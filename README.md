@@ -186,10 +186,15 @@ while a bore too wide for the root is still refused.
 
 ```sh
 make venv        # .venv with the dev extras (needs CPython 3.10-3.12; see below)
-make test        # pytest
+make verify      # the gate: ruff, mypy --strict, import boundaries, pytest (~11 s, no Docker)
 make up          # build the image and wait for the service on :8000
-make check       # everything CI runs: tests, image smoke test, vendored bundle
+make check       # verify + the image smoke test + the vendored-bundle check (needs Docker)
 ```
+
+`make verify` is the one command that decides whether a change is done. The same command
+runs in the pre-commit hook, in CI on Python 3.10 and 3.12, and inside
+`make worktree.land` before a merge, so "it passed" means the same thing everywhere.
+There is deliberately no automatic formatter; see `L16`.
 
 `make test-image` runs the suite inside the container instead, which needs no local
 Python at all. **`cadquery-ocp` only publishes wheels for CPython 3.10-3.12**, so a
@@ -204,7 +209,18 @@ a hand-maintained list. Regenerate it with `make lock` after bumping anything in
 `docker/smoke.py`, which exercises the kernel, both exporters and the ASGI app, so an
 incomplete closure fails the build rather than production.
 
-`docs/` holds the 2026-09-21 review and the plan that came out of it.
+`docs/` holds the project's durable knowledge, and `AGENTS.md` is the brief every AI
+agent reads first (`CLAUDE.md` is a symlink to it):
+
+| | |
+|---|---|
+| `docs/architecture/overview.md` | one-page system map |
+| `docs/architecture/decision_log.md` | the locked decisions, `L01`–`L16`, cited from the code |
+| `docs/architecture/<subsystem>/` | strategy, tactics, implementation, errors, tests |
+| `docs/CODING_VALUES.md` | what code this project welcomes and rejects |
+| `docs/HOW_TO_DEVELOP.md` | the development loop (in Russian) |
+| `docs/tech_debt/`, `docs/ideas/` | known gaps and deferred work, one file each |
+| `docs/review-2026-09-21.md`, `docs/plan-2026-09-21.md` | the audit that produced most of the above, and its outcome |
 
 The viewer uses a tree-shaken three.js bundle committed at
 `src/spur/static/vendor/`, so the runtime needs no Node. To rebuild it (for example
