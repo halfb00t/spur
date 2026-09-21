@@ -1,0 +1,2 @@
+src/spur/static/vendor/** linguist-vendored -diff
+web/package-lock.json linguist-generated -diff

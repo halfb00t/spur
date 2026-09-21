@@ -1,0 +1,18 @@
+services:
+  spur:
+    build: .
+    image: spur:latest
+    ports:
+      # Localhost only. To expose on the network use "8000:8000" and put
+      # something with authentication in front (the app has none).
+      - "127.0.0.1:8000:8000"
+    environment:
+      SPUR_WORKERS: "2"
+      # SPUR_ROOT_PATH: /spur   # when served under a sub-path by a reverse proxy
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped

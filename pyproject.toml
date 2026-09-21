@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spur"
+version = "0.1.0"
+description = "Parametric involute spur gear generator: web UI, HTTP API and CLI with STL/STEP export"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["gear", "involute", "cad", "cadquery", "stl", "step", "3d-printing"]
+dependencies = [
+    "cadquery>=2.5",
+    "fastapi>=0.115",
+    "pydantic>=2.7",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+spur = "spur.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spur"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:starlette.*", "ignore:Using `httpx`"]

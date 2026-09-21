@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>spur · parametric spur gear</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <h1>spur</h1>
+    <span class="sub">parametric involute spur gear</span>
+    <nav><a href="docs" target="_blank" rel="noopener">API</a></nav>
+  </header>
+
+  <main>
+    <aside>
+      <form id="params" autocomplete="off"></form>
+      <div class="actions">
+        <button type="button" id="reset">Reset</button>
+        <button type="button" id="copy-link">Copy link</button>
+      </div>
+    </aside>
+
+    <section id="view">
+      <div id="canvas-wrap">
+        <canvas id="canvas" aria-label="3D preview of the gear"></canvas>
+        <div id="status" role="status"></div>
+        <button type="button" id="fit" title="Fit gear to view">Fit</button>
+      </div>
+
+      <div id="bottom">
+        <div class="col">
+          <div class="downloads">
+            <a id="dl-stl" class="btn primary" aria-disabled="true">Download STL</a>
+            <a id="dl-step" class="btn primary" aria-disabled="true">Download STEP</a>
+          </div>
+          <div id="messages" aria-live="polite"></div>
+          <label class="mate">
+            Centre distance to a
+            <input id="mate-teeth" type="number" min="6" max="1000" step="1" placeholder="—">
+            -tooth mate: <b id="centre-distance">—</b>
+          </label>
+        </div>
+        <div class="col">
+          <dl id="dims"></dl>
+          <p class="hint">Calipers across tips and span over <i>k</i> teeth are nominal values to
+            compare against the original gear.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="static/app.js"></script>
+</body>
+</html>

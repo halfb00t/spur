@@ -1,0 +1,168 @@
+# spur
+
+Parametric involute spur gear generator. Set the parameters in a web page, get a live
+3D preview and the numbers you'd measure on a real gear, and download the result as
+**STL** (for slicing) or **STEP** (a proper solid for CAD). The same thing is available
+as an HTTP API and a CLI.
+
+Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI and three.js.
+
+- Involute flanks from module, tooth count, pressure angle and profile shift
+- Backlash, root fillets, D-flat or round bore with print clearance and chamfer
+- Annular face recesses (one or both sides) with filleted floors
+- Measurement aids: calipers across tips (corrected for odd tooth counts), span over
+  *k* teeth (Wildhaber), centre distance to a mating gear
+- Shareable links: every parameter lives in the URL
+
+## Run it
+
+### Docker
+
+```sh
+docker compose up -d --build        # http://localhost:8000
+```
+
+or without compose:
+
+```sh
+docker build -t spur .
+docker run --rm -p 127.0.0.1:8000:8000 spur
+```
+
+The image is about 1.5 GB, most of it OpenCascade and VTK. It builds for `linux/amd64`
+and `linux/arm64`, so Apple silicon, Graviton and a Raspberry Pi 5 all work:
+
+```sh
+docker buildx build --platform linux/amd64,linux/arm64 -t registry.example.com/spur:0.1.0 --push .
+```
+
+### On a remote host
+
+The Docker CLI can build and run on another machine over SSH, no registry needed:
+
+```sh
+DOCKER_HOST=ssh://user@host docker compose up -d --build
+ssh -L 8000:localhost:8000 user@host      # then open http://localhost:8000
+```
+
+**The app has no authentication.** The compose file binds to `127.0.0.1` on purpose.
+To expose it, change the port mapping and put a reverse proxy with auth in front
+(Caddy, Traefik, nginx, Cloudflare Access, Tailscale serve, ...). Under a sub-path,
+set `SPUR_ROOT_PATH=/spur`; the UI uses relative URLs and works as-is.
+
+The container runs as a non-root user and the compose file adds a read-only root
+filesystem, `tmpfs` on `/tmp`, `cap_drop: ALL` and `no-new-privileges`.
+
+| Variable | Default (image) | |
+|---|---|---|
+| `SPUR_HOST` | `0.0.0.0` | Bind address |
+| `SPUR_PORT` | `8000` | Port |
+| `SPUR_WORKERS` | `1` | Uvicorn worker processes; each builds one gear at a time |
+| `SPUR_ROOT_PATH` | | URL prefix when proxied under a sub-path |
+
+### Without Docker
+
+Python 3.10+:
+
+```sh
+python -m venv .venv && . .venv/bin/activate
+pip install -e '.[dev]'
+spur serve                                    # http://127.0.0.1:8000
+```
+
+## CLI
+
+```sh
+spur export -o gear.step                                  # defaults
+spur export -o gear.stl --teeth 24 --module 1 --pressure-angle 20 --bore-flat 0
+spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
+spur export --help                                        # every parameter
+```
+
+## API
+
+Every gear parameter is a query-string field; anything omitted takes its default.
+Interactive docs are at `/docs`.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/model.stl?…&quality=preview\|fine` | Binary STL |
+| `GET /api/model.step?…` | STEP solid |
+| `GET /api/info?…[&mate_teeth=N]` | Derived dimensions, measurement aids, warnings |
+| `GET /api/schema` | JSON schema of the parameters (the UI form is built from it) |
+| `GET /api/health` | Liveness |
+
+```sh
+curl -OJ 'http://localhost:8000/api/model.step?teeth=19&module=1.75&pressure_angle=25'
+```
+
+Parameters that can't make a sound part (a bore wider than the root, a recess cutting
+through the rim, pointed teeth, ...) return `422` with a message and the offending
+fields in `detail[].ctx.fields`.
+
+## Parameters
+
+Lengths in mm, angles in degrees.
+
+| Name | Default | |
+|---|---|---|
+| `teeth` | 19 | Number of teeth |
+| `module` | 1.75 | Pitch diameter / teeth. Must match the mating gear |
+| `pressure_angle` | 25 | Higher gives thinner tips and thicker roots. Must match the mating gear |
+| `profile_shift` | 0 | Coefficient *x*; positive thickens the root and moves the tip outward |
+| `backlash` | 0.1 | Removed from the circular tooth thickness (printing clearance) |
+| `root_fillet` | 0.5 | Fillet radius at the tooth roots, capped to fit. 0 = sharp |
+| `face_width` | 7.5 | Overall thickness |
+| `bore_d` | 9 | Round part of the bore. 0 = no bore |
+| `bore_flat` | 8 | Flat to opposite side of the bore. 0 = round bore |
+| `bore_clearance` | 0.15 | Added to bore and flat for print shrinkage. 0 for resin/SLS |
+| `bore_chamfer` | 0.4 | Chamfer on both bore edges |
+| `recess_sides` | `both` | `both`, `top`, `bottom` or `none` |
+| `recess_depth` | 2 | Depth of each groove |
+| `recess_width` | 6 | Radial width of the groove |
+| `recess_inner_d` | 0 | Inner diameter of the groove. 0 = centred so hub wall equals rim wall |
+| `recess_fillet` | 0.5 | Fillet at the groove floor corners |
+
+The defaults describe a 19-tooth printer gear this project started from.
+
+## Matching an existing gear
+
+1. Count the teeth and measure across the tips. With an **odd** tooth count the jaws sit
+   on a tip on one side and a gap on the other, so the reading is short of the true tip
+   diameter; the UI shows the value you should expect.
+2. Estimate the module as tip diameter / (teeth + 2) and round to a standard value
+   (0.5, 0.6, 0.8, 1, 1.25, 1.5, 1.75, 2, ...).
+3. Confirm with **span over *k* teeth**: jaws flat against the flanks, spanning *k* teeth.
+   It is insensitive to worn tips and distinguishes neighbouring modules and pressure
+   angles.
+4. If the mating gear is at hand, count its teeth and check the **centre distance**
+   between the shafts.
+
+## Geometry notes
+
+- Flanks are true involutes sampled into B-splines, from the base circle (or the root
+  circle, if that is larger) to the tip.
+- Below the base circle the flank is radial, as in most gear generators. Real hobbed
+  gears have a trochoidal root there; it only matters for undercut on small tooth
+  counts, and the UI warns when that applies.
+- Root fillets are computed analytically in the 2D outline rather than with the kernel's
+  fillet operator, which is far slower on a many-toothed profile. Where a fillet needs
+  room above the base circle, the flank starts with a short chord onto the involute,
+  in the non-working root zone.
+- Backlash is taken from the tooth thickness, so the part still meshes at nominal
+  centre distance.
+
+## Development
+
+```sh
+pip install -e '.[dev]'
+pytest
+```
+
+The viewer uses a tree-shaken three.js bundle committed at
+`src/spur/static/vendor/`, so the runtime needs no Node. To rebuild it (for example
+after bumping three in `web/package.json`):
+
+```sh
+cd web && npm ci && npm run build
+```

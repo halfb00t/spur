@@ -1,0 +1,8 @@
+# Pinned runtime versions used by the Docker image (tested together).
+# pyproject.toml keeps looser ranges for installing into your own environment.
+cadquery==2.8.0
+cadquery-ocp==7.9.3.1.1
+vtk==9.6.2
+fastapi==0.141.1
+pydantic==2.13.5
+uvicorn==0.53.0
