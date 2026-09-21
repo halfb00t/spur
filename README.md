@@ -182,16 +182,27 @@ while a bore too wide for the root is still refused.
 
 ## Development
 
+`make` on its own lists every target. The ones you want first:
+
 ```sh
-pip install -e '.[dev]'
-pytest
+make venv        # .venv with the dev extras (needs CPython 3.10-3.12; see below)
+make test        # pytest
+make up          # build the image and wait for the service on :8000
+make check       # everything CI runs: tests, image smoke test, vendored bundle
 ```
 
+`make test-image` runs the suite inside the container instead, which needs no local
+Python at all. **`cadquery-ocp` only publishes wheels for CPython 3.10-3.12**, so a
+newer default `python3` will send pip off trying to build OpenCascade from source;
+`make venv` picks a supported interpreter itself and says so if it cannot find one.
+On Apple silicon, `PLATFORM=linux/arm64 make image` builds natively rather than
+inheriting a `DOCKER_DEFAULT_PLATFORM=linux/amd64` from your shell.
+
 `requirements.txt` is the exact pinned closure the image installs with `--no-deps`, not
-a hand-maintained list. Regenerate it with `docker/refresh-requirements.sh` after
-bumping anything in `pyproject.toml`, and verify both architectures build. The image
-build runs `docker/smoke.py`, which exercises the kernel, both exporters and the ASGI
-app, so an incomplete closure fails the build rather than production.
+a hand-maintained list. Regenerate it with `make lock` after bumping anything in
+`pyproject.toml`, and verify both architectures build. The image build runs
+`docker/smoke.py`, which exercises the kernel, both exporters and the ASGI app, so an
+incomplete closure fails the build rather than production.
 
 `docs/` holds the 2026-09-21 review and the plan that came out of it.
 
