@@ -16,6 +16,24 @@ A number this tool prints is a number someone will cut metal to — so every dim
 either computed honestly or reported as a warning, never guessed (L08). Everything else
 (the UI, the API, the CLI) exists to get parameters in and a trustworthy gear out.
 
+## Current Milestone: v0.1 Hardening
+
+**Goal:** Pay down the three `must` tech-debt items so the generator is operable under
+real load and its response contract is type-checked — before helical/internal/rack gears
+and spoke/hex cutouts make every build heavier.
+
+**Target features:**
+- CAD builds run outside the event loop (process pool), with a re-measured memory ceiling
+- Structured logging at the composition boundary, covering the decision branches that
+  already exist
+- A typed `DerivedDimensions` contract, with mypy's `disallow_any_explicit` turned on
+- `.github/workflows/ci.yml` observed executing in GitHub Actions, not just hand-verified
+
+**Not in this milestone:** all five `nice` debt items, and every new feature — trochoidal
+root fillets, helical/internal/rack/bevel gears, tooth chamfers, keyway/hex bores, spoke
+and hex cutouts, a browser test for the viewer. Those are the next milestone, recorded in
+`REQUIREMENTS.md` under "Future Requirements".
+
 ## Requirements
 
 ### Validated
@@ -41,11 +59,17 @@ the full list with sources and acceptance evidence.
 
 ### Active
 
-None. **Forward scope for the next milestone is undefined** — nothing in the ingested
-README, SPECs, or decision log states what ships after v0. This is a known, accepted
-consequence of scoping this ingest to the existing tree, not an omission to silently fill.
-The human sets the next milestone's requirements (`/gsd-new-milestone` or equivalent),
-optionally drawing from the candidate pools below — see `ROADMAP.md` for the two pools.
+Milestone v0.1 (Hardening). Each maps to a `must` item in `docs/tech_debt/active/` or a
+standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIREMENTS.md`.
+
+- [ ] CAD builds no longer stall the event loop — kernel work moves off the serving
+  process, with the memory ceiling re-measured rather than estimated
+- [ ] Production requests leave evidence — a structured logger configured at the
+  composition boundary, logging the branches that already exist
+- [ ] The info contract has a real shape — a `DerivedDimensions` model, with mypy's
+  `disallow_any_explicit` turned on and L14's ratchet retired
+- [ ] The CI workflow is observed green in GitHub Actions on both supported Python
+  versions
 
 ### Out of Scope
 
@@ -139,12 +163,39 @@ quick reference.
 | L15 | `TRY003` disabled; the rest of `TRY` on — error messages name the field and say what to change | ✓ Good |
 | L16 | No automatic formatter — would flatten 648 lines of hand-set comment alignment | ✓ Good |
 
-## Success Metric (Next Milestone)
+## Success Metric (Milestone v0.1)
 
-**Not derivable.** No ingested document (README, SPECs, decision log) states a
-developer-facing success metric for a next milestone — none was invented to fill the gap.
-The human must set this when defining the next milestone's scope.
+Set by the human at milestone start — no ingested document derived it. All four must hold;
+the first three are observable, the fourth is the bookkeeping that follows them:
+
+1. **Measured event-loop latency.** `/api/health` p95 stays under an agreed threshold with
+   a named build in flight, measured against the baseline on record (0.22 s → 0.76 s →
+   2.00 s under one 200-tooth fine build, 12-core machine).
+2. **`disallow_any_explicit` on.** `make verify` passes with the rule enabled; L14's named
+   ratchet is retired rather than re-deferred.
+3. **Logs answer an incident.** A named set of decision branches — build started, build
+   failed, export served from cache or built, queue refused — is observable in structured
+   output, proven by a test rather than by reading the console.
+4. **The three `must` debt files are resolved.** `Status: resolved`, commit sha recorded,
+   `git mv`'d into `docs/tech_debt/resolved/`, INDEX rows moved — in the same commits as
+   the fixes, per `CLAUDE.md`.
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
-*Last updated: 2026-09-21 after initial GSD bootstrap from doc ingest + codebase map
-(`/gsd-new-project` unified init, mode `new-project-from-ingest`).*
+*Last updated: 2026-09-21 — milestone v0.1 (Hardening) started via `/gsd-new-milestone`.*

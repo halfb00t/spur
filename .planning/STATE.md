@@ -1,12 +1,16 @@
 ---
-gsd_state_version: '1.0'
+gsd_state_version: "1.0"
+milestone: v0.1
+milestone_name: Hardening
 status: planning
+last_updated: "2026-09-21T14:31:13.369Z"
+last_activity: 2026-09-21
 progress:
-  total_phases: 1
-  completed_phases: 1
+  total_phases: 0
+  completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 100
+  percent: 0
 ---
 
 # Project State
@@ -17,24 +21,20 @@ See: .planning/PROJECT.md (updated 2026-09-21)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** None. Phase 1 (v0 baseline) is shipped and complete. Forward scope is
-undefined pending human input — see ROADMAP.md "Forward Scope — UNDEFINED".
+**Current focus:** Milestone v0.1 (Hardening) — the three `must` tech-debt items plus
+verifying CI actually executes in GitHub Actions. No new gear features ship in v0.1.
 
 ## Current Position
 
-Phase: 1 of 1 (v0 Baseline — Shipped)
-Plan: N/A — baseline predates GSD planning; no PLAN.md history
-Status: Baseline complete. No active phase. Awaiting human decision on the next milestone.
-Last activity: 2026-09-21 — GSD planning bootstrap from doc ingest + codebase map
-(PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md written; mode
-`new-project-from-ingest`).
-
-Progress: [██████████] 100% of Phase 1 (the only defined phase). Overall project progress
-against a next milestone is not measurable — none is defined yet.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-21 — Milestone v0.1 started
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed via GSD: 0 (v0 was built and verified directly against
   `make verify`, before this planning structure existed)
 - Average duration: N/A
@@ -63,15 +63,18 @@ None yet.
 
 ### Blockers/Concerns
 
-- **Forward scope undefined.** No ingested document states what ships after v0. The human
-  must set the next milestone's requirements before `/gsd-plan-phase` has anything beyond
-  Phase 1 to plan against. Candidate pools (not phases): `docs/ideas/` (2 items),
-  `docs/tech_debt/active/` (8 items: 3 must, 5 nice) — see ROADMAP.md and
-  `.planning/codebase/CONCERNS.md`.
-- **Success metric not derivable.** No ingested document states a developer-facing success
-  metric for a next milestone; the human must set one — see PROJECT.md.
+- **L07 needs superseding, not rewriting.** L07 fixes the memory story on *per-process*
+  bounded caches plus `malloc_trim(0)`, with a measured 1.87 GiB → 358 MiB result backing
+  `compose.yaml`'s `mem_limit: 2g`. Moving CAD builds to a process pool makes those caches
+  per-worker and invalidates that formula. Per `CLAUDE.md` this requires a new superseding
+  `Lxx` in `docs/architecture/decision_log.md` with a **re-measured** ceiling — an
+  estimated `mem_limit` would be exactly the guessed number L08 forbids. Largest risk in
+  v0.1.
 - **CI workflow unverified.** `.github/workflows/ci.yml` was hand-verified step-by-step but
-  has never executed inside GitHub Actions (per `docs/plan-2026-09-21.md`).
+  has never executed inside GitHub Actions (per `docs/plan-2026-09-21.md`). Now in v0.1
+  scope rather than a standing blocker.
+- *(Resolved at v0.1 start: "Forward scope undefined" and "Success metric not derivable" —
+  both set by the human, see PROJECT.md "Current Milestone" and "Success Metric".)*
 
 ## Deferred Items
 
