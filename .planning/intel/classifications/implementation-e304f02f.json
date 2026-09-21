@@ -1,0 +1,12 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/solid-model/implementation.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "solid-model — implementation",
+  "summary": "Specifications for the CadQuery solid gear model module: layout, entry points, and constraints.",
+  "scope": ["solid gear model", "CadQuery", "model.py", "export", "OCCT", "tessellation"],
+  "cross_refs": ["docs/tech_debt/active/2026-09-21-cadquery-shape-typing.md", "docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md"],
+  "locked": false,
+  "precedence": null
+}

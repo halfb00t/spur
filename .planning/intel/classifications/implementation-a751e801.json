@@ -1,0 +1,12 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/gear-maths/implementation.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "gear-maths — implementation",
+  "summary": "Technical specification of the calculation layer: involute function, tooth geometry, fillets, bore, GearParams model, and module structure.",
+  "scope": ["involute function", "calculation layer", "GearParams", "calc.py", "params.py", "tooth geometry", "fillets", "centre distance", "span measurement", "bore radius", "Profile"],
+  "cross_refs": ["src/spur/calc.py", "src/spur/params.py", "model.py", "app.py", "cli.py"],
+  "locked": false,
+  "precedence": null
+}

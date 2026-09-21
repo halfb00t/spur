@@ -1,0 +1,34 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/CODING_VALUES.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "spur — Coding Values",
+  "summary": "Comprehensive coding standards and values guide for the spur project covering philosophy, stack, coupling, validation, testing, and conventions.",
+  "scope": [
+    "code standards",
+    "Python 3.10–3.12",
+    "CadQuery",
+    "FastAPI",
+    "OpenCascade",
+    "module coupling",
+    "validation",
+    "testing",
+    "naming conventions",
+    "failure handling"
+  ],
+  "cross_refs": [
+    "AGENTS.md",
+    "docs/architecture/decision_log.md",
+    "pyproject.toml",
+    "model.py",
+    "calc.py",
+    "cli.py",
+    "app.py",
+    "tests/test_cli.py",
+    "docs/tech_debt/active/2026-09-21-no-structured-logging.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

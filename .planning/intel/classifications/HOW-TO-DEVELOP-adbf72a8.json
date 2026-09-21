@@ -1,0 +1,31 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/HOW_TO_DEVELOP.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Как разрабатывать spur (гид для человека)",
+  "summary": "Development workflow guide for spur, covering the AI-agent collaboration cycle from discussion through acceptance.",
+  "scope": [
+    "development workflow",
+    "AI agents",
+    "make verify",
+    "make check",
+    "worktrees",
+    "CI/CD",
+    "code review",
+    "testing",
+    "spur project"
+  ],
+  "cross_refs": [
+    "AGENTS.md",
+    "docs/architecture/",
+    ".planning/",
+    "docs/ideas/",
+    "docs/tech_debt/",
+    "web/",
+    ".claude/worktrees/"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

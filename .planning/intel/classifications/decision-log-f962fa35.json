@@ -1,0 +1,35 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/decision_log.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Decision log",
+  "summary": "Locked architectural decisions for the spur parametric gear generator covering stack, concurrency, caching, validation, tooling, and code quality.",
+  "scope": [
+    "L01: Stack (Python 3.10-3.12, CadQuery, FastAPI, JavaScript, Docker, GitHub Actions)",
+    "L02: Parameter model (GearParams as single source of truth)",
+    "L03: Input validation (cap and warn, never guess)",
+    "L04: Admission control (web layer queue)",
+    "L05: Defaults (absolute millimetres, no rescaling)",
+    "L06: Thread safety (OpenCascade RLock)",
+    "L07: Memory management (bounded caches, malloc_trim)",
+    "L08: Numeric robustness (centre_distance bisection solver)",
+    "L09: Root fillet computation (analytical, not OCCT operator)",
+    "L10: Gear profile approximation (radial root below base circle)",
+    "L11: Frontend bundling (three.js vendored bundle)",
+    "L12: Docker dependencies (pinned requirements.txt closure)",
+    "L13: Development gate (make verify)",
+    "L14: Type checking (mypy strict mode)",
+    "L15: Linter configuration (TRY003 disabled)",
+    "L16: Formatter policy (no auto-format)"
+  ],
+  "cross_refs": [
+    "docs/review-2026-09-21.md",
+    "docs/plan-2026-09-21.md",
+    "docs/ideas/",
+    "docs/tech_debt/active/2026-09-21-untyped-info-contract.md"
+  ],
+  "locked": true,
+  "precedence": 0,
+  "notes": "File declares itself 'Locked decisions' and is identified by AGENTS.md as 'the single source of locked decisions'. Contains 16 individual architectural decisions (L01-L16), all locked by inclusion in the log per repo policy: 'agents must not re-litigate a logged decision'. Unlike typical ADRs with Status: Accepted frontmatter, this meta-file's lock status derives from its explicit opening declaration and the repo's established authority. Manifest-driven classification with override to preserve locked status across all 16 entries."
+}

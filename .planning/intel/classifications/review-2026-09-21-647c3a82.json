@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/review-2026-09-21.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Review — 2026-09-21",
+  "summary": "Audit of spur project at initial commit. Verifies functionality and documents eight findings (F1–F8): high-severity issues (silent errors, unbounded memory, unusable defaults), medium-severity (admission control), low-severity (measurement errors, unused dependencies, structure).",
+  "scope": ["spur", "audit", "code review", "Docker container", "API", "caching", "defaults", "vendored dependencies", "CLI", "structure"],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": "Review audit with eight findings presented as current/outstanding at commit 9345338. No resolution status indicated in this document; pair with docs/plan-2026-09-21.md to determine which have been addressed."
+}

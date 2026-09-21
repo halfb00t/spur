@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/gear-maths/strategy.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "gear-maths — strategy",
+  "summary": "Technical specification for the gear-maths calculation module: involute spur gear geometry, derived dimensions, validation rules, and module boundaries.",
+  "scope": ["gear-maths", "involute spur gear", "profile geometry", "derived dimensions", "calculation module", "validation"],
+  "cross_refs": ["src/spur/calc.py", "src/spur/params.py", "model.py", "app.py", "cli.py"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

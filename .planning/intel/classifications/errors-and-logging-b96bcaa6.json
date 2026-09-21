@@ -1,0 +1,12 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/gear-maths/errors_and_logging.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "gear-maths — errors & logging",
+  "summary": "Specifies error handling strategy (refuse/cap-warn/report-nothing) and logging policy for the gear-maths module.",
+  "scope": ["gear-maths error handling", "input validation", "warnings", "logging policy"],
+  "cross_refs": ["docs/tech_debt/active/2026-09-21-no-structured-logging.md"],
+  "locked": false,
+  "precedence": null
+}

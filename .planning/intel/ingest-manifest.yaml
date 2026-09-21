@@ -1,0 +1,75 @@
+# Manifest for /gsd-ingest-docs, 2026-09-21.
+# Hand-curated because directory-convention discovery inverts precedence in this repo:
+#   - docs/architecture/decision_log.md (the actual locked decisions, L01-L16) matches
+#     none of the ADR patterns (*/adr/*, ADR-*.md, [0-9]{4}-*.md) and would fall through
+#     to DOC, the lowest precedence.
+#   - The [0-9]{4}-*.md pattern instead matches 10 ISO-dated files under
+#     docs/tech_debt/active/ and docs/ideas/, tagging debt notes and deferred ideas as
+#     ADR, the highest precedence.
+#
+# Excluded deliberately:
+#   CLAUDE.md                      symlink to AGENTS.md; duplicate content
+#   AGENTS.md                      creates 4 cross_ref cycles (-> README, CODING_VALUES,
+#                                  HOW_TO_DEVELOP, and itself), which the synthesizer
+#                                  treats as a hard BLOCKER. Its substance is covered by
+#                                  decision_log.md + CODING_VALUES.md + HOW_TO_DEVELOP.md.
+#   docs/tech_debt/**              tracked by its own lifecycle (CLAUDE.md); already
+#                                  summarized in .planning/codebase/CONCERNS.md
+#   docs/ideas/**                  explicitly deferred ("not for now")
+#   */INDEX.md, */TEMPLATE.md      scaffolding, no content
+#   docs/guides/README.md          68 words, stub
+#   .ai_skills/README.md           agent tooling meta
+
+docs:
+  # --- ADR: the single source of locked decisions -------------------------------
+  - path: docs/architecture/decision_log.md
+    type: ADR
+    precedence: 0
+
+  # --- SPEC: component contracts ------------------------------------------------
+  - path: docs/architecture/overview.md
+    type: SPEC
+  - path: docs/architecture/cli.md
+    type: SPEC
+  - path: docs/architecture/http-api.md
+    type: SPEC
+  - path: docs/architecture/web-ui.md
+    type: SPEC
+  - path: docs/architecture/packaging.md
+    type: SPEC
+  - path: docs/architecture/gear-maths/strategy.md
+    type: SPEC
+  - path: docs/architecture/gear-maths/tactics.md
+    type: SPEC
+  - path: docs/architecture/gear-maths/implementation.md
+    type: SPEC
+  - path: docs/architecture/gear-maths/tests.md
+    type: SPEC
+  - path: docs/architecture/gear-maths/errors_and_logging.md
+    type: SPEC
+  - path: docs/architecture/solid-model/strategy.md
+    type: SPEC
+  - path: docs/architecture/solid-model/tactics.md
+    type: SPEC
+  - path: docs/architecture/solid-model/implementation.md
+    type: SPEC
+  - path: docs/architecture/solid-model/tests.md
+    type: SPEC
+  - path: docs/architecture/solid-model/errors_and_logging.md
+    type: SPEC
+
+  # --- PRD: none. This repo has no product requirements document. ---------------
+
+  # --- DOC: context -------------------------------------------------------------
+  - path: README.md
+    type: DOC
+  - path: docs/requirements/README.md
+    type: DOC
+  - path: docs/CODING_VALUES.md
+    type: DOC
+  - path: docs/HOW_TO_DEVELOP.md
+    type: DOC
+  - path: docs/plan-2026-09-21.md
+    type: DOC
+  - path: docs/review-2026-09-21.md
+    type: DOC

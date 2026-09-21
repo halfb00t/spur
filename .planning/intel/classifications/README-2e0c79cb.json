@@ -1,0 +1,12 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/README.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "spur",
+  "summary": "Parametric involute spur gear generator. Set parameters via web, API, or CLI to generate STL/STEP models with live 3D preview and measurement aids.",
+  "scope": ["spur gears", "involute geometry", "parameters", "STL/STEP export", "web UI", "HTTP API", "CLI", "Docker deployment", "3D preview", "measurement aids", "CadQuery", "OpenCascade"],
+  "cross_refs": ["docs/architecture/overview.md", "docs/architecture/decision_log.md", "docs/CODING_VALUES.md", "docs/HOW_TO_DEVELOP.md", "docs/tech_debt/", "docs/ideas/", "docs/review-2026-09-21.md", "docs/plan-2026-09-21.md"],
+  "locked": false,
+  "precedence": null
+}

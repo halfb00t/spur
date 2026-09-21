@@ -1,0 +1,24 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/plan-2026-09-21.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Remediation plan — review of 2026-09-21",
+  "summary": "Completed remediation of seven issues from the 2026-09-21 review, with measured before/after outcomes.",
+  "scope": [
+    "centre_distance solver",
+    "root_thickness measurement",
+    "recess capping",
+    "cache sizing",
+    "admission control",
+    "Docker image optimization",
+    "tests",
+    "CI workflow"
+  ],
+  "cross_refs": [
+    "review-2026-09-21.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "All seven remediation steps completed and verified with measurements. This is a historical record of finished work (dated 2026-09-21), not a live action item list. Outcome section shows metrics confirming delivery. Items in 'Deliberately not done' section are explicitly out of scope."
+}

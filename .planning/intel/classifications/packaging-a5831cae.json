@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/packaging.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "packaging",
+  "summary": "Specifies Docker image build, dependency pinning, hardening, smoke test, and CI gate for reproducible deployment.",
+  "scope": ["Docker", "image", "requirements.txt", "compose.yaml", "CI gate", "smoke test", "hardening", "Makefile", "packaging"],
+  "cross_refs": ["Dockerfile", "compose.yaml", "requirements.txt", "docker/", ".github/workflows/ci.yml", "Makefile", "docker/refresh-requirements.sh", "docker/smoke.py", "pyproject.toml", ".pre-commit-config.yaml", "web/", ".claude/worktrees/"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

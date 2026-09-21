@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/cli.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "cli",
+  "summary": "Specification of the spur CLI with commands for serving, gear information, and export; generated from GearParams.",
+  "scope": ["spur CLI", "commands", "GearParams", "flags", "validation", "error handling", "exit codes", "output formats"],
+  "cross_refs": ["src/spur/cli.py", "tests/test_cli.py", "docs/architecture/decision_log.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/gear-maths/tactics.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "gear-maths — tactics",
+  "summary": "Defines the three-layer architecture and function contracts for the gear-maths calculation module.",
+  "scope": ["gear-maths module", "Profile", "Rules", "Reports", "GearParams", "function contracts", "JSON output"],
+  "cross_refs": ["L08", "L14"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

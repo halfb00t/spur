@@ -1,0 +1,22 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/solid-model/errors_and_logging.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "solid-model — errors & logging",
+  "summary": "Specifies error handling via BuildError exception and memory management for the geometry kernel module.",
+  "scope": [
+    "solid-model module",
+    "error handling",
+    "BuildError exception",
+    "OCCT geometry kernel",
+    "memory management",
+    "caching",
+    "logging"
+  ],
+  "cross_refs": [
+    "docs/tech_debt/active/2026-09-21-no-structured-logging.md"
+  ],
+  "locked": false,
+  "precedence": null
+}

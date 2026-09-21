@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/overview.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Architecture overview",
+  "summary": "One-page system architecture overview covering stack components, main subsystems with responsibility table, and source-of-truth principles.",
+  "scope": ["spur gear generator", "Python", "FastAPI", "Pydantic", "CadQuery", "OpenCascade", "three.js", "Docker", "HTTP API", "Web UI", "CLI", "parameters model", "geometry", "solid model", "import-linter"],
+  "cross_refs": ["decision_log.md", "gear-maths/", "solid-model/", "http-api.md", "web-ui.md", "cli.md", "packaging.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": "Manifest type SPEC provided and confirmed: document specifies implementation architecture, stack choices, subsystem contracts, and dependency constraints."
+}

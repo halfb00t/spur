@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/solid-model/strategy.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "solid-model — strategy",
+  "summary": "Specifies the solid-model CAD kernel module's responsibilities, boundaries, design secrets, and implementation constraints.",
+  "scope": ["solid-model", "CAD kernel", "CadQuery", "OpenCascade", "geometry", "concurrency", "fillets", "export"],
+  "cross_refs": ["src/spur/model.py", "calc.py"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

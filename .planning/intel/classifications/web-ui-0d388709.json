@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/web-ui.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "web-ui",
+  "summary": "Web UI implementation: form, live 3D preview, parameters via URL, static assets.",
+  "scope": ["web-ui", "three.js", "form", "API schema", "STL preview", "static assets"],
+  "cross_refs": ["src/spur/static/", "web/", "static/vendor/three.bundle.min.js", "params.py", "app.js", "entry.js", "tests/test_api.py", "docs/tech_debt/active/2026-09-21-no-server-side-cancellation.md", "docs/ideas/"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

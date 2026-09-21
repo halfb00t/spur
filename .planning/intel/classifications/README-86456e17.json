@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/requirements/README.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Requirements",
+  "summary": "Placeholder describing intended taxonomy for durable requirements: functional, nfr, errors, security.",
+  "scope": ["requirements taxonomy", "functional requirements", "non-functional requirements", "error contract", "security posture"],
+  "cross_refs": ["docs/architecture/decision_log.md", "tests/test_calc.py", "tests/test_api.py", "docs/plan-2026-09-21.md", "docs/tech_debt/active/2026-09-21-no-authentication.md", "functional.md", "nfr.md", "errors.md", "security.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": "Placeholder README. The four files mentioned (functional.md, nfr.md, errors.md, security.md) do not currently exist in docs/requirements/; this document guides their intended structure."
+}

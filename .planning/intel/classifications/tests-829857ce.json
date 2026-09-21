@@ -1,0 +1,13 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/gear-maths/tests.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "gear-maths — tests",
+  "summary": "Test coverage and gaps for the gear-maths calculation module, with 21 unit tests and running instructions.",
+  "scope": ["test coverage", "gear-maths", "unit tests", "pytest", "calc.py"],
+  "cross_refs": ["tests/test_calc.py", "docs/tech_debt/active/2026-09-21-no-coverage-floor.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

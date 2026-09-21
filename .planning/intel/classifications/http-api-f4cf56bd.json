@@ -1,0 +1,26 @@
+{
+  "source_path": "/Users/halfb00t/git/halfb00t/spur/docs/architecture/http-api.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "http-api",
+  "summary": "HTTP API specification: endpoints, schemas, error handling, and request/response contracts.",
+  "scope": [
+    "HTTP API",
+    "FastAPI",
+    "GearParams schema",
+    "endpoints",
+    "error handling",
+    "admission control",
+    "request models"
+  ],
+  "cross_refs": [
+    "src/spur/app.py",
+    "tests/test_api.py",
+    "static/index.html",
+    "docs/tech_debt/active/2026-09-21-no-authentication.md",
+    "docs/tech_debt/active/2026-09-21-no-structured-logging.md"
+  ],
+  "locked": false,
+  "precedence": null
+}
