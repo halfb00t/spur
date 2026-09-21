@@ -88,26 +88,118 @@ criterion, `acceptance` is marked **absent** — nothing was invented to fill it
     and `docker build --platform linux/arm64` both clean — a historical verification; see
     `.planning/INGEST-CONFLICTS.md` (INFO) for the historical-vs-live caveat.
 
-## v1+ Requirements
+## v0.1 Requirements (Milestone: Hardening)
 
-**None defined.** Forward scope beyond the v0 baseline is undefined — no ingested document
-states what ships next. This is intentional per the routing decision that produced this
-file, not an omission. See `PROJECT.md` ("Active" requirements) and `ROADMAP.md` for the
-candidate pools (`docs/ideas/`, `docs/tech_debt/active/`) the human may draw the next
-milestone's requirements from.
+**Work to be done.** Five requirements, all paying down `must` tech debt or closing a
+standing blocker — no new gear geometry ships in v0.1. Each cites the debt file or blocker
+it retires. Feature work is deferred to the next milestone ("Future Requirements" below).
+
+### Runtime & Concurrency
+
+- [ ] **REQ-cad-off-event-loop**: CAD builds execute outside the serving process, so
+  `/api/health` latency no longer scales with the size of the gear someone asked for.
+  - *Retires*: `docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md` (must).
+  - *Acceptance*: p95 health latency under load stays within **2× of idle p95**, measured
+    with that file's own two scenarios — one 200-tooth fine build in flight, and ten
+    concurrent builds. Baseline to beat, on record from the same file: 0.22 s → 0.76 s →
+    2.00 s for the first scenario, repeatedly over 5 s for the second (12-core machine).
+    The threshold is a property (latency decoupled from build size), not a plucked number;
+    the absolute figures are recorded alongside it.
+  - *Note*: admission control stays in the web layer and the CLI still never queues (L04).
+
+- [ ] **REQ-measured-memory-ceiling**: The memory ceiling for the multi-process topology is
+  measured, `compose.yaml`'s `mem_limit` is set from that measurement, and a superseding
+  `Lxx` replaces L07 in `docs/architecture/decision_log.md`.
+  - *Why it is separate*: L07's numbers (1.87 GiB → 1.5 GiB → 358 MiB, `mem_limit: 2g` as a
+    measured backstop after 1g failed ~5% of requests) assume caches bounded **per process**.
+    N workers multiply that. An estimated replacement ceiling is exactly the plausible-but-
+    unverified number L08 forbids, so this is a requirement in its own right rather than a
+    footnote to the one above — it is the part most likely to be skipped.
+  - *Acceptance*: the new ceiling is reported from a measured sweep, not derived
+    arithmetically; the superseding decision entry cites the measurement.
+
+### Observability
+
+- [ ] **REQ-structured-logging**: A structured logger is configured at the composition
+  boundary (`cli.cmd_serve` / `app.py` startup) and emits the decision branches that already
+  exist — build started (with parameter slug), build failed (with exception class), export
+  served from cache vs. built, queue refused.
+  - *Retires*: `docs/tech_debt/active/2026-09-21-no-structured-logging.md` (must).
+  - *Acceptance*: a test asserts the branch records are emitted with their field names — not
+    console eyeballing. Field names are chosen once, deliberately, before the first incident
+    forces the choice.
+  - *Boundary*: `calc.py` stays log-free. It is pure, it runs on every keystroke, and its
+    `warnings` output is its diagnostic (L01/AGENTS.md).
+
+### Contracts & Types
+
+- [ ] **REQ-typed-derived-dimensions**: `derive()` returns a `DerivedDimensions` model with
+  explicit optional fields instead of `dict[str, Any]`; `disallow_any_explicit` is turned on
+  in the mypy config and `make verify` passes with it on.
+  - *Retires*: `docs/tech_debt/active/2026-09-21-untyped-info-contract.md` (must), and L14's
+    named ratchet with it.
+  - *Acceptance*: `make verify` green with the rule enabled; the web UI, CLI and API all read
+    the same typed shape, and the OpenAPI document reflects it. The fields the UI already
+    reads by name (`detail[].ctx.fields`, `warnings`) keep working.
+
+### Delivery
+
+- [ ] **REQ-ci-verified**: `.github/workflows/ci.yml` is observed executing green in GitHub
+  Actions on both supported Python versions — not hand-verified step-by-step.
+  - *Retires*: the "CI workflow unverified" blocker carried in `STATE.md` since the
+    2026-09-21 bootstrap (source: `docs/plan-2026-09-21.md`).
+  - *Acceptance*: a run URL, on a real push, showing the gate and both container checks
+    green. Predicting that it would pass is not the same as watching it pass (L13).
+
+## Future Requirements
+
+**Next milestone — features.** Gathered at v0.1 kickoff, deferred deliberately. Not yet
+scoped, estimated, or ordered; recorded so they survive the session that named them.
+
+### New gear types
+- Helical gears — twisted extrusion; materially heavier OCCT work, which is part of why
+  `REQ-cad-off-event-loop` comes first.
+- Internal / ring gears.
+- Rack — the spur-family special case (infinite radius).
+- Bevel gears — **needs a product-scope decision first.** Bevel is not an extension of the
+  involute spur pipeline in `calc.py`, and it contradicts what `PROJECT.md` says this is
+  ("A parametric involute spur gear generator"). Either the product definition changes or
+  this does not belong here; that is a decision, not a geometry task.
+
+### Tooth and bore detail
+- Chamfers on the teeth. (The chamfer that ships today is on the **bore**, per
+  `REQ-bore-and-fillets` — tooth-tip chamfer is new geometry.)
+- Additional centre-hole types: keyway, hex, spline, and similar. (D-flat and round
+  **already ship** under `REQ-bore-and-fillets` — only the new profiles are work.)
+
+### Web / body cutouts
+- Parametric body cutouts: spoke arms, circular lightening holes, hexagonal patterns, each
+  with their own parameters. Every added boolean cut makes builds heavier — a second reason
+  `REQ-cad-off-event-loop` is prerequisite rather than optional.
+
+### Carried over from `docs/ideas/`
+- Trochoidal (vs. radial) root fillet below the base circle — would supersede L10's
+  documented approximation.
+- A browser-driven test for the 3D viewer — a test, not a user feature; the cost of the
+  first one is the whole question.
+
+**Deferred `nice` tech debt** (out of v0.1 by explicit choice, each keeps its own trigger in
+`docs/tech_debt/active/`): coverage floor in the gate, CadQuery `Shape` typing cleanup,
+server-side cancellation on client abort, Enji Guard / Dependabot CVE alerting.
 
 ## Out of Scope
 
+Explicitly excluded from **milestone v0.1**, with reasoning. Items merely *deferred* live
+under "Future Requirements" above — this table is for things that are not planned work.
+
 | Feature | Reason |
 |---------|--------|
-| Trochoidal root fillet (vs. radial, L10) | Documented, accepted approximation; tracked as a `docs/ideas/` item, not required for v0 |
-| Browser-driven viewer test | `docs/ideas/` item; not required for v0's `make verify` gate |
-| CAD builds on a process pool (off the event loop) | `docs/tech_debt/active/` (must); root cause of an accepted, mitigated limitation (admission queue + raised health-check timeout) |
-| Structured logging | `docs/tech_debt/active/` (must); revisit at first production incident or multi-user deploy |
-| Typed `/api/info` response contract | `docs/tech_debt/active/` (must); revisit when a third consumer of the endpoint appears |
-| Coverage floor in the gate | `docs/tech_debt/active/` (must); a ten-minute item, deferred, not blocking |
-| CadQuery `Shape` typing cleanup, server-side cancellation, Enji Guard / CVE alerting | `docs/tech_debt/active/` (nice); each has its own named trigger |
-| Authentication | Deliberate for a single-user/localhost tool (REQ-no-auth-default is itself satisfied by this absence); revisit if ever exposed beyond one machine |
+| Any new gear geometry (helical, internal/ring, rack, bevel, tooth chamfers, new bore profiles, body cutouts) | v0.1 is a hardening milestone by explicit decision — features ship next milestone, on top of a runtime that no longer stalls and a response contract that is type-checked |
+| Coverage floor in the gate | `docs/tech_debt/active/` (nice); a ten-minute measured item, deliberately not bundled with the `must` work |
+| CadQuery `Shape` typing cleanup | `docs/tech_debt/active/` (nice); its own file says it wants its own tested change to the geometry pipeline, not a ride-along |
+| Server-side cancellation on client abort | `docs/tech_debt/active/` (nice); its own trigger is "after the process pool lands, which would make real cancellation possible" — so it is correctly *after* v0.1, not in it |
+| Enji Guard / CVE alerting | `docs/tech_debt/active/` (nice); needs an OAuth click by a repo admin, or the narrower free equivalent (Dependabot alerts) — not code work |
+| Authentication | Deliberate for a localhost/single-user tool; `REQ-no-auth-default` is *satisfied* by its absence. Its debt file's own next step is "Nothing now". Revisit only if the binding changes or it is deployed beyond one machine |
 
 ## Traceability
 
@@ -124,12 +216,16 @@ milestone's requirements from.
 | REQ-error-contract | Phase 1 | Complete (shipped v0) |
 | REQ-no-auth-default | Phase 1 | Complete (shipped v0) |
 | REQ-docker-multiarch | Phase 1 | Complete (shipped v0) |
+| REQ-cad-off-event-loop | *(TBD — roadmap)* | Pending |
+| REQ-measured-memory-ceiling | *(TBD — roadmap)* | Pending |
+| REQ-structured-logging | *(TBD — roadmap)* | Pending |
+| REQ-typed-derived-dimensions | *(TBD — roadmap)* | Pending |
+| REQ-ci-verified | *(TBD — roadmap)* | Pending |
 
 **Coverage:**
-- v0 requirements: 11 total
-- Mapped to phases: 11
-- Unmapped: 0 ✓
+- v0 requirements (shipped baseline): 11 total, 11 mapped, 0 unmapped ✓
+- v0.1 requirements (this milestone): 5 total, phase mapping written by the roadmapper
 
 ---
 *Requirements defined: 2026-09-21*
-*Last updated: 2026-09-21 after initial GSD bootstrap from doc ingest + codebase map.*
+*Last updated: 2026-09-21 — milestone v0.1 (Hardening) requirements defined.*
