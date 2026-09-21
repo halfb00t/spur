@@ -9,9 +9,17 @@ services:
     environment:
       SPUR_WORKERS: "2"
       # SPUR_ROOT_PATH: /spur   # when served under a sub-path by a reverse proxy
+      # SPUR_SOLID_CACHE, SPUR_EXPORT_CACHE_MB, SPUR_MAX_QUEUED_BUILDS: see the README
+    # Sized by measurement, not by guess: two workers sweeping 40 distinct 160-199
+    # tooth gears settle at ~740 MB resident, but one large build peaks far above its
+    # steady state, and 1g made ~5% of those requests fail. Raise it if you raise
+    # SPUR_WORKERS or the cache settings.
+    mem_limit: 2g
     read_only: true
     tmpfs:
-      - /tmp
+      # Exports are written here before being read back; bounded so a huge STL cannot
+      # eat the memory limit.
+      - /tmp:size=256m
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true

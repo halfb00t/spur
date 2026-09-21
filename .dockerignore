@@ -15,3 +15,5 @@ tests
 *.stp
 compose.yaml
 Dockerfile
+docs
+.github
