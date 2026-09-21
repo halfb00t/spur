@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .params import GearParams
 
-MIN_WALL = 0.4        # mm, thinnest wall allowed anywhere in the body
-MIN_TIP_FDM = 0.4     # mm, below this a tip is roughly one extrusion line wide
+MIN_WALL = 0.4          # mm, thinnest wall allowed anywhere in the body
+MIN_TIP_FDM = 0.4       # mm, below this a tip is roughly one extrusion line wide
+MIN_RECESS_WIDTH = 1.0  # mm, below this a face groove is not worth cutting
 
 
 def inv(a: float) -> float:
@@ -56,18 +57,38 @@ def bore_radius(p: GearParams) -> float:
 
 
 def recess_radii(p: GearParams, rf: float) -> tuple[float, float] | None:
-    """(inner, outer) radius of the face groove, or None if there is none."""
+    """(inner, outer) radius of the face groove, narrowed to fit between the hub wall
+    and the tooth rim, or None when there is no room for a groove at all.
+
+    The requested width is a wish, not a constraint. The stock defaults are absolute
+    millimetres sized for a 19-tooth m=1.75 gear, so a smaller gear would otherwise be
+    refused over a parameter the user never touched. Same contract as root_fillet():
+    cap silently here, warn about it in derive().
+    """
     if p.recess_sides == "none" or p.recess_depth <= 0 or p.recess_width <= 0:
         return None
     R = bore_radius(p)
+    hub = R + (p.bore_chamfer if p.bore_d > 0 else 0.0) + MIN_WALL  # clear of the hub wall
+    rim = rf - MIN_WALL                                             # clear of the tooth rim
+    if rim - hub < MIN_RECESS_WIDTH:
+        return None
+    width = min(p.recess_width, rim - hub)
+    # Default position: hub wall and rim wall come out equal, as before any capping.
     r_in = p.recess_inner_d / 2 if p.recess_inner_d > 0 else R + (rf - R - p.recess_width) / 2
-    return r_in, r_in + p.recess_width
+    r_in = min(max(r_in, hub), rim - width)
+    return r_in, r_in + width
 
 
 def _tooth(pr: Profile) -> tuple[float, float, float]:
+    """(tip thickness, root thickness, root gap), arc lengths in mm.
+
+    Thickness and gap are both measured on the root circle: below the base circle the
+    flank is radial, so the half-angle down there is the one at r_start.
+    """
+    psi_root = pr.half_angle(pr.r_start)
     tip = 2 * pr.ra * pr.half_angle(pr.ra)
-    root = 2 * pr.r_start * pr.half_angle(pr.r_start)
-    gap = 2 * pr.rf * (math.pi / pr.z - pr.half_angle(pr.r_start))
+    root = 2 * pr.rf * psi_root
+    gap = 2 * pr.rf * (math.pi / pr.z - psi_root)
     return tip, root, gap
 
 
@@ -77,8 +98,25 @@ def root_fillet(p: GearParams) -> float:
     return round(min(p.root_fillet, 0.45 * gap), 3) if gap > 0 else 0.0
 
 
+def recess_fillet(p: GearParams, rf: float) -> float:
+    """Recess floor fillet actually used: the requested radius, capped to the groove.
+
+    Both floor corners carry the fillet, so it cannot exceed half the groove width.
+    """
+    rr = recess_radii(p, rf)
+    if not rr or p.recess_fillet <= 0:
+        return 0.0
+    width = rr[1] - rr[0]
+    return round(min(p.recess_fillet, 0.45 * width, 0.45 * p.recess_depth), 3)
+
+
 def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
-    """Reasons the parameters can't produce a sound part, each with the fields involved."""
+    """Reasons the parameters can't produce a sound part, each with the fields involved.
+
+    Only conflicts the user has to resolve themselves land here. Dimensions that can be
+    trimmed to fit without contradicting an explicit choice — the root fillet, the face
+    recess — are capped in their own functions and reported as warnings instead.
+    """
     errors: list[tuple[str, tuple[str, ...]]] = []
     pr = profile(p)
     if pr.rf <= MIN_WALL:
@@ -103,24 +141,12 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         errors.append(("Bore chamfer must be less than half the face width.",
                        ("bore_chamfer",)))
 
-    rr = recess_radii(p, pr.rf)
-    if rr:
-        r_in, r_out = rr
+    if recess_radii(p, pr.rf):
         sides = 2 if p.recess_sides == "both" else 1
         web = p.face_width - sides * p.recess_depth
         if web < MIN_WALL:
             errors.append((f"Recesses leave a {web:.2f} mm web; reduce the depth.",
                            ("recess_depth",)))
-        if r_in - (R + p.bore_chamfer) < MIN_WALL:
-            errors.append(("Recess cuts into the bore wall; reduce its width or inner Ø.",
-                           ("recess_width", "recess_inner_d")))
-        if pr.rf - r_out < MIN_WALL:
-            errors.append(("Recess cuts into the tooth rim; reduce its width or inner Ø.",
-                           ("recess_width", "recess_inner_d")))
-        if p.recess_fillet > 0 and (p.recess_fillet >= p.recess_depth
-                                    or p.recess_fillet >= p.recess_width / 2):
-            errors.append(("Recess fillet must be smaller than the depth and half the width.",
-                           ("recess_fillet",)))
     return errors
 
 
@@ -154,6 +180,17 @@ def derive(p: GearParams) -> dict[str, Any]:
 
     rr = recess_radii(p, pr.rf)
     sides = {"both": 2, "top": 1, "bottom": 1}.get(p.recess_sides, 0)
+    wanted_recess = p.recess_sides != "none" and p.recess_depth > 0 and p.recess_width > 0
+    rec_fil = recess_fillet(p, pr.rf)
+    if rr:
+        if rr[1] - rr[0] < p.recess_width - 1e-9:
+            warnings.append(f"Recess narrowed to {rr[1] - rr[0]:.2f} mm to fit between "
+                            "the bore wall and the tooth rim.")
+        if rec_fil < p.recess_fillet:
+            warnings.append(f"Recess fillet reduced to {rec_fil:.2f} mm to fit the groove.")
+    elif wanted_recess:
+        warnings.append("No room for a face recess between the bore wall and the tooth "
+                        "rim; it was left out.")
 
     def r3(v: float | None) -> float | None:
         return None if v is None else round(v, 3)
@@ -173,17 +210,62 @@ def derive(p: GearParams) -> dict[str, Any]:
         "bore_effective": r3(2 * bore_radius(p)) if p.bore_d > 0 else None,
         "recess_id": r3(2 * rr[0]) if rr else None,
         "recess_od": r3(2 * rr[1]) if rr else None,
+        "recess_fillet": rec_fil if rr else None,
         "web": r3(p.face_width - sides * p.recess_depth) if rr else None,
         "warnings": warnings,
     }
 
 
-def centre_distance(p: GearParams, mate_teeth: int, mate_shift: float = 0.0) -> float:
-    """Working centre distance to a mating gear of the same module and pressure angle."""
+def _involute_angle(target: float) -> float:
+    """Inverse of inv() on (0, pi/2): the angle whose involute function is `target`.
+
+    Bisection rather than Newton: inv is monotonic here, 60 halvings reach full double
+    precision, and there is no starting guess that can send it outside the bracket.
+    """
+    lo, hi = 1e-12, math.radians(89.0)
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        if inv(mid) < target:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def centre_distance(p: GearParams, mate_teeth: int,
+                    mate_shift: float = 0.0) -> float | None:
+    """Working centre distance to a mating gear of the same module and pressure angle,
+    or None when the pair cannot mesh at any centre distance.
+
+    Solves inv(aw) = inv(a) + 2 tan(a) (x1 + x2) / (z1 + z2) for the working pressure
+    angle aw. inv is non-negative on (0, pi/2), so a total profile shift negative enough
+    drives the right-hand side below zero and no such angle exists -- the teeth would
+    have to interfere. Saying so is the only honest answer; the number is not merely
+    imprecise, it does not exist.
+    """
     a = math.radians(p.pressure_angle)
     z1, z2 = p.teeth, mate_teeth
-    target = 2 * math.tan(a) * (p.profile_shift + mate_shift) / (z1 + z2) + inv(a)
-    aw = a
-    for _ in range(40):  # Newton on inv(aw) = target; d/da inv(a) = tan^2(a)
-        aw -= (inv(aw) - target) / math.tan(aw) ** 2
+    target = inv(a) + 2 * math.tan(a) * (p.profile_shift + mate_shift) / (z1 + z2)
+    if not 0 < target < inv(math.radians(89.0)):
+        return None
+    aw = _involute_angle(target)
     return p.module * (z1 + z2) / 2 * math.cos(a) / math.cos(aw)
+
+
+def with_mate(info: dict[str, Any], p: GearParams, mate_teeth: int,
+              mate_shift: float = 0.0) -> dict[str, Any]:
+    """derive() output plus the centre distance to a mating gear.
+
+    The API and the CLI share this so the decision -- an impossible pair is a warning on
+    an otherwise fine gear, not an error and not a number -- is written down once.
+    """
+    aw = centre_distance(p, mate_teeth, mate_shift)
+    out = {**info, "mate_teeth": mate_teeth,
+           "centre_distance": None if aw is None else round(aw, 3)}
+    if aw is None:
+        out["warnings"] = [*info.get("warnings", ()),
+                           f"A {mate_teeth}-tooth gear cannot mesh with this one at any "
+                           f"centre distance: a total profile shift of "
+                           f"{p.profile_shift + mate_shift:+g} is too negative for "
+                           f"{p.teeth + mate_teeth} teeth."]
+    return out

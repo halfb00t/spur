@@ -29,8 +29,10 @@ docker build -t spur .
 docker run --rm -p 127.0.0.1:8000:8000 spur
 ```
 
-The image is about 1.5 GB, most of it OpenCascade and VTK. It builds for `linux/amd64`
-and `linux/arm64`, so Apple silicon, Graviton and a Raspberry Pi 5 all work:
+The image is about 1.7 GB, most of it OpenCascade and VTK;
+`docker/refresh-requirements.sh` keeps the rest of cadquery's dependency tree out of
+it. It builds for `linux/amd64` and `linux/arm64`, so Apple silicon, Graviton and a
+Raspberry Pi 5 all work:
 
 ```sh
 docker buildx build --platform linux/amd64,linux/arm64 -t registry.example.com/spur:0.1.0 --push .
@@ -48,7 +50,9 @@ ssh -L 8000:localhost:8000 user@host      # then open http://localhost:8000
 **The app has no authentication.** The compose file binds to `127.0.0.1` on purpose.
 To expose it, change the port mapping and put a reverse proxy with auth in front
 (Caddy, Traefik, nginx, Cloudflare Access, Tailscale serve, ...). Under a sub-path,
-set `SPUR_ROOT_PATH=/spur`; the UI uses relative URLs and works as-is.
+set `SPUR_ROOT_PATH=/spur`; the UI uses relative URLs and works as-is — but the proxy
+must redirect `/spur` to `/spur/`, or the browser resolves `static/app.js` one level too
+high.
 
 The container runs as a non-root user and the compose file adds a read-only root
 filesystem, `tmpfs` on `/tmp`, `cap_drop: ALL` and `no-new-privileges`.
@@ -59,6 +63,20 @@ filesystem, `tmpfs` on `/tmp`, `cap_drop: ALL` and `no-new-privileges`.
 | `SPUR_PORT` | `8000` | Port |
 | `SPUR_WORKERS` | `1` | Uvicorn worker processes; each builds one gear at a time |
 | `SPUR_ROOT_PATH` | | URL prefix when proxied under a sub-path |
+| `SPUR_SOLID_CACHE` | `4` | Built solids kept per worker. A 200-tooth solid costs a few hundred MB |
+| `SPUR_EXPORT_CACHE_MB` | `64` | Budget for cached STL/STEP bytes, per worker |
+| `SPUR_MAX_QUEUED_BUILDS` | `4` | Requests allowed to queue before the API answers `503` |
+
+Memory scales with the size of the gears people ask for, not with traffic, and the
+caches are per worker — so the ceiling is roughly
+`SPUR_WORKERS × (SPUR_SOLID_CACHE × solid size + SPUR_EXPORT_CACHE_MB)`. The compose
+file sets a `mem_limit` as the backstop; keep it if you change the cache settings.
+
+Every export serialises on one lock, because OpenCascade is not safe to drive from
+several threads at once, so queuing more work than `SPUR_MAX_QUEUED_BUILDS` only adds
+latency. Past that the API returns `503` with `Retry-After`. A single large gear still
+stalls the event loop for a second or two while the kernel holds the GIL; the container
+healthcheck allows for that.
 
 ### Without Docker
 
@@ -96,9 +114,12 @@ Interactive docs are at `/docs`.
 curl -OJ 'http://localhost:8000/api/model.step?teeth=19&module=1.75&pressure_angle=25'
 ```
 
-Parameters that can't make a sound part (a bore wider than the root, a recess cutting
-through the rim, pointed teeth, ...) return `422` with a message and the offending
-fields in `detail[].ctx.fields`.
+Parameters that can't make a sound part — a bore wider than the root, teeth that come
+to a point, recesses that leave no web — return `422` with a message and the offending
+fields in `detail[].ctx.fields`. Dimensions that can be trimmed without contradicting
+something you asked for are trimmed instead, and say so in `warnings`: the root fillet
+is capped to the tooth gap, and the face recess is narrowed to fit between the bore wall
+and the tooth rim. `503` with `Retry-After` means the build queue is full.
 
 ## Parameters
 
@@ -119,11 +140,14 @@ Lengths in mm, angles in degrees.
 | `bore_chamfer` | 0.4 | Chamfer on both bore edges |
 | `recess_sides` | `both` | `both`, `top`, `bottom` or `none` |
 | `recess_depth` | 2 | Depth of each groove |
-| `recess_width` | 6 | Radial width of the groove |
+| `recess_width` | 6 | Radial width of the groove. Narrowed automatically if it won't fit |
 | `recess_inner_d` | 0 | Inner diameter of the groove. 0 = centred so hub wall equals rim wall |
 | `recess_fillet` | 0.5 | Fillet at the groove floor corners |
 
-The defaults describe a 19-tooth printer gear this project started from.
+The defaults describe a 19-tooth printer gear this project started from. They are
+absolute millimetres, so on a much smaller gear the bore and the recess stop fitting;
+the recess is narrowed (or dropped) to suit and the reason appears in the warnings,
+while a bore too wide for the root is still refused.
 
 ## Matching an existing gear
 
@@ -151,13 +175,36 @@ The defaults describe a 19-tooth printer gear this project started from.
   in the non-working root zone.
 - Backlash is taken from the tooth thickness, so the part still meshes at nominal
   centre distance.
+- Centre distance to a mate solves `inv(aw) = inv(a) + 2·tan(a)·Σx/Σz` for the working
+  pressure angle. A total profile shift negative enough makes the right-hand side
+  negative, and then no such angle exists — the pair cannot mesh at any distance. That
+  is reported as a warning rather than a number.
 
 ## Development
 
+`make` on its own lists every target. The ones you want first:
+
 ```sh
-pip install -e '.[dev]'
-pytest
+make venv        # .venv with the dev extras (needs CPython 3.10-3.12; see below)
+make test        # pytest
+make up          # build the image and wait for the service on :8000
+make check       # everything CI runs: tests, image smoke test, vendored bundle
 ```
+
+`make test-image` runs the suite inside the container instead, which needs no local
+Python at all. **`cadquery-ocp` only publishes wheels for CPython 3.10-3.12**, so a
+newer default `python3` will send pip off trying to build OpenCascade from source;
+`make venv` picks a supported interpreter itself and says so if it cannot find one.
+On Apple silicon, `PLATFORM=linux/arm64 make image` builds natively rather than
+inheriting a `DOCKER_DEFAULT_PLATFORM=linux/amd64` from your shell.
+
+`requirements.txt` is the exact pinned closure the image installs with `--no-deps`, not
+a hand-maintained list. Regenerate it with `make lock` after bumping anything in
+`pyproject.toml`, and verify both architectures build. The image build runs
+`docker/smoke.py`, which exercises the kernel, both exporters and the ASGI app, so an
+incomplete closure fails the build rather than production.
+
+`docs/` holds the 2026-09-21 review and the plan that came out of it.
 
 The viewer uses a tree-shaken three.js bundle committed at
 `src/spur/static/vendor/`, so the runtime needs no Node. To rebuild it (for example

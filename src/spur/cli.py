@@ -51,16 +51,17 @@ def cmd_serve(ns: argparse.Namespace) -> None:
 
 
 def cmd_info(ns: argparse.Namespace) -> None:
-    from .calc import centre_distance, derive
+    from .calc import derive, with_mate
 
     p = _params(ns)
     out = derive(p)
     if ns.mate_teeth:
-        out["centre_distance"] = round(centre_distance(p, ns.mate_teeth), 3)
+        out = with_mate(out, p, ns.mate_teeth)
     print(json.dumps(out, indent=2, ensure_ascii=False))
 
 
 def cmd_export(ns: argparse.Namespace) -> None:
+    from .calc import derive
     from .model import BuildError, export
 
     out: Path = ns.output
@@ -74,6 +75,8 @@ def cmd_export(ns: argparse.Namespace) -> None:
         raise SystemExit(f"error: {exc}") from None
     out.write_bytes(data)
     print(f"wrote {out} ({len(data) / 1024:.0f} KiB)", file=sys.stderr)
+    for warning in derive(p)["warnings"]:
+        print(f"warning: {warning}", file=sys.stderr)
 
 
 def main(argv: list[str] | None = None) -> None:

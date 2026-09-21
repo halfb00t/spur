@@ -16,12 +16,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Heavy CAD dependencies first so code changes don't invalidate this layer.
+# --no-deps because requirements.txt is the entire pinned closure: that is what lets it
+# leave out the ~550 MB of packages cadquery declares but spur never imports (VTK
+# viewers, DXF export, the assembly solver, matplotlib). docker/smoke.py below is what
+# makes that safe -- it fails the build if the closure is incomplete.
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-deps -r requirements.txt
 
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install --no-deps . && python -c "import spur.model" && rm -rf /tmp/.cache
+COPY docker ./docker
+RUN pip install --no-deps . \
+ && python docker/smoke.py \
+ && rm -rf /tmp/.cache
 
 RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin spur
 USER 10001
@@ -31,7 +38,10 @@ ENV SPUR_HOST=0.0.0.0 \
     SPUR_WORKERS=1
 EXPOSE 8000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD ["python", "-c", "import os, urllib.request as u; u.urlopen('http://127.0.0.1:' + os.environ.get('SPUR_PORT', '8000') + '/api/health', timeout=4)"]
+# 10 s rather than 5: OpenCascade holds the GIL, so one large gear legitimately stalls
+# the event loop for a few seconds. Failing liveness over that restarts a healthy
+# container mid-build.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD ["python", "-c", "import os, urllib.request as u; u.urlopen('http://127.0.0.1:' + os.environ.get('SPUR_PORT', '8000') + '/api/health', timeout=8)"]
 
 CMD ["spur", "serve"]
