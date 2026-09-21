@@ -2,12 +2,15 @@
 
 ## Overview
 
-`spur` already ships. This roadmap records one completed baseline milestone — v0, the
-working parametric involute spur gear generator currently in the tree, with all 11
-ingested requirements satisfied and `make verify` passing. It then stops: **forward scope
-is undefined**, and no forward phases are invented here. See "Forward Scope" below for the
-two candidate pools the human may draw the next milestone from, and `PROJECT.md`
-("Success Metric") for the one field this roadmap explicitly cannot set.
+`spur` already ships. Phase 1 records the completed v0 baseline — the working parametric
+involute spur gear generator currently in the tree, with all 11 ingested requirements
+satisfied and `make verify` passing. Milestone v0.1 ("Hardening") builds forward from
+there: Phases 2–5 pay down the three `must` tech-debt items and close the standing
+CI-unverified blocker, so the generator is operable under real load and its response
+contract is type-checked — before any new gear geometry (helical/internal/rack gears,
+tooth chamfers, new bore profiles, body cutouts) makes every build heavier. No new gear
+features ship in this milestone; see "Forward Scope" below for where those candidates are
+tracked.
 
 ## Phases
 
@@ -17,6 +20,16 @@ two candidate pools the human may draw the next milestone from, and `PROJECT.md`
 
 - [x] **Phase 1: v0 Baseline (Shipped)** - The generator, its three interfaces, and its
   error/measurement/export contract, as already built and verified.
+- [ ] **Phase 2: CAD Off the Event Loop** - CAD kernel work moves to worker processes, and
+  the multi-process memory ceiling is measured, not carried over from the single-process
+  design.
+- [ ] **Phase 3: Structured Logging at the Composition Boundary** - Production requests
+  leave evidence: a structured logger at startup covers the decision branches that already
+  exist.
+- [ ] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real
+  shape, checked by mypy with `disallow_any_explicit` on.
+- [ ] **Phase 5: CI Observed Green** - The CI workflow is proven by a real GitHub Actions
+  run, not by hand-verification.
 
 ## Phase Details
 
@@ -50,37 +63,113 @@ REQ-stl-step-export, REQ-error-contract, REQ-no-auth-default, REQ-docker-multiar
 **Plans**: N/A — this baseline predates GSD planning and was built and verified directly
 against `make verify`; there is no PLAN.md history to point to.
 
-## Forward Scope — UNDEFINED
+### Phase 2: CAD Off the Event Loop
+**Goal**: CAD kernel work runs in worker processes outside the request-serving event loop,
+and the resulting multi-process memory ceiling is a measured number — not an assumption
+carried forward from the single-process design L07 measured.
+**Depends on**: Phase 1
+**Requirements**: REQ-cad-off-event-loop, REQ-measured-memory-ceiling
+**Success Criteria** (what must be TRUE, each backed by a measurement, not a prediction):
+  1. Repeating the debt file's own two load scenarios — one 200-tooth fine build in
+     flight, and ten concurrent builds — against the new topology shows `/api/health` p95
+     within 2× of idle p95, with the measured numbers recorded next to the baseline on
+     record (0.22 s → 0.76 s → 2.00 s for the single build; repeatedly over 5 s for ten
+     concurrent, 12-core machine). *(REQ-cad-off-event-loop)*
+  2. A memory sweep of the actual N-worker topology — not L07's per-process numbers
+     multiplied out — produces a measured ceiling, and `compose.yaml`'s `mem_limit` is set
+     from that number. *(REQ-measured-memory-ceiling)*
+  3. `docs/architecture/decision_log.md` gains two new entries that supersede, and say they
+     supersede, L07 (per-process cache/memory formula) and L06 ("concurrency buys latency,
+     not throughput") — each dated, each citing the new measurement, neither edited in
+     place. *(REQ-measured-memory-ceiling)*
+  4. `docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md` is
+     `Status: resolved` with its commit sha recorded, `git mv`'d into
+     `docs/tech_debt/resolved/`, and its row moved in `docs/tech_debt/INDEX.md` — in the
+     same commit as the fix. *(REQ-cad-off-event-loop)*
+  5. `make verify` passes with the new topology in place; admission control still lives in
+     the web layer and the CLI still never queues (L04) — unchanged by the process pool.
+**Plans**: TBD
 
-**No forward phases are defined past Phase 1, and none should be invented.** Nothing in
-the ingested README, SPECs, or decision log (`docs/architecture/decision_log.md`) states
-what ships next; `PROJECT.md`'s "Active" requirements section is empty for the same
-reason. This is the correct, honest state of this roadmap right now — not a gap for a
-future run of this workflow to quietly fill.
+### Phase 3: Structured Logging at the Composition Boundary
+**Goal**: Production requests leave evidence — a structured logger configured once at the
+composition boundary, covering the decision branches that already exist.
+**Depends on**: Phase 1 (no dependency on Phase 2 found in the debt files — the logging
+gap and the event-loop gap are independent; nothing in
+`docs/tech_debt/active/2026-09-21-no-structured-logging.md` ties its fields to the process
+pool's build-queue mechanics)
+**Requirements**: REQ-structured-logging
+**Success Criteria** (what must be TRUE, proven by a test, not console-reading):
+  1. A test asserts that each of the four existing decision branches — build started (with
+     parameter slug), build failed (with exception class), export served from cache vs.
+     built, queue refused — emits a structured log record with named fields.
+  2. `calc.py` stays log-free: it remains pure, runs on every keystroke, and its
+     `warnings` output is its only diagnostic (L01/AGENTS.md boundary, unchanged).
+  3. `docs/tech_debt/active/2026-09-21-no-structured-logging.md` is `Status: resolved`
+     with its commit sha recorded, `git mv`'d into `docs/tech_debt/resolved/`, and its row
+     moved in `docs/tech_debt/INDEX.md` — in the same commit as the fix.
+  4. `make verify` passes.
+**Plans**: TBD
 
-To start the next milestone, the human runs `/gsd-new-milestone` (or equivalent) and
-picks requirements — optionally, but not necessarily, from these two pools. Neither pool
-is a phase; both are candidates only:
+### Phase 4: Typed Derived-Dimensions Contract
+**Goal**: The response every interface reads has a real shape — a typed model, checked by
+mypy, instead of an honest but unchecked `dict[str, Any]`.
+**Depends on**: Phase 1 (independent of Phases 2 and 3 — the contract change touches
+`calc.py`'s return type and the API/CLI/UI's read of it, not the process topology or the
+logger)
+**Requirements**: REQ-typed-derived-dimensions
+**Success Criteria** (what must be TRUE, checked by the gate, not asserted):
+  1. `derive()` returns a `DerivedDimensions` Pydantic model with explicit optional fields
+     in place of `dict[str, Any]`.
+  2. `make verify` passes with mypy's `disallow_any_explicit` turned on across `src/` —
+     L14's named ratchet is retired, not re-deferred.
+  3. The generated OpenAPI document reflects the new typed shape, and the web UI's
+     existing reads of `detail[].ctx.fields` and `warnings` still work, verified by the
+     test suite.
+  4. `docs/tech_debt/active/2026-09-21-untyped-info-contract.md` is `Status: resolved`
+     with its commit sha recorded, `git mv`'d into `docs/tech_debt/resolved/`, and its row
+     moved in `docs/tech_debt/INDEX.md` — in the same commit as the fix.
+**Plans**: TBD
 
-**Ideas pool** — `docs/ideas/` (2 items):
-- Trochoidal (vs. radial) root fillet below the base circle — see PROJECT.md, L10.
-- A browser-driven test for the 3D viewer.
+### Phase 5: CI Observed Green
+**Goal**: The CI workflow is proven by a real GitHub Actions run executing it — not by
+reading `.github/workflows/ci.yml` and predicting it will pass.
+**Depends on**: Phase 1 (independent of Phases 2–4; small and deliberately not bundled
+into any of them per the milestone's own scoping)
+**Requirements**: REQ-ci-verified
+**Success Criteria** (what must be TRUE, evidenced by a run URL, not a prediction):
+  1. A real push to GitHub produces a run URL showing the `test` job green on both matrix
+     entries (`python: ["3.10", "3.12"]`).
+  2. The same run shows the `vendor-bundle` job (the committed three.js bundle matches a
+     fresh build of `web/`) and the `image` job (the packaged container serves
+     `/api/health`, `.stl`, and `.step`) both green.
+  3. The "CI workflow unverified" blocker carried in `STATE.md` since the 2026-09-21
+     bootstrap is retired, with the run URL recorded as the evidence.
+**Plans**: TBD
 
-**Tech debt pool** — `docs/tech_debt/active/` (8 items; excluded from this ingest by user
-decision, tracked under its own lifecycle per `CLAUDE.md`):
-- `must` (3): CAD builds block the event loop; no structured logging; untyped
-  `/api/info` contract.
-- `nice` (5): CadQuery `Shape` typing bypasses mypy; no coverage floor in the gate; no
-  server-side cancellation on client abort; authentication intentionally absent; Enji
-  Guard / CVE alerting not connected.
+## Forward Scope
 
-Full detail on each item: `.planning/codebase/CONCERNS.md`.
+Milestone v0.1 is hardening only — no new gear geometry ships in Phases 2–5. Candidates
+for the *next* milestone are gathered, not scoped, in `REQUIREMENTS.md` under "Future
+Requirements": helical/internal/rack/bevel gears, tooth chamfers, new bore/centre-hole
+profiles, parametric body cutouts (spokes, lightening holes, hex patterns), the trochoidal
+root-fillet idea (would supersede L10), and a browser-driven viewer test. None of these
+are phases yet — the next `/gsd-new-milestone` run picks from that list deliberately, the
+way this one did.
+
+The five `nice`-severity tech-debt items in `docs/tech_debt/active/` (coverage floor,
+CadQuery `Shape` typing, server-side cancellation, no authentication, Enji Guard/CVE
+alerting) stay in their own lifecycle, each with its own trigger — not carried into this
+roadmap.
 
 ## Progress
 
 **Execution Order:**
-Phase 1 only. No further phases exist until the human defines the next milestone.
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
+| 2. CAD Off the Event Loop | 0/TBD | Not started | - |
+| 3. Structured Logging at the Composition Boundary | 0/TBD | Not started | - |
+| 4. Typed Derived-Dimensions Contract | 0/TBD | Not started | - |
+| 5. CI Observed Green | 0/TBD | Not started | - |

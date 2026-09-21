@@ -216,16 +216,17 @@ under "Future Requirements" above — this table is for things that are not plan
 | REQ-error-contract | Phase 1 | Complete (shipped v0) |
 | REQ-no-auth-default | Phase 1 | Complete (shipped v0) |
 | REQ-docker-multiarch | Phase 1 | Complete (shipped v0) |
-| REQ-cad-off-event-loop | *(TBD — roadmap)* | Pending |
-| REQ-measured-memory-ceiling | *(TBD — roadmap)* | Pending |
-| REQ-structured-logging | *(TBD — roadmap)* | Pending |
-| REQ-typed-derived-dimensions | *(TBD — roadmap)* | Pending |
-| REQ-ci-verified | *(TBD — roadmap)* | Pending |
+| REQ-cad-off-event-loop | Phase 2 | Pending |
+| REQ-measured-memory-ceiling | Phase 2 | Pending |
+| REQ-structured-logging | Phase 3 | Pending |
+| REQ-typed-derived-dimensions | Phase 4 | Pending |
+| REQ-ci-verified | Phase 5 | Pending |
 
 **Coverage:**
 - v0 requirements (shipped baseline): 11 total, 11 mapped, 0 unmapped ✓
-- v0.1 requirements (this milestone): 5 total, phase mapping written by the roadmapper
+- v0.1 requirements (this milestone): 5 total, 5 mapped, 0 unmapped ✓ (Phase 2: 2,
+  Phase 3: 1, Phase 4: 1, Phase 5: 1)
 
 ---
 *Requirements defined: 2026-09-21*
-*Last updated: 2026-09-21 — milestone v0.1 (Hardening) requirements defined.*
+*Last updated: 2026-09-21 — milestone v0.1 (Hardening) roadmap written; all 5 requirements mapped to Phases 2-5.*
