@@ -58,3 +58,42 @@ def test_model_download(fmt, ctype, magic):
 
 def test_unknown_format_is_rejected():
     assert client.get("/api/model.obj").status_code == 422
+
+
+SMALL_GEAR = {"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6,
+              "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none"}
+
+
+def test_impossible_mate_is_a_warning_not_a_number():
+    r = client.get("/api/info", params={**SMALL_GEAR, "mate_teeth": 40})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["mate_teeth"] == 40
+    assert body["centre_distance"] is None
+    assert any("cannot mesh" in w for w in body["warnings"])
+
+
+def test_a_gear_too_small_for_the_stock_recess_is_still_served():
+    r = client.get("/api/model.stl", params={"teeth": 24, "module": 1,
+                                             "pressure_angle": 20, "bore_flat": 0,
+                                             "quality": "preview"})
+    assert r.status_code == 200
+    assert client.get("/api/info", params={"teeth": 24, "module": 1, "pressure_angle": 20,
+                                           "bore_flat": 0}).json()["recess_id"] is not None
+
+
+def test_a_saturated_service_refuses_instead_of_queueing():
+    """Builds serialise on the kernel lock, so a deep queue is latency with no payoff."""
+    from spur import app as app_module
+
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/model.stl", params={"quality": "preview"})
+        assert r.status_code == 503
+        assert r.headers["retry-after"] == "5"
+        assert r.json()["detail"][0]["type"] == "busy"
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()

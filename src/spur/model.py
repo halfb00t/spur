@@ -1,22 +1,28 @@
 """CadQuery solid construction and STL/STEP export.
 
-OpenCascade isn't safe to drive from several threads at once, so every kernel call
-goes through one lock. Results are cached per parameter set: the UI asks for the
-same gear repeatedly (preview, then STL, then STEP).
+OpenCascade isn't safe to drive from several threads at once, so every kernel call goes
+through one lock. Results are cached per parameter set, because the UI asks for the same
+gear repeatedly (preview, then STL, then STEP). Both caches are bounded by size rather
+than by entry count where that is measurable: a 200-tooth solid costs hundreds of
+megabytes, so "32 entries" is not a memory bound. Tune with SPUR_SOLID_CACHE (entries)
+and SPUR_EXPORT_CACHE_MB (total megabytes of exported bytes).
 """
 
 from __future__ import annotations
 
+import ctypes
 import math
 import tempfile
 import threading
+from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import cadquery as cq
 
-from .calc import Profile, bore_radius, profile, recess_radii, root_fillet
+from . import int_env
+from .calc import Profile, bore_radius, profile, recess_fillet, recess_radii, root_fillet
 from .params import GearParams
 
 Format = Literal["stl", "step"]
@@ -25,12 +31,39 @@ Quality = Literal["preview", "fine"]
 # (linear deflection mm, angular deflection rad) for STL tessellation
 TESSELLATION: dict[str, tuple[float, float]] = {"preview": (0.08, 0.5), "fine": (0.01, 0.1)}
 FLANK_POINTS = 16
+TOL = 1e-6              # mm, for matching kernel geometry back to the numbers we asked for
 
 _LOCK = threading.RLock()
 
 
 class BuildError(RuntimeError):
     """The CAD kernel could not produce a valid solid for these parameters."""
+
+
+def _load_malloc_trim():
+    try:
+        fn = ctypes.CDLL("libc.so.6").malloc_trim
+    except (OSError, AttributeError):
+        return None          # musl or macOS: nothing to do
+    fn.argtypes = [ctypes.c_size_t]
+    return fn
+
+
+_MALLOC_TRIM = _load_malloc_trim()
+
+
+def _release_arenas() -> None:
+    """Hand freed heap back to the operating system after a build.
+
+    OpenCascade churns through enormous numbers of short-lived allocations. glibc keeps
+    the freed arenas to reuse and never returns them, so a worker that has built a few
+    large gears looks like it is leaking and eventually meets the container memory
+    limit. Measured over 40 distinct 160-199 tooth gears: 1578 MiB resident without
+    this, 360 MiB with it -- far more than cache sizing is worth. Only called on a cache
+    miss, since walking the arenas is not free.
+    """
+    if _MALLOC_TRIM is not None:
+        _MALLOC_TRIM(0)
 
 
 def _polar(r: float, t: float) -> cq.Vector:
@@ -110,54 +143,94 @@ def _outline(pr: Profile, fillet: float) -> cq.Wire:
     return cq.Wire.assembleEdges(edges)
 
 
+# --- the part, one decision per step -------------------------------------------------
+
+def _gear_blank(pr: Profile, fillet: float, face_width: float) -> cq.Shape:
+    """The toothed disc, before the face recesses and the bore."""
+    face = cq.Face.makeFromWires(_outline(pr, fillet))
+    return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, face_width))
+
+
+def _cut_face_recesses(solid: cq.Shape, p: GearParams, rf: float) -> cq.Shape:
+    """Annular groove in one or both faces, with filleted floors."""
+    rr = recess_radii(p, rf)
+    if not rr:
+        return solid
+    r_in, r_out = rr
+    floor_z: list[float] = []
+    if p.recess_sides in ("both", "bottom"):
+        floor_z.append(p.recess_depth)
+        solid = solid.cut(_ring(r_in, r_out, 0.0, p.recess_depth))
+    if p.recess_sides in ("both", "top"):
+        floor_z.append(p.face_width - p.recess_depth)
+        solid = solid.cut(_ring(r_in, r_out, p.face_width - p.recess_depth, p.recess_depth))
+    fillet = recess_fillet(p, rf)
+    if fillet > 0:
+        solid = solid.fillet(fillet, _groove_floor_edges(solid, (r_in, r_out), floor_z))
+    return solid
+
+
+def _cut_bore(solid: cq.Shape, p: GearParams) -> cq.Shape:
+    """Round or D-shaped bore, chamfered on both rims."""
+    if p.bore_d <= 0:
+        return solid
+    R = bore_radius(p)
+    hole = cq.Workplane("XY").circle(R).extrude(p.face_width)
+    if p.bore_flat > 0:
+        flat = p.bore_flat + p.bore_clearance          # flat to opposite side
+        keep = cq.Workplane("XY").center(flat - 2 * R, 0).rect(2 * R, 2 * R + 2)
+        hole = hole.intersect(keep.extrude(p.face_width))
+    solid = solid.cut(hole.val())
+    if p.bore_chamfer > 0:
+        solid = solid.chamfer(p.bore_chamfer, None, _bore_rim_edges(solid, R, p.face_width))
+    return solid
+
+
+# --- picking kernel geometry back out ------------------------------------------------
+
+def _ring(r_in: float, r_out: float, z0: float, height: float) -> cq.Shape:
+    return (cq.Workplane("XY").workplane(offset=z0)
+            .circle(r_out).circle(r_in).extrude(height).val())
+
+
+def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],
+                        floor_z: list[float]) -> list[cq.Edge]:
+    """The circles where a groove wall meets its floor."""
+    return [e for e in solid.Edges()
+            if e.geomType() == "CIRCLE"
+            and min(abs(e.radius() - r) for r in radii) < TOL
+            and any(abs(e.startPoint().z - z) < TOL for z in floor_z)]
+
+
+def _bore_rim_edges(solid: cq.Shape, R: float, face_width: float) -> list[cq.Edge]:
+    """The bore opening on the two end faces.
+
+    Selected by position, not by type: a D-bore rim is an arc plus a straight line. The
+    only other edges on an end face belong to a recess, and recess_radii() keeps at
+    least MIN_WALL plus the chamfer between that and the bore, so a radius test
+    separates them.
+    """
+    lim = R + 0.01
+
+    def on_rim(e: cq.Edge) -> bool:
+        a, b = e.startPoint(), e.endPoint()
+        if abs(a.z - b.z) > TOL or TOL < a.z < face_width - TOL:
+            return False
+        if max(math.hypot(a.x, a.y), math.hypot(b.x, b.y)) > lim:
+            return False
+        return all(math.hypot(q.x, q.y) < lim
+                   for q in (e.positionAt(s / 4) for s in range(1, 4)))
+
+    return [e for e in solid.Edges() if on_rim(e)]
+
+
+# --- build and export ----------------------------------------------------------------
+
 def _build(p: GearParams) -> cq.Solid:
     pr = profile(p)
-    rfil = root_fillet(p)
-    face = cq.Face.makeFromWires(_outline(pr, rfil))
-    solid: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.face_width))
-
-    rr = recess_radii(p, pr.rf)
-    if rr:
-        r_in, r_out = rr
-        floors = []
-        if p.recess_sides in ("both", "bottom"):
-            floors.append((0.0, p.recess_depth))
-        if p.recess_sides in ("both", "top"):
-            floors.append((p.face_width - p.recess_depth, p.face_width - p.recess_depth))
-        for z0, _ in floors:
-            ring = (cq.Workplane("XY").workplane(offset=z0)
-                    .circle(r_out).circle(r_in).extrude(p.recess_depth).val())
-            solid = solid.cut(ring)
-        if p.recess_fillet > 0:
-            zs = [f for _, f in floors]
-            edges = [e for e in solid.Edges()
-                     if e.geomType() == "CIRCLE"
-                     and min(abs(e.radius() - r_in), abs(e.radius() - r_out)) < 1e-6
-                     and any(abs(e.startPoint().z - z) < 1e-6 for z in zs)]
-            solid = solid.fillet(p.recess_fillet, edges)
-
-    if p.bore_d > 0:
-        R = bore_radius(p)
-        hole = cq.Workplane("XY").circle(R).extrude(p.face_width)
-        if p.bore_flat > 0:
-            flat = p.bore_flat + p.bore_clearance          # flat to opposite side
-            keep = cq.Workplane("XY").center(flat - R - R, 0).rect(2 * R, 2 * R + 2)
-            hole = hole.intersect(keep.extrude(p.face_width))
-        solid = solid.cut(hole.val())
-        if p.bore_chamfer > 0:
-            lim = R + 0.01
-
-            def on_bore_rim(e: cq.Edge) -> bool:
-                a, b = e.startPoint(), e.endPoint()
-                if abs(a.z - b.z) > 1e-6 or 1e-6 < a.z < p.face_width - 1e-6:
-                    return False
-                if max(math.hypot(a.x, a.y), math.hypot(b.x, b.y)) > lim:
-                    return False
-                return all(math.hypot(q.x, q.y) < lim
-                           for q in (e.positionAt(s / 4) for s in range(1, 4)))
-
-            edges = [e for e in solid.Edges() if on_bore_rim(e)]
-            solid = solid.chamfer(p.bore_chamfer, None, edges)
+    solid = _gear_blank(pr, root_fillet(p), p.face_width)
+    solid = _cut_face_recesses(solid, p, pr.rf)
+    solid = _cut_bore(solid, p)
 
     solids = solid.Solids()
     if len(solids) != 1 or not solids[0].isValid():
@@ -165,8 +238,7 @@ def _build(p: GearParams) -> cq.Solid:
     return solids[0]
 
 
-@lru_cache(maxsize=32)
-def _build_cached(p: GearParams) -> cq.Solid:
+def _build_checked(p: GearParams) -> cq.Solid:
     try:
         return _build(p)
     except BuildError:
@@ -176,14 +248,47 @@ def _build_cached(p: GearParams) -> cq.Solid:
                          "try smaller fillets or chamfers.") from exc
 
 
+_build_cached = lru_cache(maxsize=int_env("SPUR_SOLID_CACHE", 4))(_build_checked)
+
+
 def build(p: GearParams) -> cq.Solid:
     with _LOCK:
         return _build_cached(p)
 
 
-@lru_cache(maxsize=32)
-def _export_cached(p: GearParams, fmt: Format, quality: Quality) -> bytes:
-    shape = _build_cached(p)
+class _BlobCache:
+    """LRU of exported bytes bounded by total size rather than by entry count.
+
+    Callers hold _LOCK, so this needs no lock of its own.
+    """
+
+    def __init__(self, budget: int) -> None:
+        self._budget = budget
+        self._items: OrderedDict[Any, bytes] = OrderedDict()
+        self._bytes = 0
+
+    def get(self, key: Any) -> bytes | None:
+        data = self._items.get(key)
+        if data is not None:
+            self._items.move_to_end(key)
+        return data
+
+    def put(self, key: Any, data: bytes) -> None:
+        old = self._items.pop(key, None)
+        if old is not None:
+            self._bytes -= len(old)
+        if len(data) > self._budget:
+            return
+        self._items[key] = data
+        self._bytes += len(data)
+        while self._bytes > self._budget:
+            self._bytes -= len(self._items.popitem(last=False)[1])
+
+
+_EXPORTS = _BlobCache(int_env("SPUR_EXPORT_CACHE_MB", 64) * 1024 * 1024)
+
+
+def _write_export(shape: cq.Solid, p: GearParams, fmt: Format, quality: Quality) -> bytes:
     with tempfile.TemporaryDirectory(prefix="spur-") as d:
         path = Path(d) / f"{p.slug()}.{fmt}"
         if fmt == "stl":
@@ -196,5 +301,11 @@ def _export_cached(p: GearParams, fmt: Format, quality: Quality) -> bytes:
 
 
 def export(p: GearParams, fmt: Format, quality: Quality = "fine") -> bytes:
+    key = (p, fmt, quality)
     with _LOCK:
-        return _export_cached(p, fmt, quality)
+        data = _EXPORTS.get(key)
+        if data is None:
+            data = _write_export(_build_cached(p), p, fmt, quality)
+            _EXPORTS.put(key, data)
+            _release_arenas()
+        return data

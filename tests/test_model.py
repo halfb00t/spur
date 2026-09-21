@@ -1,4 +1,6 @@
+import collections
 import math
+import struct
 
 import pytest
 
@@ -45,3 +47,40 @@ def test_exports():
     step = export(p, "step")
     assert step.startswith(b"ISO-10303-21;")
     assert b"MANIFOLD_SOLID_BREP" in step
+
+
+def test_a_gear_too_small_for_the_stock_recess_still_builds():
+    """The README's own example. The recess is narrowed to fit rather than refused, so
+    the kernel must still get a sane annulus out of it."""
+    solid = build(GearParams(teeth=24, module=1, pressure_angle=20, bore_flat=0))
+    assert solid.isValid()
+    assert len(solid.Solids()) == 1
+
+
+def _stl_triangles(data: bytes):
+    n = int.from_bytes(data[80:84], "little")
+    assert len(data) == 84 + 50 * n, "truncated binary STL"
+    for i in range(n):
+        v = struct.unpack("<12fH", data[84 + 50 * i:134 + 50 * i])
+        yield v[3:6], v[6:9], v[9:12]
+
+
+def test_exported_stl_is_a_closed_consistently_oriented_shell():
+    """A slicer needs a watertight mesh. A missing or flipped facet is invisible in the
+    3D preview and turns up as a broken print, so assert the topology directly."""
+    def vertex(p):
+        return tuple(round(c * 1e5) for c in p)
+
+    directed: collections.Counter = collections.Counter()
+    volume = 0.0
+    for a, b, c in _stl_triangles(export(GearParams(), "stl", "preview")):
+        ka, kb, kc = vertex(a), vertex(b), vertex(c)
+        assert len({ka, kb, kc}) == 3, "degenerate facet"
+        directed.update([(ka, kb), (kb, kc), (kc, ka)])
+        volume += (a[0] * (b[1] * c[2] - b[2] * c[1])
+                   - a[1] * (b[0] * c[2] - b[2] * c[0])
+                   + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6
+
+    assert all(n == 1 for n in directed.values()), "an edge is used twice the same way"
+    assert all((v, u) in directed for u, v in directed), "an edge has no opposite facet"
+    assert volume > 0, "normals point inward"

@@ -24,6 +24,7 @@ const DIMS = [
   ['bore_effective', 'Bore Ø incl. clearance'],
   ['recess_id', 'Recess inner Ø'],
   ['recess_od', 'Recess outer Ø'],
+  ['recess_fillet', 'Recess fillet used'],
   ['web', 'Web thickness'],
 ];
 

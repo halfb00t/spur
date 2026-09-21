@@ -13,8 +13,10 @@ curl-able. Unset fields take their defaults.
 
 from __future__ import annotations
 
+import threading
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Iterator, Literal
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.gzip import GZipMiddleware
@@ -22,13 +24,18 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 
-from . import __version__
-from .calc import centre_distance, derive
+from . import __version__, int_env
+from .calc import derive, with_mate
 from .model import BuildError, export
 from .params import GearParams
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
+
+# Every build serialises on the kernel lock in model.py, so requests waiting behind it
+# buy latency and memory but no throughput. Past a short queue, 503 is the honest answer.
+MAX_QUEUED_BUILDS = int_env("SPUR_MAX_QUEUED_BUILDS", 4)
+BUILD_QUEUE = threading.BoundedSemaphore(MAX_QUEUED_BUILDS)
 
 app = FastAPI(
     title="spur",
@@ -37,7 +44,6 @@ app = FastAPI(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
-
 
 
 class InfoQuery(GearParams):
@@ -51,7 +57,30 @@ class ModelQuery(GearParams):
 
 
 def _gear(q: GearParams) -> GearParams:
+    """Strip the per-endpoint extras back to a plain GearParams.
+
+    The build caches are keyed on the parameter object, and pydantic equality includes
+    the class, so a ModelQuery and an InfoQuery describing the same gear would otherwise
+    never hit each other's cache entries.
+    """
     return GearParams(**q.model_dump(include=set(GearParams.model_fields)))
+
+
+@contextmanager
+def _build_slot() -> Iterator[None]:
+    """Admission control: refuse work we cannot start soon rather than queue it."""
+    if not BUILD_QUEUE.acquire(blocking=False):
+        raise HTTPException(
+            503,
+            detail=[{"loc": ["query"], "type": "busy",
+                     "msg": f"Busy: {MAX_QUEUED_BUILDS} gears are already being built. "
+                            "Try again in a moment."}],
+            headers={"Retry-After": "5"},
+        )
+    try:
+        yield
+    finally:
+        BUILD_QUEUE.release()
 
 
 @app.get("/", include_in_schema=False)
@@ -74,10 +103,7 @@ def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
     """Derived dimensions. With `mate_teeth`, also the centre distance to that gear."""
     params = _gear(q)
     out = derive(params)
-    if q.mate_teeth:
-        out["mate_teeth"] = q.mate_teeth
-        out["centre_distance"] = round(centre_distance(params, q.mate_teeth), 3)
-    return out
+    return with_mate(out, params, q.mate_teeth) if q.mate_teeth else out
 
 
 @app.get("/api/model.{fmt}", response_class=Response,
@@ -85,7 +111,8 @@ def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
 def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()]) -> Response:
     params = _gear(q)
     try:
-        data = export(params, fmt, q.quality)
+        with _build_slot():
+            data = export(params, fmt, q.quality)
     except BuildError as exc:
         raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
                                           "type": "build_error"}]) from exc
