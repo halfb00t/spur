@@ -1,20 +1,21 @@
 """The CLI had no tests, and the README's own example did not run."""
 
 import json
+from pathlib import Path
 
 import pytest
 
 from spur import cli
 
 
-def test_info_reports_the_mate_it_was_asked_about(capsys):
+def test_info_reports_the_mate_it_was_asked_about(capsys: pytest.CaptureFixture[str]) -> None:
     cli.main(["info", "--teeth", "19", "--mate-teeth", "40"])
     out = json.loads(capsys.readouterr().out)
     assert out["mate_teeth"] == 40
     assert out["centre_distance"] == pytest.approx(51.625)
 
 
-def test_readme_export_examples_run(tmp_path, capsys):
+def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     step = tmp_path / "gear.step"
     cli.main(["export", "-o", str(step)])
     assert step.read_bytes().startswith(b"ISO-10303-21;")
@@ -26,14 +27,15 @@ def test_readme_export_examples_run(tmp_path, capsys):
     assert "Recess narrowed" in capsys.readouterr().err
 
 
-def test_infeasible_parameters_exit_2_and_name_the_problem(capsys):
+def test_infeasible_parameters_exit_2_and_name_the_problem(
+        capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["info", "--bore-flat", "3"])
     assert exc.value.code == 2
     assert "D-flat" in capsys.readouterr().err
 
 
-def test_unknown_output_extension_is_refused(tmp_path):
+def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])
     assert "must end in .stl or .step" in str(exc.value)

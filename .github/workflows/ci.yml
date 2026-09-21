@@ -18,8 +18,10 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-      - run: pip install -e '.[dev]'
-      - run: pytest -q
+      # The same gate a developer runs locally and `make worktree.land` runs before a
+      # merge: ruff, mypy --strict, the import-boundary contracts, the unfinished-work
+      # scan and the tests. One definition of "passing", enforced in three places.
+      - run: make verify PYTHON=python
 
   vendor-bundle:
     # The committed three.js bundle must stay reproducible from web/, or nobody can

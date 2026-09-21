@@ -12,3 +12,6 @@ web/node_modules/
 *.stl
 *.step
 *.stp
+
+# agent worktrees (make worktree.new)
+/.claude/worktrees/

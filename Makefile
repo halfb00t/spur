@@ -18,11 +18,12 @@ STAMP := $(VENV)/.installed
 PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 
 .DEFAULT_GOAL := help
-.PHONY: help venv test serve check image test-image smoke up down logs \
-        lock vendor vendor-check clean clean-docker
+.PHONY: help venv verify lint typecheck lint-imports no-fake-done test serve \
+        check image test-image smoke up down logs lock vendor vendor-check \
+        worktree.bootstrap worktree.new worktree.land clean clean-docker
 
 help:  ## list the targets
-	@grep -hE '^[a-z][a-z-]*:.*##' $(MAKEFILE_LIST) | sed 's/:[^#]*##/\t/' | expand -t18
+	@grep -hE '^[a-z][a-z.-]*:.*##' $(MAKEFILE_LIST) | sed 's/:[^#]*##/\t/' | expand -t18
 
 # --- local python ------------------------------------------------------------------
 
@@ -39,13 +40,37 @@ $(STAMP): pyproject.toml
 
 venv: $(STAMP)  ## create .venv with the dev extras, ~1.4 GB (override with VENV=)
 
+# --- the gate ----------------------------------------------------------------------
+
+# Nothing is done until this passes. Needs no Docker, so it is the one an agent runs
+# after every change; `make check` adds the container checks CI also runs.
+verify: lint typecheck lint-imports no-fake-done test  ## the gate: lint, types, import boundaries, tests
+
+lint: $(STAMP)  ## ruff: correctness rules only, no reformatting (L16)
+	$(PY) -m ruff check .
+
+typecheck: $(STAMP)  ## mypy --strict over the package and its tests
+	$(PY) -m mypy src tests docker
+
+lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
+	$(VENV)/bin/lint-imports
+
+# ':!.../vendor' keeps a future three.js release's own comments from failing our gate:
+# the bundle is a build artefact (L11), not code we wrote.
+no-fake-done: ## refuse unfinished work dressed up as finished
+	@if git grep -nE '\b(TODO|FIXME|XXX|HACK|NotImplementedError)\b' \
+	     -- '*.py' '*.js' '*.sh' ':!src/spur/static/vendor'; then \
+	  echo "make: unfinished-work markers above. Finish it, or file it in docs/tech_debt/."; \
+	  exit 1; \
+	fi
+
 test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the tests)
 	$(PY) -m pytest $(PYTEST_ARGS)
 
 serve: $(STAMP)  ## run the dev server on http://127.0.0.1:8000
 	$(VENV)/bin/spur serve
 
-check: test smoke vendor-check  ## everything CI runs, locally
+check: verify smoke vendor-check  ## everything CI runs, locally (needs Docker)
 
 # --- container ---------------------------------------------------------------------
 
@@ -90,6 +115,40 @@ vendor:  ## rebuild the vendored three.js bundle (needs node)
 vendor-check:  ## fail if the committed bundle no longer matches web/
 	cd web && npm ci --silent && npm run build
 	git diff --exit-code -- src/spur/static/vendor
+
+# --- worktrees: isolated, parallel agent work ---------------------------------------
+
+worktree.bootstrap:  ## once per clone: let each worktree keep its own config
+	git config extensions.worktreeConfig true
+
+worktree.new:  ## SLUG=<slug> : branch agent/<slug> off HEAD into .claude/worktrees/<slug>
+	@test -n "$(SLUG)" || { echo "SLUG= required"; exit 1; }
+	@echo "$(SLUG)" | grep -qE '^[a-zA-Z0-9_-]+$$' || { echo "Bad SLUG (alnum/_/- only)"; exit 1; }
+	@BASE=$$(git symbolic-ref --short HEAD); \
+	git worktree add .claude/worktrees/$(SLUG) -b agent/$(SLUG) $$BASE; \
+	git -C .claude/worktrees/$(SLUG) config --worktree worktree.base $$BASE; \
+	echo "worktree .claude/worktrees/$(SLUG) on agent/$(SLUG) (base $$BASE)"
+
+worktree.land:  ## SLUG=<slug> MSG="<commit>" : verify, squash-merge, remove the worktree
+	@test -n "$(SLUG)" || { echo "SLUG= required"; exit 1; }
+	@test -n "$(MSG)" || { echo 'MSG= required'; exit 1; }
+	@WT=$$(git rev-parse --show-toplevel)/.claude/worktrees/$(SLUG); \
+	test -d "$$WT" || { echo "No worktree at $$WT"; exit 1; }; \
+	BASE=$$(git -C $$WT config worktree.base); \
+	test -n "$$BASE" || { echo "worktree.base unset; run worktree.bootstrap, then recreate"; exit 1; }; \
+	git -C $$WT diff --quiet && git -C $$WT diff --cached --quiet || { echo "Dirty worktree; commit or reset first"; exit 1; }; \
+	test "$$(git symbolic-ref --short HEAD)" = "$$BASE" || { echo "Switch the main checkout to $$BASE first"; exit 1; }; \
+	LOCK=$$(git rev-parse --git-dir)/worktree-land.lock; \
+	until mkdir "$$LOCK" 2>/dev/null; do echo "another land in progress on $$BASE; waiting..."; sleep 1; done; \
+	trap 'rmdir "$$LOCK" 2>/dev/null' EXIT; \
+	git diff --quiet && git diff --cached --quiet || { echo "Dirty $$BASE; commit or reset first"; exit 1; }; \
+	: "reset --hard HEAD is safe here: the base was just verified clean under the lock, so it only discards the failed squash (which leaves no MERGE_HEAD to abort)"; \
+	git merge --squash agent/$(SLUG) || { git reset --hard HEAD; echo "CONFLICT - resolve in the worktree, then retry"; exit 1; }; \
+	$(MAKE) verify || { git reset --hard HEAD; echo "verify failed on the merged result; not landing"; exit 1; }; \
+	git commit -m "$(MSG)"; \
+	git worktree remove --force $$WT; \
+	git branch -D agent/$(SLUG); \
+	echo "landed agent/$(SLUG) on $$BASE"
 
 # --- cleanup -----------------------------------------------------------------------
 

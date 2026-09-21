@@ -17,7 +17,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "httpx>=0.27"]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.14",
+    "mypy>=1.18",
+    "import-linter>=2.3",
+    "pre-commit>=4",
+]
 
 [project.scripts]
 spur = "spur.cli:main"
@@ -25,6 +32,115 @@ spur = "spur.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/spur"]
 
+# --- the gate: lint, types, import boundaries, tests. `make verify` runs all four. ----
+
+[tool.ruff]
+target-version = "py310"   # cadquery-ocp has no wheels past 3.12; CI runs 3.10 and 3.12
+line-length = 100          # the widest line already in the tree is 99
+
+# `ruff format` is deliberately not part of this project -- see L16. It would rewrite 10
+# files and 648 lines, flattening comment alignment and continuation layout that was set
+# by hand to make the geometry readable. The linter below still enforces line length and
+# whitespace; the arrangement inside that is a human decision here.
+
+[tool.ruff.lint]
+# High-signal set, not "ALL": ALL churns between ruff releases and turns review into
+# bikeshedding. No D/DOC (module and function docstrings here are prose, not a schema),
+# no ANN (mypy strict already demands annotations).
+select = [
+    "E", "F", "W",   # pycodestyle + pyflakes
+    "I",             # import sorting
+    "N",             # naming
+    "UP",            # modern syntax for the lowest supported Python
+    "B",             # bugbear: real bugs, not style
+    "SIM",           # simplifications
+    "C4",            # comprehensions
+    "PTH",           # pathlib over os.path
+    "TID",           # tidy imports
+    "ARG",           # unused arguments
+    "ERA",           # commented-out code
+    "TRY",           # exception antipatterns
+    "LOG", "G",      # logging correctness
+    "PT",            # pytest style
+    "RUF",           # ruff's own, including RUF100: an unused noqa is an error
+]
+# A bare `# noqa` is itself a violation -- suppress one rule, by code, or not at all.
+ignore = [
+    # TRY003 wants long messages moved into exception classes. This project's error
+    # messages are the product: they name the offending parameter and say what to
+    # change ("D-flat must be between 4.5 and 9 mm"). A class per message would make
+    # them worse, not better. The rest of TRY stays on. See L15.
+    "TRY003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests name their fixtures and parametrised cases for the reader, not for a linter.
+"tests/*" = ["ARG001"]
+
+[tool.mypy]
+# 3.12, not the 3.10 floor: numpy's bundled stubs use `type` statements and mypy refuses
+# to read them below 3.12. Ruff (target-version = py310) is what holds the language
+# floor, and CI runs the suite on a real 3.10 -- so the floor is checked by execution,
+# not by the type checker's opinion.
+python_version = "3.12"
+plugins = ["pydantic.mypy"]   # without it mypy cannot see the generated model __init__
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
+# disallow_any_explicit is deliberately OFF. The API's derive()/info() contracts are
+# `dict[str, Any]` by design (a JSON document whose keys vary with the parameters), so
+# turning it on today would fail the gate on code that is correct. It is a ratchet, not
+# an exemption: see docs/tech_debt/active/2026-09-21-typed-info-contract.md.
+
+[[tool.mypy.overrides]]
+# The CAD kernel ships no type information. Scoped to the two packages that lack it --
+# never a global ignore_missing_imports, which would blind the whole project.
+module = ["cadquery.*", "OCP.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-filterwarnings = ["ignore::DeprecationWarning:starlette.*", "ignore:Using `httpx`"]
+addopts = "--strict-markers --strict-config"
+xfail_strict = true
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:starlette.*",
+    "ignore:Using `httpx`",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/spur"]
+# No fail_under yet: a floor picked without measuring is a number, not a guarantee.
+# See docs/tech_debt/active/2026-09-21-no-coverage-floor.md.
+
+[tool.importlinter]
+root_package = "spur"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "The app never imports its own tests"
+type = "forbidden"
+source_modules = ["spur"]
+forbidden_modules = ["tests"]
+
+[[tool.importlinter.contracts]]
+name = "The gear maths stays free of the CAD kernel"
+# calc.py runs on every keystroke in the UI. It is pure arithmetic on purpose: the
+# moment it can reach OpenCascade, that property is gone and nobody notices until the
+# form goes slow. model.py is the only module allowed to touch the kernel.
+type = "forbidden"
+source_modules = ["spur.calc", "spur.params", "spur.app", "spur.cli"]
+forbidden_modules = ["cadquery", "OCP"]
+# Reaching the kernel *through* model.py is the whole point; only a direct import here
+# is the violation.
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "The CLI does not inherit web-serving policy"
+# Admission control (the bounded build queue) is a property of serving HTTP, not of
+# building a gear -- see L04. A CLI export must never queue behind anything.
+type = "forbidden"
+source_modules = ["spur.cli"]
+forbidden_modules = ["spur.app", "fastapi", "starlette"]
+allow_indirect_imports = true

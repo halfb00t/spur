@@ -17,9 +17,12 @@ import threading
 from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import cadquery as cq
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from . import int_env
 from .calc import Profile, bore_radius, profile, recess_fillet, recess_radii, root_fillet
@@ -40,7 +43,7 @@ class BuildError(RuntimeError):
     """The CAD kernel could not produce a valid solid for these parameters."""
 
 
-def _load_malloc_trim():
+def _load_malloc_trim() -> Callable[[int], int] | None:
     try:
         fn = ctypes.CDLL("libc.so.6").malloc_trim
     except (OSError, AttributeError):
@@ -166,7 +169,9 @@ def _cut_face_recesses(solid: cq.Shape, p: GearParams, rf: float) -> cq.Shape:
         solid = solid.cut(_ring(r_in, r_out, p.face_width - p.recess_depth, p.recess_depth))
     fillet = recess_fillet(p, rf)
     if fillet > 0:
-        solid = solid.fillet(fillet, _groove_floor_edges(solid, (r_in, r_out), floor_z))
+        # Shape declares no fillet/chamfer: they are on Mixin3D, which every Solid and
+        # Compound carries. _build() re-checks we still have exactly one valid solid.
+        solid = solid.fillet(fillet, _groove_floor_edges(solid, (r_in, r_out), floor_z))  # type: ignore[attr-defined]
     return solid
 
 
@@ -174,15 +179,16 @@ def _cut_bore(solid: cq.Shape, p: GearParams) -> cq.Shape:
     """Round or D-shaped bore, chamfered on both rims."""
     if p.bore_d <= 0:
         return solid
-    R = bore_radius(p)
-    hole = cq.Workplane("XY").circle(R).extrude(p.face_width)
+    r_bore = bore_radius(p)
+    hole = cq.Workplane("XY").circle(r_bore).extrude(p.face_width)
     if p.bore_flat > 0:
         flat = p.bore_flat + p.bore_clearance          # flat to opposite side
-        keep = cq.Workplane("XY").center(flat - 2 * R, 0).rect(2 * R, 2 * R + 2)
+        keep = cq.Workplane("XY").center(flat - 2 * r_bore, 0).rect(2 * r_bore, 2 * r_bore + 2)
         hole = hole.intersect(keep.extrude(p.face_width))
-    solid = solid.cut(hole.val())
+    solid = solid.cut(hole.val())  # type: ignore[arg-type]  # .val() is typed as a 4-way union
     if p.bore_chamfer > 0:
-        solid = solid.chamfer(p.bore_chamfer, None, _bore_rim_edges(solid, R, p.face_width))
+        solid = solid.chamfer(  # type: ignore[attr-defined]  # see _cut_face_recesses
+            p.bore_chamfer, None, _bore_rim_edges(solid, r_bore, p.face_width))
     return solid
 
 
@@ -190,7 +196,7 @@ def _cut_bore(solid: cq.Shape, p: GearParams) -> cq.Shape:
 
 def _ring(r_in: float, r_out: float, z0: float, height: float) -> cq.Shape:
     return (cq.Workplane("XY").workplane(offset=z0)
-            .circle(r_out).circle(r_in).extrude(height).val())
+            .circle(r_out).circle(r_in).extrude(height).val())  # type: ignore[return-value]
 
 
 def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],
@@ -202,7 +208,7 @@ def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],
             and any(abs(e.startPoint().z - z) < TOL for z in floor_z)]
 
 
-def _bore_rim_edges(solid: cq.Shape, R: float, face_width: float) -> list[cq.Edge]:
+def _bore_rim_edges(solid: cq.Shape, r_bore: float, face_width: float) -> list[cq.Edge]:
     """The bore opening on the two end faces.
 
     Selected by position, not by type: a D-bore rim is an arc plus a straight line. The
@@ -210,7 +216,7 @@ def _bore_rim_edges(solid: cq.Shape, R: float, face_width: float) -> list[cq.Edg
     least MIN_WALL plus the chamfer between that and the bore, so a radius test
     separates them.
     """
-    lim = R + 0.01
+    lim = r_bore + 0.01
 
     def on_rim(e: cq.Edge) -> bool:
         a, b = e.startPoint(), e.endPoint()

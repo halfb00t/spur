@@ -1,16 +1,23 @@
 import math
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
 
 from spur.calc import (
-    MIN_WALL, bore_radius, centre_distance, derive, inv, profile, recess_radii,
-    span_measurement, with_mate,
+    MIN_WALL,
+    bore_radius,
+    centre_distance,
+    derive,
+    inv,
+    profile,
+    span_measurement,
+    with_mate,
 )
 from spur.params import GearParams
 
 
-def test_default_dimensions():
+def test_default_dimensions() -> None:
     d = derive(GearParams())
     assert d["pitch_d"] == pytest.approx(33.25)
     assert d["tip_d"] == pytest.approx(36.75)
@@ -25,7 +32,7 @@ def test_default_dimensions():
     assert d["warnings"] == []
 
 
-def test_caliper_reading_is_short_for_odd_tooth_counts():
+def test_caliper_reading_is_short_for_odd_tooth_counts() -> None:
     odd, even = derive(GearParams(teeth=19)), derive(GearParams(teeth=20))
     assert odd["caliper_over_tips"] < odd["tip_d"]
     assert even["caliper_over_tips"] == even["tip_d"]
@@ -36,26 +43,28 @@ def test_caliper_reading_is_short_for_odd_tooth_counts():
     (1.75, 25, 3, 13.360),
     (1.0, 20, 3, 7.646),
 ])
-def test_span_measurement(m, pa, k, w):
+def test_span_measurement(m: float, pa: float, k: int, w: float) -> None:
     p = GearParams(module=m, pressure_angle=pa, bore_d=0, recess_sides="none")
     kk, ww = span_measurement(p)
     assert kk == k
     assert ww == pytest.approx(w, abs=2e-3)
 
 
-def test_higher_pressure_angle_gives_finer_tips_and_thicker_roots():
+def test_higher_pressure_angle_gives_finer_tips_and_thicker_roots() -> None:
     a, b = derive(GearParams(pressure_angle=20)), derive(GearParams(pressure_angle=25))
     assert b["tip_thickness"] < a["tip_thickness"]
     assert b["root_thickness"] > a["root_thickness"]
 
 
-def test_centre_distance_unshifted_and_shifted():
+def test_centre_distance_unshifted_and_shifted() -> None:
     p = GearParams()
     assert centre_distance(p, 40) == pytest.approx(1.75 * 59 / 2)
-    assert centre_distance(GearParams(profile_shift=0.3), 40) > 1.75 * 59 / 2
+    shifted = centre_distance(GearParams(profile_shift=0.3), 40)
+    assert shifted is not None
+    assert shifted > 1.75 * 59 / 2
 
 
-def test_root_fillet_is_capped_with_a_warning():
+def test_root_fillet_is_capped_with_a_warning() -> None:
     d = derive(GearParams(teeth=80, module=0.5, bore_d=5, bore_flat=0))
     assert d["root_fillet"] < 0.5
     assert any("Root fillet reduced" in w for w in d["warnings"])
@@ -67,7 +76,7 @@ def test_root_fillet_is_capped_with_a_warning():
     ({"pressure_angle": 35, "profile_shift": 1}, "pressure_angle"),
     ({"bore_d": 30}, "bore_d"),
 ])
-def test_infeasible_parameters_name_their_fields(kw, field):
+def test_infeasible_parameters_name_their_fields(kw: dict[str, Any], field: str) -> None:
     with pytest.raises(ValidationError) as exc:
         GearParams(**kw)
     err = exc.value.errors()[0]
@@ -75,11 +84,11 @@ def test_infeasible_parameters_name_their_fields(kw, field):
     assert field in err["ctx"]["fields"]
 
 
-def test_no_bore_ignores_d_flat():
+def test_no_bore_ignores_d_flat() -> None:
     assert GearParams(bore_d=0).bore_flat == 8.0
 
 
-def test_tooth_thickness_and_gap_are_measured_on_the_same_circle():
+def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:
     """Thickness + gap must add up to the pitch on the root circle.
 
     They did not when the base circle sat outside the root circle, which is the case for
@@ -92,7 +101,7 @@ def test_tooth_thickness_and_gap_are_measured_on_the_same_circle():
             2 * math.pi * pr.rf / teeth, abs=2e-3)
 
 
-def test_oversized_recess_is_narrowed_to_fit_and_says_so():
+def test_oversized_recess_is_narrowed_to_fit_and_says_so() -> None:
     d = derive(GearParams(recess_width=12))
     assert any("Recess narrowed" in w for w in d["warnings"])
     assert (d["recess_od"] - d["recess_id"]) / 2 < 12  # radial width, capped
@@ -101,7 +110,7 @@ def test_oversized_recess_is_narrowed_to_fit_and_says_so():
     assert d["recess_od"] / 2 <= profile(p).rf - MIN_WALL + 1e-9
 
 
-def test_small_gear_keeps_the_stock_bore_and_recess():
+def test_small_gear_keeps_the_stock_bore_and_recess() -> None:
     """The README's own example: defaults sized for a 19-tooth m=1.75 gear must not
     refuse a 24-tooth m=1 one over a parameter the user never touched."""
     d = derive(GearParams(teeth=24, module=1, pressure_angle=20, bore_flat=0))
@@ -109,13 +118,13 @@ def test_small_gear_keeps_the_stock_bore_and_recess():
     assert d["recess_id"] is not None
 
 
-def test_recess_is_dropped_when_there_is_no_room_at_all():
+def test_recess_is_dropped_when_there_is_no_room_at_all() -> None:
     d = derive(GearParams(teeth=16, module=1, bore_d=9, bore_flat=8))
     assert d["recess_id"] is None
     assert any("No room for a face recess" in w for w in d["warnings"])
 
 
-def test_recess_fillet_is_capped_to_the_narrowed_groove():
+def test_recess_fillet_is_capped_to_the_narrowed_groove() -> None:
     d = derive(GearParams(recess_width=12, recess_fillet=3))
     assert d["recess_fillet"] < 3
     assert any("Recess fillet reduced" in w for w in d["warnings"])
@@ -125,7 +134,7 @@ def test_recess_fillet_is_capped_to_the_narrowed_groove():
     ({"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6}, 40),
     ({"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.5}, 12),
 ])
-def test_impossible_pairs_have_no_centre_distance(kw, mate):
+def test_impossible_pairs_have_no_centre_distance(kw: dict[str, Any], mate: int) -> None:
     """inv(aw) = inv(a) + 2 tan(a) x / z has no root when the right-hand side is
     negative: the pair cannot mesh at any distance. It used to return garbage -- 39.4 mm
     where the nominal is 70, and negative numbers elsewhere."""
@@ -136,8 +145,8 @@ def test_impossible_pairs_have_no_centre_distance(kw, mate):
     assert any("cannot mesh" in w for w in out["warnings"])
 
 
-def test_centre_distance_matches_an_independent_solver():
-    def bisect(p, z2):
+def test_centre_distance_matches_an_independent_solver() -> None:
+    def bisect(p: GearParams, z2: int) -> float | None:
         a = math.radians(p.pressure_angle)
         target = inv(a) + 2 * math.tan(a) * p.profile_shift / (p.teeth + z2)
         if target <= 0:

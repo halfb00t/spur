@@ -9,6 +9,9 @@ including the ASGI stack under it -- using nothing that isn't already in the ima
 
 from __future__ import annotations
 
+from collections.abc import MutableMapping
+from typing import Any
+
 import anyio
 
 from spur.app import app
@@ -20,10 +23,10 @@ async def get(path: str, query: bytes = b"") -> tuple[int, bytes]:
     body = bytearray()
     pending = [{"type": "http.request", "body": b"", "more_body": False}]
 
-    async def receive() -> dict:
+    async def receive() -> MutableMapping[str, Any]:
         return pending.pop(0) if pending else {"type": "http.disconnect"}
 
-    async def send(message: dict) -> None:
+    async def send(message: MutableMapping[str, Any]) -> None:
         nonlocal status
         if message["type"] == "http.response.start":
             status = message["status"]
@@ -47,10 +50,12 @@ async def main() -> None:
         assert status == 200, f"{path} -> {status}"
 
     status, stl = await get("/api/model.stl", b"quality=preview")
-    assert status == 200 and len(stl) > 1000, f"stl -> {status}, {len(stl)} bytes"
+    assert status == 200, f"stl -> {status}"
+    assert len(stl) > 1000, f"stl -> only {len(stl)} bytes"
 
     status, step = await get("/api/model.step")
-    assert status == 200 and step.startswith(b"ISO-10303-21;"), f"step -> {status}"
+    assert status == 200, f"step -> {status}"
+    assert step.startswith(b"ISO-10303-21;"), "step -> not an ISO-10303-21 file"
 
     status, _ = await get("/api/info", b"bore_flat=3")
     assert status == 422, f"invalid parameters -> {status}, expected 422"

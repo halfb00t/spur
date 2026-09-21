@@ -75,7 +75,7 @@ class GearParams(BaseModel):
                               step=0.05, help="Fillet at the groove floor corners.")
 
     @model_validator(mode="after")
-    def _feasible(self) -> "GearParams":
+    def _feasible(self) -> GearParams:
         from .calc import check  # local import: calc only needs the attributes
 
         problems = check(self)

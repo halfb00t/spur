@@ -6,30 +6,30 @@ from spur.app import app
 client = TestClient(app)
 
 
-def test_health():
+def test_health() -> None:
     assert client.get("/api/health").json()["status"] == "ok"
 
 
-def test_index_and_static():
+def test_index_and_static() -> None:
     assert "spur" in client.get("/").text
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/vendor/three.bundle.min.js").status_code == 200
 
 
-def test_schema_drives_the_form():
+def test_schema_drives_the_form() -> None:
     props = client.get("/api/schema").json()["properties"]
     assert props["teeth"]["group"] == "Teeth"
     assert props["module"]["unit"] == "mm"
     assert props["recess_sides"]["enum"] == ["both", "top", "bottom", "none"]
 
 
-def test_info_with_mate():
+def test_info_with_mate() -> None:
     r = client.get("/api/info", params={"teeth": 21, "mate_teeth": 40})
     assert r.status_code == 200
     assert r.json()["centre_distance"] == pytest.approx(1.75 * 61 / 2)
 
 
-def test_infeasible_is_422_with_fields():
+def test_infeasible_is_422_with_fields() -> None:
     r = client.get("/api/info", params={"bore_flat": 3})
     assert r.status_code == 422
     detail = r.json()["detail"][0]
@@ -37,7 +37,7 @@ def test_infeasible_is_422_with_fields():
     assert detail["ctx"]["fields"] == ["bore_flat"]
 
 
-def test_bad_type_is_422_on_the_field():
+def test_bad_type_is_422_on_the_field() -> None:
     r = client.get("/api/info", params={"teeth": "many"})
     assert r.status_code == 422
     assert r.json()["detail"][0]["loc"] == ["query", "teeth"]
@@ -47,7 +47,7 @@ def test_bad_type_is_422_on_the_field():
     ("stl", "model/stl", None),
     ("step", "model/step", b"ISO-10303-21;"),
 ])
-def test_model_download(fmt, ctype, magic):
+def test_model_download(fmt: str, ctype: str, magic: bytes | None) -> None:
     r = client.get(f"/api/model.{fmt}", params={"quality": "preview", "teeth": 21})
     assert r.status_code == 200
     assert r.headers["content-type"] == ctype
@@ -56,7 +56,7 @@ def test_model_download(fmt, ctype, magic):
         assert r.content.startswith(magic)
 
 
-def test_unknown_format_is_rejected():
+def test_unknown_format_is_rejected() -> None:
     assert client.get("/api/model.obj").status_code == 422
 
 
@@ -64,7 +64,7 @@ SMALL_GEAR = {"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6,
               "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none"}
 
 
-def test_impossible_mate_is_a_warning_not_a_number():
+def test_impossible_mate_is_a_warning_not_a_number() -> None:
     r = client.get("/api/info", params={**SMALL_GEAR, "mate_teeth": 40})
     assert r.status_code == 200
     body = r.json()
@@ -73,7 +73,7 @@ def test_impossible_mate_is_a_warning_not_a_number():
     assert any("cannot mesh" in w for w in body["warnings"])
 
 
-def test_a_gear_too_small_for_the_stock_recess_is_still_served():
+def test_a_gear_too_small_for_the_stock_recess_is_still_served() -> None:
     r = client.get("/api/model.stl", params={"teeth": 24, "module": 1,
                                              "pressure_angle": 20, "bore_flat": 0,
                                              "quality": "preview"})
@@ -82,7 +82,7 @@ def test_a_gear_too_small_for_the_stock_recess_is_still_served():
                                            "bore_flat": 0}).json()["recess_id"] is not None
 
 
-def test_a_saturated_service_refuses_instead_of_queueing():
+def test_a_saturated_service_refuses_instead_of_queueing() -> None:
     """Builds serialise on the kernel lock, so a deep queue is latency with no payoff."""
     from spur import app as app_module
 

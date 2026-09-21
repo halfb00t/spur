@@ -1,12 +1,16 @@
 import collections
 import math
 import struct
+from collections.abc import Iterator, Sequence
+from typing import Any
 
 import pytest
 
 from spur.calc import profile, recess_radii
 from spur.model import build, export
 from spur.params import GearParams
+
+Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
 
 
 @pytest.mark.parametrize("kw", [
@@ -21,7 +25,7 @@ from spur.params import GearParams
     {"teeth": 40, "module": 2, "profile_shift": 0.4, "pressure_angle": 20,
      "face_width": 12, "bore_d": 12, "bore_flat": 11, "recess_depth": 4},
 ])
-def test_builds_one_valid_solid(kw):
+def test_builds_one_valid_solid(kw: dict[str, Any]) -> None:
     p = GearParams(**kw)
     s = build(p)
     assert s.isValid()
@@ -30,15 +34,17 @@ def test_builds_one_valid_solid(kw):
     assert max(bb.xlen, bb.ylen) <= p.module * (p.teeth + 2 + 2 * p.profile_shift) + 1e-6
 
 
-def test_recess_removes_expected_volume():
+def test_recess_removes_expected_volume() -> None:
     solid = build(GearParams(recess_sides="none", recess_fillet=0)).Volume()
     p = GearParams(recess_fillet=0)
-    r_in, r_out = recess_radii(p, profile(p).rf)
+    rr = recess_radii(p, profile(p).rf)
+    assert rr is not None, "the stock gear must have a recess"
+    r_in, r_out = rr
     ring = math.pi * (r_out ** 2 - r_in ** 2) * p.recess_depth * 2
     assert solid - build(p).Volume() == pytest.approx(ring, rel=1e-3)
 
 
-def test_exports():
+def test_exports() -> None:
     p = GearParams()
     stl = export(p, "stl", "preview")
     n_triangles = int.from_bytes(stl[80:84], "little")  # binary STL header
@@ -49,7 +55,7 @@ def test_exports():
     assert b"MANIFOLD_SOLID_BREP" in step
 
 
-def test_a_gear_too_small_for_the_stock_recess_still_builds():
+def test_a_gear_too_small_for_the_stock_recess_still_builds() -> None:
     """The README's own example. The recess is narrowed to fit rather than refused, so
     the kernel must still get a sane annulus out of it."""
     solid = build(GearParams(teeth=24, module=1, pressure_angle=20, bore_flat=0))
@@ -57,7 +63,7 @@ def test_a_gear_too_small_for_the_stock_recess_still_builds():
     assert len(solid.Solids()) == 1
 
 
-def _stl_triangles(data: bytes):
+def _stl_triangles(data: bytes) -> Iterator[Facet]:
     n = int.from_bytes(data[80:84], "little")
     assert len(data) == 84 + 50 * n, "truncated binary STL"
     for i in range(n):
@@ -65,13 +71,13 @@ def _stl_triangles(data: bytes):
         yield v[3:6], v[6:9], v[9:12]
 
 
-def test_exported_stl_is_a_closed_consistently_oriented_shell():
+def test_exported_stl_is_a_closed_consistently_oriented_shell() -> None:
     """A slicer needs a watertight mesh. A missing or flipped facet is invisible in the
     3D preview and turns up as a broken print, so assert the topology directly."""
-    def vertex(p):
+    def vertex(p: Sequence[float]) -> tuple[int, ...]:
         return tuple(round(c * 1e5) for c in p)
 
-    directed: collections.Counter = collections.Counter()
+    directed: collections.Counter[tuple[tuple[int, ...], tuple[int, ...]]] = collections.Counter()
     volume = 0.0
     for a, b, c in _stl_triangles(export(GearParams(), "stl", "preview")):
         ka, kb, kc = vertex(a), vertex(b), vertex(c)

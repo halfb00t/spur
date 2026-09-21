@@ -67,14 +67,15 @@ def recess_radii(p: GearParams, rf: float) -> tuple[float, float] | None:
     """
     if p.recess_sides == "none" or p.recess_depth <= 0 or p.recess_width <= 0:
         return None
-    R = bore_radius(p)
-    hub = R + (p.bore_chamfer if p.bore_d > 0 else 0.0) + MIN_WALL  # clear of the hub wall
-    rim = rf - MIN_WALL                                             # clear of the tooth rim
+    r_bore = bore_radius(p)
+    hub = r_bore + (p.bore_chamfer if p.bore_d > 0 else 0.0) + MIN_WALL  # clear of the hub wall
+    rim = rf - MIN_WALL                                                  # clear of the tooth rim
     if rim - hub < MIN_RECESS_WIDTH:
         return None
     width = min(p.recess_width, rim - hub)
     # Default position: hub wall and rim wall come out equal, as before any capping.
-    r_in = p.recess_inner_d / 2 if p.recess_inner_d > 0 else R + (rf - R - p.recess_width) / 2
+    centred = r_bore + (rf - r_bore - p.recess_width) / 2
+    r_in = p.recess_inner_d / 2 if p.recess_inner_d > 0 else centred
     r_in = min(max(r_in, hub), rim - width)
     return r_in, r_in + width
 
@@ -131,8 +132,8 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         errors.append(("Neighbouring teeth merge at the root; lower the profile shift.",
                        ("profile_shift",)))
 
-    R = bore_radius(p)
-    if p.bore_d > 0 and R > pr.rf - MIN_WALL:
+    r_bore = bore_radius(p)
+    if p.bore_d > 0 and r_bore > pr.rf - MIN_WALL:
         errors.append(("Bore is too large for the root diameter.", ("bore_d",)))
     if p.bore_d > 0 and p.bore_flat > 0 and not p.bore_d / 2 < p.bore_flat < p.bore_d:
         errors.append((f"D-flat must be between {p.bore_d / 2:g} and {p.bore_d:g} mm "

@@ -10,7 +10,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Literal, get_args, get_origin
+from typing import Any, Literal, cast, get_args, get_origin
 
 from pydantic import ValidationError
 
@@ -21,7 +21,7 @@ from .params import GearParams
 def _add_gear_args(ap: argparse.ArgumentParser) -> None:
     g = ap.add_argument_group("gear parameters (defaults in brackets)")
     for name, field in GearParams.model_fields.items():
-        kw: dict = {"dest": name, "default": None, "metavar": "V",
+        kw: dict[str, Any] = {"dest": name, "default": None, "metavar": "V",
                     "help": f"{field.description} [{field.default}]".replace("%", "%%")}
         if get_origin(field.annotation) is Literal:
             kw["choices"] = list(get_args(field.annotation))
@@ -62,7 +62,7 @@ def cmd_info(ns: argparse.Namespace) -> None:
 
 def cmd_export(ns: argparse.Namespace) -> None:
     from .calc import derive
-    from .model import BuildError, export
+    from .model import BuildError, Format, export
 
     out: Path = ns.output
     fmt = ns.format or out.suffix.lower().lstrip(".").replace("stp", "step")
@@ -70,7 +70,7 @@ def cmd_export(ns: argparse.Namespace) -> None:
         raise SystemExit("error: output must end in .stl or .step (or pass --format)")
     p = _params(ns)
     try:
-        data = export(p, fmt, ns.quality)
+        data = export(p, cast("Format", fmt), ns.quality)   # the check above is the proof
     except BuildError as exc:
         raise SystemExit(f"error: {exc}") from None
     out.write_bytes(data)
