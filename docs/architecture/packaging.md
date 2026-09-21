@@ -48,6 +48,17 @@ because a newer default `python3` sends pip off building OpenCascade from source
 Apple silicon, `PLATFORM=linux/arm64 make image` avoids inheriting an emulated
 `DOCKER_DEFAULT_PLATFORM=linux/amd64` from the shell.
 
+## Worktrees
+
+`make worktree.new SLUG=<s>` branches into `.claude/worktrees/<s>`; `make worktree.land
+SLUG=<s> MSG="..."` squash-merges it after re-running the gate on the merged result, and
+refuses if either checkout is dirty or the base branch is wrong.
+
+One trap, verified rather than assumed: **do not share the main checkout's `.venv` with a
+worktree.** Its editable install points at the main checkout's `src/`, so `import spur`
+from inside a worktree resolves back to the main tree and the suite silently tests
+unmodified code. Run `make venv` inside the worktree (~1.4 GB) or use `make test-image`.
+
 ## Known gap
 
 `malloc_trim(0)` is glibc-only, so the memory behaviour L07 exists for is inactive on a

@@ -127,7 +127,10 @@ worktree.new:  ## SLUG=<slug> : branch agent/<slug> off HEAD into .claude/worktr
 	@BASE=$$(git symbolic-ref --short HEAD); \
 	git worktree add .claude/worktrees/$(SLUG) -b agent/$(SLUG) $$BASE; \
 	git -C .claude/worktrees/$(SLUG) config --worktree worktree.base $$BASE; \
-	echo "worktree .claude/worktrees/$(SLUG) on agent/$(SLUG) (base $$BASE)"
+	echo "worktree .claude/worktrees/$(SLUG) on agent/$(SLUG) (base $$BASE)"; \
+	echo "run 'make venv' inside it, or 'make test-image' -- do NOT share the main"; \
+	echo ".venv: its editable install resolves 'import spur' back to the main checkout,"; \
+	echo "so the suite would silently test unmodified code."
 
 worktree.land:  ## SLUG=<slug> MSG="<commit>" : verify, squash-merge, remove the worktree
 	@test -n "$(SLUG)" || { echo "SLUG= required"; exit 1; }
