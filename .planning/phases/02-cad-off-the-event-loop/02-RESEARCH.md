@@ -633,7 +633,10 @@ counter incremented/decremented around `_build_slot()` instead of reading `_valu
 and all already defended against by the locked decisions themselves (D-03, D-17); none
 block planning, but A3 warrants an explicit regression-test task.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All three were open at the end of research and are answered by the phase plans
+committed in `109769f`. Each carries its resolution inline below; none is outstanding.
 
 1. **Does the injectable build backend (D-15) need an explicit "pool not started" fallback,
    or does it always default to inline?**
@@ -647,6 +650,11 @@ block planning, but A3 warrants an explicit regression-test task.
      tests only, with the production path hard-failing (not silently going inline) if the
      pool was never started, since a production request that skipped the pool would also
      skip the affinity/cache-locality guarantees D-07 depends on.
+   - **RESOLVED — injection for tests only; the production path hard-fails.** Plan 02-01
+     Task 1 builds the backend that way, and `02-VALIDATION.md`'s Wave 0 list records it
+     as "the injectable build backend itself (D-15), hard-failing rather than falling back
+     to inline when no pool started. Owner: 02-01 Task 1". The recommendation above was
+     adopted unchanged.
 
 2. **What is `SPUR_BUILD_TIMEOUT`'s literal default value?**
    - What we know: D-10 fixes the rule ("set above the worst measured build") but leaves
@@ -656,6 +664,12 @@ block planning, but A3 warrants an explicit regression-test task.
      measured), so no candidate value is offered here.
    - Recommendation: the plan should make "run the sweep, then set the constant" an
      explicit task with its own verification step, not a value picked during planning.
+   - **RESOLVED — no literal value was picked at planning time, by design.** Plan 02-03
+     ships a provisional default carrying a comment that says so; Plan 02-04's
+     "Re-run both load scenarios, and set the timeout above what was observed" task runs
+     the sweep and replaces it with a number above the worst build actually observed,
+     recorded in `bench/RESULTS.md`. Its acceptance criteria require that no provisional
+     comment from 02-03 survives.
 
 3. **Does `max_tasks_per_child` end up enabled or not?**
    - What we know: D-11 says "only if the sweep shows drift that trim does not flatten."
@@ -664,6 +678,11 @@ block planning, but A3 warrants an explicit regression-test task.
    - Recommendation: plan should include both code paths as trivial to wire (the
      `ProcessPoolExecutor` constructor already accepts the kwarg per the verified
      signature above) and gate the decision on the sweep's own numbers, recorded in L17.
+   - **RESOLVED — the outcome stays empirical, and the plan gates it.** Plan 02-04's
+     memory-sweep task enables `max_tasks_per_child` only if the sweep shows drift that
+     `malloc_trim(0)` did not flatten, and requires the deciding numbers in the comment
+     either way — an absent knob with no comment reads as an oversight. Plan 02-05 records
+     the outcome in L17.
 
 ## Environment Availability
 

@@ -53,9 +53,10 @@ created: "2026-09-22"
 | T2 Three failure modes, three answers | 02-03 | 2 | REQ-cad-off-event-loop | T-02-08 | Every failure path releases its admission slot; the semaphore cannot drain | contract (injected backend) | `make test PYTEST_ARGS="tests/test_pool.py -q"` | ✅ from 02-01 | ⬜ |
 | T3 Decision: `/api/health` field shape | 02-03 | 2 | REQ-cad-off-event-loop | T-02-09 | A published contract is gated before it becomes permanent | checkpoint:decision | n/a — blocking human decision | n/a | ⬜ |
 | T4 Pool state on `/api/health` | 02-03 | 2 | REQ-cad-off-event-loop | T-02-09 | Parent-local counters only: no IPC, no lock, no await on a worker | contract + human check | `make test PYTEST_ARGS="tests/test_pool.py tests/test_api.py -q"` | ✅ from 02-01 | ⬜ |
-| T1 Re-run both load scenarios | 02-04 | 3 | REQ-cad-off-event-loop | T-02-12, T-02-14 | The build timeout is set above an observed worst build, never a plausible number | manual-only (load harness) + human check | `make bench.latency` then `make verify` | ❌ harness from 02-02 | ⬜ |
-| T2 Memory sweep and `mem_limit` | 02-04 | 3 | REQ-measured-memory-ceiling | T-02-11, T-02-14 | The chosen limit is confirmed at zero failures over the same 40-gear corpus that earned 2g | manual-only (container sweep) + human check | `docker compose config` then `make verify` | ❌ harness from 02-02 | ⬜ |
-| T3 README + packaging docs | 02-04 | 3 | REQ-measured-memory-ceiling | T-02-13 | Every published number is traceable to `bench/RESULTS.md` | doc assertion | `grep -nE 'SPUR_BUILD_WORKERS\|SPUR_BUILD_TIMEOUT' README.md` | ✅ existing files | ⬜ |
+| T1 Environment gate before measuring | 02-04 | 3 | REQ-cad-off-event-loop | T-02-14 | No number is produced until a human has confirmed a quiet host and a running Docker daemon; an un-quiet machine is recorded as a caveat, never hidden | checkpoint:human-action (`gate="blocking-human"`) | n/a — blocking human action | n/a | ⬜ |
+| T2 Re-run both load scenarios | 02-04 | 3 | REQ-cad-off-event-loop | T-02-12, T-02-14 | The build timeout is set above an observed worst build, never a plausible number | manual-only (load harness) + human check | `make bench.latency` then `make verify` | ❌ harness from 02-02 | ⬜ |
+| T3 Memory sweep and `mem_limit` | 02-04 | 3 | REQ-measured-memory-ceiling | T-02-11, T-02-14 | The chosen limit is confirmed at zero failures over the same 40-gear corpus that earned 2g | manual-only (container sweep) + human check | `docker compose config` then `make verify` | ❌ harness from 02-02 | ⬜ |
+| T4 README + packaging docs | 02-04 | 3 | REQ-measured-memory-ceiling | T-02-13 | Every published number is traceable to `bench/RESULTS.md` | doc assertion | `grep -nE 'SPUR_BUILD_WORKERS\|SPUR_BUILD_TIMEOUT' README.md` | ✅ existing files | ⬜ |
 | T1 Decision: append L17 and L18 | 02-05 | 4 | REQ-measured-memory-ceiling | T-02-18 | The last cheap look before a permanent, append-only entry | checkpoint:decision | n/a — blocking human decision | n/a | ⬜ |
 | T2 L17 and L18 | 02-05 | 4 | REQ-measured-memory-ceiling | T-02-16 | L06 and L07 are superseded, never edited: the diff adds lines only | doc assertion + diff gate | `git diff --stat HEAD -- docs/architecture/decision_log.md` | ✅ existing file | ⬜ |
 | T3 Healthcheck down, debt resolved | 02-05 | 4 | REQ-cad-off-event-loop | T-02-15, T-02-17 | A `git mv`, never a delete; the container is actually built and run | container gate + git assertions | `make check` | ✅ existing files | ⬜ |
@@ -74,7 +75,7 @@ Every item below is now owned by a plan task; none is left for execution to impr
 - [ ] The one real end-to-end test (D-15), opened with `with TestClient(app) as client:` (lifespan does not run otherwise). **Owner: 02-01 Task 1**, as `tests/test_pool.py::test_a_real_worker_builds_and_downloads` — placed in a new module rather than `tests/test_api.py`, so the module-scoped inline-backend fixture that keeps the 12 existing API tests pool-independent does not also neutralise the one test that must cross the boundary
 - [ ] The injectable build backend itself (D-15), hard-failing rather than falling back to inline when no pool started. **Owner: 02-01 Task 1**
 - [ ] Tests for the three D-12 failure-mode → status-code mappings (`BuildError` → 422, `BrokenProcessPool` → 503, timeout → 503). **Owner: 02-03 Task 2**
-- [ ] Load/memory harness + `make bench` target (D-16): both load scenarios and the N=1,2,4 memory sweep over the existing 40-gear corpus (reuse `docs/plan-2026-09-21.md` F2 methodology). **Owner: 02-02 Tasks 1-3**; run by **02-04 Tasks 1-2**
+- [ ] Load/memory harness + `make bench` target (D-16): both load scenarios and the N=1,2,4 memory sweep over the existing 40-gear corpus (reuse `docs/plan-2026-09-21.md` F2 methodology). **Owner: 02-02 Tasks 1-3**; run by **02-04 Tasks 2-3**
 - [ ] Regression test asserting the `ProcessPoolExecutor` instance's `_processes` mapping exists, so a future CPython silently breaking D-10's termination path fails `make verify` loudly. **Owner: 02-01 Task 3** (deliberately landed one wave *before* the timeout path that depends on it)
 
 ---
@@ -86,13 +87,14 @@ Every item below is now owned by a plan task; none is left for execution to impr
 | `/api/health` p95 within 2× idle p95 under both load scenarios | REQ-cad-off-event-loop | Load harness, not part of `make verify`; needs the real container topology and a quiet machine | `make bench` (D-16); record numbers next to the baseline (0.22 s → 0.76 s → 2.00 s single; >5 s ten concurrent, 12-core) |
 | Memory sweep N=1,2,4 over the 40-gear corpus produces a peak-per-N table | REQ-measured-memory-ceiling | Container-side RSS measurement, minutes of wall time | `make bench` memory mode (D-16/D-18) |
 | `compose.yaml` `mem_limit` re-run at the chosen value shows zero failures over the corpus | REQ-measured-memory-ceiling | Requires Docker and the sweep | `docker compose up` + sweep at the chosen limit |
+| The host was quiet and Docker was up before either measurement ran | REQ-cad-off-event-loop, REQ-measured-memory-ceiling | Claude can read `docker info` and the load average but cannot quiet a machine or start Docker Desktop | 02-04 Task 1 — blocking-human checkpoint; `02-04` is `autonomous: false` for this reason |
 | `docs/architecture/decision_log.md` gains two superseding entries for L06 and L07 | REQ-measured-memory-ceiling | Content judgement; each must cite the new measurement | Human review of the two entries |
 
 ---
 
 ## Validation Sign-Off
 
-- [x] All tasks have `<automated>` verify or Wave 0 dependencies — every `auto`/`tracer` task in all five plans carries at least one runnable `<automated>` command with a stated `<fails_when>`; the two `checkpoint:decision` tasks are blocking human decisions and carry none by design
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies — every `auto`/`tracer` task in all five plans carries at least one runnable `<automated>` command with a stated `<fails_when>`; the two `checkpoint:decision` tasks and 02-04's `checkpoint:human-action` environment gate are blocking human steps and carry none by design
 - [x] Sampling continuity: no 3 consecutive tasks without automated verify — the longest run without one is a single checkpoint task
 - [x] Wave 0 covers all MISSING references — each of the seven Wave 0 items above names the plan and task that owns it
 - [x] No watch-mode flags — every command is one-shot (`make test`, `make verify`, `make lint-imports`, `make check`, `grep`, `docker compose config`)
