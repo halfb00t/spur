@@ -1,16 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.1
-milestone_name: Hardening
+current_phase: 2
+current_phase_name: CAD Off the Event Loop
 status: planning
-last_updated: "2026-09-21T00:00:00.000Z"
+stopped_at: Phase 2 context gathered
+last_updated: "2026-09-22T13:43:37.493Z"
 last_activity: 2026-09-21
+last_activity_desc: "ROADMAP.md written for milestone v0.1: Phases 2–5 derived from"
+state_head: a6187e583aa8625109e100f5a14cf87854940806
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 0
   completed_plans: 0
-  percent: 20
+milestone_name: Hardening
 ---
 
 # Project State
@@ -108,8 +112,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-21
-Stopped at: ROADMAP.md written for milestone v0.1 — Phase 1 (v0 baseline) preserved as
+Last session: 2026-09-22T13:43:37.479Z
+Stopped at: Phase 2 context gathered
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
-Resume file: None
+Resume file: .planning/phases/02-cad-off-the-event-loop/02-CONTEXT.md
