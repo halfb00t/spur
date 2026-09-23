@@ -4,11 +4,11 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-09-23T10:46:34.043Z"
+stopped_at: "Phase 2 halted before wave 4 (02-05) by human decision: investigate the concurrent-scenario /api/health p95 ratio (4 runs at 2.02-2.45x vs <=2x bar) before recording L17/L18"
+last_updated: "2026-09-23T12:24:26.102Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 02 execution started
-state_head: a01e3e4fcf93b62ff2425e8a8288ba95b9d9c502
+state_head: ad3821246719b95ebe8a9033246c1122b457e4f7
 progress:
   total_phases: 5
   completed_phases: 1
@@ -117,6 +117,7 @@ None yet.
   at roadmap creation: "Forward scope" now points to REQUIREMENTS.md "Future Requirements"
   as candidates for the next milestone, not phases in this one.)*
 - REQ-cad-off-event-loop's concurrent-scenario latency ratio (bench/RESULTS.md) was not demonstrated within the 2x pass bar on Plan 02-04's measurement session (2.02x, 2.45x); a genuinely-idle-host re-run or an explicit accept-with-caveat decision is needed before this requirement is marked Complete. **Re-run (2026-09-23, ~12:11-12:12 UTC, dispatched by the human's `quiet` re-run choice):** two more runs against the same harness gave 2.32x and 2.35x -- still not met, and worse than the original session, because the host's load average climbed higher during the re-run (1-minute figures 3.33->3.96) than during the original measurement (2.35, 2.33), driven by an unrelated `node` process at 160.9% CPU. Four measurements across two sessions now agree the bar is not met on this machine under any environment condition observed so far; broken-windows ledger item 1 stays open. See `bench/RESULTS.md`'s "Idle-host re-run (Runs 3-4)" subsection and `02-04-SUMMARY.md`'s follow-up section.
+- **Root cause investigated (2026-09-23):** a bounded investigation (no `src/`/`bench/` changes) found the ratio is a real server-side cost, not a harness artifact -- `GZipMiddleware`'s default `compresslevel=9` costs ~1.2-1.4s per concurrent compression of a 9MB fine STL, and a cache hit in `app.py`'s `model()` bypasses `_build_slot()`'s admission control entirely, so nothing bounds concurrent compression work for repeat downloads. See `.planning/phases/02-cad-off-the-event-loop/02-LATENCY-INVESTIGATION.md` for the full evidence and gap-plan recommendation.
 
 ## Deferred Items
 
@@ -126,8 +127,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T10:46:34.024Z
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-09-23T12:24:26.080Z
+Stopped at: Phase 2 halted before wave 4 (02-05) by human decision: investigate the concurrent-scenario /api/health p95 ratio (4 runs at 2.02-2.45x vs <=2x bar) before recording L17/L18
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
-Resume file: None
+Resume file: .planning/phases/02-cad-off-the-event-loop/02-04-SUMMARY.md
