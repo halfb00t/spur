@@ -4,10 +4,10 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: "Phase 2 at 4/5: fix-first route chosen; next is /gsd-quick for the gzip/admission fix + re-measure, then /gsd-execute-phase 2 for 02-05"
-last_updated: "2026-09-23T13:07:53.192Z"
+stopped_at: "Phase 2 at 4/5: quick task 260923-qwr landed the gzip fix (2d47994, 7a61fad, 013926e) and re-measured -- Runs 5-6 concurrent 1.31x / 2.10x, bar not met on both, WINDOWS item 1 still open; needs a human decision (another re-run, accept-with-caveat, or a further fix) before /gsd-execute-phase 2 for 02-05"
+last_updated: "2026-09-23T13:58:25.000Z"
 last_activity: 2026-09-23
-last_activity_desc: Phase 02 execution started
+last_activity_desc: Completed quick task 260923-qwr (gzip level + bounded, cached compression; Runs 5-6 1.31x / 2.10x)
 state_head: "0b5ffe2ef7573f657beb7e9f09fa1d9187958fd6"
 progress:
   total_phases: 5
@@ -33,7 +33,7 @@ gear features ship in v0.1.
 Phase: 02 (CAD Off the Event Loop) — EXECUTING
 Plan: 5 of 5
 Status: Ready to execute
-Last activity: 2026-09-23 — Phase 02 execution started
+Last activity: 2026-09-23 - Completed quick task 260923-qwr: gzip level 1 from measurement, model-body compression bounded by _build_slot() and cached; Runs 5-6 concurrent 1.31x / 2.10x (bar not met on both)
 the five v0.1 requirements, 100% coverage validated.
 
 Progress: [██░░░░░░░░] 20%
@@ -93,6 +93,8 @@ Roadmap-time decisions for v0.1:
 - [Phase 02]: SPUR_BUILD_TIMEOUT=30s (~4x the worst observed build, 7.39s); mem_limit=4g (N=2 measured peak 2878.5 MiB x1.3 headroom, confirmed at zero failures); max_tasks_per_child stays off (drift explained by ascending corpus tooth size, not a leak). — Every knob is set from bench/RESULTS.md's measured numbers, not guessed or derived from L07's superseded per-process formula.
 - [Phase 02]: The concurrent latency scenario's pass bar (under-load p95 <= 2x idle p95) was NOT demonstrated met on this measurement session (2.02x, then 2.45x on a repeat run); recorded as a finding per the plan's own instruction rather than tuned into a pass. — Host was not fully idle at measurement time (load average 2.3-2.7 on a 12-core machine); absolute latencies are sub-millisecond and noise-sensitive. Needs a decision before REQ-cad-off-event-loop is marked complete -- see 02-04-SUMMARY.md Next Phase Readiness.
 - [Phase 02]: Phase 2 halted before 02-05 to fix the concurrent /api/health latency cost first (route chosen by the human 2026-09-23), then re-measure, then resume 02-05. — Four latency runs measured 2.02-2.45x against the <=2x bar; 02-LATENCY-INVESTIGATION.md traced it to GZipMiddleware compresslevel=9 on 9 MB STL bodies in the serving process, with _EXPORTS cache hits bypassing admission control. Writing L17/L18 and the HEALTHCHECK timeout from those numbers would need a second edit after the fix, and retiring the debt file with the acceptance clause unmet would be a plausible-looking record L08 forbids. Fix via /gsd-quick (compresslevel from measurement, cache hits through an admission bound, cached compressed bytes if simple), re-run make bench.latency, resolve WINDOWS item 1 on evidence, then /gsd-execute-phase 2 for 02-05.
+- [Quick 260923-qwr]: `_GZIP_LEVEL = 1`, measured on the real 9,062,784-byte teeth=199 fine STL (level 1: 51.5 ms median / 29.0% of input / 74.4 ms 10-concurrent wall; level 6: 147.9 ms / 26.5% / 198.9 ms; level 9: 788.0 ms / 26.5% / 925.5 ms; host loadavg 2.68/3.07/2.78). Levels 6 and 9 are only 8.7% / 8.66% smaller than level 1 -- under the plan's 10% bar -- so level 1 by the rule, not by taste. The comment beside the constant carries the table (2d47994).
+- [Quick 260923-qwr]: model-body gzip moved out of GZipMiddleware into `model()`, performed inside `_build_slot()` in a worker thread and cached in `_EXPORTS` under an encoding-tagged key `(params, fmt, quality, encoding)` -- the middleware compresses only after the endpoint has returned and released its slot, so any bound placed inside the endpoint without moving the compression would have capped nothing. Concurrent compressions are now <= MAX_QUEUED_BUILDS and a repeat download of a compressed gear takes no slot and no compression; a first compression of an already-built gear can now be refused 503 busy (7a61fad, four behaviour tests). Not sized: Starlette's private `_gzip_capacity_limiter` RunVar (same private-internals objection as D-13).
 
 ### Pending Todos
 
@@ -119,6 +121,13 @@ None yet.
   as candidates for the next milestone, not phases in this one.)*
 - REQ-cad-off-event-loop's concurrent-scenario latency ratio (bench/RESULTS.md) was not demonstrated within the 2x pass bar on Plan 02-04's measurement session (2.02x, 2.45x); a genuinely-idle-host re-run or an explicit accept-with-caveat decision is needed before this requirement is marked Complete. **Re-run (2026-09-23, ~12:11-12:12 UTC, dispatched by the human's `quiet` re-run choice):** two more runs against the same harness gave 2.32x and 2.35x -- still not met, and worse than the original session, because the host's load average climbed higher during the re-run (1-minute figures 3.33->3.96) than during the original measurement (2.35, 2.33), driven by an unrelated `node` process at 160.9% CPU. Four measurements across two sessions now agree the bar is not met on this machine under any environment condition observed so far; broken-windows ledger item 1 stays open. See `bench/RESULTS.md`'s "Idle-host re-run (Runs 3-4)" subsection and `02-04-SUMMARY.md`'s follow-up section.
 - **Root cause investigated (2026-09-23):** a bounded investigation (no `src/`/`bench/` changes) found the ratio is a real server-side cost, not a harness artifact -- `GZipMiddleware`'s default `compresslevel=9` costs ~1.2-1.4s per concurrent compression of a 9MB fine STL, and a cache hit in `app.py`'s `model()` bypasses `_build_slot()`'s admission control entirely, so nothing bounds concurrent compression work for repeat downloads. See `.planning/phases/02-cad-off-the-event-loop/02-LATENCY-INVESTIGATION.md` for the full evidence and gap-plan recommendation.
+- **Fix landed and re-measured (2026-09-23, quick task 260923-qwr):** `bench/RESULTS.md` "Post-fix re-run (Runs 5-6)", commit under test 7a61fad, loadavg 4.64 -> 3.58 -> 2.73 before the runs (still above the >1.5 idle bar). `concurrent`: **Run 5 1.31x (met), Run 6 2.10x (not met)**; `single`: Run 5 1.10x (met), Run 6 no p95 (n=19 < MIN_SAMPLES, refused per L08). Down from four straight failures (2.02x-2.45x) to one pass and one narrow miss, but the task's own rule was "mark WINDOWS item 1 fixed only if <=2x on both runs" -- so **item 1 stays open**. Needs a human decision before 02-05: (a) another two-run measurement on a genuinely idle host, (b) accept-with-caveat and waive the ledger item with a reason, or (c) a further fix (candidate 4 in the investigation, the result-transfer path, is the next lever named there).
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260923-qwr | Fix /api/health under-load latency: gzip level 1 from measurement, model-body compression inside _build_slot() and cached; Runs 5-6 concurrent 1.31x / 2.10x -- bar not met on both, WINDOWS item 1 stays open | 2026-09-23 | 2d47994..5a6e7d7 | [260923-qwr-fix-the-api-health-under-load-latency-co](./quick/260923-qwr-fix-the-api-health-under-load-latency-co/) |
 
 ## Deferred Items
 
@@ -129,7 +138,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-09-23T13:07:18.961Z
-Stopped at: Phase 2 at 4/5: fix-first route chosen; next is /gsd-quick for the gzip/admission fix + re-measure, then /gsd-execute-phase 2 for 02-05
+Stopped at: Phase 2 at 4/5: quick task 260923-qwr landed the gzip fix (2d47994, 7a61fad, 013926e) and re-measured -- Runs 5-6 concurrent 1.31x / 2.10x, bar not met on both, WINDOWS item 1 still open; needs a human decision (another re-run, accept-with-caveat, or a further fix) before /gsd-execute-phase 2 for 02-05
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
-Resume file: .planning/phases/02-cad-off-the-event-loop/02-LATENCY-INVESTIGATION.md
+Resume file: .planning/quick/260923-qwr-fix-the-api-health-under-load-latency-co/260923-qwr-SUMMARY.md
