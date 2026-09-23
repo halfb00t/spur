@@ -70,6 +70,19 @@ class BuildPool:
         self.timeout = timeout  # D-10: per-build ceiling in seconds; see app.py's
         # lifespan for where the number itself comes from -- this class only enforces it.
         self.replaced = 0  # D-13: workers replaced since start, reported at /api/health
+        # D-11: max_tasks_per_child deliberately absent (stays None -- no recycling).
+        # bench/memory.py's sweep (bench/RESULTS.md, Memory section) split each N's
+        # samples into an early/late half to check for drift malloc_trim doesn't
+        # flatten: N=1 showed no growth (late peak *below* early peak); N=2 and N=4
+        # both grew late vs early, but bench/corpus.py's corpus is strictly ascending
+        # tooth count (160 -> 199), so the "late" half is inherently the biggest gears
+        # -- a bounded, per-worker 4-entry solid cache holding increasingly large
+        # solids as the corpus advances grows resident memory for that reason alone,
+        # with no leak required. No sweep run showed unbounded growth or a failure
+        # from it. Recycling anyway would cost a respawn plus a cadquery import and
+        # wipe the warm solid cache D-07 exists to keep, for a drift signal this sweep
+        # did not actually find. Re-run the sweep and revisit if a future corpus or
+        # workload shows growth the ascending-corpus explanation can't account for.
         self._executors = [
             ProcessPoolExecutor(max_workers=1, mp_context=_SPAWN, initializer=_warm)
             for _ in range(workers)

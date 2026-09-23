@@ -7,14 +7,22 @@ services:
       # something with authentication in front (the app has none).
       - "127.0.0.1:8000:8000"
     environment:
-      SPUR_WORKERS: "2"
+      # D-01: one server process, N builders -- process count and cache count now move
+      # together on one knob (SPUR_BUILD_WORKERS below), so the memory sweep has one
+      # variable, not two multiplied.
+      SPUR_WORKERS: "1"
+      SPUR_BUILD_WORKERS: "2"   # bench/RESULTS.md's Memory sweep: see the mem_limit comment
       # SPUR_ROOT_PATH: /spur   # when served under a sub-path by a reverse proxy
       # SPUR_SOLID_CACHE, SPUR_EXPORT_CACHE_MB, SPUR_MAX_QUEUED_BUILDS: see the README
-    # Sized by measurement, not by guess: two workers sweeping 40 distinct 160-199
-    # tooth gears settle at ~740 MB resident, but one large build peaks far above its
-    # steady state, and 1g made ~5% of those requests fail. Raise it if you raise
-    # SPUR_WORKERS or the cache settings.
-    mem_limit: 2g
+    # Sized by measurement, not by guess (L17 supersedes L07 -- bench/RESULTS.md's
+    # Memory sweep): two build workers (the shipping SPUR_BUILD_WORKERS default above)
+    # sweeping the same 40 distinct 160-199 tooth gears peak at 2878.5 MiB, uncapped by
+    # any pre-existing limit. 4g is that peak x1.3 named headroom, rounded up. Confirmed
+    # by re-running the full 40-gear corpus at 4g: 0 of 40 requests failed (the same bar
+    # 2g cleared and 1g did not, before this phase). Re-measure (bench.memory sweep) and
+    # raise if you raise SPUR_BUILD_WORKERS or the cache settings -- do not scale this
+    # number by arithmetic, per L08.
+    mem_limit: 4g
     read_only: true
     tmpfs:
       # Exports are written here before being read back; bounded so a huge STL cannot

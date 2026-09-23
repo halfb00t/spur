@@ -91,3 +91,87 @@ observation — to leave margin for hardware slower than this M2 Max under host 
 (the debt file's own concern: "on slower hardware... the stall is proportionally worse").
 See `src/spur/app.py`'s `int_env("SPUR_BUILD_TIMEOUT", 30)` for the comment naming this
 observation.
+
+## Memory
+
+`make bench.memory` (`.venv/bin/python -m bench.memory sweep`, then `confirm 4g`) against
+`docker compose`, the same 40-gear corpus L07's `2g` was earned against (`bench/corpus.py`,
+D-18). Docker: `docker info` exit 0, Docker Compose v5.1.2, Docker 29.4.0. Run in the same
+session as the Latency numbers above, same machine, ~09:50-10:35 UTC.
+
+### Two blocking issues found and fixed before this data could be trusted
+
+1. **The pre-existing `mem_limit: 2g` was silently capping the sweep it was supposed to be
+   replaced by.** `compose.yaml` was already at `SPUR_WORKERS: "1"` / `SPUR_BUILD_WORKERS:
+   "2"` (this task's own first edit, done before the first sweep) but still carried the
+   old, superseded `mem_limit: 2g`. That first sweep attempt gave N=2 and N=4 identical
+   peaks of exactly `2048.0 MiB` — the `2g` limit itself, not a real footprint — with N=4
+   additionally failing 2 of 40 requests to OOM pressure at that cap. `mem_limit` was
+   temporarily raised to `8g` for the sweep so the measurement could not be capped by the
+   value it exists to determine, then set back to the real, measured value below. Only the
+   runs at the relaxed limit are reported here.
+2. **`docker/smoke.py` and `docker compose build` both failed** against the pool topology:
+   `docker/smoke.py` calls the ASGI app directly (`await app(scope, receive, send)`),
+   which never runs `app.py`'s `lifespan` -- so `app.state.pool` was never set, and
+   `build_backend()` hard-fails by design (02-01-SUMMARY.md). Fixed by driving the
+   lifespan explicitly via `app.router.lifespan_context(app)`. That surfaced a second bug:
+   the script's unguarded module-level `anyio.run(main)` recursed under `spawn`
+   multiprocessing (which re-imports `__main__` in the child) once a build actually tried
+   to spawn a worker; fixed with the standard `if __name__ == "__main__":` guard. The image
+   in place before this task predated all of Phase 2's code (45 hours old); a rebuild was
+   required regardless, and would have hit this the first time anyone rebuilt the image
+   locally or in CI.
+
+### Sweep (SPUR_WORKERS=1, mem_limit temporarily relaxed to 8g)
+
+| N (SPUR_BUILD_WORKERS) | Peak | Early peak | Late peak | Requests | Failures | Elapsed |
+|---|---|---|---|---|---|---|
+| 1 | 2052.1 MiB | 2052.1 MiB | 1833.0 MiB | 40 | 0 | 276.8s |
+| 2 | 2878.5 MiB | 2566.1 MiB | 2878.5 MiB | 40 | 0 | 284.3s |
+| 4 | 4731.9 MiB | 4155.4 MiB | 4731.9 MiB | 40 | 0 | 292.8s |
+
+Peak read from `docker stats --no-stream` MEM USAGE, polled every 0.5s (a sampled peak,
+not the cgroup's exact accounting). Early/late peak: max of the first half vs second half
+of that N's samples, in run order (D-11 drift check). A second, otherwise-identical sweep
+run immediately before this one (also uncapped) gave peaks of 2015.2 / 2821.1 / 4502.5 MiB
+for N=1/2/4 -- run-to-run variance of roughly 2-5%, the noise floor for this measurement.
+
+**Formula in words (D-06): parent byte budget + N x solid cache.** The naive version of
+that formula -- `SPUR_EXPORT_CACHE_MB` (64 MiB) + N x `SPUR_SOLID_CACHE` (4) x one solid
+(~280 MiB) -- predicts roughly 1184 / 2304 / 4544 MiB for N=1/2/4. The measured peaks
+(2052 / 2879 / 4732 MiB) are all higher, by an amount that grows with N: each additional
+build worker costs roughly 810-870 MiB here (N=1->2: +826 MiB; N=2->4: +927 MiB average
+per added worker), not the ~1120 MiB the naive cache-only term would predict alone, nor
+small enough to be cache-only. The gap is each worker's own baseline footprint --
+`cadquery`/OCP/VTK loaded once per worker process (D-04's warm-up) -- which is resident
+memory but not a "cache" in D-06's sense; the naive formula omits it because L07's original
+version only ever had to account for one process. The observed numbers, not the naive
+formula, are what set `mem_limit` below.
+
+**Drift (D-11):** N=1's late-half peak is *lower* than its early-half peak (1833.0 vs
+2052.1 MiB) -- no growth. N=2 and N=4 both show late > early (2879 vs 2566 MiB; 4732 vs
+4155 MiB). This is not treated as evidence of a leak `malloc_trim(0)` fails to flatten:
+`bench/corpus.py`'s corpus is strictly ascending tooth count (160 -> 199), so the "late"
+half of any run is inherently the biggest gears in the corpus, and each worker's bounded,
+4-entry solid cache (`SPUR_SOLID_CACHE`) holding increasingly large solids as the corpus
+advances grows resident memory for that reason alone -- no leak required to explain it. No
+run showed unbounded growth, a growing failure rate, or an elapsed time trending up across
+repeated sweeps (276-293s across three runs). `max_tasks_per_child` stays off; see
+`src/spur/pool.py`'s comment on `BuildPool.__init__` for the same reasoning, so the two
+never drift apart.
+
+### `mem_limit`: earned, not asserted
+
+Shipping default is N=2 (`SPUR_BUILD_WORKERS=2`, D-19). Measured peak: **2878.5 MiB**.
+Headroom factor: **x1.3** (a named 30%, chosen for margin over run-to-run noise and gears
+outside the 40-gear corpus, without being arbitrarily large) = 3742.05 MiB, rounded up to
+a clean value: **4g**.
+
+Confirm run, `.venv/bin/python -m bench.memory confirm 4g` (`SPUR_BUILD_WORKERS=2`, the
+full 40-gear corpus): **0 of 40 requests failed** -- the same bar `2g` cleared and `1g`
+did not, before this phase (`docs/plan-2026-09-21.md`). No lower value was attempted or
+needed; `4g` cleared on the first try.
+
+`compose.yaml` now ships `SPUR_WORKERS: "1"`, `SPUR_BUILD_WORKERS: "2"` and
+`mem_limit: 4g`, with the comment above `mem_limit` naming this peak, this headroom
+factor and this confirm result.

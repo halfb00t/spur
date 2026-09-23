@@ -122,6 +122,11 @@ class SweepRow:
     requests: int
     failures: int
     elapsed_s: float
+    early_peak_bytes: int | None = None  # D-11: max of the first half of samples --
+    late_peak_bytes: int | None = None   # ...vs the second half. Answers "did resident
+    # memory keep climbing across the corpus, or plateau" -- the question that decides
+    # whether max_tasks_per_child is worth enabling. A single overall peak can't
+    # distinguish "climbed once early and stayed there" from "kept climbing".
     note: str = ""
 
 
@@ -155,7 +160,11 @@ def _sweep_one(n: int, base_url: str) -> SweepRow:
     if not samples:
         print(f"warning: N={n} produced no memory samples", file=sys.stderr)
         return SweepRow(n, None, requests, failures, elapsed, note="no memory samples")
-    return SweepRow(n, max(samples), requests, failures, elapsed)
+    mid = len(samples) // 2 or 1  # `or 1` guards a 1-sample run: both halves non-empty
+    early_peak = max(samples[:mid])
+    late_peak = max(samples[mid:]) if samples[mid:] else early_peak
+    return SweepRow(n, max(samples), requests, failures, elapsed,
+                     early_peak_bytes=early_peak, late_peak_bytes=late_peak)
 
 
 def _sweep_table_markdown(rows: list[SweepRow]) -> str:
@@ -164,15 +173,22 @@ def _sweep_table_markdown(rows: list[SweepRow]) -> str:
         f"- Machine: {machine_facts()}",
         "- Peak read from: `docker stats --no-stream` MEM USAGE, polled every "
         f"{POLL_INTERVAL}s (sampled peak, not the cgroup's exact accounting)",
+        "- Early/late peak: max of the first half vs second half of the corpus run's "
+        "samples (D-11 drift check)",
         "",
-        "| N (SPUR_BUILD_WORKERS) | Peak | Requests | Failures | Elapsed |",
-        "|---|---|---|---|---|",
+        "| N (SPUR_BUILD_WORKERS) | Peak | Early peak | Late peak | Requests | Failures "
+        "| Elapsed |",
+        "|---|---|---|---|---|---|---|",
     ]
     for row in rows:
         peak = f"{row.peak_bytes / (1024**2):.1f} MiB" if row.peak_bytes is not None \
             else f"(none -- {row.note})"
-        lines.append(f"| {row.n} | {peak} | {row.requests} | {row.failures} "
-                     f"| {row.elapsed_s:.1f}s |")
+        early = f"{row.early_peak_bytes / (1024**2):.1f} MiB" \
+            if row.early_peak_bytes is not None else "--"
+        late = f"{row.late_peak_bytes / (1024**2):.1f} MiB" \
+            if row.late_peak_bytes is not None else "--"
+        lines.append(f"| {row.n} | {peak} | {early} | {late} | {row.requests} "
+                     f"| {row.failures} | {row.elapsed_s:.1f}s |")
     return "\n".join(lines) + "\n"
 
 

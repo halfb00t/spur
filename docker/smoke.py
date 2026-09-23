@@ -45,22 +45,37 @@ async def get(path: str, query: bytes = b"") -> tuple[int, bytes]:
 
 
 async def main() -> None:
-    for path in ("/", "/api/health", "/api/schema", "/api/info"):
-        status, _ = await get(path)
-        assert status == 200, f"{path} -> {status}"
+    # The build pool (Phase 2, D-04) starts in app.py's `lifespan`, which only runs
+    # under a real ASGI server or a lifespan-aware client -- calling `app(...)` raw, as
+    # this script does, never triggers it on its own. `/api/model.{stl,step}` now needs
+    # a started pool (build_backend() hard-fails otherwise, by design -- 02-01-SUMMARY.md
+    # "resolves Open Question 1: injection is for tests only, production never goes
+    # inline"), so this smoke test drives the lifespan itself via Starlette's own
+    # `router.lifespan_context`, the same callable a real ASGI server invokes.
+    async with app.router.lifespan_context(app):
+        for path in ("/", "/api/health", "/api/schema", "/api/info"):
+            status, _ = await get(path)
+            assert status == 200, f"{path} -> {status}"
 
-    status, stl = await get("/api/model.stl", b"quality=preview")
-    assert status == 200, f"stl -> {status}"
-    assert len(stl) > 1000, f"stl -> only {len(stl)} bytes"
+        status, stl = await get("/api/model.stl", b"quality=preview")
+        assert status == 200, f"stl -> {status}"
+        assert len(stl) > 1000, f"stl -> only {len(stl)} bytes"
 
-    status, step = await get("/api/model.step")
-    assert status == 200, f"step -> {status}"
-    assert step.startswith(b"ISO-10303-21;"), "step -> not an ISO-10303-21 file"
+        status, step = await get("/api/model.step")
+        assert status == 200, f"step -> {status}"
+        assert step.startswith(b"ISO-10303-21;"), "step -> not an ISO-10303-21 file"
 
-    status, _ = await get("/api/info", b"bore_flat=3")
-    assert status == 422, f"invalid parameters -> {status}, expected 422"
+        status, _ = await get("/api/info", b"bore_flat=3")
+        assert status == 422, f"invalid parameters -> {status}, expected 422"
 
     print("smoke: kernel, exports, ASGI stack and validation all live")
 
 
-anyio.run(main)
+if __name__ == "__main__":
+    # Required now that /api/model.{stl,step} spawns a worker process (Phase 2,
+    # mp_context="spawn", pool.py): spawn re-imports this module as __main__ in the
+    # child to bootstrap it, and an unguarded module-level anyio.run(main) call would
+    # re-run this entire script inside that child -- the exact recursive-relaunch
+    # multiprocessing's own "Safe importing of main module" guidance (and its
+    # RuntimeError when violated) warns against.
+    anyio.run(main)
