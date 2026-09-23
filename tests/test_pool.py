@@ -19,8 +19,8 @@ from concurrent.futures.process import BrokenProcessPool
 import pytest
 from fastapi.testclient import TestClient
 
-from spur.app import ModelQuery, _gear, app
-from spur.build_errors import BuildTimeout
+from spur.app import ModelQuery, _gear, app, build_backend
+from spur.build_errors import BuildError, BuildTimeout
 from spur.params import GearParams
 
 
@@ -157,3 +157,101 @@ def test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced() -> None:
         assert pool.replaced == replaced_before + 1
         # the slot is usable again, against a fresh worker
         assert pool.executor_for(params).submit(os.getpid).result() > 0
+
+
+@pytest.mark.parametrize(("exc", "want_status", "want_type"), [
+    (BuildError("D-flat too small for this bore"), 422, "build_error"),
+    (BuildTimeout("Build exceeded the 30s per-build timeout."), 503, "timeout"),
+    (BrokenProcessPool("worker died"), 503, "pool_broken"),
+])
+def test_each_build_failure_mode_maps_to_its_own_status_and_type(
+        exc: Exception, want_status: int, want_type: str) -> None:
+    """D-12: BuildError -> 422 (unchanged), BuildTimeout -> 503, BrokenProcessPool ->
+    503 -- three distinct exception mappings, reusing _build_slot's `503` +
+    `Retry-After` + `detail[].type` shape for the two new ones rather than inventing a
+    new response contract. Drives each failure via the D-15 injectable build_backend,
+    exactly as it's meant to be used: no real worker or build needed for a contract
+    test about status codes and body shapes.
+    """
+    from spur import app as app_module
+
+    async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        raise exc
+
+    # A plain (non-`with`) TestClient never runs the lifespan (Pitfall 1) -- fine here,
+    # since overriding build_backend means the real pool is never consulted.
+    client = TestClient(app)
+    app.dependency_overrides[build_backend] = lambda: backend
+    try:
+        capacity_before = app_module.BUILD_QUEUE._value
+        # teeth=43: a count no other test in this suite ever successfully downloads,
+        # so the parent's byte cache (_EXPORTS, D-06) can never short-circuit this
+        # request before the raising backend gets a chance to run (the same reasoning
+        # tests/test_api.py's own cache test uses for picking teeth=22 over 21).
+        r = client.get("/api/model.stl", params={"quality": "preview", "teeth": 43})
+        assert r.status_code == want_status
+        detail = r.json()["detail"][0]
+        assert detail["type"] == want_type
+        if want_status == 503:
+            assert r.headers["retry-after"] == "5"
+        # the admission slot is released on every failure path (D-12): a repeated
+        # failure must never leak capacity and turn into a service that refuses
+        # everything -- the failure mode hardest to diagnose from the outside.
+        assert app_module.BUILD_QUEUE._value == capacity_before
+    finally:
+        app.dependency_overrides.pop(build_backend, None)
+
+
+def test_the_four_failure_types_are_pairwise_distinct() -> None:
+    """`busy` (existing, from a saturated queue), `build_error`, `timeout` and
+    `pool_broken` (all D-12) must all differ, so a client can tell "your gear is
+    impossible" from "come back in a moment" from "something died" from "the queue is
+    full" -- checked against the values the app actually returns, not restated
+    constants that would trivially agree with themselves.
+    """
+    from spur import app as app_module
+
+    client = TestClient(app)
+    types: set[str] = set()
+
+    # teeth=44: a count no other test in this suite ever successfully downloads (see
+    # the comment in test_each_build_failure_mode_maps_to_its_own_status_and_type),
+    # so _EXPORTS can never short-circuit any of the four requests below.
+    query = {"quality": "preview", "teeth": 44}
+
+    async def _never_called(p: GearParams, fmt: str, quality: str) -> bytes:
+        # build_backend is a FastAPI dependency, resolved before the endpoint body
+        # runs, on every request regardless of which branch inside it ends up
+        # executing -- so even the "busy" sub-case below needs an override in place
+        # (a plain TestClient(app), unlike `with TestClient(app):`, never starts the
+        # lifespan that would otherwise supply a real one). This tripwire is that
+        # override: it must never actually run, because _build_slot's admission check
+        # is supposed to refuse the request before backend(...) is ever awaited.
+        raise AssertionError("_build_slot should have refused before calling backend")
+
+    app.dependency_overrides[build_backend] = lambda: _never_called
+    try:
+        held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+                for _ in range(app_module.MAX_QUEUED_BUILDS)]
+        try:
+            r = client.get("/api/model.stl", params=query)
+            assert r.status_code == 503
+            types.add(r.json()["detail"][0]["type"])
+        finally:
+            for _ in held:
+                app_module.BUILD_QUEUE.release()
+
+        for exc in (BuildError("D-flat too small"),
+                    BuildTimeout("Build exceeded the 30s per-build timeout."),
+                    BrokenProcessPool("worker died")):
+            async def backend(p: GearParams, fmt: str, quality: str,
+                               _exc: Exception = exc) -> bytes:
+                raise _exc
+
+            app.dependency_overrides[build_backend] = lambda b=backend: b
+            r = client.get("/api/model.stl", params=query)
+            types.add(r.json()["detail"][0]["type"])
+    finally:
+        app.dependency_overrides.pop(build_backend, None)
+
+    assert len(types) == 4

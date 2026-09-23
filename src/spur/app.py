@@ -16,6 +16,7 @@ from __future__ import annotations
 import threading
 from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from concurrent.futures.process import BrokenProcessPool
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -27,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 
 from . import __version__, int_env
-from .build_errors import BuildError
+from .build_errors import BuildError, BuildTimeout
 from .calc import derive, with_mate
 from .params import GearParams
 from .pool import BuildPool
@@ -218,6 +219,29 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
         except BuildError as exc:
             raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "build_error"}]) from exc
+        except BuildTimeout as exc:
+            # 503, not 422 (D-12): the same gear succeeds on faster hardware, so
+            # overrunning is a property of this machine and this moment, not of the
+            # parameters -- calling it a parameter error would tell the user to change
+            # a gear that is fine. Same busy-refusal shape as _build_slot above (reused,
+            # not reinvented), with its own `type` so a client can tell "come back in a
+            # moment" from "your gear is impossible".
+            raise HTTPException(503, detail=[{"loc": ["query"], "msg": str(exc),
+                                              "type": "timeout"}],
+                                headers={"Retry-After": "5"}) from exc
+        except BrokenProcessPool as exc:
+            # 503, not 422 (D-12): the worker died, the parameters didn't do anything
+            # wrong. BuildPool.export already replaced the dead slot before this
+            # propagated here (pool.py's _run_with_timeout); the client just needs to
+            # know it can retry.
+            raise HTTPException(
+                503,
+                detail=[{"loc": ["query"],
+                         "msg": "A build worker died unexpectedly. The request can be "
+                                "retried.",
+                         "type": "pool_broken"}],
+                headers={"Retry-After": "5"},
+            ) from exc
         _EXPORTS.put(key, data)
     return Response(
         data,
