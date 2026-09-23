@@ -5,10 +5,10 @@ current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
 stopped_at: "Phase 2 at 4/5: fix-first route chosen; next is /gsd-quick for the gzip/admission fix + re-measure, then /gsd-execute-phase 2 for 02-05"
-last_updated: "2026-09-23T13:07:18.983Z"
+last_updated: "2026-09-23T13:07:53.192Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 02 execution started
-state_head: ebe0a0df56000c15fcf91f1f9081773213fad504
+state_head: "0b5ffe2ef7573f657beb7e9f09fa1d9187958fd6"
 progress:
   total_phases: 5
   completed_phases: 1
@@ -92,6 +92,7 @@ Roadmap-time decisions for v0.1:
 - [Phase 02]: /api/health's pool fields (D-13) nest under one `pool` object rather than flat top-level keys or a separate endpoint (Task 3 checkpoint, 02-03-PLAN.md) — Every later pool field lands inside `pool` without touching the published top-level status/version the UI and container healthcheck already read -- converts a one-way decision (the response is a published contract Phase 4's OpenAPI work inherits) into a reversible one.
 - [Phase 02]: SPUR_BUILD_TIMEOUT=30s (~4x the worst observed build, 7.39s); mem_limit=4g (N=2 measured peak 2878.5 MiB x1.3 headroom, confirmed at zero failures); max_tasks_per_child stays off (drift explained by ascending corpus tooth size, not a leak). — Every knob is set from bench/RESULTS.md's measured numbers, not guessed or derived from L07's superseded per-process formula.
 - [Phase 02]: The concurrent latency scenario's pass bar (under-load p95 <= 2x idle p95) was NOT demonstrated met on this measurement session (2.02x, then 2.45x on a repeat run); recorded as a finding per the plan's own instruction rather than tuned into a pass. — Host was not fully idle at measurement time (load average 2.3-2.7 on a 12-core machine); absolute latencies are sub-millisecond and noise-sensitive. Needs a decision before REQ-cad-off-event-loop is marked complete -- see 02-04-SUMMARY.md Next Phase Readiness.
+- [Phase 02]: Phase 2 halted before 02-05 to fix the concurrent /api/health latency cost first (route chosen by the human 2026-09-23), then re-measure, then resume 02-05. — Four latency runs measured 2.02-2.45x against the <=2x bar; 02-LATENCY-INVESTIGATION.md traced it to GZipMiddleware compresslevel=9 on 9 MB STL bodies in the serving process, with _EXPORTS cache hits bypassing admission control. Writing L17/L18 and the HEALTHCHECK timeout from those numbers would need a second edit after the fix, and retiring the debt file with the acceptance clause unmet would be a plausible-looking record L08 forbids. Fix via /gsd-quick (compresslevel from measurement, cache hits through an admission bound, cached compressed bytes if simple), re-run make bench.latency, resolve WINDOWS item 1 on evidence, then /gsd-execute-phase 2 for 02-05.
 
 ### Pending Todos
 
