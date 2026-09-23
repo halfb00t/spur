@@ -285,3 +285,10 @@ make precise. No blockers.
 ---
 *Phase: 02-cad-off-the-event-loop*
 *Completed: 2026-09-23*
+
+## Self-Check: PASSED
+
+- `src/spur/pool.py`, `src/spur/app.py`, `tests/test_pool.py`,
+  `docs/architecture/http-api.md`, and this SUMMARY.md all confirmed present on disk.
+- Commits `4fb7037`, `34e267e`, `520c71c` (task code) and `043b79d` (this SUMMARY) all
+  confirmed present in `git log --oneline --all`.
