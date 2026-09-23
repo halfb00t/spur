@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-09-23T02:49:13.002Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-09-23T03:10:52.411Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 02 execution started
-state_head: 0997f46e56d533aa8e9a01a9d3c10b2fc643b03e
+state_head: 8920c197ea560fb029d1a3a3b7b0b5bfbda372d8
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 2
 milestone_name: Hardening
 ---
 
@@ -31,7 +31,7 @@ gear features ship in v0.1.
 ## Current Position
 
 Phase: 02 (CAD Off the Event Loop) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-23 — Phase 02 execution started
 the five v0.1 requirements, 100% coverage validated.
@@ -63,6 +63,7 @@ Progress: [██░░░░░░░░] 20%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 02 P01 | 30min | 3 tasks | 8 files |
+| Phase 02 P02 | 19min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,7 @@ Roadmap-time decisions for v0.1:
   that CLAUDE.md's "one concern per commit" and the milestone's own "REQ-ci-verified does
   not belong bundled inside a large phase" instruction argued against merging.
 - [Phase 02]: Task 2's TDD RED tests were committed together with GREEN, not as a separate failing commit, because the repo's pre-commit hook always runs full make verify with no bypass
+- [Phase 02]: Container memory peak for bench.memory is sampled via docker stats --no-stream polling (0.5s interval) rather than reading a cgroup peak file, since the image's non-root/nologin user makes exec-based cgroup reads unreliable and the cgroup version was never verified. — Resolved 02-02-PLAN.md's flagged assumption 1 rather than deferring it; documented as a sampled (not exact) peak in code and bench/README.md.
 
 ### Pending Todos
 
@@ -118,8 +120,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T02:49:07.581Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-09-23T03:10:52.393Z
+Stopped at: Completed 02-02-PLAN.md
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
 Resume file: None

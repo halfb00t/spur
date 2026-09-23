@@ -93,12 +93,12 @@ carried forward from the single-process design L07 measured.
      same commit as the fix. *(REQ-cad-off-event-loop)*
   5. `make verify` passes with the new topology in place; admission control still lives in
      the web layer and the CLI still never queues (L04) — unchanged by the process pool.
-**Plans**: 1/5 plans executed, in 4 waves (01 and 02 run in parallel)
+**Plans**: 2/5 plans executed, in 4 waves (01 and 02 run in parallel)
 
 - [x] 02-01-PLAN.md — One build, in another process: the kernel-free `BuildError`, the
   affinity-routed `BuildPool`, the async endpoint, the parent-side byte cache, and the
   import-linter contract that makes the boundary enforced rather than reviewed *(wave 1)*
-- [ ] 02-02-PLAN.md — The measuring instrument: `bench/` (L07's own 40-gear corpus, both
+- [x] 02-02-PLAN.md — The measuring instrument: `bench/` (L07's own 40-gear corpus, both
   load scenarios, the N=1,2,4 container memory sweep) and `make bench`, deliberately
   outside the gate *(wave 1, parallel with 02-01)*
 - [ ] 02-03-PLAN.md — Failure modes and liveness: the per-build timeout that terminates a
@@ -197,7 +197,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
-| 2. CAD Off the Event Loop | 1/5 | In Progress|  |
+| 2. CAD Off the Event Loop | 2/5 | In Progress|  |
 | 3. Structured Logging at the Composition Boundary | 0/TBD | Not started | - |
 | 4. Typed Derived-Dimensions Contract | 0/TBD | Not started | - |
 | 5. CI Observed Green | 0/TBD | Not started | - |
