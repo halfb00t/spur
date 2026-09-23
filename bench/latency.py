@@ -68,7 +68,7 @@ def _sample_for(base_url: str, client: httpx.Client, duration: float) -> list[fl
 
 
 def _sample_while_building(base_url: str, client: httpx.Client,
-                            futures: list[Future[float]]) -> list[float]:
+                            futures: list[Future[float | None]]) -> list[float]:
     """Keep sampling `/api/health` for as long as at least one build is in flight.
 
     A do-while shape (sample first, check after) guarantees at least one sample even
@@ -83,11 +83,21 @@ def _sample_while_building(base_url: str, client: httpx.Client,
             return samples
 
 
-def _build(base_url: str, client: httpx.Client, teeth: int, quality: str) -> float:
-    """One `/api/model.stl` download; returns how long it took, in seconds."""
+def _build(base_url: str, client: httpx.Client, teeth: int, quality: str) -> float | None:
+    """One `/api/model.stl` download; returns how long it took, in seconds, or `None`
+    if admission control refused it (`503`) rather than building.
+
+    A refusal here is not a harness failure: `MAX_QUEUED_BUILDS` (D-09, `app.py`) is 4
+    at the shipping default, and the concurrent scenario below deliberately fires 10
+    requests at once -- `docs/plan-2026-09-21.md`'s own outcome table records exactly
+    this admission-control behaviour pre-dating this phase ("6 of 10 refused"). Any
+    other non-2xx status is a real failure and still raises.
+    """
     t0 = time.perf_counter()
     response = client.get(f"{base_url}/api/model.stl",
                            params={"teeth": teeth, "quality": quality}, timeout=120.0)
+    if response.status_code == 503:
+        return None
     response.raise_for_status()
     return time.perf_counter() - t0
 
@@ -98,6 +108,16 @@ class ScenarioResult:
     idle: list[float]
     under_load: list[float]
     slowest_build: float
+    attempted: int
+    refused: int
+
+
+def _collect(futures: list[Future[float | None]]) -> tuple[float, int, int]:
+    """Slowest completed build, attempted count, refused (503) count."""
+    results = [future.result() for future in futures]
+    completed = [r for r in results if r is not None]
+    refused = len(results) - len(completed)
+    return (max(completed) if completed else 0.0), len(results), refused
 
 
 def scenario_single(base_url: str) -> ScenarioResult:
@@ -108,21 +128,22 @@ def scenario_single(base_url: str) -> ScenarioResult:
         with ThreadPoolExecutor(max_workers=1) as pool:
             futures = [pool.submit(_build, base_url, client, 200, "fine")]
             under_load = _sample_while_building(base_url, client, futures)
-        slowest = max(future.result() for future in futures)
-    return ScenarioResult("single", idle, under_load, slowest)
+        slowest, attempted, refused = _collect(futures)
+    return ScenarioResult("single", idle, under_load, slowest, attempted, refused)
 
 
 def scenario_concurrent(base_url: str) -> ScenarioResult:
     """Idle p95, then ten concurrent fine builds -- the scenario that repeatedly
-    exceeded 5s."""
+    exceeded 5s. Admission control (MAX_QUEUED_BUILDS, D-09) refuses whatever doesn't
+    fit the queue; see `_build`'s docstring."""
     with httpx.Client() as client:
         idle = _sample_for(base_url, client, SETTLE_SECONDS)
         with ThreadPoolExecutor(max_workers=10) as pool:
             futures = [pool.submit(_build, base_url, client, teeth, "fine")
                        for teeth in range(190, 200)]
             under_load = _sample_while_building(base_url, client, futures)
-        slowest = max(future.result() for future in futures)
-    return ScenarioResult("concurrent", idle, under_load, slowest)
+        slowest, attempted, refused = _collect(futures)
+    return ScenarioResult("concurrent", idle, under_load, slowest, attempted, refused)
 
 
 _SCENARIOS: dict[str, Callable[[str], ScenarioResult]] = {
@@ -145,7 +166,8 @@ def _p95_or_warn(samples: list[float], label: str) -> tuple[float, int] | None:
 
 
 def _report_markdown(name: str, idle_p95: float, idle_n: int, load_p95: float,
-                      load_n: int, slowest_build: float) -> str:
+                      load_n: int, slowest_build: float, attempted: int,
+                      refused: int) -> str:
     ratio = load_p95 / idle_p95 if idle_p95 > 0 else float("inf")
     return (
         f"## Latency: {name}\n\n"
@@ -154,6 +176,9 @@ def _report_markdown(name: str, idle_p95: float, idle_n: int, load_p95: float,
         f"- Under-load p95: {load_p95 * 1000:.1f} ms (n={load_n})\n"
         f"- Ratio (under-load / idle): {ratio:.2f}x -- pass bar is <= 2.00x\n"
         f"- Slowest single build observed: {slowest_build:.2f} s\n"
+        f"- Build requests: {attempted} attempted, {refused} refused by admission "
+        f"control (`503`, D-09 -- expected once concurrency exceeds MAX_QUEUED_BUILDS, "
+        f"not a harness failure)\n"
         f"- Recorded baseline (different machine, ratio-only comparison per D-17): "
         f"{RECORDED_BASELINE}\n"
     )
@@ -167,7 +192,8 @@ def _run_scenario(name: str, base_url: str) -> bool:
         return False
     idle_p95, idle_n = idle
     load_p95, load_n = under_load
-    print(_report_markdown(name, idle_p95, idle_n, load_p95, load_n, result.slowest_build))
+    print(_report_markdown(name, idle_p95, idle_n, load_p95, load_n, result.slowest_build,
+                            result.attempted, result.refused))
     return True
 
 

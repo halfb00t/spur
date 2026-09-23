@@ -112,14 +112,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """
     app.state.pool = BuildPool(
         int_env("SPUR_BUILD_WORKERS", 2),
-        # PROVISIONAL (D-10, 02-03-PLAN.md flagged_assumptions #1): this is NOT a
-        # measurement. D-10's rule is "set above the worst measured build", and the
-        # worst measured build doesn't exist until Plan 02-04's bench harness has
-        # actually run against this topology. 30s is chosen only to be generous enough
-        # that no legitimate build in today's test suite (small gears, well under a
-        # second each) can trip it. Plan 02-04 replaces this with a value set from the
-        # real sweep, above the worst build it observes. A plausible-looking number
-        # presented as settled here is exactly the failure L08 exists to prevent.
+        # D-10: set above the worst measured build. bench/latency.py's two load
+        # scenarios (bench/RESULTS.md) observed a worst single build of 7.39s (a
+        # 200-tooth fine gear, ten concurrent requests, this machine under host
+        # contention -- see bench/RESULTS.md's Machine caveat). 30s is ~4x that
+        # observation, chosen as margin for hardware slower than the measurement
+        # machine (the debt file's own concern: the stall is proportionally worse on
+        # slower hardware). Re-measure and adjust if bench/RESULTS.md's worst observed
+        # build ever approaches this value.
         int_env("SPUR_BUILD_TIMEOUT", 30),
     )
     try:
