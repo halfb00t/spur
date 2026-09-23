@@ -15,6 +15,7 @@ tracked.
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
@@ -34,6 +35,7 @@ tracked.
 ## Phase Details
 
 ### Phase 1: v0 Baseline (Shipped)
+
 **Goal**: Users can generate a correct, print/CNC-ready involute spur gear — with numbers
 they can trust — from a web UI, an HTTP API, or a CLI, all driven by one parameter model.
 **Depends on**: Nothing (first phase)
@@ -41,6 +43,7 @@ they can trust — from a web UI, an HTTP API, or a CLI, all driven by one param
 REQ-measurement-aids, REQ-three-interfaces, REQ-cli-parity, REQ-shareable-links,
 REQ-stl-step-export, REQ-error-contract, REQ-no-auth-default, REQ-docker-multiarch
 **Success Criteria** (what is observably TRUE today):
+
   1. The same gear and the same derived numbers are reachable from the web UI, the HTTP
      API, and the CLI, all built from one `GearParams` model; the CLI's numbers, warnings,
      and exit codes match the API's. *(REQ-three-interfaces, REQ-cli-parity)*
@@ -64,12 +67,14 @@ REQ-stl-step-export, REQ-error-contract, REQ-no-auth-default, REQ-docker-multiar
 against `make verify`; there is no PLAN.md history to point to.
 
 ### Phase 2: CAD Off the Event Loop
+
 **Goal**: CAD kernel work runs in worker processes outside the request-serving event loop,
 and the resulting multi-process memory ceiling is a measured number — not an assumption
 carried forward from the single-process design L07 measured.
 **Depends on**: Phase 1
 **Requirements**: REQ-cad-off-event-loop, REQ-measured-memory-ceiling
 **Success Criteria** (what must be TRUE, each backed by a measurement, not a prediction):
+
   1. Repeating the debt file's own two load scenarios — one 200-tooth fine build in
      flight, and ten concurrent builds — against the new topology shows `/api/health` p95
      within 2× of idle p95, with the measured numbers recorded next to the baseline on
@@ -88,8 +93,9 @@ carried forward from the single-process design L07 measured.
      same commit as the fix. *(REQ-cad-off-event-loop)*
   5. `make verify` passes with the new topology in place; admission control still lives in
      the web layer and the CLI still never queues (L04) — unchanged by the process pool.
-**Plans**: 5 plans, in 4 waves (01 and 02 run in parallel)
-- [ ] 02-01-PLAN.md — One build, in another process: the kernel-free `BuildError`, the
+**Plans**: 1/5 plans executed, in 4 waves (01 and 02 run in parallel)
+
+- [x] 02-01-PLAN.md — One build, in another process: the kernel-free `BuildError`, the
   affinity-routed `BuildPool`, the async endpoint, the parent-side byte cache, and the
   import-linter contract that makes the boundary enforced rather than reviewed *(wave 1)*
 - [ ] 02-02-PLAN.md — The measuring instrument: `bench/` (L07's own 40-gear corpus, both
@@ -106,6 +112,7 @@ carried forward from the single-process design L07 measured.
   moved in the same commit *(wave 4)*
 
 ### Phase 3: Structured Logging at the Composition Boundary
+
 **Goal**: Production requests leave evidence — a structured logger configured once at the
 composition boundary, covering the decision branches that already exist.
 **Depends on**: Phase 1 (no dependency on Phase 2 found in the debt files — the logging
@@ -114,6 +121,7 @@ gap and the event-loop gap are independent; nothing in
 pool's build-queue mechanics)
 **Requirements**: REQ-structured-logging
 **Success Criteria** (what must be TRUE, proven by a test, not console-reading):
+
   1. A test asserts that each of the four existing decision branches — build started (with
      parameter slug), build failed (with exception class), export served from cache vs.
      built, queue refused — emits a structured log record with named fields.
@@ -123,9 +131,11 @@ pool's build-queue mechanics)
      with its commit sha recorded, `git mv`'d into `docs/tech_debt/resolved/`, and its row
      moved in `docs/tech_debt/INDEX.md` — in the same commit as the fix.
   4. `make verify` passes.
+
 **Plans**: TBD
 
 ### Phase 4: Typed Derived-Dimensions Contract
+
 **Goal**: The response every interface reads has a real shape — a typed model, checked by
 mypy, instead of an honest but unchecked `dict[str, Any]`.
 **Depends on**: Phase 1 (independent of Phases 2 and 3 — the contract change touches
@@ -133,6 +143,7 @@ mypy, instead of an honest but unchecked `dict[str, Any]`.
 logger)
 **Requirements**: REQ-typed-derived-dimensions
 **Success Criteria** (what must be TRUE, checked by the gate, not asserted):
+
   1. `derive()` returns a `DerivedDimensions` Pydantic model with explicit optional fields
      in place of `dict[str, Any]`.
   2. `make verify` passes with mypy's `disallow_any_explicit` turned on across `src/` —
@@ -146,12 +157,14 @@ logger)
 **Plans**: TBD
 
 ### Phase 5: CI Observed Green
+
 **Goal**: The CI workflow is proven by a real GitHub Actions run executing it — not by
 reading `.github/workflows/ci.yml` and predicting it will pass.
 **Depends on**: Phase 1 (independent of Phases 2–4; small and deliberately not bundled
 into any of them per the milestone's own scoping)
 **Requirements**: REQ-ci-verified
 **Success Criteria** (what must be TRUE, evidenced by a run URL, not a prediction):
+
   1. A real push to GitHub produces a run URL showing the `test` job green on both matrix
      entries (`python: ["3.10", "3.12"]`).
   2. The same run shows the `vendor-bundle` job (the committed three.js bundle matches a
@@ -184,7 +197,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
-| 2. CAD Off the Event Loop | 0/5 | Planned | - |
+| 2. CAD Off the Event Loop | 1/5 | In Progress|  |
 | 3. Structured Logging at the Composition Boundary | 0/TBD | Not started | - |
 | 4. Typed Derived-Dimensions Contract | 0/TBD | Not started | - |
 | 5. CI Observed Green | 0/TBD | Not started | - |

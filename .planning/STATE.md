@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.1
-current_phase: 2
+current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-09-22T16:04:57.539Z"
-last_activity: 2026-09-21
-last_activity_desc: "ROADMAP.md written for milestone v0.1: Phases 2–5 derived from"
-state_head: 5239d4f509ff13743127801d5eeb32b0cf030dc2
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-09-23T02:49:13.002Z"
+last_activity: 2026-09-23
+last_activity_desc: Phase 02 execution started
+state_head: 0997f46e56d533aa8e9a01a9d3c10b2fc643b03e
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 0
+  completed_plans: 1
 milestone_name: Hardening
 ---
 
@@ -25,15 +25,15 @@ See: .planning/PROJECT.md (updated 2026-09-21)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.1 (Hardening), Phase 2 — CAD Off the Event Loop. No new
+**Current focus:** Phase 02 — CAD Off the Event Loop
 gear features ship in v0.1.
 
 ## Current Position
 
-Phase: 2 (CAD Off the Event Loop) — READY TO EXECUTE
-Plan: — (roadmap approved, not yet planned)
+Phase: 02 (CAD Off the Event Loop) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-09-21 — ROADMAP.md written for milestone v0.1: Phases 2–5 derived from
+Last activity: 2026-09-23 — Phase 02 execution started
 the five v0.1 requirements, 100% coverage validated.
 
 Progress: [██░░░░░░░░] 20%
@@ -58,6 +58,11 @@ Progress: [██░░░░░░░░] 20%
 | 5. CI Observed Green | TBD | - | - |
 
 **Recent Trend:** N/A — no GSD-tracked plan history yet.
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 02 P01 | 30min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -79,6 +84,7 @@ Roadmap-time decisions for v0.1:
   contract, or CI verification to the process-pool work; each is small enough on its own
   that CLAUDE.md's "one concern per commit" and the milestone's own "REQ-ci-verified does
   not belong bundled inside a large phase" instruction argued against merging.
+- [Phase 02]: Task 2's TDD RED tests were committed together with GREEN, not as a separate failing commit, because the repo's pre-commit hook always runs full make verify with no bypass
 
 ### Pending Todos
 
@@ -112,8 +118,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-22T13:43:37.479Z
-Stopped at: Phase 2 context gathered
+Last session: 2026-09-23T02:49:07.581Z
+Stopped at: Completed 02-01-PLAN.md
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
-Resume file: .planning/phases/02-cad-off-the-event-loop/02-CONTEXT.md
+Resume file: None
