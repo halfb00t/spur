@@ -159,3 +159,154 @@ Reason: measured before deciding — the formatter would rewrite 10 files and 64
 flattening comment alignment and continuation layout that was set by hand so the
 geometry reads. The cost is real and the benefit here is style uniformity the project
 already has. Revisit if the codebase grows past what hand-formatting can hold.
+
+## L17 — The memory ceiling of a kernel-free server plus N builders (supersedes L07)
+
+Date: 2026-09-23.
+
+L07's formula assumed bounded caches inside one process. Under Phase 2's process-pool
+split (D-01–D-08) that formula no longer describes what is resident: the exported-bytes
+cache (`_BlobCache`, `SPUR_EXPORT_CACHE_MB`, default 64 MiB) lives in the parent alone,
+and the solid `lru_cache` (`SPUR_SOLID_CACHE`, default 4 entries) lives once per build
+worker. The new formula, in words: **a parent byte budget, plus N × the per-worker solid
+cache.**
+
+Swept, not derived by multiplying L07's per-process figures by N — that distinction is
+the whole reason `REQ-measured-memory-ceiling` is its own requirement. `mem_limit`
+temporarily relaxed so the sweep could not be capped by the value it exists to determine;
+same 40-gear, 160–199-tooth corpus L07's `2g` was earned against (`bench/corpus.py`,
+D-18). Peak container memory per `SPUR_BUILD_WORKERS` (N), sampled via `docker stats
+--no-stream` polling every 0.5 s:
+
+| N | Peak |
+|---|---|
+| 1 | 2052.1 MiB |
+| 2 | 2878.5 MiB |
+| 4 | 4731.9 MiB |
+
+A second, otherwise-identical sweep gave 2015.2 / 2821.1 / 4502.5 MiB for the same three
+N — run-to-run variance of roughly 2–5%, the noise floor for this measurement. The naive
+cache-only formula (64 MiB + N × 4 × ~280 MiB) predicts roughly 1184/2304/4544 MiB; the
+measured peaks are higher by an amount that grows with N (roughly 810–870 MiB per added
+worker beyond the naive term) — each worker's own `cadquery`/OCP/VTK baseline footprint
+(loaded once per worker at D-04's eager warm-up), not cache contents, which L07's
+single-process formula never had to account for.
+
+`mem_limit`: N=2 is the shipping default (`SPUR_BUILD_WORKERS=2`, D-19). Measured peak
+2878.5 MiB × a named **1.3** (30%) headroom = 3742.05 MiB, rounded up to **4g**.
+Confirmed by re-running the full 40-gear corpus at `4g`: **0 of 40 requests failed** —
+the same zero-failure bar `2g` cleared and `1g` did not, before this phase.
+
+`max_tasks_per_child`: stays **off**. N=1's late-half peak is lower than its early-half
+(1833.0 vs 2052.1 MiB — no growth). N=2 and N=4 both show late > early (2878.5 vs
+2566.1 MiB; 4731.9 vs 4155.4 MiB), but the 40-gear corpus is strictly ascending tooth
+count, so the "late" half of any run is inherently the biggest gears in the corpus — the
+bounded 4-entry solid cache holding progressively larger solids explains the rise
+without a leak. No run showed unbounded growth, a rising failure rate, or elapsed time
+trending up across three repeated sweeps (276.8–292.8 s).
+
+Reason: measured, over the real multi-process topology this phase shipped — not derived
+by multiplying L07's per-process numbers by N, which is exactly the
+plausible-but-unmeasured guess L08 forbids. Machine: 12-core Apple M2 Max, 32 GiB RAM,
+macOS 27.0 (Darwin 27.0.0), Docker 29.4.0 / Compose v5.1.2, 2026-09-23, ~09:50–10:35 UTC
+(`bench/RESULTS.md` § Memory).
+
+## L18 — One lock, and what it no longer costs (supersedes L06)
+
+Date: 2026-09-23.
+
+L06's decision stands: every OpenCascade call still goes through one `RLock` in
+`model.py`, unchanged this phase. The lock stays because it is uncontended under
+one-task-per-worker, costs nothing measurable, and still guards OCCT's process-global
+state against a future in-process thread — none of that changed. What this entry
+retires is L06's stated *consequence*: "concurrency buys latency, not throughput." That
+was true of one process holding the lock across every request; it stopped being true the
+moment there were N independent kernels in N independent processes (D-01–D-08). The
+lock's scope is now per worker, not global, so concurrency across different gears now
+buys throughput too, not only latency.
+
+Measured, `single` scenario (one 200-tooth fine build in flight) vs `concurrent` (ten
+concurrent fine builds), under-load p95 / idle p95 ratio, pass bar <= 2.00x
+(`bench/RESULTS.md` § Latency, this machine, 2026-09-23):
+
+- `single`: **met** on every run recorded — Runs 1–2 (1.12x, 1.18x), Runs 3–4 (1.68x,
+  1.17x), Run 5 (1.10x; Run 6 had too few samples for a p95, per L08).
+- `concurrent`: **accepted with caveat, not demonstrated met on both runs of one
+  session.** Eight runs across four sessions: pre-fix 2.02x/2.45x and 2.32x/2.35x;
+  post-fix (gzip level set from measurement and moved inside the admission slot, L19)
+  1.31x/2.10x and 1.86x/2.02x, the last pair on a host held under the file's own 1.5
+  idle-load bar. On 2026-09-23 the human waived this ledger item on that evidence rather
+  than fix further or re-run again; the caveat and two uninvestigated observations
+  (every second run of a pair reads worse than its first, before and after the fix; the
+  verdict sits at the harness's ~0.1 ms-of-p95 resolution floor) live in
+  `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`.
+
+No throughput number is recorded here: `bench/RESULTS.md` contains no throughput
+measurement (the memory sweep's elapsed times are sequential requests, not a load test).
+"Concurrency now buys throughput too" is a property of N independent kernels in N
+independent processes, not a measured requests/second figure — that is the one thing
+this entry claims beyond the ratios above, and it is a structural claim, not a number
+L08 would require evidence for.
+
+Reason: the lock's cost and purpose are unchanged and stay logged at L06; what changed
+is the shape of what it guards — one process becoming N — and that is what made its old
+consequence false. Machine: 12-core Apple M2 Max, 32 GiB RAM, macOS 27.0 (Darwin
+27.0.0), 2026-09-23 (`bench/RESULTS.md` § Latency).
+
+## L19 — Model bodies are gzip-encoded at a measured level, inside the admission slot, once per cache fill
+
+Date: 2026-09-23.
+
+`GZipMiddleware`'s default (`compresslevel=9`, Starlette, never measured against this
+app's bodies) cost ~1.2 s to compress a real 9,062,784-byte fine STL (`gzip_bench.py`,
+single-threaded: **1181.7 ms**, `02-LATENCY-INVESTIGATION.md` E2c), and a cache hit in
+`model()` bypassed `_build_slot()`'s admission control entirely — nothing bounded
+concurrent compression of repeat downloads. With the build pool never running, E2c
+measured the `concurrent` scenario's under-load/idle ratio at **4.33x** and **5.52x**
+from this mechanism alone, both well over the 2.00x bar.
+
+**(1)** `_GZIP_LEVEL = 1`, chosen from a measured 1/6/9 table against the real STL
+(`teeth=199&quality=fine`), host loadavg 2.68/3.07/2.78 (quick task 260923-qwr):
+
+| level | single-threaded median | output bytes (% of input) | 10-concurrent wall |
+|---|---|---|---|
+| 1 | 51.5 ms | 2,632,467 (29.0%) | 74.4 ms |
+| 6 | 147.9 ms | 2,403,312 (26.5%) | 198.9 ms |
+| 9 | 788.0 ms | 2,404,371 (26.5%) | 925.5 ms |
+
+Rule: move up a level only if it shrinks output by >=10% **and** costs <=1.5x the lower
+level's 10-concurrent wall time. Level 6 over level 1 is only 8.7% smaller; level 9 over
+level 1 is only 8.66% smaller (and 12.4x the wall time) — both miss the 10% bar
+decisively, so level 1 was chosen with no ambiguity (`src/spur/app.py`'s `_GZIP_LEVEL`
+comment carries this table).
+
+**(2)** Model-body gzip moved out of `GZipMiddleware` and into `model()`, performed in a
+worker thread (`run_in_threadpool(_gzip, raw)`) **inside** `_build_slot()`, cached in
+`_EXPORTS` under an encoding-tagged key `(params, fmt, quality, encoding)`. This is the
+only place the bound can apply: `GZipMiddleware` compresses only after the endpoint has
+returned and released its slot, so a limit placed inside the endpoint without moving the
+compression itself would have capped nothing (`_build_slot`'s own docstring).
+
+**(3)** Consequences: concurrent compressions are now bounded by `MAX_QUEUED_BUILDS`,
+the same admission bound builds use; a repeat download of an already-compressed gear
+takes no slot and performs no compression
+(`test_an_already_compressed_download_needs_no_slot_at_all`); a first compression of an
+already-built-but-not-yet-compressed gear can now be refused `503` busy
+(`test_a_cache_hit_that_still_needs_compressing_goes_through_admission_control`).
+`health()`'s `queue_available` now means slots free for build **and** first gzip encode,
+not build alone. `GZipMiddleware` stays, at the same measured level, for JSON/HTML
+responses — those never went through `_build_slot()` and were never the mechanism.
+Starlette's private `_gzip_capacity_limiter` `RunVar` is deliberately not sized — the
+same objection D-13 already raised against reaching into another module's private
+internals.
+
+Re-measured, `concurrent` scenario, under-load p95 / idle p95 (`bench/RESULTS.md`
+"Post-fix re-run (Runs 5-6)", "Idle-host re-run (Runs 7-8)"): **1.31x, 2.10x, 1.86x,
+2.02x** — down from the pre-fix 2.02x–2.45x range, one pass and one narrow miss each
+session; not demonstrated met on both runs of one session (see L18 and
+`docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`).
+
+Reason: the middleware compresses after admission control has already released its
+slot, so bounding compression required moving where it happens, not just how expensive
+it is; the level and the architecture are both measured, not assumed. Commits:
+`2d47994` (gzip level), `7a61fad` (admission-bound, cached compression).
