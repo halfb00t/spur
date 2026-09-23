@@ -156,7 +156,8 @@ app = FastAPI(
 #     6   | 147.9 ms                | 2,403,312 (26.5%)          | 198.9 ms
 #     9   | 788.0 ms                | 2,404,371 (26.5%)          | 925.5 ms
 #
-# Selection rule (02-LATENCY-INVESTIGATION.md): adopt a higher level only if it shrinks
+# Selection rule (set up front in quick task 260923-qwr's plan, Task 1 step D; the
+# investigation only asked for the measurement): adopt a higher level only if it shrinks
 # output by >=10% AND costs <=1.5x the 10-concurrent wall time of the level below it.
 # Level 6 over level 1: only 8.7% smaller (229,155 / 2,632,467) -- misses the 10% bar, so
 # it is never reached; level 9 over level 1: only 8.66% smaller, also misses it (and its
