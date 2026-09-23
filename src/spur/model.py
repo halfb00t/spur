@@ -1,11 +1,15 @@
 """CadQuery solid construction and STL/STEP export.
 
-OpenCascade isn't safe to drive from several threads at once, so every kernel call goes
-through one lock. Results are cached per parameter set, because the UI asks for the same
-gear repeatedly (preview, then STL, then STEP). Both caches are bounded by size rather
-than by entry count where that is measurable: a 200-tooth solid costs hundreds of
-megabytes, so "32 entries" is not a memory bound. Tune with SPUR_SOLID_CACHE (entries)
-and SPUR_EXPORT_CACHE_MB (total megabytes of exported bytes).
+This module is the only doorway to `cadquery`/`OCP`, and it now runs inside a worker
+process, not the serving process (D-02, D-05) -- `app.py` reaches `export()` only through
+a spawned `BuildPool`, never by importing this module directly. OpenCascade isn't safe to
+drive from several threads at once, so every kernel call goes through one lock; it stays
+uncontended under one-task-per-worker (D-08). Results are cached per parameter set,
+because the UI asks for the same gear repeatedly (preview, then STL, then STEP). Both
+caches are bounded by size rather than by entry count where that is measurable: a
+200-tooth solid costs hundreds of megabytes, so "32 entries" is not a memory bound. Tune
+with SPUR_SOLID_CACHE (entries) and SPUR_EXPORT_CACHE_MB (total megabytes of exported
+bytes).
 """
 
 from __future__ import annotations
@@ -25,6 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 from . import int_env
+from .build_errors import BuildError
 from .calc import Profile, bore_radius, profile, recess_fillet, recess_radii, root_fillet
 from .params import GearParams
 
@@ -37,10 +42,6 @@ FLANK_POINTS = 16
 TOL = 1e-6              # mm, for matching kernel geometry back to the numbers we asked for
 
 _LOCK = threading.RLock()
-
-
-class BuildError(RuntimeError):
-    """The CAD kernel could not produce a valid solid for these parameters."""
 
 
 def _load_malloc_trim() -> Callable[[int], int] | None:

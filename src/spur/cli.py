@@ -61,8 +61,9 @@ def cmd_info(ns: argparse.Namespace) -> None:
 
 
 def cmd_export(ns: argparse.Namespace) -> None:
+    from .build_errors import BuildError
     from .calc import derive
-    from .model import BuildError, Format, export
+    from .model import Format, export
 
     out: Path = ns.output
     fmt = ns.format or out.suffix.lower().lstrip(".").replace("stp", "step")

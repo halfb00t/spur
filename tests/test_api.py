@@ -1,9 +1,37 @@
+from collections.abc import Iterator
+from typing import cast
+
 import pytest
 from fastapi.testclient import TestClient
 
-from spur.app import app
+from spur.app import app, build_backend
+from spur.model import Format, Quality, export
+from spur.params import GearParams
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _inline_build_backend() -> Iterator[None]:
+    """Override the pool-backed dependency with an in-process build, for every test here.
+
+    The module-level `client = TestClient(app)` above never runs the app's lifespan (it
+    is used without `with` -- see tests/test_pool.py's comment for why), so app.state.pool
+    never exists for these tests. Overriding the dependency directly means these 12 tests
+    exercise the exact code path the CLI takes (D-15) and never depend on lifespan state.
+    tests/test_pool.py deliberately does not install this override, to prove the pool
+    path for real.
+    """
+
+    async def inline_backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        # build_backend's BuildBackend type is str/str (app.py has no static import path
+        # to model.Format/model.Quality to name them with, D-02); this override does, so
+        # the cast just narrows back to what export() actually wants.
+        return export(p, cast(Format, fmt), cast(Quality, quality))
+
+    app.dependency_overrides[build_backend] = lambda: inline_backend
+    yield
+    app.dependency_overrides.pop(build_backend, None)
 
 
 def test_health() -> None:

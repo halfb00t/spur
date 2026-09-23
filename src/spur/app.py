@@ -14,21 +14,22 @@ curl-able. Unset fields take their defaults.
 from __future__ import annotations
 
 import threading
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 
 from . import __version__, int_env
+from .build_errors import BuildError
 from .calc import derive, with_mate
-from .model import BuildError, export
 from .params import GearParams
+from .pool import BuildPool
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -38,13 +39,52 @@ MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
 MAX_QUEUED_BUILDS = int_env("SPUR_MAX_QUEUED_BUILDS", 4)
 BUILD_QUEUE = threading.BoundedSemaphore(MAX_QUEUED_BUILDS)
 
+# The type an injected build backend must satisfy -- plain str for fmt/quality (not
+# model.Format/model.Quality) because this module has no static import path to model.py
+# to name them with (D-02); the endpoint's own Literal types are still checked at the
+# call site.
+BuildBackend = Callable[[GearParams, str, str], Awaitable[bytes]]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Build the pool eagerly at startup, tear it down at shutdown (D-04).
+
+    Eager, import-only warm-up: the memory sweep then measures steady state from t=0
+    instead of a ramp. SPUR_BUILD_WORKERS defaults to a fixed 2, not os.cpu_count() --
+    a machine-dependent default would make the measured mem_limit untrue somewhere (D-19).
+    """
+    app.state.pool = BuildPool(int_env("SPUR_BUILD_WORKERS", 2))
+    try:
+        yield
+    finally:
+        app.state.pool.shutdown()
+
+
 app = FastAPI(
     title="spur",
     version=__version__,
     summary="Parametric involute spur gear generator with STL/STEP export.",
+    lifespan=lifespan,
 )
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+def build_backend() -> BuildBackend:
+    """The injectable seam D-15 needs: exposes the pool's export to the endpoint.
+
+    Hard-fails rather than falling back to an inline build when no pool has started: a
+    production request that skipped the pool would silently reinstate the event-loop
+    stall this phase removes, and would also skip D-07's cache-locality affinity
+    (02-RESEARCH.md Open Question 1). Tests override this dependency with an inline
+    backend instead (see tests/test_api.py's autouse fixture); the production code path
+    never goes inline.
+    """
+    pool: BuildPool | None = getattr(app.state, "pool", None)
+    if pool is None:
+        raise RuntimeError("Build pool not started -- did the app's lifespan run?")
+    return pool.export
 
 
 class InfoQuery(GearParams):
@@ -109,11 +149,12 @@ def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
 
 @app.get("/api/model.{fmt}", response_class=Response,
          responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
-def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()]) -> Response:
+async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
+                backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
     params = _gear(q)
     try:
         with _build_slot():
-            data = export(params, fmt, q.quality)
+            data = await backend(params, fmt, q.quality)
     except BuildError as exc:
         raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
                                           "type": "build_error"}]) from exc
