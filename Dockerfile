@@ -39,9 +39,9 @@ ENV SPUR_HOST=0.0.0.0 \
 EXPOSE 8000
 
 # /api/health no longer touches the CAD kernel or waits on a build worker (Phase 2,
-# D-13): its measured under-load p95 is 0.7-1.3 ms across all eight bench/RESULTS.md
-# latency runs (worst: 1.3 ms, concurrent Runs 6 and 8) -- three orders of magnitude
-# below the old 10 s. 2 s leaves that margin for what actually varies here: the probe
+# D-13): its measured under-load p95 is 0.7-2.3 ms across the eight bench/RESULTS.md
+# latency runs (worst: 2.3 ms, concurrent Run 3, pre-L19; 1.3 ms post-L19) -- three
+# orders of magnitude below the old 10 s. 2 s leaves that margin for what actually varies here: the probe
 # itself is a fresh Python process starting inside the container on every check, so its
 # floor is interpreter startup, not the ~1 ms request. The inner urlopen timeout (1 s)
 # stays below the outer --timeout so a genuinely hung request fails the check on its own

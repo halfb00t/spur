@@ -16,7 +16,7 @@ provides:
     L06, and a new gzip-admission decision), every number transcribed from
     bench/RESULTS.md and the quick-task SUMMARY, L06/L07 byte-identical"
   - "Dockerfile HEALTHCHECK --timeout lowered from 10s to 2s (inner urlopen 8s -> 1s), set
-    from the measured under-load p95 (0.7-1.3ms across all eight bench/RESULTS.md latency
+    from the measured under-load p95 (0.7-2.3ms across the eight bench/RESULTS.md latency
     runs), comment rewritten"
   - "docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md resolved
     (Status: resolved, Resolved in: daeb284), git mv'd to resolved/, INDEX.md row moved --
@@ -187,7 +187,7 @@ server plus N build workers.**
   caveat), and L19 (new, the gzip-level/admission-bound decision) -- L06 and L07 stand
   untouched (diff adds 151 lines, deletes none).
 - The Dockerfile's `HEALTHCHECK --timeout` is down from 10s to 2s (inner `urlopen`
-  timeout 8s -> 1s), set from the measured under-load p95 (0.7-1.3ms across all eight
+  timeout 8s -> 1s), set from the measured under-load p95 (0.7-2.3ms across the eight
   latency runs) rather than the old comment's now-disproven claim that OpenCascade
   legitimately stalls the event loop for a few seconds.
 - `docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md` is resolved
