@@ -4,11 +4,11 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: "Completed 02-05-PLAN.md: Phase 02 complete (5/5 plans). L17/L18/L19 appended, HEALTHCHECK timeout down to 2s, event-loop debt resolved and moved, system map redrawn."
-last_updated: "2026-09-23T15:09:03.350Z"
+stopped_at: Phase 2 executed 5/5; verification human_needed then stale (Dockerfile comment corrected, 2b34ec4); 02-UAT.md has 2 human items; 02-REVIEW.md has CR-01 (CancelledError -> 500 on same-slot cancel), CR-02 (bench sweep self-caps at mem_limit 4g), WR-01 (double recreate_for) awaiting the human's fix-now-or-file decision; WR-02 fixed
+last_updated: "2026-09-23T15:25:09.767Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 02 execution complete (5/5 plans); awaiting /gsd-verify-work 2
-state_head: 4e8b8ac89dce4876c4b39448a28a7b03844ef0e6
+state_head: 9023463aab792c0997906e1bda7874130ed9ab09
 progress:
   total_phases: 5
   completed_phases: 1
@@ -135,8 +135,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T15:09:03.328Z
-Stopped at: Completed 02-05-PLAN.md: Phase 02 complete (5/5 plans). L17/L18/L19 appended, HEALTHCHECK timeout down to 2s, event-loop debt resolved and moved, system map redrawn.
+Last session: 2026-09-23T15:25:09.743Z
+Stopped at: Phase 2 executed 5/5; verification human_needed then stale (Dockerfile comment corrected, 2b34ec4); 02-UAT.md has 2 human items; 02-REVIEW.md has CR-01 (CancelledError -> 500 on same-slot cancel), CR-02 (bench sweep self-caps at mem_limit 4g), WR-01 (double recreate_for) awaiting the human's fix-now-or-file decision; WR-02 fixed
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
-Resume file: None
+Resume file: .planning/phases/02-cad-off-the-event-loop/02-REVIEW.md
