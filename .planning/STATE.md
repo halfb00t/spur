@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: "Phase 2 at 4/5: WINDOWS item 1 waived by the human on the Runs 1-8 evidence, debt filed at docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md; next /gsd-execute-phase 2 for 02-05, whose L17/L18 must carry that waiver caveat verbatim"
-last_updated: "2026-09-23T14:17:18.000Z"
+stopped_at: "Completed 02-05-PLAN.md: Phase 02 complete (5/5 plans). L17/L18/L19 appended, HEALTHCHECK timeout down to 2s, event-loop debt resolved and moved, system map redrawn."
+last_updated: "2026-09-23T15:09:03.350Z"
 last_activity: 2026-09-23
-last_activity_desc: WINDOWS item 1 waived on the Runs 1-8 evidence; debt item filed; ready for 02-05
-state_head: "0b5ffe2ef7573f657beb7e9f09fa1d9187958fd6"
+last_activity_desc: Phase 02 execution complete (5/5 plans); awaiting /gsd-verify-work 2
+state_head: 4e8b8ac89dce4876c4b39448a28a7b03844ef0e6
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 milestone_name: Hardening
 ---
 
@@ -30,13 +30,11 @@ gear features ship in v0.1.
 
 ## Current Position
 
-Phase: 02 (CAD Off the Event Loop) — EXECUTING
+Phase: 02 (CAD Off the Event Loop) — COMPLETE
 Plan: 5 of 5
-Status: Ready to execute
-Last activity: 2026-09-23 - WINDOWS item 1 waived by the human on the Runs 1-8 evidence (post-fix 1.31x/2.10x/1.86x/2.02x); caveat filed as tech debt; ready for /gsd-execute-phase 2 (02-05)
-the five v0.1 requirements, 100% coverage validated.
-
-Progress: [██░░░░░░░░] 20%
+Status: Phase 02 complete, ready for /gsd-plan-phase 3 and /gsd-verify-work 2
+Last activity: 2026-09-23 — Plan 02-05 closed the loop (L17/L18/L19, HEALTHCHECK timeout,
+tech-debt resolution, redrawn system map)
 
 ## Performance Metrics
 
@@ -66,6 +64,7 @@ Progress: [██░░░░░░░░] 20%
 | Phase 02 P02 | 19min | 3 tasks | 6 files |
 | Phase 02 P03 | ~25min | 4 tasks | 4 files |
 | Phase 02 P04 | ~2h | 3 tasks | 9 files |
+| Phase 02 P05 | 35min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -95,6 +94,9 @@ Roadmap-time decisions for v0.1:
 - [Phase 02]: Phase 2 halted before 02-05 to fix the concurrent /api/health latency cost first (route chosen by the human 2026-09-23), then re-measure, then resume 02-05. — Four latency runs measured 2.02-2.45x against the <=2x bar; 02-LATENCY-INVESTIGATION.md traced it to GZipMiddleware compresslevel=9 on 9 MB STL bodies in the serving process, with _EXPORTS cache hits bypassing admission control. Writing L17/L18 and the HEALTHCHECK timeout from those numbers would need a second edit after the fix, and retiring the debt file with the acceptance clause unmet would be a plausible-looking record L08 forbids. Fix via /gsd-quick (compresslevel from measurement, cache hits through an admission bound, cached compressed bytes if simple), re-run make bench.latency, resolve WINDOWS item 1 on evidence, then /gsd-execute-phase 2 for 02-05.
 - [Quick 260923-qwr]: `_GZIP_LEVEL = 1`, measured on the real 9,062,784-byte teeth=199 fine STL (level 1: 51.5 ms median / 29.0% of input / 74.4 ms 10-concurrent wall; level 6: 147.9 ms / 26.5% / 198.9 ms; level 9: 788.0 ms / 26.5% / 925.5 ms; host loadavg 2.68/3.07/2.78). Levels 6 and 9 are only 8.7% / 8.66% smaller than level 1 -- under the plan's 10% bar -- so level 1 by the rule, not by taste. The comment beside the constant carries the table (2d47994).
 - [Quick 260923-qwr]: model-body gzip moved out of GZipMiddleware into `model()`, performed inside `_build_slot()` in a worker thread and cached in `_EXPORTS` under an encoding-tagged key `(params, fmt, quality, encoding)` -- the middleware compresses only after the endpoint has returned and released its slot, so any bound placed inside the endpoint without moving the compression would have capped nothing. Concurrent compressions are now <= MAX_QUEUED_BUILDS and a repeat download of a compressed gear takes no slot and no compression; a first compression of an already-built gear can now be refused 503 busy (7a61fad, four behaviour tests). Not sized: Starlette's private `_gzip_capacity_limiter` RunVar (same private-internals objection as D-13).
+- [Phase 02]: L17 (supersedes L07) and L18 (supersedes L06) appended to docs/architecture/decision_log.md with every number transcribed from bench/RESULTS.md; L18 records the concurrent latency scenario as accepted with caveat, not demonstrated, per the human's waiver -- no throughput number invented. — D-20's decision checkpoint (Option A, plus L19) resolved by the human before this continuation began.
+- [Phase 02]: L19 (new) records the gzip-level/admission-bound decision from quick task 260923-qwr (compresslevel=1, compression moved inside _build_slot(), cached in _EXPORTS). — Human approved adding L19 alongside L17/L18 at the Task 1 checkpoint.
+- [Phase 02]: Dockerfile HEALTHCHECK --timeout dropped from 10s to 2s (inner urlopen timeout 8s -> 1s), set from the measured under-load p95 (0.7-1.3ms across all eight bench/RESULTS.md latency runs). — CONTEXT.md: if the timeout cannot come down, that is evidence the phase did not land -- it came down.
 
 ### Pending Todos
 
@@ -102,15 +104,9 @@ None yet.
 
 ### Blockers/Concerns
 
-- **L07 needs superseding, not rewriting.** L07 fixes the memory story on *per-process*
-  bounded caches plus `malloc_trim(0)`, with a measured 1.87 GiB → 358 MiB result backing
-  `compose.yaml`'s `mem_limit: 2g`. Moving CAD builds to a process pool makes those caches
-  per-worker and invalidates that formula. Phase 2 carries this: a new superseding `Lxx`
-  in `docs/architecture/decision_log.md` with a **re-measured** ceiling — an estimated
-  `mem_limit` would be exactly the guessed number L08 forbids. Largest risk in v0.1.
-- **L06 also needs superseding, not rewriting.** Same phase, second entry: "concurrency
-  buys latency, not throughput" no longer holds once a process pool exists; the `RLock`'s
-  scope becomes per-worker rather than global.
+- **Resolved (02-05):** L07 and L06 are superseded by L17 and L18
+  (`docs/architecture/decision_log.md`) — the re-measured memory ceiling and the
+  retired "concurrency buys latency, not throughput" consequence. No longer a blocker.
 - **CI workflow unverified.** `.github/workflows/ci.yml` was hand-verified step-by-step but
   has never executed inside GitHub Actions (per `docs/plan-2026-09-21.md`). Now Phase 5's
   entire scope: a real push, a run URL, three jobs (`test` matrix, `vendor-bundle`,
@@ -139,8 +135,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T13:07:18.961Z
-Stopped at: Phase 2 at 4/5: WINDOWS item 1 waived by the human on the Runs 1-8 evidence, debt filed at docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md; next /gsd-execute-phase 2 for 02-05, whose L17/L18 must carry that waiver caveat verbatim
+Last session: 2026-09-23T15:09:03.328Z
+Stopped at: Completed 02-05-PLAN.md: Phase 02 complete (5/5 plans). L17/L18/L19 appended, HEALTHCHECK timeout down to 2s, event-loop debt resolved and moved, system map redrawn.
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
-Resume file: .planning/quick/260923-qwr-fix-the-api-health-under-load-latency-co/260923-qwr-SUMMARY.md
+Resume file: None

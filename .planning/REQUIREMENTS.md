@@ -96,7 +96,7 @@ it retires. Feature work is deferred to the next milestone ("Future Requirements
 
 ### Runtime & Concurrency
 
-- [ ] **REQ-cad-off-event-loop**: CAD builds execute outside the serving process, so
+- [x] **REQ-cad-off-event-loop**: CAD builds execute outside the serving process, so
   `/api/health` latency no longer scales with the size of the gear someone asked for.
   - *Retires*: `docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md` (must).
   - *Acceptance*: p95 health latency under load stays within **2× of idle p95**, measured
@@ -107,7 +107,7 @@ it retires. Feature work is deferred to the next milestone ("Future Requirements
     the absolute figures are recorded alongside it.
   - *Note*: admission control stays in the web layer and the CLI still never queues (L04).
 
-- [ ] **REQ-measured-memory-ceiling**: The memory ceiling for the multi-process topology is
+- [x] **REQ-measured-memory-ceiling**: The memory ceiling for the multi-process topology is
   measured, `compose.yaml`'s `mem_limit` is set from that measurement, and a superseding
   `Lxx` replaces L07 in `docs/architecture/decision_log.md`.
   - *Why it is separate*: L07's numbers (1.87 GiB → 1.5 GiB → 358 MiB, `mem_limit: 2g` as a
@@ -157,6 +157,7 @@ it retires. Feature work is deferred to the next milestone ("Future Requirements
 scoped, estimated, or ordered; recorded so they survive the session that named them.
 
 ### New gear types
+
 - Helical gears — twisted extrusion; materially heavier OCCT work, which is part of why
   `REQ-cad-off-event-loop` comes first.
 - Internal / ring gears.
@@ -167,17 +168,20 @@ scoped, estimated, or ordered; recorded so they survive the session that named t
   this does not belong here; that is a decision, not a geometry task.
 
 ### Tooth and bore detail
+
 - Chamfers on the teeth. (The chamfer that ships today is on the **bore**, per
   `REQ-bore-and-fillets` — tooth-tip chamfer is new geometry.)
 - Additional centre-hole types: keyway, hex, spline, and similar. (D-flat and round
   **already ship** under `REQ-bore-and-fillets` — only the new profiles are work.)
 
 ### Web / body cutouts
+
 - Parametric body cutouts: spoke arms, circular lightening holes, hexagonal patterns, each
   with their own parameters. Every added boolean cut makes builds heavier — a second reason
   `REQ-cad-off-event-loop` is prerequisite rather than optional.
 
 ### Carried over from `docs/ideas/`
+
 - Trochoidal (vs. radial) root fillet below the base circle — would supersede L10's
   documented approximation.
 - A browser-driven test for the 3D viewer — a test, not a user feature; the cost of the
@@ -216,13 +220,14 @@ under "Future Requirements" above — this table is for things that are not plan
 | REQ-error-contract | Phase 1 | Complete (shipped v0) |
 | REQ-no-auth-default | Phase 1 | Complete (shipped v0) |
 | REQ-docker-multiarch | Phase 1 | Complete (shipped v0) |
-| REQ-cad-off-event-loop | Phase 2 | Pending |
-| REQ-measured-memory-ceiling | Phase 2 | Pending |
+| REQ-cad-off-event-loop | Phase 2 | Complete |
+| REQ-measured-memory-ceiling | Phase 2 | Complete |
 | REQ-structured-logging | Phase 3 | Pending |
 | REQ-typed-derived-dimensions | Phase 4 | Pending |
 | REQ-ci-verified | Phase 5 | Pending |
 
 **Coverage:**
+
 - v0 requirements (shipped baseline): 11 total, 11 mapped, 0 unmapped ✓
 - v0.1 requirements (this milestone): 5 total, 5 mapped, 0 unmapped ✓ (Phase 2: 2,
   Phase 3: 1, Phase 4: 1, Phase 5: 1)
