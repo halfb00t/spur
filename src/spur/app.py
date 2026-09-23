@@ -14,6 +14,7 @@ curl-able. Unset fields take their defaults.
 from __future__ import annotations
 
 import threading
+from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
@@ -34,9 +35,54 @@ from .pool import BuildPool
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
 
-# Every build serialises on the kernel lock in model.py, so requests waiting behind it
-# buy latency and memory but no throughput. Past a short queue, 503 is the honest answer.
-MAX_QUEUED_BUILDS = int_env("SPUR_MAX_QUEUED_BUILDS", 4)
+
+class _BlobCache:
+    """LRU of exported bytes bounded by total size rather than by entry count.
+
+    Moved here from model.py (D-06): this is now the only exported-bytes cache in the
+    whole topology, one instead of N. It needs no lock of its own -- unlike the old
+    per-process version, whose docstring claimed callers held model.py's _LOCK, this one
+    is the only thing touching its dict, single-threaded, on one event loop, in the one
+    uvicorn worker this app runs as (D-01).
+    """
+
+    def __init__(self, budget: int) -> None:
+        self._budget = budget
+        self._items: OrderedDict[Any, bytes] = OrderedDict()
+        self._bytes = 0
+
+    def get(self, key: Any) -> bytes | None:
+        data = self._items.get(key)
+        if data is not None:
+            self._items.move_to_end(key)
+        return data
+
+    def put(self, key: Any, data: bytes) -> None:
+        old = self._items.pop(key, None)
+        if old is not None:
+            self._bytes -= len(old)
+        if len(data) > self._budget:
+            return
+        self._items[key] = data
+        self._bytes += len(data)
+        while self._bytes > self._budget:
+            self._bytes -= len(self._items.popitem(last=False)[1])
+
+
+_EXPORTS = _BlobCache(int_env("SPUR_EXPORT_CACHE_MB", 64) * 1024 * 1024)
+
+
+def _max_queued_builds() -> int:
+    """A queue deeper than the pool can drain is latency with no payoff (D-09).
+
+    A function, not a bare module constant, so SPUR_BUILD_WORKERS and
+    SPUR_MAX_QUEUED_BUILDS are read together, on every call -- tests exercise all three
+    derivation cases via monkeypatch + a direct call, without reloading this module.
+    """
+    return int_env("SPUR_MAX_QUEUED_BUILDS", 2 * int_env("SPUR_BUILD_WORKERS", 2))
+
+
+MAX_QUEUED_BUILDS = _max_queued_builds()
 BUILD_QUEUE = threading.BoundedSemaphore(MAX_QUEUED_BUILDS)
 
 # The type an injected build backend must satisfy -- plain str for fmt/quality (not
@@ -152,12 +198,16 @@ def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
 async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
     params = _gear(q)
-    try:
-        with _build_slot():
-            data = await backend(params, fmt, q.quality)
-    except BuildError as exc:
-        raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
-                                          "type": "build_error"}]) from exc
+    key = (params, fmt, q.quality)
+    data = _EXPORTS.get(key)
+    if data is None:
+        try:
+            with _build_slot():
+                data = await backend(params, fmt, q.quality)
+        except BuildError as exc:
+            raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
+                                              "type": "build_error"}]) from exc
+        _EXPORTS.put(key, data)
     return Response(
         data,
         media_type=MEDIA_TYPES[fmt],

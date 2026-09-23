@@ -11,6 +11,13 @@ from spur.params import GearParams
 client = TestClient(app)
 
 
+async def _inline_backend(p: GearParams, fmt: str, quality: str) -> bytes:
+    # build_backend's BuildBackend type is str/str (app.py has no static import path to
+    # model.Format/model.Quality to name them with, D-02); this override does, so the
+    # cast just narrows back to what export() actually wants.
+    return export(p, cast(Format, fmt), cast(Quality, quality))
+
+
 @pytest.fixture(autouse=True, scope="module")
 def _inline_build_backend() -> Iterator[None]:
     """Override the pool-backed dependency with an in-process build, for every test here.
@@ -22,14 +29,7 @@ def _inline_build_backend() -> Iterator[None]:
     tests/test_pool.py deliberately does not install this override, to prove the pool
     path for real.
     """
-
-    async def inline_backend(p: GearParams, fmt: str, quality: str) -> bytes:
-        # build_backend's BuildBackend type is str/str (app.py has no static import path
-        # to model.Format/model.Quality to name them with, D-02); this override does, so
-        # the cast just narrows back to what export() actually wants.
-        return export(p, cast(Format, fmt), cast(Quality, quality))
-
-    app.dependency_overrides[build_backend] = lambda: inline_backend
+    app.dependency_overrides[build_backend] = lambda: _inline_backend
     yield
     app.dependency_overrides.pop(build_backend, None)
 
@@ -111,7 +111,7 @@ def test_a_gear_too_small_for_the_stock_recess_is_still_served() -> None:
 
 
 def test_a_saturated_service_refuses_instead_of_queueing() -> None:
-    """Builds serialise on the kernel lock, so a deep queue is latency with no payoff."""
+    """A queue deeper than the pool can drain is latency with no payoff (D-09)."""
     from spur import app as app_module
 
     held = [app_module.BUILD_QUEUE.acquire(blocking=False)
@@ -125,3 +125,56 @@ def test_a_saturated_service_refuses_instead_of_queueing() -> None:
     finally:
         for _ in held:
             app_module.BUILD_QUEUE.release()
+
+
+def test_max_queued_builds_is_derived_from_build_workers(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """One knob moves both, so a deployer cannot configure a queue deeper than the pool
+    can drain (D-09) -- SPUR_MAX_QUEUED_BUILDS still overrides the derivation when set."""
+    from spur import app as app_module
+
+    monkeypatch.delenv("SPUR_BUILD_WORKERS", raising=False)
+    monkeypatch.delenv("SPUR_MAX_QUEUED_BUILDS", raising=False)
+    assert app_module._max_queued_builds() == 4  # 2 x the default 2 workers
+
+    monkeypatch.setenv("SPUR_BUILD_WORKERS", "3")
+    assert app_module._max_queued_builds() == 6
+
+    monkeypatch.setenv("SPUR_MAX_QUEUED_BUILDS", "1")
+    assert app_module._max_queued_builds() == 1  # explicit override still wins
+
+
+def test_the_export_cache_refuses_a_blob_bigger_than_its_budget() -> None:
+    """A _BlobCache never reports a stored size above its budget (D-06)."""
+    from spur import app as app_module
+
+    cache = app_module._BlobCache(budget=10)
+    cache.put("fits", b"12345")
+    assert cache.get("fits") == b"12345"
+
+    cache.put("too_big", b"x" * 20)
+    assert cache.get("too_big") is None
+
+
+def test_a_second_identical_download_is_served_from_the_byte_cache() -> None:
+    """The parent's byte cache means a repeat download never reaches a worker (D-06)."""
+    from spur import app as app_module
+
+    calls = 0
+
+    async def counting_backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        nonlocal calls
+        calls += 1
+        return export(p, cast(Format, fmt), cast(Quality, quality))
+
+    app_module.app.dependency_overrides[build_backend] = lambda: counting_backend
+    try:
+        params = {"quality": "preview", "teeth": 22}
+        first = client.get("/api/model.stl", params=params)
+        second = client.get("/api/model.stl", params=params)
+    finally:
+        app_module.app.dependency_overrides[build_backend] = lambda: _inline_backend
+
+    assert first.status_code == second.status_code == 200
+    assert first.content == second.content
+    assert calls == 1

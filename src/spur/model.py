@@ -4,12 +4,12 @@ This module is the only doorway to `cadquery`/`OCP`, and it now runs inside a wo
 process, not the serving process (D-02, D-05) -- `app.py` reaches `export()` only through
 a spawned `BuildPool`, never by importing this module directly. OpenCascade isn't safe to
 drive from several threads at once, so every kernel call goes through one lock; it stays
-uncontended under one-task-per-worker (D-08). Results are cached per parameter set,
-because the UI asks for the same gear repeatedly (preview, then STL, then STEP). Both
-caches are bounded by size rather than by entry count where that is measurable: a
-200-tooth solid costs hundreds of megabytes, so "32 entries" is not a memory bound. Tune
-with SPUR_SOLID_CACHE (entries) and SPUR_EXPORT_CACHE_MB (total megabytes of exported
-bytes).
+uncontended under one-task-per-worker (D-08). The solid built for a parameter set is
+cached here, per worker (SPUR_SOLID_CACHE, entries) -- rebuilding it needs the kernel
+that only a worker has, and D-07's affinity routing keeps the UI's repeat requests for
+one gear (preview, then STL, then STEP) on this same worker. The exported-bytes cache
+lives one level up, in the serving process (`app.py`'s `_BlobCache`, D-06): a repeat
+download never wakes a worker at all.
 """
 
 from __future__ import annotations
@@ -18,10 +18,9 @@ import ctypes
 import math
 import tempfile
 import threading
-from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import cadquery as cq
 
@@ -63,8 +62,10 @@ def _release_arenas() -> None:
     the freed arenas to reuse and never returns them, so a worker that has built a few
     large gears looks like it is leaking and eventually meets the container memory
     limit. Measured over 40 distinct 160-199 tooth gears: 1578 MiB resident without
-    this, 360 MiB with it -- far more than cache sizing is worth. Only called on a cache
-    miss, since walking the arenas is not free.
+    this, 360 MiB with it -- far more than cache sizing is worth. Called after every
+    export(): the byte cache that used to make some calls here a "miss" now lives in the
+    parent process (D-06), so every call that reaches a worker at all is one by
+    construction -- there is no cache left in this module to miss.
     """
     if _MALLOC_TRIM is not None:
         _MALLOC_TRIM(0)
@@ -263,38 +264,6 @@ def build(p: GearParams) -> cq.Solid:
         return _build_cached(p)
 
 
-class _BlobCache:
-    """LRU of exported bytes bounded by total size rather than by entry count.
-
-    Callers hold _LOCK, so this needs no lock of its own.
-    """
-
-    def __init__(self, budget: int) -> None:
-        self._budget = budget
-        self._items: OrderedDict[Any, bytes] = OrderedDict()
-        self._bytes = 0
-
-    def get(self, key: Any) -> bytes | None:
-        data = self._items.get(key)
-        if data is not None:
-            self._items.move_to_end(key)
-        return data
-
-    def put(self, key: Any, data: bytes) -> None:
-        old = self._items.pop(key, None)
-        if old is not None:
-            self._bytes -= len(old)
-        if len(data) > self._budget:
-            return
-        self._items[key] = data
-        self._bytes += len(data)
-        while self._bytes > self._budget:
-            self._bytes -= len(self._items.popitem(last=False)[1])
-
-
-_EXPORTS = _BlobCache(int_env("SPUR_EXPORT_CACHE_MB", 64) * 1024 * 1024)
-
-
 def _write_export(shape: cq.Solid, p: GearParams, fmt: Format, quality: Quality) -> bytes:
     with tempfile.TemporaryDirectory(prefix="spur-") as d:
         path = Path(d) / f"{p.slug()}.{fmt}"
@@ -308,11 +277,7 @@ def _write_export(shape: cq.Solid, p: GearParams, fmt: Format, quality: Quality)
 
 
 def export(p: GearParams, fmt: Format, quality: Quality = "fine") -> bytes:
-    key = (p, fmt, quality)
     with _LOCK:
-        data = _EXPORTS.get(key)
-        if data is None:
-            data = _write_export(_build_cached(p), p, fmt, quality)
-            _EXPORTS.put(key, data)
-            _release_arenas()
+        data = _write_export(_build_cached(p), p, fmt, quality)
+        _release_arenas()
         return data
