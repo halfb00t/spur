@@ -194,6 +194,80 @@ caches, not by a quieter host alone (the host was not meaningfully quieter than 
 p95) is **not** demonstrated met on both runs measured this session: Run 5 clears it,
 Run 6 does not.
 
+### Idle-host re-run (Runs 7-8)
+
+Dispatched by the human's choice, after Runs 5-6, to re-measure on a genuinely idle host
+rather than waive the ledger item or fix further. Commit under test: `aaf5852` -- the
+served code is the Runs 5-6 fix (`7a61fad`; `5a6e7d7` since then changed one comment in
+`src/spur/app.py`, nothing executable). Same harness, same server convention
+(`SPUR_PORT=8001 make serve`, port 8000 still held by `spur-spur-1`), two runs in
+immediate succession against the same server, so Run 8 inherits Run 7's `_EXPORTS`
+contents as every even-numbered run before it did.
+
+The host was waited for, not asserted. A manual sample at 14:05:16 UTC read a 1-minute
+load of 4.16 with Spotlight (`mds`, 61.6%) and a Time Machine pass (`backupd-helper`,
+53.8%) on top; a watcher then sampled `sysctl -n vm.loadavg` every 30 s and released the
+runs only after three consecutive samples under the 1.5 bar this file names (1.35, 1.02,
+1.05 at 14:09:05-14:10:05 UTC). Nothing was killed; the daemons finished on their own.
+
+**Environment snapshot (2026-09-23, ~14:10-14:11 UTC, immediately before the runs):**
+
+- `docker info`: exit 0.
+- `sysctl -n vm.loadavg`, three samples 30 s apart: `{ 1.11 1.85 2.38 }` (14:10:17 UTC),
+  `{ 1.20 1.80 2.34 }` (14:10:47 UTC), `{ 1.63 1.85 2.34 }` (14:11:17 UTC).
+- Top CPU (`ps -Ao %cpu,comm -r | head -5`), latest sample: WindowServer 44.1%, iTerm2
+  21.1%, AlDente 6.4%, claude 6.1%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 4 hours (healthy)`,
+  `fleet-user Restarting (2)` (pre-existing, unrelated, not touched).
+- After both runs: `{ 2.29 1.99 2.37 }`.
+
+**Environment caveat.** The quietest of the four sessions by every sample: the 1-minute
+figure was under the 1.5 bar for the two samples before the runs and 1.63 at the third
+(cause not identified; `fleet-user` restart-loops every ~40 s throughout). This is the
+closest this machine has come to its own idle bar; it is not a lab. Numbers reported as
+measured (L08).
+
+#### `single` scenario (Runs 7-8)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 7 | 0.6 ms (n=3540) | 0.7 ms (n=5132) | 1.11x | 3.18 s | 0 of 1 |
+| 8 | insufficient (n<20) | insufficient (n=18) | -- | -- | -- |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 7. Run 8 printed `warning:
+single/under-load has only 18 /api/health samples (need >= 20); refusing to report a
+p95` -- the 200-tooth gear was cached from Run 7, so there was no load window to sample;
+no ratio, per L08, exactly as in Run 6.
+
+#### `concurrent` scenario (Runs 7-8)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 7 | 0.6 ms (n=3543) | 1.2 ms (n=10527) | 1.86x | 8.77 s | 6 of 10 |
+| 8 | 0.6 ms (n=3553) | 1.3 ms (n=7719) | 2.02x | 6.63 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 7 (1.86x), **Not met** on
+Run 8 (2.02x). Neither run was repeated or restarted in search of a passing number.
+
+**Finding.** The `concurrent` acceptance clause is still not demonstrated on both runs
+of one session: post-fix, four runs over two sessions read 1.31x, 2.10x, 1.86x, 2.02x.
+Two things are visible in the eight runs now recorded -- stated as observations, not as
+causes, because neither was investigated:
+
+1. Every second run of a pair -- the one that inherits the first run's `_EXPORTS` -- is
+   worse than its first run, before the fix (2.02x -> 2.45x, 2.32x -> 2.35x) and after it
+   (1.31x -> 2.10x, 1.86x -> 2.02x). Post-fix, the inherited cache hits perform no
+   compression and take no slot (`tests/test_api.py`,
+   `test_an_already_compressed_download_needs_no_slot_at_all`), so whatever makes the
+   second run worse is not the mechanism the fix removed.
+2. The verdict is being read at the harness's floor: idle p95 is 0.6 ms in six of the
+   eight runs (0.9-1.0 ms in Runs 3-4), so the 2.00x bar sits at about 1.2 ms of
+   under-load p95, and Run 7 (1.2 ms, 1.86x) and Run 8 (1.3 ms, 2.02x) are separated by
+   roughly a tenth of a millisecond of p95.
+
+Both bear on how the bar should be read; neither changes what it says. Not met on both
+runs.
+
 ### `SPUR_BUILD_TIMEOUT`
 
 Worst single build observed across both runs and both scenarios: **7.39 s** (`concurrent`

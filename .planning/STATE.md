@@ -4,10 +4,10 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: "Phase 2 at 4/5: quick task 260923-qwr landed the gzip fix (2d47994, 7a61fad, 013926e) and re-measured -- Runs 5-6 concurrent 1.31x / 2.10x, bar not met on both, WINDOWS item 1 still open; needs a human decision (another re-run, accept-with-caveat, or a further fix) before /gsd-execute-phase 2 for 02-05"
+stopped_at: "Phase 2 at 4/5: gzip fix landed (2d47994, 7a61fad) and re-measured twice -- Runs 5-6 concurrent 1.31x / 2.10x, Runs 7-8 on a waited-for idle host 1.86x / 2.02x; the second run of every pair misses the <=2x bar, WINDOWS item 1 still open; needs a human decision (accept-with-caveat + waive, investigate the second-run effect, or change what is measured) before /gsd-execute-phase 2 for 02-05"
 last_updated: "2026-09-23T13:58:25.000Z"
 last_activity: 2026-09-23
-last_activity_desc: Completed quick task 260923-qwr (gzip level + bounded, cached compression; Runs 5-6 1.31x / 2.10x)
+last_activity_desc: Idle-host re-run Runs 7-8 (concurrent 1.86x / 2.02x) -- bar still not met on both runs
 state_head: "0b5ffe2ef7573f657beb7e9f09fa1d9187958fd6"
 progress:
   total_phases: 5
@@ -33,7 +33,7 @@ gear features ship in v0.1.
 Phase: 02 (CAD Off the Event Loop) — EXECUTING
 Plan: 5 of 5
 Status: Ready to execute
-Last activity: 2026-09-23 - Completed quick task 260923-qwr: gzip level 1 from measurement, model-body compression bounded by _build_slot() and cached; Runs 5-6 concurrent 1.31x / 2.10x (bar not met on both)
+Last activity: 2026-09-23 - Idle-host re-run Runs 7-8 after quick task 260923-qwr: concurrent 1.86x / 2.02x, bar still not met on both runs; WINDOWS item 1 open
 the five v0.1 requirements, 100% coverage validated.
 
 Progress: [██░░░░░░░░] 20%
@@ -122,6 +122,7 @@ None yet.
 - REQ-cad-off-event-loop's concurrent-scenario latency ratio (bench/RESULTS.md) was not demonstrated within the 2x pass bar on Plan 02-04's measurement session (2.02x, 2.45x); a genuinely-idle-host re-run or an explicit accept-with-caveat decision is needed before this requirement is marked Complete. **Re-run (2026-09-23, ~12:11-12:12 UTC, dispatched by the human's `quiet` re-run choice):** two more runs against the same harness gave 2.32x and 2.35x -- still not met, and worse than the original session, because the host's load average climbed higher during the re-run (1-minute figures 3.33->3.96) than during the original measurement (2.35, 2.33), driven by an unrelated `node` process at 160.9% CPU. Four measurements across two sessions now agree the bar is not met on this machine under any environment condition observed so far; broken-windows ledger item 1 stays open. See `bench/RESULTS.md`'s "Idle-host re-run (Runs 3-4)" subsection and `02-04-SUMMARY.md`'s follow-up section.
 - **Root cause investigated (2026-09-23):** a bounded investigation (no `src/`/`bench/` changes) found the ratio is a real server-side cost, not a harness artifact -- `GZipMiddleware`'s default `compresslevel=9` costs ~1.2-1.4s per concurrent compression of a 9MB fine STL, and a cache hit in `app.py`'s `model()` bypasses `_build_slot()`'s admission control entirely, so nothing bounds concurrent compression work for repeat downloads. See `.planning/phases/02-cad-off-the-event-loop/02-LATENCY-INVESTIGATION.md` for the full evidence and gap-plan recommendation.
 - **Fix landed and re-measured (2026-09-23, quick task 260923-qwr):** `bench/RESULTS.md` "Post-fix re-run (Runs 5-6)", commit under test 7a61fad, loadavg 4.64 -> 3.58 -> 2.73 before the runs (still above the >1.5 idle bar). `concurrent`: **Run 5 1.31x (met), Run 6 2.10x (not met)**; `single`: Run 5 1.10x (met), Run 6 no p95 (n=19 < MIN_SAMPLES, refused per L08). Down from four straight failures (2.02x-2.45x) to one pass and one narrow miss, but the task's own rule was "mark WINDOWS item 1 fixed only if <=2x on both runs" -- so **item 1 stays open**. Needs a human decision before 02-05: (a) another two-run measurement on a genuinely idle host, (b) accept-with-caveat and waive the ledger item with a reason, or (c) a further fix (candidate 4 in the investigation, the result-transfer path, is the next lever named there).
+- **Idle-host re-run, Runs 7-8 (2026-09-23, ~14:10-14:12 UTC, human chose option (a)):** host waited for, not asserted -- a watcher released the runs after three consecutive 1-minute load samples under 1.5 (1.35, 1.02, 1.05; a Time Machine pass and Spotlight indexing had finished on their own). Pre-run samples 1.11 / 1.20 / 1.63, the quietest session of the four. `concurrent`: **Run 7 1.86x (met), Run 8 2.02x (not met)**; `single`: Run 7 1.11x, Run 8 no p95 (n=18). `bench/RESULTS.md` "Idle-host re-run (Runs 7-8)". **Item 1 stays open.** Two observations recorded there, uninvestigated: every second run of a pair (the one inheriting the first run's cache) is worse than its first, before and after the fix (2.02->2.45, 2.32->2.35, 1.31->2.10, 1.86->2.02); and the verdict sits at the harness floor (idle p95 0.6 ms, so the bar is ~1.2 ms and Runs 7/8 differ by ~0.1 ms of p95). Options now: waive with this evidence; a bounded investigation of the second-run effect; or decide whether a like-for-like second run against a warm cache is the right thing to measure at all.
 
 ### Quick Tasks Completed
 
@@ -138,7 +139,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-09-23T13:07:18.961Z
-Stopped at: Phase 2 at 4/5: quick task 260923-qwr landed the gzip fix (2d47994, 7a61fad, 013926e) and re-measured -- Runs 5-6 concurrent 1.31x / 2.10x, bar not met on both, WINDOWS item 1 still open; needs a human decision (another re-run, accept-with-caveat, or a further fix) before /gsd-execute-phase 2 for 02-05
+Stopped at: Phase 2 at 4/5: gzip fix landed (2d47994, 7a61fad) and re-measured twice -- Runs 5-6 concurrent 1.31x / 2.10x, Runs 7-8 on a waited-for idle host 1.86x / 2.02x; the second run of every pair misses the <=2x bar, WINDOWS item 1 still open; needs a human decision (accept-with-caveat + waive, investigate the second-run effect, or change what is measured) before /gsd-execute-phase 2 for 02-05
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
 Resume file: .planning/quick/260923-qwr-fix-the-api-health-under-load-latency-co/260923-qwr-SUMMARY.md
