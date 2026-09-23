@@ -61,22 +61,30 @@ filesystem, `tmpfs` on `/tmp`, `cap_drop: ALL` and `no-new-privileges`.
 |---|---|---|
 | `SPUR_HOST` | `0.0.0.0` | Bind address |
 | `SPUR_PORT` | `8000` | Port |
-| `SPUR_WORKERS` | `1` | Uvicorn worker processes; each builds one gear at a time |
+| `SPUR_WORKERS` | `1` | Uvicorn processes serving HTTP. They only route and cache now — no CAD build ever runs in one |
+| `SPUR_BUILD_WORKERS` | `2` | CAD build worker processes (a separate pool from `SPUR_WORKERS`). Each one gear-build runs in |
+| `SPUR_BUILD_TIMEOUT` | `30` (seconds) | Per-build ceiling. Past it the overrunning build's worker is killed and replaced, and the request is refused with `503` |
 | `SPUR_ROOT_PATH` | | URL prefix when proxied under a sub-path |
-| `SPUR_SOLID_CACHE` | `4` | Built solids kept per worker. A 200-tooth solid costs a few hundred MB |
-| `SPUR_EXPORT_CACHE_MB` | `64` | Budget for cached STL/STEP bytes, per worker |
-| `SPUR_MAX_QUEUED_BUILDS` | `4` | Requests allowed to queue before the API answers `503` |
+| `SPUR_SOLID_CACHE` | `4` | Built solids kept per **build worker**. A 200-tooth solid costs a few hundred MB |
+| `SPUR_EXPORT_CACHE_MB` | `64` | Budget for cached STL/STEP bytes — one budget in the serving process, not one per worker |
+| `SPUR_MAX_QUEUED_BUILDS` | `2 × SPUR_BUILD_WORKERS` | Requests allowed to queue before the API answers `503`. Set explicitly to override the derived default |
 
-Memory scales with the size of the gears people ask for, not with traffic, and the
-caches are per worker — so the ceiling is roughly
-`SPUR_WORKERS × (SPUR_SOLID_CACHE × solid size + SPUR_EXPORT_CACHE_MB)`. The compose
-file sets a `mem_limit` as the backstop; keep it if you change the cache settings.
+Memory scales with the size of the gears people ask for, not with traffic. The formula
+is now a parent byte budget plus N times the solid cache (`SPUR_EXPORT_CACHE_MB` once, in
+the serving process, plus `SPUR_BUILD_WORKERS` build workers each holding
+`SPUR_SOLID_CACHE` solids) — see `bench/RESULTS.md`'s Memory section for the measured
+per-`SPUR_BUILD_WORKERS` peaks this ceiling is set from, and check it rather than take it
+on faith. The compose file's `mem_limit` is a measured backstop, not a guess; re-measure
+(`make bench.memory`) and raise it if you raise `SPUR_BUILD_WORKERS` or the cache
+settings.
 
-Every export serialises on one lock, because OpenCascade is not safe to drive from
-several threads at once, so queuing more work than `SPUR_MAX_QUEUED_BUILDS` only adds
-latency. Past that the API returns `503` with `Retry-After`. A single large gear still
-stalls the event loop for a second or two while the kernel holds the GIL; the container
-healthcheck allows for that.
+CAD builds run in their own worker processes, so the API stays responsive while one is
+in flight — `/api/health` measures in single-digit milliseconds under load
+(`bench/RESULTS.md`'s Latency section). A build past `SPUR_BUILD_TIMEOUT` is refused
+rather than waited on: the request gets `503` with `Retry-After`, and the worker behind
+it is terminated and replaced so the next request to that gear doesn't queue behind a
+wedged one. Past `SPUR_MAX_QUEUED_BUILDS` the API also answers `503` with `Retry-After`
+rather than piling work up.
 
 ### Without Docker
 
