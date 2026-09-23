@@ -20,6 +20,7 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 .DEFAULT_GOAL := help
 .PHONY: help venv verify lint typecheck lint-imports no-fake-done test serve \
         check image test-image smoke up down logs lock vendor vendor-check \
+        bench bench.latency bench.memory \
         worktree.bootstrap worktree.new worktree.land clean clean-docker
 
 help:  ## list the targets
@@ -50,7 +51,7 @@ lint: $(STAMP)  ## ruff: correctness rules only, no reformatting (L16)
 	$(PY) -m ruff check .
 
 typecheck: $(STAMP)  ## mypy --strict over the package and its tests
-	$(PY) -m mypy src tests docker
+	$(PY) -m mypy src tests docker bench
 
 lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
 	$(VENV)/bin/lint-imports
@@ -103,6 +104,18 @@ down:  ## stop and remove the service
 
 logs:  ## follow the service log
 	docker compose logs -f
+
+# --- measurement: not part of the gate (D-16) ---------------------------------------
+# Both need a running service and minutes; a latency assertion on shared hardware would
+# flap until someone stopped believing it. Rerun deliberately, not on every commit.
+
+bench: bench.latency bench.memory  ## everything this phase's success criteria need
+
+bench.latency: $(STAMP)  ## /api/health under load, on the host -- run `make serve` first (D-17)
+	$(PY) -m bench.latency
+
+bench.memory: $(STAMP)  ## container memory sweep over the 40-gear corpus; manages its own containers
+	$(PY) -m bench.memory sweep
 
 # --- generated artefacts -----------------------------------------------------------
 
