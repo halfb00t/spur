@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-09-23T08:57:52.108Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-09-23T10:46:34.043Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 02 execution started
-state_head: 11f2ec74bc46a8560625f50eb1f5ebd2d67d272d
+state_head: a01e3e4fcf93b62ff2425e8a8288ba95b9d9c502
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
 milestone_name: Hardening
 ---
 
@@ -31,7 +31,7 @@ gear features ship in v0.1.
 ## Current Position
 
 Phase: 02 (CAD Off the Event Loop) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-23 — Phase 02 execution started
 the five v0.1 requirements, 100% coverage validated.
@@ -65,6 +65,7 @@ Progress: [██░░░░░░░░] 20%
 | Phase 02 P01 | 30min | 3 tasks | 8 files |
 | Phase 02 P02 | 19min | 3 tasks | 6 files |
 | Phase 02 P03 | ~25min | 4 tasks | 4 files |
+| Phase 02 P04 | ~2h | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,8 @@ Roadmap-time decisions for v0.1:
 - [Phase 02]: Task 2's TDD RED tests were committed together with GREEN, not as a separate failing commit, because the repo's pre-commit hook always runs full make verify with no bypass
 - [Phase 02]: Container memory peak for bench.memory is sampled via docker stats --no-stream polling (0.5s interval) rather than reading a cgroup peak file, since the image's non-root/nologin user makes exec-based cgroup reads unreliable and the cgroup version was never verified. — Resolved 02-02-PLAN.md's flagged assumption 1 rather than deferring it; documented as a sampled (not exact) peak in code and bench/README.md.
 - [Phase 02]: /api/health's pool fields (D-13) nest under one `pool` object rather than flat top-level keys or a separate endpoint (Task 3 checkpoint, 02-03-PLAN.md) — Every later pool field lands inside `pool` without touching the published top-level status/version the UI and container healthcheck already read -- converts a one-way decision (the response is a published contract Phase 4's OpenAPI work inherits) into a reversible one.
+- [Phase 02]: SPUR_BUILD_TIMEOUT=30s (~4x the worst observed build, 7.39s); mem_limit=4g (N=2 measured peak 2878.5 MiB x1.3 headroom, confirmed at zero failures); max_tasks_per_child stays off (drift explained by ascending corpus tooth size, not a leak). — Every knob is set from bench/RESULTS.md's measured numbers, not guessed or derived from L07's superseded per-process formula.
+- [Phase 02]: The concurrent latency scenario's pass bar (under-load p95 <= 2x idle p95) was NOT demonstrated met on this measurement session (2.02x, then 2.45x on a repeat run); recorded as a finding per the plan's own instruction rather than tuned into a pass. — Host was not fully idle at measurement time (load average 2.3-2.7 on a 12-core machine); absolute latencies are sub-millisecond and noise-sensitive. Needs a decision before REQ-cad-off-event-loop is marked complete -- see 02-04-SUMMARY.md Next Phase Readiness.
 
 ### Pending Todos
 
@@ -113,6 +116,7 @@ None yet.
   both set by the human, see PROJECT.md "Current Milestone" and "Success Metric". Resolved
   at roadmap creation: "Forward scope" now points to REQUIREMENTS.md "Future Requirements"
   as candidates for the next milestone, not phases in this one.)*
+- REQ-cad-off-event-loop's concurrent-scenario latency ratio (bench/RESULTS.md) was not demonstrated within the 2x pass bar on Plan 02-04's measurement session (2.02x, 2.45x); a genuinely-idle-host re-run or an explicit accept-with-caveat decision is needed before this requirement is marked Complete.
 
 ## Deferred Items
 
@@ -122,8 +126,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T08:57:52.091Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-09-23T10:46:34.024Z
+Stopped at: Completed 02-04-PLAN.md
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
 Resume file: None
