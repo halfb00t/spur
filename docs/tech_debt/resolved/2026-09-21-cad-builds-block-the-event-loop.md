@@ -1,8 +1,9 @@
 # CAD builds block the event loop
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-21
+Resolved in: daeb284
 Source: docs/review-2026-09-21.md F4, and its plan's "Deliberately not done"
 Related files:
 - src/spur/model.py:36 (`_LOCK`)
@@ -35,3 +36,16 @@ ceiling formula, so it is a phase of its own, not a patch.
 
 Revisit when: more than one concurrent user is real, or a health probe fails in an
 environment that matters.
+
+## Resolution (2026-09-23)
+
+`Resolved in: daeb284` is the Plan 02-01 commit that actually moved the build into a
+worker process (`feat(02-01): build one STL in a worker process, end to end`) — not the
+present commit, which resolves this file and brings the `HEALTHCHECK` timeout down from
+10 s to 2 s, the last accommodation this file described. Measured result
+(`bench/RESULTS.md`, `L17`, `L18`): the `single` scenario clears the <=2.00x
+under-load/idle p95 bar on every run recorded; the `concurrent` scenario is **accepted
+with caveat, not demonstrated** — four post-fix runs read 1.31x, 2.10x, 1.86x, 2.02x, an
+improvement over the four pre-fix runs (2.02x–2.45x) but not a pass on both runs of one
+session. See `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md` for that
+caveat and two observations nobody has yet explained.

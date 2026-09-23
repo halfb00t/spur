@@ -16,7 +16,6 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
-| must | [CAD builds block the event loop](active/2026-09-21-cad-builds-block-the-event-loop.md) | more than one concurrent user, or a health probe failing |
 | must | [The concurrent latency bar was waived, not demonstrated](active/2026-09-23-concurrent-latency-bar-waived.md) | 02-05 writes L17/L18, the harness or the machine changes, or any run reads above 2.45x |
 | must | [No structured logging anywhere](active/2026-09-21-no-structured-logging.md) | the first production incident, or any deploy beyond one person's machine |
 | must | [The info contract is `dict[str, Any]`](active/2026-09-21-untyped-info-contract.md) | a client depends on the shape, or a third consumer appears |
@@ -28,4 +27,6 @@ Severity (grep-able `Severity:` field):
 
 ## Resolved
 
-- (none yet)
+| Item | Resolved in |
+|---|---|
+| [CAD builds block the event loop](resolved/2026-09-21-cad-builds-block-the-event-loop.md) | `daeb284` — see the file's own `Resolved in:` field |

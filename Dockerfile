@@ -38,10 +38,15 @@ ENV SPUR_HOST=0.0.0.0 \
     SPUR_WORKERS=1
 EXPOSE 8000
 
-# 10 s rather than 5: OpenCascade holds the GIL, so one large gear legitimately stalls
-# the event loop for a few seconds. Failing liveness over that restarts a healthy
-# container mid-build.
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD ["python", "-c", "import os, urllib.request as u; u.urlopen('http://127.0.0.1:' + os.environ.get('SPUR_PORT', '8000') + '/api/health', timeout=8)"]
+# /api/health no longer touches the CAD kernel or waits on a build worker (Phase 2,
+# D-13): its measured under-load p95 is 0.7-1.3 ms across all eight bench/RESULTS.md
+# latency runs (worst: 1.3 ms, concurrent Runs 6 and 8) -- three orders of magnitude
+# below the old 10 s. 2 s leaves that margin for what actually varies here: the probe
+# itself is a fresh Python process starting inside the container on every check, so its
+# floor is interpreter startup, not the ~1 ms request. The inner urlopen timeout (1 s)
+# stays below the outer --timeout so a genuinely hung request fails the check on its own
+# terms rather than via Docker's outer kill.
+HEALTHCHECK --interval=30s --timeout=2s --start-period=30s --retries=3 \
+  CMD ["python", "-c", "import os, urllib.request as u; u.urlopen('http://127.0.0.1:' + os.environ.get('SPUR_PORT', '8000') + '/api/health', timeout=1)"]
 
 CMD ["spur", "serve"]
