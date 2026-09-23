@@ -100,7 +100,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     instead of a ramp. SPUR_BUILD_WORKERS defaults to a fixed 2, not os.cpu_count() --
     a machine-dependent default would make the measured mem_limit untrue somewhere (D-19).
     """
-    app.state.pool = BuildPool(int_env("SPUR_BUILD_WORKERS", 2))
+    app.state.pool = BuildPool(
+        int_env("SPUR_BUILD_WORKERS", 2),
+        # PROVISIONAL (D-10, 02-03-PLAN.md flagged_assumptions #1): this is NOT a
+        # measurement. D-10's rule is "set above the worst measured build", and the
+        # worst measured build doesn't exist until Plan 02-04's bench harness has
+        # actually run against this topology. 30s is chosen only to be generous enough
+        # that no legitimate build in today's test suite (small gears, well under a
+        # second each) can trip it. Plan 02-04 replaces this with a value set from the
+        # real sweep, above the worst build it observes. A plausible-looking number
+        # presented as settled here is exactly the failure L08 exists to prevent.
+        int_env("SPUR_BUILD_TIMEOUT", 30),
+    )
     try:
         yield
     finally:
