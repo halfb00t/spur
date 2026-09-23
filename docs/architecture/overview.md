@@ -33,7 +33,7 @@ See `decision_log.md` for why each of these, and for the locked behavioural deci
 | Gear maths | `src/spur/calc.py` | involute geometry, derived dimensions, measurement aids, feasibility. No CAD kernel — see `gear-maths/` |
 | Build pool | `src/spur/pool.py` | worker-process lifecycle (N `SPUR_BUILD_WORKERS`, spawned and warmed eagerly), parameter-hash affinity routing, the per-build timeout and worker replacement — see `packaging.md` |
 | Solid model | `src/spur/model.py` | the CadQuery solid, the kernel lock, the per-worker solid cache, STL/STEP export — runs inside a build-pool worker process, not the server, since Phase 2 — see `solid-model/` |
-| HTTP API + UI serving | `src/spur/app.py` | endpoints, admission control, the parent-side exported-bytes cache and static hosting; drives the pool but never reaches the CAD kernel itself — see `http-api.md` |
+| HTTP API + UI serving | `src/spur/app.py` | endpoints, admission control, the parent-side exported-bytes cache and static hosting; gzip-encodes model bodies inside the admission slot and caches both encodings (L19); drives the pool but never reaches the CAD kernel itself — see `http-api.md` |
 | Web UI | `src/spur/static/`, `web/` | the form, the three.js preview, shareable URLs — see `web-ui.md` |
 | CLI | `src/spur/cli.py` | `spur serve` / `info` / `export` — see `cli.md` |
 | Packaging + runtime | `Dockerfile`, `compose.yaml`, `requirements.txt`, `docker/`, `.github/` | the reproducible image and the checks that keep it honest — see `packaging.md` |
