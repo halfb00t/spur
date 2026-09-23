@@ -13,6 +13,7 @@ curl-able. Unset fields take their defaults.
 
 from __future__ import annotations
 
+import gzip
 import threading
 from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
@@ -21,11 +22,12 @@ from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
+from starlette.concurrency import run_in_threadpool
 
 from . import __version__, int_env
 from .build_errors import BuildError, BuildTimeout
@@ -70,6 +72,13 @@ class _BlobCache:
             self._bytes -= len(self._items.popitem(last=False)[1])
 
 
+# Keyed on (params, fmt, quality, encoding) -- "identity" or "gzip" -- so both encodings
+# of a gear are first-class variants of the one cache, sharing the one byte budget,
+# rather than a gzip-only sidecar bolted alongside a still-primary raw cache (quick task
+# 260923-qwr's assumption_delta: pluralization, promote). Accepted cost: caching both
+# encodings of a hot gear (~9 MB raw + ~2.6 MB gzip at _GZIP_LEVEL=1 for a fine gear)
+# means this cache holds fewer distinct gears within the same default 64 MB budget; the
+# budget itself is unchanged and still enforced by _BlobCache below.
 _EXPORTS = _BlobCache(int_env("SPUR_EXPORT_CACHE_MB", 64) * 1024 * 1024)
 
 
@@ -197,16 +206,35 @@ def _gear(q: GearParams) -> GearParams:
     return GearParams(**q.model_dump(include=set(GearParams.model_fields)))
 
 
+def _gzip(data: bytes) -> bytes:
+    """gzip-encode at the level Task 1 measured (`_GZIP_LEVEL`, set from a real 9 MB STL,
+    above). A named module-level function, not an inline call, so a test can substitute a
+    counting wrapper the same way the existing tests substitute `build_backend`. No
+    `mtime=`: nothing compares gzip bytes themselves, only the bodies they decode to, so a
+    fixed header timestamp would buy nothing.
+    """
+    return gzip.compress(data, compresslevel=_GZIP_LEVEL)
+
+
 @contextmanager
 def _build_slot() -> Iterator[None]:
-    """Admission control: refuse work we cannot start soon rather than queue it."""
+    """Admission control: refuse work we cannot start soon rather than queue it.
+
+    A slot now covers a build *and* the first gzip encode of its result (quick task
+    260923-qwr): `GZipMiddleware` compresses only after the endpoint has returned and
+    this slot is gone, so putting compression there bounded nothing -- the mechanism
+    behind the concurrent scenario's 4.33x/5.52x under-load ratios with the build pool
+    never running (02-LATENCY-INVESTIGATION.md E2c). `model()` now compresses inside this
+    slot instead, so a request for an already-built-but-not-yet-compressed gear can be
+    refused here too.
+    """
     global _in_flight_builds
     if not BUILD_QUEUE.acquire(blocking=False):
         raise HTTPException(
             503,
             detail=[{"loc": ["query"], "type": "busy",
-                     "msg": f"Busy: {MAX_QUEUED_BUILDS} gears are already being built. "
-                            "Try again in a moment."}],
+                     "msg": f"Busy: {MAX_QUEUED_BUILDS} gears are already being built or "
+                            "compressed. Try again in a moment."}],
             headers={"Retry-After": "5"},
         )
     _in_flight_builds += 1
@@ -247,6 +275,11 @@ def health() -> dict[str, Any]:
     app's lifespan (tests/test_api.py's module-level client does this deliberately, to
     exercise the inline build backend without paying pool startup cost). Every real
     deployment runs the lifespan, so `pool` is always present in production.
+
+    `queue_available` now means slots free for build *and* first gzip encode, not build
+    alone (quick task 260923-qwr, `_build_slot`'s own docstring): a slot is held across
+    `model()`'s first compression of a result too, so a busy service can show fewer
+    available slots than it would have before that change, for the same in-flight work.
     """
     pool: BuildPool | None = getattr(app.state, "pool", None)
     payload: dict[str, Any] = {"status": "ok", "version": __version__}
@@ -275,14 +308,38 @@ def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
 @app.get("/api/model.{fmt}", response_class=Response,
          responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
 async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
+                request: Request,
                 backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
     params = _gear(q)
-    key = (params, fmt, q.quality)
+    # Same test GZipMiddleware itself makes (installed starlette's own
+    # middleware/gzip.py:66, `"gzip" in headers.get("Accept-Encoding", "")`) -- endpoint
+    # and middleware must agree on who gets encoded bytes, or a client that asked for
+    # identity could be served gzip bytes cached for a previous gzip-accepting client.
+    wants_gzip = "gzip" in request.headers.get("Accept-Encoding", "")
+    encoding = "gzip" if wants_gzip else "identity"
+    key = (params, fmt, q.quality, encoding)
     data = _EXPORTS.get(key)
     if data is None:
         try:
+            # Compression moves inside this slot (quick task 260923-qwr): outside it, a
+            # bound on cache-hit compression would be a no-op, because GZipMiddleware
+            # compresses only after the endpoint has already returned and the slot is
+            # gone (see _build_slot's own docstring for the measured mechanism this
+            # fixes).
             with _build_slot():
-                data = await backend(params, fmt, q.quality)
+                raw_key = (params, fmt, q.quality, "identity")
+                raw = _EXPORTS.get(raw_key)
+                if raw is None:
+                    raw = await backend(params, fmt, q.quality)
+                    _EXPORTS.put(raw_key, raw)
+                if wants_gzip:
+                    # Off the event loop, same as Starlette's own middleware did for
+                    # bodies this size -- what's new is that it's now bounded by the
+                    # same admission control as a fresh build.
+                    data = await run_in_threadpool(_gzip, raw)
+                    _EXPORTS.put(key, data)
+                else:
+                    data = raw
         except BuildError as exc:
             raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "build_error"}]) from exc
@@ -309,9 +366,12 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                          "type": "pool_broken"}],
                 headers={"Retry-After": "5"},
             ) from exc
-        _EXPORTS.put(key, data)
-    return Response(
-        data,
-        media_type=MEDIA_TYPES[fmt],
-        headers={"Content-Disposition": f'attachment; filename="{params.slug()}.{fmt}"'},
-    )
+    headers = {"Content-Disposition": f'attachment; filename="{params.slug()}.{fmt}"',
+               "Vary": "Accept-Encoding"}
+    if wants_gzip:
+        # Setting Content-Encoding here is what makes GZipMiddleware's pass-through
+        # branch leave this body alone instead of compressing it a second time
+        # (installed starlette's middleware/gzip.py:100-120, "if it is [already set],
+        # the body passes through unchanged").
+        headers["Content-Encoding"] = "gzip"
+    return Response(data, media_type=MEDIA_TYPES[fmt], headers=headers)

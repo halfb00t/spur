@@ -178,3 +178,95 @@ def test_a_second_identical_download_is_served_from_the_byte_cache() -> None:
     assert first.status_code == second.status_code == 200
     assert first.content == second.content
     assert calls == 1
+
+
+def test_a_gzip_client_gets_compressed_bytes_an_identity_client_gets_the_raw_file() -> None:
+    """One encoding's bytes must never be served under another's label (T-QWR-03)."""
+    params = {"quality": "preview", "teeth": 31}
+
+    gzip_resp = client.get("/api/model.stl", params=params)
+    assert gzip_resp.status_code == 200
+    assert gzip_resp.headers["content-encoding"] == "gzip"
+    assert "accept-encoding" in gzip_resp.headers["vary"].lower()
+
+    identity_resp = client.get("/api/model.stl", params=params,
+                               headers={"Accept-Encoding": "identity"})
+    assert identity_resp.status_code == 200
+    assert "content-encoding" not in identity_resp.headers
+    assert not identity_resp.content.startswith(b"\x1f\x8b")  # not gzip magic -- a raw STL
+
+    # httpx decodes the gzip response transparently (hard_fact_8): decoded bytes must
+    # equal the identity bytes exactly, or a client silently gets the wrong gear.
+    assert gzip_resp.content == identity_resp.content
+
+
+def test_a_gear_is_compressed_once_per_cache_fill_not_once_per_download(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """A repeat gzip download must hit the cached compressed bytes, not recompress."""
+    from spur import app as app_module
+
+    calls = 0
+    original = app_module._gzip
+
+    def counting_gzip(data: bytes) -> bytes:
+        nonlocal calls
+        calls += 1
+        return original(data)
+
+    monkeypatch.setattr(app_module, "_gzip", counting_gzip)
+
+    params = {"quality": "preview", "teeth": 32}
+    first = client.get("/api/model.stl", params=params)
+    second = client.get("/api/model.stl", params=params)
+
+    assert first.status_code == second.status_code == 200
+    assert first.content == second.content
+    assert calls == 1
+
+
+def test_a_cache_hit_that_still_needs_compressing_goes_through_admission_control() -> None:
+    """The gear is already built; only the compression itself can refuse this request --
+    exactly the property a naive cache-hit-bypasses-the-slot implementation would fail to
+    deliver (hard_fact_2)."""
+    from spur import app as app_module
+
+    params = {"quality": "preview", "teeth": 33}
+
+    # Warm only the raw bytes.
+    warm = client.get("/api/model.stl", params=params, headers={"Accept-Encoding": "identity"})
+    assert warm.status_code == 200
+
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/model.stl", params=params)
+        assert r.status_code == 503
+        assert r.headers["retry-after"] == "5"
+        assert r.json()["detail"][0]["type"] == "busy"
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()
+
+
+def test_an_already_compressed_download_needs_no_slot_at_all() -> None:
+    """Once a gear's gzip bytes are cached, a repeat download takes zero slots -- the E2c
+    scenario (measured at 4.33x and 5.52x) becoming free."""
+    from spur import app as app_module
+
+    params = {"quality": "preview", "teeth": 33}
+
+    # Fill the gzip cache too (raw bytes already warm from the previous test; slots free).
+    first = client.get("/api/model.stl", params=params)
+    assert first.status_code == 200
+    assert first.headers["content-encoding"] == "gzip"
+
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/model.stl", params=params)
+        assert r.status_code == 200
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()
