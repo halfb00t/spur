@@ -134,7 +134,30 @@ app = FastAPI(
     summary="Parametric involute spur gear generator with STL/STEP export.",
     lifespan=lifespan,
 )
-app.add_middleware(GZipMiddleware, minimum_size=1024)
+# Measured against the real 9,062,784-byte STL this app serves for teeth=199&quality=fine
+# (02-LATENCY-INVESTIGATION.md's own corpus), gzip.compress at levels 1/6/9, host loadavg
+# 2.68/3.07/2.78 just before measuring (quiet, but not test-lab-idle -- this run's level-9
+# single-threaded 788.0ms is ~34% faster than the investigation's 1181.7ms on a busier
+# host that session, consistent with the difference being host load, not the input: the
+# compressed byte count at level 9 is 2,404,371 in both runs, so the input is identical):
+#
+#   level | single-threaded median | output bytes (% of input) | 10-concurrent wall (median of 3)
+#   ----- | ----------------------- | -------------------------- | ---------------------------------
+#     1   |  51.5 ms                | 2,632,467 (29.0%)          |  74.4 ms
+#     6   | 147.9 ms                | 2,403,312 (26.5%)          | 198.9 ms
+#     9   | 788.0 ms                | 2,404,371 (26.5%)          | 925.5 ms
+#
+# Selection rule (02-LATENCY-INVESTIGATION.md): adopt a higher level only if it shrinks
+# output by >=10% AND costs <=1.5x the 10-concurrent wall time of the level below it.
+# Level 6 over level 1: only 8.7% smaller (229,155 / 2,632,467) -- misses the 10% bar, so
+# it is never reached; level 9 over level 1: only 8.66% smaller, also misses it (and its
+# concurrent wall is 12.4x level 1's, far past 1.5x regardless). STL triangle data is
+# mostly non-repeating 32-bit floats -- there is little redundancy left for a slower zlib
+# search to find, so the extra CPU cost buys almost nothing here. Level 1 wins on both
+# rule clauses.
+_GZIP_LEVEL = 1
+
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=_GZIP_LEVEL)
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
