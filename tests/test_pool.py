@@ -9,7 +9,9 @@ test_a_real_worker_builds_and_downloads below for why, and don't "fix" it back.
 
 from __future__ import annotations
 
+import multiprocessing as mp
 import os
+from concurrent.futures import ProcessPoolExecutor
 
 from fastapi.testclient import TestClient
 
@@ -57,3 +59,25 @@ def test_preview_fine_and_step_share_one_worker() -> None:
         step = _gear(ModelQuery(teeth=21))  # STEP has no quality dimension
         assert pool.executor_for(preview) is pool.executor_for(fine)
         assert pool.executor_for(fine) is pool.executor_for(step)
+
+
+def test_executor_processes_attribute_still_exists() -> None:
+    """Regression guard for Plan 02-03's forced-termination path (RESEARCH.md A3).
+
+    `ProcessPoolExecutor` has no public API to kill a running task -- Plan 02-03's
+    timeout->terminate->recreate path reaches the OS process through the private,
+    undocumented `_processes` dict (pid -> SpawnProcess). Confirmed present on
+    CPython 3.12.13 this session (02-RESEARCH.md, "Pattern 2"); only checked on
+    3.12, and this project's CI also runs 3.10 (L14). If a future interpreter
+    removes or renames this attribute, this test fails `make verify` loudly instead
+    of D-10's termination path silently becoming a no-op.
+    """
+    executor = ProcessPoolExecutor(max_workers=1, mp_context=mp.get_context("spawn"))
+    try:
+        executor.submit(os.getpid).result()  # a trivial task, so a worker actually starts
+        assert hasattr(executor, "_processes")
+        assert executor._processes  # non-empty: at least the one worker just used
+    finally:
+        # Explicit shutdown: filterwarnings = ["error"] in pyproject.toml turns a
+        # leaked subprocess's ResourceWarning into a test failure (L13).
+        executor.shutdown(wait=True)

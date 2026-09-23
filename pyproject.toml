@@ -128,9 +128,13 @@ forbidden_modules = ["tests"]
 name = "The gear maths stays free of the CAD kernel"
 # calc.py runs on every keystroke in the UI. It is pure arithmetic on purpose: the
 # moment it can reach OpenCascade, that property is gone and nobody notices until the
-# form goes slow. model.py is the only module allowed to touch the kernel.
+# form goes slow. model.py is the only module allowed to touch the kernel. spur.app used
+# to be listed here too, with allow_indirect_imports = true; its own, stricter rule now
+# lives in "The serving process never imports the CAD kernel" below -- forbidding
+# indirectly subsumes forbidding directly, so keeping both here would just be two
+# overlapping rules for the same module.
 type = "forbidden"
-source_modules = ["spur.calc", "spur.params", "spur.app", "spur.cli"]
+source_modules = ["spur.calc", "spur.params", "spur.cli"]
 forbidden_modules = ["cadquery", "OCP"]
 # Reaching the kernel *through* model.py is the whole point; only a direct import here
 # is the violation.
@@ -144,3 +148,15 @@ type = "forbidden"
 source_modules = ["spur.cli"]
 forbidden_modules = ["spur.app", "fastapi", "starlette"]
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "The serving process never imports the CAD kernel"
+# app.py stops importing model.py under D-02: builds happen in worker processes only,
+# reached through spur.pool's runtime importlib call, never a static import. The
+# serving process's memory must never contain OpenCascade, so a transitive path is as
+# bad as a direct one -- allow_indirect_imports = false is what makes mem_limit a
+# number about a kernel-free parent plus N workers, rather than a guess.
+type = "forbidden"
+source_modules = ["spur.app"]
+forbidden_modules = ["cadquery", "OCP"]
+allow_indirect_imports = false
