@@ -83,6 +83,53 @@ different (12-core) machine, ratio-only comparison per D-17: single: 0.22s -> 0.
 2.00s under one 200-tooth fine build; concurrent: repeatedly over 5s under ten concurrent
 builds.
 
+### Idle-host re-run (Runs 3-4)
+
+Dispatched by the human's choice to re-run on a quieted host rather than accept-with-caveat
+or investigate (broken-windows ledger item 1). Same machine, `make serve` on
+`SPUR_PORT=8001` (port 8000 still held by the pre-existing `spur-spur-1` container, D-17),
+same harness (`bench/latency.py`), unmodified.
+
+**Environment snapshot (2026-09-23, ~12:11-12:12 UTC, immediately before the runs):**
+
+- `docker info`: exit 0.
+- `sysctl -n vm.loadavg`, three samples 30 s apart: `{ 3.33 2.86 2.23 }` (12:11:13 UTC),
+  `{ 3.79 3.02 2.31 }` (12:11:48 UTC), `{ 3.96 3.13 2.37 }` (12:12:18 UTC).
+- Top CPU (`ps -Ao %cpu,comm -r | head -5`), latest sample: `node` 160.9%, iTerm2 97.1%,
+  WindowServer 67.9%, MenuBarAgent 25.2%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 2 hours (healthy)`,
+  `fleet-user Restarting (2)` (pre-existing, unrelated, not touched).
+
+**Environment caveat.** The human's `quiet` request at ~12:09 UTC did not produce an idle
+host: the 1-minute load figure climbed across the three samples (3.33 -> 3.79 -> 3.96),
+higher than either of Runs 1-2's pre-run figures (2.35, 2.33), with `node` (an unrelated
+process, not this session) at 160.9% CPU driving most of it. This re-run does not clear
+the ">1.5-on-a-12-core-host idle" bar the plan itself names any better than the original
+session did; per the same L08 reasoning Runs 1-2 recorded this caveat under, the numbers
+below are reported as measured, not presented as clean.
+
+#### `single` scenario (Runs 3-4)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 3 | 0.7 ms (n=3302) | 1.2 ms (n=5529) | 1.68x | 4.17 s | 0 of 1 |
+| 4 | 0.9 ms (n=3139) | 1.0 ms (n=1526) | 1.17x | 1.08 s | 0 of 1 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on both runs (3, 4).
+
+#### `concurrent` scenario (Runs 3-4)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 3 | 1.0 ms (n=2787) | 2.3 ms (n=9785) | 2.32x | 11.04 s | 6 of 10 |
+| 4 | 0.9 ms (n=2903) | 2.1 ms (n=7588) | 2.35x | 7.72 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Not met** on either run (3, 4) -- worse than
+both of Runs 1-2 (2.02x, 2.45x), consistent with the host being less idle at this re-run
+than the original session, not more. Four measurements across two sessions now agree: the
+`concurrent` scenario's ratio bar is not demonstrated met on this machine under any
+environment condition observed so far.
+
 ### `SPUR_BUILD_TIMEOUT`
 
 Worst single build observed across both runs and both scenarios: **7.39 s** (`concurrent`

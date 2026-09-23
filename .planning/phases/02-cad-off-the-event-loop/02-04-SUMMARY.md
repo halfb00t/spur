@@ -386,6 +386,22 @@ No other blockers. `docker compose up -d --build` was re-run at the end of this 
 so the pre-existing `spur-spur-1` deployment (present before this session started) is
 left running on the final, measured topology rather than down.
 
+## Follow-up: idle-host latency re-run
+
+Dispatched separately (2026-09-23, ~12:11-12:12 UTC) after the human chose to re-run on a
+quieted host rather than accept-with-caveat or investigate broken-windows ledger item 1.
+Both scenarios re-run twice more (Runs 3-4) against the same unmodified harness, same
+machine, host `spur serve` on port 8001. `single`: 1.68x, 1.17x -- **met** both runs, same
+as Runs 1-2. `concurrent`: 2.32x, 2.35x -- **not met** either run, and worse than Runs 1-2
+(2.02x, 2.45x), because the host was measurably less idle at this re-run (1-minute load
+climbing 3.33 -> 3.96 across three 30s-apart samples, driven by an unrelated `node`
+process) than during the original session. Four measurements across two sessions now
+agree: `REQ-cad-off-event-loop`'s concurrent-scenario ratio bar is not demonstrated met on
+this machine under any environment condition observed so far. Broken-windows ledger item 1
+stays **open** -- a single passing run was never in reach, so no fixed/waived decision was
+warranted either way. Full numbers: `bench/RESULTS.md`'s "Idle-host re-run (Runs 3-4)"
+subsection. Recorded in this commit.
+
 ## Self-Check: PASSED
 
 - All 9 files listed under `key-files` confirmed present on disk (`bench/RESULTS.md`,

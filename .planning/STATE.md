@@ -116,7 +116,7 @@ None yet.
   both set by the human, see PROJECT.md "Current Milestone" and "Success Metric". Resolved
   at roadmap creation: "Forward scope" now points to REQUIREMENTS.md "Future Requirements"
   as candidates for the next milestone, not phases in this one.)*
-- REQ-cad-off-event-loop's concurrent-scenario latency ratio (bench/RESULTS.md) was not demonstrated within the 2x pass bar on Plan 02-04's measurement session (2.02x, 2.45x); a genuinely-idle-host re-run or an explicit accept-with-caveat decision is needed before this requirement is marked Complete.
+- REQ-cad-off-event-loop's concurrent-scenario latency ratio (bench/RESULTS.md) was not demonstrated within the 2x pass bar on Plan 02-04's measurement session (2.02x, 2.45x); a genuinely-idle-host re-run or an explicit accept-with-caveat decision is needed before this requirement is marked Complete. **Re-run (2026-09-23, ~12:11-12:12 UTC, dispatched by the human's `quiet` re-run choice):** two more runs against the same harness gave 2.32x and 2.35x -- still not met, and worse than the original session, because the host's load average climbed higher during the re-run (1-minute figures 3.33->3.96) than during the original measurement (2.35, 2.33), driven by an unrelated `node` process at 160.9% CPU. Four measurements across two sessions now agree the bar is not met on this machine under any environment condition observed so far; broken-windows ledger item 1 stays open. See `bench/RESULTS.md`'s "Idle-host re-run (Runs 3-4)" subsection and `02-04-SUMMARY.md`'s follow-up section.
 
 ## Deferred Items
 
