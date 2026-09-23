@@ -86,6 +86,15 @@ def _max_queued_builds() -> int:
 MAX_QUEUED_BUILDS = _max_queued_builds()
 BUILD_QUEUE = threading.BoundedSemaphore(MAX_QUEUED_BUILDS)
 
+# D-13: a plain in-flight counter, not BUILD_QUEUE._value -- threading.BoundedSemaphore's
+# internal counter is itself a private attribute (02-RESEARCH.md Assumption A4), so this
+# module keeps its own instead of reading another module's undocumented internals to
+# report the same number. Incremented/decremented only inside _build_slot's own
+# acquire/release pair below. With one uvicorn worker (D-01) and this counter only ever
+# touched from the event-loop thread, it needs no lock of its own -- that stops being
+# true the moment SPUR_WORKERS raises the serving-process count again.
+_in_flight_builds = 0
+
 # The type an injected build backend must satisfy -- plain str for fmt/quality (not
 # model.Format/model.Quality) because this module has no static import path to model.py
 # to name them with (D-02); the endpoint's own Literal types are still checked at the
@@ -168,6 +177,7 @@ def _gear(q: GearParams) -> GearParams:
 @contextmanager
 def _build_slot() -> Iterator[None]:
     """Admission control: refuse work we cannot start soon rather than queue it."""
+    global _in_flight_builds
     if not BUILD_QUEUE.acquire(blocking=False):
         raise HTTPException(
             503,
@@ -176,9 +186,11 @@ def _build_slot() -> Iterator[None]:
                             "Try again in a moment."}],
             headers={"Retry-After": "5"},
         )
+    _in_flight_builds += 1
     try:
         yield
     finally:
+        _in_flight_builds -= 1
         BUILD_QUEUE.release()
 
 
@@ -188,8 +200,40 @@ def index() -> FileResponse:
 
 
 @app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "version": __version__}
+def health() -> dict[str, Any]:
+    """Liveness, plus pool state (D-13) -- parent-local counters only.
+
+    `status` and `version` stay exactly where they are today, at the top level, so the
+    container healthcheck and the UI (neither of which reads pool fields today) are
+    unaffected. Pool state nests under one `pool` key instead (02-03-PLAN.md Task 3
+    checkpoint decision, option B): every later pool field lands inside `pool` without
+    touching the published top level, which is what keeps this a reversible decision
+    instead of a fresh one-way door each time a field is added.
+
+    This endpoint's p95 under load is Phase 2's headline success criterion
+    (02-RESEARCH.md REQ-cad-off-event-loop), so it has to measure the event loop and not
+    the pool: a plain `def`, not `async def`, means there is nothing here for FastAPI to
+    await, and every value below is an O(1) attribute or counter read -- no lock, no IPC,
+    no call into a worker. Querying the workers themselves (the only way to spot one that
+    is alive but wedged) was the rejected D-13 variant; it stays deferred in CONTEXT.md
+    with its own trigger, because asking a worker how it's doing would make the
+    measurement measure the exact thing it's supposed to be independent of.
+
+    `pool` is absent only when `app.state.pool` hasn't been set -- the one path that can
+    happen on is a bare `TestClient(app)` used without `with`, which never runs this
+    app's lifespan (tests/test_api.py's module-level client does this deliberately, to
+    exercise the inline build backend without paying pool startup cost). Every real
+    deployment runs the lifespan, so `pool` is always present in production.
+    """
+    pool: BuildPool | None = getattr(app.state, "pool", None)
+    payload: dict[str, Any] = {"status": "ok", "version": __version__}
+    if pool is not None:
+        payload["pool"] = {
+            "workers": pool.workers,
+            "queue_available": MAX_QUEUED_BUILDS - _in_flight_builds,
+            "workers_replaced": pool.replaced,
+        }
+    return payload
 
 
 @app.get("/api/schema")

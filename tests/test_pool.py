@@ -255,3 +255,73 @@ def test_the_four_failure_types_are_pairwise_distinct() -> None:
         app.dependency_overrides.pop(build_backend, None)
 
     assert len(types) == 4
+
+
+def test_health_reports_pool_state() -> None:
+    """D-13: /api/health additionally reports pool state -- worker count, remaining
+    admission capacity and workers replaced since start -- nested under one `pool` key
+    (Task 3 checkpoint decision: option B), without disturbing the existing top-level
+    `status`/`version` shape the UI and the container healthcheck already read.
+    """
+    from spur import app as app_module
+
+    with TestClient(app) as client:
+        pool = app.state.pool
+        body = client.get("/api/health").json()
+        assert body["status"] == "ok"
+        assert "version" in body
+        assert body["pool"] == {
+            "workers": pool.workers,
+            "queue_available": app_module.MAX_QUEUED_BUILDS,
+            "workers_replaced": pool.replaced,
+        }
+
+
+def test_health_queue_available_falls_while_a_slot_is_held() -> None:
+    """Remaining admission capacity in /api/health drops while a build holds a slot and
+    returns to full once it's released -- backed by the plain in-flight counter
+    `_build_slot` maintains, not `BUILD_QUEUE._value` (02-RESEARCH.md Assumption A4,
+    which this plan's Task 4 explicitly rejects reading from app.py).
+    """
+    from spur import app as app_module
+
+    with TestClient(app) as client:
+        full = client.get("/api/health").json()["pool"]["queue_available"]
+        with app_module._build_slot():
+            held = client.get("/api/health").json()["pool"]["queue_available"]
+            assert held == full - 1
+        released = client.get("/api/health").json()["pool"]["queue_available"]
+        assert released == full
+
+
+def test_health_workers_replaced_increases_after_a_forced_termination() -> None:
+    """`workers_replaced` on /api/health reflects `BuildPool.replaced`, and increases
+    after Task 1's timeout-terminate-replace path fires -- proving the reported field
+    tracks live pool state rather than being frozen at startup.
+    """
+    with TestClient(app) as client:
+        pool = app.state.pool
+        params = GearParams(teeth=21)
+        before = client.get("/api/health").json()["pool"]["workers_replaced"]
+
+        original_timeout = pool.timeout
+        pool.timeout = 0.2
+        try:
+            with pytest.raises(BuildTimeout):
+                asyncio.run(pool._run_with_timeout(params, _sleep_past_timeout, 5.0))
+        finally:
+            pool.timeout = original_timeout
+
+        after = client.get("/api/health").json()["pool"]["workers_replaced"]
+        assert after == before + 1
+
+
+def test_health_handler_never_awaits_or_touches_pool_internals() -> None:
+    """D-13: the health handler is a plain sync function -- FastAPI never awaits a sync
+    route, so a sync `def health()` is itself the structural proof that this endpoint
+    performs no `await` on a worker. Guards against a future edit accidentally making it
+    `async def` and reaching into the pool's executors.
+    """
+    from spur.app import health
+
+    assert not asyncio.iscoroutinefunction(health)
