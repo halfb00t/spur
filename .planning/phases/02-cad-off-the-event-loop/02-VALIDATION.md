@@ -118,7 +118,7 @@ Evidence, in the order the map lists it:
 
 - `make verify` green at `6722cb3` (the pre-commit hook of the UAT commit ran it: ruff,
   mypy `--strict` over `src tests docker bench`, the four import-linter contracts, the
-  unfinished-work scan, pytest — 59 tests across six modules).
+  unfinished-work scan, pytest — 59 test functions in six modules, 76 collected items once parametrised).
 - Every automated row names a test or contract that exists in the tree today; the names in
   the Status column are the ones `pytest --collect-only` reports.
 - The doc-assertion rows (02-04 T4, 02-05 T2/T4) and the CLI-smoke rows (02-02 T1-T3) were
