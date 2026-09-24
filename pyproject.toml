@@ -87,10 +87,25 @@ plugins = ["pydantic.mypy"]   # without it mypy cannot see the generated model _
 strict = true
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
-# disallow_any_explicit is deliberately OFF. The API's derive()/info() contracts are
-# `dict[str, Any]` by design (a JSON document whose keys vary with the parameters), so
-# turning it on today would fail the gate on code that is correct. It is a ratchet, not
-# an exemption: see docs/tech_debt/active/2026-09-21-typed-info-contract.md.
+disallow_any_explicit = true
+# On, for everything mypy checks (src tests docker bench), with no per-module
+# exception -- a carve-out would be a second ratchet, the shape L21 retires. `Any` is
+# not written in this codebase: a genuinely untyped value is `object`, and a value a
+# library already names keeps the library's own alias (pydantic's JsonSchemaValue,
+# starlette's Message). See L21 (supersedes L14).
+
+[tool.pydantic-mypy]
+init_typed = true
+init_forbid_extra = true
+# Without these, the pydantic mypy plugin writes an explicit `Any` into the
+# initialiser it generates for every model and reports it on the model's own `class`
+# line -- confirmed by a hand-run `mypy --disallow-any-explicit` before this fix:
+# exactly six errors, one per model (GearParams, DerivedDimensions, InfoQuery,
+# ModelQuery, PoolState, HealthReport), see 04-02-SUMMARY.md. With both settings the
+# generated initialiser is typed from the fields and none remain. Trade-off (R-1,
+# L21): every model constructor call is now type-checked against its fields. Static
+# only -- no model gains extra="forbid", so runtime handling of unknown fields is
+# unchanged.
 
 [[tool.mypy.overrides]]
 # The CAD kernel ships no type information. Scoped to the two packages that lack it --

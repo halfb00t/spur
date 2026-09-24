@@ -17,7 +17,6 @@ Severity (grep-able `Severity:` field):
 | Severity | Item | Trigger to revisit |
 |---|---|---|
 | must | [The concurrent latency bar was waived, not demonstrated](active/2026-09-23-concurrent-latency-bar-waived.md) | 02-05 writes L17/L18, the harness or the machine changes, or any run reads above 2.45x |
-| must | [The info contract is `dict[str, Any]`](active/2026-09-21-untyped-info-contract.md) | a client depends on the shape, or a third consumer appears |
 | must | [A cached solid's `.BoundingBox()` reads wrong after it has been STL-exported](active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md) | a feature needs a measured dimension from a `Solid` after export, or a test outside the suite's autouse protection hits the same symptom |
 | nice | [CadQuery's `Shape` typing forces four `type: ignore`s](active/2026-09-21-cadquery-shape-typing.md) | CadQuery narrows its own return types, or the pipeline is touched anyway |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
@@ -31,3 +30,4 @@ Severity (grep-able `Severity:` field):
 |---|---|
 | [CAD builds block the event loop](resolved/2026-09-21-cad-builds-block-the-event-loop.md) | `daeb284` — see the file's own `Resolved in:` field |
 | [No structured logging anywhere](resolved/2026-09-21-no-structured-logging.md) | `21b8fe4` — see the file's own `Resolved in:` field |
+| [The info contract is `dict[str, Any]`](resolved/2026-09-21-untyped-info-contract.md) | `013900d` — see the file's own `Resolved in:` field |
