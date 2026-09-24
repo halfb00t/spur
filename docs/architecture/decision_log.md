@@ -310,3 +310,71 @@ Reason: the middleware compresses after admission control has already released i
 slot, so bounding compression required moving where it happens, not just how expensive
 it is; the level and the architecture are both measured, not assumed. Commits:
 `2d47994` (gzip level), `7a61fad` (admission-bound, cached compression).
+
+## L20 — Structured JSON logging, configured at two idempotent call sites
+
+Date: 2026-09-24.
+
+The serving process now leaves structured evidence for the decision branches that
+already existed (Phase 2's queue, pool and failure paths): `build.started`,
+`build.failed`, `export.served`, `queue.refused`, `worker.replaced`, one JSON object per
+line, on stderr. `src/spur/records.py` is the module that owns this — one formatter, one
+level knob, and one small function per event (D-17), so `app.py` and `pool.py` call
+intent-named helpers instead of assembling `extra=` dicts by hand.
+
+**Library and format.** stdlib `logging` with a project-owned JSON `Formatter` — one
+JSON object per line, always, built from the record's attributes plus `extra` (D-01,
+D-03). No `SPUR_LOG_FORMAT` knob and no TTY detection: one formatter is one code path,
+which is the one thing the round-trip test proves. `structlog` was rejected — a new
+pinned dependency against `L12`'s closure, in an image that already carries 1.6 GB of
+OpenCascade and VTK, for a five-event problem. logfmt was rejected too — a convention
+with no parser, where `jq` is the intended reader (`make serve 2>&1 | jq`).
+
+**The stream.** One handler, on stderr (D-04), matching the convention `cli.py` already
+sets: stdout is product output (`spur info` prints JSON there), stderr is diagnostics.
+uvicorn's own records (`uvicorn`, `uvicorn.error`, `uvicorn.access`) join the same
+stream because `cli.cmd_serve` passes `log_config=None` to `uvicorn.run` (D-02). Verified
+by reading the installed uvicorn's `Config.configure_logging()`: its entire body is
+gated behind `if self.log_config is not None:`, so passing `None` skips `dictConfig`
+altogether and both uvicorn loggers keep `propagate=True`, landing on whatever the root
+logger is configured with — the one handler `records.configure()` installs.
+
+**Two idempotent configuration points, not one.** `cli.cmd_serve` (before
+`uvicorn.run`, the composition root for the default `SPUR_WORKERS=1` deployment) **and**
+`app.py`'s `lifespan()` startup both call `records.configure()`. The original design
+assumed one call site was enough, on the premise that uvicorn's worker children inherit
+the parent's logging configuration when `SPUR_WORKERS>1`. `03-RESEARCH.md` tested that
+premise directly — reading uvicorn's installed `_subprocess.py` /
+`supervisors/multiprocess.py`, which start extra workers via
+`multiprocessing.get_context("spawn")`, and a live reproduction showing a spawned
+child's root logger holds zero handlers immediately after the parent installed one — and
+found it **false**: a spawned worker is a fresh interpreter that re-imports `spur.app`
+but never runs `cli.cmd_serve`, so `lifespan()` is the only code that reaches every
+worker regardless of `SPUR_WORKERS`. **Removing either call is a regression, not a
+cleanup**: dropping `cli.cmd_serve`'s call leaves the degraded paths (a bare `uvicorn
+spur.app:app`, `docker/smoke.py`) with no configured logger before `lifespan()` runs;
+dropping `lifespan()`'s call silently drops every record in every worker but the one
+that happened to run `cli.cmd_serve`, for any deployment with `SPUR_WORKERS` above 1.
+`records.configure()` is guarded idempotent (checks for an already-installed handler
+instance) so both calls landing in the same process, the common `SPUR_WORKERS=1` case,
+never double-prints a line.
+
+**Where records are emitted.** The parent process only (D-06). No handler is configured
+in `pool._warm()`, no record is emitted from `model.py` — workers stay silent by
+decision. Accepted cost: the kernel's own traceback reaches the parent only as the
+`_RemoteTraceback` text `concurrent.futures` ships back inside `BuildError`'s message,
+not as a class object.
+
+**Default level and its knob.** INFO by default (`build.started`/`export.served` live
+there, so every branch is visible out of the box), with a `SPUR_LOG_LEVEL` environment
+variable following the existing `SPUR_*` pattern and falling back to INFO on a name
+`logging.getLevelName()` doesn't recognise — the same "read once, fall back on
+nonsense" shape as `int_env` (`spur/__init__.py`) (D-14).
+
+Reason: no number is the headline claim here — this is the observability decision the
+debt file (`docs/tech_debt/resolved/2026-09-21-no-structured-logging.md`) asked to be
+made once, with the field names pinned by tests rather than re-derived by eye each time
+someone needs to read an incident. The two-call-site correction in particular is the
+single most likely future regression: a reader finding `lifespan()`'s `configure()` call
+redundant next to `cli.cmd_serve`'s and deleting it would silently blind every worker
+process above the first, with nothing in a `SPUR_WORKERS=1` dev environment to catch it.

@@ -87,8 +87,34 @@ and has to measure the event loop, not the pool.
 
 ## Logging
 
-None. See `docs/tech_debt/active/2026-09-21-no-structured-logging.md` — a `503`, a
-`BuildError` and a slow build are all invisible in production today.
+One JSON-lines logger, on stderr, configured at the composition boundary (`L20`,
+`src/spur/records.py`). Every `/api/model` request emits exactly one of the following,
+each carrying a per-request `request` id, the gear's `slug` and non-default `params`:
+
+| Event | Level | When | Fields beyond the shared envelope |
+|---|---|---|---|
+| `build.started` | INFO | Immediately before the backend call — the one place a build actually begins | `fmt`, `quality` |
+| `export.served` | INFO | Every request that returns bytes, whichever of the three paths served it | `fmt`, `quality`, `encoding`, `source` (`cache` / `compressed` / `built`), `duration_ms` |
+| `build.failed` | WARNING for `BuildError`, ERROR for everything else (`BuildTimeout`/`BrokenProcessPool`, or any other exception class `model()` didn't expect) | Any of `model()`'s `except` clauses, including the catch-all (WR-01, review fix) | `fmt`, `quality`, `exception` (the class name), `duration_ms` |
+| `queue.refused` | WARNING | `_build_slot()`'s single admission refusal | `fmt`, `quality`, `in_flight`, `max_queued` |
+
+`pool.recreate_for()` also emits `worker.replaced` at ERROR, with the hash slot and a
+`cause` of `timeout` or `broken_pool` — the pool-recovery branch this file's own
+"replaced once per incident" guarantee describes above. See `L20`.
+
+uvicorn's own access and error records (`uvicorn`, `uvicorn.error`, `uvicorn.access`)
+ride the same stream and the same JSON format: `cli.cmd_serve` passes `log_config=None`
+to `uvicorn.run`, so uvicorn installs no `dictConfig` of its own and its loggers
+propagate to the same root handler `records.configure()` installs (D-02). A record that
+itself carries a real traceback -- concretely, uvicorn's own `"Exception in ASGI
+application"` line for any exception `model()` doesn't classify -- gets one rendered
+into a `traceback` field (CR-01, review fix); `spur`'s own `build_failed()` never sets
+`exc_info` on the records it emits, so that field never appears on spur's own vocabulary
+(D-06/T-03-05 still holds).
+
+The incident question this answers, from the stderr stream alone, for one request: was
+it refused, served from cache, compressed or built; if built, how long; if it failed,
+which class; and was a worker replaced. Read locally with `make serve 2>&1 | jq`.
 
 ## Tests
 

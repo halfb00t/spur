@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from . import __version__
 from .params import GearParams
+from .records import configure
 
 
 def _add_gear_args(ap: argparse.ArgumentParser) -> None:
@@ -46,8 +47,20 @@ def _params(ns: argparse.Namespace) -> GearParams:
 def cmd_serve(ns: argparse.Namespace) -> None:
     import uvicorn
 
+    # The composition root (D-05): every production start is `spur serve`. configure()
+    # installs the one stderr JSON handler for the SPUR_WORKERS=1 default; app.py's
+    # lifespan() calls it again, idempotently, because this call alone would silently
+    # miss every record once a deployer raises SPUR_WORKERS (see records.py's docstring).
+    configure()
+    # log_config=None: verified this session by reading the installed uvicorn's
+    # Config.configure_logging(), whose entire body is gated behind
+    # `if self.log_config is not None`. Passing None skips uvicorn's own dictConfig
+    # entirely, and since no log_level is passed either, uvicorn never touches
+    # `uvicorn.error`/`uvicorn.access`'s levels or handlers -- they keep propagate=True
+    # and land on the one root handler above, so the whole stream shares one format
+    # (D-02).
     uvicorn.run("spur.app:app", host=ns.host, port=ns.port, workers=ns.workers,
-                root_path=ns.root_path, proxy_headers=True)
+                root_path=ns.root_path, proxy_headers=True, log_config=None)
 
 
 def cmd_info(ns: argparse.Namespace) -> None:

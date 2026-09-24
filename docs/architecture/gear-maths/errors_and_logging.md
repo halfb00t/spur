@@ -28,5 +28,6 @@ None, deliberately. This code runs on every keystroke; it is pure, and its outpu
 its diagnostic — `warnings` in the response says what was changed and why. Nothing here
 has a failure that a log line would help reproduce.
 
-The project as a whole has no structured logger yet. That is an open gap for the serving
-layers, not for this one: see `docs/tech_debt/active/2026-09-21-no-structured-logging.md`.
+The serving layers have a structured logger now (`L20`, `src/spur/records.py`). This
+module's silence is a boundary, not a shared gap: `calc.py` never imports it, the way it
+never imports the CAD kernel — pure functions on every keystroke stay pure.

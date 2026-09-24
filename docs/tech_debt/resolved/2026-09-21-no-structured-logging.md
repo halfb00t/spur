@@ -1,8 +1,9 @@
 # No structured logging anywhere
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-21
+Resolved in: 21b8fe4
 Source: writing docs/architecture/*/errors_and_logging.md — verified by grep, not assumed
 Related files:
 - src/spur/app.py
@@ -38,3 +39,21 @@ or built, queue refused. Redact nothing sensitive because there is nothing sensi
 but pick the field names once.
 
 Revisit when: the first production incident, or any deploy beyond one person's machine.
+
+## Resolution (2026-09-24)
+
+`Resolved in: 21b8fe4` is Plan 03-02's `worker.replaced` commit
+(`feat(03-02): worker.replaced -- one record per incident, inside the guard that already
+counts once`) — the last code-changing commit of Phase 3, not the present commit, which
+resolves this file and makes the documentation describing it true (per flagged
+assumption 1, a file cannot carry its own commit's sha).
+
+`src/spur/records.py` configures one stderr JSON logger at two idempotent call sites
+(`cli.cmd_serve` and `app.py`'s `lifespan()` — the second required once
+03-RESEARCH.md falsified the single-call-site assumption; see `L20`) and emits all five
+branches this file named: `build.started` with the parameter slug, `build.failed` with
+the exception class, `export.served` with `source` in `{cache, compressed, built}`,
+`queue.refused`, plus `worker.replaced` for the pool-recovery branch Phase 2 added after
+this file was written. Each is proven by a `caplog`-based test asserting the literal
+event and field names (D-16), plus one formatter round-trip test. `calc.py` stays
+log-free, as this file said it should.

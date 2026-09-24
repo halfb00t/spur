@@ -10,6 +10,7 @@ test_a_real_worker_builds_and_downloads below for why, and don't "fix" it back.
 from __future__ import annotations
 
 import asyncio
+import logging
 import multiprocessing as mp
 import os
 import time
@@ -45,6 +46,23 @@ def _die() -> bytes:
     raised Python exception would surface as that exception instead].
     """
     os._exit(1)
+
+
+def _event_records(caplog: pytest.LogCaptureFixture, event: str) -> list[logging.LogRecord]:
+    """Same helper as tests/test_api.py's own `_event_records` (D-16) -- the records
+    this module's helpers emitted for one literal event name. `getattr(..., None)`
+    because `caplog.records` also holds records from other loggers that carry no
+    `event` attribute at all.
+    """
+    return [rec for rec in caplog.records if getattr(rec, "event", None) == event]
+
+
+def _field(rec: logging.LogRecord, name: str) -> object:
+    """Same helper as tests/test_api.py's own `_field` -- `name` is a parameter, not a
+    literal, at this call site, so ruff's B009 ("no getattr with a constant") does not
+    fire here the way it would on a direct `getattr(rec, "slot")`.
+    """
+    return getattr(rec, name)
 
 
 def test_a_real_worker_builds_and_downloads() -> None:
@@ -111,14 +129,19 @@ def test_executor_processes_attribute_still_exists() -> None:
         executor.shutdown(wait=True)
 
 
-def test_a_wedged_build_is_terminated_and_its_worker_replaced() -> None:
+def test_a_wedged_build_is_terminated_and_its_worker_replaced(
+        caplog: pytest.LogCaptureFixture) -> None:
     """D-10, D-12: a build that overruns its per-build timeout is killed, not merely
     abandoned -- the wait ends and the work ends with it -- and the wedged hash slot's
     worker is replaced rather than left dead, so the next request for that slot
     succeeds against a fresh worker."""
+    caplog.set_level(logging.INFO)  # Pitfall 1: caplog defaults to WARNING, and
+    # worker.replaced is ERROR, but this pins the assertion to the level under test
+    # rather than to caplog's own default happening to be low enough.
     with TestClient(app):
         pool = app.state.pool
         params = GearParams(teeth=21)
+        expected_slot = hash(params) % pool.workers  # pool.executor_for's own arithmetic
         executor = pool.executor_for(params)
         worker_pid_before = executor.submit(os.getpid).result()  # starts the worker
         [proc] = list(executor._processes.values())
@@ -138,24 +161,40 @@ def test_a_wedged_build_is_terminated_and_its_worker_replaced() -> None:
         assert not proc.is_alive()
         assert pool.replaced == replaced_before + 1
 
+        replaced = _event_records(caplog, "worker.replaced")
+        assert len(replaced) == 1
+        assert replaced[0].levelno == logging.ERROR
+        assert _field(replaced[0], "cause") == "timeout"
+        assert _field(replaced[0], "slot") == expected_slot
+
         # the next request routed to the same hash slot succeeds against the fresh worker
         new_pid = pool.executor_for(params).submit(os.getpid).result()
         assert new_pid != worker_pid_before
 
 
-def test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced() -> None:
+def test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced(
+        caplog: pytest.LogCaptureFixture) -> None:
     """D-12: a worker that dies unexpectedly (a hard process death, not a Python
     exception) surfaces as BrokenProcessPool from the awaited call, and its slot is
     replaced rather than left dead."""
+    caplog.set_level(logging.INFO)  # Pitfall 1
     with TestClient(app):
         pool = app.state.pool
         params = GearParams(teeth=21)
+        expected_slot = hash(params) % pool.workers
         replaced_before = pool.replaced
 
         with pytest.raises(BrokenProcessPool):
             asyncio.run(pool._run_with_timeout(params, _die))
 
         assert pool.replaced == replaced_before + 1
+
+        replaced = _event_records(caplog, "worker.replaced")
+        assert len(replaced) == 1
+        assert replaced[0].levelno == logging.ERROR
+        assert _field(replaced[0], "cause") == "broken_pool"
+        assert _field(replaced[0], "slot") == expected_slot
+
         # the slot is usable again, against a fresh worker
         assert pool.executor_for(params).submit(os.getpid).result() > 0
 
@@ -288,7 +327,7 @@ def test_health_queue_available_falls_while_a_slot_is_held() -> None:
 
     with TestClient(app) as client:
         full = client.get("/api/health").json()["pool"]["queue_available"]
-        with app_module._build_slot():
+        with app_module._build_slot("test-req", GearParams(), "stl", "preview"):
             held = client.get("/api/health").json()["pool"]["queue_available"]
             assert held == full - 1
         released = client.get("/api/health").json()["pool"]["queue_available"]
@@ -420,12 +459,18 @@ def test_four_same_slot_requests_all_refuse_without_cancellation() -> None:
         assert new_pid != worker_pid_before
 
 
-def test_two_same_slot_deaths_from_one_incident_replace_the_worker_once() -> None:
+def test_two_same_slot_deaths_from_one_incident_replace_the_worker_once(
+        caplog: pytest.LogCaptureFixture) -> None:
     """WR-01: two same-slot requests that both lose their worker to a hard process
     death both surface as BrokenProcessPool (D-12, unchanged by this fix), and
     `pool.replaced` rises by exactly 1 -- not 2 -- because both requests are observing
-    the same incident, not two independent ones.
+    the same incident, not two independent ones. CR-01/WR-01: extended (not replaced)
+    with a matching record-count assertion -- RESEARCH.md Pitfall 4 notes the existing
+    counter-only assertions would still pass against a record emitted at the two
+    `_run_with_timeout` call sites instead of inside `recreate_for`'s identity guard;
+    this is the assertion that would catch that regression.
     """
+    caplog.set_level(logging.INFO)  # Pitfall 1
     with TestClient(app):
         pool = app.state.pool
         params = GearParams(teeth=21)
@@ -442,3 +487,4 @@ def test_two_same_slot_deaths_from_one_incident_replace_the_worker_once() -> Non
         assert isinstance(first_result, BrokenProcessPool)
         assert isinstance(second_result, BrokenProcessPool)
         assert pool.replaced == replaced_before + 1
+        assert len(_event_records(caplog, "worker.replaced")) == 1

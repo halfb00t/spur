@@ -120,7 +120,7 @@ it retires. Feature work is deferred to the next milestone ("Future Requirements
 
 ### Observability
 
-- [ ] **REQ-structured-logging**: A structured logger is configured at the composition
+- [x] **REQ-structured-logging**: A structured logger is configured at the composition
   boundary (`cli.cmd_serve` / `app.py` startup) and emits the decision branches that already
   exist — build started (with parameter slug), build failed (with exception class), export
   served from cache vs. built, queue refused.
@@ -222,7 +222,7 @@ under "Future Requirements" above — this table is for things that are not plan
 | REQ-docker-multiarch | Phase 1 | Complete (shipped v0) |
 | REQ-cad-off-event-loop | Phase 2 | Complete |
 | REQ-measured-memory-ceiling | Phase 2 | Complete |
-| REQ-structured-logging | Phase 3 | Pending |
+| REQ-structured-logging | Phase 3 | Complete |
 | REQ-typed-derived-dimensions | Phase 4 | Pending |
 | REQ-ci-verified | Phase 5 | Pending |
 

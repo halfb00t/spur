@@ -29,6 +29,7 @@ from typing import cast
 
 from .build_errors import BuildTimeout
 from .params import GearParams
+from .records import worker_replaced
 
 _SPAWN = mp.get_context("spawn")  # portable, and with D-02 the parent has no OCP to fork
 
@@ -91,7 +92,7 @@ class BuildPool:
     def executor_for(self, p: GearParams) -> ProcessPoolExecutor:
         return self._executors[hash(p) % self.workers]  # D-07: affinity, not load-balance
 
-    def recreate_for(self, p: GearParams, executor: ProcessPoolExecutor) -> None:
+    def recreate_for(self, p: GearParams, executor: ProcessPoolExecutor, cause: str) -> None:
         """Discard a broken/wedged single-worker executor and replace it (D-10, D-12).
 
         `executor` is the one the *caller's own* failing request actually used --
@@ -105,6 +106,15 @@ class BuildPool:
         would count one incident as two -- observed directly by
         tests/test_pool.py::test_two_same_slot_deaths_from_one_incident_replace_the_worker_once
         against this method before this guard existed (`replaced` read 2, not 1).
+
+        `cause` (`"timeout"` or `"broken_pool"`) is threaded in from the caller because
+        `recreate_for` itself cannot tell which of `_run_with_timeout`'s two branches
+        is calling it. The `worker.replaced` log record below and the `self.replaced`
+        counter above it are two views of the same event and must stay on the same
+        side of this identity guard: emitting from either call site in
+        `_run_with_timeout` instead would log once per *caller* rather than once per
+        *incident*, re-creating the CR-01/WR-01 double-count this guard exists to
+        prevent -- this time in the log, where nothing else would catch it.
         """
         i = hash(p) % self.workers
         if self._executors[i] is not executor:
@@ -138,6 +148,7 @@ class BuildPool:
         self._executors[i] = ProcessPoolExecutor(
             max_workers=1, mp_context=_SPAWN, initializer=_warm)
         self.replaced += 1
+        worker_replaced(slot=i, cause=cause)
 
     async def _run_with_timeout(
         self, p: GearParams, func: Callable[..., bytes], *args: object,
@@ -182,7 +193,7 @@ class BuildPool:
             # abandoned future that never gets killed.
             for proc in executor._processes.values():
                 proc.terminate()
-            self.recreate_for(p, executor)
+            self.recreate_for(p, executor, "timeout")
             raise BuildTimeout(
                 f"Build exceeded the {self.timeout}s per-build timeout. Try a coarser "
                 "quality or fewer teeth."
@@ -194,7 +205,7 @@ class BuildPool:
             # Hand-Roll"]. Same remedy as the timeout case: the dead slot is replaced
             # rather than staying dead. Re-raised so app.py maps it to its own status
             # code (D-12) instead of this module deciding HTTP semantics.
-            self.recreate_for(p, executor)
+            self.recreate_for(p, executor, "broken_pool")
             raise
 
     async def export(self, p: GearParams, fmt: str, quality: str) -> bytes:

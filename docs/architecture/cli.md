@@ -35,6 +35,17 @@ capped recess is visible to someone scripting exports.
 Exit 2 with `error: …` on stderr for bad parameters and for an unknown output extension;
 `BuildError` becomes `error: <kernel message>`. Nothing is written when the build fails.
 
+## Logging
+
+`spur serve` configures the structured JSON logger (`records.configure()`, `L20`) before
+starting uvicorn — it is the composition root for every production deployment
+(Dockerfile `CMD ["spur", "serve"]`, `make serve`). `spur info` and `spur export`
+deliberately do not: none of the logged branches exist on the CLI path (no admission
+queue, no byte cache, no build pool — L04), so there is nothing here for a logger to
+observe. Their stderr prose above (`error: …`, `warning: …`) is their diagnostic,
+matching the stdout-is-product-output / stderr-is-diagnostics convention `records.py`'s
+own stream choice (D-04) was built to match, not the other way around.
+
 ## Tests
 
 `tests/test_cli.py`, 4 tests — added because the CLI had none and the README's own

@@ -1,10 +1,13 @@
+import logging
 from collections.abc import Iterator
-from typing import cast
+from concurrent.futures.process import BrokenProcessPool
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
 
 from spur.app import app, build_backend
+from spur.build_errors import BuildError, BuildTimeout
 from spur.model import Format, Quality, export
 from spur.params import GearParams
 
@@ -125,6 +128,47 @@ def test_a_saturated_service_refuses_instead_of_queueing() -> None:
     finally:
         for _ in held:
             app_module.BUILD_QUEUE.release()
+
+
+def test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """D-09, D-10, D-15: a refusal says which gear was turned away and how close to
+    the ceiling the service was, at WARNING -- capacity, not breakage."""
+    from spur import app as app_module
+
+    caplog.set_level(logging.INFO)
+    # Same synthetic-saturation shape as test_a_saturated_service_refuses_instead_of_
+    # queueing above: the semaphore is exhausted directly, not through _build_slot, so
+    # the parent's own `_in_flight_builds` counter is whatever it already reads (0 in
+    # this synthetic scenario, since no real slot holder incremented it) -- captured
+    # here rather than hardcoded, so the assertion checks the record against the
+    # module's own counter, not a value this test happens to expect.
+    in_flight_before = app_module._in_flight_builds
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/model.stl", params={"quality": "preview", "teeth": 72})
+        assert r.status_code == 503
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    refused = _event_records(caplog, "queue.refused")
+    assert len(refused) == 1
+    assert refused[0].levelno == logging.WARNING
+    assert _field(refused[0], "request")
+    assert _field(refused[0], "slug")
+    assert _field(refused[0], "in_flight") == in_flight_before
+    assert _field(refused[0], "max_queued") == app_module.MAX_QUEUED_BUILDS
+
+    assert not _event_records(caplog, "export.served")
+    assert not _event_records(caplog, "build.started")
+    # WR-01 (review fix) regression: the catch-all `except Exception` model() gained
+    # must not also fire for _build_slot()'s own admission-control HTTPException --
+    # that would duplicate this queue.refused record as a spurious build.failed one.
+    assert not _event_records(caplog, "build.failed")
 
 
 def test_max_queued_builds_is_derived_from_build_workers(
@@ -270,3 +314,175 @@ def test_an_already_compressed_download_needs_no_slot_at_all() -> None:
     finally:
         for _ in held:
             app_module.BUILD_QUEUE.release()
+
+
+def _event_records(caplog: pytest.LogCaptureFixture, event: str) -> list[logging.LogRecord]:
+    """The records this module's helpers emitted for one literal event name (D-16).
+    `getattr(..., None)` (not a plain attribute access): `caplog.records` also holds
+    records from other loggers (httpx logs its own "HTTP Request" line at INFO once
+    anything sets the root level there), and those carry no `event` attribute at all."""
+    return [rec for rec in caplog.records if getattr(rec, "event", None) == event]
+
+
+def _field(rec: logging.LogRecord, name: str) -> Any:
+    """Read a field one of this module's per-event helpers attached via `extra=`, on a
+    record already selected by `_event_records` -- so the field is known present.
+    LogRecord's stub declares no such attribute, so mypy --strict needs an explicit
+    `Any` read; ruff's B009 ("no getattr with a constant") does not fire here because
+    `name` is a parameter, not a literal, at this call site.
+    """
+    return getattr(rec, name)
+
+
+def test_a_fresh_build_emits_build_started_then_export_served_with_source_built(
+        caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params={"quality": "preview", "teeth": 61})
+    assert r.status_code == 200
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    assert _event_records(caplog, "build.started")
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "source") == "built"
+    assert _field(served[0], "request")
+    assert _field(served[0], "slug")
+
+
+def test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started(
+        caplog: pytest.LogCaptureFixture) -> None:
+    params = {"quality": "preview", "teeth": 62}
+    client.get("/api/model.stl", params=params)  # warm the byte cache
+
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params=params)
+    assert r.status_code == 200
+    assert caplog.records
+
+    assert not _event_records(caplog, "build.started")
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "source") == "cache"
+    assert _field(served[0], "duration_ms") == 0
+
+
+def test_a_gzip_request_after_an_identity_download_emits_source_compressed(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """Raw bytes are already cached; only this encoding is not -- the path quick task
+    260923-qwr found behind the concurrent-latency ratios (D-11)."""
+    params = {"quality": "preview", "teeth": 63}
+    client.get("/api/model.stl", params=params, headers={"Accept-Encoding": "identity"})
+
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params=params)
+    assert r.status_code == 200
+    assert caplog.records
+
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "source") == "compressed"
+    assert _field(served[0], "duration_ms") > 0
+
+
+def test_an_all_default_gear_logs_params_as_an_empty_object_not_omitted(
+        caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params={"quality": "preview"})
+    assert r.status_code == 200
+    assert caplog.records
+
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "params") == {}
+
+
+def test_two_requests_for_one_gear_get_two_different_request_ids(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """Two concurrent requests for the same gear are the one case params + time cannot
+    disambiguate (D-13, D-07's same-slot affinity)."""
+    caplog.set_level(logging.INFO)
+    params = {"quality": "preview", "teeth": 64}
+    client.get("/api/model.stl", params=params)
+    client.get("/api/model.stl", params=params)
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 2
+    assert _field(served[0], "request") != _field(served[1], "request")
+
+
+@pytest.mark.parametrize(("exc", "want_level", "want_exception"), [
+    (BuildError("D-flat too small for this bore"), logging.WARNING, "BuildError"),
+    (BuildTimeout("Build exceeded the 30s per-build timeout."), logging.ERROR, "BuildTimeout"),
+    (BrokenProcessPool("worker died"), logging.ERROR, "BrokenProcessPool"),
+])
+def test_a_failed_build_emits_build_failed_naming_the_class_and_the_level(
+        caplog: pytest.LogCaptureFixture, exc: Exception, want_level: int,
+        want_exception: str) -> None:
+    """D-08, D-15: the level says whose fault it is -- BuildError (the user's gear,
+    422) is a WARNING, the two 503 classes are ERROR."""
+    caplog.set_level(logging.INFO)
+
+    async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        raise exc
+
+    app.dependency_overrides[build_backend] = lambda: backend
+    try:
+        # teeth=71: a count no other test in this suite ever successfully downloads
+        # (test_pool.py's own such test picks 43/44 for the same reason), so the
+        # shared byte cache can never short-circuit this request before the raising
+        # backend runs.
+        r = client.get("/api/model.stl", params={"quality": "preview", "teeth": 71})
+    finally:
+        app.dependency_overrides[build_backend] = lambda: _inline_backend
+    assert r.status_code in (422, 503)
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    failed = _event_records(caplog, "build.failed")
+    assert len(failed) == 1
+    assert failed[0].levelno == want_level
+    assert _field(failed[0], "exception") == want_exception
+    assert _field(failed[0], "request")
+    assert _field(failed[0], "slug")
+    assert _field(failed[0], "params") is not None
+    assert _field(failed[0], "duration_ms") is not None
+
+    assert not _event_records(caplog, "export.served")
+
+
+def test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """WR-01 (review fix): model()'s three except clauses only covered BuildError/
+    BuildTimeout/BrokenProcessPool -- anything else (`_gzip()` under memory pressure, or
+    a future violation of model.py's "BuildError is the only exception that escapes"
+    contract) propagated uncaught with no build.failed record at all, no exception
+    class, nothing from spur's own vocabulary (the CR-01 review found this was the one
+    scenario left with no traceback either). The catch-all must log then re-raise, not
+    swallow -- the unhandled-error path still has to serve the response, so this test
+    drives the exception through `pytest.raises`, not a status-code assertion."""
+    caplog.set_level(logging.INFO)
+
+    async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        raise MemoryError("out of memory compressing bytes")
+
+    app.dependency_overrides[build_backend] = lambda: backend
+    try:
+        # teeth=73: unused by any other test in this suite (see the teeth=71 comment
+        # above), so the shared byte cache can never short-circuit this request.
+        with pytest.raises(MemoryError):
+            client.get("/api/model.stl", params={"quality": "preview", "teeth": 73})
+    finally:
+        app.dependency_overrides[build_backend] = lambda: _inline_backend
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    failed = _event_records(caplog, "build.failed")
+    assert len(failed) == 1
+    assert failed[0].levelno == logging.ERROR  # unrecognised class -> the service's fault
+    assert _field(failed[0], "exception") == "MemoryError"
+    assert _field(failed[0], "request")
+    assert _field(failed[0], "slug")
+    assert _field(failed[0], "duration_ms") is not None
+
+    assert not _event_records(caplog, "export.served")

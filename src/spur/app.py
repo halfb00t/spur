@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import gzip
 import threading
+import time
+import uuid
 from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from concurrent.futures.process import BrokenProcessPool
@@ -34,6 +36,7 @@ from .build_errors import BuildError, BuildTimeout
 from .calc import derive, with_mate
 from .params import GearParams
 from .pool import BuildPool
+from .records import build_failed, build_started, configure, export_served, queue_refused
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -119,6 +122,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     instead of a ramp. SPUR_BUILD_WORKERS defaults to a fixed 2, not os.cpu_count() --
     a machine-dependent default would make the measured mem_limit untrue somewhere (D-19).
     """
+    # The only code that runs inside *every* spawned uvicorn worker, regardless of
+    # SPUR_WORKERS (03-RESEARCH.md: uvicorn's extra workers are `multiprocessing.spawn`
+    # children whose target is uvicorn's own subprocess_started, never cli.cmd_serve, so
+    # a spawned worker inherits none of the parent's logging configuration -- verified
+    # by reading uvicorn's installed source and by a live reproduction). configure() is
+    # idempotent, so the default SPUR_WORKERS=1 case, where this and cli.cmd_serve's own
+    # call both run in one process, still installs exactly one handler, not two.
+    configure()
     app.state.pool = BuildPool(
         int_env("SPUR_BUILD_WORKERS", 2),
         # D-10: set above the worst measured build. bench/latency.py's two load
@@ -218,7 +229,7 @@ def _gzip(data: bytes) -> bytes:
 
 
 @contextmanager
-def _build_slot() -> Iterator[None]:
+def _build_slot(request_id: str, p: GearParams, fmt: str, quality: str) -> Iterator[None]:
     """Admission control: refuse work we cannot start soon rather than queue it.
 
     A slot now covers a build *and* the first gzip encode of its result (quick task
@@ -228,9 +239,15 @@ def _build_slot() -> Iterator[None]:
     never running (02-LATENCY-INVESTIGATION.md E2c). `model()` now compresses inside this
     slot instead, so a request for an already-built-but-not-yet-compressed gear can be
     refused here too.
+
+    Takes the request identity (D-10) so a refusal can name the gear that was turned
+    away -- the only reason this context manager, previously argument-free, now needs
+    the caller's `request_id`/`params`/`fmt`/`quality`.
     """
     global _in_flight_builds
     if not BUILD_QUEUE.acquire(blocking=False):
+        queue_refused(request_id, p, fmt, quality,
+                      in_flight=_in_flight_builds, max_queued=MAX_QUEUED_BUILDS)
         raise HTTPException(
             503,
             detail=[{"loc": ["query"], "type": "busy",
@@ -311,6 +328,11 @@ def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
 async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 request: Request,
                 backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
+    # D-13: a plain local, not middleware or contextvars -- minted once here and passed
+    # to every record this request emits, so two concurrent requests for the same gear
+    # (the one case params + time cannot disambiguate; D-07 affinity's same-slot
+    # scenario) are still distinguishable in the log.
+    request_id = uuid.uuid4().hex[:8]
     params = _gear(q)
     # Same test GZipMiddleware itself makes (installed starlette's own
     # middleware/gzip.py:66, `"gzip" in headers.get("Accept-Encoding", "")`) -- endpoint
@@ -319,20 +341,31 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
     wants_gzip = "gzip" in request.headers.get("Accept-Encoding", "")
     encoding = "gzip" if wants_gzip else "identity"
     key = (params, fmt, q.quality, encoding)
+    # A plain cache hit never enters the slot below, so its duration is zero by
+    # construction (D-12) and its source is "cache" -- both set here, not as a branch,
+    # so the cache-hit path that skips the block below still has a defined value for
+    # each when export_served() is called.
+    duration_s = 0.0
+    source = "cache"
     data = _EXPORTS.get(key)
     if data is None:
+        start = time.monotonic()
         try:
             # Compression moves inside this slot (quick task 260923-qwr): outside it, a
             # bound on cache-hit compression would be a no-op, because GZipMiddleware
             # compresses only after the endpoint has already returned and the slot is
             # gone (see _build_slot's own docstring for the measured mechanism this
             # fixes).
-            with _build_slot():
+            with _build_slot(request_id, params, fmt, q.quality):
                 raw_key = (params, fmt, q.quality, "identity")
                 raw = _EXPORTS.get(raw_key)
                 if raw is None:
+                    source = "built"
+                    build_started(request_id, params, fmt, q.quality)
                     raw = await backend(params, fmt, q.quality)
                     _EXPORTS.put(raw_key, raw)
+                else:
+                    source = "compressed"
                 if wants_gzip:
                     # Off the event loop, same as Starlette's own middleware did for
                     # bodies this size -- what's new is that it's now bounded by the
@@ -342,6 +375,8 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 else:
                     data = raw
         except BuildError as exc:
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
             raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "build_error"}]) from exc
         except BuildTimeout as exc:
@@ -351,6 +386,8 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # a gear that is fine. Same busy-refusal shape as _build_slot above (reused,
             # not reinvented), with its own `type` so a client can tell "come back in a
             # moment" from "your gear is impossible".
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
             raise HTTPException(503, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "timeout"}],
                                 headers={"Retry-After": "5"}) from exc
@@ -363,6 +400,8 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # overran its own timeout (D-07 affinity) -- that queued request's worker
             # was terminated by this service, not by a crash, so "died unexpectedly"
             # alone stopped being true of every caller reaching this branch.
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
             raise HTTPException(
                 503,
                 detail=[{"loc": ["query"],
@@ -372,6 +411,30 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                          "type": "pool_broken"}],
                 headers={"Retry-After": "5"},
             ) from exc
+        except HTTPException:
+            # _build_slot()'s own admission-control refusal (busy, 503) raises this from
+            # inside the `with` above and already calls queue_refused() itself -- an
+            # already-classified, already-logged outcome, not an unclassified crash. Must
+            # come before the catch-all below, or a busy refusal would also produce a
+            # spurious build.failed record naming "HTTPException" alongside the correct
+            # queue.refused one.
+            raise
+        except Exception as exc:
+            # WR-01 (review fix): the three classes above are model.py's *documented*
+            # contract ("BuildError is the only exception the module lets out",
+            # solid-model/errors_and_logging.md) -- but `_gzip()` runs inside this same
+            # slot under `run_in_threadpool` and can raise under memory pressure, and a
+            # future violation of that contract is exactly the kind of bug this catch
+            # exists for. Log then re-raise, not swallow: uvicorn's own ASGI-level 500 is
+            # still what serves the response (CR-01's fix means that record now carries a
+            # traceback too); this only adds spur's own build.failed record to what would
+            # otherwise be the *only* remaining evidence of a request that actually failed.
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
+            raise
+        duration_s = time.monotonic() - start
+    export_served(request_id, params, fmt, q.quality, source=source, encoding=encoding,
+                  duration_s=duration_s)
     headers = {"Content-Disposition": f'attachment; filename="{params.slug()}.{fmt}"',
                "Vary": "Accept-Encoding"}
     if wants_gzip:
