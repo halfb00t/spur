@@ -150,6 +150,18 @@ forbidden_modules = ["spur.app", "fastapi", "starlette"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
+name = "The gear maths stays free of the logger"
+# calc.py runs on every keystroke in the UI and must stay pure arithmetic, the same
+# reason it must stay free of the CAD kernel above -- a logging import would mean this
+# module can raise from formatting/handler I/O, or silently drift its own state (D-17).
+# tests/test_records.py's test_calc_module_stays_log_free is a regex-based belt on the
+# same claim; this contract is the suspenders, the way the CAD-kernel boundary above
+# already has both.
+type = "forbidden"
+source_modules = ["spur.calc"]
+forbidden_modules = ["spur.records", "logging"]
+
+[[tool.importlinter.contracts]]
 name = "The serving process never imports the CAD kernel"
 # app.py stops importing model.py under D-02: builds happen in worker processes only,
 # reached through spur.pool's runtime importlib call, never a static import. The

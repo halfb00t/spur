@@ -241,7 +241,12 @@ def test_configure_twice_still_emits_exactly_one_line_per_record(
 
 def test_calc_module_stays_log_free() -> None:
     """L01, REQ boundary: calc.py runs on every keystroke in the UI and must never
-    import logging -- cheap insurance against drift into the module that matters most
-    to keep pure."""
+    import logging, nor the module that owns it (`spur.records`) -- cheap insurance
+    against drift into the module that matters most to keep pure. WR-02 (review fix):
+    the pyproject.toml import-linter contract "The gear maths stays free of the logger"
+    is the suspenders for this same claim; this regex is the belt, so it must catch a
+    `from .records import ...`/`from spur.records import ...`/`import spur.records`
+    edit too, not only a direct `import logging`."""
     source = Path(calc_module.__file__).read_text()
-    assert not re.search(r"^\s*(import|from)\s+logging\b", source, re.MULTILINE)
+    assert not re.search(
+        r"^\s*(import|from)\s+(logging|\.records|spur\.records)\b", source, re.MULTILINE)
