@@ -2,7 +2,6 @@ import collections
 import math
 import struct
 from collections.abc import Iterator, Sequence
-from typing import Any
 
 import pytest
 
@@ -25,8 +24,8 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     {"teeth": 40, "module": 2, "profile_shift": 0.4, "pressure_angle": 20,
      "face_width": 12, "bore_d": 12, "bore_flat": 11, "recess_depth": 4},
 ])
-def test_builds_one_valid_solid(kw: dict[str, Any]) -> None:
-    p = GearParams(**kw)
+def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
+    p = GearParams.model_validate(kw)
     s = build(p)
     assert s.isValid()
     bb = s.BoundingBox()

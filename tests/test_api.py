@@ -2,7 +2,7 @@ import logging
 import re
 from collections.abc import Iterator
 from concurrent.futures.process import BrokenProcessPool
-from typing import Any, cast
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -393,12 +393,13 @@ def _event_records(caplog: pytest.LogCaptureFixture, event: str) -> list[logging
     return [rec for rec in caplog.records if getattr(rec, "event", None) == event]
 
 
-def _field(rec: logging.LogRecord, name: str) -> Any:
+def _field(rec: logging.LogRecord, name: str) -> object:
     """Read a field one of this module's per-event helpers attached via `extra=`, on a
     record already selected by `_event_records` -- so the field is known present.
-    LogRecord's stub declares no such attribute, so mypy --strict needs an explicit
-    `Any` read; ruff's B009 ("no getattr with a constant") does not fire here because
-    `name` is a parameter, not a literal, at this call site.
+    LogRecord's stub declares no such attribute, so `getattr` on it yields an untyped
+    value; `object` states that honestly. Each caller compares by equality/identity or
+    narrows before doing arithmetic on it. ruff's B009 ("no getattr with a constant")
+    does not fire here because `name` is a parameter, not a literal, at this call site.
     """
     return getattr(rec, name)
 
@@ -452,7 +453,9 @@ def test_a_gzip_request_after_an_identity_download_emits_source_compressed(
     served = _event_records(caplog, "export.served")
     assert len(served) == 1
     assert _field(served[0], "source") == "compressed"
-    assert _field(served[0], "duration_ms") > 0
+    duration_ms = _field(served[0], "duration_ms")
+    assert isinstance(duration_ms, int)
+    assert duration_ms > 0
 
 
 def test_an_all_default_gear_logs_params_as_an_empty_object_not_omitted(

@@ -1,5 +1,4 @@
 import math
-from typing import Any
 
 import pytest
 from pydantic import ValidationError
@@ -89,9 +88,9 @@ def test_root_fillet_is_capped_with_a_warning() -> None:
     ({"pressure_angle": 35, "profile_shift": 1}, "pressure_angle"),
     ({"bore_d": 30}, "bore_d"),
 ])
-def test_infeasible_parameters_name_their_fields(kw: dict[str, Any], field: str) -> None:
+def test_infeasible_parameters_name_their_fields(kw: dict[str, object], field: str) -> None:
     with pytest.raises(ValidationError) as exc:
-        GearParams(**kw)
+        GearParams.model_validate(kw)
     err = exc.value.errors()[0]
     assert err["type"] == "infeasible"
     assert field in err["ctx"]["fields"]
@@ -152,11 +151,12 @@ def test_recess_fillet_is_capped_to_the_narrowed_groove() -> None:
     ({"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6}, 40),
     ({"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.5}, 12),
 ])
-def test_impossible_pairs_have_no_centre_distance(kw: dict[str, Any], mate: int) -> None:
+def test_impossible_pairs_have_no_centre_distance(kw: dict[str, object], mate: int) -> None:
     """inv(aw) = inv(a) + 2 tan(a) x / z has no root when the right-hand side is
     negative: the pair cannot mesh at any distance. It used to return garbage -- 39.4 mm
     where the nominal is 70, and negative numbers elsewhere."""
-    p = GearParams(bore_d=0, bore_flat=0, bore_chamfer=0, recess_sides="none", **kw)
+    p = GearParams.model_validate(
+        {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none", **kw})
     assert centre_distance(p, mate) is None
     out = derive(p, mate_teeth=mate)
     assert out.centre_distance is None
