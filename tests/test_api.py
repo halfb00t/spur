@@ -363,6 +363,7 @@ def test_two_requests_for_one_gear_get_two_different_request_ids(
     params = {"quality": "preview", "teeth": 64}
     client.get("/api/model.stl", params=params)
     client.get("/api/model.stl", params=params)
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
 
     served = _event_records(caplog, "export.served")
     assert len(served) == 2
