@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 04
 current_phase_name: Typed Derived-Dimensions Contract
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-09-24T14:10:56.716Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-09-24T14:36:07.451Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 04 execution started
-state_head: 2f8b2da81cf5926cc80f940e3d1a483600f182c2
+state_head: 6064c4ff914ab8a5e85755b34b966b10b03021e1
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
 milestone_name: Hardening
 ---
 
@@ -30,7 +30,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 04 (Typed Derived-Dimensions Contract) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-24 — Phase 04 execution started
 
@@ -69,6 +69,7 @@ took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~
 | Phase 03 P02 | 27min | 3 tasks | 5 files |
 | Phase 03 P03 | 20min | 3 tasks | 9 files |
 | Phase 04 P01 | ~45min | 3 tasks | 11 files |
+| Phase 04 P02 | 16min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,8 @@ L17–L19):
 - [Phase 03]: docs/tech_debt/active/2026-09-21-no-structured-logging.md retired: Status: resolved, Resolved in: 21b8fe4 (Plan 03-02's commit, not this plan's own), git mv'd into resolved/, INDEX.md row moved -- same commit as the four corrected Logging sections.
 - [Phase 03, post-review fixes 2a1900d/a2a2371/482c936]: `_JsonFormatter` renders `exc_info`/`stack_info` into `traceback`/`stack_info` fields only for records that carry them (uvicorn's "Exception in ASGI application" record) -- spur's own helpers never set `exc_info`, so D-06/T-03-05 hold; `model()` gained a catch-all that logs `build.failed` and re-raises, with `HTTPException` passed through untouched so a 503 refusal does not double-log; import-linter contract "The gear maths stays free of the logger" forbids `spur.calc` -> `spur.records`/`logging`.
 - [Phase 04]: DerivedDimensions: 19-field frozen pydantic model, no defaults on any field, derive() as the single construction site; with_mate() deleted (D-01, D-02, D-09). — A default would make a key optional in OpenAPI, contradicting the always-present/null-where-it-doesn't-apply contract (Pitfall 2); a single construction site means a shape bug fails loudly instead of quietly matching dict[str, Any].
+- [Phase 04]: pool._run_with_timeout forwards through functools.partial(func, *args, **kwargs), not a bare *args/**kwargs pass-through to run_in_executor -- run_in_executor takes positional arguments only, and PEP 612 requires *args: P.args and **kwargs: P.kwargs declared together, so a signature that only forwarded *args would type-check while silently dropping any keyword argument.
+- [Phase 04]: app.py's lifespan now dels app.state.pool in its finally block, in addition to shutting it down -- app is one module-level FastAPI singleton shared across every test file in a pytest session, and a shut-down pool object was lingering for a later, lifespan-free test client to see (04-02 Rule 1 deviation).
 
 ### Pending Todos
 
@@ -162,6 +165,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T14:10:56.684Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-09-24T14:36:07.422Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
