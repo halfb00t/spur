@@ -132,14 +132,14 @@ pool's build-queue mechanics)
      moved in `docs/tech_debt/INDEX.md` — in the same commit as the fix.
   4. `make verify` passes.
 
-**Plans**: 1/3 plans executed, in 3 waves (each wave depends on the one before — `records.py` and
+**Plans**: 2/3 plans executed, in 3 waves (each wave depends on the one before — `records.py` and
 `app.py` are touched by both code plans, so there is no honest parallelism here)
 
 - [x] 03-01-PLAN.md — The tracer and the module: kernel-free `records.py` (`configure()`,
   the JSON formatter, the level knob), wired at both composition points (`cli.cmd_serve`
   with `log_config=None`, and the `lifespan()` call research proved mandatory), plus
   `export.served`/`build.started` and the record format's edges *(wave 1)*
-- [ ] 03-02-PLAN.md — The failure branches: `build.failed` with the exception class and
+- [x] 03-02-PLAN.md — The failure branches: `build.failed` with the exception class and
   duration, `queue.refused` with the in-flight count, and `worker.replaced` emitted inside
   `recreate_for`'s identity guard so one incident is one record *(wave 2)*
 - [ ] 03-03-PLAN.md — Close the loop: `L20`, the four §Logging sections and the README row
@@ -209,6 +209,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 |-------|----------------|--------|-----------|
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
-| 3. Structured Logging at the Composition Boundary | 1/3 | In Progress|  |
+| 3. Structured Logging at the Composition Boundary | 2/3 | In Progress|  |
 | 4. Typed Derived-Dimensions Contract | 0/TBD | Not started | - |
 | 5. CI Observed Green | 0/TBD | Not started | - |

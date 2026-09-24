@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 03
 current_phase_name: Structured Logging at the Composition Boundary
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-09-24T09:28:53.899Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-09-24T10:02:07.716Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 03 execution started
-state_head: 047c1231a78a3cfed1a16f714d9e588c6f39f434
+state_head: 21b8fe4390f2548bc20fe9ea87bea2ec8668c094
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
+  completed_plans: 7
 milestone_name: Hardening
 ---
 
@@ -30,7 +30,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 03 (Structured Logging at the Composition Boundary) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-24 — Phase 03 execution started
 
@@ -65,6 +65,7 @@ dominated because it waited on real benchmark runs, not on code.
 | Phase 02 P04 | ~2h | 3 tasks | 9 files |
 | Phase 02 P05 | 35min | 3 tasks | 5 files |
 | Phase 03 P01 | 25min | 3 tasks | 8 files |
+| Phase 03 P02 | 27min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,8 @@ L17–L19):
   pre-commit hook runs the full `make verify` with no bypass.
 - [Phase 03]: records.py falls back to record.getMessage() for the event field when a record carries no event extra (uvicorn's own records), so the shared formatter never raises on a record it did not originate.
 - [Phase 03]: Filed docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md (must): model.py's process-global solid cache lets exportStl()'s mesh side effect skew a later .BoundingBox() call on the same cached object; no production code calls BoundingBox() today, fixed test-side via an autouse cache-clearing fixture.
+- [Phase 03]: build.failed carries no hash slot and worker.replaced carries no request id -- both deliberate boundary/type-signature limitations (03-02-PLAN.md flagged assumptions 1-2), correlated instead by stream adjacency and the cause field.
+- [Phase 03]: gsd_run check tdd-red-evidence does not support pytest output (its TAP parser expects node --test format) -- RED phases in this Python project are verified by direct inspection of pytest failure output instead; documented in 03-02-SUMMARY.md's Issues Encountered for future TDD plans in this phase.
 
 ### Pending Todos
 
@@ -144,6 +147,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T09:28:53.874Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-09-24T10:02:01.068Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
