@@ -69,14 +69,18 @@ the full list with sources and acceptance evidence.
   `worker.replaced` proven by `caplog`/`json.loads` tests; uvicorn's own records share the
   stream; post-review fix renders a `traceback` field for records that carry `exc_info`
   (L20) — Phase 3
+- ✓ REQ-typed-derived-dimensions — `derive()` returns a frozen 19-field `DerivedDimensions`
+  model (every key always present, `null` where it does not apply); `/api/health` is a
+  `HealthReport` with `pool: PoolState | None`; `/api/schema` is pydantic's own
+  `JsonSchemaValue`; mypy's `disallow_any_explicit` is on globally with `make verify` green
+  (104 tests) via the pydantic plugin's `init_typed`/`init_forbid_extra`, no suppressions;
+  `spur info --mate-teeth` refuses the range the API refuses (L21 supersedes L14) — Phase 4
 
 ### Active
 
 Milestone v0.1 (Hardening). Each maps to a `must` item in `docs/tech_debt/active/` or a
 standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIREMENTS.md`.
 
-- [ ] The info contract has a real shape — a `DerivedDimensions` model, with mypy's
-  `disallow_any_explicit` turned on and L14's ratchet retired
 - [ ] The CI workflow is observed green in GitHub Actions on both supported Python
   versions
 
@@ -88,9 +92,8 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
   the documented, accepted approximation for now.
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- A typed `/api/info` response contract, a coverage floor, and the other `must` items
-  listed in `docs/tech_debt/INDEX.md` — `docs/tech_debt/active/` — deferred, each with
-  its own trigger.
+- A coverage floor and the other `must` items listed in `docs/tech_debt/INDEX.md` —
+  `docs/tech_debt/active/` — deferred, each with its own trigger.
 - CadQuery `Shape` typing cleanup, server-side request cancellation, Enji Guard / CVE
   alerting integration — `docs/tech_debt/active/` (nice) — deferred.
 
@@ -176,13 +179,14 @@ quick reference.
 | L11 | three.js vendored as a committed, CI-byte-checked bundle; no Node at runtime | ✓ Good |
 | L12 | `requirements.txt` is a generated, full pinned closure installed `--no-deps` | ✓ Good |
 | L13 | `make verify` is the gate (dev shell, pre-commit, CI); `make check` adds container checks | ✓ Good |
-| L14 | mypy strict, `disallow_any_explicit` off as a ratchet (`/api/info` is honest `dict[str, Any]`) | ⚠️ Revisit — tracked as untyped-info-contract tech debt |
+| L14 | mypy strict, `disallow_any_explicit` off as a ratchet (`/api/info` is honest `dict[str, Any]`) | ✓ Superseded by L21 (Phase 4) — ratchet retired, debt file resolved |
 | L15 | `TRY003` disabled; the rest of `TRY` on — error messages name the field and say what to change | ✓ Good |
 | L16 | No automatic formatter — would flatten 648 lines of hand-set comment alignment | ✓ Good |
 | L17 | Memory ceiling = parent byte budget + N × per-worker solid cache, swept on the real topology: `mem_limit: 4g` from N=2's 2878.5 MiB peak × 1.3 (supersedes L07) | ✓ Good — measured, zero failures at the limit |
 | L18 | The `RLock` is per worker, not global; "concurrency buys latency, not throughput" retired. Single build within 2× idle p95 on every run; ten-concurrent accepted with caveat, not demonstrated (Runs 1–8: 1.31x–2.45x) (supersedes L06) | ⚠️ Caveat — must debt `2026-09-23-concurrent-latency-bar-waived.md` |
 | L19 | Model bodies gzip-encoded at measured `compresslevel=1` (51.5 ms vs 788 ms at level 9 on a 9 MB STL), inside the admission slot, cached once per encoding | ✓ Good |
 | L20 | Structured JSON logging: stdlib `logging` + project-owned formatter, one object per line on stderr, `configure()` at both `cli.cmd_serve` and `app.lifespan()` (idempotent — uvicorn's spawn-based workers need the second site), parent process only, INFO default via `SPUR_LOG_LEVEL` | ✓ Good — post-review fix: records carrying `exc_info` render a `traceback` field (CR-01), `model()` catch-all logs `build.failed` (WR-01) |
+| L21 | `disallow_any_explicit` on globally, no per-module override; the published responses are typed models (`DerivedDimensions`, `HealthReport`/`PoolState`); the pydantic mypy plugin's `init_typed`/`init_forbid_extra` retire the six class-line errors instead of six per-class suppressions; `Any` is never written — `object` narrowed at use, a library's own alias keeps the library's `Any` (supersedes L14) | ✓ Good — `make verify` green under the rule (104 tests); `--mate-teeth 0` now exits 2 like the API's 422 |
 
 ## Success Metric (Milestone v0.1)
 
@@ -219,4 +223,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 — after Phase 3 (Structured Logging at the Composition Boundary) completed via `/gsd-execute-phase 3`.*
+*Last updated: 2026-09-24 — after Phase 4 (Typed Derived-Dimensions Contract) completed via `/gsd-execute-phase 4`.*

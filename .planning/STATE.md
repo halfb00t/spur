@@ -4,17 +4,16 @@ milestone: v0.1
 current_phase: 5
 current_phase_name: CI Observed Green
 status: planning
-stopped_at: Phase 04 complete, ready to plan Phase 5
-last_updated: "2026-09-24T15:08:43.264Z"
+stopped_at: Phase 4 complete, ready to plan Phase 5
+last_updated: "2026-09-24T15:12:16.099Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 04 complete, transitioned to Phase 5
-state_head: 2b9f579e5fe191ba0bf324ed743afc669407deef
+state_head: 821a966d307262623d7be015a6579689ff65dbf4
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 11
   completed_plans: 11
-  percent: 80
 milestone_name: Hardening
 ---
 
@@ -26,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 04 — Typed Derived-Dimensions Contract
+**Current focus:** Phase 5 — CI Observed Green
 
 ## Current Position
 
@@ -39,7 +38,7 @@ Last activity: 2026-09-24 — Phase 04 complete, transitioned to Phase 5
 
 **Velocity:**
 
-- Total plans completed via GSD: 8 (Phase 2: 5, Phase 3: 3; v0 was built and verified
+- Total plans completed via GSD: 11 (Phase 2: 5, Phase 3: 3, Phase 4: 3; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -51,13 +50,15 @@ Last activity: 2026-09-24 — Phase 04 complete, transitioned to Phase 5
 | 1. v0 Baseline | N/A | N/A | N/A |
 | 2. CAD Off the Event Loop | 5 | ~3h50m | ~46min |
 | 3. Structured Logging | 3 | ~1h12m | ~24min |
-| 4. Typed Derived-Dimensions Contract | TBD | - | - |
+| 4. Typed Derived-Dimensions Contract | 3 | ~1h10m | ~23min |
 | 5. CI Observed Green | TBD | - | - |
-| 04 | 3 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
 took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~10 min.
+Phase 4's three plans took ~1h10m: 04-01 (~45 min — reconstructed, not measured) carried
+the model and the three contract tests; 04-02 and 04-03 were 16 and 9 measured minutes.
+Code review came back clean (1 info) and verification passed 4/4 with no fix pass.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -78,10 +79,10 @@ took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~
 
 ### Decisions
 
-Full decision log: PROJECT.md "Key Decisions" table (L01–L20, from
+Full decision log: PROJECT.md "Key Decisions" table (L01–L21, from
 `docs/architecture/decision_log.md`). Flagged for revisit there: L10 (radial root
-fillet — trochoidal is a tracked idea), L14 (`disallow_any_explicit` off — retired by
-Phase 4, not just revisited) and L18 (ten-concurrent latency bar accepted with caveat).
+fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar accepted with
+caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again.
 
 Roadmap-time decisions for v0.1:
 
@@ -149,7 +150,9 @@ None yet.
   `docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md`
   (must). Triggers: a feature needs a measured dimension from a `Solid` after export, or a
   test outside the fixture's protection hits the symptom.
-- *(Resolved in Phase 3: "No structured logging anywhere" — `21b8fe4`/`013997a`, moved to
+- *(Resolved in Phase 4: "Untyped info contract" — `013900d` (the model) / `cfe5f8d` (the
+  rule turned on and the debt file retired, same commit), moved to
+  `docs/tech_debt/resolved/`; L14 superseded by L21. Resolved in Phase 3: "No structured logging anywhere" — `21b8fe4`/`013997a`, moved to
   `docs/tech_debt/resolved/`; L20. Resolved in Phase 2: "CAD builds block the event loop" — `daeb284`, moved to
   `docs/tech_debt/resolved/`; L06/L07 superseded by L18/L17. Resolved at v0.1 start:
   "Forward scope undefined" and "Success metric not derivable" — both set by the human,
@@ -170,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T14:52:22.129Z
-Stopped at: Phase 04 complete, ready to plan Phase 5
+Last session: 2026-09-24T15:12:16.065Z
+Stopped at: Phase 4 complete, ready to plan Phase 5
 Resume file: None
