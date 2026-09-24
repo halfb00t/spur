@@ -378,3 +378,74 @@ someone needs to read an incident. The two-call-site correction in particular is
 single most likely future regression: a reader finding `lifespan()`'s `configure()` call
 redundant next to `cli.cmd_serve`'s and deleting it would silently blind every worker
 process above the first, with nothing in a `SPUR_WORKERS=1` dev environment to catch it.
+
+## L21 — mypy rejects explicit `Any`; the published responses are typed models (supersedes L14)
+
+Date: 2026-09-24.
+
+L14 kept `disallow_any_explicit` off because `derive()`'s and `/api/info`'s document had
+keys that varied with the parameters, and `dict[str, Any]` was the honest type for that.
+It no longer is: `DerivedDimensions` (Plan 04-01) is a frozen pydantic model whose keys
+never vary — `mate_teeth`/`centre_distance` are always present, `null` when they do not
+apply — so the reason the rule was off is gone. `HealthReport`/`PoolState` (Plan 04-02)
+closed the second published-response gap the same way. `disallow_any_explicit` is now
+**on**, globally, with `make verify` passing under it.
+
+**The rule is on globally, with no per-module override** (D-04). A carve-out for
+`tests.*`, `docker.*` or `bench.*` would be a second ratchet in the shape this entry
+retires — the whole point of a ratchet is that it tightens, not that it grows a permanent
+exception.
+
+**The house rule** (D-04, D-07). `Any` is not written in this codebase, full stop. A
+genuinely untyped value is `object`, narrowed where it is used. A value a library already
+names keeps the library's own alias: the `Any` inside pydantic's `JsonSchemaValue` (used
+for `schema()`'s return type) or starlette's `Message` (used in `docker/smoke.py`) is the
+library's `Any`, not ours, and does not count as writing one.
+
+**The two plugin settings — the human's decision, 2026-09-24 (R-1).** Without
+`init_typed` and `init_forbid_extra`, the pydantic mypy plugin writes an explicit `Any`
+into the initialiser it generates for every model and reports it on the model's own
+`class` line — every model with fields produced this error, confirmed by reading the
+installed plugin's `add_initializer` and by a hand-run `mypy --disallow-any-explicit`
+before this phase's fix: exactly six errors, one per model (`GearParams`,
+`DerivedDimensions`, `InfoQuery`, `ModelQuery`, `PoolState`, `HealthReport`), all on the
+`class` line (04-02-SUMMARY.md's "Intermediate Proof"). With both settings, the generated
+initialiser is typed from the fields and none of the six remain. **Trade-off accepted:**
+mypy now type-checks every model constructor call against its field types. Static only —
+no model's runtime handling of extra fields changed; none gained `extra="forbid"`. The
+rejected alternative was six per-class explicit-Any suppression comments, one per model
+(RESEARCH.md's recommendation) — a carve-out in comment form, the same shape as a
+per-module override.
+
+**`DerivedDimensions`** (D-09). A frozen pydantic `BaseModel`, defined in `calc.py` next
+to `derive()`, validated when it is built, in exactly one place — `derive()` itself, its
+single construction site. Two homes were rejected: a frozen `@dataclass` with pydantic
+only at the API edge (two spellings of one contract, when the roadmap already names
+Pydantic); and `params.py` (the lazy `params → calc` import used to avoid a cycle would
+become a real one).
+
+**Null over absent** (D-01, D-06). Both `/api/info` and `/api/health` carry every key,
+always, with `null` for a value that does not apply or cannot be computed honestly (L08)
+— `mate_teeth`/`centre_distance` on the info document, `pool` on the health document
+under a lifespan-free client. Conditional keys were rejected: OpenAPI cannot state a
+key's presence as conditional on a runtime value honestly, only its absence entirely.
+
+**Uniform rounding** (D-10). Every length `DerivedDimensions` returns is rounded once, at
+construction, through `r3()`. Correction: this changed no value on the wire — `r3()` now
+also wraps `root_fillet`/`recess_fillet`, but `root_fillet()` and `recess_fillet()`
+already `round(..., 3)` internally, so wrapping them again is idempotent. The point is
+the invariant, not a value that moved: the rule "every length is rounded once, at
+construction" stays true even if either helper's internal rounding is ever removed.
+
+**The measured cost.** `derive()` now constructs and validates one `DerivedDimensions`
+per call. `.venv/bin/python -m timeit`, best of 5, default `GearParams`, arm64,
+Python 3.12.13 (04-01-SUMMARY.md): **9.19 usec** before the model, **11.5 usec** after —
+about +2.3 usec (~1.25x), recorded in `derive()`'s own docstring, well under the plan's
+2x stop-and-surface bar and negligible next to an HTTP round trip.
+
+Reason: the ratchet was a promise to turn the rule on once the report had a real shape,
+not a permanent exemption, and that shape now exists. The single most likely future
+regression is someone re-adding `Any` "just for this one dict" or adding a per-module
+override the next time a genuinely dynamic-looking value shows up; this entry is where
+that stops being re-litigable — the answer is `object`, narrowed where it is used, or a
+library's own alias, never a local respelling of `Any`.
