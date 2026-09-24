@@ -182,6 +182,16 @@ def _emit(level: int, event: str, fields: dict[str, object]) -> None:
     _LOG.log(level, event, extra={"event": event, **fields})
 
 
+def build_started(request: str, p: GearParams, fmt: str, quality: str) -> None:
+    """`build.started` at INFO (D-15), emitted immediately before the backend call --
+    the one place a build actually begins. No `duration_ms`: D-12 puts duration on
+    `export.served` and `build.failed` only, because a start record has nothing to time
+    yet.
+    """
+    _emit(logging.INFO, "build.started",
+          {"request": request, **_gear_fields(p), "fmt": fmt, "quality": quality})
+
+
 def export_served(request: str, p: GearParams, fmt: str, quality: str, *,
                    source: str, encoding: str, duration_s: float) -> None:
     """`export.served` at INFO (D-15) -- the one record every `/api/model` request

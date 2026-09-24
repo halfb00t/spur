@@ -1,5 +1,6 @@
+import logging
 from collections.abc import Iterator
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -270,3 +271,99 @@ def test_an_already_compressed_download_needs_no_slot_at_all() -> None:
     finally:
         for _ in held:
             app_module.BUILD_QUEUE.release()
+
+
+def _event_records(caplog: pytest.LogCaptureFixture, event: str) -> list[logging.LogRecord]:
+    """The records this module's helpers emitted for one literal event name (D-16).
+    `getattr(..., None)` (not a plain attribute access): `caplog.records` also holds
+    records from other loggers (httpx logs its own "HTTP Request" line at INFO once
+    anything sets the root level there), and those carry no `event` attribute at all."""
+    return [rec for rec in caplog.records if getattr(rec, "event", None) == event]
+
+
+def _field(rec: logging.LogRecord, name: str) -> Any:
+    """Read a field one of this module's per-event helpers attached via `extra=`, on a
+    record already selected by `_event_records` -- so the field is known present.
+    LogRecord's stub declares no such attribute, so mypy --strict needs an explicit
+    `Any` read; ruff's B009 ("no getattr with a constant") does not fire here because
+    `name` is a parameter, not a literal, at this call site.
+    """
+    return getattr(rec, name)
+
+
+def test_a_fresh_build_emits_build_started_then_export_served_with_source_built(
+        caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params={"quality": "preview", "teeth": 61})
+    assert r.status_code == 200
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    assert _event_records(caplog, "build.started")
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "source") == "built"
+    assert _field(served[0], "request")
+    assert _field(served[0], "slug")
+
+
+def test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started(
+        caplog: pytest.LogCaptureFixture) -> None:
+    params = {"quality": "preview", "teeth": 62}
+    client.get("/api/model.stl", params=params)  # warm the byte cache
+
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params=params)
+    assert r.status_code == 200
+    assert caplog.records
+
+    assert not _event_records(caplog, "build.started")
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "source") == "cache"
+    assert _field(served[0], "duration_ms") == 0
+
+
+def test_a_gzip_request_after_an_identity_download_emits_source_compressed(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """Raw bytes are already cached; only this encoding is not -- the path quick task
+    260923-qwr found behind the concurrent-latency ratios (D-11)."""
+    params = {"quality": "preview", "teeth": 63}
+    client.get("/api/model.stl", params=params, headers={"Accept-Encoding": "identity"})
+
+    caplog.clear()
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params=params)
+    assert r.status_code == 200
+    assert caplog.records
+
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "source") == "compressed"
+    assert _field(served[0], "duration_ms") > 0
+
+
+def test_an_all_default_gear_logs_params_as_an_empty_object_not_omitted(
+        caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO)
+    r = client.get("/api/model.stl", params={"quality": "preview"})
+    assert r.status_code == 200
+    assert caplog.records
+
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 1
+    assert _field(served[0], "params") == {}
+
+
+def test_two_requests_for_one_gear_get_two_different_request_ids(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """Two concurrent requests for the same gear are the one case params + time cannot
+    disambiguate (D-13, D-07's same-slot affinity)."""
+    caplog.set_level(logging.INFO)
+    params = {"quality": "preview", "teeth": 64}
+    client.get("/api/model.stl", params=params)
+    client.get("/api/model.stl", params=params)
+
+    served = _event_records(caplog, "export.served")
+    assert len(served) == 2
+    assert _field(served[0], "request") != _field(served[1], "request")

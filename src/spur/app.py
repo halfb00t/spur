@@ -36,7 +36,7 @@ from .build_errors import BuildError, BuildTimeout
 from .calc import derive, with_mate
 from .params import GearParams
 from .pool import BuildPool
-from .records import configure, export_served
+from .records import build_started, configure, export_served
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -355,6 +355,7 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 raw = _EXPORTS.get(raw_key)
                 if raw is None:
                     source = "built"
+                    build_started(request_id, params, fmt, q.quality)
                     raw = await backend(params, fmt, q.quality)
                     _EXPORTS.put(raw_key, raw)
                 else:
