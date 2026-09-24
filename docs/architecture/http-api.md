@@ -105,7 +105,12 @@ each carrying a per-request `request` id, the gear's `slug` and non-default `par
 uvicorn's own access and error records (`uvicorn`, `uvicorn.error`, `uvicorn.access`)
 ride the same stream and the same JSON format: `cli.cmd_serve` passes `log_config=None`
 to `uvicorn.run`, so uvicorn installs no `dictConfig` of its own and its loggers
-propagate to the same root handler `records.configure()` installs (D-02).
+propagate to the same root handler `records.configure()` installs (D-02). A record that
+itself carries a real traceback -- concretely, uvicorn's own `"Exception in ASGI
+application"` line for any exception `model()` doesn't classify -- gets one rendered
+into a `traceback` field (CR-01, review fix); `spur`'s own `build_failed()` never sets
+`exc_info` on the records it emits, so that field never appears on spur's own vocabulary
+(D-06/T-03-05 still holds).
 
 The incident question this answers, from the stderr stream alone, for one request: was
 it refused, served from cache, compressed or built; if built, how long; if it failed,

@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import sys
 from pathlib import Path
 from typing import cast
 
@@ -96,6 +97,65 @@ def test_the_formatter_round_trips_every_application_field_through_json_loads() 
     assert payload["duration_ms"] == 42
     for envelope_field in ("ts", "level", "logger", "version"):
         assert envelope_field in payload
+
+
+def _raise(message: str) -> None:
+    """Raises from a named function, not inline in a test's `try` block (ruff TRY301),
+    so the two traceback tests below get a real, multi-frame `exc_info`/`__traceback__`
+    -- the same shape a genuine unclassified crash produces -- rather than a synthetic
+    one built by hand."""
+    raise ValueError(message)
+
+
+def _record_with_a_real_traceback(message: str) -> logging.LogRecord:
+    """The same record shape uvicorn's own `"Exception in ASGI application"` log call
+    builds (`h11_impl.py`'s `run_asgi`): a real `exc_info` tuple, not a hand-built one --
+    building `record` inside the `except` and returning it there (rather than assigning
+    to an outer variable) is what keeps mypy's `possibly-undefined` check satisfied
+    without a `# type: ignore`."""
+    try:
+        _raise(message)
+    except ValueError:
+        return logging.getLogger("uvicorn.error").makeRecord(
+            "uvicorn.error", logging.ERROR, __file__, 1,
+            "Exception in ASGI application", (), sys.exc_info())
+    raise AssertionError("unreachable: _raise always raises")
+
+
+def test_the_formatter_renders_a_real_traceback_into_a_dedicated_field() -> None:
+    """CR-01 (review fix): a record that itself carries `exc_info` -- uvicorn's own
+    `"Exception in ASGI application"` line is exactly this shape, since `cli.cmd_serve`
+    passes `log_config=None` (D-02) -- must not have its traceback silently discarded.
+    Before this fix `_JsonFormatter` dropped `exc_info`/`exc_text`/`stack_info`
+    unconditionally, so a genuinely unclassified crash in `model()` (WR-01) had nothing
+    to read anywhere. `spur`'s own helpers (`build_failed()`) never pass `exc_info=` to
+    `_emit` (D-06/T-03-05), so their records are unchanged by this."""
+    record = _record_with_a_real_traceback("boom, unexpected model.py bug")
+    line = records._JsonFormatter().format(record)
+
+    # One physical line is the whole point of D-03/D-04 (jq-readable): a real traceback's
+    # embedded newlines must stay escaped inside the JSON string value, not break the line.
+    assert "\n" not in line
+    payload = json.loads(line)
+    assert "ValueError" in payload["traceback"]
+    assert "boom, unexpected model.py bug" in payload["traceback"]
+
+
+def test_build_failed_helper_never_carries_a_traceback_field(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """The design boundary CR-01's fix must not cross (D-06/T-03-05): `build_failed()`
+    never passes `exc_info=` to `_emit`, so its own records stay traceback-free even
+    after `_JsonFormatter` learns to render one for records that do carry it."""
+    records.configure()
+    try:
+        _raise("boom")
+    except ValueError as exc:
+        records.build_failed("req00001", GearParams(), "stl", "fine", exc=exc,
+                             duration_s=0.01)
+    lines = [line for line in capsys.readouterr().err.strip().splitlines()
+             if json.loads(line).get("event") == "build.failed"]
+    assert lines, "no build.failed record found on stderr"
+    assert "traceback" not in json.loads(lines[-1])
 
 
 def test_a_field_with_a_newline_and_non_ascii_stays_one_physical_line() -> None:

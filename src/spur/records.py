@@ -73,6 +73,26 @@ class _JsonFormatter(logging.Formatter):
             "event": record.__dict__.get("event", record.getMessage()),
             "version": __version__,
         }
+        # Only a record that itself carries `exc_info`/`stack_info` gets a `traceback`
+        # field -- `spur`'s own helpers (`build_failed()` et al.) never pass `exc_info=`
+        # to `_emit` (D-06/T-03-05: no worker-side traceback text leaves this process
+        # through spur's own vocabulary), so their records are byte-for-byte unchanged
+        # by this branch. What this fixes is the record `spur` does not control: uvicorn's
+        # own `"Exception in ASGI application"` line (`log_config=None`, D-02) sets real
+        # `exc_info`, and until now this formatter threw that traceback away for every
+        # logger, not just spur's -- the one case a genuinely unclassified crash in
+        # `model()` actually needs a traceback for (CR-01, review fix). `self.formatException`
+        # (stdlib) renders the traceback text; `json.dumps` below escapes its embedded
+        # newlines, so it still lands as one physical line, not one line per frame.
+        if record.exc_info:
+            payload["traceback"] = self.formatException(record.exc_info)
+        elif record.exc_text:
+            # A second handler formatting the same record: stdlib's own Formatter caches
+            # the rendered text on `exc_text` after the first `formatException()` call so
+            # later handlers don't re-walk the traceback.
+            payload["traceback"] = record.exc_text
+        if record.stack_info:
+            payload["stack_info"] = self.formatStack(record.stack_info)
         for key, value in record.__dict__.items():
             if key in _STANDARD_LOGRECORD_ATTRS or key == "event":
                 continue
