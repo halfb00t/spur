@@ -15,3 +15,6 @@ web/node_modules/
 
 # agent worktrees (make worktree.new)
 /.claude/worktrees/
+
+# GSD per-run dispatch sentinel (isolation decision + timestamp of the last run), not config
+.gsd/
