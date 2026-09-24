@@ -39,7 +39,7 @@ own: how much work it is willing to accept at once.
 | `GET /` | the UI (`static/index.html`) |
 | `GET /api/health` | `{"status": "ok", "version": ..., "pool": {"workers": N, "queue_available": M, "workers_replaced": R}}` |
 | `GET /api/schema` | `GearParams.model_json_schema()` — the form is built from this |
-| `GET /api/info?…[&mate_teeth=N]` | `derive()`, optionally `with_mate()` |
+| `GET /api/info?…[&mate_teeth=N]` | `derive(params, mate_teeth=…)` → a `DerivedDimensions` document; every key always present, `null` where a value does not apply |
 | `GET /api/model.{stl,step}?…` | the bytes, with `Content-Disposition` from `params.slug()` |
 
 Two request models subclass `GearParams`: `InfoQuery` adds `mate_teeth`, `ModelQuery`

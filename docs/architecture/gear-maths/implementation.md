@@ -15,10 +15,9 @@
 | `_tooth(pr)` | tip thickness, root thickness and root gap — all measured on the root circle |
 | `check(p)` | the refusals, each with the fields responsible |
 | `span_measurement(p)` | Wildhaber span over *k* teeth |
-| `derive(p)` | the full dimensions document plus warnings |
+| `derive(p, mate_teeth=None, mate_shift=0.0)` | the `DerivedDimensions` document: dimensions, warnings, and the mate when asked |
 | `_involute_angle(target)` | bisection inverse of `inv` |
 | `centre_distance(p, z2, x2=0)` | working centre distance, or `None` |
-| `with_mate(info, p, z2, x2=0)` | `derive()` plus the mate, or plus the warning |
 
 `src/spur/params.py` — the `GearParams` model. Field metadata (`group`, `unit`, `step`)
 travels through the JSON schema into the web form, so a new field appears in the UI and

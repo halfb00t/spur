@@ -16,7 +16,7 @@ input, and that split is the product decision (L03):
   adds the sentence to `warnings`. Examples: a root fillet larger than the tooth gap, a
   face recess that does not fit between the hub wall and the tooth rim.
 - **Report nothing rather than something wrong** — `centre_distance()` returns `None`
-  where no working pressure angle exists, and `with_mate()` states why in a warning
+  where no working pressure angle exists, and `derive()` states why in a warning
   (L08).
 
 Adding a rule means deciding which of the three it is. That is the decision, not the
