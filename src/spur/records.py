@@ -241,3 +241,17 @@ def queue_refused(request: str, p: GearParams, fmt: str, quality: str, *,
     _emit(logging.WARNING, "queue.refused",
           {"request": request, **_gear_fields(p), "fmt": fmt, "quality": quality,
            "in_flight": in_flight, "max_queued": max_queued})
+
+
+def worker_replaced(*, slot: int, cause: str) -> None:
+    """`worker.replaced` at ERROR (D-15 -- the service's fault; these are the 503s),
+    with the hash slot and the `cause` -- `"timeout"` or `"broken_pool"` -- distinguishing
+    a wedged build from a worker that died on its own (D-08).
+
+    `/api/health` exposes only a `workers_replaced` count (Phase 2 D-13), so this log
+    record is the only place the *when* and the *why* of a replacement can live. Per
+    this plan's flagged assumption 2, it carries no `request` id: the pool has no
+    request context to give it, and the `build.failed` record that precedes it
+    (emitted from `app.py`, which does have one) already does.
+    """
+    _emit(logging.ERROR, "worker.replaced", {"slot": slot, "cause": cause})
