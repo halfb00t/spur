@@ -4,11 +4,11 @@ milestone: v0.1
 current_phase: 02
 current_phase_name: CAD Off the Event Loop
 status: executing
-stopped_at: Phase 2 executed 5/5; verification human_needed then stale (Dockerfile comment corrected, 2b34ec4); 02-UAT.md has 2 human items; 02-REVIEW.md has CR-01 (CancelledError -> 500 on same-slot cancel), CR-02 (bench sweep self-caps at mem_limit 4g), WR-01 (double recreate_for) awaiting the human's fix-now-or-file decision; WR-02 fixed
-last_updated: "2026-09-23T15:25:09.767Z"
+stopped_at: "Phase 2 executed 5/5; 02-REVIEW.md findings all resolved (quick task 260924-bv5, commits 17048c9 d334049 08697f0 15fa5cd); verification stale after the fixes -- next: /gsd-verify-work 2 (re-verify, then the 2 UAT items in 02-UAT.md)"
+last_updated: "2026-09-24T03:10:31.445Z"
 last_activity: 2026-09-23
 last_activity_desc: Phase 02 execution complete (5/5 plans); awaiting /gsd-verify-work 2
-state_head: 9023463aab792c0997906e1bda7874130ed9ab09
+state_head: 15fa5cde154148a10ecdd7dcb38401ca1dc8acdd
 progress:
   total_phases: 5
   completed_phases: 1
@@ -94,6 +94,7 @@ Roadmap-time decisions for v0.1:
 - [Phase 02]: Phase 2 halted before 02-05 to fix the concurrent /api/health latency cost first (route chosen by the human 2026-09-23), then re-measure, then resume 02-05. — Four latency runs measured 2.02-2.45x against the <=2x bar; 02-LATENCY-INVESTIGATION.md traced it to GZipMiddleware compresslevel=9 on 9 MB STL bodies in the serving process, with _EXPORTS cache hits bypassing admission control. Writing L17/L18 and the HEALTHCHECK timeout from those numbers would need a second edit after the fix, and retiring the debt file with the acceptance clause unmet would be a plausible-looking record L08 forbids. Fix via /gsd-quick (compresslevel from measurement, cache hits through an admission bound, cached compressed bytes if simple), re-run make bench.latency, resolve WINDOWS item 1 on evidence, then /gsd-execute-phase 2 for 02-05.
 - [Quick 260923-qwr]: `_GZIP_LEVEL = 1`, measured on the real 9,062,784-byte teeth=199 fine STL (level 1: 51.5 ms median / 29.0% of input / 74.4 ms 10-concurrent wall; level 6: 147.9 ms / 26.5% / 198.9 ms; level 9: 788.0 ms / 26.5% / 925.5 ms; host loadavg 2.68/3.07/2.78). Levels 6 and 9 are only 8.7% / 8.66% smaller than level 1 -- under the plan's 10% bar -- so level 1 by the rule, not by taste. The comment beside the constant carries the table (2d47994).
 - [Quick 260923-qwr]: model-body gzip moved out of GZipMiddleware into `model()`, performed inside `_build_slot()` in a worker thread and cached in `_EXPORTS` under an encoding-tagged key `(params, fmt, quality, encoding)` -- the middleware compresses only after the endpoint has returned and released its slot, so any bound placed inside the endpoint without moving the compression would have capped nothing. Concurrent compressions are now <= MAX_QUEUED_BUILDS and a repeat download of a compressed gear takes no slot and no compression; a first compression of an already-built gear can now be refused 503 busy (7a61fad, four behaviour tests). Not sized: Starlette's private `_gzip_capacity_limiter` RunVar (same private-internals objection as D-13).
+- [Quick 260924-bv5]: `BuildPool.recreate_for` takes the failing request's own executor and replaces a slot only if it still holds it (one incident, one replacement, D-13's `workers_replaced` counted once), and shuts the old executor down WITHOUT `cancel_futures=True`: CPython keeps `max_workers + EXTRA_QUEUED_CALLS = 2` items RUNNING in the call queue, so only the fourth-and-later same-slot request was ever cancellable -- observed as an escaped `asyncio.CancelledError` (a 500) pre-fix, `BrokenProcessPool` -> 503 `pool_broken` after. `bench.memory sweep` now measures under its own 8 GiB ceiling via the existing override helper and refuses a row within 1% of it (L08). 02-REVIEW.md status: resolved.
 - [Phase 02]: L17 (supersedes L07) and L18 (supersedes L06) appended to docs/architecture/decision_log.md with every number transcribed from bench/RESULTS.md; L18 records the concurrent latency scenario as accepted with caveat, not demonstrated, per the human's waiver -- no throughput number invented. — D-20's decision checkpoint (Option A, plus L19) resolved by the human before this continuation began.
 - [Phase 02]: L19 (new) records the gzip-level/admission-bound decision from quick task 260923-qwr (compresslevel=1, compression moved inside _build_slot(), cached in _EXPORTS). — Human approved adding L19 alongside L17/L18 at the Task 1 checkpoint.
 - [Phase 02]: Dockerfile HEALTHCHECK --timeout dropped from 10s to 2s (inner urlopen timeout 8s -> 1s), set from the measured under-load p95 (0.7-2.3 (worst 2.3 ms, Run 3 concurrent, pre-L19)ms across all eight bench/RESULTS.md latency runs). — CONTEXT.md: if the timeout cannot come down, that is evidence the phase did not land -- it came down.
@@ -126,6 +127,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260923-qwr | Fix /api/health under-load latency: gzip level 1 from measurement, model-body compression inside _build_slot() and cached; Runs 5-6 concurrent 1.31x / 2.10x -- bar not met on both, WINDOWS item 1 stays open | 2026-09-23 | 2d47994..5a6e7d7 | [260923-qwr-fix-the-api-health-under-load-latency-co](./quick/260923-qwr-fix-the-api-health-under-load-latency-co/) |
+| 260924-bv5 | Fix 02-REVIEW.md CR-01/CR-02/WR-01: recreate_for identity-guarded and no longer cancels pending futures (fourth same-slot request observed CancelledError pre-fix, BrokenProcessPool after); memory sweep runs under its own 8 GiB ceiling and refuses capped rows; 5 new tests, 76 passing | 2026-09-24 | 15fa5cd | [260924-bv5-fix-02-review-md-findings-cr-01-cr-02-an](./quick/260924-bv5-fix-02-review-md-findings-cr-01-cr-02-an/) |
 
 ## Deferred Items
 
@@ -135,8 +137,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-23T15:25:09.743Z
-Stopped at: Phase 2 executed 5/5; verification human_needed then stale (Dockerfile comment corrected, 2b34ec4); 02-UAT.md has 2 human items; 02-REVIEW.md has CR-01 (CancelledError -> 500 on same-slot cancel), CR-02 (bench sweep self-caps at mem_limit 4g), WR-01 (double recreate_for) awaiting the human's fix-now-or-file decision; WR-02 fixed
+Last session: 2026-09-24T03:10:31.421Z
+Stopped at: Phase 2 executed 5/5; 02-REVIEW.md findings all resolved (quick task 260924-bv5, commits 17048c9 d334049 08697f0 15fa5cd); verification stale after the fixes -- next: /gsd-verify-work 2 (re-verify, then the 2 UAT items in 02-UAT.md)
 complete; Phases 2–5 derived from the five v0.1 requirements with 100% coverage; awaiting
 human approval before `/gsd-plan-phase 2`.
-Resume file: .planning/phases/02-cad-off-the-event-loop/02-REVIEW.md
+Resume file: .planning/phases/02-cad-off-the-event-loop/02-UAT.md

@@ -37,7 +37,7 @@ findings:
   warning: 2
   info: 0
   total: 4
-status: issues_found
+status: resolved
 ---
 
 # Phase 02: Code Review Report
@@ -45,7 +45,7 @@ status: issues_found
 **Reviewed:** 2026-09-23T15:00:00Z
 **Depth:** standard
 **Files Reviewed:** 27
-**Status:** issues_found
+**Status:** resolved (see Resolution below)
 
 ## Summary
 
@@ -318,3 +318,14 @@ range:
 _Reviewed: 2026-09-23T15:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+
+## Resolution (2026-09-24, quick task 260924-bv5)
+
+| Finding | Resolved in | Evidence |
+|---|---|---|
+| CR-01 | `17048c9`, `08697f0`, `15fa5cd` | `recreate_for` no longer cancels pending futures; `tests/test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation`. The cancellation is reachable only from the FOURTH same-slot request (worker holds 1, the 2-deep call queue holds 2 and 3 as RUNNING, uncancellable — `concurrent/futures/process.py` 3.12.13 lines 118, 391-404, 540); with `cancel_futures=True` restored, request 4 raised `asyncio.CancelledError` in 5/5 runs; after the fix all three siblings raise `BrokenProcessPool` → 503 `pool_broken`. |
+| CR-02 | `d334049` | `sweep()` applies `_SWEEP_MEM_LIMIT_BYTES` (8 GiB) through `_write_mem_limit_override`; a row within 1% of the ceiling is refused with no peak and `sweep()` returns False; `docker inspect` on an override-started container read `8589934592` vs the shipped `4294967296`; `tests/test_bench.py` pins the predicate. `bench/RESULTS.md` unchanged. |
+| WR-01 | `17048c9` | `recreate_for(p, executor)` replaces a slot only if it still holds the caller's executor; `replaced` rose by exactly 1 with two and with four same-slot observers of one incident (tests above). |
+| WR-02 | `2b34ec4` | Dockerfile comment, 02-05 SUMMARY, STATE.md and VERIFICATION.md corrected to the eight-run range 0.7-2.3 ms (worst 2.3 ms, Run 3 concurrent). |
+
+`make verify` after the last fix: 76 passed. Verification is `stale` until `/gsd-verify-work 2` re-runs it.
