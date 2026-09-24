@@ -54,7 +54,7 @@ def test_schema_drives_the_form() -> None:
     assert props["recess_sides"]["enum"] == ["both", "top", "bottom", "none"]
 
 
-def test_info_with_mate() -> None:
+def test_info_reports_the_mate() -> None:
     r = client.get("/api/info", params={"teeth": 21, "mate_teeth": 40})
     assert r.status_code == 200
     assert r.json()["centre_distance"] == pytest.approx(1.75 * 61 / 2)

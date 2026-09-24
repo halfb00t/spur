@@ -33,7 +33,7 @@ from starlette.concurrency import run_in_threadpool
 
 from . import __version__, int_env
 from .build_errors import BuildError, BuildTimeout
-from .calc import derive, with_mate
+from .calc import DerivedDimensions, derive
 from .params import GearParams
 from .pool import BuildPool
 from .records import build_failed, build_started, configure, export_served, queue_refused
@@ -316,11 +316,9 @@ def schema() -> dict[str, Any]:
 
 
 @app.get("/api/info")
-def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
+def info(q: Annotated[InfoQuery, Query()]) -> DerivedDimensions:
     """Derived dimensions. With `mate_teeth`, also the centre distance to that gear."""
-    params = _gear(q)
-    out = derive(params)
-    return with_mate(out, params, q.mate_teeth) if q.mate_teeth else out
+    return derive(_gear(q), mate_teeth=q.mate_teeth)
 
 
 @app.get("/api/model.{fmt}", response_class=Response,

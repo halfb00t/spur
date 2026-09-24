@@ -6,7 +6,6 @@ Gear options are generated from GearParams, so they always match the API.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from pathlib import Path
@@ -64,13 +63,13 @@ def cmd_serve(ns: argparse.Namespace) -> None:
 
 
 def cmd_info(ns: argparse.Namespace) -> None:
-    from .calc import derive, with_mate
+    from .calc import derive
 
-    p = _params(ns)
-    out = derive(p)
-    if ns.mate_teeth:
-        out = with_mate(out, p, ns.mate_teeth)
-    print(json.dumps(out, indent=2, ensure_ascii=False))
+    # `or None`: --mate-teeth 0 has always meant "no mate" in this command, and that
+    # holds until the flag is range-checked like InfoQuery.mate_teeth (Plan 04-03
+    # Task 1, which removes this fallback once it lands -- 04-01-PLAN.md flagged
+    # assumption 2).
+    print(derive(_params(ns), mate_teeth=ns.mate_teeth or None).model_dump_json(indent=2))
 
 
 def cmd_export(ns: argparse.Namespace) -> None:
@@ -89,7 +88,7 @@ def cmd_export(ns: argparse.Namespace) -> None:
         raise SystemExit(f"error: {exc}") from None
     out.write_bytes(data)
     print(f"wrote {out} ({len(data) / 1024:.0f} KiB)", file=sys.stderr)
-    for warning in derive(p)["warnings"]:
+    for warning in derive(p).warnings:
         print(f"warning: {warning}", file=sys.stderr)
 
 
