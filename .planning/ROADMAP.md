@@ -21,7 +21,7 @@ tracked.
 
 - [x] **Phase 1: v0 Baseline (Shipped)** - The generator, its three interfaces, and its
   error/measurement/export contract, as already built and verified.
-- [ ] **Phase 2: CAD Off the Event Loop** - CAD kernel work moves to worker processes, and
+- [x] **Phase 2: CAD Off the Event Loop** - CAD kernel work moves to worker processes, and (completed 2026-09-24)
   the multi-process memory ceiling is measured, not carried over from the single-process
   design.
 - [ ] **Phase 3: Structured Logging at the Composition Boundary** - Production requests
@@ -197,7 +197,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
-| 2. CAD Off the Event Loop | 5/5 | In Progress|  |
+| 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 0/TBD | Not started | - |
 | 4. Typed Derived-Dimensions Contract | 0/TBD | Not started | - |
 | 5. CI Observed Green | 0/TBD | Not started | - |
