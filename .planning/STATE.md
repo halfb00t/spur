@@ -3,12 +3,11 @@ gsd_state_version: "1.0"
 milestone: v0.1
 current_phase: 4
 current_phase_name: Typed Derived-Dimensions Contract
-status: planning
+status: "Phase 3 shipped — PR #2"
 stopped_at: Phase 03 complete, ready to plan Phase 4
-last_updated: "2026-09-24T11:29:18.849Z"
+last_updated: "2026-09-24T11:36:44.128Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 03 complete, transitioned to Phase 4
-state_head: 47615e1fcd193954faf2ea2738179555f2ee0131
+state_head: 18bc4adcddb72109d2a002978b13248f55cc4ffb
 progress:
   total_phases: 5
   completed_phases: 3
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 4 — Typed Derived-Dimensions Contract
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-24 — Phase 03 complete, transitioned to Phase 4
+Status: Phase 3 shipped — PR #2
+Last activity: 2026-09-24
 
 ## Performance Metrics
 
