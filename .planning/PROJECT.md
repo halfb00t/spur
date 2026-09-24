@@ -56,14 +56,19 @@ the full list with sources and acceptance evidence.
 - ✓ REQ-no-auth-default — no built-in auth; binds to `127.0.0.1` by default — v0
 - ✓ REQ-docker-multiarch — Docker/compose for `linux/amd64` and `linux/arm64` — v0
 - ✓ REQ-cli-parity — `spur serve`/`info`/`export` match the API's numbers and errors — v0
+- ✓ REQ-cad-off-event-loop — CAD builds run in `BuildPool` worker processes and the serving
+  process is import-linter-forbidden from the kernel; `/api/health` p95 under one build
+  within 2× idle on every run recorded, the ten-concurrent scenario accepted with caveat,
+  not demonstrated (L18; waived on the Runs 1–8 evidence) — Phase 2
+- ✓ REQ-measured-memory-ceiling — the N=1/2/4 container sweep measured the ceiling;
+  `compose.yaml` `mem_limit: 4g` is N=2's 2878.5 MiB peak × 1.3 headroom, not L07's
+  formula multiplied out (L17) — Phase 2
 
 ### Active
 
 Milestone v0.1 (Hardening). Each maps to a `must` item in `docs/tech_debt/active/` or a
 standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIREMENTS.md`.
 
-- [ ] CAD builds no longer stall the event loop — kernel work moves off the serving
-  process, with the memory ceiling re-measured rather than estimated
 - [ ] Production requests leave evidence — a structured logger configured at the
   composition boundary, logging the branches that already exist
 - [ ] The info contract has a real shape — a `DerivedDimensions` model, with mypy's
@@ -79,8 +84,6 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
   the documented, accepted approximation for now.
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- Moving CAD builds off the event loop (process pool) — `docs/tech_debt/active/` (must);
-  root cause of the event-loop-stall concern; deferred, a phase of its own if picked up.
 - Structured logging, a typed `/api/info` response contract, a coverage floor —
   `docs/tech_debt/active/` (must) — deferred, each with its own trigger.
 - CadQuery `Shape` typing cleanup, server-side request cancellation, Enji Guard / CVE
@@ -104,7 +107,10 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
   `requirements.md`, `constraints.md`, `context.md`; conflict report at
   `.planning/INGEST-CONFLICTS.md` (0 blockers, 0 warnings, 5 info).
 - Active tech debt (not carried into this ingest by user decision; own lifecycle):
-  `docs/tech_debt/active/` — 3 `must`, 5 `nice`. Ideas backlog: `docs/ideas/` — 2 items.
+  `docs/tech_debt/active/` — 3 `must` (the event-loop item resolved in Phase 2, `daeb284`,
+  now in `resolved/`; one new: the waived concurrent-latency bar,
+  `2026-09-23-concurrent-latency-bar-waived.md`), 5 `nice`. Ideas backlog: `docs/ideas/`
+  — 2 items.
 
 ## Constraints
 
@@ -117,12 +123,18 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
   every keystroke); `model.py` is the only doorway to `cadquery`/`OCP`, no vendor object
   escapes it; `cli.py` never imports `app`/`fastapi`/`starlette`. Enforced by import-linter
   contracts, not discipline (L01/AGENTS.md, L04, L06).
-- **Concurrency**: one `RLock` around every OpenCascade call (OCCT is not thread-safe);
-  admission control (bounded build queue, `503` + `Retry-After`) lives in the web layer,
-  never the CLI (L04, L06).
-- **Memory**: solid cache bounded by entry count, export cache by total bytes,
-  `malloc_trim(0)` after every cache-missing export; `compose.yaml` sets `mem_limit: 2g` as
-  a measured backstop (1g failed ~5% of requests under a sweep) (L07).
+- **Concurrency**: CAD builds run in `BuildPool` worker processes (`SPUR_BUILD_WORKERS`,
+  default 2), routed by parameter-hash affinity, each build bounded by
+  `SPUR_BUILD_TIMEOUT=30s` (~4× the worst measured build); the serving process cannot
+  import the kernel (fourth import-linter contract). One `RLock` still wraps every
+  OpenCascade call inside a worker (OCCT is not thread-safe), but it is per worker now, so
+  concurrency across gears buys throughput too (L18 supersedes L06). Admission control
+  (bounded build queue, `503` + `Retry-After`) lives in the web layer, never the CLI
+  (L04); model-body gzip runs inside that slot at a measured `compresslevel=1` (L19).
+- **Memory**: a parent byte budget (export cache, `SPUR_EXPORT_CACHE_MB`) plus N × the
+  per-worker solid cache (`SPUR_SOLID_CACHE`); `compose.yaml` sets `mem_limit: 4g` from
+  the N=2 sweep's 2878.5 MiB peak × 1.3 headroom, confirmed at zero failures — swept, not
+  derived (L17 supersedes L07).
 - **Defaults**: absolute millimetres, tuned to the 19-tooth m=1.75 gear this project
   started from; they never rescale — every shareable link that omits a field depends on
   them (L05).
@@ -151,8 +163,8 @@ quick reference.
 | L03 | Cap and warn a trimmable dimension; refuse (422) a direct conflict — never guess | ✓ Good |
 | L04 | Admission control (bounded build queue) lives in the web layer, not `model.py`; CLI never queues | ✓ Good |
 | L05 | Defaults are absolute mm and never rescale; shareable links depend on them | ✓ Good |
-| L06 | One `RLock` around every OpenCascade call; concurrency buys latency, not throughput | ✓ Good |
-| L07 | Bounded caches (entries / bytes) + `malloc_trim(0)` after cache-missing export — measured 1.87 GiB → 1.5 GiB → 358 MiB | ✓ Good |
+| L06 | One `RLock` around every OpenCascade call; concurrency buys latency, not throughput | Superseded by L18 — the lock stays, its "not throughput" consequence is retired |
+| L07 | Bounded caches (entries / bytes) + `malloc_trim(0)` after cache-missing export — measured 1.87 GiB → 1.5 GiB → 358 MiB | Superseded by L17 — ceiling re-swept on the N-worker topology |
 | L08 | `centre_distance()` returns `None` (bisection, not Newton) rather than a confidently wrong number | ✓ Good |
 | L09 | Root fillets solved analytically in the 2D outline, ~50× faster than OCCT's fillet operator | ✓ Good |
 | L10 | Radial (not trochoidal) root below the base circle, with an undercut warning | ⚠️ Revisit — trochoidal fillet is a tracked idea |
@@ -162,6 +174,9 @@ quick reference.
 | L14 | mypy strict, `disallow_any_explicit` off as a ratchet (`/api/info` is honest `dict[str, Any]`) | ⚠️ Revisit — tracked as untyped-info-contract tech debt |
 | L15 | `TRY003` disabled; the rest of `TRY` on — error messages name the field and say what to change | ✓ Good |
 | L16 | No automatic formatter — would flatten 648 lines of hand-set comment alignment | ✓ Good |
+| L17 | Memory ceiling = parent byte budget + N × per-worker solid cache, swept on the real topology: `mem_limit: 4g` from N=2's 2878.5 MiB peak × 1.3 (supersedes L07) | ✓ Good — measured, zero failures at the limit |
+| L18 | The `RLock` is per worker, not global; "concurrency buys latency, not throughput" retired. Single build within 2× idle p95 on every run; ten-concurrent accepted with caveat, not demonstrated (Runs 1–8: 1.31x–2.45x) (supersedes L06) | ⚠️ Caveat — must debt `2026-09-23-concurrent-latency-bar-waived.md` |
+| L19 | Model bodies gzip-encoded at measured `compresslevel=1` (51.5 ms vs 788 ms at level 9 on a 9 MB STL), inside the admission slot, cached once per encoding | ✓ Good |
 
 ## Success Metric (Milestone v0.1)
 
@@ -198,4 +213,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-21 — milestone v0.1 (Hardening) started via `/gsd-new-milestone`.*
+*Last updated: 2026-09-24 — after Phase 2 (CAD Off the Event Loop) completed via `/gsd-execute-phase 02`.*
