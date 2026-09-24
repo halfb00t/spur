@@ -27,7 +27,7 @@ tracked.
 - [x] **Phase 3: Structured Logging at the Composition Boundary** - Production requests (completed 2026-09-24)
   leave evidence: a structured logger at startup covers the decision branches that already
   exist.
-- [ ] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real
+- [x] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real (completed 2026-09-24)
   shape, checked by mypy with `disallow_any_explicit` on.
 - [ ] **Phase 5: CI Observed Green** - The CI workflow is proven by a real GitHub Actions
   run, not by hand-verification.
@@ -224,5 +224,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
-| 4. Typed Derived-Dimensions Contract | 3/3 | In Progress|  |
+| 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
 | 5. CI Observed Green | 0/TBD | Not started | - |
