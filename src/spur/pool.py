@@ -109,19 +109,26 @@ class BuildPool:
         i = hash(p) % self.workers
         if self._executors[i] is not executor:
             return  # someone else already replaced this slot for this incident
-        # No `cancel_futures=True`: a queued sibling's future left pending (not
-        # cancelled) lets CPython's own `_ExecutorManagerThread._terminate_broken`
-        # (concurrent/futures/process.py, 3.12.13) fail it with `BrokenProcessPool` --
-        # the same exception this method's own callers already raise, which the
-        # `except BrokenProcessPool` branch below already handles and app.py already
-        # maps to a 503 `pool_broken`. Cancelling it instead handed that sibling an
-        # `asyncio.CancelledError` -- a BaseException that nothing between here and the
-        # client (not this module, not model(), not Starlette's ServerErrorMiddleware)
-        # catches. [VERIFIED this session: `_ExecutorManagerThread.run`'s shutdown
-        # branch only returns once `pending_work_items` is empty; with an uncancelled
-        # sibling still pending it loops back into `wait_result_broken_or_wakeup`,
-        # finds the terminated worker's sentinel ready, and fails that sibling's item
-        # with `BrokenProcessPool` the same way a worker dying on its own does.]
+        # No `cancel_futures=True`. A single-worker executor's call queue holds
+        # `max_workers + EXTRA_QUEUED_CALLS == 2` items (process.py, 3.12.13, line
+        # 118); `add_call_item_to_queue` (lines 391-404) marks each item it pulls into
+        # that queue RUNNING via `future.set_running_or_notify_cancel()` (line 404) --
+        # before any worker has touched it, purely because it fit. A future already
+        # RUNNING can't be cancelled, so `flag_executor_shutting_down`'s own cancel
+        # loop (line 540, only reached with `cancel_futures=True`) silently skips it
+        # and it falls through to `_ExecutorManagerThread._terminate_broken` the same
+        # way a worker dying on its own does -- `BrokenProcessPool`, which the `except
+        # BrokenProcessPool` branch below already handles and app.py already maps to a
+        # 503 `pool_broken`. [VERIFIED this session, both with and without
+        # `cancel_futures=True`, 5 runs each: even a *third* same-slot sibling reached
+        # `BrokenProcessPool`, never `asyncio.CancelledError` -- both extra siblings in
+        # tests/test_pool.py's queued-sibling test are created back-to-back in one
+        # asyncio tick, so the manager thread's single fill loop drains both into the
+        # 2-deep queue as RUNNING before any `shutdown()` call can run. That leaves
+        # open whether a sibling landing genuinely PENDING (a fourth, or different
+        # timing) would still surface `asyncio.CancelledError` if `cancel_futures=True`
+        # were used -- see 260924-bv5-SUMMARY.md for the run transcript. This method
+        # drops `cancel_futures=True` unconditionally rather than depend on that.]
         self._executors[i].shutdown(wait=False)
         self._executors[i] = ProcessPoolExecutor(
             max_workers=1, mp_context=_SPAWN, initializer=_warm)

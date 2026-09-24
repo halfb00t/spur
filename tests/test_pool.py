@@ -337,6 +337,28 @@ def test_a_queued_sibling_is_refused_not_cancelled() -> None:
 
     Also WR-01: the same incident must replace the worker exactly once, and the hash
     slot must be usable again afterwards against a fresh worker.
+
+    THREE same-slot siblings are driven, not two: a single-worker executor's call
+    queue is `max_workers + EXTRA_QUEUED_CALLS == 2` deep
+    (concurrent/futures/process.py, 3.12.13, line 118 -- `EXTRA_QUEUED_CALLS = 1`).
+    `add_call_item_to_queue` (lines 391-404) drains `work_ids_queue` into that 2-deep
+    call queue by calling `work_item.future.set_running_or_notify_cancel()` on each
+    item it pulls (line 404) -- marking it RUNNING before any worker has actually
+    touched it, purely because it fit in the queue. `flag_executor_shutting_down`
+    (line 540) only cancels a future whose own `.cancel()` succeeds, which a RUNNING
+    future's never does. A second same-slot sibling was already suspected to be
+    RUNNING (and therefore uncancellable) the moment it's submitted; a third was the
+    review's candidate for the first sibling still genuinely PENDING and cancellable.
+    [VERIFIED empirically this session, both pre- and post-fix, 5 runs each: even with
+    `cancel_futures=True` temporarily restored on `recreate_for`'s `shutdown()` call,
+    the THIRD sibling also raised `BrokenProcessPool`, never `CancelledError` --
+    because both siblings here are created back-to-back in the same asyncio tick
+    (no `await` between them) and are both drained into the 2-deep call queue by the
+    manager thread's single, uninterrupted fill loop before `shutdown()` ever runs, so
+    neither is still PENDING by the time the incident is handled. See
+    260924-bv5-SUMMARY.md for the run transcript.] Both siblings are asserted the same
+    way below regardless -- the fix (no `cancel_futures=True`, ever) makes this
+    deterministic rather than a race, and the assertions hold either way.
     """
     with TestClient(app):
         pool = app.state.pool
@@ -358,24 +380,30 @@ def test_a_queued_sibling_is_refused_not_cancelled() -> None:
                 # both, and keeps the whole test near the timeout's own 1.0s rather
                 # than the 10.0s sleep (the sleep only needs to outlast the timeout;
                 # the terminate that follows the timeout is what actually ends it).
+                # Second and third both start after that one gap, before the first's
+                # deadline -- not a second, separate gap (see the docstring above for
+                # why a third request is needed at all).
                 await asyncio.sleep(0.5)
                 second = asyncio.create_task(
+                    pool._run_with_timeout(params, _sleep_past_timeout, 10.0))
+                third = asyncio.create_task(
                     pool._run_with_timeout(params, _sleep_past_timeout, 10.0))
                 # mypy --strict: asyncio.gather's overloads collapse to Any once
                 # return_exceptions=True mixes results with exception instances in one
                 # list -- cast to what the awaited call actually returns, the same
                 # pattern pool.py's own build_export uses for a dynamic-import return.
-                return cast(list[object],
-                            await asyncio.gather(first, second, return_exceptions=True))
+                return cast(list[object], await asyncio.gather(
+                    first, second, third, return_exceptions=True))
 
-            first_result, second_result = asyncio.run(_drive())
+            first_result, second_result, third_result = asyncio.run(_drive())
         finally:
             pool.timeout = original_timeout
 
         assert isinstance(first_result, BuildTimeout)
-        assert isinstance(second_result, BrokenProcessPool)
-        assert not isinstance(second_result, asyncio.CancelledError)
-        assert not isinstance(second_result, BuildTimeout)
+        for sibling_result in (second_result, third_result):
+            assert isinstance(sibling_result, BrokenProcessPool)
+            assert not isinstance(sibling_result, asyncio.CancelledError)
+            assert not isinstance(sibling_result, BuildTimeout)
         assert pool.replaced == replaced_before + 1
 
         new_pid = pool.executor_for(params).submit(os.getpid).result()
