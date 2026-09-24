@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 03
 current_phase_name: Structured Logging at the Composition Boundary
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-09-24T08:35:42.275Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-09-24T09:28:53.899Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 02 complete, transitioned to Phase 3
-state_head: ef1b5eb091a03b9576b01d90cbf21b8ab859231c
+last_activity_desc: Phase 03 execution started
+state_head: 047c1231a78a3cfed1a16f714d9e588c6f39f434
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 5
+  completed_plans: 6
 milestone_name: Hardening
 ---
 
@@ -25,14 +25,14 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 3 — Structured Logging at the Composition Boundary
+**Current focus:** Phase 03 — Structured Logging at the Composition Boundary
 
 ## Current Position
 
-Phase: 03 (Structured Logging at the Composition Boundary) — READY TO EXECUTE
-Plan: Not started
+Phase: 03 (Structured Logging at the Composition Boundary) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-24 — Phase 02 complete, transitioned to Phase 3
+Last activity: 2026-09-24 — Phase 03 execution started
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ dominated because it waited on real benchmark runs, not on code.
 | Phase 02 P03 | ~25min | 4 tasks | 4 files |
 | Phase 02 P04 | ~2h | 3 tasks | 9 files |
 | Phase 02 P05 | 35min | 3 tasks | 5 files |
+| Phase 03 P01 | 25min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ L17–L19):
   incident and no longer cancels pending futures (quick 260924-bv5, CR-01/WR-01).
 - TDD RED tests were committed together with GREEN, not as a separate failing commit: the
   pre-commit hook runs the full `make verify` with no bypass.
+- [Phase 03]: records.py falls back to record.getMessage() for the event field when a record carries no event extra (uvicorn's own records), so the shared formatter never raises on a record it did not originate.
+- [Phase 03]: Filed docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md (must): model.py's process-global solid cache lets exportStl()'s mesh side effect skew a later .BoundingBox() call on the same cached object; no production code calls BoundingBox() today, fixed test-side via an autouse cache-clearing fixture.
 
 ### Pending Todos
 
@@ -141,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T07:51:50.100Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-structured-logging-at-the-composition-boundary/03-CONTEXT.md
+Last session: 2026-09-24T09:28:53.874Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
