@@ -63,14 +63,18 @@ the full list with sources and acceptance evidence.
 - ✓ REQ-measured-memory-ceiling — the N=1/2/4 container sweep measured the ceiling;
   `compose.yaml` `mem_limit: 4g` is N=2's 2878.5 MiB peak × 1.3 headroom, not L07's
   formula multiplied out (L17) — Phase 2
+- ✓ REQ-structured-logging — `src/spur/records.py` (stdlib `logging`, project-owned JSON
+  formatter, one object per line on stderr) configured idempotently at both composition
+  points; `build.started`, `build.failed`, `export.served`, `queue.refused` and
+  `worker.replaced` proven by `caplog`/`json.loads` tests; uvicorn's own records share the
+  stream; post-review fix renders a `traceback` field for records that carry `exc_info`
+  (L20) — Phase 3
 
 ### Active
 
 Milestone v0.1 (Hardening). Each maps to a `must` item in `docs/tech_debt/active/` or a
 standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIREMENTS.md`.
 
-- [ ] Production requests leave evidence — a structured logger configured at the
-  composition boundary, logging the branches that already exist
 - [ ] The info contract has a real shape — a `DerivedDimensions` model, with mypy's
   `disallow_any_explicit` turned on and L14's ratchet retired
 - [ ] The CI workflow is observed green in GitHub Actions on both supported Python
@@ -84,8 +88,9 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
   the documented, accepted approximation for now.
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- Structured logging, a typed `/api/info` response contract, a coverage floor —
-  `docs/tech_debt/active/` (must) — deferred, each with its own trigger.
+- A typed `/api/info` response contract, a coverage floor, and the other `must` items
+  listed in `docs/tech_debt/INDEX.md` — `docs/tech_debt/active/` — deferred, each with
+  its own trigger.
 - CadQuery `Shape` typing cleanup, server-side request cancellation, Enji Guard / CVE
   alerting integration — `docs/tech_debt/active/` (nice) — deferred.
 
@@ -177,6 +182,7 @@ quick reference.
 | L17 | Memory ceiling = parent byte budget + N × per-worker solid cache, swept on the real topology: `mem_limit: 4g` from N=2's 2878.5 MiB peak × 1.3 (supersedes L07) | ✓ Good — measured, zero failures at the limit |
 | L18 | The `RLock` is per worker, not global; "concurrency buys latency, not throughput" retired. Single build within 2× idle p95 on every run; ten-concurrent accepted with caveat, not demonstrated (Runs 1–8: 1.31x–2.45x) (supersedes L06) | ⚠️ Caveat — must debt `2026-09-23-concurrent-latency-bar-waived.md` |
 | L19 | Model bodies gzip-encoded at measured `compresslevel=1` (51.5 ms vs 788 ms at level 9 on a 9 MB STL), inside the admission slot, cached once per encoding | ✓ Good |
+| L20 | Structured JSON logging: stdlib `logging` + project-owned formatter, one object per line on stderr, `configure()` at both `cli.cmd_serve` and `app.lifespan()` (idempotent — uvicorn's spawn-based workers need the second site), parent process only, INFO default via `SPUR_LOG_LEVEL` | ✓ Good — post-review fix: records carrying `exc_info` render a `traceback` field (CR-01), `model()` catch-all logs `build.failed` (WR-01) |
 
 ## Success Metric (Milestone v0.1)
 
@@ -213,4 +219,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 — after Phase 2 (CAD Off the Event Loop) completed via `/gsd-execute-phase 02`.*
+*Last updated: 2026-09-24 — after Phase 3 (Structured Logging at the Composition Boundary) completed via `/gsd-execute-phase 3`.*

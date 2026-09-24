@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 03 — Structured Logging at the Composition Boundary
+**Current focus:** Phase 4 — Typed Derived-Dimensions Contract
 
 ## Current Position
 
@@ -39,8 +39,8 @@ Last activity: 2026-09-24 — Phase 03 complete, transitioned to Phase 4
 
 **Velocity:**
 
-- Total plans completed via GSD: 5 (Phase 2; v0 was built and verified directly against
-  `make verify`, before this planning structure existed)
+- Total plans completed via GSD: 8 (Phase 2: 5, Phase 3: 3; v0 was built and verified
+  directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
 
@@ -50,13 +50,13 @@ Last activity: 2026-09-24 — Phase 03 complete, transitioned to Phase 4
 |-------|-------|-------|----------|
 | 1. v0 Baseline | N/A | N/A | N/A |
 | 2. CAD Off the Event Loop | 5 | ~3h50m | ~46min |
-| 3. Structured Logging | TBD | - | - |
+| 3. Structured Logging | 3 | ~1h12m | ~24min |
 | 4. Typed Derived-Dimensions Contract | TBD | - | - |
 | 5. CI Observed Green | TBD | - | - |
-| 03 | 3 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
-dominated because it waited on real benchmark runs, not on code.
+dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
+took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~10 min.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -74,7 +74,7 @@ dominated because it waited on real benchmark runs, not on code.
 
 ### Decisions
 
-Full decision log: PROJECT.md "Key Decisions" table (L01–L19, from
+Full decision log: PROJECT.md "Key Decisions" table (L01–L20, from
 `docs/architecture/decision_log.md`). Flagged for revisit there: L10 (radial root
 fillet — trochoidal is a tracked idea), L14 (`disallow_any_explicit` off — retired by
 Phase 4, not just revisited) and L18 (ten-concurrent latency bar accepted with caveat).
@@ -114,6 +114,7 @@ L17–L19):
 - [Phase 03]: gsd_run check tdd-red-evidence does not support pytest output (its TAP parser expects node --test format) -- RED phases in this Python project are verified by direct inspection of pytest failure output instead; documented in 03-02-SUMMARY.md's Issues Encountered for future TDD plans in this phase.
 - [Phase 03]: L20 appended recording D-01 through D-04, D-06 and D-14, including why there are two idempotent configure() call sites (03-RESEARCH.md falsified the single-call-site assumption).
 - [Phase 03]: docs/tech_debt/active/2026-09-21-no-structured-logging.md retired: Status: resolved, Resolved in: 21b8fe4 (Plan 03-02's commit, not this plan's own), git mv'd into resolved/, INDEX.md row moved -- same commit as the four corrected Logging sections.
+- [Phase 03, post-review fixes 2a1900d/a2a2371/482c936]: `_JsonFormatter` renders `exc_info`/`stack_info` into `traceback`/`stack_info` fields only for records that carry them (uvicorn's "Exception in ASGI application" record) -- spur's own helpers never set `exc_info`, so D-06/T-03-05 hold; `model()` gained a catch-all that logs `build.failed` and re-raises, with `HTTPException` passed through untouched so a 503 refusal does not double-log; import-linter contract "The gear maths stays free of the logger" forbids `spur.calc` -> `spur.records`/`logging`.
 
 ### Pending Todos
 
@@ -132,7 +133,15 @@ None yet.
   p95) live in `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`
   (must). Triggers: the harness or the machine changes, or any run reads above 2.45x.
   History: `bench/RESULTS.md`, `02-LATENCY-INVESTIGATION.md`, `02-04-SUMMARY.md`.
-- *(Resolved in Phase 2: "CAD builds block the event loop" — `daeb284`, moved to
+- ⚠️ [Phase 3] A cached `cq.Solid`'s `.BoundingBox()` reads wrong after `exportStl()` has
+  attached a coarser mesh to the same object — `model.py`'s process-global `_build_cached`
+  LRU shares the mutable solid across calls. No production caller today and STL bytes are
+  unaffected; the suite is protected by an autouse cache-clearing fixture.
+  `docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md`
+  (must). Triggers: a feature needs a measured dimension from a `Solid` after export, or a
+  test outside the fixture's protection hits the symptom.
+- *(Resolved in Phase 3: "No structured logging anywhere" — `21b8fe4`/`013997a`, moved to
+  `docs/tech_debt/resolved/`; L20. Resolved in Phase 2: "CAD builds block the event loop" — `daeb284`, moved to
   `docs/tech_debt/resolved/`; L06/L07 superseded by L18/L17. Resolved at v0.1 start:
   "Forward scope undefined" and "Success metric not derivable" — both set by the human,
   see PROJECT.md "Current Milestone" and "Success Metric".)*
@@ -152,6 +161,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T10:23:39.472Z
-Stopped at: Phase 03 complete, ready to plan Phase 4
+Last session: 2026-09-24T11:31:29Z
+Stopped at: Phase 3 complete, ready to plan Phase 4
 Resume file: None
