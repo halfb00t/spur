@@ -9,7 +9,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import Any, Literal, cast, get_args, get_origin
+from typing import Literal, cast, get_args, get_origin
 
 from pydantic import ValidationError
 
@@ -21,14 +21,18 @@ from .records import configure
 def _add_gear_args(ap: argparse.ArgumentParser) -> None:
     g = ap.add_argument_group("gear parameters (defaults in brackets)")
     for name, field in GearParams.model_fields.items():
-        kw: dict[str, Any] = {"dest": name, "default": None, "metavar": "V",
-                    "help": f"{field.description} [{field.default}]".replace("%", "%%")}
+        flag = "--" + name.replace("_", "-")
+        help_text = f"{field.description} [{field.default}]".replace("%", "%%")
         if get_origin(field.annotation) is Literal:
-            kw["choices"] = list(get_args(field.annotation))
-            kw.pop("metavar")
+            g.add_argument(flag, dest=name, default=None, help=help_text,
+                            choices=list(get_args(field.annotation)))
         else:
-            kw["type"] = field.annotation
-        g.add_argument("--" + name.replace("_", "-"), **kw)
+            # pydantic gives every declared field an annotation; this check exists
+            # only to narrow `field.annotation`'s `type | None` to a real type for
+            # argparse's `type=`, not because a field can actually lack one.
+            assert field.annotation is not None
+            g.add_argument(flag, dest=name, default=None, help=help_text,
+                            metavar="V", type=field.annotation)
 
 
 def _params(ns: argparse.Namespace) -> GearParams:

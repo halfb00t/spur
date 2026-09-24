@@ -20,18 +20,22 @@ worker that dies on its own (`BrokenProcessPool`, D-12).
 from __future__ import annotations
 
 import asyncio
+import functools
 import importlib
 import multiprocessing as mp
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
-from typing import cast
+from typing import ParamSpec, cast
 
 from .build_errors import BuildTimeout
 from .params import GearParams
 from .records import worker_replaced
 
 _SPAWN = mp.get_context("spawn")  # portable, and with D-02 the parent has no OCP to fork
+
+P = ParamSpec("P")  # the real call shapes: build_export(p, fmt, quality),
+# _sleep_past_timeout(seconds), _die() -- see _run_with_timeout below
 
 
 def _warm() -> None:
@@ -151,10 +155,10 @@ class BuildPool:
         worker_replaced(slot=i, cause=cause)
 
     async def _run_with_timeout(
-        self, p: GearParams, func: Callable[..., bytes], *args: object,
+        self, p: GearParams, func: Callable[P, bytes], *args: P.args, **kwargs: P.kwargs,
     ) -> bytes:
-        """Route `func(*args)` to `p`'s worker, enforcing the per-build timeout (D-10)
-        and replacing the worker if it wedges or dies (D-12).
+        """Route `func(*args, **kwargs)` to `p`'s worker, enforcing the per-build
+        timeout (D-10) and replacing the worker if it wedges or dies (D-12).
 
         A private seam behind `export()` rather than inlined there, so
         tests/test_pool.py can drive the timeout/replacement path with a trivial
@@ -164,11 +168,17 @@ class BuildPool:
         """
         executor = self.executor_for(p)
         loop = asyncio.get_running_loop()
-        # run_in_executor(executor, func, *args) is positional-only -- no **kwargs --
-        # so every func crossing this boundary must stay all-positional (verified
-        # against the installed asyncio.AbstractEventLoop.run_in_executor signature,
-        # 02-RESEARCH.md).
-        future = loop.run_in_executor(executor, func, *args)
+        # run_in_executor(executor, func, *args) takes positional arguments only, so
+        # func/args/kwargs are bound into a functools.partial first -- the partial
+        # carries the keyword arguments across the boundary that run_in_executor's own
+        # signature has no slot for (verified against the installed
+        # asyncio.AbstractEventLoop.run_in_executor signature, 02-RESEARCH.md; PEP 612
+        # requires *args: P.args and **kwargs: P.kwargs together, so a signature that
+        # forwarded only *args would type-check while accepting -- and then silently
+        # dropping -- a keyword argument). A partial of a module-level function pickles
+        # by reference under `spawn`, so a callable still has to be importable by its
+        # qualified name -- same rule as before.
+        future = loop.run_in_executor(executor, functools.partial(func, *args, **kwargs))
         try:
             return await asyncio.wait_for(future, timeout=self.timeout)
         except asyncio.TimeoutError:

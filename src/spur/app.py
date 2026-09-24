@@ -18,11 +18,11 @@ import threading
 import time
 import uuid
 from collections import OrderedDict
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Hashable, Iterator
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
@@ -51,20 +51,22 @@ class _BlobCache:
     per-process version, whose docstring claimed callers held model.py's _LOCK, this one
     is the only thing touching its dict, single-threaded, on one event loop, in the one
     uvicorn worker this app runs as (D-01).
+
+    Any hashable key works; the one real key shape is described above `_EXPORTS`.
     """
 
     def __init__(self, budget: int) -> None:
         self._budget = budget
-        self._items: OrderedDict[Any, bytes] = OrderedDict()
+        self._items: OrderedDict[Hashable, bytes] = OrderedDict()
         self._bytes = 0
 
-    def get(self, key: Any) -> bytes | None:
+    def get(self, key: Hashable) -> bytes | None:
         data = self._items.get(key)
         if data is not None:
             self._items.move_to_end(key)
         return data
 
-    def put(self, key: Any, data: bytes) -> None:
+    def put(self, key: Hashable, data: bytes) -> None:
         old = self._items.pop(key, None)
         if old is not None:
             self._bytes -= len(old)
@@ -147,6 +149,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         app.state.pool.shutdown()
+        # Clear the attribute, not just the object it points at: `app` is one
+        # module-level FastAPI singleton shared by every test file in one pytest
+        # session, and `getattr(app.state, "pool", None)`'s absent-vs-set distinction
+        # (health()'s D-06 contract) is meaningless if a shut-down pool from an earlier
+        # test's `with TestClient(app)` block lingers here for a later test's bare,
+        # lifespan-free client to see.
+        del app.state.pool
 
 
 app = FastAPI(
