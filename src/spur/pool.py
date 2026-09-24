@@ -119,16 +119,21 @@ class BuildPool:
         # and it falls through to `_ExecutorManagerThread._terminate_broken` the same
         # way a worker dying on its own does -- `BrokenProcessPool`, which the `except
         # BrokenProcessPool` branch below already handles and app.py already maps to a
-        # 503 `pool_broken`. [VERIFIED this session, both with and without
-        # `cancel_futures=True`, 5 runs each: even a *third* same-slot sibling reached
-        # `BrokenProcessPool`, never `asyncio.CancelledError` -- both extra siblings in
-        # tests/test_pool.py's queued-sibling test are created back-to-back in one
-        # asyncio tick, so the manager thread's single fill loop drains both into the
-        # 2-deep queue as RUNNING before any `shutdown()` call can run. That leaves
-        # open whether a sibling landing genuinely PENDING (a fourth, or different
-        # timing) would still surface `asyncio.CancelledError` if `cancel_futures=True`
-        # were used -- see 260924-bv5-SUMMARY.md for the run transcript. This method
-        # drops `cancel_futures=True` unconditionally rather than depend on that.]
+        # 503 `pool_broken`. With request 1 already dequeued into the (single, busy)
+        # worker, that 2-deep call queue is exactly big enough to also make requests 2
+        # and 3 RUNNING; a *fourth* same-slot request is the first one that can still
+        # be sitting in `work_ids_queue`, genuinely PENDING -- and reachable in
+        # production, since `MAX_QUEUED_BUILDS` admits 4 builds and D-07 affinity can
+        # route all four to one hash slot. [VERIFIED this session, both with and
+        # without `cancel_futures=True`, 5 runs each: the 2nd and 3rd same-slot
+        # requests always reached `BrokenProcessPool` (already RUNNING per the above),
+        # but the *4th* raised `asyncio.CancelledError` with `cancel_futures=True`
+        # restored, in every one of 5 runs -- confirming the mechanism this comment
+        # describes, and confirming this method's unconditional removal of
+        # `cancel_futures=True` is what keeps a 4th-or-later same-slot request from
+        # ever reaching that path. See tests/test_pool.py::
+        # test_four_same_slot_requests_all_refuse_without_cancellation and
+        # 260924-bv5-SUMMARY.md for the run transcript.]
         self._executors[i].shutdown(wait=False)
         self._executors[i] = ProcessPoolExecutor(
             max_workers=1, mp_context=_SPAWN, initializer=_warm)
