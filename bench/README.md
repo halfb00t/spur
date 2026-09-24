@@ -13,7 +13,10 @@ figure quoted from a session that has since ended.
 - **`bench.memory`** (`bench/memory.py`) -- the container memory ceiling. `sweep` drives
   the 40-gear corpus (`bench/corpus.py`) through the service at each of N = 1, 2, 4 build
   workers and records the peak per N; `confirm` re-runs the same corpus at a candidate
-  `mem_limit` and reports the failure count.
+  `mem_limit` and reports the failure count. `sweep` runs under a ceiling of its own
+  (CR-02 review) so `compose.yaml`'s `mem_limit` can never cap the measurement it
+  exists to determine, and a row whose peak reaches that ceiling is reported capped,
+  with no peak number.
 
 ## Where each half must run, and why
 

@@ -44,6 +44,40 @@ _MEM_UNITS: list[tuple[str, int]] = [
 
 POLL_INTERVAL = 0.5  # seconds between docker stats samples
 
+# CR-02 review: the sweep's own ceiling, applied through the same override mechanism
+# confirm() already uses (_write_mem_limit_override) -- so a re-run can never again be
+# silently capped by whatever compose.yaml currently ships. bench/RESULTS.md's Memory
+# section: this sweep's highest N (N=4) peaked at 4731.9 MiB, uncapped; the *first*
+# sweep attempt, still under the then-shipped mem_limit: 2g, read exactly 2048.0 MiB
+# for both N=2 and N=4 -- the 2g cap itself, printed as if it were a peak, which is the
+# exact bug this constant exists to stop recurring. That session's fix was to raise
+# mem_limit to 8g by hand for the sweep, and it was sufficient (0 of 120 requests
+# failed across all three N); this constant is that same 8g, so a future re-run needs
+# no manual step. Fixed, not derived from the host's RAM: the same reasoning D-19 gives
+# SHIPPING_DEFAULT_WORKERS applies here -- a machine-dependent ceiling would make the
+# measurement untrue somewhere. Safe to pick by hand at all because an undersized value
+# is no longer silent: a row that reaches it is now refused (capped, no peak number)
+# instead of reported as if it were real -- see `_is_capped` below.
+_SWEEP_MEM_LIMIT_BYTES = 8 * 1024**3  # 8589934592
+
+# The two rows on file that actually hit a cap (bench/RESULTS.md's first sweep
+# attempt, above) read the cap exactly: 2048.0 MiB against a then-shipped `mem_limit:
+# 2g`. A capped row doesn't creep up on the ceiling, it reads it. 1% is a small, stated
+# fraction chosen to absorb `docker stats`' own one-decimal-MiB display rounding
+# (~0.05 MiB of noise against an 8 GiB ceiling) without being wide enough to call a
+# real, honest peak "capped" -- the N=1/N=2 peaks this sweep already recorded (2052.1 /
+# 2878.5 MiB) sit nowhere near 1% of 8 GiB (~85.9 MiB).
+_CAP_TOLERANCE_FRACTION = 0.01
+
+
+def _is_capped(peak_bytes: int, ceiling_bytes: int) -> bool:
+    """Whether a sampled peak is the sweep's own container ceiling showing up as if it
+    were a measurement (CR-02), not a real footprint -- see `_CAP_TOLERANCE_FRACTION`'s
+    comment for the record this tolerance is read from. Pure and Docker-free so
+    tests/test_bench.py can pin every case without a daemon.
+    """
+    return peak_bytes >= ceiling_bytes * (1 - _CAP_TOLERANCE_FRACTION)
+
 
 def _parse_mem(text: str) -> int:
     """Parse a `docker stats` size like "612.3MiB" into bytes."""
@@ -131,15 +165,31 @@ class SweepRow:
 
 
 def _sweep_one(n: int, base_url: str) -> SweepRow:
-    """Cold-start the service at SPUR_BUILD_WORKERS=n, drive the corpus, tear down."""
+    """Cold-start the service at SPUR_BUILD_WORKERS=n under the sweep's own ceiling
+    (`_SWEEP_MEM_LIMIT_BYTES`, CR-02), drive the corpus, tear down.
+
+    Applies the ceiling through the same override mechanism `confirm()` already uses
+    (`_write_mem_limit_override`, `-f compose.yaml -f <override>`) rather than a second
+    mechanism -- written in Docker's byte form (an integer byte count with a `b`
+    suffix, e.g. "8589934592b") so the number Compose applies and the number
+    `_is_capped` compares against are literally the same constant [VERIFIED this
+    session: `docker compose ... config` normalised this form and `docker inspect
+    --format '{{.HostConfig.Memory}}'` on a container started this way read back
+    exactly `_SWEEP_MEM_LIMIT_BYTES`].
+    """
     container = f"spur-bench-n{n}"
     _teardown(container)  # a stray container from an earlier, aborted run
+    override_path = _write_mem_limit_override(f"{_SWEEP_MEM_LIMIT_BYTES}b")
     try:
-        subprocess.run(
-            ["docker", "compose", "run", "--rm", "-d", "--name", container,
-             "--service-ports", "-e", f"SPUR_BUILD_WORKERS={n}", "spur"],
-            check=True, capture_output=True,
-        )
+        try:
+            subprocess.run(
+                ["docker", "compose", "-f", "compose.yaml", "-f", override_path, "run",
+                 "--rm", "-d", "--name", container, "--service-ports",
+                 "-e", f"SPUR_BUILD_WORKERS={n}", "spur"],
+                check=True, capture_output=True,
+            )
+        finally:
+            Path(override_path).unlink(missing_ok=True)
         _wait_healthy(container)
     except (subprocess.CalledProcessError, RuntimeError) as exc:
         print(f"warning: N={n} never came up: {exc}", file=sys.stderr)
@@ -160,10 +210,22 @@ def _sweep_one(n: int, base_url: str) -> SweepRow:
     if not samples:
         print(f"warning: N={n} produced no memory samples", file=sys.stderr)
         return SweepRow(n, None, requests, failures, elapsed, note="no memory samples")
+    peak = max(samples)
+    if _is_capped(peak, _SWEEP_MEM_LIMIT_BYTES):
+        # A capped row is the sweep's own ceiling, not a measurement (L08) -- reported
+        # with no peak number at all (reuses the table's existing "(none -- note)"
+        # rendering and sweep()'s existing all(row.peak_bytes is not None) result, so
+        # no new print branch and no new exit path is needed here).
+        print(f"warning: N={n} peak ({peak / (1024**2):.1f} MiB) reached the sweep's "
+              f"own {_SWEEP_MEM_LIMIT_BYTES / (1024**3):.0f}g ceiling -- reporting no "
+              "peak", file=sys.stderr)
+        return SweepRow(n, None, requests, failures, elapsed,
+                         note=f"capped at the sweep's own "
+                              f"{_SWEEP_MEM_LIMIT_BYTES / (1024**3):.0f}g ceiling")
     mid = len(samples) // 2 or 1  # `or 1` guards a 1-sample run: both halves non-empty
     early_peak = max(samples[:mid])
     late_peak = max(samples[mid:]) if samples[mid:] else early_peak
-    return SweepRow(n, max(samples), requests, failures, elapsed,
+    return SweepRow(n, peak, requests, failures, elapsed,
                      early_peak_bytes=early_peak, late_peak_bytes=late_peak)
 
 
@@ -195,8 +257,12 @@ def _sweep_table_markdown(rows: list[SweepRow]) -> str:
 def sweep(base_url: str = DEFAULT_BASE_URL) -> bool:
     """N = 1, 2, 4: peak container memory over the 40-gear corpus, one row per N (D-18).
 
-    Returns False if any row is incomplete (no samples, or docker never came up) -- a
-    partial sweep must never be mistaken for a finished one (L08).
+    Each N runs under the sweep's own ceiling (`_SWEEP_MEM_LIMIT_BYTES`, CR-02) --
+    whatever `mem_limit` compose.yaml currently ships cannot cap this measurement.
+
+    Returns False if any row is incomplete (no samples, docker never came up, or a
+    row's peak reached the sweep's own ceiling and was refused rather than reported)
+    -- a partial or self-capped sweep must never be mistaken for a finished one (L08).
     """
     rows = [_sweep_one(n, base_url) for n in (1, 2, 4)]
     print(_sweep_table_markdown(rows))

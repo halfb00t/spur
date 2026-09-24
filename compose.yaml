@@ -19,9 +19,10 @@ services:
     # sweeping the same 40 distinct 160-199 tooth gears peak at 2878.5 MiB, uncapped by
     # any pre-existing limit. 4g is that peak x1.3 named headroom, rounded up. Confirmed
     # by re-running the full 40-gear corpus at 4g: 0 of 40 requests failed (the same bar
-    # 2g cleared and 1g did not, before this phase). Re-measure (bench.memory sweep) and
-    # raise if you raise SPUR_BUILD_WORKERS or the cache settings -- do not scale this
-    # number by arithmetic, per L08.
+    # 2g cleared and 1g did not, before this phase). Re-measure (bench.memory sweep --
+    # which runs under its own ceiling, not this one, CR-02 review) and raise if you
+    # raise SPUR_BUILD_WORKERS or the cache settings -- do not scale this number by
+    # arithmetic, per L08.
     mem_limit: 4g
     read_only: true
     tmpfs:
