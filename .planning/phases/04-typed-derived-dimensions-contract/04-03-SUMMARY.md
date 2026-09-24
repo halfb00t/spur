@@ -336,3 +336,8 @@ Phase complete, ready for verification.
 ---
 *Phase: 04-typed-derived-dimensions-contract*
 *Completed: 2026-09-24*
+
+## Self-Check: PASSED
+
+All 7 created/modified files found on disk (plus this summary); all 4 commits
+(`ce5195e`, `059a7e4`, `cfe5f8d`, `5aa3815`) found in `git log --oneline --all`.
