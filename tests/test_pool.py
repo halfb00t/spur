@@ -15,6 +15,7 @@ import os
 import time
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -325,3 +326,81 @@ def test_health_handler_never_awaits_or_touches_pool_internals() -> None:
     from spur.app import health
 
     assert not asyncio.iscoroutinefunction(health)
+
+
+def test_a_queued_sibling_is_refused_not_cancelled() -> None:
+    """CR-01: a request queued on the same hash slot behind one that times out must
+    surface as BrokenProcessPool -- never asyncio.CancelledError (a BaseException every
+    handler between here and the client misses), and never its own BuildTimeout (its
+    own deadline firing first would mean this test never actually exercised the queued
+    path, so that outcome must fail the assertions below, not silently pass them).
+
+    Also WR-01: the same incident must replace the worker exactly once, and the hash
+    slot must be usable again afterwards against a fresh worker.
+    """
+    with TestClient(app):
+        pool = app.state.pool
+        params = GearParams(teeth=21)
+        worker_pid_before = pool.executor_for(params).submit(os.getpid).result()
+        replaced_before = pool.replaced
+
+        original_timeout = pool.timeout
+        pool.timeout = 1.0  # injected, short -- restored in `finally` exactly as the
+        # existing timeout tests do.
+        try:
+            async def _drive() -> list[object]:
+                first = asyncio.create_task(
+                    pool._run_with_timeout(params, _sleep_past_timeout, 10.0))
+                # The gap is the point of this test, not incidental: a sibling that
+                # arrives later always has a later deadline under D-10's per-build
+                # timeout, so the gap must be comfortably above event-loop scheduling
+                # jitter and comfortably below the 1.0s injected timeout -- 0.5s clears
+                # both, and keeps the whole test near the timeout's own 1.0s rather
+                # than the 10.0s sleep (the sleep only needs to outlast the timeout;
+                # the terminate that follows the timeout is what actually ends it).
+                await asyncio.sleep(0.5)
+                second = asyncio.create_task(
+                    pool._run_with_timeout(params, _sleep_past_timeout, 10.0))
+                # mypy --strict: asyncio.gather's overloads collapse to Any once
+                # return_exceptions=True mixes results with exception instances in one
+                # list -- cast to what the awaited call actually returns, the same
+                # pattern pool.py's own build_export uses for a dynamic-import return.
+                return cast(list[object],
+                            await asyncio.gather(first, second, return_exceptions=True))
+
+            first_result, second_result = asyncio.run(_drive())
+        finally:
+            pool.timeout = original_timeout
+
+        assert isinstance(first_result, BuildTimeout)
+        assert isinstance(second_result, BrokenProcessPool)
+        assert not isinstance(second_result, asyncio.CancelledError)
+        assert not isinstance(second_result, BuildTimeout)
+        assert pool.replaced == replaced_before + 1
+
+        new_pid = pool.executor_for(params).submit(os.getpid).result()
+        assert new_pid != worker_pid_before
+
+
+def test_two_same_slot_deaths_from_one_incident_replace_the_worker_once() -> None:
+    """WR-01: two same-slot requests that both lose their worker to a hard process
+    death both surface as BrokenProcessPool (D-12, unchanged by this fix), and
+    `pool.replaced` rises by exactly 1 -- not 2 -- because both requests are observing
+    the same incident, not two independent ones.
+    """
+    with TestClient(app):
+        pool = app.state.pool
+        params = GearParams(teeth=21)
+        replaced_before = pool.replaced
+
+        async def _drive() -> list[object]:
+            first = asyncio.create_task(pool._run_with_timeout(params, _die))
+            second = asyncio.create_task(pool._run_with_timeout(params, _die))
+            return cast(list[object],
+                        await asyncio.gather(first, second, return_exceptions=True))
+
+        first_result, second_result = asyncio.run(_drive())
+
+        assert isinstance(first_result, BrokenProcessPool)
+        assert isinstance(second_result, BrokenProcessPool)
+        assert pool.replaced == replaced_before + 1

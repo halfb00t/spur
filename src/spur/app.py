@@ -355,15 +355,20 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                                               "type": "timeout"}],
                                 headers={"Retry-After": "5"}) from exc
         except BrokenProcessPool as exc:
-            # 503, not 422 (D-12): the worker died, the parameters didn't do anything
-            # wrong. BuildPool.export already replaced the dead slot before this
-            # propagated here (pool.py's _run_with_timeout); the client just needs to
-            # know it can retry.
+            # 503, not 422 (D-12): the worker is gone, the parameters didn't do
+            # anything wrong. BuildPool.export already replaced the dead slot before
+            # this propagated here (pool.py's _run_with_timeout); the client just needs
+            # to know it can retry. Since CR-01's fix (pool.py's recreate_for) this
+            # also covers a request queued behind a *different*, same-slot request that
+            # overran its own timeout (D-07 affinity) -- that queued request's worker
+            # was terminated by this service, not by a crash, so "died unexpectedly"
+            # alone stopped being true of every caller reaching this branch.
             raise HTTPException(
                 503,
                 detail=[{"loc": ["query"],
-                         "msg": "A build worker died unexpectedly. The request can be "
-                                "retried.",
+                         "msg": "A build worker was lost (died unexpectedly, or was "
+                                "terminated after another request on the same slot "
+                                "overran its timeout). The request can be retried.",
                          "type": "pool_broken"}],
                 headers={"Retry-After": "5"},
             ) from exc

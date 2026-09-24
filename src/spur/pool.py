@@ -91,10 +91,38 @@ class BuildPool:
     def executor_for(self, p: GearParams) -> ProcessPoolExecutor:
         return self._executors[hash(p) % self.workers]  # D-07: affinity, not load-balance
 
-    def recreate_for(self, p: GearParams) -> None:
-        """Discard a broken/wedged single-worker executor and replace it (D-10, D-12)."""
+    def recreate_for(self, p: GearParams, executor: ProcessPoolExecutor) -> None:
+        """Discard a broken/wedged single-worker executor and replace it (D-10, D-12).
+
+        `executor` is the one the *caller's own* failing request actually used --
+        `_run_with_timeout` passes in the `executor` local it already holds. D-07's
+        affinity means several requests share one hash slot, so more than one of them
+        can observe the same dead/wedged worker and each call this method for the same
+        incident (CR-01 review, WR-01). Without this identity check the second (and
+        third, ...) caller would discard and recreate a *replacement* that the first
+        caller's call just built and is still warming (`_warm` importing
+        `spur.model`/`cadquery`, D-04), and `/api/health`'s `workers_replaced` (D-13)
+        would count one incident as two -- observed directly by
+        tests/test_pool.py::test_two_same_slot_deaths_from_one_incident_replace_the_worker_once
+        against this method before this guard existed (`replaced` read 2, not 1).
+        """
         i = hash(p) % self.workers
-        self._executors[i].shutdown(wait=False, cancel_futures=True)
+        if self._executors[i] is not executor:
+            return  # someone else already replaced this slot for this incident
+        # No `cancel_futures=True`: a queued sibling's future left pending (not
+        # cancelled) lets CPython's own `_ExecutorManagerThread._terminate_broken`
+        # (concurrent/futures/process.py, 3.12.13) fail it with `BrokenProcessPool` --
+        # the same exception this method's own callers already raise, which the
+        # `except BrokenProcessPool` branch below already handles and app.py already
+        # maps to a 503 `pool_broken`. Cancelling it instead handed that sibling an
+        # `asyncio.CancelledError` -- a BaseException that nothing between here and the
+        # client (not this module, not model(), not Starlette's ServerErrorMiddleware)
+        # catches. [VERIFIED this session: `_ExecutorManagerThread.run`'s shutdown
+        # branch only returns once `pending_work_items` is empty; with an uncancelled
+        # sibling still pending it loops back into `wait_result_broken_or_wakeup`,
+        # finds the terminated worker's sentinel ready, and fails that sibling's item
+        # with `BrokenProcessPool` the same way a worker dying on its own does.]
+        self._executors[i].shutdown(wait=False)
         self._executors[i] = ProcessPoolExecutor(
             max_workers=1, mp_context=_SPAWN, initializer=_warm)
         self.replaced += 1
@@ -142,7 +170,7 @@ class BuildPool:
             # abandoned future that never gets killed.
             for proc in executor._processes.values():
                 proc.terminate()
-            self.recreate_for(p)
+            self.recreate_for(p, executor)
             raise BuildTimeout(
                 f"Build exceeded the {self.timeout}s per-build timeout. Try a coarser "
                 "quality or fewer teeth."
@@ -154,7 +182,7 @@ class BuildPool:
             # Hand-Roll"]. Same remedy as the timeout case: the dead slot is replaced
             # rather than staying dead. Re-raised so app.py maps it to its own status
             # code (D-12) instead of this module deciding HTTP semantics.
-            self.recreate_for(p)
+            self.recreate_for(p, executor)
             raise
 
     async def export(self, p: GearParams, fmt: str, quality: str) -> bytes:

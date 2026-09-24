@@ -72,9 +72,11 @@ and has to measure the event loop, not the pool.
   (`detail[0].type == "timeout"`, D-12): the same gear succeeds on faster hardware or a
   less loaded moment, so overrunning is a property of this machine and this instant, not
   of the parameters — a `422` would wrongly tell the caller to change a gear that is fine.
-- A build worker that dies unexpectedly (`BrokenProcessPool`) → `503` + `Retry-After`
-  (`detail[0].type == "pool_broken"`, D-12). The dead executor is replaced before this
-  reaches the client; the request itself can simply be retried.
+- A build worker that is lost -- dies unexpectedly, or is terminated because another
+  request on the same D-07 hash slot overran its timeout -- (`BrokenProcessPool`) →
+  `503` + `Retry-After` (`detail[0].type == "pool_broken"`, D-12). The dead executor is
+  replaced once per incident before this reaches the client (CR-01/WR-01 review fix);
+  the request itself can simply be retried.
 - Queue full → `503` + `Retry-After` (`detail[0].type == "busy"`).
 - The four `detail[0].type` values above (`build_error`, `timeout`, `pool_broken`,
   `busy`) are pairwise distinct and form a closed set the UI can switch on.
