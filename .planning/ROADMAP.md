@@ -24,7 +24,7 @@ tracked.
 - [x] **Phase 2: CAD Off the Event Loop** - CAD kernel work moves to worker processes, and (completed 2026-09-24)
   the multi-process memory ceiling is measured, not carried over from the single-process
   design.
-- [ ] **Phase 3: Structured Logging at the Composition Boundary** - Production requests
+- [x] **Phase 3: Structured Logging at the Composition Boundary** - Production requests (completed 2026-09-24)
   leave evidence: a structured logger at startup covers the decision branches that already
   exist.
 - [ ] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real
@@ -209,6 +209,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 |-------|----------------|--------|-----------|
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
-| 3. Structured Logging at the Composition Boundary | 3/3 | In Progress|  |
+| 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 0/TBD | Not started | - |
 | 5. CI Observed Green | 0/TBD | Not started | - |
