@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Iterator
 from concurrent.futures.process import BrokenProcessPool
 from typing import Any, cast
@@ -6,8 +7,9 @@ from typing import Any, cast
 import pytest
 from fastapi.testclient import TestClient
 
-from spur.app import app, build_backend
+from spur.app import STATIC, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
+from spur.calc import DerivedDimensions
 from spur.model import Format, Quality, export
 from spur.params import GearParams
 
@@ -52,6 +54,58 @@ def test_schema_drives_the_form() -> None:
     assert props["teeth"]["group"] == "Teeth"
     assert props["module"]["unit"] == "mm"
     assert props["recess_sides"]["enum"] == ["both", "top", "bottom", "none"]
+
+
+def test_openapi_documents_the_typed_contracts() -> None:
+    """D-11, the info half (Plan 04-02 adds the health half to this same function).
+
+    The field names are written out literally here, not derived from
+    DerivedDimensions.model_fields -- a renamed field, or a route that lost its typed
+    return annotation, must fail this test rather than pass tautologically.
+    """
+    schema = client.get("/openapi.json").json()
+
+    info_response = schema["paths"]["/api/info"]["get"]["responses"]["200"]
+    assert info_response["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/DerivedDimensions"}
+
+    fields = {
+        "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
+        "root_thickness", "root_gap", "root_fillet", "span_teeth", "span",
+        "bore_effective", "recess_id", "recess_od", "recess_fillet", "web", "warnings",
+        "mate_teeth", "centre_distance",
+    }
+    component = schema["components"]["schemas"]["DerivedDimensions"]
+    assert set(component["properties"]) == fields
+    # The null-over-absent invariant (D-01): a field with a default drops out of
+    # `required` in OpenAPI (Pitfall 2), so a field that quietly regained one would show
+    # up here first.
+    assert set(component["required"]) == fields
+
+    assert component["properties"]["pitch_d"]["unit"] == "mm"
+    assert component["properties"]["centre_distance"]["unit"] == "mm"  # nullable, still a length
+    assert "unit" not in component["properties"]["span_teeth"]
+
+
+def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
+    """D-12: a renamed or dropped field silently blanks a row of the UI, and there is no
+    browser test to catch it (the browser-test idea is deferred, CONTEXT.md). This checks
+    one direction only -- a new model field with no DIMS row is not caught, and that is
+    deliberate.
+    """
+    source = (STATIC / "app.js").read_text()
+    # Each DIMS row starts with `['key', ...` at the top of its line; verified against
+    # the shipped file to extract exactly the 15 DIMS keys and nothing else (04-01-PLAN.md
+    # Task 2's action).
+    dims_keys = re.findall(r"^\s*\['(\w+)',", source, re.MULTILINE)
+    assert len(dims_keys) >= 15  # a regex that silently stopped matching must fail, not pass
+
+    for read_form in (".span_teeth", "info.centre_distance", "info.warnings"):
+        assert read_form in source
+
+    model_fields = set(DerivedDimensions.model_fields)
+    assert set(dims_keys) <= model_fields
+    assert {"span_teeth", "centre_distance", "warnings"} <= model_fields
 
 
 def test_info_reports_the_mate() -> None:
