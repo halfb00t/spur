@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v0.1
 current_phase: 04
 current_phase_name: Typed Derived-Dimensions Contract
-status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-09-24T14:36:07.451Z"
+status: verifying
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-09-24T14:52:22.159Z"
 last_activity: 2026-09-24
 last_activity_desc: Phase 04 execution started
-state_head: 6064c4ff914ab8a5e85755b34b966b10b03021e1
+state_head: cfe5f8d9610ce18404a6dc33ada8beaf0623f802
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 11
-  completed_plans: 10
+  completed_plans: 11
 milestone_name: Hardening
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 04 (Typed Derived-Dimensions Contract) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-24 — Phase 04 execution started
 
 ## Performance Metrics
@@ -70,6 +70,7 @@ took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~
 | Phase 03 P03 | 20min | 3 tasks | 9 files |
 | Phase 04 P01 | ~45min | 3 tasks | 11 files |
 | Phase 04 P02 | 16min | 3 tasks | 9 files |
+| Phase 04 P03 | 9min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,8 @@ L17–L19):
 - [Phase 04]: DerivedDimensions: 19-field frozen pydantic model, no defaults on any field, derive() as the single construction site; with_mate() deleted (D-01, D-02, D-09). — A default would make a key optional in OpenAPI, contradicting the always-present/null-where-it-doesn't-apply contract (Pitfall 2); a single construction site means a shape bug fails loudly instead of quietly matching dict[str, Any].
 - [Phase 04]: pool._run_with_timeout forwards through functools.partial(func, *args, **kwargs), not a bare *args/**kwargs pass-through to run_in_executor -- run_in_executor takes positional arguments only, and PEP 612 requires *args: P.args and **kwargs: P.kwargs declared together, so a signature that only forwarded *args would type-check while silently dropping any keyword argument.
 - [Phase 04]: app.py's lifespan now dels app.state.pool in its finally block, in addition to shutting it down -- app is one module-level FastAPI singleton shared across every test file in a pytest session, and a shut-down pool object was lingering for a later, lifespan-free test client to see (04-02 Rule 1 deviation).
+- [Phase 04]: Plan 04-03: L21 appended superseding L14 -- disallow_any_explicit on globally, satisfiable via the pydantic mypy plugin's init_typed/init_forbid_extra settings (R-1, human decision) rather than per-class suppression comments.
+- [Phase 04]: Plan 04-03: spur info --mate-teeth range-checked to InfoQuery's ge=6/le=1000 bounds (R-2, human decision); --mate-teeth 0 now exits 2 instead of meaning 'no mate'.
 
 ### Pending Todos
 
@@ -165,6 +168,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T14:36:07.422Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-09-24T14:52:22.129Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
