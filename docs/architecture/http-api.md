@@ -95,7 +95,7 @@ each carrying a per-request `request` id, the gear's `slug` and non-default `par
 |---|---|---|---|
 | `build.started` | INFO | Immediately before the backend call — the one place a build actually begins | `fmt`, `quality` |
 | `export.served` | INFO | Every request that returns bytes, whichever of the three paths served it | `fmt`, `quality`, `encoding`, `source` (`cache` / `compressed` / `built`), `duration_ms` |
-| `build.failed` | WARNING for `BuildError`, ERROR for `BuildTimeout`/`BrokenProcessPool` | The three `except` clauses in `model()` | `fmt`, `quality`, `exception` (the class name), `duration_ms` |
+| `build.failed` | WARNING for `BuildError`, ERROR for everything else (`BuildTimeout`/`BrokenProcessPool`, or any other exception class `model()` didn't expect) | Any of `model()`'s `except` clauses, including the catch-all (WR-01, review fix) | `fmt`, `quality`, `exception` (the class name), `duration_ms` |
 | `queue.refused` | WARNING | `_build_slot()`'s single admission refusal | `fmt`, `quality`, `in_flight`, `max_queued` |
 
 `pool.recreate_for()` also emits `worker.replaced` at ERROR, with the hash slot and a

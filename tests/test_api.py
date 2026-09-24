@@ -165,6 +165,10 @@ def test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling
 
     assert not _event_records(caplog, "export.served")
     assert not _event_records(caplog, "build.started")
+    # WR-01 (review fix) regression: the catch-all `except Exception` model() gained
+    # must not also fire for _build_slot()'s own admission-control HTTPException --
+    # that would duplicate this queue.refused record as a spurious build.failed one.
+    assert not _event_records(caplog, "build.failed")
 
 
 def test_max_queued_builds_is_derived_from_build_workers(
@@ -443,6 +447,42 @@ def test_a_failed_build_emits_build_failed_naming_the_class_and_the_level(
     assert _field(failed[0], "request")
     assert _field(failed[0], "slug")
     assert _field(failed[0], "params") is not None
+    assert _field(failed[0], "duration_ms") is not None
+
+    assert not _event_records(caplog, "export.served")
+
+
+def test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """WR-01 (review fix): model()'s three except clauses only covered BuildError/
+    BuildTimeout/BrokenProcessPool -- anything else (`_gzip()` under memory pressure, or
+    a future violation of model.py's "BuildError is the only exception that escapes"
+    contract) propagated uncaught with no build.failed record at all, no exception
+    class, nothing from spur's own vocabulary (the CR-01 review found this was the one
+    scenario left with no traceback either). The catch-all must log then re-raise, not
+    swallow -- the unhandled-error path still has to serve the response, so this test
+    drives the exception through `pytest.raises`, not a status-code assertion."""
+    caplog.set_level(logging.INFO)
+
+    async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        raise MemoryError("out of memory compressing bytes")
+
+    app.dependency_overrides[build_backend] = lambda: backend
+    try:
+        # teeth=73: unused by any other test in this suite (see the teeth=71 comment
+        # above), so the shared byte cache can never short-circuit this request.
+        with pytest.raises(MemoryError):
+            client.get("/api/model.stl", params={"quality": "preview", "teeth": 73})
+    finally:
+        app.dependency_overrides[build_backend] = lambda: _inline_backend
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    failed = _event_records(caplog, "build.failed")
+    assert len(failed) == 1
+    assert failed[0].levelno == logging.ERROR  # unrecognised class -> the service's fault
+    assert _field(failed[0], "exception") == "MemoryError"
+    assert _field(failed[0], "request")
+    assert _field(failed[0], "slug")
     assert _field(failed[0], "duration_ms") is not None
 
     assert not _event_records(caplog, "export.served")

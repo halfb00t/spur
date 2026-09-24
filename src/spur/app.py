@@ -411,6 +411,27 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                          "type": "pool_broken"}],
                 headers={"Retry-After": "5"},
             ) from exc
+        except HTTPException:
+            # _build_slot()'s own admission-control refusal (busy, 503) raises this from
+            # inside the `with` above and already calls queue_refused() itself -- an
+            # already-classified, already-logged outcome, not an unclassified crash. Must
+            # come before the catch-all below, or a busy refusal would also produce a
+            # spurious build.failed record naming "HTTPException" alongside the correct
+            # queue.refused one.
+            raise
+        except Exception as exc:
+            # WR-01 (review fix): the three classes above are model.py's *documented*
+            # contract ("BuildError is the only exception the module lets out",
+            # solid-model/errors_and_logging.md) -- but `_gzip()` runs inside this same
+            # slot under `run_in_threadpool` and can raise under memory pressure, and a
+            # future violation of that contract is exactly the kind of bug this catch
+            # exists for. Log then re-raise, not swallow: uvicorn's own ASGI-level 500 is
+            # still what serves the response (CR-01's fix means that record now carries a
+            # traceback too); this only adds spur's own build.failed record to what would
+            # otherwise be the *only* remaining evidence of a request that actually failed.
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
+            raise
         duration_s = time.monotonic() - start
     export_served(request_id, params, fmt, q.quality, source=source, encoding=encoding,
                   duration_s=duration_s)
