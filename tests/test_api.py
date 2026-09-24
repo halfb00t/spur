@@ -40,7 +40,11 @@ def _inline_build_backend() -> Iterator[None]:
 
 
 def test_health() -> None:
-    assert client.get("/api/health").json()["status"] == "ok"
+    body = client.get("/api/health").json()
+    assert body["status"] == "ok"
+    # D-06: pool is present-and-null under the bare client, not absent.
+    assert "pool" in body
+    assert body["pool"] is None
 
 
 def test_index_and_static() -> None:
@@ -85,6 +89,17 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["pitch_d"]["unit"] == "mm"
     assert component["properties"]["centre_distance"]["unit"] == "mm"  # nullable, still a length
     assert "unit" not in component["properties"]["span_teeth"]
+
+    health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
+    assert health_response["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/HealthReport"}
+
+    health_component = schema["components"]["schemas"]["HealthReport"]
+    assert set(health_component["required"]) == {"status", "version", "pool"}
+
+    pool_component = schema["components"]["schemas"]["PoolState"]
+    assert set(pool_component["required"]) == {
+        "workers", "queue_available", "workers_replaced"}
 
 
 def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:

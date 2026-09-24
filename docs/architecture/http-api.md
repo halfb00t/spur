@@ -37,7 +37,7 @@ own: how much work it is willing to accept at once.
 | Endpoint | Returns |
 |---|---|
 | `GET /` | the UI (`static/index.html`) |
-| `GET /api/health` | `{"status": "ok", "version": ..., "pool": {"workers": N, "queue_available": M, "workers_replaced": R}}` |
+| `GET /api/health` | a `HealthReport`: `{"status": "ok", "version": ..., "pool": {"workers": N, "queue_available": M, "workers_replaced": R}}`, with `pool` `null` only when the app runs without its lifespan |
 | `GET /api/schema` | `GearParams.model_json_schema()` — the form is built from this |
 | `GET /api/info?…[&mate_teeth=N]` | `derive(params, mate_teeth=…)` → a `DerivedDimensions` document; every key always present, `null` where a value does not apply |
 | `GET /api/model.{stl,step}?…` | the bytes, with `Content-Disposition` from `params.slug()` |
@@ -52,8 +52,9 @@ That is the whole reason the function exists, and the code says so.
 
 `/api/health`'s pool fields (D-13) nest under one `pool` key rather than sitting flat at
 the top level next to `status`/`version` (02-03-PLAN.md Task 3 checkpoint decision,
-option B): the health response is a published contract the web UI and Phase 4's typed
-OpenAPI work both inherit, and every later pool field lands inside `pool` without
+option B): the health response is a published contract the web UI reads, and
+`/openapi.json` documents it as `HealthReport` with `PoolState`, `pool` always present
+(`null` without the lifespan, D-06). Every later pool field lands inside `pool` without
 touching that published top level. All three values are parent-local, O(1) reads — worker
 count and replacement count come straight off `BuildPool`, and remaining admission
 capacity comes from a plain in-flight counter `app.py` keeps itself, not from
