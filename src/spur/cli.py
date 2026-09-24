@@ -17,6 +17,27 @@ from . import __version__
 from .params import GearParams
 from .records import configure
 
+# Mirrors InfoQuery.mate_teeth's ge=/le= in app.py, so the CLI refuses what the API
+# refuses (REQ-cli-parity). A tooth count outside this range would produce a centre
+# distance for a gear that cannot exist (L08). cli.py may not import spur.app (the
+# import-linter contract "The CLI does not inherit web-serving policy"), so the bound
+# is copied rather than shared; tests/test_cli.py::test_info_rejects_a_mate_the_api_
+# would_reject reads InfoQuery's own JSON schema and pins the two copies together.
+_MATE_TEETH_MIN = 6
+_MATE_TEETH_MAX = 1000
+
+
+def _mate_teeth(text: str) -> int:
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not an integer") from None
+    if not (_MATE_TEETH_MIN <= value <= _MATE_TEETH_MAX):
+        raise argparse.ArgumentTypeError(
+            f"--mate-teeth must be between {_MATE_TEETH_MIN} and {_MATE_TEETH_MAX} "
+            f"(got {value})")
+    return value
+
 
 def _add_gear_args(ap: argparse.ArgumentParser) -> None:
     g = ap.add_argument_group("gear parameters (defaults in brackets)")
@@ -69,11 +90,10 @@ def cmd_serve(ns: argparse.Namespace) -> None:
 def cmd_info(ns: argparse.Namespace) -> None:
     from .calc import derive
 
-    # `or None`: --mate-teeth 0 has always meant "no mate" in this command, and that
-    # holds until the flag is range-checked like InfoQuery.mate_teeth (Plan 04-03
-    # Task 1, which removes this fallback once it lands -- 04-01-PLAN.md flagged
-    # assumption 2).
-    print(derive(_params(ns), mate_teeth=ns.mate_teeth or None).model_dump_json(indent=2))
+    # ns.mate_teeth is None (flag omitted) or already range-checked by _mate_teeth
+    # (argparse's type=); --mate-teeth 0 is refused at the argument, matching the
+    # API's 422 for the same value (R-2) instead of meaning "no mate" as it used to.
+    print(derive(_params(ns), mate_teeth=ns.mate_teeth).model_dump_json(indent=2))
 
 
 def cmd_export(ns: argparse.Namespace) -> None:
@@ -111,7 +131,9 @@ def main(argv: list[str] | None = None) -> None:
     s.set_defaults(func=cmd_serve)
 
     i = sub.add_parser("info", help="print derived dimensions as JSON")
-    i.add_argument("--mate-teeth", type=int, help="also print centre distance to this gear")
+    i.add_argument("--mate-teeth", type=_mate_teeth,
+                   help="also print centre distance to this gear "
+                        f"[{_MATE_TEETH_MIN}-{_MATE_TEETH_MAX}]")
     _add_gear_args(i)
     i.set_defaults(func=cmd_info)
 

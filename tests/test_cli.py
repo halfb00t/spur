@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 import spur.app
 from spur import cli
+from spur.app import InfoQuery
 from spur.calc import DerivedDimensions
 
 
@@ -16,6 +17,29 @@ def test_info_reports_the_mate_it_was_asked_about(capsys: pytest.CaptureFixture[
     out = json.loads(capsys.readouterr().out)
     assert out["mate_teeth"] == 40
     assert out["centre_distance"] == pytest.approx(51.625)
+
+
+def test_info_rejects_a_mate_the_api_would_reject(capsys: pytest.CaptureFixture[str]) -> None:
+    """A centre distance to a gear that cannot exist is the plausible wrong number L08
+    forbids; the CLI must refuse exactly the mate teeth the API's InfoQuery refuses
+    (REQ-cli-parity), not a hand-picked range that can drift from it."""
+    schema = InfoQuery.model_json_schema()
+    bounds = next(b for b in schema["properties"]["mate_teeth"]["anyOf"]
+                  if b["type"] == "integer")
+    minimum, maximum = bounds["minimum"], bounds["maximum"]
+
+    for value in (-5, 3, 0, minimum - 1, maximum + 1):
+        with pytest.raises(SystemExit) as exc:
+            cli.main(["info", f"--mate-teeth={value}"])
+        assert exc.value.code == 2
+        captured = capsys.readouterr()
+        assert "centre_distance" not in captured.out
+        assert "--mate-teeth" in captured.err
+
+    for value in (minimum, maximum):
+        cli.main(["info", f"--mate-teeth={value}"])
+        out = json.loads(capsys.readouterr().out)
+        assert isinstance(out["centre_distance"], float)
 
 
 def test_cli_and_api_print_the_same_document(capsys: pytest.CaptureFixture[str]) -> None:
