@@ -229,3 +229,15 @@ def build_failed(request: str, p: GearParams, fmt: str, quality: str, *,
     _emit(level, "build.failed",
           {"request": request, **_gear_fields(p), "fmt": fmt, "quality": quality,
            "exception": type(exc).__name__, "duration_ms": _ms(duration_s)})
+
+
+def queue_refused(request: str, p: GearParams, fmt: str, quality: str, *,
+                   in_flight: int, max_queued: int) -> None:
+    """`queue.refused` at WARNING (D-15 -- capacity, not breakage): one record per
+    refused request, carrying the identity of the gear that was turned away (D-10 --
+    an incident reader needs to know *which* gear, not only that one was refused)
+    alongside how close to the ceiling the service was (D-09).
+    """
+    _emit(logging.WARNING, "queue.refused",
+          {"request": request, **_gear_fields(p), "fmt": fmt, "quality": quality,
+           "in_flight": in_flight, "max_queued": max_queued})

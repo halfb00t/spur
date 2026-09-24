@@ -288,7 +288,7 @@ def test_health_queue_available_falls_while_a_slot_is_held() -> None:
 
     with TestClient(app) as client:
         full = client.get("/api/health").json()["pool"]["queue_available"]
-        with app_module._build_slot():
+        with app_module._build_slot("test-req", GearParams(), "stl", "preview"):
             held = client.get("/api/health").json()["pool"]["queue_available"]
             assert held == full - 1
         released = client.get("/api/health").json()["pool"]["queue_available"]

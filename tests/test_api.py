@@ -130,6 +130,43 @@ def test_a_saturated_service_refuses_instead_of_queueing() -> None:
             app_module.BUILD_QUEUE.release()
 
 
+def test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """D-09, D-10, D-15: a refusal says which gear was turned away and how close to
+    the ceiling the service was, at WARNING -- capacity, not breakage."""
+    from spur import app as app_module
+
+    caplog.set_level(logging.INFO)
+    # Same synthetic-saturation shape as test_a_saturated_service_refuses_instead_of_
+    # queueing above: the semaphore is exhausted directly, not through _build_slot, so
+    # the parent's own `_in_flight_builds` counter is whatever it already reads (0 in
+    # this synthetic scenario, since no real slot holder incremented it) -- captured
+    # here rather than hardcoded, so the assertion checks the record against the
+    # module's own counter, not a value this test happens to expect.
+    in_flight_before = app_module._in_flight_builds
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/model.stl", params={"quality": "preview", "teeth": 72})
+        assert r.status_code == 503
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    refused = _event_records(caplog, "queue.refused")
+    assert len(refused) == 1
+    assert refused[0].levelno == logging.WARNING
+    assert _field(refused[0], "request")
+    assert _field(refused[0], "slug")
+    assert _field(refused[0], "in_flight") == in_flight_before
+    assert _field(refused[0], "max_queued") == app_module.MAX_QUEUED_BUILDS
+
+    assert not _event_records(caplog, "export.served")
+    assert not _event_records(caplog, "build.started")
+
+
 def test_max_queued_builds_is_derived_from_build_workers(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """One knob moves both, so a deployer cannot configure a queue deeper than the pool

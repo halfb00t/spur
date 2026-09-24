@@ -36,7 +36,7 @@ from .build_errors import BuildError, BuildTimeout
 from .calc import derive, with_mate
 from .params import GearParams
 from .pool import BuildPool
-from .records import build_failed, build_started, configure, export_served
+from .records import build_failed, build_started, configure, export_served, queue_refused
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -229,7 +229,7 @@ def _gzip(data: bytes) -> bytes:
 
 
 @contextmanager
-def _build_slot() -> Iterator[None]:
+def _build_slot(request_id: str, p: GearParams, fmt: str, quality: str) -> Iterator[None]:
     """Admission control: refuse work we cannot start soon rather than queue it.
 
     A slot now covers a build *and* the first gzip encode of its result (quick task
@@ -239,9 +239,15 @@ def _build_slot() -> Iterator[None]:
     never running (02-LATENCY-INVESTIGATION.md E2c). `model()` now compresses inside this
     slot instead, so a request for an already-built-but-not-yet-compressed gear can be
     refused here too.
+
+    Takes the request identity (D-10) so a refusal can name the gear that was turned
+    away -- the only reason this context manager, previously argument-free, now needs
+    the caller's `request_id`/`params`/`fmt`/`quality`.
     """
     global _in_flight_builds
     if not BUILD_QUEUE.acquire(blocking=False):
+        queue_refused(request_id, p, fmt, quality,
+                      in_flight=_in_flight_builds, max_queued=MAX_QUEUED_BUILDS)
         raise HTTPException(
             503,
             detail=[{"loc": ["query"], "type": "busy",
@@ -350,7 +356,7 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # compresses only after the endpoint has already returned and the slot is
             # gone (see _build_slot's own docstring for the measured mechanism this
             # fixes).
-            with _build_slot():
+            with _build_slot(request_id, params, fmt, q.quality):
                 raw_key = (params, fmt, q.quality, "identity")
                 raw = _EXPORTS.get(raw_key)
                 if raw is None:
