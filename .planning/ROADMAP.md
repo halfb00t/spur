@@ -176,8 +176,9 @@ parallelism here)
 - [ ] 04-02-PLAN.md — `/api/health` as `HealthReport` (`pool: null`, not absent),
   `/api/schema` as `JsonSchemaValue`, and every remaining explicit `Any` removed, rule
   still off, down to the six model class lines *(wave 2)*
-- [ ] 04-03-PLAN.md — Decision checkpoint, then `L21` (supersedes L14) and the house rule,
-  then `disallow_any_explicit` on via the pydantic plugin's typed-initialiser settings,
+- [ ] 04-03-PLAN.md — `spur info --mate-teeth` given `InfoQuery`'s range (REQ-cli-parity,
+  L08), then `L21` (supersedes L14) and the house rule, then `disallow_any_explicit` on
+  via the pydantic plugin's typed-initialiser settings (human decision, 2026-09-24),
   with the debt file retired in the same commit *(wave 3)*
 
 ### Phase 5: CI Observed Green
