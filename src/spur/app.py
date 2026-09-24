@@ -36,7 +36,7 @@ from .build_errors import BuildError, BuildTimeout
 from .calc import derive, with_mate
 from .params import GearParams
 from .pool import BuildPool
-from .records import build_started, configure, export_served
+from .records import build_failed, build_started, configure, export_served
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -369,6 +369,8 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 else:
                     data = raw
         except BuildError as exc:
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
             raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "build_error"}]) from exc
         except BuildTimeout as exc:
@@ -378,6 +380,8 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # a gear that is fine. Same busy-refusal shape as _build_slot above (reused,
             # not reinvented), with its own `type` so a client can tell "come back in a
             # moment" from "your gear is impossible".
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
             raise HTTPException(503, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "timeout"}],
                                 headers={"Retry-After": "5"}) from exc
@@ -390,6 +394,8 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # overran its own timeout (D-07 affinity) -- that queued request's worker
             # was terminated by this service, not by a crash, so "died unexpectedly"
             # alone stopped being true of every caller reaching this branch.
+            build_failed(request_id, params, fmt, q.quality, exc=exc,
+                        duration_s=time.monotonic() - start)
             raise HTTPException(
                 503,
                 detail=[{"loc": ["query"],

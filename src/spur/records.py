@@ -35,6 +35,7 @@ import sys
 from typing import TextIO
 
 from . import __version__
+from .build_errors import BuildError
 from .params import GearParams
 
 _LOG = logging.getLogger(__name__)
@@ -204,3 +205,27 @@ def export_served(request: str, p: GearParams, fmt: str, quality: str, *,
     _emit(logging.INFO, "export.served",
           {"request": request, **_gear_fields(p), "fmt": fmt, "quality": quality,
            "encoding": encoding, "source": source, "duration_ms": _ms(duration_s)})
+
+
+def build_failed(request: str, p: GearParams, fmt: str, quality: str, *,
+                  exc: Exception, duration_s: float) -> None:
+    """`build.failed` -- one record per failing request, at the level D-15's "whose
+    fault is it" rule picks: WARNING for `BuildError` (a 422, the user's gear, and
+    deterministic -- `docs/architecture/solid-model/errors_and_logging.md` reads it as
+    a missing rule, worth noticing, not worth paging), ERROR for everything else
+    (`BuildTimeout`, `BrokenProcessPool` -- both 503s, the service's fault). An
+    unrecognised future failure class also lands at ERROR: a failure mode this module
+    has not classified is the service's problem until someone says otherwise.
+
+    `exception` is `type(exc).__name__` -- `BuildError`, `BuildTimeout` and
+    `BrokenProcessPool` are already the literal class names D-08 wants, so no mapping
+    table is needed. No traceback text rides on the record: `BuildError`'s own message
+    already carries the kernel text, and the other two classes have no kernel traceback
+    at all (D-06's accepted cost) -- publishing `exc_info` here would leak worker-side
+    file paths and interpreter internals into a stream anyone reading `docker logs` can
+    see, for no incident value the class name doesn't already give (T-03-05).
+    """
+    level = logging.WARNING if isinstance(exc, BuildError) else logging.ERROR
+    _emit(level, "build.failed",
+          {"request": request, **_gear_fields(p), "fmt": fmt, "quality": quality,
+           "exception": type(exc).__name__, "duration_ms": _ms(duration_s)})

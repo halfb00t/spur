@@ -1,11 +1,13 @@
 import logging
 from collections.abc import Iterator
+from concurrent.futures.process import BrokenProcessPool
 from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
 
 from spur.app import app, build_backend
+from spur.build_errors import BuildError, BuildTimeout
 from spur.model import Format, Quality, export
 from spur.params import GearParams
 
@@ -368,3 +370,42 @@ def test_two_requests_for_one_gear_get_two_different_request_ids(
     served = _event_records(caplog, "export.served")
     assert len(served) == 2
     assert _field(served[0], "request") != _field(served[1], "request")
+
+
+@pytest.mark.parametrize(("exc", "want_level", "want_exception"), [
+    (BuildError("D-flat too small for this bore"), logging.WARNING, "BuildError"),
+    (BuildTimeout("Build exceeded the 30s per-build timeout."), logging.ERROR, "BuildTimeout"),
+    (BrokenProcessPool("worker died"), logging.ERROR, "BrokenProcessPool"),
+])
+def test_a_failed_build_emits_build_failed_naming_the_class_and_the_level(
+        caplog: pytest.LogCaptureFixture, exc: Exception, want_level: int,
+        want_exception: str) -> None:
+    """D-08, D-15: the level says whose fault it is -- BuildError (the user's gear,
+    422) is a WARNING, the two 503 classes are ERROR."""
+    caplog.set_level(logging.INFO)
+
+    async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        raise exc
+
+    app.dependency_overrides[build_backend] = lambda: backend
+    try:
+        # teeth=71: a count no other test in this suite ever successfully downloads
+        # (test_pool.py's own such test picks 43/44 for the same reason), so the
+        # shared byte cache can never short-circuit this request before the raising
+        # backend runs.
+        r = client.get("/api/model.stl", params={"quality": "preview", "teeth": 71})
+    finally:
+        app.dependency_overrides[build_backend] = lambda: _inline_backend
+    assert r.status_code in (422, 503)
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    failed = _event_records(caplog, "build.failed")
+    assert len(failed) == 1
+    assert failed[0].levelno == want_level
+    assert _field(failed[0], "exception") == want_exception
+    assert _field(failed[0], "request")
+    assert _field(failed[0], "slug")
+    assert _field(failed[0], "params") is not None
+    assert _field(failed[0], "duration_ms") is not None
+
+    assert not _event_records(caplog, "export.served")
