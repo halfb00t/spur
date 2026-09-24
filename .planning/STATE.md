@@ -4,16 +4,15 @@ milestone: v0.1
 current_phase: 4
 current_phase_name: Typed Derived-Dimensions Contract
 status: "Phase 3 shipped — PR #2"
-stopped_at: Phase 03 complete, ready to plan Phase 4
-last_updated: "2026-09-24T11:36:44.128Z"
+stopped_at: Phase 4 context gathered
+last_updated: "2026-09-24T12:15:14.337Z"
 last_activity: 2026-09-24
-state_head: 18bc4adcddb72109d2a002978b13248f55cc4ffb
+state_head: 538d26f690090bd73fde771e621a636dd97c2c25
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 8
   completed_plans: 8
-  percent: 60
 milestone_name: Hardening
 ---
 
@@ -160,6 +159,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T11:31:29Z
-Stopped at: Phase 3 complete, ready to plan Phase 4
-Resume file: None
+Last session: 2026-09-24T12:15:14.294Z
+Stopped at: Phase 4 context gathered
+Resume file: .planning/phases/04-typed-derived-dimensions-contract/04-CONTEXT.md
