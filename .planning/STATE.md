@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.1
-current_phase: 4
+current_phase: 04
 current_phase_name: Typed Derived-Dimensions Contract
-status: "Phase 3 shipped — PR #2"
-stopped_at: Phase 4 context gathered
-last_updated: "2026-09-24T13:40:50.455Z"
+status: executing
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-09-24T14:10:56.716Z"
 last_activity: 2026-09-24
-last_activity_desc: Phase 4 planning complete
-state_head: 70b7a6aef29e381524578a8ad551d954958985f0
+last_activity_desc: Phase 04 execution started
+state_head: 2f8b2da81cf5926cc80f940e3d1a483600f182c2
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 9
 milestone_name: Hardening
 ---
 
@@ -25,14 +25,14 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 4 — Typed Derived-Dimensions Contract
+**Current focus:** Phase 04 — Typed Derived-Dimensions Contract
 
 ## Current Position
 
-Phase: 4 (Typed Derived-Dimensions Contract) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 3 shipped — PR #2
-Last activity: 2026-09-24 — Phase 4 planning complete
+Phase: 04 (Typed Derived-Dimensions Contract) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-09-24 — Phase 04 execution started
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~
 | Phase 03 P01 | 25min | 3 tasks | 8 files |
 | Phase 03 P02 | 27min | 3 tasks | 5 files |
 | Phase 03 P03 | 20min | 3 tasks | 9 files |
+| Phase 04 P01 | ~45min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,7 @@ L17–L19):
 - [Phase 03]: L20 appended recording D-01 through D-04, D-06 and D-14, including why there are two idempotent configure() call sites (03-RESEARCH.md falsified the single-call-site assumption).
 - [Phase 03]: docs/tech_debt/active/2026-09-21-no-structured-logging.md retired: Status: resolved, Resolved in: 21b8fe4 (Plan 03-02's commit, not this plan's own), git mv'd into resolved/, INDEX.md row moved -- same commit as the four corrected Logging sections.
 - [Phase 03, post-review fixes 2a1900d/a2a2371/482c936]: `_JsonFormatter` renders `exc_info`/`stack_info` into `traceback`/`stack_info` fields only for records that carry them (uvicorn's "Exception in ASGI application" record) -- spur's own helpers never set `exc_info`, so D-06/T-03-05 hold; `model()` gained a catch-all that logs `build.failed` and re-raises, with `HTTPException` passed through untouched so a 503 refusal does not double-log; import-linter contract "The gear maths stays free of the logger" forbids `spur.calc` -> `spur.records`/`logging`.
+- [Phase 04]: DerivedDimensions: 19-field frozen pydantic model, no defaults on any field, derive() as the single construction site; with_mate() deleted (D-01, D-02, D-09). — A default would make a key optional in OpenAPI, contradicting the always-present/null-where-it-doesn't-apply contract (Pitfall 2); a single construction site means a shape bug fails loudly instead of quietly matching dict[str, Any].
 
 ### Pending Todos
 
@@ -160,6 +162,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T12:15:14.294Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-typed-derived-dimensions-contract/04-CONTEXT.md
+Last session: 2026-09-24T14:10:56.684Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
