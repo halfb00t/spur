@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import gzip
 import threading
+import time
+import uuid
 from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from concurrent.futures.process import BrokenProcessPool
@@ -34,6 +36,7 @@ from .build_errors import BuildError, BuildTimeout
 from .calc import derive, with_mate
 from .params import GearParams
 from .pool import BuildPool
+from .records import configure, export_served
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -119,6 +122,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     instead of a ramp. SPUR_BUILD_WORKERS defaults to a fixed 2, not os.cpu_count() --
     a machine-dependent default would make the measured mem_limit untrue somewhere (D-19).
     """
+    # The only code that runs inside *every* spawned uvicorn worker, regardless of
+    # SPUR_WORKERS (03-RESEARCH.md: uvicorn's extra workers are `multiprocessing.spawn`
+    # children whose target is uvicorn's own subprocess_started, never cli.cmd_serve, so
+    # a spawned worker inherits none of the parent's logging configuration -- verified
+    # by reading uvicorn's installed source and by a live reproduction). configure() is
+    # idempotent, so the default SPUR_WORKERS=1 case, where this and cli.cmd_serve's own
+    # call both run in one process, still installs exactly one handler, not two.
+    configure()
     app.state.pool = BuildPool(
         int_env("SPUR_BUILD_WORKERS", 2),
         # D-10: set above the worst measured build. bench/latency.py's two load
@@ -311,6 +322,11 @@ def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
 async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 request: Request,
                 backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
+    # D-13: a plain local, not middleware or contextvars -- minted once here and passed
+    # to every record this request emits, so two concurrent requests for the same gear
+    # (the one case params + time cannot disambiguate; D-07 affinity's same-slot
+    # scenario) are still distinguishable in the log.
+    request_id = uuid.uuid4().hex[:8]
     params = _gear(q)
     # Same test GZipMiddleware itself makes (installed starlette's own
     # middleware/gzip.py:66, `"gzip" in headers.get("Accept-Encoding", "")`) -- endpoint
@@ -319,8 +335,15 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
     wants_gzip = "gzip" in request.headers.get("Accept-Encoding", "")
     encoding = "gzip" if wants_gzip else "identity"
     key = (params, fmt, q.quality, encoding)
+    # A plain cache hit never enters the slot below, so its duration is zero by
+    # construction (D-12) and its source is "cache" -- both set here, not as a branch,
+    # so the cache-hit path that skips the block below still has a defined value for
+    # each when export_served() is called.
+    duration_s = 0.0
+    source = "cache"
     data = _EXPORTS.get(key)
     if data is None:
+        start = time.monotonic()
         try:
             # Compression moves inside this slot (quick task 260923-qwr): outside it, a
             # bound on cache-hit compression would be a no-op, because GZipMiddleware
@@ -331,8 +354,11 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 raw_key = (params, fmt, q.quality, "identity")
                 raw = _EXPORTS.get(raw_key)
                 if raw is None:
+                    source = "built"
                     raw = await backend(params, fmt, q.quality)
                     _EXPORTS.put(raw_key, raw)
+                else:
+                    source = "compressed"
                 if wants_gzip:
                     # Off the event loop, same as Starlette's own middleware did for
                     # bodies this size -- what's new is that it's now bounded by the
@@ -372,6 +398,9 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                          "type": "pool_broken"}],
                 headers={"Retry-After": "5"},
             ) from exc
+        duration_s = time.monotonic() - start
+    export_served(request_id, params, fmt, q.quality, source=source, encoding=encoding,
+                  duration_s=duration_s)
     headers = {"Content-Disposition": f'attachment; filename="{params.slug()}.{fmt}"',
                "Vary": "Accept-Encoding"}
     if wants_gzip:
