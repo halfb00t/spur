@@ -68,6 +68,10 @@ filesystem, `tmpfs` on `/tmp`, `cap_drop: ALL` and `no-new-privileges`.
 | `SPUR_SOLID_CACHE` | `4` | Built solids kept per **build worker**. A 200-tooth solid costs a few hundred MB |
 | `SPUR_EXPORT_CACHE_MB` | `64` | Budget for cached STL/STEP bytes — one budget in the serving process, not one per worker |
 | `SPUR_MAX_QUEUED_BUILDS` | `2 × SPUR_BUILD_WORKERS` | Requests allowed to queue before the API answers `503`. Set explicitly to override the derived default |
+| `SPUR_LOG_LEVEL` | `INFO` | Root logger level for the structured JSON logs on stderr. An unrecognised value falls back to `INFO` |
+
+The service writes one JSON object per log line to stderr (`L20`); `docker logs` — or
+`make serve 2>&1 | jq` outside Docker — captures them.
 
 Memory scales with the size of the gears people ask for, not with traffic. The formula
 is now a parent byte budget plus N times the solid cache (`SPUR_EXPORT_CACHE_MB` once, in

@@ -26,10 +26,16 @@ caches are bounded (L07), the arenas are returned after each cache-missing expor
 
 ## Logging
 
-None. The module emits no log lines at all.
+None here, **by decision**, not by oversight (`L20`, D-06). The worker process that
+actually runs `_build_checked()` configures no handler and emits no record — every
+`build.started`/`build.failed`/`export.served` record this project emits comes from the
+parent, in `app.py`, around the pool call, where the existing `except BuildError` /
+`BuildTimeout` / `BrokenProcessPool` branches already run.
 
-That is a real gap, not a design choice: a `BuildError`, a cache eviction or a build that
-took three seconds are all things you would want to see in production, and today the only
-evidence is the HTTP status. Tracked in
-`docs/tech_debt/active/2026-09-21-no-structured-logging.md`. Do not add ad-hoc `print()`
-calls in the meantime — that is how a logging decision gets made by accident.
+The accepted cost: the kernel's own traceback reaches the parent only as the
+`_RemoteTraceback` text `concurrent.futures` ships back inside `BuildError`'s message —
+readable by a human, but not available to the parent as a class object the way
+`BuildTimeout`/`BrokenProcessPool` are. A `BuildError` means the kernel failed on input
+that passed every rule we know how to state (see above) — worth reading as "a rule is
+missing," and that reading is exactly why it logs at WARNING, not ERROR, in `app.py`'s
+`build.failed` record.

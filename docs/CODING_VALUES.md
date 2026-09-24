@@ -131,12 +131,17 @@ instead.
 
 ## Logging
 
-The project has none today, and that is a tracked gap
-(`docs/tech_debt/active/2026-09-21-no-structured-logging.md`), not a value.
+One JSON-lines logger, on stderr, configured at the composition boundary (`L20`):
+`src/spur/records.py` owns the formatter, the `SPUR_LOG_LEVEL` knob and one small
+function per event — `build_started`, `build_failed`, `export_served`, `queue_refused`,
+`worker_replaced`. `app.py` and `pool.py` call these intent-named helpers; they never
+assemble a log record's `extra=` dict by hand, and never call `logging` directly.
 
-Until a logger is configured deliberately: **do not add `print()` for diagnostics** in
-`src/`. That is how a logging decision gets made by accident. `cli.py` printing to stderr
-is user-facing output, which is different, and is fine.
+**The logger exists, so use it — do not add `print()` for diagnostics** in `src/`. That
+prohibition is stronger now than when there was no logger to reach for instead: a
+`print()` call today is not filling a gap, it is bypassing a mechanism that exists
+specifically to be the one place diagnostics go. `cli.py` printing to stderr is
+user-facing output, which is different, and is fine.
 
 `calc.py` needs no logging even after that lands — it is pure, and `warnings` is its
 diagnostic.
