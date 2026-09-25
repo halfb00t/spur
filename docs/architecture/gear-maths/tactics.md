@@ -11,7 +11,7 @@ Three layers, each built on the one below:
    `check`. Each answers one question and returns the *effective* value, already capped.
    `recess_radii()` returning `None` means "no room for a groove at all", which is a
    legitimate outcome, not an error.
-3. **Reports** — `derive(p, mate_teeth=None)`, which builds the `DerivedDimensions`
+3. **Reports** — `derive(p, mate_teeth=None, mate_shift=0.0)`, which builds the `DerivedDimensions`
    document the API, the UI and the CLI all print, `warnings` included.
 
 `centre_distance()` sits apart: it solves `inv(aw) = inv(α) + 2·tan(α)·Σx/Σz` for the

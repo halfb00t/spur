@@ -2,7 +2,8 @@
 
 ## Layout
 
-`src/spur/calc.py` — 270 lines, no classes but `Profile`.
+`src/spur/calc.py` — the constants, the rules and the report; two classes, `Profile` and
+the frozen `DerivedDimensions` document `derive()` returns.
 
 | Piece | Does |
 |---|---|
