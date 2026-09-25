@@ -269,9 +269,21 @@ def _write_export(shape: cq.Solid, p: GearParams, fmt: Format, quality: Quality)
         path = Path(d) / f"{p.slug()}.{fmt}"
         if fmt == "stl":
             tol, ang = TESSELLATION[quality]
-            shape.exportStl(str(path), tolerance=tol, angularTolerance=ang,
-                            ascii=False, relative=False)
+            # exportStl() attaches a triangulation to the solid it is called on.
+            # _build_cached hands the same object to every caller for one GearParams,
+            # and build() returns it after releasing _LOCK -- meshing it in place left
+            # .BoundingBox() reading the mesh (zlen 7.5000 -> 7.5877 mm after a preview
+            # export, 7.5196 after fine, L24) and made a preview after a fine export
+            # reuse the fine mesh (46,278 triangles instead of 9,066). A copy keeps the
+            # cached solid mesh-free for its whole life, at 1.4-17.6 ms per export
+            # (L24) -- no positional argument to copy(): its one parameter is mesh,
+            # default False, and copy(mesh=True) would carry a mesh across.
+            shape.copy().exportStl(str(path), tolerance=tol, angularTolerance=ang,
+                                   ascii=False, relative=False)
         else:
+            # STEP export attaches no mesh, so the cached solid stays exact (measured
+            # at planning: zlen 7.500000200000001 after export(p, "step")). No copy
+            # needed here.
             shape.exportStep(str(path))
         return path.read_bytes()
 
