@@ -18,7 +18,7 @@ Full intent: gsd `.planning/PROJECT.md` (not written yet — run `gsd-map-codeba
 
 ## Stack
 
-Python 3.10–3.12 (`cadquery-ocp` publishes wheels for nothing newer), CadQuery /
+Python 3.12 only (`cadquery-ocp` publishes wheels for nothing newer, L23), CadQuery /
 OpenCascade for the solid, FastAPI + Pydantic v2 + uvicorn for the API, argparse for the
 CLI, vanilla JS + a vendored tree-shaken three.js bundle for the viewer (the runtime needs
 no Node), pytest for tests, Docker + compose for delivery, GitHub Actions for CI.

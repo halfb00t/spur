@@ -29,8 +29,8 @@ tracked.
   exist.
 - [x] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real (completed 2026-09-24)
   shape, checked by mypy with `disallow_any_explicit` on.
-- [ ] **Phase 5: CI Observed Green** - The CI workflow is proven by a real GitHub Actions
-  run, not by hand-verification.
+- [x] **Phase 5: CI Observed Green** - CI is the trusted merge gate: every `main` commit (completed 2026-09-25)
+  has a run, red or run-less merges are refused, Python 3.12 only.
 
 ## Phase Details
 
@@ -183,21 +183,74 @@ parallelism here)
 
 ### Phase 5: CI Observed Green
 
-**Goal**: The CI workflow is proven by a real GitHub Actions run executing it — not by
-reading `.github/workflows/ci.yml` and predicting it will pass.
+**Goal**: CI is the trusted merge gate for `main` — every commit that lands there has a
+GitHub Actions run attached, structurally rather than by discipline; a red, missing or
+stale run cannot be merged through the sanctioned path; the supported Python is the one
+that actually runs (3.12); and the 2026-09-21 "CI workflow unverified" blocker is retired
+with run URLs as evidence. *(Reframed 2026-09-25 in `05-CONTEXT.md`: the original premise —
+"the workflow has never executed" — was false; 13 runs existed and `main` push run
+35963114939 was green on all four jobs. What the runs revealed is the work: the two squash
+commits on `main` since Phase 2 have no run because a `[ci skip]` token rode into their
+bodies, and PR #2 was merged with `test (3.10)` red.)*
 **Depends on**: Phase 1 (independent of Phases 2–4; small and deliberately not bundled
 into any of them per the milestone's own scoping)
 **Requirements**: REQ-ci-verified
-**Success Criteria** (what must be TRUE, evidenced by a run URL, not a prediction):
+**Success Criteria** (what must be TRUE, each evidenced by a test, a run URL or a setting read back — not a prediction):
 
-  1. A real push to GitHub produces a run URL showing the `test` job green on both matrix
-     entries (`python: ["3.10", "3.12"]`).
-  2. The same run shows the `vendor-bundle` job (the committed three.js bundle matches a
-     fresh build of `web/`) and the `image` job (the packaged container serves
-     `/api/health`, `.stl`, and `.step`) both green.
-  3. The "CI workflow unverified" blocker carried in `STATE.md` since the 2026-09-21
-     bootstrap is retired, with the run URL recorded as the evidence.
-**Plans**: TBD
+  1. No commit in this repository can carry a GitHub Actions skip token: a repo-owned
+     `commit-msg` hook rejects all six (`[skip ci]`, `[ci skip]`, `[no ci]`,
+     `[skip actions]`, `[actions skip]`, `skip-checks: true`), proven by a test; and the
+     repository's squash-merge message is the PR title + body, never the branch's commit
+     subjects.
+  2. `make pr.land PR=N` is the documented merge path (`docs/HOW_TO_DEVELOP.md` §8): it
+     refuses a PR whose head sha lacks a green run for every named job (`test (3.12)`,
+     `vendor-bundle`, `image`), refuses a branch behind `main`, squash-merges, and exits
+     non-zero unless a run appears for the squash commit — printing its URL.
+  3. spur supports Python 3.12 only: `requires-python`, ruff's `target-version`, the CI
+     matrix, the Makefile's interpreter choice, the README and a decision-log entry
+     superseding L01's floor all agree, and `make verify` is green.
+  4. The "CI workflow unverified" blocker in `STATE.md` is retired citing runs 35963114939
+     (`main` push `59f02c3`, all four jobs green) and 36088409707 (PR #3 head `2c4b544`,
+     tree-identical to `main` HEAD `bfc9110`);
+     `docs/tech_debt/active/2026-09-25-ship-note-skip-token-leaks-into-squash-merge.md` is
+     `Status: resolved` in the same commit as the hook + setting, moved to `resolved/` with
+     its INDEX row; L22 (the merge gate) and L23 (Python 3.12 only) are appended to
+     `docs/architecture/decision_log.md`. *(REQ-ci-verified)*
+  5. A ruleset on `main` requires `test (3.12)`, `vendor-bundle` and `image` to be green on
+     an up-to-date head and requires a pull request, read back via
+     `gh api repos/halfb00t/spur/rules/branches/main`; `docs/HOW_TO_DEVELOP.md` §8 records
+     the command that applied it. *(D-12, supersedes D-06 — added in plan-phase 2026-09-25
+     after verifying the repository is public)*
+**Plans**: 6/6 plans executed, in 6 waves (each depends on the one before — `Makefile`,
+`docs/HOW_TO_DEVELOP.md`, `docs/architecture/decision_log.md` and
+`.github/workflows/required-jobs.txt` are touched by more than one plan, L22 must be
+appended before L23, and the pre-commit hook runs `make verify` in the one working tree)
+
+- [x] 05-01-PLAN.md — The skip-token gate: a `commit-msg` hook (`scripts/skip_tokens.py`)
+  refusing the six tokens anywhere above git's scissors line, proven by a refused real
+  commit (tracer); the squash message set to PR title + body; the manual ship-note step;
+  the debt file retired *(wave 1)*
+- [x] 05-02-PLAN.md — `make pr.land PR=N`: lands a green PR with the checked head, subject
+  and body, prints the squash commit's run URL or exits non-zero (tracer); then every
+  stale, red, missing or token-carrying PR refused, and `required-jobs.txt` held equal to
+  `ci.yml` *(wave 2)*
+- [x] 05-03-PLAN.md — The wall: the repository's `default` ruleset retargeted to `main`
+  (`test (3.12)`, `vendor-bundle`, `image` green on an up-to-date head; a pull request
+  required), read back via `rules/branches/main` and recorded in §8; §8 rewritten around
+  `make pr.land`, the sanctioned path through it, and §2 no longer pushing to `main`;
+  L22 appended *(wave 3)*
+- [x] 05-04-PLAN.md — Python 3.12 only: L23 (supersedes L01's floor); `requires-python`,
+  ruff py312 and the three findings it forces; `make venv`, the CI matrix and the
+  required list narrowed in one commit *(wave 4)*
+- [x] 05-05-PLAN.md — The record made true: every current document says 3.12 and cites the
+  observed runs; REQ-ci-verified reworded; the STATE.md blocker retired with run URLs
+  35963114939 and 36088409707 *(wave 5)*
+- [x] 05-06-PLAN.md — Gap closure (05-VERIFICATION.md 4/5, CR-01): `find_skip_tokens`
+  searches the whole text it is given and git's cut line is applied only by the hook's own
+  entry to an editor buffer, so `make pr.land` refuses a PR body hiding a token below a
+  cut line (tracer: the verifier's reproduction as two tests, the fix, the one-line re-run);
+  the hook cuts only when git ran an editor (`GIT_EDITOR=:` otherwise), the hand-typed
+  cut-line residue filed as `must` debt *(wave 6, gap closure)*
 
 ## Forward Scope
 
@@ -225,4 +278,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
-| 5. CI Observed Green | 0/TBD | Not started | - |
+| 5. CI Observed Green | 6/6 | Complete    | 2026-09-25 |

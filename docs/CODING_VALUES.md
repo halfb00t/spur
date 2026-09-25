@@ -28,7 +28,7 @@ argument is the most valuable line in the file.
 
 Pointers only; the *why* is in `decision_log.md`.
 
-- **Core + API:** Python 3.10–3.12, FastAPI, Pydantic v2, uvicorn. Why → `L01`.
+- **Core + API:** Python 3.12, FastAPI, Pydantic v2, uvicorn. Why → `L01`, `L23`.
 - **Geometry:** CadQuery over OpenCascade. Why → `L01`, and the constraints it imposes →
   `L06`, `L07`, `L09`.
 - **Viewer:** vanilla JS + a vendored three.js bundle. Why → `L11`.
@@ -188,9 +188,10 @@ call counts is banned.
 
 ## Project-specific
 
-- **Python 3.10–3.12 only.** `cadquery-ocp` publishes no wheels past 3.12 and pip will
+- **Python 3.12 only** (L23). `cadquery-ocp` publishes no wheels past 3.12 and pip will
   spend minutes failing to build OpenCascade from source. `make venv` picks a supported
-  interpreter itself. Do not "modernise" the floor or the ceiling without checking wheels.
+  interpreter itself. Do not lower the floor without a real interpreter for the new floor
+  in CI, and do not raise the ceiling without checking wheels.
 - **`requirements.txt` is installed with `--no-deps`.** A hand-bumped version there fails
   silently rather than loudly.
 - **The vendored bundle is a build artefact.** Never edit `src/spur/static/vendor/` by

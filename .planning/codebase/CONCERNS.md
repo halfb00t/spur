@@ -181,7 +181,7 @@ All blocking-severity debt has been resolved. The project passed the gate at com
 
 **Current coverage:**
 
-- Full gate runs on Python 3.10 and 3.12 via CI (`.github/workflows/ci.yml`)
+- Full gate runs on Python 3.12 via CI (`.github/workflows/ci.yml`)
 - Dependency closure is fully pinned (31 of 31 packages) in `requirements.txt`
 - Documented review history in `docs/`
 
@@ -212,13 +212,14 @@ All eight findings from `docs/review-2026-09-21.md` (F1–F8) have been implemen
 
 ## Dependency & Environment Notes
 
-**Python:** pinned to 3.10–3.12 in `pyproject.toml` (cadquery-ocp publishes wheels for these versions only). `Dockerfile` uses 3.12-slim-bookworm.
+**Python:** pinned to 3.12 only (`>=3.12,<3.13`, L23) in `pyproject.toml` — cadquery-ocp
+publishes wheels for nothing newer. `Dockerfile` uses 3.12-slim-bookworm.
 
 **Vendored Bundle:** `src/spur/static/vendor/three.bundle.min.js` (555 KB) is byte-checked by CI (`npm run build` must match the committed version). SHA256: `1abe0e82acd7a9949063acb09693e5b938ec8b0eea365d649adf423d8bb5f2eb`.
 
 **Docker:** `compose.yaml` sets memory limit to 2 GiB (measured from sweep workloads); HEALTHCHECK timeout is 10 s; container runs non-root with read-only root and capabilities dropped.
 
-**CI:** `.github/workflows/ci.yml` runs `make verify` (lint, types, import boundaries, tests) on Python 3.10 and 3.12, builds the image, smoke-tests it, and verifies the vendored bundle matches. **Note:** The workflow has never executed in a GitHub Actions environment — it was hand-verified during setup but not yet proven in CI.
+**CI:** `.github/workflows/ci.yml` runs `make verify` (lint, types, import boundaries, tests) on Python 3.12, builds the image, smoke-tests it, and verifies the vendored bundle matches. Runs are observed green: main push run 35963114939 (`59f02c3`, all four jobs green) and PR #3 head run 36088409707 (`2c4b544`, tree-identical to `bfc9110`). The ruleset on `main` requires `test (3.12)`, `vendor-bundle` and `image` green on an up-to-date head (D-12), and every merge through `make pr.land` ends with a run URL for the new `main` commit (L22).
 
 ---
 

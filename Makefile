@@ -5,10 +5,10 @@ IMAGE       ?= spur:latest
 PLATFORM    ?=
 PYTEST_ARGS ?=
 
-# cadquery-ocp publishes wheels for CPython 3.10-3.12 only. Choosing the interpreter
-# here instead of using a bare `python3` is what stops pip trying to build OpenCascade
-# from source against a newer one and failing several minutes in.
-PYTHON ?= $(shell for p in python3.12 python3.11 python3.10; do \
+# cadquery-ocp publishes wheels up to CPython 3.12, and spur supports 3.12 only (L23).
+# Choosing the interpreter here instead of using a bare `python3` is what stops pip
+# trying to build OpenCascade from source against a newer one and failing minutes in.
+PYTHON ?= $(shell for p in python3.12; do \
             command -v $$p >/dev/null 2>&1 && { echo $$p; break; }; done)
 
 PY    := $(VENV)/bin/python
@@ -21,7 +21,7 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 .PHONY: help venv verify lint typecheck lint-imports no-fake-done test serve \
         check image test-image smoke up down logs lock vendor vendor-check \
         bench bench.latency bench.memory \
-        worktree.bootstrap worktree.new worktree.land clean clean-docker
+        worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
 
 help:  ## list the targets
 	@grep -hE '^[a-z][a-z.-]*:.*##' $(MAKEFILE_LIST) | sed 's/:[^#]*##/\t/' | expand -t18
@@ -30,8 +30,8 @@ help:  ## list the targets
 
 $(STAMP): pyproject.toml
 	@test -n "$(PYTHON)" || { \
-	  echo "make: no python3.10-3.12 on PATH."; \
-	  echo "      cadquery-ocp has no wheels for anything newer and pip cannot build it."; \
+	  echo "make: no python3.12 on PATH."; \
+	  echo "      cadquery-ocp has no wheels past 3.12 and spur supports 3.12 only (L23)."; \
 	  echo "      Install one (brew install python@3.12), or use 'make test-image'."; \
 	  exit 1; }
 	$(PYTHON) -m venv $(VENV)
@@ -51,7 +51,7 @@ lint: $(STAMP)  ## ruff: correctness rules only, no reformatting (L16)
 	$(PY) -m ruff check .
 
 typecheck: $(STAMP)  ## mypy --strict over the package and its tests
-	$(PY) -m mypy src tests docker bench
+	$(PY) -m mypy src tests docker bench scripts
 
 lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
 	$(VENV)/bin/lint-imports
@@ -165,6 +165,12 @@ worktree.land:  ## SLUG=<slug> MSG="<commit>" : verify, squash-merge, remove the
 	git worktree remove --force $$WT; \
 	git branch -D agent/$(SLUG); \
 	echo "landed agent/$(SLUG) on $$BASE"
+
+# --- landing on main: the merge gate (L22) ------------------------------------------
+
+pr.land: $(STAMP)  ## PR=<n> : squash-merge a PR only if its head is green and current with main
+	@test -n "$(PR)" || { echo "PR= required"; exit 1; }
+	$(PY) -m scripts.pr_land $(PR)
 
 # --- cleanup -----------------------------------------------------------------------
 

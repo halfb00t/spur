@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.1
-current_phase: 5
-current_phase_name: CI Observed Green
-status: "Phase 4 shipped — PR #3"
-stopped_at: Phase 4 complete, ready to plan Phase 5
-last_updated: "2026-09-24T16:34:40.067Z"
-last_activity: 2026-09-24
-state_head: 49ae671144a2459ca686f9b43fa4ad609115d651
+current_phase: 05
+status: "Phase 05 shipped — PR #4"
+stopped_at: Phase 05 complete — all phases complete
+last_updated: "2026-09-25T09:10:32.760Z"
+last_activity: 2026-09-25
+state_head: 73535a24ce57258f23049d72e8c99eb1d5c0ba90
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  completed_phases: 5
+  total_plans: 17
+  completed_plans: 17
+  percent: 100
 milestone_name: Hardening
 ---
 
@@ -20,24 +20,24 @@ milestone_name: Hardening
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-24)
+See: .planning/PROJECT.md (updated 2026-09-25)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 5 — CI Observed Green
+**Current focus:** Milestone v0.1 complete — all five phases verified; next `/gsd-complete-milestone v0.1`
 
 ## Current Position
 
-Phase: 5 — CI Observed Green
+Phase: 05
 Plan: Not started
-Status: Phase 4 shipped — PR #3
-Last activity: 2026-09-24
+Status: Phase 05 shipped — PR #4
+Last activity: 2026-09-25
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed via GSD: 11 (Phase 2: 5, Phase 3: 3, Phase 4: 3; v0 was built and verified
+- Total plans completed via GSD: 17 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -50,7 +50,7 @@ Last activity: 2026-09-24
 | 2. CAD Off the Event Loop | 5 | ~3h50m | ~46min |
 | 3. Structured Logging | 3 | ~1h12m | ~24min |
 | 4. Typed Derived-Dimensions Contract | 3 | ~1h10m | ~23min |
-| 5. CI Observed Green | TBD | - | - |
+| 5. CI Observed Green | 6 | ~1h38m | ~16min |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -58,6 +58,10 @@ took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~
 Phase 4's three plans took ~1h10m: 04-01 (~45 min — reconstructed, not measured) carried
 the model and the three contract tests; 04-02 and 04-03 were 16 and 9 measured minutes.
 Code review came back clean (1 info) and verification passed 4/4 with no fix pass.
+Phase 5's six plans took ~1h38m: 05-02 (~35 min, the live `make pr.land` tracer) dominated;
+the rest were 11–14 min each. Code review found CR-01 (pr.land's cut-line bypass) and
+verification scored 4/5; gap-closure plan 05-06 (13 min) closed it, the re-review was clean
+and re-verification passed 5/5.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -73,6 +77,12 @@ Code review came back clean (1 info) and verification passed 4/4 with no fix pas
 | Phase 04 P01 | ~45min | 3 tasks | 11 files |
 | Phase 04 P02 | 16min | 3 tasks | 9 files |
 | Phase 04 P03 | 9min | 3 tasks | 7 files |
+| Phase 05 P01 | 12 min | 2 tasks | 8 files |
+| Phase 05 P02 | ~35min | 2 tasks | 5 files |
+| Phase 05 P03 | ~13min | 3 tasks | 3 files |
+| Phase 05 P04 | 14 min | 3 tasks | 10 files |
+| Phase 05 P05 | ~11min | 3 tasks | 13 files |
+| Phase 05 P06 | 13min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -124,6 +134,17 @@ L17–L19):
 - [Phase 04]: app.py's lifespan now dels app.state.pool in its finally block, in addition to shutting it down -- app is one module-level FastAPI singleton shared across every test file in a pytest session, and a shut-down pool object was lingering for a later, lifespan-free test client to see (04-02 Rule 1 deviation).
 - [Phase 04]: Plan 04-03: L21 appended superseding L14 -- disallow_any_explicit on globally, satisfiable via the pydantic mypy plugin's init_typed/init_forbid_extra settings (R-1, human decision) rather than per-class suppression comments.
 - [Phase 04]: Plan 04-03: spur info --mate-teeth range-checked to InfoQuery's ge=6/le=1000 bounds (R-2, human decision); --mate-teeth 0 now exits 2 instead of meaning 'no mate'.
+- [Phase 05]: Python, not bash, for the skip-token hook -- Plan 05-02's make pr.land must import the same find_skip_tokens() to check the squash commit's subject and body; one importable module is the only way the two checks cannot drift apart. — 05-01-SUMMARY.md key-decisions
+- [Phase 05]: The verify pre-commit hook needed stages: [pre-commit] -- an unpinned hook inherits every installed stage and ran make verify twice per commit once commit-msg joined default_install_hook_types (planning-probe finding, re-confirmed live). — 05-01-SUMMARY.md key-decisions
+- [Phase 05]: Git's commit -v scissors cut line is exactly '# ' + 24 dashes + ' >8 ' + 24 dashes -- verified byte-for-byte in a scratch repo this session, not taken from the plan's prose alone. — 05-01-SUMMARY.md key-decisions
+- [Phase 05]: 05-02: head_refusals gains a required compare:tuple[int,int] param (no default) in Task 2 -- check_head always fetches it, so a default would be dead code — Task 1's own tests updated in the same commit to pass a neutral NOT_BEHIND=(1,0)
+- [Phase 05]: 05-02: JSON-field narrowing uses isinstance-based _as_object/_as_array/_as_int/_as_str helpers raising TypeError, not # type: ignore comments — mypy --strict flagged the ignore comment as unused/wrong-code; ruff TRY004/TRY301/TRY300 flagged the inline isinstance-raise pattern; matches L21's object-narrowed-at-use convention
+- [Phase 05]: 05-03: Retargeted the repository's existing `default` ruleset (id 23977515) onto `main` rather than creating a second ruleset -- planning's flagged assumption 1 confirmed live before the change (empty `include`, exactly deletion/non_fast_forward/pull_request); required checks are the post-D-09 set (test (3.12), vendor-bundle, image) applied now, before Plan 05-04 collapses the CI matrix
+- [Phase 05]: 05-03: docs/HOW_TO_DEVELOP.md Section 8's old manual `git switch main && git pull --ff-only ... && git branch -D ...` block was removed entirely rather than merged with the new pr.land description -- make pr.land performs every one of those steps itself (confirmed against scripts/pr_land.py's land() control flow); L22 is one decision-log entry covering D-02 through D-05 and D-12, not five entries
+- [Phase 05]: Plan 05-04: kept the one-entry CI matrix (test (3.12)) rather than a bare test job -- required-jobs.txt and the live ruleset both name that string; widening later is one line, a rename would need a ruleset update too — Plan's flagged assumption 3, confirmed against the live ruleset read-back in Task 3
+- [Phase 05]: Plan 05-04: the ruleset on main needed no write -- Plan 05-03 already applied the post-D-09 required-check set, so Task 3's live read-back confirmed agreement rather than changing anything — gh api repos/halfb00t/spur/rules/branches/main read back exactly image;test (3.12);vendor-bundle, matching the collapsed required-jobs.txt byte-for-byte
+- [Phase 05]: [Phase 05]: Plan 05-05: STATE.md's CI-unverified blocker was removed with one scoped edit inside Blockers/Concerns rather than state.resolve-blocker, which filters single '- ' lines and would orphan the bullet's three continuation lines — Plan's flagged assumption 3
+- [Phase 05]: 05-06: the cut moves into the hook's main() (editor-only), not find_skip_tokens -- pr_land.py's code is unchanged; message_refusals now searches the whole PR title/body with no cut, closing CR-01's reproduced bypass. The one residual (a hand-typed cut line inside an editor session without -v) is filed as must debt, backstopped by the ruleset on main, make pr.land's run check, and D-03.
 
 ### Pending Todos
 
@@ -131,10 +152,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- **CI workflow unverified.** `.github/workflows/ci.yml` was hand-verified step-by-step but
-  has never executed inside GitHub Actions (per `docs/plan-2026-09-21.md`). Now Phase 5's
-  entire scope: a real push, a run URL, three jobs (`test` matrix, `vendor-bundle`,
-  `image`) observed green.
 - ⚠️ [Phase 2] The ten-concurrent `/api/health` latency bar (≤2.00x idle p95) was waived,
   not demonstrated: eight runs across four sessions read 1.31x–2.45x and never ≤2.00x on
   both runs of one session. The caveat and two uninvestigated observations (every second
@@ -149,7 +166,18 @@ None yet.
   `docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md`
   (must). Triggers: a feature needs a measured dimension from a `Solid` after export, or a
   test outside the fixture's protection hits the symptom.
-- *(Resolved in Phase 4: "Untyped info contract" — `013900d` (the model) / `cfe5f8d` (the
+- ⚠️ [Phase 5] The `commit-msg` hook cannot see a skip token hidden below a git cut line
+  typed by hand inside an editor session without `-v` — by content it is identical to git's
+  own `commit -v` diff, which the hook must skip. Backstopped: the ruleset on `main` refuses
+  a head without green required checks, `make pr.land` refuses a run-less head, and after
+  D-03 a branch commit's message never becomes `main`'s.
+  `docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md` (must).
+- *(Resolved in Phase 5: "CI workflow unverified" — the premise was false: main push run
+  <https://github.com/halfb00t/spur/actions/runs/35963114939> (`59f02c3`, all four jobs
+  green) and PR #3 head run <https://github.com/halfb00t/spur/actions/runs/36088409707>
+  (`2c4b544`, tree-identical to `bfc9110`); L22's merge gate keeps it true, and this
+  phase's own squash-commit run is recorded after `make pr.land` prints it. Resolved in
+  Phase 4: "Untyped info contract" — `013900d` (the model) / `cfe5f8d` (the
   rule turned on and the debt file retired, same commit), moved to
   `docs/tech_debt/resolved/`; L14 superseded by L21. Resolved in Phase 3: "No structured logging anywhere" — `21b8fe4`/`013997a`, moved to
   `docs/tech_debt/resolved/`; L20. Resolved in Phase 2: "CAD builds block the event loop" — `daeb284`, moved to
@@ -164,6 +192,10 @@ None yet.
 | 260923-qwr | Fix /api/health under-load latency: gzip level 1 from measurement, model-body compression inside _build_slot() and cached; Runs 5-6 concurrent 1.31x / 2.10x -- bar not met on both, WINDOWS item 1 stays open | 2026-09-23 | 2d47994..5a6e7d7 | [260923-qwr-fix-the-api-health-under-load-latency-co](./quick/260923-qwr-fix-the-api-health-under-load-latency-co/) |
 | 260924-bv5 | Fix 02-REVIEW.md CR-01/CR-02/WR-01: recreate_for identity-guarded and no longer cancels pending futures (fourth same-slot request observed CancelledError pre-fix, BrokenProcessPool after); memory sweep runs under its own 8 GiB ceiling and refuses capped rows; 5 new tests, 76 passing | 2026-09-24 | 15fa5cd | [260924-bv5-fix-02-review-md-findings-cr-01-cr-02-an](./quick/260924-bv5-fix-02-review-md-findings-cr-01-cr-02-an/) |
 
+### Roadmap Evolution
+
+- Phase 5 edited: edited fields: goal, success_criteria (reframed per 05-CONTEXT.md D-10), Phases-list one-liner
+
 ## Deferred Items
 
 | Category | Item | Status | Deferred At | Milestone |
@@ -172,6 +204,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T15:12:16.065Z
-Stopped at: Phase 4 complete, ready to plan Phase 5
+Last session: 2026-09-25T08:54:38.000Z
+Stopped at: Phase 05 complete — milestone v0.1 ready to close (`/gsd-complete-milestone v0.1`)
 Resume file: None

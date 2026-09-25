@@ -6,10 +6,12 @@ two exceptions out of `model.py` is what makes that possible: `model.py` still d
 raises them, but the import that matters -- `from .build_errors import BuildError` in
 `app.py` -- never drags OpenCascade in behind it.
 
-`BuildTimeout` is defined here, not reused from a builtin, because `asyncio.TimeoutError`
-and the builtin `TimeoutError` are distinct classes on Python 3.10 and only became aliases
-in 3.11 -- and CI runs both 3.10 and 3.12 (L14). A single `BuildTimeout` class means the
-per-build timeout Plan 02-03 wires up never has to catch a version-dependent builtin.
+`BuildTimeout` was originally defined here, not reused from a builtin, because
+`asyncio.TimeoutError` and the builtin `TimeoutError` were distinct classes on the
+retired 3.10 floor and only became aliases in 3.11 -- a gap L23 retired by dropping that
+floor. It stays because it is the one timeout `app.py` turns into a 503 with its own
+error `type` ("timeout"), distinct from `BrokenProcessPool`'s 503 -- a client can tell
+"come back in a moment" from "the worker died" by this class alone.
 """
 
 from __future__ import annotations

@@ -32,7 +32,7 @@ import json
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING, TextIO
+from typing import TextIO
 
 from . import __version__
 from .build_errors import BuildError
@@ -64,7 +64,7 @@ class _JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, object] = {
             "ts": datetime.datetime.fromtimestamp(
-                record.created, tz=datetime.timezone.utc).isoformat(),
+                record.created, tz=datetime.UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             # `event` rides in `record.__dict__` for spur's own records (`_emit` passes
@@ -107,20 +107,12 @@ class _JsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str)
 
 
-# The type checker sees the generic base; the interpreter never subscripts it.
-# `logging.StreamHandler` only gained `__class_getitem__` in Python 3.11, and this
-# project's floor is 3.10 (pyproject.toml's `target-version`, the CI matrix): subscripting
-# it in a class statement raised `TypeError: 'type' object is not subscriptable` at
-# import time on CI's `test (3.10)` leg (runs 35993984796 and 36028253714) while the
-# local 3.12 `make verify` passed -- a 3.10 interpreter is the only check that catches
-# this class of bug, which is why the matrix has one.
-if TYPE_CHECKING:
-    _StreamHandlerBase = logging.StreamHandler[TextIO]
-else:
-    _StreamHandlerBase = logging.StreamHandler
-
-
-class _JsonHandler(_StreamHandlerBase):
+# Subscripting `StreamHandler` at runtime needs Python 3.11+ (`__class_getitem__`
+# landed in 3.11); the floor is 3.12 now (L23), so a direct generic base is safe. This
+# exact construct broke the retired 3.10 CI leg at import time (`TypeError: 'type'
+# object is not subscriptable`, runs 35993984796, 36028253714) -- any future widening
+# below 3.11 must go back to a `TYPE_CHECKING`-gated base or drop the subscript.
+class _JsonHandler(logging.StreamHandler[TextIO]):
     """A `StreamHandler` subclass with no added behaviour -- a pure identity marker.
 
     `configure()`'s idempotency guard checks `isinstance(h, _JsonHandler)` against the
@@ -139,8 +131,8 @@ def _parse_level(raw: str) -> int:
     `logging.getLevelName(name)` is the stdlib's own validity check: it returns an int
     for a real level name and a `"Level <name>"` string for anything else (verified this
     session against the installed interpreter). Not `logging._nameToLevel` (private),
-    and not `logging.getLevelNamesMapping()` (added in 3.11 only -- this project's floor
-    is 3.10, per pyproject.toml's `target-version` and the two-version CI matrix).
+    and not `logging.getLevelNamesMapping()` -- it is 3.11+, and `getLevelName` already
+    answers the same question.
     """
     level = logging.getLevelName(raw.upper())
     return level if isinstance(level, int) else logging.INFO

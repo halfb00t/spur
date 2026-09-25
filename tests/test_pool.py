@@ -13,6 +13,8 @@ import asyncio
 import logging
 import multiprocessing as mp
 import os
+import signal
+import threading
 import time
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
@@ -113,16 +115,21 @@ def test_executor_processes_attribute_still_exists() -> None:
     `ProcessPoolExecutor` has no public API to kill a running task -- Plan 02-03's
     timeout->terminate->recreate path reaches the OS process through the private,
     undocumented `_processes` dict (pid -> SpawnProcess). Confirmed present on
-    CPython 3.12.13 this session (02-RESEARCH.md, "Pattern 2"); only checked on
-    3.12, and this project's CI also runs 3.10 (L14). If a future interpreter
-    removes or renames this attribute, this test fails `make verify` loudly instead
-    of D-10's termination path silently becoming a no-op.
+    CPython 3.12.13 this session (02-RESEARCH.md, "Pattern 2"); checked on CPython
+    3.12.13, the only supported interpreter (L23). If a future interpreter removes
+    or renames this attribute, this test fails `make verify` loudly instead of
+    D-10's termination path silently becoming a no-op.
     """
     executor = ProcessPoolExecutor(max_workers=1, mp_context=mp.get_context("spawn"))
     try:
         executor.submit(os.getpid).result()  # a trivial task, so a worker actually starts
         assert hasattr(executor, "_processes")
         assert executor._processes  # non-empty: at least the one worker just used
+        # Same guard for the second private the wedged-build test reaches through: the
+        # executor's manager thread, captured there so that it -- not the test -- is the
+        # one reaper of the terminated worker (typeshed types it as `_ThreadWakeup`; at
+        # runtime it is the `_ExecutorManagerThread`, a `threading.Thread`).
+        assert isinstance(executor._executor_manager_thread, threading.Thread)
     finally:
         # Explicit shutdown: filterwarnings = ["error"] in pyproject.toml turns a
         # leaked subprocess's ResourceWarning into a test failure (L13).
@@ -145,6 +152,12 @@ def test_a_wedged_build_is_terminated_and_its_worker_replaced(
         executor = pool.executor_for(params)
         worker_pid_before = executor.submit(os.getpid).result()  # starts the worker
         [proc] = list(executor._processes.values())
+        # The executor's own manager thread will be the one reaper of `proc` (see the
+        # join below). Captured now: `recreate_for`'s `shutdown(wait=False)` drops the
+        # executor's reference to it (`_executor_manager_thread = None`, process.py,
+        # 3.12.13) before this test gets control back.
+        manager = executor._executor_manager_thread
+        assert isinstance(manager, threading.Thread)
         replaced_before = pool.replaced
 
         original_timeout = pool.timeout
@@ -157,8 +170,25 @@ def test_a_wedged_build_is_terminated_and_its_worker_replaced(
         finally:
             pool.timeout = original_timeout
 
-        proc.join(timeout=5)  # give the terminated process a moment to actually exit
-        assert not proc.is_alive()
+        # Wait for the manager thread, never for `proc` directly. Once the worker dies,
+        # the manager thread and this one wake on the same process sentinel and race to
+        # `os.waitpid` for the same child; the loser gets ECHILD, which
+        # `multiprocessing.popen_fork.Popen.poll` swallows into "still alive"
+        # (ASSUMPTION, not directly observed -- see the resolved debt record for what
+        # was and wasn't checked). The old `proc.join(timeout=5); assert not
+        # proc.is_alive()` is consistent with failing that way on the GitHub runner on
+        # 4 of 5 attempts (runs 36116930241, 36117030280, 36118554588, 2026-09-25) with
+        # the worker in fact dead, and never once on a workstation (0/18 locally,
+        # contended and idle). With the manager thread as the only
+        # reaper, `exitcode` is the status its join recorded, and asserting the signal
+        # number proves the death was ours, not a crash. The liveness assertion between
+        # the two is load-bearing: a timed `join` can return with the thread still
+        # running, and reading `exitcode` before it has stored the status is the same
+        # `waitpid` race again -- reproduced by pausing the manager just before its
+        # assignment (Codex re-review of ae052f8: `exitcode=None`, errno ECHILD).
+        manager.join(timeout=5)
+        assert not manager.is_alive(), "executor manager thread did not finish shutdown"
+        assert proc.exitcode == -signal.SIGTERM
         assert pool.replaced == replaced_before + 1
 
         replaced = _event_records(caplog, "worker.replaced")

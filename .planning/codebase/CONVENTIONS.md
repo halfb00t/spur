@@ -45,12 +45,12 @@ last_mapped_at: 2026-09-21
 - Explicit per-file ignores in `pyproject.toml`:
   - Tests: `ARG001` (unused arguments are named for reader clarity)
 - A bare `# noqa` is a violation; suppress by code (`# noqa: E501`) or not at all
-- Ruff config: Python 3.10+ target, line-length 100, no DOC (docstrings are prose, not schema), no ANN (mypy --strict already enforces annotations)
+- Ruff config: Python 3.12 target, line-length 100, no DOC (docstrings are prose, not schema), no ANN (mypy --strict already enforces annotations)
 
 **Mypy:**
 
 - Mode: `--strict` (required)
-- Python version: 3.12 (type checker floor, not runtime floor; ruff enforces py310)
+- Python version: 3.12, the same as the runtime (L23)
 - Overrides: `cadquery.*` and `OCP.*` have `ignore_missing_imports = true` (CAD kernel ships no stubs)
 - Pydantic plugin enabled to see generated `__init__` signatures
 - No explicit `disallow_any_explicit` (tracked in tech debt; API's `dict[str, Any]` contracts are by design)

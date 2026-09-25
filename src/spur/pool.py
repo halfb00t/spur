@@ -181,10 +181,10 @@ class BuildPool:
         future = loop.run_in_executor(executor, functools.partial(func, *args, **kwargs))
         try:
             return await asyncio.wait_for(future, timeout=self.timeout)
-        except asyncio.TimeoutError:
-            # asyncio.TimeoutError by its qualified name, not the builtin: they are
-            # distinct classes on the 3.10 floor CI also runs (see build_errors.py's
-            # BuildTimeout docstring) -- and asyncio.wait_for always raises this one.
+        except TimeoutError:
+            # The builtin TimeoutError, not the qualified asyncio.TimeoutError: since
+            # Python 3.11 the asyncio name is an alias of the builtin, and 3.12 is this
+            # project's floor (L23) -- asyncio.wait_for always raises this one.
             #
             # Executor.shutdown(cancel_futures=True) is not a substitute for this: it
             # only cancels futures that have not started running yet [VERIFIED:

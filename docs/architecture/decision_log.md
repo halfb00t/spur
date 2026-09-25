@@ -449,3 +449,158 @@ regression is someone re-adding `Any` "just for this one dict" or adding a per-m
 override the next time a genuinely dynamic-looking value shows up; this entry is where
 that stops being re-litigable — the answer is `object`, narrowed where it is used, or a
 library's own alias, never a local respelling of `Any`.
+
+## L22 — CI is the merge gate: a ruleset walls main, every commit on main has a run, and main is landed with `make pr.land`
+
+Date: 2026-09-25.
+
+L13 made `make verify` the gate, but nothing tied a merge on `main` to CI having
+actually run it. PR #2 was merged five minutes after run 35993984796 failed
+`test (3.10)` — four test modules failed at collection with a `TypeError`, and nothing
+stopped the merge. Two squash commits already on `main`, `538d26f` and `bfc9110`, carry
+no GitHub Actions run at all: a GitHub Actions skip token in a branch commit rode into
+GitHub's default squash message (`COMMIT_OR_PR_TITLE`/`COMMIT_MESSAGES`, the
+concatenation of branch commit subjects) and reached `main` twice.
+
+**The commit-msg hook** (D-02, Plan 05-01). A repo-owned `commit-msg` hook in
+`.pre-commit-config.yaml` refuses all six tokens GitHub Actions honours anywhere in the
+message — subject or body — case-insensitively, above git's `commit -v` scissors line.
+Why a hook and not only the repository setting: PR #2's head `20b63e4` showed zero
+checks because the token sat in the commit subject; PR #3's `6fce500`, a prose mention
+("No [ci skip] on purpose"), got skipped too and needed an empty trigger commit,
+`87d500e`, to get a real run. GitHub's own documentation, fetched during this phase's
+research, does not state a case rule for the six tokens (RESEARCH A1) — the hook's
+case-insensitive match is a deliberate over-match on top of an unconfirmed case rule,
+not a GitHub-documented fact. The `verify` hook is pinned to `stages: [pre-commit]`
+(it otherwise ran twice per commit once `commit-msg` joined the same config).
+
+**The squash message is the PR title and body** (D-03, Plan 05-01). The repository's
+squash-merge settings are now `squash_merge_commit_title=PR_TITLE`,
+`squash_merge_commit_message=PR_BODY` (read back live after one `gh api -X PATCH`); the
+exact command lives in `docs/HOW_TO_DEVELOP.md` §8, next to this decision, because a
+repository setting is not in git.
+
+**The ship note** (D-04, Plan 05-01). `/gsd-ship`'s ship-note commit carries `[ci skip]`
+in its subject, hardcoded in the global `~/.claude/gsd-core/workflows/ship.md` with no
+project config knob. With the hook (D-02) that commit is refused, so the ship note is a
+documented manual step (`docs/HOW_TO_DEVELOP.md` §6): the global workflow file is not
+patched, since a local patch would be lost on the next `gsd` update and is invisible to
+this repository anyway.
+
+**`make pr.land` is the sanctioned path** (D-05, Plan 05-02). `scripts/pr_land.py`
+resolves the PR's current head, refuses a behind or identical head, requires every job
+named in `.github/workflows/required-jobs.txt` to be `success` for that head, refuses a
+skip token in the squash subject or body (`message_refusals`, reusing D-02's
+`find_skip_tokens` unmodified), then squash-merges with `gh pr merge --squash
+--match-head-commit`, binding the merge to the exact head sha just checked. It passes
+the checked subject and body itself rather than trusting `gh`'s defaults, so RESEARCH A2
+(whether `gh pr merge` honours the repository squash-message setting at all) is off its
+path either way, and the token refusal holds regardless. The list in
+`required-jobs.txt` sits next to `ci.yml`, and a test in `tests/test_pr_land.py` derives
+the required set from `ci.yml`'s own text and asserts the two agree, so the file cannot
+silently drift from what CI actually runs. The behind check is what makes "the merged
+tree is the checked tree" true: `bfc9110` (PR #3's squash commit on `main`) and
+`2c4b544` (PR #3's checked head, run `36088409707` green on all four jobs) share tree
+`6ebbeaa2…`, confirmed live this phase — which is why step 5 waits only for a run to
+*appear* on the squash commit, not to finish. `pr.land` then does the local follow-up
+(`git switch`/`pull --ff-only`/`branch -D`, the last only when the local branch's tip
+equals the merged head) and never passes `gh pr merge --delete-branch`.
+
+**The wall: the ruleset on `main`** (D-12, which superseded D-06; Plan 05-03). CONTEXT.md
+recorded the repository as private on a free plan and D-06 deferred branch protection on
+that account; by 2026-09-25 the repository was public and the human chose to put the
+wall up in this phase rather than keep deferring it. It is the repository's own ruleset
+`default` (id 23977515), retargeted from no branch onto `refs/heads/main` — not a second
+ruleset created beside an inert one. Read back from `rules/branches/main`: the rule
+types are exactly `deletion`, `non_fast_forward`, `pull_request` and
+`required_status_checks`, all from ruleset 23977515; the strict up-to-date policy is on;
+the required checks are exactly `test (3.12)`, `vendor-bundle` and `image`, each pinned
+to GitHub Actions (`integration_id: 15368`), so a same-named status from anywhere else
+cannot satisfy it. It never names `test (3.10)`: it is the post-D-09 set from the start,
+because `main`'s `ci.yml` already reports all three names on every PR, while naming the
+3.10 job would leave every PR after this phase waiting for a check no job reports.
+No bypass actors: nothing lands on `main` except through a pull request with the
+required checks green, milestone-completion and worktree-landing commits included —
+chosen by the human over making the repository admin a bypass actor, which would
+re-open the PR #2 red-merge hole from the button. The apply command, the read-back and
+the removal call all live in `docs/HOW_TO_DEVELOP.md` §8, and are re-run whenever
+`required-jobs.txt` changes.
+
+**And `make pr.land` is still the path — a tool, not a wall.** The ruleset cannot see the
+squash text, where a skip token still acts *after* the merge (D-02/D-03 unchanged), or
+the squash commit's own run; `pr.land` checks both, and does the local follow-up the
+ruleset has no concept of. It keeps its own required-job and behind checks even though
+the ruleset now duplicates them, because its claim that the merged tree is the checked
+tree must not rest on a repository setting outside git that it does not itself read.
+
+**Reversibility.** This entry is appended, one-way: the log is append-only by policy, and
+nothing above it changes. The mechanisms it records are each cheap to undo on their own —
+remove the hook, `gh api -X PATCH` the squash setting back, `gh api -X DELETE` the
+ruleset, stop invoking `make pr.land`. The ruleset is D-12's own "costly": one `gh api`
+call removes it, but the documented merge path in `docs/HOW_TO_DEVELOP.md` §8 and this
+entry would both need rewriting to match.
+
+Reason: the single most likely future regression is someone re-adding a skip token "to
+save a pipeline" — the ship workflow's own hardcoded default — or renaming or adding a
+CI job without re-running the ruleset's apply command. A rename leaves every PR waiting
+on a check no job reports; an addition leaves the GitHub merge button weaker than
+`make pr.land`. The answer is already on file: the commit-msg hook refuses the first;
+the drift test in `tests/test_pr_land.py` keeps `required-jobs.txt` equal to `ci.yml`,
+and `docs/HOW_TO_DEVELOP.md` §8 says to re-run the ruleset command when that list
+changes; and `make pr.land` exits non-zero, naming the gap, whenever a squash commit
+gets no run.
+
+## L23 — Python 3.12 only (supersedes L01's floor)
+
+Date: 2026-09-25.
+
+L01 recorded 3.10-3.12 as "detected, not chosen": the floor was never a requirement, only
+what `cadquery-ocp`'s wheel range happened to cover at the time. The ceiling reasoning
+stands unchanged: `cadquery-ocp` publishes no wheels past 3.12, and widening upward waits
+on a wheel *and* a consumer appearing, same as before.
+
+**Why the floor goes.** mypy cannot hold a floor below 3.12, because numpy's bundled
+stubs use `type` statements and mypy refuses to read them below that version. Ruff's
+3.10 target held syntax only. So the floor was checked by CI's 3.10 run alone, and that
+let `logging.StreamHandler[TextIO]` — runtime subscripting needs 3.11 — reach `main`
+unimportable on 3.10 (runs 35993984796, 36028253714, 36028759311; fixed `990d1fe`). The
+Docker image, the dev machine and the pre-commit hook are all 3.12 already. With one
+version, the type checker's version is the runtime, and the gap closes structurally
+rather than depending on a CI leg to catch the next one.
+
+**What changes.** `requires-python = ">=3.12,<3.13"` (the upper bound makes L01's
+ceiling checkable: pip refuses instead of spending minutes building OpenCascade from
+source). Ruff `target-version = "py312"`; mypy `python_version = "3.12"` is unchanged —
+it was already there for the numpy-stub reason. CI matrix narrows to `["3.12"]`, keeping
+the job name `test (3.12)`. `make venv` picks `python3.12` only. `pr.land`'s required
+list (`required-jobs.txt`) loses the `test (3.10)` job in the same commit as the matrix
+(L22); the ruleset on `main` never required it in the first place (D-12).
+
+**Who is affected.** `pip install` on Python 3.10 or 3.11 is now refused by pip itself,
+naming the requirement. Ubuntu 22.04 users, whose system Python predates 3.12, use
+Docker — which needs no local Python — or `uv`.
+
+**What 3.12-only adopts: the unwind list.** At planning, `ruff check --target-version
+py312 .` reported three findings that this decision forces, not chooses: a PEP 695 type
+parameter replacing the module-level `TypeVar` on `params._f` (UP047); catching the
+builtin `TimeoutError` instead of the qualified `asyncio.TimeoutError` in `pool.py`
+(UP041); and `datetime.UTC` replacing `datetime.timezone.utc` in `records.py` (UP017).
+Beyond ruff's own findings, `records._JsonHandler` now subclasses
+`logging.StreamHandler[TextIO]` directly in the class statement — the `TYPE_CHECKING`
+indirection that gave the type checker and the interpreter different base classes existed
+solely to survive a floor below 3.11, and that floor is gone. Any future widening below
+3.11 must undo this list, not just the version strings.
+
+**Rejected.** 3.11-3.12, which keeps the same structural gap one version narrower. A
+3.10 interpreter in the pre-commit hook, which would put a 3.10 install on every clone
+and roughly double the hook's running time for a floor nothing else exercises.
+
+**Reversibility: costly.** Widening back is a one-line matrix change plus a new decision
+entry, but every construct in the unwind list above must be undone first, and the
+published `requires-python` upper bound refuses installs that worked before it was
+tightened.
+
+**Reason:** the most likely future regression is lowering the floor for one machine or
+one convenience without bringing a real interpreter at the new floor into CI in the same
+change — mypy cannot check a floor below its own `python_version`, so a floor with no
+real interpreter behind it is a floor checked by hope (RESEARCH.md Pitfall 4).
