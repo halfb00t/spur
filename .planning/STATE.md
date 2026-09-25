@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 05
 current_phase_name: CI Observed Green
 status: executing
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-09-25T06:51:34.748Z"
+stopped_at: Completed 05-04-PLAN.md
+last_updated: "2026-09-25T07:07:30.520Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 05 execution started
-state_head: a6c111405e0325cd699ee3582482c42efe76d7ab
+state_head: 5981c6f5d7123d4f2bad62302d4d6a7fec47b01f
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
 milestone_name: Hardening
 ---
 
@@ -30,7 +30,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 05 (CI Observed Green) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-25 — Phase 05 execution started
 
@@ -77,6 +77,7 @@ Code review came back clean (1 info) and verification passed 4/4 with no fix pas
 | Phase 05 P01 | 12 min | 2 tasks | 8 files |
 | Phase 05 P02 | ~35min | 2 tasks | 5 files |
 | Phase 05 P03 | ~13min | 3 tasks | 3 files |
+| Phase 05 P04 | 14 min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,8 @@ L17–L19):
 - [Phase 05]: 05-02: JSON-field narrowing uses isinstance-based _as_object/_as_array/_as_int/_as_str helpers raising TypeError, not # type: ignore comments — mypy --strict flagged the ignore comment as unused/wrong-code; ruff TRY004/TRY301/TRY300 flagged the inline isinstance-raise pattern; matches L21's object-narrowed-at-use convention
 - [Phase 05]: 05-03: Retargeted the repository's existing `default` ruleset (id 23977515) onto `main` rather than creating a second ruleset -- planning's flagged assumption 1 confirmed live before the change (empty `include`, exactly deletion/non_fast_forward/pull_request); required checks are the post-D-09 set (test (3.12), vendor-bundle, image) applied now, before Plan 05-04 collapses the CI matrix
 - [Phase 05]: 05-03: docs/HOW_TO_DEVELOP.md Section 8's old manual `git switch main && git pull --ff-only ... && git branch -D ...` block was removed entirely rather than merged with the new pr.land description -- make pr.land performs every one of those steps itself (confirmed against scripts/pr_land.py's land() control flow); L22 is one decision-log entry covering D-02 through D-05 and D-12, not five entries
+- [Phase 05]: Plan 05-04: kept the one-entry CI matrix (test (3.12)) rather than a bare test job -- required-jobs.txt and the live ruleset both name that string; widening later is one line, a rename would need a ruleset update too — Plan's flagged assumption 3, confirmed against the live ruleset read-back in Task 3
+- [Phase 05]: Plan 05-04: the ruleset on main needed no write -- Plan 05-03 already applied the post-D-09 required-check set, so Task 3's live read-back confirmed agreement rather than changing anything — gh api repos/halfb00t/spur/rules/branches/main read back exactly image;test (3.12);vendor-bundle, matching the collapsed required-jobs.txt byte-for-byte
 
 ### Pending Todos
 
@@ -187,6 +190,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T06:51:25.906Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-09-25T07:07:30.485Z
+Stopped at: Completed 05-04-PLAN.md
 Resume file: None
