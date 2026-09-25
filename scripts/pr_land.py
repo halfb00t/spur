@@ -168,6 +168,20 @@ def parse_runs(text: str) -> list[WorkflowRun]:
     return runs
 
 
+def parse_compare(text: str) -> tuple[int, int]:
+    """Parse `gh api repos/{owner}/{repo}/compare/main...<sha> --jq '{ahead_by,
+    behind_by}'`'s stdout into `(ahead_by, behind_by)`."""
+    try:
+        data = _as_object(json.loads(text), "compare output")
+        result = (
+            _as_int(data["ahead_by"], "ahead_by"),
+            _as_int(data["behind_by"], "behind_by"),
+        )
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise ValueError(f"compare output does not parse: {exc}") from exc
+    return result
+
+
 def parse_jobs(text: str) -> list[dict[str, str]]:
     """Parse the `--jq '[.jobs[] | {name, status, conclusion}]'` array. Kept as plain
     dicts, not a dataclass -- only `name` and `conclusion` are read, by
@@ -221,22 +235,51 @@ def pr_refusals(pr: PullRequest) -> list[str]:
     return refusals
 
 
+def message_refusals(subject: str, body: str) -> list[str]:
+    """One refusal per GitHub Actions skip token `find_skip_tokens` finds in the
+    squash subject and body -- the same function the commit-msg hook uses
+    (`scripts.skip_tokens`), so the two checks cannot drift apart (flagged
+    assumption 2). This checks the text that becomes `main`'s commit message (D-03);
+    no commit-msg hook ever sees a squash commit."""
+    tokens = find_skip_tokens(subject + "\n\n" + body)
+    return [
+        f"pr.land: the squash message carries a GitHub Actions skip token: {token!r}. "
+        "Edit the PR title or body to describe it in words instead."
+        for token in tokens
+    ]
+
+
 def head_refusals(
     sha: str,
+    compare: tuple[int, int],
     run: WorkflowRun | None,
     jobs: list[dict[str, str]],
     required: frozenset[str],
 ) -> list[str]:
-    """The read-only decision core `check_head` calls: no run for `sha` -- refused,
-    naming the sha; a run not `completed` -- refused as still running, with its URL;
-    each required job missing from `jobs` or not `success` -- refused, naming the job
-    and its conclusion. Return a list; empty means go."""
-    if run is None:
-        return [f"pr.land: no {WORKFLOW} run for head {sha}."]
-    if run.status != "completed":
-        return [f"pr.land: the newest run for {sha} is still running: {run.html_url}"]
-    by_name = {job["name"]: job["conclusion"] for job in jobs}
+    """The read-only decision core `check_head` calls. `compare` is
+    `(ahead_by, behind_by)`: `behind_by > 0` is refused (D-05 step 2 -- rebase,
+    push, let CI run on the real tree, retry); identical to `main`
+    (`ahead_by == 0 and behind_by == 0`) is refused as nothing to merge. Then: no run
+    for `sha` -- refused, naming the sha; a run not `completed` -- refused as still
+    running, with its URL; each required job missing from `jobs` or not `success` --
+    refused, naming the job and its conclusion. Return a list; empty means go."""
+    ahead_by, behind_by = compare
     refusals: list[str] = []
+    if behind_by > 0:
+        refusals.append(
+            f"pr.land: head {sha} is {behind_by} commit(s) behind main. "
+            "Rebase onto main, push, let CI run on the real tree, retry."
+        )
+    elif ahead_by == 0:
+        refusals.append(f"pr.land: head {sha} is identical to main -- nothing to merge.")
+
+    if run is None:
+        refusals.append(f"pr.land: no {WORKFLOW} run for head {sha}.")
+        return refusals
+    if run.status != "completed":
+        refusals.append(f"pr.land: the newest run for {sha} is still running: {run.html_url}")
+        return refusals
+    by_name = {job["name"]: job["conclusion"] for job in jobs}
     for name in sorted(required):
         conclusion = by_name.get(name)
         if conclusion is None:
@@ -247,9 +290,25 @@ def head_refusals(
 
 
 def check_head(sha: str, run: Runner, required: frozenset[str]) -> list[str]:
-    """The read-only half: fetch the runs for `sha`, pick the newest, fetch its jobs,
-    then decide via `head_refusals`. A failed or unparseable read is itself a
-    refusal, never a default value (prohibition 1)."""
+    """The read-only half: fetch the compare against `main`, the runs for `sha`,
+    pick the newest, fetch its jobs, then decide via `head_refusals`. A failed or
+    unparseable read is itself a refusal, never a default value (prohibition 1)."""
+    compare_result = run(
+        [
+            "gh",
+            "api",
+            f"repos/{{owner}}/{{repo}}/compare/main...{sha}",
+            "--jq",
+            "{ahead_by, behind_by}",
+        ]
+    )
+    if compare_result.returncode != 0:
+        return [f"pr.land: reading compare for {sha} failed: {compare_result.stderr.strip()}"]
+    try:
+        compare = parse_compare(compare_result.stdout)
+    except ValueError as exc:
+        return [f"pr.land: {exc}"]
+
     runs_result = run(
         [
             "gh",
@@ -289,7 +348,7 @@ def check_head(sha: str, run: Runner, required: frozenset[str]) -> list[str]:
         except ValueError as exc:
             return [f"pr.land: {exc}"]
 
-    return head_refusals(sha, newest, jobs, required)
+    return head_refusals(sha, compare, newest, jobs, required)
 
 
 def land(
@@ -340,12 +399,7 @@ def land(
 
     subject = squash_subject(pr)
     refusals = check_head(pr.head_sha, run, required_jobs())
-    tokens = find_skip_tokens(subject + "\n\n" + pr.body)
-    refusals += [
-        f"pr.land: the squash message carries a GitHub Actions skip token: {token!r}. "
-        "Edit the PR title or body to describe it in words instead."
-        for token in tokens
-    ]
+    refusals += message_refusals(subject, pr.body)
     if refusals:
         for line in refusals:
             print(line)
