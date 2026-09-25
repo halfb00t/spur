@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 05
 current_phase_name: CI Observed Green
 status: executing
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-09-25T08:15:07.379Z"
+stopped_at: Completed 05-06-PLAN.md
+last_updated: "2026-09-25T08:33:44.821Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 05 execution started
-state_head: ab0e5bf9be9e0c289fa30486586bbffa1bf58ce7
+state_head: 3e68e74eee25843eafa3aec4316767a21110304b
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 17
-  completed_plans: 16
+  completed_plans: 17
 milestone_name: Hardening
 ---
 
@@ -29,8 +29,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 05 (CI Observed Green) — READY TO EXECUTE
-Plan: 5 of 5
+Phase: 05 (CI Observed Green) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
 Last activity: 2026-09-25 — Phase 05 execution started
 
@@ -79,6 +79,7 @@ Code review came back clean (1 info) and verification passed 4/4 with no fix pas
 | Phase 05 P03 | ~13min | 3 tasks | 3 files |
 | Phase 05 P04 | 14 min | 3 tasks | 10 files |
 | Phase 05 P05 | ~11min | 3 tasks | 13 files |
+| Phase 05 P06 | 13min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,7 @@ L17–L19):
 - [Phase 05]: Plan 05-04: kept the one-entry CI matrix (test (3.12)) rather than a bare test job -- required-jobs.txt and the live ruleset both name that string; widening later is one line, a rename would need a ruleset update too — Plan's flagged assumption 3, confirmed against the live ruleset read-back in Task 3
 - [Phase 05]: Plan 05-04: the ruleset on main needed no write -- Plan 05-03 already applied the post-D-09 required-check set, so Task 3's live read-back confirmed agreement rather than changing anything — gh api repos/halfb00t/spur/rules/branches/main read back exactly image;test (3.12);vendor-bundle, matching the collapsed required-jobs.txt byte-for-byte
 - [Phase 05]: [Phase 05]: Plan 05-05: STATE.md's CI-unverified blocker was removed with one scoped edit inside Blockers/Concerns rather than state.resolve-blocker, which filters single '- ' lines and would orphan the bullet's three continuation lines — Plan's flagged assumption 3
+- [Phase 05]: 05-06: the cut moves into the hook's main() (editor-only), not find_skip_tokens -- pr_land.py's code is unchanged; message_refusals now searches the whole PR title/body with no cut, closing CR-01's reproduced bypass. The one residual (a hand-typed cut line inside an editor session without -v) is filed as must debt, backstopped by the ruleset on main, make pr.land's run check, and D-03.
 
 ### Pending Todos
 
@@ -193,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T07:21:58.124Z
-Stopped at: Completed 05-05-PLAN.md
+Last session: 2026-09-25T08:33:44.783Z
+Stopped at: Completed 05-06-PLAN.md
 Resume file: None

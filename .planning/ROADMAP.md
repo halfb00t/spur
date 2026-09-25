@@ -221,7 +221,7 @@ into any of them per the milestone's own scoping)
      `gh api repos/halfb00t/spur/rules/branches/main`; `docs/HOW_TO_DEVELOP.md` §8 records
      the command that applied it. *(D-12, supersedes D-06 — added in plan-phase 2026-09-25
      after verifying the repository is public)*
-**Plans**: 5/6 plans executed, in 6 waves (each depends on the one before — `Makefile`,
+**Plans**: 6/6 plans executed, in 6 waves (each depends on the one before — `Makefile`,
 `docs/HOW_TO_DEVELOP.md`, `docs/architecture/decision_log.md` and
 `.github/workflows/required-jobs.txt` are touched by more than one plan, L22 must be
 appended before L23, and the pre-commit hook runs `make verify` in the one working tree)
@@ -245,7 +245,7 @@ appended before L23, and the pre-commit hook runs `make verify` in the one worki
 - [x] 05-05-PLAN.md — The record made true: every current document says 3.12 and cites the
   observed runs; REQ-ci-verified reworded; the STATE.md blocker retired with run URLs
   35963114939 and 36088409707 *(wave 5)*
-- [ ] 05-06-PLAN.md — Gap closure (05-VERIFICATION.md 4/5, CR-01): `find_skip_tokens`
+- [x] 05-06-PLAN.md — Gap closure (05-VERIFICATION.md 4/5, CR-01): `find_skip_tokens`
   searches the whole text it is given and git's cut line is applied only by the hook's own
   entry to an editor buffer, so `make pr.land` refuses a PR body hiding a token below a
   cut line (tracer: the verifier's reproduction as two tests, the fix, the one-line re-run);
@@ -278,4 +278,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
-| 5. CI Observed Green | 5/5 | In Progress|  |
+| 5. CI Observed Green | 6/6 | In Progress|  |
