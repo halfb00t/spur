@@ -1,19 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.1
-status: Awaiting next milestone
-stopped_at: Milestone v0.1 closed and archived — next /gsd-new-milestone
-last_updated: "2026-09-25T14:15:39.378Z"
+milestone: v0.2
+milestone_name: Fit to Shaft
+status: planning
+last_updated: "2026-09-25T14:48:09.649Z"
 last_activity: 2026-09-25
-last_activity_desc: Milestone v0.1 completed and archived
-state_head: 700230b7fc35512d4036c22f4dab948c5d7534cc
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 21
-  completed_plans: 21
-milestone_name: Hardening
-current_phase: 06
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -30,10 +27,10 @@ yet defined — `/gsd-new-milestone`.
 
 ## Current Position
 
-Phase: Milestone v0.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-25 — Milestone v0.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-25 — Milestone v0.2 started
 
 ## Performance Metrics
 

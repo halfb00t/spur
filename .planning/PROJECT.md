@@ -30,15 +30,40 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Next Milestone Goals
+## Current Milestone: v0.2 Fit to Shaft
 
-Not yet defined — `/gsd-new-milestone` picks deliberately from the candidates gathered at
-v0.1 kickoff (`milestones/v0.1-REQUIREMENTS.md`, "Future Requirements"): helical, internal
-and rack gears (bevel needs a product-scope decision first — it contradicts "involute spur
-gear generator"), tooth chamfers, keyway/hex/spline bores, parametric body cutouts
-(spokes, lightening holes, hex patterns), the trochoidal root fillet (would supersede
-L10), and a browser-driven viewer test. Every one of these makes builds heavier, which is
-why v0.1's process pool came first.
+**Goal:** A generated gear mounts on a real shaft and prints light — new bore profiles,
+body cutouts and a tooth-tip chamfer, all additive on the shipped spur pipeline, with
+tooth measurements untouched.
+
+**Target features:**
+- Keyway bore — explicit width, depth and clearance in mm; no standard-table lookup (the
+  user reads the key size off the shaft; a looked-up size is a number someone cuts metal
+  to, and would need the standard cited and its table verified)
+- Hex bore — across-flats plus clearance
+- Body cutouts, each with an explicit count and its own dimensions: spoke arms (arms, arm
+  width, hub Ø, rim wall), circular lightening holes (holes, hole Ø, bolt-circle Ø),
+  hexagonal pattern (cell size, wall thickness; the count follows from the web area and is
+  capped and warned when the build cannot fit the timeout)
+- Tooth-tip chamfer (the bore chamfer already ships)
+- Features compose: cutouts combine with face recesses (cut through the recessed floor,
+  floor fillet intact), with any bore profile, and with each other where geometry allows;
+  the only refusal is a direct dimensional conflict named by field (L03)
+
+**Rules this milestone lives by:**
+- New parameters default to off — every pre-v0.2 shareable link produces the same part and
+  the same numbers (L05); proven by a regression test, not assumed.
+- Every new cut gets a measured build time at its heaviest allowed configuration (recess +
+  hex pattern is the unknown) against `SPUR_BUILD_TIMEOUT=30s`; what cannot fit is
+  capped-and-warned or refused, never silently truncated.
+- `DerivedDimensions` grows additively; caliper, span and centre-distance formulas are not
+  touched.
+
+Picked 2026-09-25 from the candidates gathered at v0.1 kickoff
+(`milestones/v0.1-REQUIREMENTS.md`, "Future Requirements") over "gear family" (helical /
+internal / rack — re-derives module, span and centre distance, the riskiest surface in
+the product, and rack needs a second parameter model) and "precision" (trochoidal fillet
+plus the waived latency bar — no trigger has fired). Both stay candidates for v0.3.
 
 ## Requirements
 
@@ -104,8 +129,21 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-- *(none — v0.1 shipped; the next milestone's requirements are written by
-  `/gsd-new-milestone` into a fresh `REQUIREMENTS.md`)*
+Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
+`REQUIREMENTS.md`.
+
+- [ ] Keyway bore with explicit width, depth and clearance
+- [ ] Hex bore with across-flats and clearance
+- [ ] Spoke-arm body cutout with an explicit arm count
+- [ ] Circular lightening-hole cutout with an explicit hole count
+- [ ] Hexagonal-pattern cutout, cell count capped to the build timeout
+- [ ] Tooth-tip chamfer
+- [ ] Cutouts compose with face recesses, any bore profile and each other; direct conflicts
+      are 422s naming the fields
+- [ ] Every pre-v0.2 parameter set yields identical derived dimensions and an identical
+      export
+- [ ] A measured build time per feature at its heaviest allowed configuration, inside the
+      timeout
 
 ### Out of Scope
 
@@ -119,12 +157,17 @@ pytest — L13). Full list with sources and acceptance evidence:
   floor, CadQuery `Shape` typing, server-side request cancellation, Enji Guard / CVE
   alerting, no built-in authentication) and one `must` (the ten-concurrent latency bar
   waived under L18, Phase 2) — deferred, each with its own trigger.
+- Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
+  not a cut; keyway and hex cover the shafts a hobbyist actually has.
+- Helical, internal/ring and rack gears (v0.2 decision) — candidates for v0.3, one type
+  per phase, helical first; bevel needs a product-scope decision before it is even a
+  candidate (it contradicts "involute spur gear generator").
 
 ## Context
 
 - **This product already ships.** `spur` is a working generator with a web UI, HTTP API,
-  and CLI; `make verify` passes at the current commit. This PROJECT.md documents a shipped
-  v0 baseline, not upcoming work.
+  and CLI; `make verify` passes at the current commit. This PROJECT.md documents the
+  shipped baseline (v0, v0.1) and the current milestone's scope.
 - The 2026-09-21 audit (`docs/review-2026-09-21.md`, findings F1–F8) is history: every
   finding — the unguarded Newton `centre_distance` solver, unbounded-by-bytes caches,
   infeasible absolute-mm defaults, no admission control, an under-pinned dependency
@@ -243,6 +286,18 @@ close (2026-09-25); outcomes in italics:
    the fixes, per `CLAUDE.md`. *Met — retired in Phases 2–4; Phase 6 retired five more
    surfaced during the milestone (10 resolved in total).*
 
+## Success Metric (Milestone v0.2)
+
+Set by the human at milestone start (2026-09-25):
+
+1. **Three interfaces, one change.** Each new feature ships on UI, API and CLI from the one
+   `GearParams` model, with its tests, in the same change.
+2. **A measured number per cut.** A recorded build time per feature at its heaviest allowed
+   configuration — including recess + cutout combined — inside `SPUR_BUILD_TIMEOUT`, with
+   the cap that keeps it there documented.
+3. **Old links unchanged.** A test proves every parameter set valid before v0.2 yields
+   identical derived dimensions and an identical export after v0.2.
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -261,4 +316,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-25 after v0.1 milestone (`/gsd-complete-milestone v0.1`).*
+*Last updated: 2026-09-25 after starting milestone v0.2 (`/gsd-new-milestone`).*

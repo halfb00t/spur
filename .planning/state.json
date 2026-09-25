@@ -1,43 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.1",
-  "phases": [
-    {
-      "number": "1",
-      "name": "v0 Baseline (Shipped)",
-      "status": "complete"
-    },
-    {
-      "number": "2",
-      "name": "CAD Off the Event Loop",
-      "status": "complete"
-    },
-    {
-      "number": "3",
-      "name": "Structured Logging at the Composition Boundary",
-      "status": "complete"
-    },
-    {
-      "number": "4",
-      "name": "Typed Derived-Dimensions Contract",
-      "status": "complete"
-    },
-    {
-      "number": "5",
-      "name": "CI Observed Green",
-      "status": "complete"
-    },
-    {
-      "number": "6",
-      "name": "Address tech debt: merge gate + solid cache",
-      "status": "complete"
-    }
-  ],
+  "milestone": "v0.2",
+  "phases": [],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
   },
-  "updated_at": "2026-09-25T14:15:39.397Z"
+  "updated_at": "2026-09-25T14:48:09.651Z"
 }
