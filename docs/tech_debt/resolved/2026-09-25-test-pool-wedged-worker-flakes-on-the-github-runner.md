@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-25
-Resolved in: ae052f8
+Resolved in: ae052f8, 3c096de
 Source: PR #4's CI during `/gsd-ship 5`, 2026-09-25: runs 36116930241 (head `73535a2`) and
   36117030280 attempt 1 (head `107c714`) failed `test (3.12)` on this one test; the
   re-run of that job on the same `107c714` passed.
@@ -80,6 +80,15 @@ asserts `proc.exitcode == -signal.SIGTERM`; the private-attribute guard test cov
 `_executor_manager_thread` too. Whether the race was the cause is proven by the next
 runner failure printing an exit code instead of `assert not True` -- or by there being
 none.
+
+`ae052f8` left a residual race, found by a Codex re-review of that commit and closed in
+`3c096de`: a timed `manager.join(timeout=5)` gives no guarantee the manager thread
+finished, and reading `proc.exitcode` while it is still running calls `Popen.poll` --
+the same concurrent `waitpid` this fix set out to remove. Reproduced by pausing the
+manager thread before its `returncode` assignment: the join returned at 5.0s with the
+thread still alive, and `exitcode` read `None` (errno `ECHILD`). `3c096de` closes it
+with `assert not manager.is_alive()` between the join and the `exitcode` read, so the
+liveness check happens before the value it gates is trusted.
 
 Revisit when: this test fails again on any run, or `tests/test_pool.py` is touched anyway.
 
