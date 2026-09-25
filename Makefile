@@ -5,10 +5,10 @@ IMAGE       ?= spur:latest
 PLATFORM    ?=
 PYTEST_ARGS ?=
 
-# cadquery-ocp publishes wheels for CPython 3.10-3.12 only. Choosing the interpreter
-# here instead of using a bare `python3` is what stops pip trying to build OpenCascade
-# from source against a newer one and failing several minutes in.
-PYTHON ?= $(shell for p in python3.12 python3.11 python3.10; do \
+# cadquery-ocp publishes wheels up to CPython 3.12, and spur supports 3.12 only (L23).
+# Choosing the interpreter here instead of using a bare `python3` is what stops pip
+# trying to build OpenCascade from source against a newer one and failing minutes in.
+PYTHON ?= $(shell for p in python3.12; do \
             command -v $$p >/dev/null 2>&1 && { echo $$p; break; }; done)
 
 PY    := $(VENV)/bin/python
@@ -30,8 +30,8 @@ help:  ## list the targets
 
 $(STAMP): pyproject.toml
 	@test -n "$(PYTHON)" || { \
-	  echo "make: no python3.10-3.12 on PATH."; \
-	  echo "      cadquery-ocp has no wheels for anything newer and pip cannot build it."; \
+	  echo "make: no python3.12 on PATH."; \
+	  echo "      cadquery-ocp has no wheels past 3.12 and spur supports 3.12 only (L23)."; \
 	  echo "      Install one (brew install python@3.12), or use 'make test-image'."; \
 	  exit 1; }
 	$(PYTHON) -m venv $(VENV)

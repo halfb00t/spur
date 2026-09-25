@@ -113,10 +113,10 @@ def test_executor_processes_attribute_still_exists() -> None:
     `ProcessPoolExecutor` has no public API to kill a running task -- Plan 02-03's
     timeout->terminate->recreate path reaches the OS process through the private,
     undocumented `_processes` dict (pid -> SpawnProcess). Confirmed present on
-    CPython 3.12.13 this session (02-RESEARCH.md, "Pattern 2"); only checked on
-    3.12, and this project's CI also runs 3.10 (L14). If a future interpreter
-    removes or renames this attribute, this test fails `make verify` loudly instead
-    of D-10's termination path silently becoming a no-op.
+    CPython 3.12.13 this session (02-RESEARCH.md, "Pattern 2"); checked on CPython
+    3.12.13, the only supported interpreter (L23). If a future interpreter removes
+    or renames this attribute, this test fails `make verify` loudly instead of
+    D-10's termination path silently becoming a no-op.
     """
     executor = ProcessPoolExecutor(max_workers=1, mp_context=mp.get_context("spawn"))
     try:
