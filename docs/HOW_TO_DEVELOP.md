@@ -140,6 +140,25 @@ gh api -X PATCH repos/halfb00t/spur \
   -f squash_merge_commit_message=PR_BODY
 ```
 
+Стена — тоже настройка репозитория, не в git (D-12): репозиторий публичный ruleset
+`default` (id `23977515`), нацеленный на `main`. Он требует зелёных `test (3.12)`,
+`vendor-bundle` и `image` от GitHub Actions на голове, не отстающей от `main`, и pull
+request на каждое изменение; GitHub отказывает в merge без них и отказывает в прямом
+push (`L22`, D-12). Команда — здесь же, потому что настройка репозитория не лежит в git:
+
+```sh
+gh api repos/halfb00t/spur/rulesets/23977515 --jq '{conditions: {ref_name: {include: ["refs/heads/main"], exclude: []}}, rules: ([.rules[] | select(.type != "required_status_checks")] + [{type: "required_status_checks", parameters: {strict_required_status_checks_policy: true, do_not_enforce_on_create: false, required_status_checks: [{context: "test (3.12)", integration_id: 15368}, {context: "vendor-bundle", integration_id: 15368}, {context: "image", integration_id: 15368}]}}])}' | gh api -X PUT repos/halfb00t/spur/rulesets/23977515 --input -
+
+gh api repos/halfb00t/spur/rules/branches/main   # прочитать стену как есть
+
+gh api -X DELETE repos/halfb00t/spur/rulesets/23977515   # снять стену
+```
+
+Когда меняется `.github/workflows/required-jobs.txt`, поправь контексты в команде
+применения и прогони её заново — она заменяет правило обязательных проверок целиком, а
+не добавляет второе; пока её не перезапустили, стена и `make pr.land` требуют разные
+списки проверок.
+
 Squash-merge PR на GitHub — одна фаза, один коммит в `main`. Затем в основном checkout'е:
 
 ```sh
