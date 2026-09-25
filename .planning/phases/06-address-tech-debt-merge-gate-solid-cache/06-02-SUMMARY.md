@@ -18,7 +18,13 @@ affects: []
 actuals:
   tokens: 5529
   tasks: 2
-  commits: 2
+  commits: 4
+
+# Commit ledger (#3968) -- measured, not narrated: git rev-list --count
+# plan_head_before..HEAD at SUMMARY-write time. 4, not 2 tasks, because the
+# metadata commit itself needed two attempts (see "Issues Encountered").
+commits: 4
+plan_head_before: 528c64f451bf494541d1515780c87394b6a272b6
 
 # Tech tracking
 tech-stack:
