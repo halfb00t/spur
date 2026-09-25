@@ -240,7 +240,11 @@ def message_refusals(subject: str, body: str) -> list[str]:
     squash subject and body -- the same function the commit-msg hook uses
     (`scripts.skip_tokens`), so the two checks cannot drift apart (flagged
     assumption 2). This checks the text that becomes `main`'s commit message (D-03);
-    no commit-msg hook ever sees a squash commit."""
+    no commit-msg hook ever sees a squash commit. Searches the whole subject and body,
+    with no cut: GitHub writes them into the squash commit verbatim, with no git cleanup
+    mode applied at all, so git's `commit -v` cut line means nothing here -- a body
+    hiding a token below a line identical to that cut line used to pass unrefused
+    (CR-01, 05-VERIFICATION.md)."""
     tokens = find_skip_tokens(subject + "\n\n" + body)
     return [
         f"pr.land: the squash message carries a GitHub Actions skip token: {token!r}. "

@@ -14,7 +14,10 @@ holes, for every tool that commits here -- human, `gsd-ship`, or anything else.
 
 This module serves two callers: the `no-skip-token` commit-msg hook below (`main`), and,
 from Plan 05-02, `make pr.land`'s check of the squash commit's subject and body -- one
-pattern, so the two checks cannot drift apart.
+pattern, so the two checks cannot drift apart. Both call one function, `find_skip_tokens`,
+on the text each hands in: the hook's `main` removes what git discards below its cut line
+first; `make pr.land` hands in the PR title and body whole, because GitHub records them
+verbatim with no git cleanup step at all (CR-01, 05-VERIFICATION.md, Plan 05-06).
 
 The match is deliberately broader than GitHub's own: case-insensitive, anywhere in the
 message. GitHub's documentation does not state a case rule -- over-matching costs a
@@ -38,14 +41,15 @@ SKIP_TOKEN = re.compile(
     re.IGNORECASE,
 )
 
-# `git commit -v` (or `commit.verbose=true`) hands the commit-msg hook the whole editor
-# buffer, including the staged diff below git's own cut line -- discarded by git before
-# the commit is recorded. Found by a planning probe in a scratch repository: the line is
-# exactly a comment character, one space, 24 dashes, one space, `>8`, one space, 24
-# dashes (`# ------------------------ >8 ------------------------`, confirmed byte for
-# byte against a real `git commit -v` buffer). Without this cut, a whole-file scan
-# refuses a commit whose only token is in the diff of an added file -- and this phase's
-# own docs and tests name tokens.
+# git truncates a commit message at this line only in `commit -v`/`commit.verbose` mode
+# or with an explicit `--cleanup=scissors` -- never for a plain `-m`/`-F` commit, and
+# never for text (like a GitHub PR body) that has no git cleanup step at all. Found by a
+# planning probe in a scratch repository: the line is exactly a comment character, one
+# space, 24 dashes, one space, `>8`, one space, 24 dashes
+# (`# ------------------------ >8 ------------------------`, confirmed byte for byte
+# against a real `git commit -v` buffer). The cut is applied by `main` alone, below --
+# never inside `find_skip_tokens` -- so a caller whose text never went through git's
+# editor is never cut by default (CR-01, 05-VERIFICATION.md, Plan 05-06 Decision (a)).
 _SCISSORS = re.compile(r"^# -{24} >8 -{24}$", re.MULTILINE)
 
 
@@ -56,10 +60,13 @@ def message_to_check(raw: str) -> str:
 
 
 def find_skip_tokens(message: str) -> list[str]:
-    """Every skip token in `message_to_check(message)`, in order of appearance, as the
-    matched text. Pure -- no I/O, so `pr.land` (Plan 05-02) can call it against a squash
-    subject and body with no message-file round trip."""
-    return [m.group(0) for m in SKIP_TOKEN.finditer(message_to_check(message))]
+    """Every skip token in the whole of `message`, in order of appearance, as the matched
+    text -- no cut. Pure -- no I/O, so `pr.land` (Plan 05-02) can call it against a squash
+    subject and body with no message-file round trip. The cut is the hook's own step
+    (`main`, below), applied only to the editor buffer git hands a commit-msg hook -- a
+    body that hid a token below a forged cut line passed the check that used to cut here
+    (CR-01, 05-VERIFICATION.md)."""
+    return [m.group(0) for m in SKIP_TOKEN.finditer(message)]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -74,7 +81,9 @@ def main(argv: list[str] | None = None) -> int:
     # Replace, not raise: an invalid-UTF-8 byte in the message must still be checked --
     # refused if it carries a token, accepted if it does not -- never a traceback.
     raw = Path(args.message_file).read_text(encoding="utf-8", errors="replace")
-    tokens = find_skip_tokens(raw)
+    # The buffer git hands a commit-msg hook can carry `git commit -v`'s staged diff
+    # below the cut line -- cut here, the hook's own step (see `_SCISSORS` above).
+    tokens = find_skip_tokens(message_to_check(raw))
     if not tokens:
         return 0
 

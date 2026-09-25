@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.skip_tokens import find_skip_tokens, message_to_check
+from scripts.skip_tokens import find_skip_tokens, main, message_to_check
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -98,12 +98,28 @@ def test_two_words_without_brackets_is_a_near_miss() -> None:
     assert find_skip_tokens("fix: bug, skip ci for this one") == []
 
 
-def test_token_only_below_the_scissors_line_gives_no_tokens() -> None:
+def test_find_skip_tokens_searches_the_whole_text_it_is_given() -> None:
+    """The cut is the hook's own step (`main`), not the search's (CR-01,
+    05-VERIFICATION.md): a caller whose text never passed through git's editor -- like
+    `pr.land`'s PR title and body -- must not get the cut by default."""
+    message = (
+        "A normal PR description.\n"
+        "\n"
+        "# ------------------------ >8 ------------------------\n"
+        "[skip ci]\n"
+    )
+    assert find_skip_tokens(message) == ["[skip ci]"]
+
+
+def test_token_only_below_the_scissors_line_gives_no_tokens(
+    tmp_path: Path,
+) -> None:
     """`git commit -v` hands the commit-msg hook the whole editor buffer, including the
     staged diff below git's cut line (flagged assumption 3, confirmed live in a scratch
     repo during planning: the cut line is exactly `# ` + 24 dashes + ` >8 ` + 24
     dashes). A token that only appears in that diff -- e.g. a file this phase adds that
-    itself names a token -- must not refuse the commit."""
+    itself names a token -- must not refuse the commit. Pins the hook's entry
+    (`main`), the one caller that applies the cut."""
     message = (
         "docs: add the skip-token doc\n\n"
         "# ------------------------ >8 ------------------------\n"
@@ -112,17 +128,25 @@ def test_token_only_below_the_scissors_line_gives_no_tokens() -> None:
         "diff --git a/f b/f\n"
         "+a line naming [skip ci] inside the diff\n"
     )
-    assert find_skip_tokens(message) == []
+    path = tmp_path / "COMMIT_EDITMSG"
+    path.write_text(message, encoding="utf-8")
+    assert main([str(path)]) == 0
 
 
-def test_token_above_and_below_the_scissors_line_is_found_once() -> None:
+def test_token_above_and_below_the_scissors_line_is_found_once(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Pins the hook's entry (`main`), the one caller that applies the cut."""
     message = (
         "docs: add the skip-token doc [skip ci]\n\n"
         "# ------------------------ >8 ------------------------\n"
         "diff --git a/f b/f\n"
         "+another [skip ci] mention inside the diff\n"
     )
-    assert find_skip_tokens(message) == ["[skip ci]"]
+    path = tmp_path / "COMMIT_EDITMSG"
+    path.write_text(message, encoding="utf-8")
+    assert main([str(path)]) == 1
+    assert capsys.readouterr().out.count("'[skip ci]'") == 1
 
 
 def test_message_to_check_returns_all_of_raw_when_there_is_no_scissors_line() -> None:

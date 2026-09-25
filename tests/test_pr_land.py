@@ -158,6 +158,18 @@ REQUIRED = frozenset({"test (3.12)", "vendor-bundle", "image"})
 # tests use for `head_refusals`, which now requires a `compare` argument as of Task 2.
 NOT_BEHIND = (1, 0)
 
+# The verifier's reproduction (05-VERIFICATION.md "Independent Assessment of Code Review
+# CR-01"): a clean description, then a line identical to git's `commit -v` cut line, then
+# a skip token. GitHub writes a PR body into the squash commit verbatim -- there is no
+# git cleanup step to discard anything below this line for `pr.land`'s text, unlike a
+# real `git commit -v` buffer (05-06-PLAN.md Decision (a)).
+CUT_LINE_BODY = (
+    "A normal PR description.\n"
+    "\n"
+    "# ------------------------ >8 ------------------------\n"
+    "[skip ci]\n"
+)
+
 
 # --- required_jobs() -------------------------------------------------------------
 
@@ -416,6 +428,15 @@ def test_message_refusals_token_in_a_later_paragraph_of_the_body_is_found() -> N
     assert "[ci skip]" in refusals[0]
 
 
+def test_message_refusals_checks_the_whole_body_even_below_a_git_cut_line() -> None:
+    """CR-01 / 05-VERIFICATION.md: GitHub writes the PR title and body into the squash
+    commit verbatim, so the commit-msg hook's cut has no meaning for this text -- this
+    body passed `message_refusals` with zero refusals before this plan."""
+    refusals = message_refusals("safe subject", CUT_LINE_BODY)
+    assert len(refusals) == 1
+    assert "[skip ci]" in refusals[0]
+
+
 # --- parsers ------------------------------------------------------------------------
 
 
@@ -655,6 +676,37 @@ def test_land_unparseable_pr_read_refuses_no_merge_call(
     assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.calls)
     out = capsys.readouterr().out
     assert "nothing was merged" in out
+
+
+def test_land_refuses_a_token_hidden_below_a_git_cut_line_in_the_pr_body(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The whole path: a green, current head is not enough when the squash text carries
+    a token behind a forged git cut line (CR-01 / 05-VERIFICATION.md's reproduction)."""
+    pr_json = json.dumps(
+        {
+            "number": 3, "state": "OPEN", "baseRefName": "main",
+            "headRefOid": PR3_HEAD_SHA,
+            "headRefName": "gsd/phase-04-typed-derived-dimensions-contract",
+            "title": "Phase 4: Typed Derived-Dimensions Contract",
+            "body": CUT_LINE_BODY,
+        }
+    )
+    runner = (
+        FakeRunner()
+        .on("pr view 3 --json number", cp(0, pr_json))
+        .on("git diff --quiet", cp(0))
+        .on("git diff --cached --quiet", cp(0))
+        .on(f"compare/main...{PR3_HEAD_SHA}", cp(0, CURRENT_COMPARE_JSON))
+        .on(f"runs?head_sha={PR3_HEAD_SHA}", cp(0, PR3_RUNS_JSON))
+        .on("runs/36088409707/jobs", cp(0, PR3_JOBS_JSON))
+    )
+    result = land(3, runner, sleep=lambda _: None)
+    assert result == 1
+    out = capsys.readouterr().out
+    assert "[skip ci]" in out
+    assert "nothing was merged" in out
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.calls)
 
 
 def test_land_gh_pr_merge_failure_returns_1_no_poll_no_follow_up(
