@@ -44,7 +44,7 @@ make bench    bench.latency (host) + bench.memory (Docker) -- NOT part of the ga
 ```
 
 The same `make verify` runs in three places: the pre-commit hook
-(`.pre-commit-config.yaml`), CI (`.github/workflows/ci.yml`, on Python 3.10 and 3.12),
+(`.pre-commit-config.yaml`), CI (`.github/workflows/ci.yml`, on Python 3.12),
 and `make worktree.land` before a merge. One definition of "passing".
 
 Merges to `main` go through `make pr.land PR=N`, which refuses a PR whose head lacks a
@@ -65,8 +65,8 @@ prove it still matches `web/` (L11).
 
 ## Platform notes
 
-`make venv` picks `python3.12`/`3.11`/`3.10` itself and says so if it cannot find one,
-because a newer default `python3` sends pip off building OpenCascade from source. On
+`make venv` picks `python3.12` itself and says so if it cannot find one, because a
+newer default `python3` sends pip off building OpenCascade from source. On
 Apple silicon, `PLATFORM=linux/arm64 make image` avoids inheriting an emulated
 `DOCKER_DEFAULT_PLATFORM=linux/amd64` from the shell.
 

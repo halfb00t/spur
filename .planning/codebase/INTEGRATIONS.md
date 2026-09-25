@@ -64,13 +64,13 @@ The application does not export observability signals. For production deployment
 
 **Hosting:** Docker container
 
-- `.github/workflows/ci.yml` - GitHub Actions test matrix (Python 3.10 and 3.12)
+- `.github/workflows/ci.yml` - GitHub Actions test matrix (Python 3.12)
 - Builds for `linux/amd64` and `linux/arm64` (Apple Silicon, Graviton, Raspberry Pi 5 compatible)
 - No dependency on external registries; image builds in CI
 
 **CI Pipeline:** GitHub Actions (`.github/workflows/ci.yml`)
 
-- **Job 1 (test):** `make verify` on Python 3.10 and 3.12
+- **Job 1 (test):** `make verify` on Python 3.12
   - Runs ruff, mypy `--strict`, import-linter, unfinished-work scan, pytest
   - ~11 seconds warm (L13)
 - **Job 2 (vendor-bundle):** Rebuilds three.js bundle; fails if it drifts from source (L11)
@@ -79,6 +79,12 @@ The application does not export observability signals. For production deployment
   - Detects incomplete dependency closures before push
 
 No external CI services (no Travis, CircleCI, Buildkite, GitLab CI, etc.).
+
+Runs are observed green — main push run
+<https://github.com/halfb00t/spur/actions/runs/35963114939> — and merges to `main` go
+through `make pr.land`, which requires every job in
+`.github/workflows/required-jobs.txt` (L22), behind a ruleset on `main` that makes
+GitHub refuse a merge without those jobs green on an up-to-date head (D-12).
 
 ## Environment Configuration
 

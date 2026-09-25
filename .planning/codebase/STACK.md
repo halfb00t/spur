@@ -10,9 +10,9 @@ last_mapped_at: 2026-09-21
 
 **Primary:**
 
-- Python 3.10–3.12 - Backend: API server, CLI, CAD kernel integration
-  - Floor set by `cadquery-ocp` wheel availability (no pre-built wheels for 3.13+)
-  - Ruff targets 3.10 (L01); CI runs both 3.10 and 3.12
+- Python 3.12 only (L23) - Backend: API server, CLI, CAD kernel integration
+  - Ceiling set by `cadquery-ocp` wheel availability (no pre-built wheels for 3.13+)
+  - Ruff targets 3.12; CI runs 3.12
 
 **Secondary:**
 
@@ -24,7 +24,7 @@ last_mapped_at: 2026-09-21
 
 **Environment:**
 
-- CPython 3.10–3.12 (server and CLI)
+- CPython 3.12 (server and CLI)
 - Browsers: modern ES2020 support (Chrome, Firefox, Safari, Edge)
 
 **Package Manager:**
@@ -111,7 +111,7 @@ See `compose.yaml` for production Docker environment setup.
 
 - `Makefile` - Entry point for all development commands (`make verify`, `make serve`, etc.)
 - `pyproject.toml` - Python project metadata, linter/type-checker/import-boundary rules
-  - Ruff config: `target-version = py310`, line length 100, high-signal rule set (L16)
+  - Ruff config: `target-version = py312`, line length 100, high-signal rule set (L16)
   - mypy config: strict mode, Python 3.12 for stubs (numpy reason), pydantic plugin (L14)
   - pytest config: `--strict-markers`, `--strict-config`, `xfail_strict`
   - import-linter contracts: CAD kernel isolation, CLI isolation from app (L04, L06)
@@ -138,7 +138,7 @@ See `compose.yaml` for production Docker environment setup.
 
 **Development:**
 
-- Python 3.10, 3.11, or 3.12 (one of these on PATH)
+- Python 3.12 on PATH
 - macOS, Linux, or WSL2 (no Windows native OCCT wheels; Docker works everywhere)
 - ~1.4 GB disk for `.venv` (vendor and headers for CAD kernel)
 - Node.js 20+ (only to rebuild three.js bundle; not needed for normal development)
