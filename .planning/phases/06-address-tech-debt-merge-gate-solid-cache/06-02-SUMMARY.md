@@ -252,7 +252,18 @@ passed (`Passed`, exit 0).
 
 ## Issues Encountered
 
-None.
+- `gsd_run query commit` (the SDK's own metadata-commit wrapper) failed the final
+  `docs(06-02): complete commit-msg hook cut-line plan` commit twice with
+  `reason: "commit_timeout"` -- its internal 30s budget for the `git commit` subprocess is
+  shorter than this repository's pre-commit `verify` hook, which runs the full
+  `make verify` (measured 32.10s-32.57s in this session, dominated by the CAD test suite).
+  No `.git/index.lock` remained and no git process was still running after either
+  timeout, so this was not a stuck lock -- it is a structural mismatch between the SDK's
+  fixed timeout and this repository's own hook cost, unrelated to the two task commits
+  (which used a plain `git commit` with the Bash tool's larger default timeout and
+  succeeded immediately both times). Resolved by committing the same already-staged files
+  with a direct `git commit` -- the same underlying operation the wrapper performs, run
+  through the installed hooks with no bypass, just without the tool-level 30s cap.
 
 ## User Setup Required
 
