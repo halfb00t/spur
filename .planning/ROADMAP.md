@@ -29,7 +29,7 @@ tracked.
   exist.
 - [x] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real (completed 2026-09-24)
   shape, checked by mypy with `disallow_any_explicit` on.
-- [ ] **Phase 5: CI Observed Green** - CI is the trusted merge gate: every `main` commit
+- [x] **Phase 5: CI Observed Green** - CI is the trusted merge gate: every `main` commit (completed 2026-09-25)
   has a run, red or run-less merges are refused, Python 3.12 only.
 
 ## Phase Details
@@ -278,4 +278,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
-| 5. CI Observed Green | 6/6 | In Progress|  |
+| 5. CI Observed Green | 6/6 | Complete    | 2026-09-25 |

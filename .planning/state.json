@@ -26,13 +26,13 @@
     {
       "number": "5",
       "name": "CI Observed Green",
-      "status": "in_progress"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 05 of 5 · executing"
+    "command": "/gsd:new-milestone",
+    "label": "Start a new milestone",
+    "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-09-25T08:33:27.373Z"
+  "updated_at": "2026-09-25T08:51:37.898Z"
 }

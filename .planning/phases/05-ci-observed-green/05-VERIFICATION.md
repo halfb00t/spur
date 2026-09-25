@@ -28,7 +28,6 @@ covered_files:
   - ".planning/phases/05-ci-observed-green/05-06-SUMMARY.md"
   - ".planning/phases/05-ci-observed-green/05-CONTEXT.md"
   - ".planning/phases/05-ci-observed-green/05-REVIEW.md"
-  - ".planning/phases/05-ci-observed-green/05-VERIFICATION.md"
   - ".pre-commit-config.yaml"
   - "AGENTS.md"
   - "Makefile"
@@ -51,7 +50,7 @@ covered_files:
   - "tests/test_pool.py"
   - "tests/test_pr_land.py"
   - "tests/test_skip_tokens.py"
-covered_digest: "v1:sha256:78652c95716b65471e89c82728d875f6a03939767c3603fa4270ff87b5dc786c"
+covered_digest: "v1:sha256:6c398801569c6ce62e4553e3fb6f4a3acb09cd3f4e4e898babced068d3baea97"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
