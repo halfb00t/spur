@@ -21,7 +21,7 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 .PHONY: help venv verify lint typecheck lint-imports no-fake-done test serve \
         check image test-image smoke up down logs lock vendor vendor-check \
         bench bench.latency bench.memory \
-        worktree.bootstrap worktree.new worktree.land clean clean-docker
+        worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
 
 help:  ## list the targets
 	@grep -hE '^[a-z][a-z.-]*:.*##' $(MAKEFILE_LIST) | sed 's/:[^#]*##/\t/' | expand -t18
@@ -165,6 +165,12 @@ worktree.land:  ## SLUG=<slug> MSG="<commit>" : verify, squash-merge, remove the
 	git worktree remove --force $$WT; \
 	git branch -D agent/$(SLUG); \
 	echo "landed agent/$(SLUG) on $$BASE"
+
+# --- landing on main: the merge gate (L22) ------------------------------------------
+
+pr.land: $(STAMP)  ## PR=<n> : squash-merge a PR only if its head is green and current with main
+	@test -n "$(PR)" || { echo "PR= required"; exit 1; }
+	$(PY) -m scripts.pr_land $(PR)
 
 # --- cleanup -----------------------------------------------------------------------
 
