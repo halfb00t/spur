@@ -136,6 +136,26 @@ RED_RUN_JOBS_JSON = (
     '{"name":"test (3.12)","status":"completed","conclusion":"success"}]'
 )
 
+# `gh api repos/halfb00t/spur/actions/workflows/ci.yml/runs?head_sha=73535a2...`
+# (2026-09-25, this plan's own execution): a completed run whose own conclusion is
+# `failure` -- `test (3.12)` failed, `vendor-bundle` and `image` green (a Phase 5 PR
+# head, D-04's live case: a run can fail on a job `required-jobs.txt` names, even
+# while every job the run *itself* names is a separate question from that list).
+RUN_36116930241_HEAD_SHA = "73535a24ce57258f23049d72e8c99eb1d5c0ba90"
+RUN_36116930241_RUNS_JSON = (
+    '[{"conclusion":"failure",'
+    '"html_url":"https://github.com/halfb00t/spur/actions/runs/36116930241",'
+    '"id":36116930241,"status":"completed"}]'
+)
+
+# `gh api repos/halfb00t/spur/actions/runs/36116930241/jobs?per_page=100`
+# (2026-09-25, this plan's own execution).
+RUN_36116930241_JOBS_JSON = (
+    '[{"conclusion":"failure","name":"test (3.12)","status":"completed"},'
+    '{"conclusion":"success","name":"vendor-bundle","status":"completed"},'
+    '{"conclusion":"success","name":"image","status":"completed"}]'
+)
+
 # `gh pr view 2 --json ...statusCheckRollup...` (RESEARCH.md "Verified Live State"):
 # a MERGED PR whose head carried a skip token -- zero recorded checks, not a red run.
 PR2_HEAD_SHA = "20b63e453a3cd0c72e5d0f995a107a238c652a90"
@@ -283,7 +303,9 @@ def test_head_refusals_empty_jobs_list_reports_every_required_job_missing() -> N
 
 def test_head_refusals_one_red_job_names_it_and_its_conclusion() -> None:
     """Run 35993984796's own recorded shape: `test (3.10)` failed. `test (3.12)` is
-    the job in `REQUIRED` here, so put the failure there instead -- same shape."""
+    the job in `REQUIRED` here, so put the failure there instead -- same shape. The
+    run's own conclusion is refused too now (D-04), in addition to the job -- the
+    count rises by one, and exactly one line names it (`concluded`)."""
     run = WorkflowRun(id=1, status="completed", conclusion="failure", html_url="u")
     jobs = [
         {"name": "test (3.12)", "conclusion": "failure"},
@@ -291,20 +313,57 @@ def test_head_refusals_one_red_job_names_it_and_its_conclusion() -> None:
         {"name": "image", "conclusion": "success"},
     ]
     refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED)
+    assert len(refusals) == 2
+    assert any("test (3.12)" in r and "failure" in r for r in refusals)
+    assert sum("concluded" in r for r in refusals) == 1
+
+
+def test_head_refusals_a_failed_run_is_refused_even_when_every_listed_job_is_green() -> None:
+    """The debt file's own case
+    (2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md): a run can fail
+    on a job the local `required-jobs.txt` does not know yet -- a PR that grows the
+    job set, landed from a checkout that predates it. The run's own verdict catches
+    it (D-04), even with every listed job green."""
+    run = WorkflowRun(
+        id=36116930241,
+        status="completed",
+        conclusion="failure",
+        html_url="https://github.com/halfb00t/spur/actions/runs/36116930241",
+    )
+    jobs = [{"name": name, "conclusion": "success"} for name in sorted(REQUIRED)] + [
+        {"name": "lint", "conclusion": "failure"}
+    ]
+    refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED)
     assert len(refusals) == 1
-    assert "test (3.12)" in refusals[0]
     assert "failure" in refusals[0]
+    assert "actions/runs/36116930241" in refusals[0]
 
 
 def test_head_refusals_matches_the_recorded_red_run_verbatim() -> None:
     """The literal shape run 35993984796 returned, unmodified -- a required set that
-    includes `test (3.10)` (this task's pre-D-09 set) catches the one red job."""
+    includes `test (3.10)` (this task's pre-D-09 set) catches the one red job. The
+    run's own conclusion is refused too now (D-04) -- the count rises by one."""
     jobs = parse_jobs(RED_RUN_JOBS_JSON)
     run = WorkflowRun(id=35993984796, status="completed", conclusion="failure", html_url="u")
     refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED | {"test (3.10)"})
-    assert len(refusals) == 1
-    assert "test (3.10)" in refusals[0]
-    assert "failure" in refusals[0]
+    assert len(refusals) == 2
+    assert any("test (3.10)" in r and "failure" in r for r in refusals)
+    assert sum("concluded" in r for r in refusals) == 1
+
+
+def test_check_head_names_the_run_conclusion_of_recorded_run_36116930241() -> None:
+    """The real failed run 36116930241, through `check_head`: two refusals -- the
+    run's own conclusion (with its URL) and the one listed job that failed on it."""
+    runner = (
+        FakeRunner()
+        .on(f"compare/main...{RUN_36116930241_HEAD_SHA}", cp(0, CURRENT_COMPARE_JSON))
+        .on(f"runs?head_sha={RUN_36116930241_HEAD_SHA}", cp(0, RUN_36116930241_RUNS_JSON))
+        .on("runs/36116930241/jobs", cp(0, RUN_36116930241_JOBS_JSON))
+    )
+    refusals = check_head(RUN_36116930241_HEAD_SHA, runner, REQUIRED)
+    assert len(refusals) == 2
+    assert any("actions/runs/36116930241" in r and "failure" in r for r in refusals)
+    assert any("test (3.12)" in r for r in refusals)
 
 
 def test_head_refusals_a_required_job_cancelled_or_skipped_is_refused() -> None:
@@ -316,8 +375,9 @@ def test_head_refusals_a_required_job_cancelled_or_skipped_is_refused() -> None:
             {"name": "image", "conclusion": "success"},
         ]
         refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED)
-        assert len(refusals) == 1
-        assert bad_conclusion in refusals[0]
+        assert len(refusals) == 2
+        assert any(bad_conclusion in r for r in refusals)
+        assert sum("concluded" in r for r in refusals) == 1
 
 
 # --- compare: behind / identical / ahead --------------------------------------------
@@ -346,10 +406,11 @@ def test_head_refusals_ahead_not_behind_no_compare_refusal() -> None:
     assert head_refusals(PR3_HEAD_SHA, (3, 0), run, jobs, REQUIRED) == []
 
 
-def test_head_refusals_several_problems_at_once_prints_both_lines() -> None:
-    """Behind, and one red job, together -- both refusal lines present (the third
-    line, a skip token, is `message_refusals`' own concern -- tested combined at the
-    `land()` level below)."""
+def test_head_refusals_several_problems_at_once_prints_every_line() -> None:
+    """Behind, the run's own conclusion (D-04), and one red job, together -- all
+    three refusal lines present (a fourth possible line, a skip token, is
+    `message_refusals`' own concern -- tested combined at the `land()` level
+    below)."""
     run = WorkflowRun(id=1, status="completed", conclusion="failure", html_url="u")
     jobs = [
         {"name": "test (3.12)", "conclusion": "failure"},
@@ -357,9 +418,10 @@ def test_head_refusals_several_problems_at_once_prints_both_lines() -> None:
         {"name": "image", "conclusion": "success"},
     ]
     refusals = head_refusals(PR3_HEAD_SHA, (5, 2), run, jobs, REQUIRED)
-    assert len(refusals) == 2
+    assert len(refusals) == 3
     assert any("behind" in r for r in refusals)
     assert any("test (3.12)" in r for r in refusals)
+    assert sum("concluded" in r for r in refusals) == 1
 
 
 # --- ordering: several runs for one sha ----------------------------------------------

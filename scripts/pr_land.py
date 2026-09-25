@@ -265,8 +265,14 @@ def head_refusals(
     push, let CI run on the real tree, retry); identical to `main`
     (`ahead_by == 0 and behind_by == 0`) is refused as nothing to merge. Then: no run
     for `sha` -- refused, naming the sha; a run not `completed` -- refused as still
-    running, with its URL; each required job missing from `jobs` or not `success` --
-    refused, naming the job and its conclusion. Return a list; empty means go."""
+    running, with its URL; a completed run whose own `conclusion` is not `success` --
+    refused, naming the conclusion and the run's URL (D-04: `required-jobs.txt` is
+    read from the local checkout, so a job a PR adds is known to the run before it is
+    known to the list -- the run's own verdict catches it even when every *listed*
+    job is green); each required job missing from `jobs` or not `success` -- refused,
+    naming the job and its conclusion (kept alongside the run-conclusion check: it is
+    what names a *missing* job, which a green run conclusion cannot). Return a list;
+    empty means go."""
     ahead_by, behind_by = compare
     refusals: list[str] = []
     if behind_by > 0:
@@ -283,6 +289,11 @@ def head_refusals(
     if run.status != "completed":
         refusals.append(f"pr.land: the newest run for {sha} is still running: {run.html_url}")
         return refusals
+    if run.conclusion != "success":
+        refusals.append(
+            f"pr.land: the newest run for {sha} concluded {run.conclusion!r}, not success: "
+            f"{run.html_url}"
+        )
     by_name = {job["name"]: job["conclusion"] for job in jobs}
     for name in sorted(required):
         conclusion = by_name.get(name)
