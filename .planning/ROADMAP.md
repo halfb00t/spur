@@ -281,15 +281,30 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
 | 5. CI Observed Green | 6/6 | Complete    | 2026-09-25 |
-| 6. Address tech debt: merge gate + solid cache | 0/0 | Not started | — |
+| 6. Address tech debt: merge gate + solid cache | 0/4 | Planned | — |
 
 ### Phase 6: Address tech debt: merge gate + solid cache
 
-**Goal:** [To be planned]
+**Goal:** Close the five open tech-debt items in the merge gate and the solid cache, each resolved in the commit that fixes it: the `commit-msg` hook checks the whole buffer git hands it (no hand-typed cut line can hide a skip token); `make pr.land` refuses a run whose own conclusion is not `success`, resolves `jobs.<id>.name` overrides in the drift test, and reports only what it observed after the merge; `_build_cached` never hands out a solid carrying a mesh (export works on a copy, `.BoundingBox()` stays exact, the autouse cache reset fixture is deleted). Every behaviour change ships with its test, the copy-vs-strip numbers are measured and written down, `make verify` stays green.
 **Requirements**: TBD
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 4 plans, in 4 waves (each depends on the one before -- `docs/tech_debt/INDEX.md`
+takes a row move in every plan, `scripts/pr_land.py`, `tests/test_pr_land.py` and
+`docs/HOW_TO_DEVELOP.md` are shared by 06-02..06-04, L24 must precede L25, and the
+pre-commit hook runs `make verify` in the one working tree)
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 6 to break down)
+- [ ] 06-01-PLAN.md — The solid cache: STL export meshes `shape.copy()`, so a cached solid
+  never carries a mesh -- `.BoundingBox()` stays exact and a preview after a fine export is
+  a preview (tracer); the autouse cache reset deleted; L24 with the measured costs; the
+  debt retired *(wave 1)*
+- [ ] 06-02-PLAN.md — The commit-msg hook reads the whole buffer, no cut: a real
+  editor-session commit hiding a token below a hand-typed cut line is refused (tracer); the
+  refusal names the line and the `-v` way out, §6 says the same; the debt retired *(wave 2)*
+- [ ] 06-03-PLAN.md — `make pr.land`'s verdict: a run whose own `conclusion` is not
+  `success` is refused, proven on run 36116930241 (tracer); the drift test reads
+  `jobs.<id>.name`; §8's up-to-date-`main` rule; two debts retired *(wave 3)*
+- [ ] 06-04-PLAN.md — After the merge, `make pr.land` reports only what it observed
+  (tracer); the docstring and §8 say which half the ruleset carries; L25 amends L22; the
+  last debt retired; STATE.md cites run 36122394253 *(wave 4)*
