@@ -47,6 +47,9 @@ Pointers only; the *why* is in `decision_log.md`.
   comment, a commit message or a reply.
 - Explicit types at every boundary. Vendor types stop at their boundary — no CadQuery
   object escapes `model.py`.
+- `Any` is not written here (`L21`), and the type checker enforces it
+  (`disallow_any_explicit`). A genuinely untyped value is `object`, narrowed where it is
+  used; a value a library already names keeps the library's own alias.
 - Self-documenting names. Domain names over pattern names: `recess_radii`, `root_fillet`,
   `_bore_rim_edges` — not `Manager`, `Processor`, `handle`.
 - One operation per routine. `model.py`'s build pipeline is one product decision per step

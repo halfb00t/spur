@@ -27,7 +27,7 @@ tracked.
 - [x] **Phase 3: Structured Logging at the Composition Boundary** - Production requests (completed 2026-09-24)
   leave evidence: a structured logger at startup covers the decision branches that already
   exist.
-- [ ] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real
+- [x] **Phase 4: Typed Derived-Dimensions Contract** - `derive()`'s response gets a real (completed 2026-09-24)
   shape, checked by mypy with `disallow_any_explicit` on.
 - [ ] **Phase 5: CI Observed Green** - The CI workflow is proven by a real GitHub Actions
   run, not by hand-verification.
@@ -165,7 +165,21 @@ logger)
   4. `docs/tech_debt/active/2026-09-21-untyped-info-contract.md` is `Status: resolved`
      with its commit sha recorded, `git mv`'d into `docs/tech_debt/resolved/`, and its row
      moved in `docs/tech_debt/INDEX.md` — in the same commit as the fix.
-**Plans**: TBD
+**Plans**: 3/3 plans executed, in 3 waves (each depends on the one before — `app.py`, `cli.py`,
+`tests/test_api.py` and `tests/test_calc.py` are touched by more than one plan, and the
+pre-commit hook runs `make verify` in the one working tree, so there is no honest
+parallelism here)
+
+- [x] 04-01-PLAN.md — The typed info contract, end to end: `DerivedDimensions` built once
+  in `derive(p, mate_teeth=…)`, read by `/api/info` and `spur info`, proven by the
+  CLI-equals-API, OpenAPI and `app.js` tests; the gear-maths docs made true *(wave 1)*
+- [x] 04-02-PLAN.md — `/api/health` as `HealthReport` (`pool: null`, not absent),
+  `/api/schema` as `JsonSchemaValue`, and every remaining explicit `Any` removed, rule
+  still off, down to the six model class lines *(wave 2)*
+- [x] 04-03-PLAN.md — `spur info --mate-teeth` given `InfoQuery`'s range (REQ-cli-parity,
+  L08), then `L21` (supersedes L14) and the house rule, then `disallow_any_explicit` on
+  via the pydantic plugin's typed-initialiser settings (human decision, 2026-09-24),
+  with the debt file retired in the same commit *(wave 3)*
 
 ### Phase 5: CI Observed Green
 
@@ -210,5 +224,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 1. v0 Baseline (Shipped) | N/A | Complete | Shipped (pre-dates this roadmap) |
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
-| 4. Typed Derived-Dimensions Contract | 0/TBD | Not started | - |
+| 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
 | 5. CI Observed Green | 0/TBD | Not started | - |

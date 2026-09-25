@@ -133,7 +133,7 @@ it retires. Feature work is deferred to the next milestone ("Future Requirements
 
 ### Contracts & Types
 
-- [ ] **REQ-typed-derived-dimensions**: `derive()` returns a `DerivedDimensions` model with
+- [x] **REQ-typed-derived-dimensions**: `derive()` returns a `DerivedDimensions` model with
   explicit optional fields instead of `dict[str, Any]`; `disallow_any_explicit` is turned on
   in the mypy config and `make verify` passes with it on.
   - *Retires*: `docs/tech_debt/active/2026-09-21-untyped-info-contract.md` (must), and L14's
@@ -223,7 +223,7 @@ under "Future Requirements" above — this table is for things that are not plan
 | REQ-cad-off-event-loop | Phase 2 | Complete |
 | REQ-measured-memory-ceiling | Phase 2 | Complete |
 | REQ-structured-logging | Phase 3 | Complete |
-| REQ-typed-derived-dimensions | Phase 4 | Pending |
+| REQ-typed-derived-dimensions | Phase 4 | Complete |
 | REQ-ci-verified | Phase 5 | Pending |
 
 **Coverage:**

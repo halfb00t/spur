@@ -9,10 +9,8 @@ including the ASGI stack under it -- using nothing that isn't already in the ima
 
 from __future__ import annotations
 
-from collections.abc import MutableMapping
-from typing import Any
-
 import anyio
+from starlette.types import Message
 
 from spur.app import app
 
@@ -23,10 +21,13 @@ async def get(path: str, query: bytes = b"") -> tuple[int, bytes]:
     body = bytearray()
     pending = [{"type": "http.request", "body": b"", "more_body": False}]
 
-    async def receive() -> MutableMapping[str, Any]:
+    async def receive() -> Message:
         return pending.pop(0) if pending else {"type": "http.disconnect"}
 
-    async def send(message: MutableMapping[str, Any]) -> None:
+    # Message is the type app.__call__ itself declares (starlette.types.ASGIApp's
+    # Send parameter) -- using the library's own alias here needs no cast, and an
+    # Any inside it is not explicit in our code (D-07's library-alias rule).
+    async def send(message: Message) -> None:
         nonlocal status
         if message["type"] == "http.response.start":
             status = message["status"]

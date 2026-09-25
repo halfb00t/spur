@@ -32,7 +32,7 @@ import json
 import logging
 import os
 import sys
-from typing import TextIO
+from typing import TYPE_CHECKING, TextIO
 
 from . import __version__
 from .build_errors import BuildError
@@ -107,7 +107,20 @@ class _JsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str)
 
 
-class _JsonHandler(logging.StreamHandler[TextIO]):
+# The type checker sees the generic base; the interpreter never subscripts it.
+# `logging.StreamHandler` only gained `__class_getitem__` in Python 3.11, and this
+# project's floor is 3.10 (pyproject.toml's `target-version`, the CI matrix): subscripting
+# it in a class statement raised `TypeError: 'type' object is not subscriptable` at
+# import time on CI's `test (3.10)` leg (runs 35993984796 and 36028253714) while the
+# local 3.12 `make verify` passed -- a 3.10 interpreter is the only check that catches
+# this class of bug, which is why the matrix has one.
+if TYPE_CHECKING:
+    _StreamHandlerBase = logging.StreamHandler[TextIO]
+else:
+    _StreamHandlerBase = logging.StreamHandler
+
+
+class _JsonHandler(_StreamHandlerBase):
     """A `StreamHandler` subclass with no added behaviour -- a pure identity marker.
 
     `configure()`'s idempotency guard checks `isinstance(h, _JsonHandler)` against the

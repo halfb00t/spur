@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
     from .params import GearParams
@@ -160,8 +162,83 @@ def span_measurement(p: GearParams) -> tuple[int, float]:
     return k, w
 
 
-def derive(p: GearParams) -> dict[str, Any]:
-    """Derived dimensions plus the numbers you'd measure on a real gear to verify them."""
+class DerivedDimensions(BaseModel):
+    """The one document `/api/info`, `spur info` and the web UI all print.
+
+    Every key is always present. `None` means a value does not apply (no bore, no
+    recess, no mate asked about) or cannot be computed honestly (a pair that cannot
+    mesh) -- never a plausible number in its place (L08).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    pitch_d: float = Field(description="Pitch circle diameter.",
+                           json_schema_extra={"unit": "mm"})
+    tip_d: float = Field(description="Tip (outside) diameter.",
+                         json_schema_extra={"unit": "mm"})
+    root_d: float = Field(description="Root diameter.",
+                          json_schema_extra={"unit": "mm"})
+    base_d: float = Field(description="Base circle diameter.",
+                          json_schema_extra={"unit": "mm"})
+    caliper_over_tips: float = Field(
+        description="Caliper reading across the tips; short of tip_d for an odd tooth count.",
+        json_schema_extra={"unit": "mm"})
+    tip_thickness: float = Field(description="Tooth thickness at the tip, as an arc.",
+                                 json_schema_extra={"unit": "mm"})
+    root_thickness: float = Field(description="Tooth thickness on the root circle, as an arc.",
+                                  json_schema_extra={"unit": "mm"})
+    root_gap: float = Field(description="Gap between teeth on the root circle, as an arc.",
+                            json_schema_extra={"unit": "mm"})
+    root_fillet: float = Field(
+        description="Root fillet radius actually used, after capping to the gap.",
+        json_schema_extra={"unit": "mm"})
+    span_teeth: int = Field(description="Number of teeth the span measurement is taken over.")
+    span: float = Field(
+        description="Span (Wildhaber) measurement over span_teeth teeth, at zero backlash.",
+        json_schema_extra={"unit": "mm"})
+    bore_effective: float | None = Field(
+        description="Bore diameter including print clearance; null with no bore.",
+        json_schema_extra={"unit": "mm"})
+    recess_id: float | None = Field(
+        description="Face recess inner diameter; null with no recess.",
+        json_schema_extra={"unit": "mm"})
+    recess_od: float | None = Field(
+        description="Face recess outer diameter; null with no recess.",
+        json_schema_extra={"unit": "mm"})
+    recess_fillet: float | None = Field(
+        description="Recess floor fillet radius actually used; null with no recess.",
+        json_schema_extra={"unit": "mm"})
+    web: float | None = Field(
+        description="Thickness left between the recesses; null with no recess.",
+        json_schema_extra={"unit": "mm"})
+    # A tuple, not a list: pydantic's `frozen=True` locks the attributes, not the objects
+    # they hold, so a list here could still be edited in place by any reader of a shared
+    # result -- the one field that would make "frozen" a lie (04-REVIEW.md WR-01).
+    warnings: tuple[str, ...] = Field(
+        description="Sentences about values that were capped, dropped or cannot be computed.")
+    mate_teeth: int | None = Field(
+        description="Teeth on the mating gear asked about; null when none was.")
+    centre_distance: float | None = Field(
+        description="Working centre distance to the mate; null with no mate, or when the "
+                    "pair cannot mesh.",
+        json_schema_extra={"unit": "mm"})
+
+
+def derive(p: GearParams, mate_teeth: int | None = None,
+          mate_shift: float = 0.0) -> DerivedDimensions:
+    """Derived dimensions plus the numbers you'd measure on a real gear to verify them.
+
+    With `mate_teeth` it also reports the working centre distance to that gear, or a
+    warning and `None` when the pair cannot mesh. Decided here, once, rather than in
+    the API and the CLI separately: an impossible pair is a warning on an otherwise
+    fine gear, not an error and not a number (L08).
+
+    Measured per call (`.venv/bin/python -m timeit`, best of 5, default GearParams,
+    arm64, Python 3.12.13): 9.19 usec before this model, 11.5 usec after --
+    validating the frozen model on construction costs about 2.3 usec, negligible next
+    to an HTTP round trip and well inside the module docstring's "fast enough to run
+    on every keystroke" claim (measured, not assumed -- CLAUDE.md).
+    """
     pr = profile(p)
     tip, root, gap = _tooth(pr)
     k, w = span_measurement(p)
@@ -193,28 +270,44 @@ def derive(p: GearParams) -> dict[str, Any]:
         warnings.append("No room for a face recess between the bore wall and the tooth "
                         "rim; it was left out.")
 
-    def r3(v: float | None) -> float | None:
-        return None if v is None else round(v, 3)
+    # The mate is folded into this one document rather than patched on afterward
+    # (D-02): a single construction site means a derive() bug that produces the wrong
+    # shape fails loudly instead of quietly matching dict[str, Any] (D-09).
+    aw = centre_distance(p, mate_teeth, mate_shift) if mate_teeth is not None else None
+    if mate_teeth is not None and aw is None:
+        warnings.append(f"A {mate_teeth}-tooth gear cannot mesh with this one at any "
+                        f"centre distance: a total profile shift of "
+                        f"{p.profile_shift + mate_shift:+g} is too negative for "
+                        f"{p.teeth + mate_teeth} teeth.")
 
-    return {
-        "pitch_d": r3(2 * pr.r),
-        "tip_d": r3(2 * pr.ra),
-        "root_d": r3(2 * pr.rf),
-        "base_d": r3(2 * pr.rb),
-        "caliper_over_tips": r3(over_tips),
-        "tip_thickness": r3(tip),
-        "root_thickness": r3(root),
-        "root_gap": r3(gap),
-        "root_fillet": rfil,
-        "span_teeth": k,
-        "span": r3(w),
-        "bore_effective": r3(2 * bore_radius(p)) if p.bore_d > 0 else None,
-        "recess_id": r3(2 * rr[0]) if rr else None,
-        "recess_od": r3(2 * rr[1]) if rr else None,
-        "recess_fillet": rec_fil if rr else None,
-        "web": r3(p.face_width - sides * p.recess_depth) if rr else None,
-        "warnings": warnings,
-    }
+    def r3(v: float) -> float:
+        return round(v, 3)
+
+    return DerivedDimensions(
+        pitch_d=r3(2 * pr.r),
+        tip_d=r3(2 * pr.ra),
+        root_d=r3(2 * pr.rf),
+        base_d=r3(2 * pr.rb),
+        caliper_over_tips=r3(over_tips),
+        tip_thickness=r3(tip),
+        root_thickness=r3(root),
+        root_gap=r3(gap),
+        # rfil and rec_fil already round(..., 3) internally (root_fillet(),
+        # recess_fillet()), so this changes no value on the wire today -- but every
+        # length is rounded once, at construction (D-10), so the rule stays true if
+        # either helper's rounding ever changes.
+        root_fillet=r3(rfil),
+        span_teeth=k,
+        span=r3(w),
+        bore_effective=r3(2 * bore_radius(p)) if p.bore_d > 0 else None,
+        recess_id=r3(2 * rr[0]) if rr else None,
+        recess_od=r3(2 * rr[1]) if rr else None,
+        recess_fillet=r3(rec_fil) if rr else None,
+        web=r3(p.face_width - sides * p.recess_depth) if rr else None,
+        warnings=tuple(warnings),
+        mate_teeth=mate_teeth,
+        centre_distance=None if aw is None else r3(aw),
+    )
 
 
 def _involute_angle(target: float) -> float:
@@ -251,22 +344,3 @@ def centre_distance(p: GearParams, mate_teeth: int,
         return None
     aw = _involute_angle(target)
     return p.module * (z1 + z2) / 2 * math.cos(a) / math.cos(aw)
-
-
-def with_mate(info: dict[str, Any], p: GearParams, mate_teeth: int,
-              mate_shift: float = 0.0) -> dict[str, Any]:
-    """derive() output plus the centre distance to a mating gear.
-
-    The API and the CLI share this so the decision -- an impossible pair is a warning on
-    an otherwise fine gear, not an error and not a number -- is written down once.
-    """
-    aw = centre_distance(p, mate_teeth, mate_shift)
-    out = {**info, "mate_teeth": mate_teeth,
-           "centre_distance": None if aw is None else round(aw, 3)}
-    if aw is None:
-        out["warnings"] = [*info.get("warnings", ()),
-                           f"A {mate_teeth}-tooth gear cannot mesh with this one at any "
-                           f"centre distance: a total profile shift of "
-                           f"{p.profile_shift + mate_shift:+g} is too negative for "
-                           f"{p.teeth + mate_teeth} teeth."]
-    return out

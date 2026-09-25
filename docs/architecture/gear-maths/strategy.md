@@ -29,7 +29,7 @@ requested dimensions had to be trimmed to fit.
   `recess_radii()` functions hold the ones that can be trimmed.
 - **L05** — defaults are absolute millimetres and do not rescale.
 - **L08** — an impossible mating pair gets a warning, not a number. `centre_distance()`
-  returns `None` and `with_mate()` turns that into a warning, once, for both the API and
-  the CLI.
+  returns `None` and `derive()` turns that into a warning plus `centre_distance: null`,
+  once, for both the API and the CLI.
 - **L10** — the root is radial below the base circle; `derive()` warns where that
   matters.

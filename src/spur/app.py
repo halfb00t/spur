@@ -18,22 +18,23 @@ import threading
 import time
 import uuid
 from collections import OrderedDict
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Hashable, Iterator
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.json_schema import JsonSchemaValue
 from starlette.concurrency import run_in_threadpool
 
 from . import __version__, int_env
 from .build_errors import BuildError, BuildTimeout
-from .calc import derive, with_mate
+from .calc import DerivedDimensions, derive
 from .params import GearParams
 from .pool import BuildPool
 from .records import build_failed, build_started, configure, export_served, queue_refused
@@ -50,20 +51,22 @@ class _BlobCache:
     per-process version, whose docstring claimed callers held model.py's _LOCK, this one
     is the only thing touching its dict, single-threaded, on one event loop, in the one
     uvicorn worker this app runs as (D-01).
+
+    Any hashable key works; the one real key shape is described above `_EXPORTS`.
     """
 
     def __init__(self, budget: int) -> None:
         self._budget = budget
-        self._items: OrderedDict[Any, bytes] = OrderedDict()
+        self._items: OrderedDict[Hashable, bytes] = OrderedDict()
         self._bytes = 0
 
-    def get(self, key: Any) -> bytes | None:
+    def get(self, key: Hashable) -> bytes | None:
         data = self._items.get(key)
         if data is not None:
             self._items.move_to_end(key)
         return data
 
-    def put(self, key: Any, data: bytes) -> None:
+    def put(self, key: Hashable, data: bytes) -> None:
         old = self._items.pop(key, None)
         if old is not None:
             self._bytes -= len(old)
@@ -146,6 +149,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         app.state.pool.shutdown()
+        # Clear the attribute, not just the object it points at: `app` is one
+        # module-level FastAPI singleton shared by every test file in one pytest
+        # session, and `getattr(app.state, "pool", None)`'s absent-vs-set distinction
+        # (health()'s D-06 contract) is meaningless if a shut-down pool from an earlier
+        # test's `with TestClient(app)` block lingers here for a later test's bare,
+        # lifespan-free client to see.
+        del app.state.pool
 
 
 app = FastAPI(
@@ -268,8 +278,35 @@ def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
 
 
+class PoolState(BaseModel):
+    """Build pool state nested under `/api/health`'s `pool` key (D-13, D-05)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    workers: int = Field(description="Build worker processes in the pool.")
+    queue_available: int = Field(
+        description="Admission slots free now, each covering a build and its first "
+                    "gzip encode.")
+    workers_replaced: int = Field(
+        description="Workers replaced since start, after a timeout or a crash.")
+
+
+class HealthReport(BaseModel):
+    """The document `/api/health` returns. `pool` is `null`, not absent, when the app
+    runs without its lifespan (D-06) -- the same null-over-absent rule as
+    `DerivedDimensions`.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    status: Literal["ok"] = Field(description="Always ok: the process answered.")
+    version: str = Field(description="spur version.")
+    pool: PoolState | None = Field(
+        description="Build pool state; null when the app runs without its lifespan.")
+
+
 @app.get("/api/health")
-def health() -> dict[str, Any]:
+def health() -> HealthReport:
     """Liveness, plus pool state (D-13) -- parent-local counters only.
 
     `status` and `version` stay exactly where they are today, at the top level, so the
@@ -288,11 +325,12 @@ def health() -> dict[str, Any]:
     with its own trigger, because asking a worker how it's doing would make the
     measurement measure the exact thing it's supposed to be independent of.
 
-    `pool` is absent only when `app.state.pool` hasn't been set -- the one path that can
-    happen on is a bare `TestClient(app)` used without `with`, which never runs this
-    app's lifespan (tests/test_api.py's module-level client does this deliberately, to
-    exercise the inline build backend without paying pool startup cost). Every real
-    deployment runs the lifespan, so `pool` is always present in production.
+    `pool` is `null`, not absent, when `app.state.pool` hasn't been set -- the one path
+    that can happen on is a bare `TestClient(app)` used without `with`, which never runs
+    this app's lifespan (tests/test_api.py's module-level client does this deliberately,
+    to exercise the inline build backend without paying pool startup cost). Every real
+    deployment runs the lifespan, so `pool` carries the same object in production either
+    way (D-06).
 
     `queue_available` now means slots free for build *and* first gzip encode, not build
     alone (quick task 260923-qwr, `_build_slot`'s own docstring): a slot is held across
@@ -300,27 +338,26 @@ def health() -> dict[str, Any]:
     available slots than it would have before that change, for the same in-flight work.
     """
     pool: BuildPool | None = getattr(app.state, "pool", None)
-    payload: dict[str, Any] = {"status": "ok", "version": __version__}
-    if pool is not None:
-        payload["pool"] = {
-            "workers": pool.workers,
-            "queue_available": MAX_QUEUED_BUILDS - _in_flight_builds,
-            "workers_replaced": pool.replaced,
-        }
-    return payload
+    return HealthReport(
+        status="ok",
+        version=__version__,
+        pool=None if pool is None else PoolState(
+            workers=pool.workers,
+            queue_available=MAX_QUEUED_BUILDS - _in_flight_builds,
+            workers_replaced=pool.replaced,
+        ),
+    )
 
 
 @app.get("/api/schema")
-def schema() -> dict[str, Any]:
+def schema() -> JsonSchemaValue:
     return GearParams.model_json_schema()
 
 
 @app.get("/api/info")
-def info(q: Annotated[InfoQuery, Query()]) -> dict[str, Any]:
+def info(q: Annotated[InfoQuery, Query()]) -> DerivedDimensions:
     """Derived dimensions. With `mate_teeth`, also the centre distance to that gear."""
-    params = _gear(q)
-    out = derive(params)
-    return with_mate(out, params, q.mate_teeth) if q.mate_teeth else out
+    return derive(_gear(q), mate_teeth=q.mate_teeth)
 
 
 @app.get("/api/model.{fmt}", response_class=Response,
