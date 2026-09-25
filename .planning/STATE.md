@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 06
 current_phase_name: "Address tech debt: merge gate + solid cache"
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-09-25T12:17:00.497Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-09-25T12:33:28.468Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 06 execution started
-state_head: f17bda0e4019aee42e7175bbf2b8dd61042f2493
+state_head: d0c43ee16f8789ede8bc5b88e2da81653538431f
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
 milestone_name: Hardening
 ---
 
@@ -30,7 +30,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 06 (Address tech debt: merge gate + solid cache) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-25 — Phase 06 execution started
 
@@ -85,6 +85,7 @@ and re-verification passed 5/5.
 | Phase 05 P05 | ~11min | 3 tasks | 13 files |
 | Phase 05 P06 | 13min | 2 tasks | 5 files |
 | Phase 06 P01 | ~20min | 2 tasks | 6 files |
+| Phase 06 P02 | 9min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -150,6 +151,7 @@ L17–L19):
 - [Phase 06]: shape.copy() before exportStl(), not BRepTools.Clean_s() — Clean_s measured 4-13% faster but strips the mesh after export, so the cached object would carry a mesh through the whole export window while build() releases _LOCK before callers read the solid; a copy keeps the cached solid mesh-free for its whole life instead. -- 06-01-SUMMARY.md key-decisions
 - [Phase 06]: Content equivalence (triangle count + decoded volume, rel=1e-6), never raw STL bytes, is D-08's proof — OCCT export matched byte-for-byte in only 8 of 20 reruns across independently built solids at planning/research time. -- 06-01-SUMMARY.md key-decisions
 - [Phase 06]: No replacement autouse fixture for the deleted solid-cache reset (D-09) — make verify's 185-test pass with the fixture gone is the only cross-test proof needed; no test relied on a cold cache for an unrelated reason. -- 06-01-SUMMARY.md key-decisions
+- [Phase 06]: 06-02: two test fixtures dropped the blank line before a hand-typed cut line so the second matched token lands on the plan's own stated line 4, not line 5 -- verified with a throwaway regex walk against the literal message text before writing the assertion. — The plan's <behavior> block and the D-02 case both specify line 4; keeping the blank line (a literal reuse of the prior test's spacing) would have put the token on line 5 instead, per re.finditer computed against the exact fixture string.
 
 ### Pending Todos
 
@@ -206,6 +208,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T12:17:00.456Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-09-25T12:33:28.429Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

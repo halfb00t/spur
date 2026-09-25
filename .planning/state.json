@@ -31,7 +31,7 @@
     {
       "number": "6",
       "name": "Address tech debt: merge gate + solid cache",
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
   "next": {
@@ -39,5 +39,5 @@
     "label": "Advance to the next step",
     "reason": "Phase 06 of 6 · executing"
   },
-  "updated_at": "2026-09-25T12:16:30.869Z"
+  "updated_at": "2026-09-25T12:33:22.626Z"
 }
