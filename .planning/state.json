@@ -31,13 +31,13 @@
     {
       "number": "6",
       "name": "Address tech debt: merge gate + solid cache",
-      "status": "in_progress"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 06 of 6 · ready to verify"
+    "command": "/gsd:new-milestone",
+    "label": "Start a new milestone",
+    "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-09-25T13:16:08.655Z"
+  "updated_at": "2026-09-25T13:34:08.874Z"
 }
