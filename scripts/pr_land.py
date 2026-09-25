@@ -10,10 +10,12 @@ wall, not the wall itself -- "a tool, not a wall" (docs/HOW_TO_DEVELOP.md sectio
 Which of its checks the ruleset duplicates, and why they stay anyway (flagged
 assumption 8, 05-02-PLAN.md): the ruleset enforces `behind_by > 0` (its strict
 up-to-date policy) and the required job set (its required status checks). This
-module keeps both. Step 5 below waits for the squash commit's own run to *appear*,
-not to finish, because the merged tree is the checked tree -- that claim is proven
-here, not rested on a server setting outside git this module does not read. And
-`required-jobs.txt` is held equal to `ci.yml` by a test in this repository, while
+module keeps both. Step 5 below proves a run *appeared* for the squash commit, and
+`check_head` refuses a head it *saw* behind `main`; the window between that read and
+`gh pr merge` rests on the ruleset's strict up-to-date policy (D-12, no bypass
+actors) -- `--match-head-commit` pins the head, not the base (cli/cli
+`pkg/cmd/pr/merge/merge.go`). And `required-jobs.txt` is held equal to `ci.yml` by a
+test in this repository, while
 the ruleset's own copy of the required-check names is not in git. The checks only
 this module can make at all: the PR is open and based on `main` (a PR to another
 base sits outside the ruleset, and step 5's evidence only ever exists for `main`);
@@ -27,7 +29,8 @@ dirty working tree; (3) `check_head` -- refuse a behind, run-less, unfinished or
 non-green head, and refuse a skip token in the checked subject/body
 (`message_refusals`); (4) squash-merge with the exact subject and body just
 checked; (5) poll for a run on the squash commit (~60 s,
-`POLL_ATTEMPTS * POLL_INTERVAL_S`) and print its URL; (6) the local follow-up --
+`POLL_ATTEMPTS * POLL_INTERVAL_S`) and print its URL, or, when none is observed,
+what was observed (`no_run_report`); (6) the local follow-up --
 switch to the PR's base, pull, delete the local branch only when its tip equals
 the merged head.
 

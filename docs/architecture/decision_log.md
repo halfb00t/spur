@@ -670,3 +670,67 @@ data, published contract or other module reads the cached object.
 object (a new export format, a tessellation for a preview endpoint) or a copy call that
 carries the mesh across (`copy(mesh=True)`); the two named tests above go red the moment
 either happens.
+
+## L25 — The merge gate reads the whole commit message and the run's own verdict (amends L22)
+
+Date: 2026-09-25.
+
+L22 stays as written; this entry amends three of its claims, closed in the three plans of
+this phase.
+
+**The hook has no cut** (D-02, Plan 06-02). L22's "above git's `commit -v` scissors line"
+no longer holds: the `commit-msg` hook now searches the whole buffer git hands it, with no
+cut, ever. Why: a cut line typed by hand in an editor session is byte-identical to git's
+own, and `GIT_EDITOR` only tells the hook whether an editor ran, not whether `-v` was
+given -- no content or environment signal distinguishes the two. A scratch-clone probe
+this phase (a hand-typed cut line inside an editor session): committed with the token
+before this change, refused after. Cost: a `git commit -v` whose appended staged diff
+names a token is refused too -- the refusal names the line and says to commit without
+`-v`; `git config --get commit.verbose` read empty on this machine, 2026-09-25 -- nobody
+is opted in.
+
+**Green is the run's own verdict and every named job** (D-04, Plan 06-03). `head_refusals`
+now also refuses a completed run whose own `conclusion` is not `success`, naming the
+conclusion and the run's `html_url` -- in addition to the unchanged per-job loop, which
+stays because it is what names a *missing* job, something a green run conclusion cannot.
+The required list is still the local `.github/workflows/required-jobs.txt`; the
+stale-checkout half is closed by rule, not by a fetch -- `docs/HOW_TO_DEVELOP.md` §8 says
+`make pr.land` is run from an up-to-date `main` checkout. Evidence: the real failed run
+36116930241, through the live `gh`, refused with two lines before this fix and three
+after (the added line names `conclusion 'failure'` and the run's URL). The drift test in
+`tests/test_pr_land.py` now compares `required_jobs()` against the effective job names
+GitHub actually reports (`jobs.<id>.name` when a job sets one, else the id), not raw job
+ids, so a `name:` override moves the derived required set the same way it moves what
+GitHub reports.
+
+**What `pr.land` proves, and what rests on the ruleset** (D-07, D-06, Plan 06-04). L22's
+sentence that its merged-tree claim "is proven here, not rested on a server setting
+outside git this module does not read" over-claimed: `gh pr merge --match-head-commit`
+pins the head, not the base, so the window between `pr.land`'s `behind_by` read and the
+merge call rests on the ruleset's strict up-to-date policy (D-12, no bypass actors), not
+on anything this module itself reads. The module docstring and `docs/HOW_TO_DEVELOP.md`
+§8 now say so explicitly. Step 5 no longer blames a skip token for every unobserved
+post-merge run: it reports exactly what it observed -- the last read error, an Actions
+link to check when the reads worked and nothing appeared, or a named skip token, and only
+after reading it from the squash commit's own message through
+`gh api repos/{owner}/{repo}/commits/<sha> --jq '.html_url, .commit.message'`.
+
+**Rejected.** A config-driven cut for the hook -- a `-v` on the command line stays
+invisible to config, so it over-matches anyway and keeps the heuristic it was meant to
+replace. Accepting the cut-line residual -- leaves a `must` item open by design. Reading
+`required-jobs.txt` from the PR head over the network -- a read in front of the pure
+decision core, for a case the run-conclusion check already refuses. A second `behind_by`
+read immediately before `gh pr merge` -- narrows the read-to-merge window without closing
+it, for one more network read per land. Never diagnosing an unobserved post-merge run --
+loses the one cause the tool can actually establish (a token, read after the fact).
+
+**Reversibility.** Reversible -- each change is local to `scripts/skip_tokens.py`'s
+`main()`, `scripts/pr_land.py`'s `head_refusals`, or `land`'s step 5 and its new
+`no_run_report`; the cut and its own tests are in history (`3e68e74`).
+
+**Reason:** the most likely future regressions -- the cut re-added "so `-v` commits
+pass"; a run judged green by its listed jobs alone again, missing an unlisted job's
+failure; a post-merge report that names a cause it did not itself read. Each is now a
+test this phase added: the whole-buffer cut-line case in `tests/test_skip_tokens.py`, the
+unlisted-job case and the real-run probe in `tests/test_pr_land.py`, and the three
+`no_run_report` branch cases plus the live probe against `b72b0e1` and `20b63e4`.
