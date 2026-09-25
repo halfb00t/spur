@@ -1,8 +1,9 @@
 # `make pr.land` reports "a skip token reached main" for any run it failed to observe
 
 Severity: nice
-Status: active
+Status: resolved
 Date: 2026-09-25
+Resolved in: e4345a4
 Source: Codex cross-CLI review of PR #4 (findings 5 and 4), 2026-09-25; confirmed
   against `scripts/pr_land.py` before filing.
 Related files:
@@ -47,5 +48,30 @@ on the ruleset. One offline `FakeRunner` case per branch.
 Revisit when: `pr.land` prints this message once for real, or `scripts/pr_land.py` is
 touched anyway.
 
-<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
-     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
+## Resolution (2026-09-25)
+
+`Resolved in: e4345a4` is Plan 06-04 Task 1's commit
+(`fix(06-04): pr.land reports only what it observed after the merge`) -- not the present
+commit, which states the split in the docstring and §8 (the other half of this same
+file), records L25 and moves this file, completing the fix (a file cannot carry its own
+commit's sha).
+
+"Next step" was taken as written: the poll keeps its last error; `land`'s unobserved-run
+message is now `no_run_report(...)`, which reports exactly one of three things --
+`; last error: ...` when the reads failed, an Actions link when they succeeded and
+nothing appeared, or a named token only after fetching the squash commit's message and
+finding one. The module docstring and `docs/HOW_TO_DEVELOP.md` §8 were rewritten to say
+which half of the merged-tree claim rests on the ruleset (D-07).
+
+What now exists: `no_run_report(pr_number, squash_sha, waited_s, last_error, run)` in
+`scripts/pr_land.py`, and four new test names in `tests/test_pr_land.py` --
+`test_land_reports_the_last_read_error_when_every_poll_failed`,
+`test_land_reports_no_run_observed_with_the_actions_url_when_reads_succeeded`,
+`test_land_names_a_skip_token_only_after_reading_it_from_the_squash_commit`, and
+`test_no_run_report_a_failed_commit_read_is_the_last_error`.
+
+Evidence: the live probe against two real commits, run during this plan's own execution
+(`06-04-SUMMARY.md`) -- `no_run_report(4, 'b72b0e1f1e31e06b9dd8bef964725b11f30e0c51', ...)`
+returned the Actions link with no last error and no token; `no_run_report(2,
+'20b63e453a3cd0c72e5d0f995a107a238c652a90', ...)` named `'[ci skip]'`, read from that
+commit's own message, with no last error.

@@ -27,6 +27,11 @@
       "number": "5",
       "name": "CI Observed Green",
       "status": "complete"
+    },
+    {
+      "number": "6",
+      "name": "Address tech debt: merge gate + solid cache",
+      "status": "complete"
     }
   ],
   "next": {
@@ -34,5 +39,5 @@
     "label": "Start a new milestone",
     "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-09-25T08:51:37.898Z"
+  "updated_at": "2026-09-25T13:34:08.874Z"
 }

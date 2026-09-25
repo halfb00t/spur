@@ -28,6 +28,10 @@ and spoke/hex cutouts make every build heavier.
   already exist
 - A typed `DerivedDimensions` contract, with mypy's `disallow_any_explicit` turned on
 - `.github/workflows/ci.yml` observed executing in GitHub Actions, not just hand-verified
+- The five `must` debt items the v0.1 phases themselves surfaced — the solid cache
+  handing out a meshed solid, and four merge-gate gaps in the commit-msg hook and
+  `make pr.land` — retired, each in the commit that fixes it (Phase 6, added after the
+  Phase 5 review)
 
 **Not in this milestone:** all five `nice` debt items, and every new feature — trochoidal
 root fillets, helical/internal/rack/bevel gears, tooth chamfers, keyway/hex bores, spoke
@@ -83,6 +87,17 @@ the full list with sources and acceptance evidence.
   live); Python 3.12 only (L23 supersedes L01's floor); the "CI workflow unverified"
   blocker retired citing runs 35963114939 and 36088409707; the pr.land cut-line bypass
   (05-REVIEW CR-01) closed by gap plan 05-06 and re-verified 5/5 (L22, L23) — Phase 5
+- ✓ Phase 6 tech-debt closure (no REQ-ID: the phase was added to v0.1 after
+  `REQUIREMENTS.md` was written; its contract is `06-CONTEXT.md` D-01…D-11) — the
+  commit-msg hook scans the whole buffer git hands it (no cut line, no `GIT_EDITOR`
+  read; refusals name the line and the `-v` way out); `make pr.land` refuses a run whose
+  own `conclusion` is not `success` (proven live on run 36116930241), resolves
+  `jobs.<id>.name` overrides in the drift test, and after the merge reports only what it
+  observed (read error / Actions link / a token read from the squash commit); STL export
+  meshes `shape.copy()` so the cached `cq.Solid` never carries a mesh (`.BoundingBox()`
+  exact, content-equivalent exports, the autouse cache reset deleted); five debt files
+  retired in their fixing commits; L24/L25 carry the measured numbers; verified 9/9,
+  review clean, 13/13 threats closed, `make verify` 191 tests — Phase 6
 
 ### Active
 
@@ -99,10 +114,10 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
   the documented, accepted approximation for now.
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- A coverage floor and the other `must` items listed in `docs/tech_debt/INDEX.md` —
-  `docs/tech_debt/active/` — deferred, each with its own trigger.
-- CadQuery `Shape` typing cleanup, server-side request cancellation, Enji Guard / CVE
-  alerting integration — `docs/tech_debt/active/` (nice) — deferred.
+- The six items still in `docs/tech_debt/active/` after Phase 6 — five `nice` (coverage
+  floor, CadQuery `Shape` typing, server-side request cancellation, Enji Guard / CVE
+  alerting, no built-in authentication) and one `must` (the ten-concurrent latency bar
+  waived under L18, Phase 2) — deferred, each with its own trigger.
 
 ## Context
 
@@ -196,6 +211,8 @@ quick reference.
 | L21 | `disallow_any_explicit` on globally, no per-module override; the published responses are typed models (`DerivedDimensions`, `HealthReport`/`PoolState`); the pydantic mypy plugin's `init_typed`/`init_forbid_extra` retire the six class-line errors instead of six per-class suppressions; `Any` is never written — `object` narrowed at use, a library's own alias keeps the library's `Any` (supersedes L14) | ✓ Good — `make verify` green under the rule (104 tests); `--mate-teeth 0` now exits 2 like the API's 422 |
 | L22 | CI is the merge gate: a ruleset on `main` requires `test (3.12)`, `vendor-bundle`, `image` green on an up-to-date head plus a pull request; a repo-owned `commit-msg` hook refuses the six skip tokens; the squash message is PR title + body; `main` is landed only via `make pr.land PR=N`, which refuses a red, stale, missing or token-carrying head and prints the squash commit's run URL | ✓ Good — ruleset read back live; gap plan 05-06 closed CR-01 (pr.land now checks the whole PR text, the hook cuts only in an editor session); residual hand-typed cut line filed as must debt `2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md` |
 | L23 | Python 3.12 only — `requires-python`, ruff `target-version`, the CI matrix, the Makefile interpreter and the README agree (supersedes L01's 3.10 floor; `cadquery-ocp` publishes wheels for nothing newer) | ✓ Good — `make verify` green on 3.12 (183 tests); CI job is `test (3.12)` alone |
+| L24 | A cached solid never carries a mesh: STL export runs `exportStl` on `shape.copy()`, never on the process-global cached `cq.Solid` (`Clean_s` rejected: 4–13 % faster but leaves the mesh on the cached object for the whole export window); copy costs +1.4 to +17.6 ms per export and +3.2 to +7.7 MiB peak RSS on a 200-tooth fine export, measured; the autouse cache-reset fixture deleted | ✓ Good — `.BoundingBox()` exact after any export, a preview after a fine export is a preview (9,066 vs 46,278 triangles) |
+| L25 | The merge gate reads the whole commit message and the run's own verdict (amends L22): the commit-msg hook takes git's entire buffer with no cut line; `pr.land` refuses `conclusion != success` and runs from an up-to-date `main`; after the merge it reports only what it observed; the read-to-merge window rests on the ruleset's up-to-date policy, not on anything `pr.land` reads (`--match-head-commit` pins the head, not the base) | ✓ Good — proven live on run 36116930241 and commits b72b0e1 / 20b63e4 |
 
 ## Success Metric (Milestone v0.1)
 
@@ -232,4 +249,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-25 — after Phase 5 (CI Observed Green) completed via `/gsd-execute-phase 5 --gaps-only`; milestone v0.1's four target features are all validated.*
+*Last updated: 2026-09-25 — after Phase 6 (Address tech debt: merge gate + solid cache) completed via `/gsd-execute-phase 6`; all six v0.1 phases verified, milestone ready to close with `/gsd-complete-milestone v0.1`.*

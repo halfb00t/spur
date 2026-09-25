@@ -10,10 +10,12 @@ wall, not the wall itself -- "a tool, not a wall" (docs/HOW_TO_DEVELOP.md sectio
 Which of its checks the ruleset duplicates, and why they stay anyway (flagged
 assumption 8, 05-02-PLAN.md): the ruleset enforces `behind_by > 0` (its strict
 up-to-date policy) and the required job set (its required status checks). This
-module keeps both. Step 5 below waits for the squash commit's own run to *appear*,
-not to finish, because the merged tree is the checked tree -- that claim is proven
-here, not rested on a server setting outside git this module does not read. And
-`required-jobs.txt` is held equal to `ci.yml` by a test in this repository, while
+module keeps both. Step 5 below proves a run *appeared* for the squash commit, and
+`check_head` refuses a head it *saw* behind `main`; the window between that read and
+`gh pr merge` rests on the ruleset's strict up-to-date policy (D-12, no bypass
+actors) -- `--match-head-commit` pins the head, not the base (cli/cli
+`pkg/cmd/pr/merge/merge.go`). And `required-jobs.txt` is held equal to `ci.yml` by a
+test in this repository, while
 the ruleset's own copy of the required-check names is not in git. The checks only
 this module can make at all: the PR is open and based on `main` (a PR to another
 base sits outside the ruleset, and step 5's evidence only ever exists for `main`);
@@ -27,7 +29,8 @@ dirty working tree; (3) `check_head` -- refuse a behind, run-less, unfinished or
 non-green head, and refuse a skip token in the checked subject/body
 (`message_refusals`); (4) squash-merge with the exact subject and body just
 checked; (5) poll for a run on the squash commit (~60 s,
-`POLL_ATTEMPTS * POLL_INTERVAL_S`) and print its URL; (6) the local follow-up --
+`POLL_ATTEMPTS * POLL_INTERVAL_S`) and print its URL, or, when none is observed,
+what was observed (`no_run_report`); (6) the local follow-up --
 switch to the PR's base, pull, delete the local branch only when its tip equals
 the merged head.
 
@@ -265,8 +268,14 @@ def head_refusals(
     push, let CI run on the real tree, retry); identical to `main`
     (`ahead_by == 0 and behind_by == 0`) is refused as nothing to merge. Then: no run
     for `sha` -- refused, naming the sha; a run not `completed` -- refused as still
-    running, with its URL; each required job missing from `jobs` or not `success` --
-    refused, naming the job and its conclusion. Return a list; empty means go."""
+    running, with its URL; a completed run whose own `conclusion` is not `success` --
+    refused, naming the conclusion and the run's URL (D-04: `required-jobs.txt` is
+    read from the local checkout, so a job a PR adds is known to the run before it is
+    known to the list -- the run's own verdict catches it even when every *listed*
+    job is green); each required job missing from `jobs` or not `success` -- refused,
+    naming the job and its conclusion (kept alongside the run-conclusion check: it is
+    what names a *missing* job, which a green run conclusion cannot). Return a list;
+    empty means go."""
     ahead_by, behind_by = compare
     refusals: list[str] = []
     if behind_by > 0:
@@ -283,6 +292,11 @@ def head_refusals(
     if run.status != "completed":
         refusals.append(f"pr.land: the newest run for {sha} is still running: {run.html_url}")
         return refusals
+    if run.conclusion != "success":
+        refusals.append(
+            f"pr.land: the newest run for {sha} concluded {run.conclusion!r}, not success: "
+            f"{run.html_url}"
+        )
     by_name = {job["name"]: job["conclusion"] for job in jobs}
     for name in sorted(required):
         conclusion = by_name.get(name)
@@ -353,6 +367,53 @@ def check_head(sha: str, run: Runner, required: frozenset[str]) -> list[str]:
             return [f"pr.land: {exc}"]
 
     return head_refusals(sha, compare, newest, jobs, required)
+
+
+def no_run_report(
+    pr_number: int,
+    squash_sha: str,
+    waited_s: float,
+    last_error: str | None,
+    run: Runner,
+) -> str:
+    """What `land`'s step 5 prints when no {WORKFLOW} run appeared for the squash
+    commit within the poll window (D-06): one read of the squash commit's own
+    message, then exactly one of three endings -- never a cause this function did
+    not itself read. Precedence (flagged assumption 1, 06-04-PLAN.md): a token found
+    in the message is reported first -- it is the one cause the tool can establish,
+    and a token means GitHub will never start a run whatever the polls saw.
+    Otherwise, a failed commit read or the poll's own last error gives the
+    last-error report (`last_error` already holds the most recent failed poll read,
+    cleared by a successful one -- see `land`'s poll loop). Otherwise, the
+    nothing-appeared report naming the Actions link, derived from the commit's own
+    `html_url` (`.../commit/<sha>` -> `.../actions/workflows/<workflow>`) so no
+    repository name is hard-coded here."""
+    prefix = (
+        f"pr.land: PR #{pr_number} IS merged as {squash_sha}, but no {WORKFLOW} run "
+        f"observed within {waited_s:.0f} s"
+    )
+    commit_result = run(
+        [
+            "gh",
+            "api",
+            f"repos/{{owner}}/{{repo}}/commits/{squash_sha}",
+            "--jq",
+            ".html_url, .commit.message",
+        ]
+    )
+    if commit_result.returncode != 0:
+        error = f"reading the squash commit failed: {commit_result.stderr.strip()}"
+        return f"{prefix}; last error: {error}"
+
+    first_line, _, message = commit_result.stdout.partition("\n")
+    tokens = find_skip_tokens(message)
+    if tokens:
+        named = ", ".join(repr(token) for token in tokens)
+        return f"{prefix}: {named} in the squash commit's message -- a regression of L22."
+    if last_error is not None:
+        return f"{prefix}; last error: {last_error}"
+    repo = first_line.split("/commit/", 1)[0]
+    return f"{prefix}. Check {repo}/actions/workflows/{WORKFLOW}."
 
 
 def land(
@@ -442,6 +503,7 @@ def land(
     squash_sha = squash_sha_result.stdout.strip()
 
     found_run: WorkflowRun | None = None
+    last_error: str | None = None
     for attempt in range(attempts):
         poll_result = run(
             [
@@ -453,14 +515,18 @@ def land(
                 "[.workflow_runs[] | {id, status, conclusion, html_url}]",
             ]
         )
-        if poll_result.returncode == 0:
+        if poll_result.returncode != 0:
+            last_error = poll_result.stderr.strip()
+        else:
             try:
                 found_run = newest_run(parse_runs(poll_result.stdout))
-            except ValueError:
-                found_run = None
-            if found_run is not None:
-                print(found_run.html_url)
-                break
+            except ValueError as exc:
+                last_error = str(exc)
+            else:
+                last_error = None
+                if found_run is not None:
+                    print(found_run.html_url)
+                    break
         if attempt < attempts - 1:
             sleep(interval_s)
 
@@ -502,11 +568,7 @@ def land(
     if found_run is not None and not step6_failed:
         return 0
     if found_run is None:
-        print(
-            f"pr.land: PR #{pr_number} IS merged as {squash_sha}, but no {WORKFLOW} run "
-            f"appeared within {attempts * interval_s:.0f} s -- a skip token reached "
-            "main (L22)"
-        )
+        print(no_run_report(pr_number, squash_sha, attempts * interval_s, last_error, run))
     return 1
 
 

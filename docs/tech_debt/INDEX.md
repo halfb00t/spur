@@ -17,16 +17,11 @@ Severity (grep-able `Severity:` field):
 | Severity | Item | Trigger to revisit |
 |---|---|---|
 | must | [The concurrent latency bar was waived, not demonstrated](active/2026-09-23-concurrent-latency-bar-waived.md) | 02-05 writes L17/L18, the harness or the machine changes, or any run reads above 2.45x |
-| must | [A cached solid's `.BoundingBox()` reads wrong after it has been STL-exported](active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md) | a feature needs a measured dimension from a `Solid` after export, or a test outside the suite's autouse protection hits the same symptom |
-| must | [The commit-msg hook trusts a cut line typed by hand in an editor session](active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md) | a PR head with zero recorded checks is traced to a commit the hook passed, anyone here adopts `commit.verbose`, or the hook is touched anyway |
-| must | [`make pr.land` judges a run by the listed jobs only, never by the run's own conclusion](active/2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md) | `ci.yml` gains a job, or `scripts/pr_land.py` is touched anyway |
 | nice | [CadQuery's `Shape` typing forces four `type: ignore`s](active/2026-09-21-cadquery-shape-typing.md) | CadQuery narrows its own return types, or the pipeline is touched anyway |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
 | nice | [No coverage floor in the gate](active/2026-09-21-no-coverage-floor.md) | after one measured baseline run |
 | nice | [The service has no authentication](active/2026-09-21-no-authentication.md) | the moment it is bound to anything but localhost |
 | nice | [Enji Guard not connected](active/2026-09-21-enji-guard-not-connected.md) | owner decides they want continuous AI audit |
-| nice | [The required-jobs drift test reads job ids, so a `name:` override slips past it](active/2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md) | any job in `ci.yml` gets a `name:`, or the drift test is touched anyway |
-| nice | [`make pr.land` reports "a skip token reached main" for any run it failed to observe](active/2026-09-25-pr-land-blames-a-skip-token-for-any-missed-post-merge-run.md) | `pr.land` prints this message once for real, or `scripts/pr_land.py` is touched anyway |
 
 ## Resolved
 
@@ -37,3 +32,8 @@ Severity (grep-able `Severity:` field):
 | [The info contract is `dict[str, Any]`](resolved/2026-09-21-untyped-info-contract.md) | `013900d` — see the file's own `Resolved in:` field |
 | [The ship-note's CI skip token leaks into the squash-merge commit and skips CI on `main`](resolved/2026-09-25-ship-note-skip-token-leaks-into-squash-merge.md) | `fac76f5` — see the file's own `Resolved in:` field |
 | [`test_a_wedged_build_is_terminated_and_its_worker_replaced` flakes on the GitHub runner](resolved/2026-09-25-test-pool-wedged-worker-flakes-on-the-github-runner.md) | `ae052f8` — see the file's own `Resolved in:` field |
+| [A cached solid's `.BoundingBox()` reads wrong after it has been STL-exported](resolved/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md) | `655ec52` — see the file's own `Resolved in:` field |
+| [The commit-msg hook trusts a cut line typed by hand in an editor session](resolved/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md) | `e46ed34` — see the file's own `Resolved in:` field |
+| [`make pr.land` judges a run by the listed jobs only, never by the run's own conclusion](resolved/2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md) | `9ca8320` — see the file's own `Resolved in:` field |
+| [The required-jobs drift test reads job ids, so a `name:` override slips past it](resolved/2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md) | `0573319` — see the file's own `Resolved in:` field |
+| [`make pr.land` reports "a skip token reached main" for any run it failed to observe](resolved/2026-09-25-pr-land-blames-a-skip-token-for-any-missed-post-merge-run.md) | `e4345a4` — see the file's own `Resolved in:` field |

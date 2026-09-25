@@ -1,8 +1,9 @@
 # The commit-msg hook trusts a cut line typed by hand in an editor session
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-25
+Resolved in: e46ed34
 Source: 05-VERIFICATION.md gap bullet 3 and 05-REVIEW.md CR-01 point 1, narrowed by Plan
   05-06's "fix(05-06): trust git's cut line in the commit-msg hook only when git ran an
   editor" (this commit).
@@ -75,5 +76,34 @@ Revisit when: a PR head with zero recorded checks is traced back to a commit the
 passed, anyone in this repository adopts `commit.verbose`, or `scripts/skip_tokens.py`
 is touched again for an unrelated reason.
 
-<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
-     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
+## Resolution (2026-09-25)
+
+`Resolved in: e46ed34` is Plan 06-02 Task 1's commit
+(`fix(06-02): the commit-msg hook reads the whole message, cut line or not`) -- not the
+present commit, which adds §6's `-v` line (D-03's doc half) and moves this file,
+completing the fix (a file cannot carry its own commit's sha).
+
+The option this file's own "Next step" took: option 1, drop the cut entirely (D-02) --
+not option 2 ("cut only when `git config` says git will truncate"), because a `-v` typed
+on the command line for one commit, with no matching `commit.verbose`/`commit.cleanup`
+config, would have stayed invisible to that check too, buying nothing over option 1 for
+exactly the commit this residual was filed about.
+
+What now exists: `main()` searches `find_skip_tokens` against the whole buffer git hands
+it, in every commit mode -- no cut, no read of `GIT_EDITOR`; the refusal names each
+matched token with its 1-based buffer line, and adds a sentence pointing a
+`git commit -v` author at committing without `-v`
+(`tests/test_skip_tokens.py::test_hook_refuses_a_token_below_a_git_cut_line_whatever_git_editor_says`,
+`::test_hook_refuses_a_token_in_the_appended_commit_v_diff_and_says_to_commit_without_v`,
+`::test_hook_names_a_token_above_and_below_a_cut_line_on_both_lines`).
+
+Evidence: a scratch-clone probe recreated this file's own `safe subject` / cut line /
+`[skip ci]` shape from a real `GIT_EDITOR` script. Before the fix (planning, 2026-09-25):
+`SKIP=verify git commit --allow-empty` succeeded, the hook reported `Passed`, HEAD moved,
+and the recorded message kept the token. After the fix (06-02-SUMMARY.md): the identical
+command is refused, the hook reports `Failed` naming `line 4: '[skip ci]'`, and HEAD does
+not move.
+
+The accepted cost, from this file's own option 1: a `git commit -v` whose appended staged
+diff names a token is refused too. `git config --get commit.verbose` still reads empty on
+this machine, 2026-09-25 -- unchanged from when this file was filed.

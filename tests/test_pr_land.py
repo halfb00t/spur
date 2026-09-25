@@ -10,7 +10,7 @@ Every literal fixture below traces to a real, read-only `gh`/`gh api` call made 
 this repository on 2026-09-25 (RESEARCH.md's "Verified Live State", or a call made
 directly during this plan's own execution) -- a comment above each names the call.
 Per-case variants change **values** (state, a PR number, conclusions, ids), never
-**shape**. Every test except the drift test (`test_required_jobs_file_matches_ci_yml_job_ids`)
+**shape**. Every test except the drift test (`test_required_jobs_file_matches_ci_yml_job_names`)
 is independent of `.github/workflows/required-jobs.txt`'s current contents: pure tests
 pass `required`/`REQUIRED` explicitly, and `land()` tests use only `test (3.12)`,
 `vendor-bundle` and `image` -- the jobs required both now and after Plan 05-04 drops the
@@ -34,6 +34,7 @@ from scripts.pr_land import (
     land,
     message_refusals,
     newest_run,
+    no_run_report,
     parse_compare,
     parse_jobs,
     parse_pull_request,
@@ -136,6 +137,26 @@ RED_RUN_JOBS_JSON = (
     '{"name":"test (3.12)","status":"completed","conclusion":"success"}]'
 )
 
+# `gh api repos/halfb00t/spur/actions/workflows/ci.yml/runs?head_sha=73535a2...`
+# (2026-09-25, this plan's own execution): a completed run whose own conclusion is
+# `failure` -- `test (3.12)` failed, `vendor-bundle` and `image` green (a Phase 5 PR
+# head, D-04's live case: a run can fail on a job `required-jobs.txt` names, even
+# while every job the run *itself* names is a separate question from that list).
+RUN_36116930241_HEAD_SHA = "73535a24ce57258f23049d72e8c99eb1d5c0ba90"
+RUN_36116930241_RUNS_JSON = (
+    '[{"conclusion":"failure",'
+    '"html_url":"https://github.com/halfb00t/spur/actions/runs/36116930241",'
+    '"id":36116930241,"status":"completed"}]'
+)
+
+# `gh api repos/halfb00t/spur/actions/runs/36116930241/jobs?per_page=100`
+# (2026-09-25, this plan's own execution).
+RUN_36116930241_JOBS_JSON = (
+    '[{"conclusion":"failure","name":"test (3.12)","status":"completed"},'
+    '{"conclusion":"success","name":"vendor-bundle","status":"completed"},'
+    '{"conclusion":"success","name":"image","status":"completed"}]'
+)
+
 # `gh pr view 2 --json ...statusCheckRollup...` (RESEARCH.md "Verified Live State"):
 # a MERGED PR whose head carried a skip token -- zero recorded checks, not a red run.
 PR2_HEAD_SHA = "20b63e453a3cd0c72e5d0f995a107a238c652a90"
@@ -151,6 +172,20 @@ PR2_VIEW_JSON = (
 # head suppressed the run entirely, not a red run (RESEARCH.md's own "PR #2's own
 # recorded shape" -- `statusCheckRollup: []`).
 PR2_RUNS_JSON = "[]"
+
+# `gh api repos/{owner}/{repo}/commits/b72b0e1f1e31e06b9dd8bef964725b11f30e0c51
+# --jq '.html_url, .commit.message'` (2026-09-25, this plan's own execution) --
+# values changed to `deadbeef1234` and PR #3's own recorded title/body, shape kept:
+# the first line is the commit's `html_url`, then its message (subject, blank line,
+# body) verbatim.
+SQUASH_COMMIT_READ = (
+    "https://github.com/halfb00t/spur/commit/deadbeef1234\n"
+    "Phase 4: Typed Derived-Dimensions Contract (#3)\n"
+    "\n"
+    "## Summary\n"
+    "\n"
+    "Typed DerivedDimensions contract.\n"
+)
 
 REQUIRED = frozenset({"test (3.12)", "vendor-bundle", "image"})
 
@@ -185,27 +220,77 @@ def test_required_jobs_reads_non_comment_non_blank_lines(tmp_path: Path) -> None
     assert required_jobs(path) == frozenset({"test (3.12)", "vendor-bundle", "image"})
 
 
-def test_required_jobs_file_matches_ci_yml_job_ids() -> None:
-    """D-05: `required_jobs()` must equal the job ids `ci.yml` actually runs, or a PR
-    could be judged green on a job GitHub never runs. Job ids are the two-space-indented
-    keys directly under `jobs:`; the `test` id expands to `test ({v})` for each version
-    in its `python: [...]` matrix list -- `test` itself must appear among the derived
-    ids, or the expansion below would silently match nothing."""
-    ci_yml = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+def _effective_job_names(ci_yml: str) -> set[str]:
+    """The job names GitHub actually reports (D-05): `jobs.<id>.name` when a job sets
+    one, else the id -- a rename under `image:` moves this set even though the id
+    stays `image`. Job ids are the two-space-indented keys directly under `jobs:`,
+    found with their match positions so each job's own block can be scoped: from the
+    end of its id line to the start of the next id line (or the end of the section).
+    Only a `^    name:` line -- exactly four spaces, one level under the id -- inside
+    that block gives the effective name; step `name:` keys sit at six-or-more spaces
+    under `steps:` and are never read (`ci.yml`'s own two, `bundle matches web/` and
+    `the packaged entrypoint serves a gear`, confirm the depth). The `test` id still
+    expands to `f"{name} ({v})"` for each version in its `python: [...]` matrix list,
+    using its own effective name -- identical to today's `test (3.12)` while `test`
+    carries no `name:`."""
     jobs_section = ci_yml.split("\njobs:\n", 1)[1]
-    job_ids = re.findall(r"^  ([a-zA-Z][\w-]*):\s*$", jobs_section, re.MULTILINE)
+    id_matches = list(re.finditer(r"^  ([a-zA-Z][\w-]*):\s*$", jobs_section, re.MULTILINE))
+    job_ids = [m.group(1) for m in id_matches]
     assert "test" in job_ids
 
     matrix_match = re.search(r"python:\s*\[([^\]]*)\]", jobs_section)
     assert matrix_match is not None, "no python matrix found in ci.yml"
     versions = [v.strip().strip('"') for v in matrix_match.group(1).split(",")]
 
-    derived = {
-        name
-        for job_id in job_ids
-        for name in ([f"test ({v})" for v in versions] if job_id == "test" else [job_id])
-    }
-    assert required_jobs() == frozenset(derived)
+    effective: dict[str, str] = {}
+    for i, match in enumerate(id_matches):
+        job_id = match.group(1)
+        block_start = match.end()
+        block_end = id_matches[i + 1].start() if i + 1 < len(id_matches) else len(jobs_section)
+        block = jobs_section[block_start:block_end]
+        name_match = re.search(r"^    name:\s*(.+?)\s*$", block, re.MULTILINE)
+        if name_match is None:
+            effective[job_id] = job_id
+            continue
+        value = name_match.group(1)
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        effective[job_id] = value
+
+    names: set[str] = set()
+    for job_id, name in effective.items():
+        if job_id == "test":
+            names.update(f"{name} ({v})" for v in versions)
+        else:
+            names.add(name)
+    return names
+
+
+def test_required_jobs_file_matches_ci_yml_job_names() -> None:
+    """D-05: `required_jobs()` must equal the job names GitHub actually reports --
+    `jobs.<id>.name` when set, else the id -- or a PR could be judged green on a job
+    GitHub never runs (or judged red on a name it no longer reports)."""
+    ci_yml = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert required_jobs() == frozenset(_effective_job_names(ci_yml))
+
+
+def test_a_job_name_override_moves_the_derived_required_set() -> None:
+    """The rename the debt file describes
+    (2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md), which the
+    id-based test passed: a `name:` override under `image:` moves the derived set
+    even though `required-jobs.txt` still says `image`, and the step `name:` keys
+    are never mistaken for it."""
+    ci_yml = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    renamed = ci_yml.replace("  image:\n", "  image:\n    name: renamed-image\n", 1)
+    assert renamed != ci_yml
+    names = _effective_job_names(renamed)
+    assert names == {"test (3.12)", "vendor-bundle", "renamed-image"}
+    assert "bundle matches web/" not in names
+    assert "the packaged entrypoint serves a gear" not in names
+
+    quoted = ci_yml.replace("  image:\n", '  image:\n    name: "renamed image"\n', 1)
+    assert quoted != ci_yml
+    assert _effective_job_names(quoted) == {"test (3.12)", "vendor-bundle", "renamed image"}
 
 
 # --- pure decisions ----------------------------------------------------------------
@@ -283,7 +368,9 @@ def test_head_refusals_empty_jobs_list_reports_every_required_job_missing() -> N
 
 def test_head_refusals_one_red_job_names_it_and_its_conclusion() -> None:
     """Run 35993984796's own recorded shape: `test (3.10)` failed. `test (3.12)` is
-    the job in `REQUIRED` here, so put the failure there instead -- same shape."""
+    the job in `REQUIRED` here, so put the failure there instead -- same shape. The
+    run's own conclusion is refused too now (D-04), in addition to the job -- the
+    count rises by one, and exactly one line names it (`concluded`)."""
     run = WorkflowRun(id=1, status="completed", conclusion="failure", html_url="u")
     jobs = [
         {"name": "test (3.12)", "conclusion": "failure"},
@@ -291,20 +378,57 @@ def test_head_refusals_one_red_job_names_it_and_its_conclusion() -> None:
         {"name": "image", "conclusion": "success"},
     ]
     refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED)
+    assert len(refusals) == 2
+    assert any("test (3.12)" in r and "failure" in r for r in refusals)
+    assert sum("concluded" in r for r in refusals) == 1
+
+
+def test_head_refusals_a_failed_run_is_refused_even_when_every_listed_job_is_green() -> None:
+    """The debt file's own case
+    (2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md): a run can fail
+    on a job the local `required-jobs.txt` does not know yet -- a PR that grows the
+    job set, landed from a checkout that predates it. The run's own verdict catches
+    it (D-04), even with every listed job green."""
+    run = WorkflowRun(
+        id=36116930241,
+        status="completed",
+        conclusion="failure",
+        html_url="https://github.com/halfb00t/spur/actions/runs/36116930241",
+    )
+    jobs = [{"name": name, "conclusion": "success"} for name in sorted(REQUIRED)] + [
+        {"name": "lint", "conclusion": "failure"}
+    ]
+    refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED)
     assert len(refusals) == 1
-    assert "test (3.12)" in refusals[0]
     assert "failure" in refusals[0]
+    assert "actions/runs/36116930241" in refusals[0]
 
 
 def test_head_refusals_matches_the_recorded_red_run_verbatim() -> None:
     """The literal shape run 35993984796 returned, unmodified -- a required set that
-    includes `test (3.10)` (this task's pre-D-09 set) catches the one red job."""
+    includes `test (3.10)` (this task's pre-D-09 set) catches the one red job. The
+    run's own conclusion is refused too now (D-04) -- the count rises by one."""
     jobs = parse_jobs(RED_RUN_JOBS_JSON)
     run = WorkflowRun(id=35993984796, status="completed", conclusion="failure", html_url="u")
     refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED | {"test (3.10)"})
-    assert len(refusals) == 1
-    assert "test (3.10)" in refusals[0]
-    assert "failure" in refusals[0]
+    assert len(refusals) == 2
+    assert any("test (3.10)" in r and "failure" in r for r in refusals)
+    assert sum("concluded" in r for r in refusals) == 1
+
+
+def test_check_head_names_the_run_conclusion_of_recorded_run_36116930241() -> None:
+    """The real failed run 36116930241, through `check_head`: two refusals -- the
+    run's own conclusion (with its URL) and the one listed job that failed on it."""
+    runner = (
+        FakeRunner()
+        .on(f"compare/main...{RUN_36116930241_HEAD_SHA}", cp(0, CURRENT_COMPARE_JSON))
+        .on(f"runs?head_sha={RUN_36116930241_HEAD_SHA}", cp(0, RUN_36116930241_RUNS_JSON))
+        .on("runs/36116930241/jobs", cp(0, RUN_36116930241_JOBS_JSON))
+    )
+    refusals = check_head(RUN_36116930241_HEAD_SHA, runner, REQUIRED)
+    assert len(refusals) == 2
+    assert any("actions/runs/36116930241" in r and "failure" in r for r in refusals)
+    assert any("test (3.12)" in r for r in refusals)
 
 
 def test_head_refusals_a_required_job_cancelled_or_skipped_is_refused() -> None:
@@ -316,8 +440,9 @@ def test_head_refusals_a_required_job_cancelled_or_skipped_is_refused() -> None:
             {"name": "image", "conclusion": "success"},
         ]
         refusals = head_refusals(PR3_HEAD_SHA, NOT_BEHIND, run, jobs, REQUIRED)
-        assert len(refusals) == 1
-        assert bad_conclusion in refusals[0]
+        assert len(refusals) == 2
+        assert any(bad_conclusion in r for r in refusals)
+        assert sum("concluded" in r for r in refusals) == 1
 
 
 # --- compare: behind / identical / ahead --------------------------------------------
@@ -346,10 +471,11 @@ def test_head_refusals_ahead_not_behind_no_compare_refusal() -> None:
     assert head_refusals(PR3_HEAD_SHA, (3, 0), run, jobs, REQUIRED) == []
 
 
-def test_head_refusals_several_problems_at_once_prints_both_lines() -> None:
-    """Behind, and one red job, together -- both refusal lines present (the third
-    line, a skip token, is `message_refusals`' own concern -- tested combined at the
-    `land()` level below)."""
+def test_head_refusals_several_problems_at_once_prints_every_line() -> None:
+    """Behind, the run's own conclusion (D-04), and one red job, together -- all
+    three refusal lines present (a fourth possible line, a skip token, is
+    `message_refusals`' own concern -- tested combined at the `land()` level
+    below)."""
     run = WorkflowRun(id=1, status="completed", conclusion="failure", html_url="u")
     jobs = [
         {"name": "test (3.12)", "conclusion": "failure"},
@@ -357,9 +483,10 @@ def test_head_refusals_several_problems_at_once_prints_both_lines() -> None:
         {"name": "image", "conclusion": "success"},
     ]
     refusals = head_refusals(PR3_HEAD_SHA, (5, 2), run, jobs, REQUIRED)
-    assert len(refusals) == 2
+    assert len(refusals) == 3
     assert any("behind" in r for r in refusals)
     assert any("test (3.12)" in r for r in refusals)
+    assert sum("concluded" in r for r in refusals) == 1
 
 
 # --- ordering: several runs for one sha ----------------------------------------------
@@ -429,9 +556,9 @@ def test_message_refusals_token_in_a_later_paragraph_of_the_body_is_found() -> N
 
 
 def test_message_refusals_checks_the_whole_body_even_below_a_git_cut_line() -> None:
-    """CR-01 / 05-VERIFICATION.md: GitHub writes the PR title and body into the squash
-    commit verbatim, so the commit-msg hook's cut has no meaning for this text -- this
-    body passed `message_refusals` with zero refusals before this plan."""
+    """CR-01 / 05-VERIFICATION.md: git's `commit -v` cut line means nothing for this
+    text -- the hook no longer cuts either (D-02) -- so this body passed
+    `message_refusals` with zero refusals before this plan."""
     refusals = message_refusals("safe subject", CUT_LINE_BODY)
     assert len(refusals) == 1
     assert "[skip ci]" in refusals[0]
@@ -585,6 +712,7 @@ def _happy_runner(pr_json: str = PR3_VIEW_JSON.replace('"MERGED"', '"OPEN"')) ->
                 '"html_url":"https://github.com/halfb00t/spur/actions/runs/1"}]',
             ),
         )
+        .on("commits/deadbeef1234", cp(0, SQUASH_COMMIT_READ))
         .on("git switch main", cp(0))
         .on("git pull --ff-only origin main", cp(0))
         .on(
@@ -612,9 +740,37 @@ def test_land_happy_path_returns_0_and_prints_the_run_url() -> None:
     assert ["git", "switch", "main"] in runner.calls
     assert ["git", "pull", "--ff-only", "origin", "main"] in runner.calls
     assert ["git", "branch", "-D", "gsd/phase-04-typed-derived-dimensions-contract"] in runner.calls
+    assert not any("commits/" in " ".join(c) for c in runner.calls)
 
 
-def test_land_poll_timeout_reports_merged_but_no_run(capsys: pytest.CaptureFixture[str]) -> None:
+def test_land_reports_the_last_read_error_when_every_poll_failed(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D-06, branch 1: every poll read fails -- the Codex review's own reproduction,
+    `gh api` returning HTTP 403 on every attempt -- and the squash commit's message
+    is clean. `land` reports the last read error it actually saw, never a skip token
+    it never found."""
+    runner = _happy_runner().replace(
+        "runs?head_sha=deadbeef", cp(1, "", "gh: HTTP 403: API rate limit exceeded")
+    )
+    sleeps: list[float] = []
+    result = land(3, runner, attempts=3, interval_s=1.0, sleep=sleeps.append)
+    assert result == 1
+    assert sleeps == [1.0, 1.0]  # attempts - 1
+    out = capsys.readouterr().out
+    assert "IS merged" in out
+    assert "deadbeef1234" in out
+    assert "no ci.yml run observed within 3 s" in out
+    assert "last error: gh: HTTP 403" in out
+    assert "skip token" not in out
+
+
+def test_land_reports_no_run_observed_with_the_actions_url_when_reads_succeeded(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D-06, branch 2: every poll read succeeds and returns nothing, and the squash
+    commit's message is clean. `land` reports the Actions link to check by hand --
+    no last error (the reads worked), no token (there is none)."""
     runner = _happy_runner().replace("runs?head_sha=deadbeef", cp(0, "[]"))
     sleeps: list[float] = []
     result = land(3, runner, attempts=3, interval_s=1.0, sleep=sleeps.append)
@@ -623,7 +779,63 @@ def test_land_poll_timeout_reports_merged_but_no_run(capsys: pytest.CaptureFixtu
     out = capsys.readouterr().out
     assert "IS merged" in out
     assert "deadbeef1234" in out
-    assert "no ci.yml run appeared" in out
+    assert "no ci.yml run observed within 3 s" in out
+    assert "https://github.com/halfb00t/spur/actions/workflows/ci.yml" in out
+    assert "last error" not in out
+    assert "skip token" not in out
+
+
+def test_land_names_a_skip_token_only_after_reading_it_from_the_squash_commit(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D-06, branch 3: every poll read succeeds and returns nothing -- same silence
+    as branch 2 -- but this time the squash commit's own message, read only now that
+    the poll gave up, carries a token. `land` names it: the one cause it could
+    actually establish, read after the fact, never assumed up front."""
+    runner = (
+        _happy_runner()
+        .replace("runs?head_sha=deadbeef", cp(0, "[]"))
+        .replace(
+            "commits/deadbeef1234",
+            cp(
+                0,
+                "https://github.com/halfb00t/spur/commit/deadbeef1234\n"
+                "chore: ship [skip ci]\n",
+            ),
+        )
+    )
+    sleeps: list[float] = []
+    result = land(3, runner, attempts=3, interval_s=1.0, sleep=sleeps.append)
+    assert result == 1
+    out = capsys.readouterr().out
+    assert "IS merged" in out
+    assert "'[skip ci]'" in out
+    assert "last error" not in out
+    commit_calls = [
+        c
+        for c in runner.calls
+        if c[:3] == ["gh", "api", "repos/{owner}/{repo}/commits/deadbeef1234"]
+    ]
+    assert commit_calls == [
+        [
+            "gh",
+            "api",
+            "repos/{owner}/{repo}/commits/deadbeef1234",
+            "--jq",
+            ".html_url, .commit.message",
+        ]
+    ]
+
+
+def test_no_run_report_a_failed_commit_read_is_the_last_error() -> None:
+    """`no_run_report` in isolation: the squash commit read itself fails -- reported
+    as the last error (there is no message to search for a token, and no commit URL
+    to derive an Actions link from)."""
+    runner = FakeRunner().on("commits/abc", cp(1, "", "gh: HTTP 404: Not Found"))
+    report = no_run_report(3, "abc", 60.0, None, runner)
+    assert "last error" in report
+    assert "HTTP 404" in report
+    assert "actions/workflows" not in report
 
 
 def test_land_local_tip_differs_keeps_the_branch(capsys: pytest.CaptureFixture[str]) -> None:

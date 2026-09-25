@@ -1,8 +1,9 @@
 # A cached solid's `.BoundingBox()` reads wrong after it has been STL-exported
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-24
+Resolved in: 655ec52
 Source: 03-01-PLAN.md Task 2 -- discovered while adding the required all-default-gear
   structured-logging test (tests/test_api.py), which collided with
   tests/test_model.py's pre-existing `kw={}` case (see tests/conftest.py's
@@ -60,3 +61,37 @@ geometry rather than an attached mesh (check whether CadQuery/OCCT exposes a
 non-optimal, mesh-independent bounding-box call). Revisit when: a feature needs to
 compute or report a measured dimension from a `Solid` after it may have been exported,
 or if a test outside this suite's autouse-fixture protection hits the same symptom.
+
+## Resolution (2026-09-25)
+
+`Resolved in: 655ec52` is Plan 06-01 Task 1's commit (`fix(06-01): export meshes a copy,
+so the cached solid never carries a mesh`), which made `_write_export`'s STL branch mesh
+`shape.copy()` and deleted `tests/conftest.py`'s autouse `_reset_solid_cache` fixture --
+not the present commit, which records the invariant as `L24`
+(`docs/architecture/decision_log.md`) with its measurements and moves this file,
+completing the fix (a file cannot carry its own commit's sha; the ship-note record's
+pattern, `docs/tech_debt/resolved/2026-09-25-ship-note-skip-token-leaks-into-squash-merge.md`).
+
+The "Next step" option taken: the `.copy()` before the mesh-attaching operation, now
+always, not only "if a production consumer is added" -- `.BoundingBox()` still has no
+production caller, but the copy is unconditional so the invariant does not depend on
+that staying true.
+
+What now exists: `_write_export`'s STL branch meshes `shape.copy()`, never the cached
+solid itself; `tests/test_model.py::test_exporting_leaves_the_cached_solid_exact` and
+`::test_an_stl_export_matches_a_first_export_whatever_came_before` assert the invariant
+and the content-equivalence property directly; the autouse `_reset_solid_cache` fixture
+this file's own "Context" describes is gone, and `make verify`'s suite-wide pass without
+it is the cross-test proof.
+
+Evidence (06-01-SUMMARY.md's public-doorway one-liner, before and after): before the
+fix, `build(p) is s` and `zlen 7.519603716332508`, fine `46278` triangles, preview
+`46278` triangles (the fine mesh reused); after the fix, `zlen 7.500000200000001`, fine
+`46278`, preview `9066`.
+
+Two corrections to what this file recorded above, without editing its "Context" section
+(the history it was when filed, not what is true now): "the actual exported STL bytes
+are unaffected" was one observation that reproduced only 8 of 20 times across
+independently built solids (06-RESEARCH.md Pitfall 1) -- not a guarantee; and export
+content *did* depend on export history in the case this file's own reproduction did not
+try (fine export followed by preview export), which is the second RED test above.

@@ -604,3 +604,133 @@ tightened.
 one convenience without bringing a real interpreter at the new floor into CI in the same
 change — mypy cannot check a floor below its own `python_version`, so a floor with no
 real interpreter behind it is a floor checked by hope (RESEARCH.md Pitfall 4).
+
+## L24 — A cached solid never carries a mesh: STL export meshes a copy
+
+Date: 2026-09-25.
+
+`_build_cached` (an `lru_cache`, per worker, sized by `SPUR_SOLID_CACHE`) hands every
+caller the same `cq.Solid` for identical `GearParams`, by design (D-07 affinity keeps
+one gear's preview/STL/fine/STEP requests on the same worker). `Shape.exportStl()`
+attaches a triangulation to whatever solid it is called on. Measured (planning probe,
+`GearParams()`, teeth=19): before any export, `.BoundingBox().zlen` reads
+7.500000200000001; after a preview STL export, 7.587720608891235; after a fine one,
+7.519603716332508. Worse than a stale diagnostic: a preview STL export taken *after* a
+fine one returned the fine mesh — 46,278 triangles, not the 9,066 a first preview export
+gives — because OCCT keeps an existing triangulation that already satisfies the coarser
+tolerance. Export content depended on what a worker had exported before for that gear.
+
+**The invariant.** A solid returned by `_build_cached` never carries a mesh.
+`_write_export`'s STL branch meshes `shape.copy()` — no positional argument to `copy()`
+(its one parameter is `mesh`, default `False`; `copy(mesh=True)` would carry a mesh
+across). The STEP branch is unchanged: a STEP export attaches no mesh, so the cached
+solid already stayed exact through it (zlen 7.500000200000001 after
+`export(p, "step")`).
+
+**Why a copy and not a strip.** `BRepTools.Clean_s(shape.wrapped)` — the installed
+`cadquery-ocp`'s actual name for the debt file's `.Clean` — strips a mesh *after*
+export, so the cached object would carry a mesh for the whole export window; `build()`
+releases `_LOCK` before callers read the solid, so the invariant would hold only between
+exports, not during one. Research's timings (06-RESEARCH.md, 2026-09-25,
+`.venv/bin/python`, Apple M2 Max, 12 cores, 32 GiB, macOS Darwin 27.0.0, mean of 3):
+reference preview / reference fine / 200-tooth preview / 200-tooth fine — copy 23.1 /
+70.9 / 260.9 / 824.2 ms, `Clean_s` 20.2 / 63.1 / 244.9 / 791.3 ms. `Clean_s` measured
+4-13% faster across the board and was rejected anyway, by the human at plan time, for
+the export-window reason above.
+
+**What the copy costs** (planning measurement, same machine, load average 3.5-5.0 — a
+busy host — mean of 3, export only, build excluded): in place 18.7 / 59.6 / 216.0 /
+719.2 ms vs. copy 20.3 / 61.0 / 230.0 / 736.8 ms (+1.4 to +17.6 ms per export); STL
+bytes identical across in-place, copy and `Clean_s` runs (453,384 / 2,313,984 /
+3,135,284 / 9,086,484 bytes). Peak RSS of one 200-tooth fine export, one process per
+run, `resource.getrusage(...).ru_maxrss` on macOS: in place 1263.0 and 1264.4 MiB, copy
+1270.7 and 1267.6 MiB — not a container measurement, so `mem_limit` (L17) is not
+re-derived here; `make bench.memory` is the instrument if that is ever needed. The two
+timing sessions (research's and planning's) differ by up to ~15% on the same machine; both
+are recorded rather than one cleaned-up figure.
+
+**The proof is content equivalence, not a byte diff.** OCCT export is not
+byte-reproducible across independently built solids — matched byte-for-byte in only
+8 of 20 reruns (06-RESEARCH.md Pitfall 1) — but triangle count and decoded volume are:
+8 preview and 4 fine independent builds of `GearParams()` gave 9,066 / 46,278 triangles
+every time, decoded-volume difference 0.0. `tests/test_model.py::
+test_exporting_leaves_the_cached_solid_exact` and `::test_an_stl_export_matches_a_first_
+export_whatever_came_before` are the tests; `tests/conftest.py`'s autouse solid-cache
+reset (Phase 3's test-side workaround) was deleted in the fixing commit (D-09) — the
+whole suite passing without it is the cross-test proof.
+
+**Rejected.** Call-site discipline (an exact-bounds helper plus a grep asserting nothing
+calls `.BoundingBox()` on a cached solid) — the cache would still hand out a mutated
+object to any caller that did. The strip-after-export route (above).
+
+**Reversibility.** Reversible — local to `_write_export`; reverting is one call, and no
+data, published contract or other module reads the cached object.
+
+**Reason:** the most likely future regression is a new mesh-attaching call on the cached
+object (a new export format, a tessellation for a preview endpoint) or a copy call that
+carries the mesh across (`copy(mesh=True)`); the two named tests above go red the moment
+either happens.
+
+## L25 — The merge gate reads the whole commit message and the run's own verdict (amends L22)
+
+Date: 2026-09-25.
+
+L22 stays as written; this entry amends three of its claims, closed in the three plans of
+this phase.
+
+**The hook has no cut** (D-02, Plan 06-02). L22's "above git's `commit -v` scissors line"
+no longer holds: the `commit-msg` hook now searches the whole buffer git hands it, with no
+cut, ever. Why: a cut line typed by hand in an editor session is byte-identical to git's
+own, and `GIT_EDITOR` only tells the hook whether an editor ran, not whether `-v` was
+given -- no content or environment signal distinguishes the two. A scratch-clone probe
+this phase (a hand-typed cut line inside an editor session): committed with the token
+before this change, refused after. Cost: a `git commit -v` whose appended staged diff
+names a token is refused too -- the refusal names the line and says to commit without
+`-v`; `git config --get commit.verbose` read empty on this machine, 2026-09-25 -- nobody
+is opted in.
+
+**Green is the run's own verdict and every named job** (D-04, Plan 06-03). `head_refusals`
+now also refuses a completed run whose own `conclusion` is not `success`, naming the
+conclusion and the run's `html_url` -- in addition to the unchanged per-job loop, which
+stays because it is what names a *missing* job, something a green run conclusion cannot.
+The required list is still the local `.github/workflows/required-jobs.txt`; the
+stale-checkout half is closed by rule, not by a fetch -- `docs/HOW_TO_DEVELOP.md` §8 says
+`make pr.land` is run from an up-to-date `main` checkout. Evidence: the real failed run
+36116930241, through the live `gh`, refused with two lines before this fix and three
+after (the added line names `conclusion 'failure'` and the run's URL). The drift test in
+`tests/test_pr_land.py` now compares `required_jobs()` against the effective job names
+GitHub actually reports (`jobs.<id>.name` when a job sets one, else the id), not raw job
+ids, so a `name:` override moves the derived required set the same way it moves what
+GitHub reports.
+
+**What `pr.land` proves, and what rests on the ruleset** (D-07, D-06, Plan 06-04). L22's
+sentence that its merged-tree claim "is proven here, not rested on a server setting
+outside git this module does not read" over-claimed: `gh pr merge --match-head-commit`
+pins the head, not the base, so the window between `pr.land`'s `behind_by` read and the
+merge call rests on the ruleset's strict up-to-date policy (D-12, no bypass actors), not
+on anything this module itself reads. The module docstring and `docs/HOW_TO_DEVELOP.md`
+§8 now say so explicitly. Step 5 no longer blames a skip token for every unobserved
+post-merge run: it reports exactly what it observed -- the last read error, an Actions
+link to check when the reads worked and nothing appeared, or a named skip token, and only
+after reading it from the squash commit's own message through
+`gh api repos/{owner}/{repo}/commits/<sha> --jq '.html_url, .commit.message'`.
+
+**Rejected.** A config-driven cut for the hook -- a `-v` on the command line stays
+invisible to config, so it over-matches anyway and keeps the heuristic it was meant to
+replace. Accepting the cut-line residual -- leaves a `must` item open by design. Reading
+`required-jobs.txt` from the PR head over the network -- a read in front of the pure
+decision core, for a case the run-conclusion check already refuses. A second `behind_by`
+read immediately before `gh pr merge` -- narrows the read-to-merge window without closing
+it, for one more network read per land. Never diagnosing an unobserved post-merge run --
+loses the one cause the tool can actually establish (a token, read after the fact).
+
+**Reversibility.** Reversible -- each change is local to `scripts/skip_tokens.py`'s
+`main()`, `scripts/pr_land.py`'s `head_refusals`, or `land`'s step 5 and its new
+`no_run_report`; the cut and its own tests are in history (`3e68e74`).
+
+**Reason:** the most likely future regressions -- the cut re-added "so `-v` commits
+pass"; a run judged green by its listed jobs alone again, missing an unlisted job's
+failure; a post-merge report that names a cause it did not itself read. Each is now a
+test this phase added: the whole-buffer cut-line case in `tests/test_skip_tokens.py`, the
+unlisted-job case and the real-run probe in `tests/test_pr_land.py`, and the three
+`no_run_report` branch cases plus the live probe against `b72b0e1` and `20b63e4`.
