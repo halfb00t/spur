@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 05
 current_phase_name: CI Observed Green
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-09-25T06:37:49.632Z"
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-09-25T06:51:34.748Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 05 execution started
-state_head: bce08ef4fcedca92d09230cc7052899abac66cc5
+state_head: a6c111405e0325cd699ee3582482c42efe76d7ab
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
 milestone_name: Hardening
 ---
 
@@ -30,7 +30,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 05 (CI Observed Green) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-09-25 — Phase 05 execution started
 
@@ -76,6 +76,7 @@ Code review came back clean (1 info) and verification passed 4/4 with no fix pas
 | Phase 04 P03 | 9min | 3 tasks | 7 files |
 | Phase 05 P01 | 12 min | 2 tasks | 8 files |
 | Phase 05 P02 | ~35min | 2 tasks | 5 files |
+| Phase 05 P03 | ~13min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ L17–L19):
 - [Phase 05]: Git's commit -v scissors cut line is exactly '# ' + 24 dashes + ' >8 ' + 24 dashes -- verified byte-for-byte in a scratch repo this session, not taken from the plan's prose alone. — 05-01-SUMMARY.md key-decisions
 - [Phase 05]: 05-02: head_refusals gains a required compare:tuple[int,int] param (no default) in Task 2 -- check_head always fetches it, so a default would be dead code — Task 1's own tests updated in the same commit to pass a neutral NOT_BEHIND=(1,0)
 - [Phase 05]: 05-02: JSON-field narrowing uses isinstance-based _as_object/_as_array/_as_int/_as_str helpers raising TypeError, not # type: ignore comments — mypy --strict flagged the ignore comment as unused/wrong-code; ruff TRY004/TRY301/TRY300 flagged the inline isinstance-raise pattern; matches L21's object-narrowed-at-use convention
+- [Phase 05]: 05-03: Retargeted the repository's existing `default` ruleset (id 23977515) onto `main` rather than creating a second ruleset -- planning's flagged assumption 1 confirmed live before the change (empty `include`, exactly deletion/non_fast_forward/pull_request); required checks are the post-D-09 set (test (3.12), vendor-bundle, image) applied now, before Plan 05-04 collapses the CI matrix
+- [Phase 05]: 05-03: docs/HOW_TO_DEVELOP.md Section 8's old manual `git switch main && git pull --ff-only ... && git branch -D ...` block was removed entirely rather than merged with the new pr.land description -- make pr.land performs every one of those steps itself (confirmed against scripts/pr_land.py's land() control flow); L22 is one decision-log entry covering D-02 through D-05 and D-12, not five entries
 
 ### Pending Todos
 
@@ -184,6 +187,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T06:37:49.597Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-09-25T06:51:25.906Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None

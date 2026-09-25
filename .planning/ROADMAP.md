@@ -221,7 +221,7 @@ into any of them per the milestone's own scoping)
      `gh api repos/halfb00t/spur/rules/branches/main`; `docs/HOW_TO_DEVELOP.md` §8 records
      the command that applied it. *(D-12, supersedes D-06 — added in plan-phase 2026-09-25
      after verifying the repository is public)*
-**Plans**: 2/5 plans executed, in 5 waves (each depends on the one before — `Makefile`,
+**Plans**: 3/5 plans executed, in 5 waves (each depends on the one before — `Makefile`,
 `docs/HOW_TO_DEVELOP.md`, `docs/architecture/decision_log.md` and
 `.github/workflows/required-jobs.txt` are touched by more than one plan, L22 must be
 appended before L23, and the pre-commit hook runs `make verify` in the one working tree)
@@ -234,7 +234,7 @@ appended before L23, and the pre-commit hook runs `make verify` in the one worki
   and body, prints the squash commit's run URL or exits non-zero (tracer); then every
   stale, red, missing or token-carrying PR refused, and `required-jobs.txt` held equal to
   `ci.yml` *(wave 2)*
-- [ ] 05-03-PLAN.md — The wall: the repository's `default` ruleset retargeted to `main`
+- [x] 05-03-PLAN.md — The wall: the repository's `default` ruleset retargeted to `main`
   (`test (3.12)`, `vendor-bundle`, `image` green on an up-to-date head; a pull request
   required), read back via `rules/branches/main` and recorded in §8; §8 rewritten around
   `make pr.land`, the sanctioned path through it, and §2 no longer pushing to `main`;
@@ -272,4 +272,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
-| 5. CI Observed Green | 2/5 | In Progress|  |
+| 5. CI Observed Green | 3/5 | In Progress|  |
