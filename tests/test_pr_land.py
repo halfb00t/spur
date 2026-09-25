@@ -429,9 +429,9 @@ def test_message_refusals_token_in_a_later_paragraph_of_the_body_is_found() -> N
 
 
 def test_message_refusals_checks_the_whole_body_even_below_a_git_cut_line() -> None:
-    """CR-01 / 05-VERIFICATION.md: GitHub writes the PR title and body into the squash
-    commit verbatim, so the commit-msg hook's cut has no meaning for this text -- this
-    body passed `message_refusals` with zero refusals before this plan."""
+    """CR-01 / 05-VERIFICATION.md: git's `commit -v` cut line means nothing for this
+    text -- the hook no longer cuts either (D-02) -- so this body passed
+    `message_refusals` with zero refusals before this plan."""
     refusals = message_refusals("safe subject", CUT_LINE_BODY)
     assert len(refusals) == 1
     assert "[skip ci]" in refusals[0]

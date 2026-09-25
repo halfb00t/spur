@@ -13,13 +13,16 @@ skipped and needed the empty trigger commit `87d500e`. Blocking at commit time c
 holes, for every tool that commits here -- human, `gsd-ship`, or anything else.
 
 This module serves two callers: the `no-skip-token` commit-msg hook below (`main`), and,
-from Plan 05-02, `make pr.land`'s check of the squash commit's subject and body -- one
-pattern, so the two checks cannot drift apart. Both call one function, `find_skip_tokens`,
-on the text each hands in: `main` removes what git discards below its cut line first, but
-only when git ran an editor (`GIT_EDITOR` is not `:`, githooks(5)) -- otherwise a
-hand-written cut line is text the author wrote, and `main` reads past it; `make pr.land`
-hands in the PR title and body whole, because GitHub records them verbatim with no git
-cleanup step at all (CR-01, 05-VERIFICATION.md, Plan 05-06).
+from Plan 05-02, `make pr.land`'s check of the squash commit's subject and body. Both hand
+`find_skip_tokens` the whole text they were given -- the hook the buffer git hands a
+commit-msg hook, `make pr.land` the PR title and body -- one pattern, so the two checks
+cannot drift apart (D-02). There is no cut, ever: a cut line typed by hand in an editor
+session is byte-identical to git's own, and `GIT_EDITOR` only says whether an editor ran,
+not whether `-v` was given, so no signal distinguishes the two
+(docs/tech_debt/resolved/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md). The
+accepted cost: a `git commit -v` whose appended staged diff names a token is refused too
+(`git config --get commit.verbose` reads empty on this machine, 2026-09-25) -- the
+refusal names the line and tells the author to commit without `-v` (D-03).
 
 The match is deliberately broader than GitHub's own: case-insensitive, anywhere in the
 message. GitHub's documentation does not state a case rule -- over-matching costs a
@@ -30,7 +33,6 @@ failure this phase responds to, `538d26f` and `bfc9110`).
 from __future__ import annotations
 
 import argparse
-import os
 import re
 from pathlib import Path
 
@@ -44,34 +46,13 @@ SKIP_TOKEN = re.compile(
     re.IGNORECASE,
 )
 
-# git truncates a commit message at this line only in `commit -v`/`commit.verbose` mode
-# or with an explicit `--cleanup=scissors` -- never for a plain `-m`/`-F` commit, and
-# never for text (like a GitHub PR body) that has no git cleanup step at all. Found by a
-# planning probe in a scratch repository: the line is exactly a comment character, one
-# space, 24 dashes, one space, `>8`, one space, 24 dashes
-# (`# ------------------------ >8 ------------------------`, confirmed byte for byte
-# against a real `git commit -v` buffer). The cut is applied by `main` alone, below --
-# never inside `find_skip_tokens` -- so a caller whose text never went through git's
-# editor is never cut by default (CR-01, 05-VERIFICATION.md, Plan 05-06 Decision (a)),
-# and even then `main` applies it only when git actually ran an editor (see `main`'s
-# `editor_ran` comment below) -- a hand-typed cut line in an editor session without
-# `-v` is the one shape neither check can tell apart, filed as debt.
-_SCISSORS = re.compile(r"^# -{24} >8 -{24}$", re.MULTILINE)
-
-
-def message_to_check(raw: str) -> str:
-    """The text above the first scissors line, or all of `raw` when there is none."""
-    match = _SCISSORS.search(raw)
-    return raw[: match.start()] if match else raw
-
 
 def find_skip_tokens(message: str) -> list[str]:
     """Every skip token in the whole of `message`, in order of appearance, as the matched
-    text -- no cut. Pure -- no I/O, so `pr.land` (Plan 05-02) can call it against a squash
-    subject and body with no message-file round trip. The cut is the hook's own step
-    (`main`, below), applied only to the editor buffer git hands a commit-msg hook -- a
-    body that hid a token below a forged cut line passed the check that used to cut here
-    (CR-01, 05-VERIFICATION.md)."""
+    text. Pure -- no I/O, so `pr.land` (Plan 05-02) can call it against a squash subject
+    and body with no message-file round trip. Neither caller cuts: the hook (`main`,
+    below) hands in the whole buffer git gives it, and `make pr.land` hands in the whole
+    PR title and body (D-02)."""
     return [m.group(0) for m in SKIP_TOKEN.finditer(message)]
 
 
@@ -87,29 +68,36 @@ def main(argv: list[str] | None = None) -> int:
     # Replace, not raise: an invalid-UTF-8 byte in the message must still be checked --
     # refused if it carries a token, accepted if it does not -- never a traceback.
     raw = Path(args.message_file).read_text(encoding="utf-8", errors="replace")
-    # Cut only when git ran an editor. githooks(5): "All the git commit hooks are
-    # invoked with the environment variable GIT_EDITOR=: if the command will not bring
-    # up an editor" -- git sets this itself, for every commit hook, overriding whatever
-    # the calling shell had. Git appends `-v`'s staged diff only to an editor buffer,
-    # and truncates at the cut line only with `-v`/`commit.verbose` or
-    # `--cleanup=scissors`; a planning probe (git 2.54.0, 2026-09-25) recorded a
-    # hand-written cut line and what followed it verbatim for `-m` and `-F`, which run
-    # with no editor. Refusing there is the documented safe over-match when git would
-    # have truncated anyway (`-v -m`). What this still cannot see -- an editor session
-    # without `-v` in which the cut line was typed by hand -- is filed as debt:
-    # docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md.
-    editor_ran = os.environ.get("GIT_EDITOR") != ":"
-    tokens = find_skip_tokens(message_to_check(raw) if editor_ran else raw)
+    # No cut, ever (D-02): a cut line typed by hand in an editor session without `-v` is
+    # byte-identical to git's own, and githooks(5)'s `GIT_EDITOR=:` signal only tells
+    # this hook whether an editor ran, not whether `-v` was given -- there is no content
+    # or environment signal left that tells the two apart
+    # (docs/tech_debt/resolved/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md).
+    # The one false positive this buys: a `git commit -v` whose appended staged diff
+    # names a token is refused too -- the refusal below names the line and tells the
+    # author to commit without `-v` (D-03).
+    tokens = find_skip_tokens(raw)
     if not tokens:
         return 0
 
     print("make: this commit message carries a GitHub Actions skip token:")
+    # Each token's 1-based line: walk `raw` with str.index from the end of the previous
+    # match so an earlier occurrence of the same text is never mistaken for this one's
+    # start (find_skip_tokens returns matches in order of appearance, non-overlapping).
+    search_from = 0
     for token in tokens:
-        print(f"      {token!r}")
+        pos = raw.index(token, search_from)
+        line_no = raw.count("\n", 0, pos) + 1
+        print(f"      line {line_no}: {token!r}")
+        search_from = pos + len(token)
     print("      A skip token here silences CI on this commit, and on a PR head it")
     print("      leaves the PR with zero checks.")
     print('      Describe it in words instead ("a GitHub Actions skip token") -- do not')
     print("      write the literal token.")
+    print(
+        "      If a named line is in the diff `git commit -v` appends below the cut"
+        " line, commit without -v -- this hook reads the whole message either way."
+    )
     print(
         "      See docs/tech_debt/resolved/"
         "2026-09-25-ship-note-skip-token-leaks-into-squash-merge.md."
