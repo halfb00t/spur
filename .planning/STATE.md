@@ -145,10 +145,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- **CI workflow unverified.** `.github/workflows/ci.yml` was hand-verified step-by-step but
-  has never executed inside GitHub Actions (per `docs/plan-2026-09-21.md`). Now Phase 5's
-  entire scope: a real push, a run URL, three jobs (`test` matrix, `vendor-bundle`,
-  `image`) observed green.
 - ⚠️ [Phase 2] The ten-concurrent `/api/health` latency bar (≤2.00x idle p95) was waived,
   not demonstrated: eight runs across four sessions read 1.31x–2.45x and never ≤2.00x on
   both runs of one session. The caveat and two uninvestigated observations (every second
@@ -163,7 +159,12 @@ None yet.
   `docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md`
   (must). Triggers: a feature needs a measured dimension from a `Solid` after export, or a
   test outside the fixture's protection hits the symptom.
-- *(Resolved in Phase 4: "Untyped info contract" — `013900d` (the model) / `cfe5f8d` (the
+- *(Resolved in Phase 5: "CI workflow unverified" — the premise was false: main push run
+  <https://github.com/halfb00t/spur/actions/runs/35963114939> (`59f02c3`, all four jobs
+  green) and PR #3 head run <https://github.com/halfb00t/spur/actions/runs/36088409707>
+  (`2c4b544`, tree-identical to `bfc9110`); L22's merge gate keeps it true, and this
+  phase's own squash-commit run is recorded after `make pr.land` prints it. Resolved in
+  Phase 4: "Untyped info contract" — `013900d` (the model) / `cfe5f8d` (the
   rule turned on and the debt file retired, same commit), moved to
   `docs/tech_debt/resolved/`; L14 superseded by L21. Resolved in Phase 3: "No structured logging anywhere" — `21b8fe4`/`013997a`, moved to
   `docs/tech_debt/resolved/`; L20. Resolved in Phase 2: "CAD builds block the event loop" — `daeb284`, moved to

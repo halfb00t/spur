@@ -122,8 +122,8 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
 
 ## Constraints
 
-- **Runtime**: Python 3.10–3.12 — `cadquery-ocp` publishes wheels for nothing newer or
-  older; Docker image pins `python:3.12-slim-bookworm` (L01, L12).
+- **Runtime**: Python 3.12 only — `cadquery-ocp` publishes wheels for nothing newer, and
+  the floor is L23's; Docker image pins `python:3.12-slim-bookworm` (L01, L12, L23).
 - **Stack**: CadQuery/OpenCascade for the solid, FastAPI + Pydantic v2 + uvicorn for the
   API, argparse for the CLI, vanilla JS + a vendored tree-shaken three.js bundle for the
   viewer (no Node at runtime), pytest, Docker + compose, GitHub Actions (L01, L11).

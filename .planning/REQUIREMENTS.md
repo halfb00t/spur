@@ -145,7 +145,7 @@ it retires. Feature work is deferred to the next milestone ("Future Requirements
 ### Delivery
 
 - [ ] **REQ-ci-verified**: `.github/workflows/ci.yml` is observed executing green in GitHub
-  Actions on both supported Python versions — not hand-verified step-by-step.
+  Actions on the supported Python version (3.12, L23) — not hand-verified step-by-step.
   - *Retires*: the "CI workflow unverified" blocker carried in `STATE.md` since the
     2026-09-21 bootstrap (source: `docs/plan-2026-09-21.md`).
   - *Acceptance*: a run URL, on a real push, showing the gate and both container checks
