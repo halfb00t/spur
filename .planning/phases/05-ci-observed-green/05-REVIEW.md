@@ -1,109 +1,142 @@
 ---
 phase: 05-ci-observed-green
-reviewed: 2026-09-25T08:41:41Z
+reviewed: 2026-09-25T00:00:00Z
 depth: standard
 files_reviewed: 6
 files_reviewed_list:
+  - docs/tech_debt/active/2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md
+  - docs/tech_debt/active/2026-09-25-pr-land-blames-a-skip-token-for-any-missed-post-merge-run.md
+  - docs/tech_debt/active/2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md
   - docs/tech_debt/INDEX.md
-  - docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md
-  - scripts/pr_land.py
-  - scripts/skip_tokens.py
-  - tests/test_pr_land.py
-  - tests/test_skip_tokens.py
+  - docs/tech_debt/resolved/2026-09-25-test-pool-wedged-worker-flakes-on-the-github-runner.md
+  - tests/test_pool.py
 findings:
   critical: 0
-  warning: 0
+  warning: 4
   info: 0
-  total: 0
-status: clean
+  total: 4
+status: issues_found
 ---
 
-# Phase 05: Code Review Report (incremental — Plan 05-06 gap closure)
+# Phase 05: Code Review Report
 
-**Reviewed:** 2026-09-25T08:41:41Z
+**Reviewed:** 2026-09-25T00:00:00Z
 **Depth:** standard
 **Files Reviewed:** 6
-**Status:** clean
+**Status:** issues_found
 
 ## Summary
 
-This is a re-review of Plan 05-06, which was written to close CR-01 from the prior
-`05-REVIEW.md` (commit `5ded6ad`): `message_refusals()` in `scripts/pr_land.py` reused
-`find_skip_tokens()`'s internal cut at git's `commit -v` scissors line on PR title/body
-text that git never truncates, so a PR body hiding a skip token below a hand-written
-line identical to that cut line passed `pr.land` with zero refusals.
+This is the second review of Phase 5, scoped to what changed since commit `a353c94`:
+`tests/test_pool.py`'s wedged-worker test (commits `ae052f8`, `3c096de`) and four new
+tech-debt records filed from a cross-CLI review of PR #4 plus the CI flake those
+commits fixed.
 
-**CR-01 is closed.** Verified by re-reading both the diff and the resulting code at
-HEAD, not just the plan's narrative:
+The test fix itself is sound. I traced `test_a_wedged_build_is_terminated_and_its_
+worker_replaced` against `src/spur/pool.py`'s `_run_with_timeout`/`recreate_for`: the
+manager thread is captured before `recreate_for`'s `shutdown(wait=False)` drops the
+executor's reference to it, `manager.join(timeout=5)` is followed by a liveness check
+before `proc.exitcode` is read (closing the residual `waitpid` race that `ae052f8`
+alone left open), and the signal-number assertion (`-signal.SIGTERM`) is a stronger,
+race-free replacement for the old `proc.is_alive()` check. No bug found in the test
+logic itself.
 
-- `find_skip_tokens()` (`scripts/skip_tokens.py:68-75`) no longer cuts at all — it is
-  now a pure, unconditional scan of whatever text it is handed. The cut was moved
-  entirely into the one caller that needs it.
-- `message_refusals()` (`scripts/pr_land.py:238-253`) calls `find_skip_tokens()` on the
-  whole `subject + "\n\n" + body`, with no cut applied anywhere on that path — this is
-  exactly the text GitHub records verbatim into the squash commit, so there is nothing
-  for a git cut line to mean there.
-- `main()` (`scripts/skip_tokens.py:78-117`, the commit-msg hook entry) now applies the
-  scissors cut only when `os.environ.get("GIT_EDITOR") != ":"` — i.e. only when git
-  actually ran an editor for this commit (githooks(5): git itself forces
-  `GIT_EDITOR=:` for every commit hook when no editor will run). For a plain `-m`/`-F`
-  commit this is strictly *more* scanning than the pre-05-06 code did (the old
-  `find_skip_tokens` cut unconditionally, including for `-m`/`-F`), so this is a
-  widening of what gets refused, never a narrowing.
-- Regression tests exist at both layers and pass: `test_find_skip_tokens_searches_the_
-  whole_text_it_is_given`, `test_message_refusals_checks_the_whole_body_even_below_a_
-  git_cut_line`, and the end-to-end `test_land_refuses_a_token_hidden_below_a_git_cut_
-  line_in_the_pr_body` all reproduce the exact CR-01 shape and assert it is now
-  refused. `test_hook_without_an_editor_refuses_a_token_below_a_cut_line` pins the
-  hook's own `-m`/`-F` case the same way.
-- Ran the two affected test files directly (not just trusted the plan's own claim):
-  `.venv/bin/python -m pytest tests/test_skip_tokens.py tests/test_pr_land.py -q` →
-  `79 passed`. `ruff check` and `mypy --strict` on all four source/test files under
-  review → clean.
+The issues are all in the surrounding documentation: three of the four new/updated
+tech-debt records contain a factual or attribution error, verified independently
+against the actual source they cite (`scripts/pr_land.py`, `.github/workflows/ci.yml`)
+rather than taken on the external reviewer's word. One further issue, found
+independently: the resolved debt record's provenance is now stale relative to
+`3c096de`. None of these are runtime bugs — the shipped test and pool code are
+correct — but three are "must"/"nice" tracked items whose own fix guidance would
+mislead or misfire if followed literally, which defeats the purpose of filing them.
 
-**Residual, correctly scoped and filed, not a new defect.** An editor session (`git
-commit` with no `-m`/`-F`) in which the author hand-types or pastes a line
-byte-identical to git's own scissors line, without `-v`, `commit.verbose`, or
-`--cleanup=scissors`, still hides a token below it from the hook — content alone cannot
-distinguish that from git's own cut, and `GIT_EDITOR` only distinguishes "no editor"
-from "editor", not "editor with `-v`" from "editor without it". This is filed as `must`
-severity in `docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-
-line.md` and linked from `docs/tech_debt/INDEX.md`, in the same commit as the fix, per
-this project's own process. The doc's own "why it matters" argument was checked, not
-just read: a commit made this way still cannot reach `main` silently, because its own
-CI run never appears for that head (the token suppresses it), and `pr.land`'s
-`check_head` refuses a run-less head unconditionally — the backstop is real, not
-asserted. `must` (not `blocker`) is the right tier under this repo's own severity
-definitions (`docs/tech_debt/INDEX.md`): the failure mode is a refused merge, not
-silent data loss or a silent partial success.
+## Warnings
 
-**Lines chased and ruled out, worth recording for the next reviewer.** Because `main()`
-now branches on `os.environ.get("GIT_EDITOR")`, and the commit-msg hook actually runs
-through the `pre-commit` framework (`.pre-commit-config.yaml`'s `no-skip-token`
-`language: system` entry), it was worth checking whether `pre-commit` sanitizes
-`GIT_*` environment variables before invoking hook subprocesses — it has a
-`no_git_env()` helper (`pre_commit/git.py`) that strips everything prefixed `GIT_`
-except a narrow allowlist that does **not** include `GIT_EDITOR`. If that helper were
-used on the path that spawns hook entries, `os.environ.get("GIT_EDITOR")` would always
-read `None` under the real hook and `editor_ran` would always evaluate `True`,
-silently defeating the `-m`/`-F` branch this plan added. Traced the actual call path
-(`unsupported_script.run_hook` → `lang_base.run_xargs` → `xargs.xargs` →
-`cmd_output_p`): none of it passes an `env=` override, so hook subprocesses inherit
-`os.environ` unmodified; `no_git_env()` is used only for `pre-commit`'s own internal
-`git` invocations elsewhere in that package. No bug here — but this was not obvious
-from reading `scripts/skip_tokens.py` alone, and is exactly the kind of assumption
-`docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md`
-itself flags as unverified-behavior risk. Recorded here rather than in `docs/tech_debt/`
-because it resolved to "no defect," not to a decision or a deferred fix.
+### WR-01: The unlisted-job debt record's fix guidance names the wrong function and variable (external: codex)
 
-No other defect was found in the diff. `docs/tech_debt/INDEX.md`'s new row and the new
-debt file's `Related files`/`Trigger` fields match what actually changed; no dangling
-reference, no severity mismatch, no missing INDEX row.
+**File:** `docs/tech_debt/active/2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md:9-10,41`
+**Issue:** The record's "Related files" section attributes the per-job verdict loop
+(`for name in sorted(required): ...`) to `check_head`, and its "Next step" says "In
+`check_head`, refuse when `run.conclusion != "success"`". Neither is where that code
+lives. Verified against `scripts/pr_land.py`:
+- The loop is inside `head_refusals` (`scripts/pr_land.py:286`), not `check_head`
+  (`scripts/pr_land.py:296`). `check_head` only calls `head_refusals` at its end
+  (`scripts/pr_land.py:337`).
+- Inside `check_head`'s own scope, the name `run` is bound to the `Runner` callable
+  parameter (`def check_head(sha: str, run: Runner, required: frozenset[str])`,
+  `scripts/pr_land.py:296`) — used throughout that function as `run(["gh", "api", ...])`.
+  It has no `.conclusion` attribute; that attribute exists only on `head_refusals`'s
+  same-named but differently-typed parameter (`run: WorkflowRun | None`,
+  `scripts/pr_land.py:256`). A literal reading of the guidance ("in `check_head`, refuse
+  when `run.conclusion`") points at the wrong object and would raise `AttributeError`
+  on the `Runner` callable if implemented as written.
+**Fix:** Correct the citation and guidance to point at `head_refusals`: "In
+`head_refusals`, alongside the per-job loop, refuse when `run.conclusion != "success"`
+(`run` here is the `WorkflowRun`, not the `Runner` callable `check_head` takes)."
 
-All reviewed files meet quality standards for this change. No issues found.
+### WR-02: The drift-test debt record's proposed fix would reject the workflow's own step names (external: codex)
+
+**File:** `docs/tech_debt/active/2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md:32-34`
+**Issue:** The record's "Next step" proposes: "assert that no `name:` key appears in
+the `jobs:` section (three lines, next to the existing `assert "test" in job_ids`)".
+`jobs_section` in the drift test is `ci_yml.split("\njobs:\n", 1)[1]`
+(`tests/test_pr_land.py:195`) — everything under `jobs:`, which includes step-level
+`name:` keys, not just job-level ones. `.github/workflows/ci.yml` already has two:
+`- name: bundle matches web/` (line 44) and `- name: the packaged entrypoint serves a
+gear` (line 58). A literal "no `name:` key in the `jobs:` section" assertion would fail
+immediately against the current, correct workflow — the opposite of the record's own
+stated goal (catching a *job*-level rename, not flagging legitimate step names).
+**Fix:** Scope the proposed assertion to job-level `name:` only — e.g. a regex anchored
+to the same two-space job-id indent already used for `job_ids`
+(`^  name:\s`, immediately after a job-id line, or restrict the search to lines that
+are siblings of the `^  ([a-zA-Z][\w-]*):\s*$` matches) rather than any `name:` in the
+whole `jobs:` subtree.
+
+### WR-03: The wedged-build test states an inferred race mechanism as established fact, unlike the debt record it summarizes (external: codex)
+
+**File:** `tests/test_pool.py:173-186`
+**Issue:** The comment above `manager.join(timeout=5)` asserts as fact: "the manager
+thread and this one wake on the same process sentinel and race to `os.waitpid` for the
+same child... The old `proc.join(timeout=5); assert not proc.is_alive()` failed that
+way on the GitHub runner on 4 of 5 attempts... with the worker in fact dead". The
+resolved debt record this test's fix is drawn from is explicit that this is *not*
+established: "The one mechanism found that makes the assertion lie... inferred from
+CPython 3.12's source this session, not observed (**ASSUMPTION**)"
+(`docs/tech_debt/resolved/2026-09-25-test-pool-wedged-worker-flakes-on-the-github-
+runner.md:46-47`), and its own "Next step" section says the race hypothesis is proven
+"by the next runner failure printing an exit code instead of `assert not True` -- or by
+there being none" — i.e., not yet, at time of filing. `CLAUDE.md` requires guesses to
+be flagged as `ASSUMPTION:` and surfaced; the test comment drops that qualifier and
+reads as a confirmed diagnosis. A future reader debugging a *different* flake in this
+test, working only from the comment (not the resolved debt file), would treat the
+`waitpid` race as proven when it is still an inference.
+**Fix:** Carry the qualifier into the test comment, e.g. replace "failed that way" with
+"is consistent with failing that way (ASSUMPTION, not directly observed — see the
+resolved debt record for what was and wasn't checked)".
+
+### WR-04: The resolved wedged-worker debt record's provenance is stale — it doesn't mention `3c096de`'s follow-up fix to its own fix
+
+**File:** `docs/tech_debt/resolved/2026-09-25-test-pool-wedged-worker-flakes-on-the-github-runner.md`
+**Issue:** This record was moved to `resolved/` in `9cf4a30` ("resolved, the fix itself
+is `ae052f8`"), and still says only `Resolved in: ae052f8` with no mention of
+`3c096de`. But `3c096de` — committed *after* `9cf4a30` — is itself a fix to a residual
+race in `ae052f8`'s fix, found by a Codex re-review of `ae052f8`: `ae052f8`'s version
+joined the manager thread and immediately read `proc.exitcode` with no liveness check
+in between, and per `3c096de`'s own commit message, "a timed `Thread.join` gives no
+guarantee the manager thread finished, and `proc.exitcode` read while it is still
+running calls `Popen.poll` -- the same concurrent `waitpid` the fix set out to remove."
+That is exactly the class of bug this debt record exists to track, reintroduced by the
+record's own prescribed fix and closed by a commit the record never references. A
+reader who trusts "Status: resolved, Resolved in: ae052f8" and stops there is trusting
+an account that stopped one commit short of what actually shipped.
+**Fix:** Amend the record (or its `Related files`/body) to add `3c096de` alongside
+`ae052f8` as part of "Resolved in", and note the residual race Codex's re-review found
+and what closed it — the same standard of evidence this project applies everywhere
+else in this file (it already names run IDs and reproduction counts; this is the one
+gap).
 
 ---
 
-_Reviewed: 2026-09-25T08:41:41Z_
+_Reviewed: 2026-09-25T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
