@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v0.1
 current_phase: 05
 current_phase_name: CI Observed Green
-status: executing
-stopped_at: Completed 05-04-PLAN.md
-last_updated: "2026-09-25T07:07:30.520Z"
+status: verifying
+stopped_at: Completed 05-05-PLAN.md
+last_updated: "2026-09-25T07:21:58.161Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 05 execution started
-state_head: 5981c6f5d7123d4f2bad62302d4d6a7fec47b01f
+state_head: 85b29cbfe1c8c9f83968332a11dbc6c1dced2dd6
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
 milestone_name: Hardening
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 05 (CI Observed Green) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-25 — Phase 05 execution started
 
 ## Performance Metrics
@@ -78,6 +78,7 @@ Code review came back clean (1 info) and verification passed 4/4 with no fix pas
 | Phase 05 P02 | ~35min | 2 tasks | 5 files |
 | Phase 05 P03 | ~13min | 3 tasks | 3 files |
 | Phase 05 P04 | 14 min | 3 tasks | 10 files |
+| Phase 05 P05 | ~11min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,7 @@ L17–L19):
 - [Phase 05]: 05-03: docs/HOW_TO_DEVELOP.md Section 8's old manual `git switch main && git pull --ff-only ... && git branch -D ...` block was removed entirely rather than merged with the new pr.land description -- make pr.land performs every one of those steps itself (confirmed against scripts/pr_land.py's land() control flow); L22 is one decision-log entry covering D-02 through D-05 and D-12, not five entries
 - [Phase 05]: Plan 05-04: kept the one-entry CI matrix (test (3.12)) rather than a bare test job -- required-jobs.txt and the live ruleset both name that string; widening later is one line, a rename would need a ruleset update too — Plan's flagged assumption 3, confirmed against the live ruleset read-back in Task 3
 - [Phase 05]: Plan 05-04: the ruleset on main needed no write -- Plan 05-03 already applied the post-D-09 required-check set, so Task 3's live read-back confirmed agreement rather than changing anything — gh api repos/halfb00t/spur/rules/branches/main read back exactly image;test (3.12);vendor-bundle, matching the collapsed required-jobs.txt byte-for-byte
+- [Phase 05]: [Phase 05]: Plan 05-05: STATE.md's CI-unverified blocker was removed with one scoped edit inside Blockers/Concerns rather than state.resolve-blocker, which filters single '- ' lines and would orphan the bullet's three continuation lines — Plan's flagged assumption 3
 
 ### Pending Todos
 
@@ -191,6 +193,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T07:07:30.485Z
-Stopped at: Completed 05-04-PLAN.md
+Last session: 2026-09-25T07:21:58.124Z
+Stopped at: Completed 05-05-PLAN.md
 Resume file: None

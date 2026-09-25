@@ -221,7 +221,7 @@ into any of them per the milestone's own scoping)
      `gh api repos/halfb00t/spur/rules/branches/main`; `docs/HOW_TO_DEVELOP.md` §8 records
      the command that applied it. *(D-12, supersedes D-06 — added in plan-phase 2026-09-25
      after verifying the repository is public)*
-**Plans**: 4/5 plans executed, in 5 waves (each depends on the one before — `Makefile`,
+**Plans**: 5/5 plans executed, in 5 waves (each depends on the one before — `Makefile`,
 `docs/HOW_TO_DEVELOP.md`, `docs/architecture/decision_log.md` and
 `.github/workflows/required-jobs.txt` are touched by more than one plan, L22 must be
 appended before L23, and the pre-commit hook runs `make verify` in the one working tree)
@@ -242,7 +242,7 @@ appended before L23, and the pre-commit hook runs `make verify` in the one worki
 - [x] 05-04-PLAN.md — Python 3.12 only: L23 (supersedes L01's floor); `requires-python`,
   ruff py312 and the three findings it forces; `make venv`, the CI matrix and the
   required list narrowed in one commit *(wave 4)*
-- [ ] 05-05-PLAN.md — The record made true: every current document says 3.12 and cites the
+- [x] 05-05-PLAN.md — The record made true: every current document says 3.12 and cites the
   observed runs; REQ-ci-verified reworded; the STATE.md blocker retired with run URLs
   35963114939 and 36088409707 *(wave 5)*
 
@@ -272,4 +272,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 2. CAD Off the Event Loop | 5/5 | Complete    | 2026-09-24 |
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
-| 5. CI Observed Green | 4/5 | In Progress|  |
+| 5. CI Observed Green | 5/5 | In Progress|  |
