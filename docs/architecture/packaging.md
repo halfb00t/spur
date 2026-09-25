@@ -47,6 +47,12 @@ The same `make verify` runs in three places: the pre-commit hook
 (`.pre-commit-config.yaml`), CI (`.github/workflows/ci.yml`, on Python 3.10 and 3.12),
 and `make worktree.land` before a merge. One definition of "passing".
 
+Merges to `main` go through `make pr.land PR=N`, which refuses a PR whose head lacks a
+green CI run of every job in `.github/workflows/required-jobs.txt` or is behind `main`,
+and confirms that a run appears for the squash commit (L22). The ruleset on `main`
+makes GitHub refuse the same red or stale merge, and any direct push (D-12); `pr.land`
+is the tool that also checks what the ruleset cannot see.
+
 `make bench` is a sibling of the gate, not a member of it (D-16): it needs a running
 service and minutes (a full N=1,2,4 memory sweep alone is ~15 minutes), and a latency
 assertion on shared hardware would flap until people stopped trusting it. It exists so
