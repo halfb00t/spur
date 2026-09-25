@@ -34,6 +34,7 @@ from scripts.pr_land import (
     land,
     message_refusals,
     newest_run,
+    no_run_report,
     parse_compare,
     parse_jobs,
     parse_pull_request,
@@ -171,6 +172,20 @@ PR2_VIEW_JSON = (
 # head suppressed the run entirely, not a red run (RESEARCH.md's own "PR #2's own
 # recorded shape" -- `statusCheckRollup: []`).
 PR2_RUNS_JSON = "[]"
+
+# `gh api repos/{owner}/{repo}/commits/b72b0e1f1e31e06b9dd8bef964725b11f30e0c51
+# --jq '.html_url, .commit.message'` (2026-09-25, this plan's own execution) --
+# values changed to `deadbeef1234` and PR #3's own recorded title/body, shape kept:
+# the first line is the commit's `html_url`, then its message (subject, blank line,
+# body) verbatim.
+SQUASH_COMMIT_READ = (
+    "https://github.com/halfb00t/spur/commit/deadbeef1234\n"
+    "Phase 4: Typed Derived-Dimensions Contract (#3)\n"
+    "\n"
+    "## Summary\n"
+    "\n"
+    "Typed DerivedDimensions contract.\n"
+)
 
 REQUIRED = frozenset({"test (3.12)", "vendor-bundle", "image"})
 
@@ -697,6 +712,7 @@ def _happy_runner(pr_json: str = PR3_VIEW_JSON.replace('"MERGED"', '"OPEN"')) ->
                 '"html_url":"https://github.com/halfb00t/spur/actions/runs/1"}]',
             ),
         )
+        .on("commits/deadbeef1234", cp(0, SQUASH_COMMIT_READ))
         .on("git switch main", cp(0))
         .on("git pull --ff-only origin main", cp(0))
         .on(
@@ -724,9 +740,37 @@ def test_land_happy_path_returns_0_and_prints_the_run_url() -> None:
     assert ["git", "switch", "main"] in runner.calls
     assert ["git", "pull", "--ff-only", "origin", "main"] in runner.calls
     assert ["git", "branch", "-D", "gsd/phase-04-typed-derived-dimensions-contract"] in runner.calls
+    assert not any("commits/" in " ".join(c) for c in runner.calls)
 
 
-def test_land_poll_timeout_reports_merged_but_no_run(capsys: pytest.CaptureFixture[str]) -> None:
+def test_land_reports_the_last_read_error_when_every_poll_failed(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D-06, branch 1: every poll read fails -- the Codex review's own reproduction,
+    `gh api` returning HTTP 403 on every attempt -- and the squash commit's message
+    is clean. `land` reports the last read error it actually saw, never a skip token
+    it never found."""
+    runner = _happy_runner().replace(
+        "runs?head_sha=deadbeef", cp(1, "", "gh: HTTP 403: API rate limit exceeded")
+    )
+    sleeps: list[float] = []
+    result = land(3, runner, attempts=3, interval_s=1.0, sleep=sleeps.append)
+    assert result == 1
+    assert sleeps == [1.0, 1.0]  # attempts - 1
+    out = capsys.readouterr().out
+    assert "IS merged" in out
+    assert "deadbeef1234" in out
+    assert "no ci.yml run observed within 3 s" in out
+    assert "last error: gh: HTTP 403" in out
+    assert "skip token" not in out
+
+
+def test_land_reports_no_run_observed_with_the_actions_url_when_reads_succeeded(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D-06, branch 2: every poll read succeeds and returns nothing, and the squash
+    commit's message is clean. `land` reports the Actions link to check by hand --
+    no last error (the reads worked), no token (there is none)."""
     runner = _happy_runner().replace("runs?head_sha=deadbeef", cp(0, "[]"))
     sleeps: list[float] = []
     result = land(3, runner, attempts=3, interval_s=1.0, sleep=sleeps.append)
@@ -735,7 +779,63 @@ def test_land_poll_timeout_reports_merged_but_no_run(capsys: pytest.CaptureFixtu
     out = capsys.readouterr().out
     assert "IS merged" in out
     assert "deadbeef1234" in out
-    assert "no ci.yml run appeared" in out
+    assert "no ci.yml run observed within 3 s" in out
+    assert "https://github.com/halfb00t/spur/actions/workflows/ci.yml" in out
+    assert "last error" not in out
+    assert "skip token" not in out
+
+
+def test_land_names_a_skip_token_only_after_reading_it_from_the_squash_commit(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """D-06, branch 3: every poll read succeeds and returns nothing -- same silence
+    as branch 2 -- but this time the squash commit's own message, read only now that
+    the poll gave up, carries a token. `land` names it: the one cause it could
+    actually establish, read after the fact, never assumed up front."""
+    runner = (
+        _happy_runner()
+        .replace("runs?head_sha=deadbeef", cp(0, "[]"))
+        .replace(
+            "commits/deadbeef1234",
+            cp(
+                0,
+                "https://github.com/halfb00t/spur/commit/deadbeef1234\n"
+                "chore: ship [skip ci]\n",
+            ),
+        )
+    )
+    sleeps: list[float] = []
+    result = land(3, runner, attempts=3, interval_s=1.0, sleep=sleeps.append)
+    assert result == 1
+    out = capsys.readouterr().out
+    assert "IS merged" in out
+    assert "'[skip ci]'" in out
+    assert "last error" not in out
+    commit_calls = [
+        c
+        for c in runner.calls
+        if c[:3] == ["gh", "api", "repos/{owner}/{repo}/commits/deadbeef1234"]
+    ]
+    assert commit_calls == [
+        [
+            "gh",
+            "api",
+            "repos/{owner}/{repo}/commits/deadbeef1234",
+            "--jq",
+            ".html_url, .commit.message",
+        ]
+    ]
+
+
+def test_no_run_report_a_failed_commit_read_is_the_last_error() -> None:
+    """`no_run_report` in isolation: the squash commit read itself fails -- reported
+    as the last error (there is no message to search for a token, and no commit URL
+    to derive an Actions link from)."""
+    runner = FakeRunner().on("commits/abc", cp(1, "", "gh: HTTP 404: Not Found"))
+    report = no_run_report(3, "abc", 60.0, None, runner)
+    assert "last error" in report
+    assert "HTTP 404" in report
+    assert "actions/workflows" not in report
 
 
 def test_land_local_tip_differs_keeps_the_branch(capsys: pytest.CaptureFixture[str]) -> None:

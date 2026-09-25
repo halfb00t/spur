@@ -366,6 +366,53 @@ def check_head(sha: str, run: Runner, required: frozenset[str]) -> list[str]:
     return head_refusals(sha, compare, newest, jobs, required)
 
 
+def no_run_report(
+    pr_number: int,
+    squash_sha: str,
+    waited_s: float,
+    last_error: str | None,
+    run: Runner,
+) -> str:
+    """What `land`'s step 5 prints when no {WORKFLOW} run appeared for the squash
+    commit within the poll window (D-06): one read of the squash commit's own
+    message, then exactly one of three endings -- never a cause this function did
+    not itself read. Precedence (flagged assumption 1, 06-04-PLAN.md): a token found
+    in the message is reported first -- it is the one cause the tool can establish,
+    and a token means GitHub will never start a run whatever the polls saw.
+    Otherwise, a failed commit read or the poll's own last error gives the
+    last-error report (`last_error` already holds the most recent failed poll read,
+    cleared by a successful one -- see `land`'s poll loop). Otherwise, the
+    nothing-appeared report naming the Actions link, derived from the commit's own
+    `html_url` (`.../commit/<sha>` -> `.../actions/workflows/<workflow>`) so no
+    repository name is hard-coded here."""
+    prefix = (
+        f"pr.land: PR #{pr_number} IS merged as {squash_sha}, but no {WORKFLOW} run "
+        f"observed within {waited_s:.0f} s"
+    )
+    commit_result = run(
+        [
+            "gh",
+            "api",
+            f"repos/{{owner}}/{{repo}}/commits/{squash_sha}",
+            "--jq",
+            ".html_url, .commit.message",
+        ]
+    )
+    if commit_result.returncode != 0:
+        error = f"reading the squash commit failed: {commit_result.stderr.strip()}"
+        return f"{prefix}; last error: {error}"
+
+    first_line, _, message = commit_result.stdout.partition("\n")
+    tokens = find_skip_tokens(message)
+    if tokens:
+        named = ", ".join(repr(token) for token in tokens)
+        return f"{prefix}: {named} in the squash commit's message -- a regression of L22."
+    if last_error is not None:
+        return f"{prefix}; last error: {last_error}"
+    repo = first_line.split("/commit/", 1)[0]
+    return f"{prefix}. Check {repo}/actions/workflows/{WORKFLOW}."
+
+
 def land(
     pr_number: int,
     run: Runner,
@@ -453,6 +500,7 @@ def land(
     squash_sha = squash_sha_result.stdout.strip()
 
     found_run: WorkflowRun | None = None
+    last_error: str | None = None
     for attempt in range(attempts):
         poll_result = run(
             [
@@ -464,14 +512,18 @@ def land(
                 "[.workflow_runs[] | {id, status, conclusion, html_url}]",
             ]
         )
-        if poll_result.returncode == 0:
+        if poll_result.returncode != 0:
+            last_error = poll_result.stderr.strip()
+        else:
             try:
                 found_run = newest_run(parse_runs(poll_result.stdout))
-            except ValueError:
-                found_run = None
-            if found_run is not None:
-                print(found_run.html_url)
-                break
+            except ValueError as exc:
+                last_error = str(exc)
+            else:
+                last_error = None
+                if found_run is not None:
+                    print(found_run.html_url)
+                    break
         if attempt < attempts - 1:
             sleep(interval_s)
 
@@ -513,11 +565,7 @@ def land(
     if found_run is not None and not step6_failed:
         return 0
     if found_run is None:
-        print(
-            f"pr.land: PR #{pr_number} IS merged as {squash_sha}, but no {WORKFLOW} run "
-            f"appeared within {attempts * interval_s:.0f} s -- a skip token reached "
-            "main (L22)"
-        )
+        print(no_run_report(pr_number, squash_sha, attempts * interval_s, last_error, run))
     return 1
 
 
