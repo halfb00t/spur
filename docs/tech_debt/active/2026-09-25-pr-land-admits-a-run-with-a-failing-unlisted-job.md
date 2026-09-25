@@ -6,9 +6,9 @@ Date: 2026-09-25
 Source: Codex cross-CLI review of PR #4 (finding 1), 2026-09-25, per `docs/HOW_TO_DEVELOP.md`
   §7; confirmed against `scripts/pr_land.py` before filing.
 Related files:
-- scripts/pr_land.py (`check_head`, the `for name in sorted(required)` loop -- the only
-  verdict on a completed run; `land`, its `check_head(pr.head_sha, run, required_jobs())`
-  call)
+- scripts/pr_land.py (`head_refusals`, the `for name in sorted(required)` loop -- the
+  only verdict on a completed run; `check_head`, which calls `head_refusals` at its end;
+  `land`, its `check_head(pr.head_sha, run, required_jobs())` call)
 - scripts/pr_land.py (`parse_runs` -- `conclusion` is parsed into the run record and then
   never read by the gate)
 - .github/workflows/required-jobs.txt
@@ -38,11 +38,12 @@ structural rather than remembered.
 
 ## Next step
 
-In `check_head`, refuse when `run.conclusion != "success"`, in addition to the per-job
-check (keep the per-job check: it is what names a *missing* job, which a green run
-conclusion cannot). One offline case in `tests/test_pr_land.py`: a run with `conclusion:
-"failure"`, every listed job `success`, one unlisted job `failure` -> refused, naming the
-run's conclusion. Second step, only if wanted: read `required-jobs.txt` from the PR head
+In `head_refusals`, alongside the per-job loop, refuse when `run.conclusion !=
+"success"` (`run` here is the `WorkflowRun`, not the `Runner` callable `check_head`
+takes), in addition to the per-job check (keep the per-job check: it is what names a
+*missing* job, which a green run conclusion cannot). One offline case in
+`tests/test_pr_land.py`: a run with `conclusion: "failure"`, every listed job
+`success`, one unlisted job `failure` -> refused, naming the run's conclusion. Second step, only if wanted: read `required-jobs.txt` from the PR head
 (`gh api repos/halfb00t/spur/contents/...?ref=<sha>`) instead of the local checkout --
 that closes the stale-checkout half but puts a network read in front of the pure core.
 
