@@ -16,35 +16,38 @@ A number this tool prints is a number someone will cut metal to — so every dim
 either computed honestly or reported as a warning, never guessed (L08). Everything else
 (the UI, the API, the CLI) exists to get parameters in and a trustworthy gear out.
 
-## Current Milestone: v0.1 Hardening
+## Current State
 
-**Goal:** Pay down the three `must` tech-debt items so the generator is operable under
-real load and its response contract is type-checked — before helical/internal/rack gears
-and spoke/hex cutouts make every build heavier.
+**Shipped: v0.1 Hardening (2026-09-25).** The generator is operable under real load and
+its contracts are honest: CAD builds run in worker processes off the event loop with a
+measured memory ceiling (L17–L19); structured logging at the composition boundary (L20);
+a typed `DerivedDimensions` contract with `disallow_any_explicit` on (L21); CI is the
+structural merge gate on Python 3.12 only (L22, L23); the five debt items the milestone
+itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
+`milestones/v0.1-ROADMAP.md`, `milestones/v0.1-MILESTONE-AUDIT.md` (status `tech_debt`:
+5/5 requirements, 14/14 integration, 6/6 flows, 6 deferred debt items with triggers).
 
-**Target features:**
-- CAD builds run outside the event loop (process pool), with a re-measured memory ceiling
-- Structured logging at the composition boundary, covering the decision branches that
-  already exist
-- A typed `DerivedDimensions` contract, with mypy's `disallow_any_explicit` turned on
-- `.github/workflows/ci.yml` observed executing in GitHub Actions, not just hand-verified
-- The five `must` debt items the v0.1 phases themselves surfaced — the solid cache
-  handing out a meshed solid, and four merge-gate gaps in the commit-msg hook and
-  `make pr.land` — retired, each in the commit that fixes it (Phase 6, added after the
-  Phase 5 review)
+Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
+31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-**Not in this milestone:** all five `nice` debt items, and every new feature — trochoidal
-root fillets, helical/internal/rack/bevel gears, tooth chamfers, keyway/hex bores, spoke
-and hex cutouts, a browser test for the viewer. Those are the next milestone, recorded in
-`REQUIREMENTS.md` under "Future Requirements".
+## Next Milestone Goals
+
+Not yet defined — `/gsd-new-milestone` picks deliberately from the candidates gathered at
+v0.1 kickoff (`milestones/v0.1-REQUIREMENTS.md`, "Future Requirements"): helical, internal
+and rack gears (bevel needs a product-scope decision first — it contradicts "involute spur
+gear generator"), tooth chamfers, keyway/hex/spline bores, parametric body cutouts
+(spokes, lightening holes, hex patterns), the trochoidal root fillet (would supersede
+L10), and a browser-driven viewer test. Every one of these makes builds heavier, which is
+why v0.1's process pool came first.
 
 ## Requirements
 
 ### Validated
 
-Shipped in the v0 baseline already in the tree and confirmed by `make verify` (ruff, mypy
-`--strict`, import-linter, unfinished-work scan, pytest — L13). See `REQUIREMENTS.md` for
-the full list with sources and acceptance evidence.
+v0 items shipped in the baseline already in the tree; v0.1 items shipped 2026-09-25. All
+confirmed by `make verify` (ruff, mypy `--strict`, import-linter, unfinished-work scan,
+pytest — L13). Full list with sources and acceptance evidence:
+`milestones/v0.1-REQUIREMENTS.md`.
 
 - ✓ REQ-involute-geometry — involute tooth geometry from module/teeth/pressure
   angle/profile shift — v0
@@ -101,10 +104,8 @@ the full list with sources and acceptance evidence.
 
 ### Active
 
-Milestone v0.1 (Hardening). Each maps to a `must` item in `docs/tech_debt/active/` or a
-standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIREMENTS.md`.
-
-- *(none — all four v0.1 target features are validated; the milestone is ready to close)*
+- *(none — v0.1 shipped; the next milestone's requirements are written by
+  `/gsd-new-milestone` into a fresh `REQUIREMENTS.md`)*
 
 ### Out of Scope
 
@@ -136,11 +137,17 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
 - Ingest intel: `.planning/intel/SYNTHESIS.md` (entry point), `decisions.md`,
   `requirements.md`, `constraints.md`, `context.md`; conflict report at
   `.planning/INGEST-CONFLICTS.md` (0 blockers, 0 warnings, 5 info).
-- Active tech debt (not carried into this ingest by user decision; own lifecycle):
-  `docs/tech_debt/active/` — 3 `must` (the event-loop item resolved in Phase 2, `daeb284`,
-  now in `resolved/`; one new: the waived concurrent-latency bar,
-  `2026-09-23-concurrent-latency-bar-waived.md`), 5 `nice`. Ideas backlog: `docs/ideas/`
-  — 2 items.
+- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 6 active after v0.1 — 1 `must`
+  (the waived ten-concurrent latency bar, `2026-09-23-concurrent-latency-bar-waived.md`,
+  L18) and 5 `nice` (coverage floor, CadQuery `Shape` typing, server-side cancellation,
+  no authentication, Enji Guard); 10 resolved, all during v0.1. Ideas backlog:
+  `docs/ideas/` — 3 items (trochoidal root fillet, browser test for the viewer, measure or
+  soften the Pi 5 claim).
+- v0.1 process: phases run on `gsd/phase-NN-*` branches cut from `origin/main` and land
+  only through `make pr.land PR=N` (L22/L25); `.planning/` rides the same PR as the code.
+  The GSD verifier fingerprints `.planning/STATE.md`, so every phase reads `stale` after
+  its own bookkeeping commit — v0.1 closed as an override on proven-identical trees (see
+  `MILESTONES.md`).
 
 ## Constraints
 
@@ -176,9 +183,10 @@ standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIRE
   (L12).
 - **Gate**: `make verify` (ruff, mypy `--strict`, import-linter, unfinished-work scan,
   pytest, ~11s warm, no Docker) is the standard for "done"; `make check` adds the two
-  container checks CI also runs (L13). mypy strict with `disallow_any_explicit` off as a
-  named ratchet (L14). `TRY003` off — error messages are the product (L15). No automatic
-  formatter (L16).
+  container checks CI also runs (L13); `main` is landed only through `make pr.land PR=N`
+  behind the ruleset (L22, L25). mypy strict with `disallow_any_explicit` on globally, no
+  suppressions (L21 supersedes L14). `TRY003` off — error messages are the product (L15).
+  No automatic formatter (L16).
 
 ## Key Decisions
 
@@ -209,27 +217,31 @@ quick reference.
 | L19 | Model bodies gzip-encoded at measured `compresslevel=1` (51.5 ms vs 788 ms at level 9 on a 9 MB STL), inside the admission slot, cached once per encoding | ✓ Good |
 | L20 | Structured JSON logging: stdlib `logging` + project-owned formatter, one object per line on stderr, `configure()` at both `cli.cmd_serve` and `app.lifespan()` (idempotent — uvicorn's spawn-based workers need the second site), parent process only, INFO default via `SPUR_LOG_LEVEL` | ✓ Good — post-review fix: records carrying `exc_info` render a `traceback` field (CR-01), `model()` catch-all logs `build.failed` (WR-01) |
 | L21 | `disallow_any_explicit` on globally, no per-module override; the published responses are typed models (`DerivedDimensions`, `HealthReport`/`PoolState`); the pydantic mypy plugin's `init_typed`/`init_forbid_extra` retire the six class-line errors instead of six per-class suppressions; `Any` is never written — `object` narrowed at use, a library's own alias keeps the library's `Any` (supersedes L14) | ✓ Good — `make verify` green under the rule (104 tests); `--mate-teeth 0` now exits 2 like the API's 422 |
-| L22 | CI is the merge gate: a ruleset on `main` requires `test (3.12)`, `vendor-bundle`, `image` green on an up-to-date head plus a pull request; a repo-owned `commit-msg` hook refuses the six skip tokens; the squash message is PR title + body; `main` is landed only via `make pr.land PR=N`, which refuses a red, stale, missing or token-carrying head and prints the squash commit's run URL | ✓ Good — ruleset read back live; gap plan 05-06 closed CR-01 (pr.land now checks the whole PR text, the hook cuts only in an editor session); residual hand-typed cut line filed as must debt `2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md` |
+| L22 | CI is the merge gate: a ruleset on `main` requires `test (3.12)`, `vendor-bundle`, `image` green on an up-to-date head plus a pull request; a repo-owned `commit-msg` hook refuses the six skip tokens; the squash message is PR title + body; `main` is landed only via `make pr.land PR=N`, which refuses a red, stale, missing or token-carrying head and prints the squash commit's run URL | ✓ Good — ruleset read back live; gap plan 05-06 closed CR-01; the residual hand-typed cut line and the run-conclusion blind spot were retired in Phase 6 (L25 amends this entry); Phase 6 itself landed through the gate as PR #5 → `1173d21`, run 36145323487 |
 | L23 | Python 3.12 only — `requires-python`, ruff `target-version`, the CI matrix, the Makefile interpreter and the README agree (supersedes L01's 3.10 floor; `cadquery-ocp` publishes wheels for nothing newer) | ✓ Good — `make verify` green on 3.12 (183 tests); CI job is `test (3.12)` alone |
 | L24 | A cached solid never carries a mesh: STL export runs `exportStl` on `shape.copy()`, never on the process-global cached `cq.Solid` (`Clean_s` rejected: 4–13 % faster but leaves the mesh on the cached object for the whole export window); copy costs +1.4 to +17.6 ms per export and +3.2 to +7.7 MiB peak RSS on a 200-tooth fine export, measured; the autouse cache-reset fixture deleted | ✓ Good — `.BoundingBox()` exact after any export, a preview after a fine export is a preview (9,066 vs 46,278 triangles) |
 | L25 | The merge gate reads the whole commit message and the run's own verdict (amends L22): the commit-msg hook takes git's entire buffer with no cut line; `pr.land` refuses `conclusion != success` and runs from an up-to-date `main`; after the merge it reports only what it observed; the read-to-merge window rests on the ruleset's up-to-date policy, not on anything `pr.land` reads (`--match-head-commit` pins the head, not the base) | ✓ Good — proven live on run 36116930241 and commits b72b0e1 / 20b63e4 |
 
 ## Success Metric (Milestone v0.1)
 
-Set by the human at milestone start — no ingested document derived it. All four must hold;
-the first three are observable, the fourth is the bookkeeping that follows them:
+Set by the human at milestone start — no ingested document derived it. All four held at
+close (2026-09-25); outcomes in italics:
 
 1. **Measured event-loop latency.** `/api/health` p95 stays under an agreed threshold with
    a named build in flight, measured against the baseline on record (0.22 s → 0.76 s →
-   2.00 s under one 200-tooth fine build, 12-core machine).
+   2.00 s under one 200-tooth fine build, 12-core machine). *Met for the single-build
+   scenario on every recorded run (L18); the ten-concurrent bar was waived on the Runs 1–8
+   evidence and is `must` debt.*
 2. **`disallow_any_explicit` on.** `make verify` passes with the rule enabled; L14's named
-   ratchet is retired rather than re-deferred.
+   ratchet is retired rather than re-deferred. *Met — L21, `make verify` green.*
 3. **Logs answer an incident.** A named set of decision branches — build started, build
    failed, export served from cache or built, queue refused — is observable in structured
-   output, proven by a test rather than by reading the console.
+   output, proven by a test rather than by reading the console. *Met — L20, five records
+   under `caplog` tests.*
 4. **The three `must` debt files are resolved.** `Status: resolved`, commit sha recorded,
    `git mv`'d into `docs/tech_debt/resolved/`, INDEX rows moved — in the same commits as
-   the fixes, per `CLAUDE.md`.
+   the fixes, per `CLAUDE.md`. *Met — retired in Phases 2–4; Phase 6 retired five more
+   surfaced during the milestone (10 resolved in total).*
 
 ## Evolution
 
@@ -249,4 +261,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-25 — after Phase 6 (Address tech debt: merge gate + solid cache) completed via `/gsd-execute-phase 6`; all six v0.1 phases verified, milestone ready to close with `/gsd-complete-milestone v0.1`.*
+*Last updated: 2026-09-25 after v0.1 milestone (`/gsd-complete-milestone v0.1`).*
