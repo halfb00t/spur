@@ -211,7 +211,10 @@ class DerivedDimensions(BaseModel):
     web: float | None = Field(
         description="Thickness left between the recesses; null with no recess.",
         json_schema_extra={"unit": "mm"})
-    warnings: list[str] = Field(
+    # A tuple, not a list: pydantic's `frozen=True` locks the attributes, not the objects
+    # they hold, so a list here could still be edited in place by any reader of a shared
+    # result -- the one field that would make "frozen" a lie (04-REVIEW.md WR-01).
+    warnings: tuple[str, ...] = Field(
         description="Sentences about values that were capped, dropped or cannot be computed.")
     mate_teeth: int | None = Field(
         description="Teeth on the mating gear asked about; null when none was.")
@@ -301,7 +304,7 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         recess_od=r3(2 * rr[1]) if rr else None,
         recess_fillet=r3(rec_fil) if rr else None,
         web=r3(p.face_width - sides * p.recess_depth) if rr else None,
-        warnings=warnings,
+        warnings=tuple(warnings),
         mate_teeth=mate_teeth,
         centre_distance=None if aw is None else r3(aw),
     )

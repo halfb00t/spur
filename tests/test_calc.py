@@ -28,7 +28,7 @@ def test_default_dimensions() -> None:
     assert d.recess_id == pytest.approx(13.013)
     assert d.recess_od == pytest.approx(25.013)
     assert d.recess_fillet == pytest.approx(0.5)
-    assert d.warnings == []
+    assert d.warnings == ()
     # D-01, edge: empty -- no mate was asked about, so both mate fields are present
     # and null, never omitted.
     assert d.mate_teeth is None
@@ -37,11 +37,15 @@ def test_default_dimensions() -> None:
 
 def test_a_derived_dimensions_result_cannot_be_changed() -> None:
     """A result shared between readers cannot change under them (D-09, edge:
-    concurrency): DerivedDimensions is frozen, so every field assignment raises."""
+    concurrency): DerivedDimensions is frozen, so every field assignment raises -- and
+    its one collection field is a tuple, so it cannot be edited in place either."""
     d = derive(GearParams())
     for name in DerivedDimensions.model_fields:
         with pytest.raises(ValidationError, match="frozen"):
             setattr(d, name, None)
+    # `frozen` is shallow: a `list` field would still take `.append()`/`.clear()` from
+    # any holder of the object. The type is the guarantee, so assert the type.
+    assert isinstance(d.warnings, tuple)
 
 
 def test_caliper_reading_is_short_for_odd_tooth_counts() -> None:
