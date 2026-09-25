@@ -549,3 +549,58 @@ the drift test in `tests/test_pr_land.py` keeps `required-jobs.txt` equal to `ci
 and `docs/HOW_TO_DEVELOP.md` §8 says to re-run the ruleset command when that list
 changes; and `make pr.land` exits non-zero, naming the gap, whenever a squash commit
 gets no run.
+
+## L23 — Python 3.12 only (supersedes L01's floor)
+
+Date: 2026-09-25.
+
+L01 recorded 3.10-3.12 as "detected, not chosen": the floor was never a requirement, only
+what `cadquery-ocp`'s wheel range happened to cover at the time. The ceiling reasoning
+stands unchanged: `cadquery-ocp` publishes no wheels past 3.12, and widening upward waits
+on a wheel *and* a consumer appearing, same as before.
+
+**Why the floor goes.** mypy cannot hold a floor below 3.12, because numpy's bundled
+stubs use `type` statements and mypy refuses to read them below that version. Ruff's
+3.10 target held syntax only. So the floor was checked by CI's 3.10 run alone, and that
+let `logging.StreamHandler[TextIO]` — runtime subscripting needs 3.11 — reach `main`
+unimportable on 3.10 (runs 35993984796, 36028253714, 36028759311; fixed `990d1fe`). The
+Docker image, the dev machine and the pre-commit hook are all 3.12 already. With one
+version, the type checker's version is the runtime, and the gap closes structurally
+rather than depending on a CI leg to catch the next one.
+
+**What changes.** `requires-python = ">=3.12,<3.13"` (the upper bound makes L01's
+ceiling checkable: pip refuses instead of spending minutes building OpenCascade from
+source). Ruff `target-version = "py312"`; mypy `python_version = "3.12"` is unchanged —
+it was already there for the numpy-stub reason. CI matrix narrows to `["3.12"]`, keeping
+the job name `test (3.12)`. `make venv` picks `python3.12` only. `pr.land`'s required
+list (`required-jobs.txt`) loses the `test (3.10)` job in the same commit as the matrix
+(L22); the ruleset on `main` never required it in the first place (D-12).
+
+**Who is affected.** `pip install` on Python 3.10 or 3.11 is now refused by pip itself,
+naming the requirement. Ubuntu 22.04 users, whose system Python predates 3.12, use
+Docker — which needs no local Python — or `uv`.
+
+**What 3.12-only adopts: the unwind list.** At planning, `ruff check --target-version
+py312 .` reported three findings that this decision forces, not chooses: a PEP 695 type
+parameter replacing the module-level `TypeVar` on `params._f` (UP047); catching the
+builtin `TimeoutError` instead of the qualified `asyncio.TimeoutError` in `pool.py`
+(UP041); and `datetime.UTC` replacing `datetime.timezone.utc` in `records.py` (UP017).
+Beyond ruff's own findings, `records._JsonHandler` now subclasses
+`logging.StreamHandler[TextIO]` directly in the class statement — the `TYPE_CHECKING`
+indirection that gave the type checker and the interpreter different base classes existed
+solely to survive a floor below 3.11, and that floor is gone. Any future widening below
+3.11 must undo this list, not just the version strings.
+
+**Rejected.** 3.11-3.12, which keeps the same structural gap one version narrower. A
+3.10 interpreter in the pre-commit hook, which would put a 3.10 install on every clone
+and roughly double the hook's running time for a floor nothing else exercises.
+
+**Reversibility: costly.** Widening back is a one-line matrix change plus a new decision
+entry, but every construct in the unwind list above must be undone first, and the
+published `requires-python` upper bound refuses installs that worked before it was
+tightened.
+
+**Reason:** the most likely future regression is lowering the floor for one machine or
+one convenience without bringing a real interpreter at the new floor into CI in the same
+change — mypy cannot check a floor below its own `python_version`, so a floor with no
+real interpreter behind it is a floor checked by hope (RESEARCH.md Pitfall 4).
