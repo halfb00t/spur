@@ -173,11 +173,13 @@ def test_a_wedged_build_is_terminated_and_its_worker_replaced(
         # Wait for the manager thread, never for `proc` directly. Once the worker dies,
         # the manager thread and this one wake on the same process sentinel and race to
         # `os.waitpid` for the same child; the loser gets ECHILD, which
-        # `multiprocessing.popen_fork.Popen.poll` swallows into "still alive". The old
-        # `proc.join(timeout=5); assert not proc.is_alive()` failed that way on the
-        # GitHub runner on 4 of 5 attempts (runs 36116930241, 36117030280, 36118554588,
-        # 2026-09-25) with the worker in fact dead, and never once on a workstation
-        # (0/18 locally, contended and idle). With the manager thread as the only
+        # `multiprocessing.popen_fork.Popen.poll` swallows into "still alive"
+        # (ASSUMPTION, not directly observed -- see the resolved debt record for what
+        # was and wasn't checked). The old `proc.join(timeout=5); assert not
+        # proc.is_alive()` is consistent with failing that way on the GitHub runner on
+        # 4 of 5 attempts (runs 36116930241, 36117030280, 36118554588, 2026-09-25) with
+        # the worker in fact dead, and never once on a workstation (0/18 locally,
+        # contended and idle). With the manager thread as the only
         # reaper, `exitcode` is the status its join recorded, and asserting the signal
         # number proves the death was ours, not a crash. The liveness assertion between
         # the two is load-bearing: a timed `join` can return with the thread still
