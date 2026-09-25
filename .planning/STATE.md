@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v0.1
-current_phase: 5
+current_phase: 05
 current_phase_name: CI Observed Green
-status: "Phase 4 shipped — PR #3"
-stopped_at: Phase 5 context gathered
-last_updated: "2026-09-25T05:54:04.882Z"
+status: executing
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-09-25T06:12:12.491Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 5 planning complete
-state_head: 40fcaaa77f1be7aa1e71050d0a887027422ee13d
+last_activity_desc: Phase 05 execution started
+state_head: 7959cdbb4eeb0dc2bcfaba21bf3323cc5f7078a9
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 16
-  completed_plans: 11
+  completed_plans: 12
 milestone_name: Hardening
 ---
 
@@ -25,14 +25,14 @@ See: .planning/PROJECT.md (updated 2026-09-24)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 5 — CI Observed Green
+**Current focus:** Phase 05 — CI Observed Green
 
 ## Current Position
 
-Phase: 5 (CI Observed Green) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 4 shipped — PR #3
-Last activity: 2026-09-25 — Phase 5 planning complete
+Phase: 05 (CI Observed Green) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-09-25 — Phase 05 execution started
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Code review came back clean (1 info) and verification passed 4/4 with no fix pas
 | Phase 04 P01 | ~45min | 3 tasks | 11 files |
 | Phase 04 P02 | 16min | 3 tasks | 9 files |
 | Phase 04 P03 | 9min | 3 tasks | 7 files |
+| Phase 05 P01 | 12 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,9 @@ L17–L19):
 - [Phase 04]: app.py's lifespan now dels app.state.pool in its finally block, in addition to shutting it down -- app is one module-level FastAPI singleton shared across every test file in a pytest session, and a shut-down pool object was lingering for a later, lifespan-free test client to see (04-02 Rule 1 deviation).
 - [Phase 04]: Plan 04-03: L21 appended superseding L14 -- disallow_any_explicit on globally, satisfiable via the pydantic mypy plugin's init_typed/init_forbid_extra settings (R-1, human decision) rather than per-class suppression comments.
 - [Phase 04]: Plan 04-03: spur info --mate-teeth range-checked to InfoQuery's ge=6/le=1000 bounds (R-2, human decision); --mate-teeth 0 now exits 2 instead of meaning 'no mate'.
+- [Phase 05]: Python, not bash, for the skip-token hook -- Plan 05-02's make pr.land must import the same find_skip_tokens() to check the squash commit's subject and body; one importable module is the only way the two checks cannot drift apart. — 05-01-SUMMARY.md key-decisions
+- [Phase 05]: The verify pre-commit hook needed stages: [pre-commit] -- an unpinned hook inherits every installed stage and ran make verify twice per commit once commit-msg joined default_install_hook_types (planning-probe finding, re-confirmed live). — 05-01-SUMMARY.md key-decisions
+- [Phase 05]: Git's commit -v scissors cut line is exactly '# ' + 24 dashes + ' >8 ' + 24 dashes -- verified byte-for-byte in a scratch repo this session, not taken from the plan's prose alone. — 05-01-SUMMARY.md key-decisions
 
 ### Pending Todos
 
@@ -177,6 +181,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T04:15:00.972Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-ci-observed-green/05-CONTEXT.md
+Last session: 2026-09-25T06:12:12.455Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None
