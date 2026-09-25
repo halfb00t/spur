@@ -604,3 +604,69 @@ tightened.
 one convenience without bringing a real interpreter at the new floor into CI in the same
 change — mypy cannot check a floor below its own `python_version`, so a floor with no
 real interpreter behind it is a floor checked by hope (RESEARCH.md Pitfall 4).
+
+## L24 — A cached solid never carries a mesh: STL export meshes a copy
+
+Date: 2026-09-25.
+
+`_build_cached` (an `lru_cache`, per worker, sized by `SPUR_SOLID_CACHE`) hands every
+caller the same `cq.Solid` for identical `GearParams`, by design (D-07 affinity keeps
+one gear's preview/STL/fine/STEP requests on the same worker). `Shape.exportStl()`
+attaches a triangulation to whatever solid it is called on. Measured (planning probe,
+`GearParams()`, teeth=19): before any export, `.BoundingBox().zlen` reads
+7.500000200000001; after a preview STL export, 7.587720608891235; after a fine one,
+7.519603716332508. Worse than a stale diagnostic: a preview STL export taken *after* a
+fine one returned the fine mesh — 46,278 triangles, not the 9,066 a first preview export
+gives — because OCCT keeps an existing triangulation that already satisfies the coarser
+tolerance. Export content depended on what a worker had exported before for that gear.
+
+**The invariant.** A solid returned by `_build_cached` never carries a mesh.
+`_write_export`'s STL branch meshes `shape.copy()` — no positional argument to `copy()`
+(its one parameter is `mesh`, default `False`; `copy(mesh=True)` would carry a mesh
+across). The STEP branch is unchanged: a STEP export attaches no mesh, so the cached
+solid already stayed exact through it (zlen 7.500000200000001 after
+`export(p, "step")`).
+
+**Why a copy and not a strip.** `BRepTools.Clean_s(shape.wrapped)` — the installed
+`cadquery-ocp`'s actual name for the debt file's `.Clean` — strips a mesh *after*
+export, so the cached object would carry a mesh for the whole export window; `build()`
+releases `_LOCK` before callers read the solid, so the invariant would hold only between
+exports, not during one. Research's timings (06-RESEARCH.md, 2026-09-25,
+`.venv/bin/python`, Apple M2 Max, 12 cores, 32 GiB, macOS Darwin 27.0.0, mean of 3):
+reference preview / reference fine / 200-tooth preview / 200-tooth fine — copy 23.1 /
+70.9 / 260.9 / 824.2 ms, `Clean_s` 20.2 / 63.1 / 244.9 / 791.3 ms. `Clean_s` measured
+4-13% faster across the board and was rejected anyway, by the human at plan time, for
+the export-window reason above.
+
+**What the copy costs** (planning measurement, same machine, load average 3.5-5.0 — a
+busy host — mean of 3, export only, build excluded): in place 18.7 / 59.6 / 216.0 /
+719.2 ms vs. copy 20.3 / 61.0 / 230.0 / 736.8 ms (+1.4 to +17.6 ms per export); STL
+bytes identical across in-place, copy and `Clean_s` runs (453,384 / 2,313,984 /
+3,135,284 / 9,086,484 bytes). Peak RSS of one 200-tooth fine export, one process per
+run, `resource.getrusage(...).ru_maxrss` on macOS: in place 1263.0 and 1264.4 MiB, copy
+1270.7 and 1267.6 MiB — not a container measurement, so `mem_limit` (L17) is not
+re-derived here; `make bench.memory` is the instrument if that is ever needed. The two
+timing sessions (research's and planning's) differ by up to ~15% on the same machine; both
+are recorded rather than one cleaned-up figure.
+
+**The proof is content equivalence, not a byte diff.** OCCT export is not
+byte-reproducible across independently built solids — matched byte-for-byte in only
+8 of 20 reruns (06-RESEARCH.md Pitfall 1) — but triangle count and decoded volume are:
+8 preview and 4 fine independent builds of `GearParams()` gave 9,066 / 46,278 triangles
+every time, decoded-volume difference 0.0. `tests/test_model.py::
+test_exporting_leaves_the_cached_solid_exact` and `::test_an_stl_export_matches_a_first_
+export_whatever_came_before` are the tests; `tests/conftest.py`'s autouse solid-cache
+reset (Phase 3's test-side workaround) was deleted in the fixing commit (D-09) — the
+whole suite passing without it is the cross-test proof.
+
+**Rejected.** Call-site discipline (an exact-bounds helper plus a grep asserting nothing
+calls `.BoundingBox()` on a cached solid) — the cache would still hand out a mutated
+object to any caller that did. The strip-after-export route (above).
+
+**Reversibility.** Reversible — local to `_write_export`; reverting is one call, and no
+data, published contract or other module reads the cached object.
+
+**Reason:** the most likely future regression is a new mesh-attaching call on the cached
+object (a new export format, a tessellation for a preview endpoint) or a copy call that
+carries the mesh across (`copy(mesh=True)`); the two named tests above go red the moment
+either happens.
