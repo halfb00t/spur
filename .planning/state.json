@@ -27,6 +27,11 @@
       "number": "5",
       "name": "CI Observed Green",
       "status": "complete"
+    },
+    {
+      "number": "6",
+      "name": "Address tech debt: merge gate + solid cache",
+      "status": "pending"
     }
   ],
   "next": {
@@ -34,5 +39,5 @@
     "label": "Show progress",
     "reason": "Unsure of state — showing progress"
   },
-  "updated_at": "2026-09-25T10:27:22.544Z"
+  "updated_at": "2026-09-25T11:52:56.224Z"
 }
