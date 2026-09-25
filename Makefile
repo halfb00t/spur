@@ -51,7 +51,7 @@ lint: $(STAMP)  ## ruff: correctness rules only, no reformatting (L16)
 	$(PY) -m ruff check .
 
 typecheck: $(STAMP)  ## mypy --strict over the package and its tests
-	$(PY) -m mypy src tests docker bench
+	$(PY) -m mypy src tests docker bench scripts
 
 lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
 	$(VENV)/bin/lint-imports
