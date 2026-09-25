@@ -10,7 +10,7 @@ Every literal fixture below traces to a real, read-only `gh`/`gh api` call made 
 this repository on 2026-09-25 (RESEARCH.md's "Verified Live State", or a call made
 directly during this plan's own execution) -- a comment above each names the call.
 Per-case variants change **values** (state, a PR number, conclusions, ids), never
-**shape**. Every test except the drift test (`test_required_jobs_file_matches_ci_yml_job_ids`)
+**shape**. Every test except the drift test (`test_required_jobs_file_matches_ci_yml_job_names`)
 is independent of `.github/workflows/required-jobs.txt`'s current contents: pure tests
 pass `required`/`REQUIRED` explicitly, and `land()` tests use only `test (3.12)`,
 `vendor-bundle` and `image` -- the jobs required both now and after Plan 05-04 drops the
@@ -205,27 +205,77 @@ def test_required_jobs_reads_non_comment_non_blank_lines(tmp_path: Path) -> None
     assert required_jobs(path) == frozenset({"test (3.12)", "vendor-bundle", "image"})
 
 
-def test_required_jobs_file_matches_ci_yml_job_ids() -> None:
-    """D-05: `required_jobs()` must equal the job ids `ci.yml` actually runs, or a PR
-    could be judged green on a job GitHub never runs. Job ids are the two-space-indented
-    keys directly under `jobs:`; the `test` id expands to `test ({v})` for each version
-    in its `python: [...]` matrix list -- `test` itself must appear among the derived
-    ids, or the expansion below would silently match nothing."""
-    ci_yml = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+def _effective_job_names(ci_yml: str) -> set[str]:
+    """The job names GitHub actually reports (D-05): `jobs.<id>.name` when a job sets
+    one, else the id -- a rename under `image:` moves this set even though the id
+    stays `image`. Job ids are the two-space-indented keys directly under `jobs:`,
+    found with their match positions so each job's own block can be scoped: from the
+    end of its id line to the start of the next id line (or the end of the section).
+    Only a `^    name:` line -- exactly four spaces, one level under the id -- inside
+    that block gives the effective name; step `name:` keys sit at six-or-more spaces
+    under `steps:` and are never read (`ci.yml`'s own two, `bundle matches web/` and
+    `the packaged entrypoint serves a gear`, confirm the depth). The `test` id still
+    expands to `f"{name} ({v})"` for each version in its `python: [...]` matrix list,
+    using its own effective name -- identical to today's `test (3.12)` while `test`
+    carries no `name:`."""
     jobs_section = ci_yml.split("\njobs:\n", 1)[1]
-    job_ids = re.findall(r"^  ([a-zA-Z][\w-]*):\s*$", jobs_section, re.MULTILINE)
+    id_matches = list(re.finditer(r"^  ([a-zA-Z][\w-]*):\s*$", jobs_section, re.MULTILINE))
+    job_ids = [m.group(1) for m in id_matches]
     assert "test" in job_ids
 
     matrix_match = re.search(r"python:\s*\[([^\]]*)\]", jobs_section)
     assert matrix_match is not None, "no python matrix found in ci.yml"
     versions = [v.strip().strip('"') for v in matrix_match.group(1).split(",")]
 
-    derived = {
-        name
-        for job_id in job_ids
-        for name in ([f"test ({v})" for v in versions] if job_id == "test" else [job_id])
-    }
-    assert required_jobs() == frozenset(derived)
+    effective: dict[str, str] = {}
+    for i, match in enumerate(id_matches):
+        job_id = match.group(1)
+        block_start = match.end()
+        block_end = id_matches[i + 1].start() if i + 1 < len(id_matches) else len(jobs_section)
+        block = jobs_section[block_start:block_end]
+        name_match = re.search(r"^    name:\s*(.+?)\s*$", block, re.MULTILINE)
+        if name_match is None:
+            effective[job_id] = job_id
+            continue
+        value = name_match.group(1)
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        effective[job_id] = value
+
+    names: set[str] = set()
+    for job_id, name in effective.items():
+        if job_id == "test":
+            names.update(f"{name} ({v})" for v in versions)
+        else:
+            names.add(name)
+    return names
+
+
+def test_required_jobs_file_matches_ci_yml_job_names() -> None:
+    """D-05: `required_jobs()` must equal the job names GitHub actually reports --
+    `jobs.<id>.name` when set, else the id -- or a PR could be judged green on a job
+    GitHub never runs (or judged red on a name it no longer reports)."""
+    ci_yml = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert required_jobs() == frozenset(_effective_job_names(ci_yml))
+
+
+def test_a_job_name_override_moves_the_derived_required_set() -> None:
+    """The rename the debt file describes
+    (2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md), which the
+    id-based test passed: a `name:` override under `image:` moves the derived set
+    even though `required-jobs.txt` still says `image`, and the step `name:` keys
+    are never mistaken for it."""
+    ci_yml = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    renamed = ci_yml.replace("  image:\n", "  image:\n    name: renamed-image\n", 1)
+    assert renamed != ci_yml
+    names = _effective_job_names(renamed)
+    assert names == {"test (3.12)", "vendor-bundle", "renamed-image"}
+    assert "bundle matches web/" not in names
+    assert "the packaged entrypoint serves a gear" not in names
+
+    quoted = ci_yml.replace("  image:\n", '  image:\n    name: "renamed image"\n', 1)
+    assert quoted != ci_yml
+    assert _effective_job_names(quoted) == {"test (3.12)", "vendor-bundle", "renamed image"}
 
 
 # --- pure decisions ----------------------------------------------------------------
