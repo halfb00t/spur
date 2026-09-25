@@ -1,8 +1,9 @@
 # `make pr.land` judges a run by the listed jobs only, never by the run's own conclusion
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-25
+Resolved in: 9ca8320
 Source: Codex cross-CLI review of PR #4 (finding 1), 2026-09-25, per `docs/HOW_TO_DEVELOP.md`
   §7; confirmed against `scripts/pr_land.py` before filing.
 Related files:
@@ -49,5 +50,27 @@ that closes the stale-checkout half but puts a network read in front of the pure
 
 Revisit when: `ci.yml` gains a job, or `scripts/pr_land.py` is touched anyway.
 
-<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
-     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
+## Resolution (2026-09-25)
+
+`Resolved in: 9ca8320` is Plan 06-03 Task 1's commit
+(`fix(06-03): pr.land refuses a run whose own conclusion is not success`) -- not the
+present commit, which adds §8's rule and moves this file, completing the fix (a file
+cannot carry its own commit's sha).
+
+The first step of "Next step" was taken: `head_refusals` refuses when
+`run.conclusion != "success"`, naming the conclusion and the run's `html_url`,
+alongside the unchanged per-job loop. The second step -- reading `required-jobs.txt`
+from the PR head over the network -- was not taken; that half of the stale-checkout
+gap is closed by rule instead, via `docs/HOW_TO_DEVELOP.md` §8's new paragraph: run
+`make pr.land` from an up-to-date `main` (`git switch main && git pull --ff-only`),
+which `pr.land`'s own step 6 leaves you on anyway.
+
+Evidence: the new offline test
+`test_head_refusals_a_failed_run_is_refused_even_when_every_listed_job_is_green` (the
+debt file's own case -- a run failed on an unlisted `lint` job, every `required-jobs.txt`
+job green, refused naming the conclusion and the run URL); the recorded real run
+36116930241 through `check_head` in
+`test_check_head_names_the_run_conclusion_of_recorded_run_36116930241`; and the live
+probe on that same run in Task 1's `<verify>` block, run against the real `gh`: two
+refusals before this fix (`behind`, `test (3.12)` failure), three after (adding the
+run's own `concluded 'failure'` line).
