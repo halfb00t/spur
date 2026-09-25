@@ -7,7 +7,7 @@ name = "spur"
 version = "0.1.0"
 description = "Parametric involute spur gear generator: web UI, HTTP API and CLI with STL/STEP export"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12,<3.13"
 keywords = ["gear", "involute", "cad", "cadquery", "stl", "step", "3d-printing"]
 dependencies = [
     "cadquery>=2.5",
@@ -35,7 +35,7 @@ packages = ["src/spur"]
 # --- the gate: lint, types, import boundaries, tests. `make verify` runs all four. ----
 
 [tool.ruff]
-target-version = "py310"   # cadquery-ocp has no wheels past 3.12; CI runs 3.10 and 3.12
+target-version = "py312"   # one supported interpreter (L23); cadquery-ocp has no wheels past 3.12
 line-length = 100          # the widest line already in the tree is 99
 
 # `ruff format` is deliberately not part of this project -- see L16. It would rewrite 10
@@ -78,17 +78,16 @@ ignore = [
 "tests/*" = ["ARG001"]
 
 [tool.mypy]
-# 3.12, not the 3.10 floor: numpy's bundled stubs use `type` statements and mypy refuses
-# to read them below 3.12. Ruff (target-version = py310) is what holds the language
-# floor, and CI runs the suite on a real 3.10 -- so the floor is checked by execution,
-# not by the type checker's opinion.
+# 3.12: numpy's bundled stubs use `type` statements and mypy refuses to read them below
+# 3.12. 3.12 is also the only supported runtime now (L23), so the type checker's version
+# is the runtime's -- there is no lower floor left for it to miss.
 python_version = "3.12"
 plugins = ["pydantic.mypy"]   # without it mypy cannot see the generated model __init__
 strict = true
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
 disallow_any_explicit = true
-# On, for everything mypy checks (src tests docker bench), with no per-module
+# On, for everything mypy checks (src tests docker bench scripts), with no per-module
 # exception -- a carve-out would be a second ratchet, the shape L21 retires. `Any` is
 # not written in this codebase: a genuinely untyped value is `object`, and a value a
 # library already names keeps the library's own alias (pydantic's JsonSchemaValue,

@@ -7,17 +7,15 @@ here shows up in the UI and CLI automatically.
 
 from __future__ import annotations
 
-from typing import Literal, TypeVar
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.config import JsonDict
 from pydantic_core import PydanticCustomError
 
-T = TypeVar("T")
 
-
-def _f(default: T, ge: float, le: float, *, title: str, group: str,
-       unit: str = "", step: float | None = None, help: str = "") -> T:
+def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
+          unit: str = "", step: float | None = None, help: str = "") -> T:
     extra: JsonDict = {"group": group, "unit": unit}
     if step is not None:
         extra["step"] = step
