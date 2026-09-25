@@ -169,20 +169,25 @@ None yet.
   p95) live in `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`
   (must). Triggers: the harness or the machine changes, or any run reads above 2.45x.
   History: `bench/RESULTS.md`, `02-LATENCY-INVESTIGATION.md`, `02-04-SUMMARY.md`.
-- ⚠️ [Phase 5] The `commit-msg` hook cannot see a skip token hidden below a git cut line
-  typed by hand inside an editor session without `-v` — by content it is identical to git's
-  own `commit -v` diff, which the hook must skip. Backstopped: the ruleset on `main` refuses
-  a head without green required checks, `make pr.land` refuses a run-less head, and after
-  D-03 a branch commit's message never becomes `main`'s.
-  `docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md` (must).
-- *(Resolved in Phase 6: "A cached solid's `.BoundingBox()` reads wrong after
-  `exportStl()`" — `655ec52` (`_write_export` meshes `shape.copy()`, autouse cache reset
-  deleted) and `f17bda0` (L24, debt file moved), 06-01-SUMMARY.md. Resolved in Phase 5:
+- *(Resolved in Phase 6: five debt records retired —
+  `docs/tech_debt/resolved/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md`
+  (`655ec52`; `f17bda0` moved it, L24),
+  `docs/tech_debt/resolved/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md`
+  (`e46ed34`),
+  `docs/tech_debt/resolved/2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md`
+  (`9ca8320`),
+  `docs/tech_debt/resolved/2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md`
+  (`0573319`), and
+  `docs/tech_debt/resolved/2026-09-25-pr-land-blames-a-skip-token-for-any-missed-post-merge-run.md`
+  (`e4345a4`); L25 amends L22 with the hook's whole-buffer rule, the run-conclusion check,
+  and the D-07 correction of L22's own merged-tree sentence. Resolved in Phase 5:
   "CI workflow unverified" — the premise was false: main push run
   <https://github.com/halfb00t/spur/actions/runs/35963114939> (`59f02c3`, all four jobs
   green) and PR #3 head run <https://github.com/halfb00t/spur/actions/runs/36088409707>
-  (`2c4b544`, tree-identical to `bfc9110`); L22's merge gate keeps it true, and this
-  phase's own squash-commit run is recorded after `make pr.land` prints it. Resolved in
+  (`2c4b544`, tree-identical to `bfc9110`); L22's merge gate keeps it true, and Phase 5's
+  own squash commit `b72b0e1` got push run
+  <https://github.com/halfb00t/spur/actions/runs/36122394253> — `test (3.12)`,
+  `vendor-bundle`, `image`, all green (read back 2026-09-25). Resolved in
   Phase 4: "Untyped info contract" — `013900d` (the model) / `cfe5f8d` (the
   rule turned on and the debt file retired, same commit), moved to
   `docs/tech_debt/resolved/`; L14 superseded by L21. Resolved in Phase 3: "No structured logging anywhere" — `21b8fe4`/`013997a`, moved to
