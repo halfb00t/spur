@@ -106,6 +106,19 @@ trigger, `2026-09-23-concurrent-latency-bar-waived.md`); the coverage floor; the
   (an `exact_bounds()` helper plus a grep that nothing calls `.BoundingBox()` — the cache
   would still hand out a mutated object). — **Reversibility:** reversible — either
   implementation is local to `_write_export`/`export`.
+  - **Amended at plan time (2026-09-25, human decision on 06-RESEARCH.md findings):**
+    (a) the installed `cadquery-ocp` exposes `BRepTools.Clean_s(shape.wrapped)`, not
+    `.Clean` — the name above is corrected, not the intent. (b) The implementation is
+    **`solid.copy()`**. Research timed both on reference / 200-tooth × preview / fine:
+    copy 23.1 / 70.9 / 260.9 / 824.2 ms, `Clean_s` 20.2 / 63.1 / 244.9 / 791.3 ms.
+    `Clean_s` was rejected despite being 5–13 % faster: it strips the mesh *after*
+    export, so the cached object carries a mesh for the whole export window, while
+    `build()` releases `_LOCK` before callers read the solid — the invariant would hold
+    only between exports. (c) The "STL bytes are unchanged" proof is replaced by
+    **content equivalence** — triangle count, decoded mesh volume and a watertight,
+    consistently oriented shell on the fixed export — because rerunning the debt file's
+    byte comparison 20 times matched only 8/20 (OCCT export is not byte-reproducible
+    across independently built solids; every measured dimension was identical each time).
 - **D-09:** `tests/conftest.py`'s autouse `_reset_solid_cache` is **deleted in the fixing
   commit**. The suite passing without it is the cross-test proof (the `test_model.py`
   `kw={}` case against `test_api.py`'s default-gear export is the collision that exposed
