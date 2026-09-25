@@ -4,15 +4,14 @@ milestone: v0.1
 current_phase: 05
 status: "Phase 05 shipped — PR #4"
 stopped_at: Phase 05 complete — all phases complete
-last_updated: "2026-09-25T09:10:32.760Z"
+last_updated: "2026-09-25T10:27:22.765Z"
 last_activity: 2026-09-25
-state_head: 73535a24ce57258f23049d72e8c99eb1d5c0ba90
+state_head: a3b37ea1f92e20bc2349f37f286318094d50a835
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
   total_plans: 17
   completed_plans: 17
-  percent: 100
 milestone_name: Hardening
 ---
 
@@ -195,6 +194,7 @@ None yet.
 ### Roadmap Evolution
 
 - Phase 5 edited: edited fields: goal, success_criteria (reframed per 05-CONTEXT.md D-10), Phases-list one-liner
+- Phase 6 added: Address tech debt: merge gate + solid cache
 
 ## Deferred Items
 

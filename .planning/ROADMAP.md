@@ -31,6 +31,8 @@ tracked.
   shape, checked by mypy with `disallow_any_explicit` on.
 - [x] **Phase 5: CI Observed Green** - CI is the trusted merge gate: every `main` commit (completed 2026-09-25)
   has a run, red or run-less merges are refused, Python 3.12 only.
+- [ ] **Phase 6: Address tech debt: merge gate + solid cache** - The merge-gate and
+  solid-cache `must` items the v0.1 audit left open (to be planned).
 
 ## Phase Details
 
@@ -279,3 +281,15 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
 | 5. CI Observed Green | 6/6 | Complete    | 2026-09-25 |
+| 6. Address tech debt: merge gate + solid cache | 0/0 | Not started | — |
+
+### Phase 6: Address tech debt: merge gate + solid cache
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 6 to break down)
