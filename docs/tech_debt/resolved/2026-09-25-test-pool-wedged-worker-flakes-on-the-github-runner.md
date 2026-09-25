@@ -1,11 +1,14 @@
 # `test_a_wedged_build_is_terminated_and_its_worker_replaced` flakes on the GitHub runner
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-25
+Resolved in: ae052f8
 Source: PR #4's CI during `/gsd-ship 5`, 2026-09-25: runs 36116930241 (head `73535a2`) and
   36117030280 attempt 1 (head `107c714`) failed `test (3.12)` on this one test; the
   re-run of that job on the same `107c714` passed.
+  After filing: run 36118554588 (head `e8e15b0`) failed the same test on both of its
+  attempts -- 4 of 5 runs that day.
 Related files:
 - tests/test_pool.py (`test_a_wedged_build_is_terminated_and_its_worker_replaced`, the
   `proc.join(timeout=5)` / `assert not proc.is_alive()` pair)
@@ -72,8 +75,11 @@ private, like `_processes`, so guard it the way
 `exitcode` is the `returncode` the manager's own join already recorded, so no second
 `waitpid` races it. If the hypothesis is wrong, the first failure after this change
 prints an exit code instead of `assert not True` -- the evidence this filing lacks.
-Until then: on a red `test (3.12)` naming this test, re-run the job (`gh run rerun <id>
---failed`) and add the run id here.
+Done in ae052f8: the test captures the manager thread before the timeout, joins it, and
+asserts `proc.exitcode == -signal.SIGTERM`; the private-attribute guard test covers
+`_executor_manager_thread` too. Whether the race was the cause is proven by the next
+runner failure printing an exit code instead of `assert not True` -- or by there being
+none.
 
 Revisit when: this test fails again on any run, or `tests/test_pool.py` is touched anyway.
 
