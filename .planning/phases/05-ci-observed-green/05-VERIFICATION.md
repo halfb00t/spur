@@ -6,10 +6,7 @@ score: 5/5 must-haves verified
 covered_files:
   - ".github/workflows/ci.yml"
   - ".github/workflows/required-jobs.txt"
-  - ".planning/PROJECT.md"
   - ".planning/REQUIREMENTS.md"
-  - ".planning/ROADMAP.md"
-  - ".planning/STATE.md"
   - ".planning/codebase/CONCERNS.md"
   - ".planning/codebase/CONVENTIONS.md"
   - ".planning/codebase/INTEGRATIONS.md"
@@ -26,8 +23,6 @@ covered_files:
   - ".planning/phases/05-ci-observed-green/05-05-SUMMARY.md"
   - ".planning/phases/05-ci-observed-green/05-06-PLAN.md"
   - ".planning/phases/05-ci-observed-green/05-06-SUMMARY.md"
-  - ".planning/phases/05-ci-observed-green/05-CONTEXT.md"
-  - ".planning/phases/05-ci-observed-green/05-REVIEW.md"
   - ".pre-commit-config.yaml"
   - "AGENTS.md"
   - "Makefile"
@@ -50,7 +45,7 @@ covered_files:
   - "tests/test_pool.py"
   - "tests/test_pr_land.py"
   - "tests/test_skip_tokens.py"
-covered_digest: "v1:sha256:6c398801569c6ce62e4553e3fb6f4a3acb09cd3f4e4e898babced068d3baea97"
+covered_digest: "v1:sha256:47c80a8294753b5c33e978953300887692bc338743b77557aeb7eef20f75f292"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:

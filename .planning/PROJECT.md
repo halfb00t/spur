@@ -75,14 +75,21 @@ the full list with sources and acceptance evidence.
   `JsonSchemaValue`; mypy's `disallow_any_explicit` is on globally with `make verify` green
   (104 tests) via the pydantic plugin's `init_typed`/`init_forbid_extra`, no suppressions;
   `spur info --mate-teeth` refuses the range the API refuses (L21 supersedes L14) — Phase 4
+- ✓ REQ-ci-verified — CI is the merge gate for `main`: a repo-owned `commit-msg` hook
+  (`scripts/skip_tokens.py`) refuses the six GitHub Actions skip tokens; `make pr.land PR=N`
+  refuses a red, missing, stale or token-carrying head and exits non-zero unless the squash
+  commit gets a run, printing its URL; the ruleset on `main` requires `test (3.12)`,
+  `vendor-bundle` and `image` green on an up-to-date head plus a pull request (read back
+  live); Python 3.12 only (L23 supersedes L01's floor); the "CI workflow unverified"
+  blocker retired citing runs 35963114939 and 36088409707; the pr.land cut-line bypass
+  (05-REVIEW CR-01) closed by gap plan 05-06 and re-verified 5/5 (L22, L23) — Phase 5
 
 ### Active
 
 Milestone v0.1 (Hardening). Each maps to a `must` item in `docs/tech_debt/active/` or a
 standing blocker in `STATE.md`; full REQ-IDs and acceptance criteria in `REQUIREMENTS.md`.
 
-- [ ] The CI workflow is observed green in GitHub Actions on both supported Python
-  versions
+- *(none — all four v0.1 target features are validated; the milestone is ready to close)*
 
 ### Out of Scope
 
@@ -166,7 +173,7 @@ quick reference.
 
 | ID | Decision | Outcome |
 |----|----------|---------|
-| L01 | Stack: Python 3.10–3.12, CadQuery/OCCT, FastAPI+Pydantic v2+uvicorn, argparse, vanilla JS + vendored three.js, pytest, Docker, GitHub Actions — detected, not chosen | ✓ Good |
+| L01 | Stack: Python 3.10–3.12, CadQuery/OCCT, FastAPI+Pydantic v2+uvicorn, argparse, vanilla JS + vendored three.js, pytest, Docker, GitHub Actions — detected, not chosen | ✓ Good — the 3.10 floor is superseded by L23 (3.12 only) |
 | L02 | One `GearParams` model drives the web form, CLI flags, and API query params | ✓ Good |
 | L03 | Cap and warn a trimmable dimension; refuse (422) a direct conflict — never guess | ✓ Good |
 | L04 | Admission control (bounded build queue) lives in the web layer, not `model.py`; CLI never queues | ✓ Good |
@@ -187,6 +194,8 @@ quick reference.
 | L19 | Model bodies gzip-encoded at measured `compresslevel=1` (51.5 ms vs 788 ms at level 9 on a 9 MB STL), inside the admission slot, cached once per encoding | ✓ Good |
 | L20 | Structured JSON logging: stdlib `logging` + project-owned formatter, one object per line on stderr, `configure()` at both `cli.cmd_serve` and `app.lifespan()` (idempotent — uvicorn's spawn-based workers need the second site), parent process only, INFO default via `SPUR_LOG_LEVEL` | ✓ Good — post-review fix: records carrying `exc_info` render a `traceback` field (CR-01), `model()` catch-all logs `build.failed` (WR-01) |
 | L21 | `disallow_any_explicit` on globally, no per-module override; the published responses are typed models (`DerivedDimensions`, `HealthReport`/`PoolState`); the pydantic mypy plugin's `init_typed`/`init_forbid_extra` retire the six class-line errors instead of six per-class suppressions; `Any` is never written — `object` narrowed at use, a library's own alias keeps the library's `Any` (supersedes L14) | ✓ Good — `make verify` green under the rule (104 tests); `--mate-teeth 0` now exits 2 like the API's 422 |
+| L22 | CI is the merge gate: a ruleset on `main` requires `test (3.12)`, `vendor-bundle`, `image` green on an up-to-date head plus a pull request; a repo-owned `commit-msg` hook refuses the six skip tokens; the squash message is PR title + body; `main` is landed only via `make pr.land PR=N`, which refuses a red, stale, missing or token-carrying head and prints the squash commit's run URL | ✓ Good — ruleset read back live; gap plan 05-06 closed CR-01 (pr.land now checks the whole PR text, the hook cuts only in an editor session); residual hand-typed cut line filed as must debt `2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md` |
+| L23 | Python 3.12 only — `requires-python`, ruff `target-version`, the CI matrix, the Makefile interpreter and the README agree (supersedes L01's 3.10 floor; `cadquery-ocp` publishes wheels for nothing newer) | ✓ Good — `make verify` green on 3.12 (183 tests); CI job is `test (3.12)` alone |
 
 ## Success Metric (Milestone v0.1)
 
@@ -223,4 +232,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-24 — after Phase 4 (Typed Derived-Dimensions Contract) completed via `/gsd-execute-phase 4`.*
+*Last updated: 2026-09-25 — after Phase 5 (CI Observed Green) completed via `/gsd-execute-phase 5 --gaps-only`; milestone v0.1's four target features are all validated.*

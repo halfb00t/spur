@@ -21,11 +21,11 @@ milestone_name: Hardening
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-24)
+See: .planning/PROJECT.md (updated 2026-09-25)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 05 — CI Observed Green
+**Current focus:** Milestone v0.1 complete — all five phases verified; next `/gsd-complete-milestone v0.1`
 
 ## Current Position
 
@@ -38,7 +38,7 @@ Last activity: 2026-09-25 — Phase 05 complete
 
 **Velocity:**
 
-- Total plans completed via GSD: 11 (Phase 2: 5, Phase 3: 3, Phase 4: 3; v0 was built and verified
+- Total plans completed via GSD: 17 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -51,8 +51,7 @@ Last activity: 2026-09-25 — Phase 05 complete
 | 2. CAD Off the Event Loop | 5 | ~3h50m | ~46min |
 | 3. Structured Logging | 3 | ~1h12m | ~24min |
 | 4. Typed Derived-Dimensions Contract | 3 | ~1h10m | ~23min |
-| 5. CI Observed Green | TBD | - | - |
-| 05 | 6 | - | - |
+| 5. CI Observed Green | 6 | ~1h38m | ~16min |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -60,6 +59,10 @@ took ~1h12m; the post-review fix pass (CR-01/WR-01/WR-02, three commits) added ~
 Phase 4's three plans took ~1h10m: 04-01 (~45 min — reconstructed, not measured) carried
 the model and the three contract tests; 04-02 and 04-03 were 16 and 9 measured minutes.
 Code review came back clean (1 info) and verification passed 4/4 with no fix pass.
+Phase 5's six plans took ~1h38m: 05-02 (~35 min, the live `make pr.land` tracer) dominated;
+the rest were 11–14 min each. Code review found CR-01 (pr.land's cut-line bypass) and
+verification scored 4/5; gap-closure plan 05-06 (13 min) closed it, the re-review was clean
+and re-verification passed 5/5.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -164,6 +167,12 @@ None yet.
   `docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md`
   (must). Triggers: a feature needs a measured dimension from a `Solid` after export, or a
   test outside the fixture's protection hits the symptom.
+- ⚠️ [Phase 5] The `commit-msg` hook cannot see a skip token hidden below a git cut line
+  typed by hand inside an editor session without `-v` — by content it is identical to git's
+  own `commit -v` diff, which the hook must skip. Backstopped: the ruleset on `main` refuses
+  a head without green required checks, `make pr.land` refuses a run-less head, and after
+  D-03 a branch commit's message never becomes `main`'s.
+  `docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md` (must).
 - *(Resolved in Phase 5: "CI workflow unverified" — the premise was false: main push run
   <https://github.com/halfb00t/spur/actions/runs/35963114939> (`59f02c3`, all four jobs
   green) and PR #3 head run <https://github.com/halfb00t/spur/actions/runs/36088409707>
@@ -196,6 +205,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T08:33:44.783Z
-Stopped at: Phase 05 complete — all phases complete
+Last session: 2026-09-25T08:54:38.000Z
+Stopped at: Phase 05 complete — milestone v0.1 ready to close (`/gsd-complete-milestone v0.1`)
 Resume file: None
