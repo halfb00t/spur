@@ -164,36 +164,43 @@ Explicitly excluded from **milestone v0.2**, with reasoning.
 
 ## Traceability
 
-Filled in by the roadmap. Each requirement maps to exactly one phase.
+Each requirement maps to exactly one phase. Full phase detail (goals, success criteria,
+research flags): `ROADMAP.md` "Phase Details".
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-keyway-bore | — | Pending |
-| REQ-keyway-composes-with-d-flat | — | Pending |
-| REQ-keyway-wall-refused | — | Pending |
-| REQ-hex-bore | — | Pending |
-| REQ-hex-rim-chamfer | — | Pending |
-| REQ-bore-derived-numbers | — | Pending |
-| REQ-spoke-cutout | — | Pending |
-| REQ-hole-cutout | — | Pending |
-| REQ-honeycomb-cutout | — | Pending |
-| REQ-one-cutout-pattern | — | Pending |
-| REQ-cutout-conflicts-refused-early | — | Pending |
-| REQ-cutout-composes | — | Pending |
-| REQ-cutout-derived-numbers | — | Pending |
-| REQ-tip-chamfer | — | Pending |
-| REQ-tip-chamfer-capped | — | Pending |
-| REQ-defaults-off-regression | — | Pending |
-| REQ-three-interfaces-extended | — | Pending |
-| REQ-measured-build-time | — | Pending |
-| REQ-derived-dimensions-additive | — | Pending |
-| REQ-edge-selection-proven | — | Pending |
+| REQ-keyway-bore | Phase 9 | Pending |
+| REQ-keyway-composes-with-d-flat | Phase 9 | Pending |
+| REQ-keyway-wall-refused | Phase 9 | Pending |
+| REQ-hex-bore | Phase 8 | Pending |
+| REQ-hex-rim-chamfer | Phase 9 | Pending |
+| REQ-bore-derived-numbers | Phase 9 | Pending |
+| REQ-spoke-cutout | Phase 11 | Pending |
+| REQ-hole-cutout | Phase 11 | Pending |
+| REQ-honeycomb-cutout | Phase 11 | Pending |
+| REQ-one-cutout-pattern | Phase 11 | Pending |
+| REQ-cutout-conflicts-refused-early | Phase 11 | Pending |
+| REQ-cutout-composes | Phase 11 | Pending |
+| REQ-cutout-derived-numbers | Phase 11 | Pending |
+| REQ-tip-chamfer | Phase 10 | Pending |
+| REQ-tip-chamfer-capped | Phase 10 | Pending |
+| REQ-defaults-off-regression | Phase 7 | Pending |
+| REQ-three-interfaces-extended | Phase 12 | Pending |
+| REQ-measured-build-time | Phase 12 | Pending |
+| REQ-derived-dimensions-additive | Phase 8 | Pending |
+| REQ-edge-selection-proven | Phase 7 | Pending |
 
 **Coverage:**
 - v0.2 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20 ⚠️ (roadmap pending)
+- Mapped to phases: 20
+- Unmapped: 0 ✓
+
+Notes on bundled requirements: REQ-hex-rim-chamfer and REQ-bore-derived-numbers each name
+both new bore shapes (hex and keyway); both are owned by Phase 9 because that is the first
+point at which both shapes exist and the full requirement text is testable end to end —
+Phase 8 already delivers the hex-only edge of each (a chamfered hex bore, the hex
+corner-to-corner field), which Phase 9's success criteria confirm still holds.
 
 ---
 *Requirements defined: 2026-09-25*
-*Last updated: 2026-09-25 after research and the four product decisions*
+*Last updated: 2026-09-25 after the v0.2 roadmap (Phases 7–12) — 20/20 requirements mapped*

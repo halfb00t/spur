@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-09-25T14:48:09.649Z"
 last_activity: 2026-09-25
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -27,10 +27,10 @@ yet defined — `/gsd-new-milestone`.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-25 — Milestone v0.2 started
+Phase: 7 of 12 (Foundation — Generalized Edge Selection + Regression Fixture)
+Plan: — (not yet planned)
+Status: Ready to plan
+Last activity: 2026-09-25 — v0.2 roadmap created (Phases 7–12, 20/20 requirements mapped)
 
 ## Performance Metrics
 
