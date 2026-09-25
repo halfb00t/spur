@@ -5,13 +5,14 @@ current_phase: 5
 current_phase_name: CI Observed Green
 status: "Phase 4 shipped — PR #3"
 stopped_at: Phase 5 context gathered
-last_updated: "2026-09-25T04:15:01.013Z"
-last_activity: 2026-09-24
-state_head: 956419ab157c00d7f9a77b5e42ac1153664a00d2
+last_updated: "2026-09-25T05:54:04.882Z"
+last_activity: 2026-09-25
+last_activity_desc: Phase 5 planning complete
+state_head: 40fcaaa77f1be7aa1e71050d0a887027422ee13d
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 11
+  total_plans: 16
   completed_plans: 11
 milestone_name: Hardening
 ---
@@ -28,10 +29,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 5 — CI Observed Green
+Phase: 5 (CI Observed Green) — READY TO EXECUTE
 Plan: Not started
 Status: Phase 4 shipped — PR #3
-Last activity: 2026-09-24
+Last activity: 2026-09-25 — Phase 5 planning complete
 
 ## Performance Metrics
 
@@ -163,6 +164,10 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260923-qwr | Fix /api/health under-load latency: gzip level 1 from measurement, model-body compression inside _build_slot() and cached; Runs 5-6 concurrent 1.31x / 2.10x -- bar not met on both, WINDOWS item 1 stays open | 2026-09-23 | 2d47994..5a6e7d7 | [260923-qwr-fix-the-api-health-under-load-latency-co](./quick/260923-qwr-fix-the-api-health-under-load-latency-co/) |
 | 260924-bv5 | Fix 02-REVIEW.md CR-01/CR-02/WR-01: recreate_for identity-guarded and no longer cancels pending futures (fourth same-slot request observed CancelledError pre-fix, BrokenProcessPool after); memory sweep runs under its own 8 GiB ceiling and refuses capped rows; 5 new tests, 76 passing | 2026-09-24 | 15fa5cd | [260924-bv5-fix-02-review-md-findings-cr-01-cr-02-an](./quick/260924-bv5-fix-02-review-md-findings-cr-01-cr-02-an/) |
+
+### Roadmap Evolution
+
+- Phase 5 edited: edited fields: goal, success_criteria (reframed per 05-CONTEXT.md D-10), Phases-list one-liner
 
 ## Deferred Items
 

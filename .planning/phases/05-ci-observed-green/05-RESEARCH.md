@@ -666,10 +666,10 @@ gh api -X PATCH repos/halfb00t/spur \
 | A2 | `gh pr merge --squash` with no `-t`/`-b` honors the repository's `squash_merge_commit_title`/`squash_merge_commit_message` settings rather than some `gh`-internal default. | Pitfall 1 / D-03 | Sourced from web search results describing this behavior, not the official `gh` CLI manual page (which, when fetched directly this session, did not state it). If false, D-03's `gh api -X PATCH` setting change would have no effect on `pr.land`'s actual merges, and the squash message would still carry whatever `gh`'s own default is. **Must be falsified at execution time**: the plan should verify this by performing (or having the human perform) one real `gh pr merge --squash` after the PATCH and reading the resulting commit body, before relying on it structurally. |
 | A3 | `gh pr merge --delete-branch`'s exact interaction with a repo that already has `delete_branch_on_merge: true` server-side (no-op vs. error vs. redundant-but-harmless). | Anti-Patterns / Open Questions | The `gh` manual page did not specify this when fetched this session. Low risk either way since `pr.land`'s design (per discretion note) already does its own explicit local `git switch/pull/branch -D` regardless of what `gh` does server-side — but the plan should decide whether to pass `--delete-branch` to `gh pr merge` at all, or rely purely on the repo setting plus `pr.land`'s own local cleanup, and that decision should be tested against the real `gh` CLI at execution time (a live merge, not a dry run) rather than assumed. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`delete_branch_on_merge` is `true` live, not `false` as 05-CONTEXT.md recorded ~30
-   minutes earlier the same session.**
+   minutes earlier the same session.** — RESOLVED
    - What we know: confirmed live twice this session (`gh api repos/halfb00t/spur`, two
      separate calls, both returned `true`; `updated_at: 2026-09-25T03:49:03Z`).
      05-CONTEXT.md's `<code_context>` section states "today: ... `delete_branch_on_merge:
@@ -683,9 +683,14 @@ gh api -X PATCH repos/halfb00t/spur \
      discretion note) — but should note in the plan that `pr.land`'s Makefile target should
      not assume any particular value for this setting (don't special-case "if remote branch
      already gone" as an error condition; treat it as expected either way).
+   - **RESOLVED** by `05-02-PLAN.md` (flagged assumption 7 and the must_haves truth on the
+     local follow-up): `pr.land` never passes `--delete-branch` and never touches the remote
+     branch; it deletes the local branch only when that branch's tip equals the merged head
+     sha. It is correct whether the setting is `true` (re-read live during planning,
+     2026-09-25) or `false`, so the value is not on its path.
 
 2. **Exact `gh pr merge` non-mergeable-PR exit behavior (exit code, stderr text) was not
-   confirmed against the actual CLI this session** — only the `--help` flag list was
+   confirmed against the actual CLI this session** — RESOLVED. Only the `--help` flag list was
    confirmed, not runtime behavior, since triggering an actual failed merge attempt against
    this real repo was avoided per the read-only-only instruction governing this research
    session.
@@ -701,6 +706,14 @@ gh api -X PATCH repos/halfb00t/spur \
      step should include one real merge exercised end to end (this phase's own PR is the
      natural test subject, per D-05/D-07's own "Phase 5's own squash-commit run URL" language)
      rather than relying on documented behavior that could not be confirmed by reading alone.
+   - **RESOLVED** by `05-02-PLAN.md` Task 1 (`land()` step 4): a non-zero `gh pr merge` exit
+     is propagated, never swallowed — gh's stderr is printed with "check `gh pr view N`
+     before retrying", the exit is 1, and there is no poll and no local follow-up (tested
+     offline with a fake runner). `pr.land` depends on the exit status only, not on gh's
+     stderr text, so the unconfirmed text does not matter. The one real merge end to end is
+     this phase's own landing (`05-05-PLAN.md`, the after-phase steps). Since D-12 (the
+     ruleset on `main`), GitHub's own refusal of a red or behind head reaches `pr.land`
+     through the same path.
 
 ## Environment Availability
 

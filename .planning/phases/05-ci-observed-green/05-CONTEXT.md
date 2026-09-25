@@ -145,6 +145,30 @@ decision, deferred); any change to *what* `make verify` checks; patching the glo
   unwound, and the published `requires-python` change refuses a `pip install` on 3.10/3.11
   that worked before.
 
+### Amendment (plan-phase, 2026-09-25) — supersedes D-06
+- **D-12:** The repository is **public** (verified live during plan-phase: `gh api
+  repos/halfb00t/spur` → `visibility: public`, `private: false`;
+  `branches/main/protection` → 404 "Branch not protected"; one active ruleset `default`
+  that targets no branch — `rules/branches/main` is `[]`). The precondition D-06 deferred
+  on is met, so **a ruleset on `main` is added in this phase**: required status checks
+  `test (3.12)`, `vendor-bundle`, `image`; require branches to be up to date before
+  merging; require a pull request. Applied with `gh api`, recorded in
+  `docs/HOW_TO_DEVELOP.md` §8 next to the D-03 PATCH (a repo setting is not in git), and
+  read back (`gh api repos/halfb00t/spur/rules/branches/main`) as the evidence. Ordering:
+  the required-check names are the post-D-09 set, so the ruleset must not name
+  `test (3.10)`, or it must be applied after the matrix collapses — the planner picks.
+  `make pr.land` stays the sanctioned path (D-05): the wall cannot observe the squash
+  commit's own run (D-05 step 5) or do the local cleanup; its pre-merge checks may be
+  reduced to what the ruleset cannot enforce — the plan states which checks stay and why.
+  D-02/D-03 unchanged: the token leak into the squash body happens after the wall. L22
+  covers the ruleset. Chosen by the human on 2026-09-25 over "keep D-06 deferred" and
+  "make the repo private again". **Bypass policy confirmed by the human 2026-09-25: no
+  bypass actors** — nothing lands on `main` except through a PR with the required checks
+  green; milestone-completion and worktree-landing commits go up as PRs too (chosen over
+  "repository admin as bypass actor", which would re-open the PR #2 red-merge hole).
+  — **Reversibility:** costly — the ruleset is removed with one `gh api` call, but the
+  documented merge path and L22 would need rewriting.
+
 ### Claude's Discretion
 - Hook install mechanics: `default_install_hook_types: [pre-commit, commit-msg]` in
   `.pre-commit-config.yaml` so the documented `pre-commit install` installs both stages;
@@ -269,6 +293,11 @@ decision, deferred); any change to *what* `make verify` checks; patching the glo
   `squash_merge_commit_message: COMMIT_MESSAGES`.
 - A full run is ~3 min wall: `vendor-bundle` ~10 s, `test (3.x)` ~1.5–2 min each,
   `image` ~2.5 min. ~9 job-minutes per run today, ~7 after D-09.
+- **Correction (plan-phase, 2026-09-25):** the repository is now **public**
+  (`visibility: public`, `private: false`, repo `updated_at` 2026-09-25T03:49:03Z);
+  `branches/main/protection` → 404 "Branch not protected" (available, not applied);
+  `delete_branch_on_merge: true`. The "private on a free plan / 403" bullet above is
+  superseded — see D-12.
 
 </code_context>
 
@@ -308,7 +337,8 @@ marks `StreamHandler` generic for every version; ruff `py310` holds syntax only;
 <deferred>
 ## Deferred Ideas
 
-- **Branch protection / required checks** — the only true wall; needs the repo public or
+- **Branch protection / required checks** — *taken up in this phase as D-12 (plan-phase
+  amendment, 2026-09-25); original note kept for the record:* the only true wall; needs the repo public or
   GitHub Pro. A visibility/money decision the human makes outside this phase. If either
   happens, the required checks are the `pr.land` job set and "require branches to be up to
   date" — D-05 is then redundant, not wrong.
