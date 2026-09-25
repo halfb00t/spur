@@ -4,16 +4,16 @@ milestone: v0.1
 current_phase: 06
 current_phase_name: "Address tech debt: merge gate + solid cache"
 status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-09-25T12:00:51.779Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-09-25T12:17:00.497Z"
 last_activity: 2026-09-25
 last_activity_desc: Phase 06 execution started
-state_head: 9d900866098980833992267b4a9cd8168b027d9f
+state_head: f17bda0e4019aee42e7175bbf2b8dd61042f2493
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 21
-  completed_plans: 17
+  completed_plans: 18
 milestone_name: Hardening
 ---
 
@@ -30,8 +30,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 06 (Address tech debt: merge gate + solid cache) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 06
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-09-25 — Phase 06 execution started
 
 ## Performance Metrics
@@ -84,6 +84,7 @@ and re-verification passed 5/5.
 | Phase 05 P04 | 14 min | 3 tasks | 10 files |
 | Phase 05 P05 | ~11min | 3 tasks | 13 files |
 | Phase 05 P06 | 13min | 2 tasks | 5 files |
+| Phase 06 P01 | ~20min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -146,6 +147,9 @@ L17–L19):
 - [Phase 05]: Plan 05-04: the ruleset on main needed no write -- Plan 05-03 already applied the post-D-09 required-check set, so Task 3's live read-back confirmed agreement rather than changing anything — gh api repos/halfb00t/spur/rules/branches/main read back exactly image;test (3.12);vendor-bundle, matching the collapsed required-jobs.txt byte-for-byte
 - [Phase 05]: [Phase 05]: Plan 05-05: STATE.md's CI-unverified blocker was removed with one scoped edit inside Blockers/Concerns rather than state.resolve-blocker, which filters single '- ' lines and would orphan the bullet's three continuation lines — Plan's flagged assumption 3
 - [Phase 05]: 05-06: the cut moves into the hook's main() (editor-only), not find_skip_tokens -- pr_land.py's code is unchanged; message_refusals now searches the whole PR title/body with no cut, closing CR-01's reproduced bypass. The one residual (a hand-typed cut line inside an editor session without -v) is filed as must debt, backstopped by the ruleset on main, make pr.land's run check, and D-03.
+- [Phase 06]: shape.copy() before exportStl(), not BRepTools.Clean_s() — Clean_s measured 4-13% faster but strips the mesh after export, so the cached object would carry a mesh through the whole export window while build() releases _LOCK before callers read the solid; a copy keeps the cached solid mesh-free for its whole life instead. -- 06-01-SUMMARY.md key-decisions
+- [Phase 06]: Content equivalence (triangle count + decoded volume, rel=1e-6), never raw STL bytes, is D-08's proof — OCCT export matched byte-for-byte in only 8 of 20 reruns across independently built solids at planning/research time. -- 06-01-SUMMARY.md key-decisions
+- [Phase 06]: No replacement autouse fixture for the deleted solid-cache reset (D-09) — make verify's 185-test pass with the fixture gone is the only cross-test proof needed; no test relied on a cold cache for an unrelated reason. -- 06-01-SUMMARY.md key-decisions
 
 ### Pending Todos
 
@@ -160,20 +164,16 @@ None yet.
   p95) live in `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`
   (must). Triggers: the harness or the machine changes, or any run reads above 2.45x.
   History: `bench/RESULTS.md`, `02-LATENCY-INVESTIGATION.md`, `02-04-SUMMARY.md`.
-- ⚠️ [Phase 3] A cached `cq.Solid`'s `.BoundingBox()` reads wrong after `exportStl()` has
-  attached a coarser mesh to the same object — `model.py`'s process-global `_build_cached`
-  LRU shares the mutable solid across calls. No production caller today and STL bytes are
-  unaffected; the suite is protected by an autouse cache-clearing fixture.
-  `docs/tech_debt/active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md`
-  (must). Triggers: a feature needs a measured dimension from a `Solid` after export, or a
-  test outside the fixture's protection hits the symptom.
 - ⚠️ [Phase 5] The `commit-msg` hook cannot see a skip token hidden below a git cut line
   typed by hand inside an editor session without `-v` — by content it is identical to git's
   own `commit -v` diff, which the hook must skip. Backstopped: the ruleset on `main` refuses
   a head without green required checks, `make pr.land` refuses a run-less head, and after
   D-03 a branch commit's message never becomes `main`'s.
   `docs/tech_debt/active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md` (must).
-- *(Resolved in Phase 5: "CI workflow unverified" — the premise was false: main push run
+- *(Resolved in Phase 6: "A cached solid's `.BoundingBox()` reads wrong after
+  `exportStl()`" — `655ec52` (`_write_export` meshes `shape.copy()`, autouse cache reset
+  deleted) and `f17bda0` (L24, debt file moved), 06-01-SUMMARY.md. Resolved in Phase 5:
+  "CI workflow unverified" — the premise was false: main push run
   <https://github.com/halfb00t/spur/actions/runs/35963114939> (`59f02c3`, all four jobs
   green) and PR #3 head run <https://github.com/halfb00t/spur/actions/runs/36088409707>
   (`2c4b544`, tree-identical to `bfc9110`); L22's merge gate keeps it true, and this
@@ -206,6 +206,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T10:42:07.564Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-address-tech-debt-merge-gate-solid-cache/06-CONTEXT.md
+Last session: 2026-09-25T12:17:00.456Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

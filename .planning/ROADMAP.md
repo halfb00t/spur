@@ -281,21 +281,21 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5.
 | 3. Structured Logging at the Composition Boundary | 3/3 | Complete    | 2026-09-24 |
 | 4. Typed Derived-Dimensions Contract | 3/3 | Complete    | 2026-09-24 |
 | 5. CI Observed Green | 6/6 | Complete    | 2026-09-25 |
-| 6. Address tech debt: merge gate + solid cache | 0/4 | Planned | — |
+| 6. Address tech debt: merge gate + solid cache | 1/4 | In Progress|  |
 
 ### Phase 6: Address tech debt: merge gate + solid cache
 
 **Goal:** Close the five open tech-debt items in the merge gate and the solid cache, each resolved in the commit that fixes it: the `commit-msg` hook checks the whole buffer git hands it (no hand-typed cut line can hide a skip token); `make pr.land` refuses a run whose own conclusion is not `success`, resolves `jobs.<id>.name` overrides in the drift test, and reports only what it observed after the merge; `_build_cached` never hands out a solid carrying a mesh (export works on a copy, `.BoundingBox()` stays exact, the autouse cache reset fixture is deleted). Every behaviour change ships with its test, the copy-vs-strip numbers are measured and written down, `make verify` stays green.
 **Requirements**: TBD
 **Depends on:** Phase 5
-**Plans:** 4 plans, in 4 waves (each depends on the one before -- `docs/tech_debt/INDEX.md`
+**Plans:** 1/4 plans executed, in 4 waves (each depends on the one before -- `docs/tech_debt/INDEX.md`
 takes a row move in every plan, `scripts/pr_land.py`, `tests/test_pr_land.py` and
 `docs/HOW_TO_DEVELOP.md` are shared by 06-02..06-04, L24 must precede L25, and the
 pre-commit hook runs `make verify` in the one working tree)
 
 Plans:
 
-- [ ] 06-01-PLAN.md — The solid cache: STL export meshes `shape.copy()`, so a cached solid
+- [x] 06-01-PLAN.md — The solid cache: STL export meshes `shape.copy()`, so a cached solid
 
 **Cross-cutting constraints:**
 
