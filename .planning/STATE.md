@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 06 — Address tech debt: merge gate + solid cache
+**Current focus:** Milestone v0.1 complete — all six phases verified; next `/gsd-complete-milestone v0.1`
 
 ## Current Position
 
@@ -52,7 +52,7 @@ Last activity: 2026-09-25 — Phase 06 complete
 | 3. Structured Logging | 3 | ~1h12m | ~24min |
 | 4. Typed Derived-Dimensions Contract | 3 | ~1h10m | ~23min |
 | 5. CI Observed Green | 6 | ~1h38m | ~16min |
-| 06 | 4 | - | - |
+| 6. Address tech debt: merge gate + solid cache | 4 | ~56min | ~14min |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -64,6 +64,10 @@ Phase 5's six plans took ~1h38m: 05-02 (~35 min, the live `make pr.land` tracer)
 the rest were 11–14 min each. Code review found CR-01 (pr.land's cut-line bypass) and
 verification scored 4/5; gap-closure plan 05-06 (13 min) closed it, the re-review was clean
 and re-verification passed 5/5.
+Phase 6's four plans took ~56m: 06-01 (~20 min, estimated from commit timestamps — start time
+was not captured) and 06-04 (17 min, the three-report tracer with a live `gh` read) dominated;
+06-02 and 06-03 were 9 and 10 measured minutes. Code review came back clean (2 info),
+verification passed 9/9, security 13/13 closed, Nyquist 11/11 green — no fix pass, no gap plan.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -89,15 +93,21 @@ and re-verification passed 5/5.
 | Phase 06 P02 | 9min | 2 tasks | 6 files |
 | Phase 06 P03 | 10min | 3 tasks | 6 files |
 | Phase 06 P04 | 17min | 3 tasks | 7 files |
+| Phase 06 P01 | ~20min | 2 tasks | 6 files |
+| Phase 06 P02 | 9min | 2 tasks | 6 files |
+| Phase 06 P03 | 10min | 3 tasks | 6 files |
+| Phase 06 P04 | 17min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
 ### Decisions
 
-Full decision log: PROJECT.md "Key Decisions" table (L01–L21, from
+Full decision log: PROJECT.md "Key Decisions" table (L01–L25, from
 `docs/architecture/decision_log.md`). Flagged for revisit there: L10 (radial root
 fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar accepted with
-caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again.
+caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
+solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
+verdict, amending L22) were appended in Phase 6.
 
 Roadmap-time decisions for v0.1:
 
@@ -220,6 +230,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T13:16:23.291Z
-Stopped at: Phase 06 complete — all phases complete
+Last session: 2026-09-25T13:36:39Z
+Stopped at: Phase 06 complete — milestone v0.1 ready to close (`/gsd-complete-milestone v0.1`)
 Resume file: None
