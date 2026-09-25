@@ -92,7 +92,7 @@ rather than piling work up.
 
 ### Without Docker
 
-Python 3.10+:
+Python 3.12:
 
 ```sh
 python -m venv .venv && . .venv/bin/activate
@@ -197,21 +197,22 @@ while a bore too wide for the root is still refused.
 `make` on its own lists every target. The ones you want first:
 
 ```sh
-make venv        # .venv with the dev extras (needs CPython 3.10-3.12; see below)
+make venv        # .venv with the dev extras (needs CPython 3.12; see below)
 make verify      # the gate: ruff, mypy --strict, import boundaries, pytest (~11 s, no Docker)
 make up          # build the image and wait for the service on :8000
 make check       # verify + the image smoke test + the vendored-bundle check (needs Docker)
 ```
 
 `make verify` is the one command that decides whether a change is done. The same command
-runs in the pre-commit hook, in CI on Python 3.10 and 3.12, and inside
+runs in the pre-commit hook, in CI on Python 3.12, and inside
 `make worktree.land` before a merge, so "it passed" means the same thing everywhere.
 There is deliberately no automatic formatter; see `L16`.
 
 `make test-image` runs the suite inside the container instead, which needs no local
-Python at all. **`cadquery-ocp` only publishes wheels for CPython 3.10-3.12**, so a
-newer default `python3` will send pip off trying to build OpenCascade from source;
-`make venv` picks a supported interpreter itself and says so if it cannot find one.
+Python at all. **`cadquery-ocp` only publishes wheels up to CPython 3.12, and spur
+supports 3.12 only (L23)**, so a newer default `python3` will send pip off trying to
+build OpenCascade from source; `make venv` picks a supported interpreter itself and
+says so if it cannot find one.
 On Apple silicon, `PLATFORM=linux/arm64 make image` builds natively rather than
 inheriting a `DOCKER_DEFAULT_PLATFORM=linux/amd64` from your shell.
 

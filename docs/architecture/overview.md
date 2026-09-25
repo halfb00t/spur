@@ -17,7 +17,7 @@ Two properties define the product and constrain every change:
 
 ## Stack
 
-- **Core / API:** Python 3.10–3.12, FastAPI + Pydantic v2, uvicorn. Why → `L01`.
+- **Core / API:** Python 3.12, FastAPI + Pydantic v2, uvicorn. Why → `L01`, `L23`.
 - **Geometry kernel:** CadQuery 2.x over OpenCascade (`cadquery-ocp`). Why → `L01`.
 - **Viewer:** vanilla JS + a vendored, tree-shaken three.js bundle built with esbuild in
   `web/`; the runtime needs no Node. Why → `L11`.
