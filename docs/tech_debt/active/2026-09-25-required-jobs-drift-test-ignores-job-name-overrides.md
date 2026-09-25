@@ -29,11 +29,16 @@ to give.
 
 ## Next step
 
-Make the parse honest about its own limits: assert that no `name:` key appears in the
-`jobs:` section (three lines, next to the existing `assert "test" in job_ids`), with a
-message saying `name:` overrides are unsupported until the derivation reads them. Or
-derive the effective name -- the `name:` value under a job id when present, else the id.
-Either way, one regression case with an in-memory `ci.yml` that renames `image`.
+Make the parse honest about its own limits: assert that no job-level `name:` key
+appears in the `jobs:` section (three lines, next to the existing `assert "test" in
+job_ids`) -- scoped to the same two-space job-id indent already used for `job_ids`,
+e.g. `^  name:\s` immediately after a job-id line, not any `name:` in the whole
+`jobs:` subtree (that would also match the step-level `name:` keys `ci.yml` already
+has, at `bundle matches web/` and `the packaged entrypoint serves a gear`, and fail
+against the current, correct workflow). Message: `name:` overrides are unsupported
+until the derivation reads them. Or derive the effective name -- the `name:` value
+under a job id when present, else the id. Either way, one regression case with an
+in-memory `ci.yml` that renames `image`.
 
 Revisit when: any job in `ci.yml` gets a `name:`, or the drift test is touched anyway.
 
