@@ -296,6 +296,10 @@ pre-commit hook runs `make verify` in the one working tree)
 Plans:
 
 - [ ] 06-01-PLAN.md — The solid cache: STL export meshes `shape.copy()`, so a cached solid
+
+**Cross-cutting constraints:**
+
+- `make verify` passes (L13)
   never carries a mesh -- `.BoundingBox()` stays exact and a preview after a fine export is
   a preview (tracer); the autouse cache reset deleted; L24 with the measured costs; the
   debt retired *(wave 1)*

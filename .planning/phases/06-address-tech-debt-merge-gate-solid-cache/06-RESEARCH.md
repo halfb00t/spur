@@ -552,7 +552,15 @@ job_ids = re.findall(r"^  ([a-zA-Z][\w-]*):\s*$", jobs_section, re.MULTILINE)
 | A2 | Candidate B (`Clean_s`) is the right pick on the measured numbers alone, absent other constraints | Code Examples (D-08 timings) | Low-medium — both candidates satisfy the invariant; if the planner or a reviewer has a non-timing reason to prefer `.copy()` (e.g., defense against a future export path that reads the object concurrently), that reason should be weighed against the ~5-13% timing loss, not treated as settled by this research alone |
 | A3 | The re-scoped D-08 proof (triangle count + volume + watertightness, not raw bytes) satisfies the *intent* of CONTEXT.md's proof requirement even though it does not literally do "assert STL bytes are unchanged" | Summary, Pitfall 1 | Medium — this changes what CONTEXT.md's D-08 literally asked for; flagged for a human decision or discuss-phase follow-up rather than silently substituted by the planner |
 
-## Open Questions
+## Open Questions (RESOLVED at plan time, 2026-09-25)
+
+> Both questions below were settled by the human before planning; the decisions are recorded
+> in `06-CONTEXT.md` under D-08 ("Amended at plan time"). Q1 → the proof is content equivalence
+> (triangle count, decoded volume, watertight shell), not a byte diff. Q2 → moot: the
+> implementation chosen is `solid.copy()`, so `BRepTools.Clean_s` is not written and never
+> reaches mypy. The "Primary recommendation" in the Summary that names `Clean_s` is superseded
+> by that amendment — `Clean_s` was rejected because it leaves the cached object meshed for the
+> whole export window while `build()` releases `_LOCK` before callers read the solid.
 
 1. **Should the re-scoped D-08 byte-identity proof go back to the human before the plan is written, or can the planner substitute the content-based assertion directly?**
    - What we know: the literal proof ("STL bytes are unchanged") is empirically unreliable — 8/20 match rate reproduced this session.
