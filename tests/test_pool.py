@@ -179,8 +179,13 @@ def test_a_wedged_build_is_terminated_and_its_worker_replaced(
         # 2026-09-25) with the worker in fact dead, and never once on a workstation
         # (0/18 locally, contended and idle). With the manager thread as the only
         # reaper, `exitcode` is the status its join recorded, and asserting the signal
-        # number proves the death was ours, not a crash.
+        # number proves the death was ours, not a crash. The liveness assertion between
+        # the two is load-bearing: a timed `join` can return with the thread still
+        # running, and reading `exitcode` before it has stored the status is the same
+        # `waitpid` race again -- reproduced by pausing the manager just before its
+        # assignment (Codex re-review of ae052f8: `exitcode=None`, errno ECHILD).
         manager.join(timeout=5)
+        assert not manager.is_alive(), "executor manager thread did not finish shutdown"
         assert proc.exitcode == -signal.SIGTERM
         assert pool.replaced == replaced_before + 1
 
