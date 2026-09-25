@@ -17,7 +17,6 @@ Severity (grep-able `Severity:` field):
 | Severity | Item | Trigger to revisit |
 |---|---|---|
 | must | [The concurrent latency bar was waived, not demonstrated](active/2026-09-23-concurrent-latency-bar-waived.md) | 02-05 writes L17/L18, the harness or the machine changes, or any run reads above 2.45x |
-| must | [The commit-msg hook trusts a cut line typed by hand in an editor session](active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md) | a PR head with zero recorded checks is traced to a commit the hook passed, anyone here adopts `commit.verbose`, or the hook is touched anyway |
 | must | [`make pr.land` judges a run by the listed jobs only, never by the run's own conclusion](active/2026-09-25-pr-land-admits-a-run-with-a-failing-unlisted-job.md) | `ci.yml` gains a job, or `scripts/pr_land.py` is touched anyway |
 | nice | [CadQuery's `Shape` typing forces four `type: ignore`s](active/2026-09-21-cadquery-shape-typing.md) | CadQuery narrows its own return types, or the pipeline is touched anyway |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
@@ -37,3 +36,4 @@ Severity (grep-able `Severity:` field):
 | [The ship-note's CI skip token leaks into the squash-merge commit and skips CI on `main`](resolved/2026-09-25-ship-note-skip-token-leaks-into-squash-merge.md) | `fac76f5` — see the file's own `Resolved in:` field |
 | [`test_a_wedged_build_is_terminated_and_its_worker_replaced` flakes on the GitHub runner](resolved/2026-09-25-test-pool-wedged-worker-flakes-on-the-github-runner.md) | `ae052f8` — see the file's own `Resolved in:` field |
 | [A cached solid's `.BoundingBox()` reads wrong after it has been STL-exported](resolved/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md) | `655ec52` — see the file's own `Resolved in:` field |
+| [The commit-msg hook trusts a cut line typed by hand in an editor session](resolved/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md) | `e46ed34` — see the file's own `Resolved in:` field |
