@@ -111,15 +111,21 @@ def test_find_skip_tokens_searches_the_whole_text_it_is_given() -> None:
     assert find_skip_tokens(message) == ["[skip ci]"]
 
 
+@pytest.mark.parametrize("git_editor", ["vi", None])
 def test_token_only_below_the_scissors_line_gives_no_tokens(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, git_editor: str | None,
 ) -> None:
-    """`git commit -v` hands the commit-msg hook the whole editor buffer, including the
-    staged diff below git's cut line (flagged assumption 3, confirmed live in a scratch
-    repo during planning: the cut line is exactly `# ` + 24 dashes + ` >8 ` + 24
-    dashes). A token that only appears in that diff -- e.g. a file this phase adds that
-    itself names a token -- must not refuse the commit. Pins the hook's entry
-    (`main`), the one caller that applies the cut."""
+    """`git commit -v` always runs an editor -- the only case in which git itself puts a
+    diff below the cut line (flagged assumption 3, confirmed live in a scratch repo
+    during planning: the cut line is exactly `# ` + 24 dashes + ` >8 ` + 24 dashes). A
+    token that only appears in that diff -- e.g. a file this phase adds that itself
+    names a token -- must not refuse the commit, whether the editor is set explicitly
+    (`vi`) or left to `core.editor` (`None`, deleted). Pins the hook's entry (`main`),
+    the one caller that applies the cut."""
+    if git_editor is None:
+        monkeypatch.delenv("GIT_EDITOR", raising=False)
+    else:
+        monkeypatch.setenv("GIT_EDITOR", git_editor)
     message = (
         "docs: add the skip-token doc\n\n"
         "# ------------------------ >8 ------------------------\n"
@@ -134,9 +140,11 @@ def test_token_only_below_the_scissors_line_gives_no_tokens(
 
 
 def test_token_above_and_below_the_scissors_line_is_found_once(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str],
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Pins the hook's entry (`main`), the one caller that applies the cut."""
+    """Pins the hook's entry (`main`), the one caller that applies the cut, in an
+    editor session (`GIT_EDITOR=vi`)."""
+    monkeypatch.setenv("GIT_EDITOR", "vi")
     message = (
         "docs: add the skip-token doc [skip ci]\n\n"
         "# ------------------------ >8 ------------------------\n"
@@ -147,6 +155,25 @@ def test_token_above_and_below_the_scissors_line_is_found_once(
     path.write_text(message, encoding="utf-8")
     assert main([str(path)]) == 1
     assert capsys.readouterr().out.count("'[skip ci]'") == 1
+
+
+def test_hook_without_an_editor_refuses_a_token_below_a_cut_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    """githooks(5): git sets `GIT_EDITOR=:` for every commit hook when the command will
+    not bring up an editor. With `-m` or `-F`, git records a hand-written cut line and
+    what follows it verbatim (flagged assumption 1) -- the hook must read past it in
+    that case, unlike the real `git commit -v` diff shape above."""
+    monkeypatch.setenv("GIT_EDITOR", ":")
+    message = (
+        "safe subject\n\n"
+        "# ------------------------ >8 ------------------------\n"
+        "[skip ci]\n"
+    )
+    path = tmp_path / "COMMIT_EDITMSG"
+    path.write_text(message, encoding="utf-8")
+    assert main([str(path)]) == 1
+    assert "'[skip ci]'" in capsys.readouterr().out
 
 
 def test_message_to_check_returns_all_of_raw_when_there_is_no_scissors_line() -> None:

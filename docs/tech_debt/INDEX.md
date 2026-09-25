@@ -18,6 +18,7 @@ Severity (grep-able `Severity:` field):
 |---|---|---|
 | must | [The concurrent latency bar was waived, not demonstrated](active/2026-09-23-concurrent-latency-bar-waived.md) | 02-05 writes L17/L18, the harness or the machine changes, or any run reads above 2.45x |
 | must | [A cached solid's `.BoundingBox()` reads wrong after it has been STL-exported](active/2026-09-24-shared-solid-cache-corrupts-later-boundingbox.md) | a feature needs a measured dimension from a `Solid` after export, or a test outside the suite's autouse protection hits the same symptom |
+| must | [The commit-msg hook trusts a cut line typed by hand in an editor session](active/2026-09-25-commit-msg-hook-trusts-a-hand-typed-cut-line.md) | a PR head with zero recorded checks is traced to a commit the hook passed, anyone here adopts `commit.verbose`, or the hook is touched anyway |
 | nice | [CadQuery's `Shape` typing forces four `type: ignore`s](active/2026-09-21-cadquery-shape-typing.md) | CadQuery narrows its own return types, or the pipeline is touched anyway |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
 | nice | [No coverage floor in the gate](active/2026-09-21-no-coverage-floor.md) | after one measured baseline run |
