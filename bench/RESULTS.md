@@ -450,3 +450,64 @@ the 7 bore-less or chamfer-less solid cases, the corpus-coverage test and the
 kernel-version test stayed green. `git status --porcelain -- src tests` printed nothing
 afterwards — the monkeypatch was in-process only, no file was touched. The fixture
 catches a silently vanished chamfer.
+
+### After the selector change (07-02)
+
+`calc.bore_rim_limit(p)`, `model.BORE_RIM_SLACK`, the two `BuildError` guards and their
+tests (D-15/D-16/D-17/D-18) added 13 tests (1 `calc.py` unit test, 10 selector-matrix
+rows, 2 zero-edge refusals) on top of 07-01's 276. `tests/regression/pre_v0_2.json` was
+never touched by this plan (`git diff --exit-code`, run after every task) — the
+selector change is behaviour-neutral for every pre-v0.2 set.
+
+#### Host state
+
+- CPU: Apple M2 Max, 12 cores
+- RAM: 32.0 GiB
+- Python: 3.12.13 (`.venv`)
+- Date: 2026-09-26, ~12:48 local (06:48 UTC)
+- HEAD: `bd4e477` (`feat(07-02): refuse an empty recess-floor selection and count both
+  selectors per bore shape`)
+- `uptime` load averages at measurement: 2.58, 2.47, 2.47 — same "not quiet" host as
+  07-01's session (>1.5 on this 12-core machine); carried as a caveat, not cleaned up
+  (L08).
+
+#### `make verify`, two runs
+
+| Run | Result | Wall time |
+|---|---|---|
+| 1 | `289 passed in 51.39s` | 52.30s (`time`, includes lint/typecheck/import-lint/no-fake-done) |
+| 2 | `289 passed in 51.28s` | 52.19s |
+
+mean(`make verify`) = **52.25s**, against 07-01's recorded **49.51s** (276 tests) and this
+phase's own pre-fixture baseline of **32.47s** / 191 tests at `b3ca789` — a **+2.74s**
+delta over 07-01 for these 13 new tests, and **+19.78s** over the pre-Phase-7 baseline
+(07-01's fixture plus 07-02's selector tests combined). No D-06-style gate applies here:
+D-06 named a ~15.0s line for the *fixture's* build cost specifically; the selector tests
+build far fewer solids (13 new tests vs. 39 fixture builds) and this delta was not the
+subject of that decision.
+
+#### Selector test durations
+
+`make test PYTEST_ARGS="tests/test_model.py tests/test_calc.py -q --durations=15"`:
+**50 passed in 10.61s**.
+
+| Duration | Case |
+|---|---|
+| 1.24s | `test_model.py::test_an_stl_export_matches_a_first_export_whatever_came_before` |
+| 0.65s | `test_model.py::test_a_gear_too_small_for_the_stock_recess_still_builds` |
+| 0.51s | `test_model.py::test_recess_removes_expected_volume` |
+| 0.46s | `test_model.py::test_builds_one_valid_solid[kw1]` |
+| 0.44s | `test_model.py::test_builds_one_valid_solid[kw8]` |
+| 0.43s | `test_model.py::test_builds_one_valid_solid[kw0]` |
+| 0.43s | `test_model.py::test_exports` |
+| 0.42s | `test_model.py::test_builds_one_valid_solid[kw6]` |
+| 0.41s | `test_model.py::test_builds_one_valid_solid[kw2]` |
+| 0.38s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[d-flat-both]` |
+| 0.37s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[round-both]` |
+| 0.35s | `test_model.py::test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore` |
+| 0.29s | `test_model.py::test_builds_one_valid_solid[kw5]` |
+| 0.26s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[d-flat-top]` |
+| 0.25s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[d-flat-bottom]` |
+
+No outlier: the ten selector-matrix rows and two refusal tests each build one gear
+(≤0.4s), the same shape as the fixture's own cost.
