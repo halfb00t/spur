@@ -217,11 +217,25 @@ def _ring(r_in: float, r_out: float, z0: float, height: float) -> cq.Shape:
 
 def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],
                         floor_z: list[float]) -> list[cq.Edge]:
-    """The circles where a groove wall meets its floor."""
-    return [e for e in solid.Edges()
-            if e.geomType() == "CIRCLE"
-            and min(abs(e.radius() - r) for r in radii) < TOL
-            and any(abs(e.startPoint().z - z) < TOL for z in floor_z)]
+    """The circles where a groove wall meets its floor: a CIRCLE whose radius is within
+    TOL of a groove radius and whose start point sits within TOL of a floor height.
+
+    Runs only when the recess fillet is above zero, so an empty result here is a
+    modelling defect, never an answer (D-15) -- a fillet that silently selects nothing
+    must never ship an unfilleted floor. Phase 11's cutouts put new circles on the
+    recessed floor and must re-prove this separating invariant (research PITFALLS.md
+    Pitfall 4).
+    """
+    edges = [e for e in solid.Edges()
+             if e.geomType() == "CIRCLE"
+             and min(abs(e.radius() - r) for r in radii) < TOL
+             and any(abs(e.startPoint().z - z) < TOL for z in floor_z)]
+    if not edges:
+        raise BuildError(
+            "Recess fillet selected no groove-floor edges: a modelling defect in spur, "
+            "not a conflict in these parameters. Set recess_fillet to 0 to build this "
+            "gear without it.")
+    return edges
 
 
 def _bore_rim_edges(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
