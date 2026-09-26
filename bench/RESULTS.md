@@ -360,3 +360,93 @@ needed; `4g` cleared on the first try.
 `compose.yaml` now ships `SPUR_WORKERS: "1"`, `SPUR_BUILD_WORKERS: "2"` and
 `mem_limit: 4g`, with the comment above `mem_limit` naming this peak, this headroom
 factor and this confirm result.
+
+## Regression fixture cost (Phase 7, D-06)
+
+The committed measurement record for `tests/regression/` (`docs/tech_debt/active/
+2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`, `REQ-defaults-off-regression`,
+D-06). D-06 requires the fixture's cost to `make verify` measured — two runs each way,
+same session — and a delta above 15.0 s to halt for a human trim decision instead of a
+silent subset.
+
+### Host state
+
+- CPU: Apple M2 Max, 12 cores
+- RAM: 32.0 GiB
+- Python: 3.12.13 (`.venv`)
+- Date: 2026-09-26, ~12:20-12:26 UTC
+- HEAD: `7cb4eb6` (`test(07-01): pin every pre-v0.2 parameter set in the regression fixture`)
+- `uptime` load averages at the start of this session: 2.34, 2.49, 2.19 — above this
+  project's usual "quiet" bar (`bench/RESULTS.md`'s Latency section names >1.5 on a
+  12-core host); the numbers below carry that caveat rather than being presented as
+  clean (L08).
+
+### Same-session, alternating runs
+
+Same HEAD, same session, alternating `--ignore=tests/regression` (A) against the full
+suite (B), twice each, to average out one noisy sample:
+
+| Run | Command | Result |
+|---|---|---|
+| A1 | `make test PYTEST_ARGS="--ignore=tests/regression -q"` | 191 passed in 32.05s |
+| B1 | `make test PYTEST_ARGS="-q"` | 276 passed in 48.41s |
+| A2 | `make test PYTEST_ARGS="--ignore=tests/regression -q"` | 191 passed in 32.15s |
+| B2 | `make test PYTEST_ARGS="-q"` | 276 passed in 48.33s |
+
+mean(A) = 32.10s, mean(B) = 48.37s -> **delta = 16.27s**, above the D-06 15.0s line.
+
+### D-06 gate: human decision
+
+The delta (16.27s) exceeded the 15.0s line, so this halted for a `checkpoint:decision`
+per D-06 and prohibition 2 (no silent subset). Planning-time evidence going into that
+decision: two standalone probes of the 39 builds alone, on this machine, on 2026-09-25,
+took 15.66s and 15.83s (load average 1.4-2.4) — the gate was expected to sit near the
+line before this session ever ran.
+
+**Decision: Option A — accept the measured cost, keep every one of the 44 records
+built.** Reason: 16.27s sits under the planner's own ~20s ceiling for accepting the cost
+as-is; the cost is spread across all 39 builds (see durations below — no single outlier
+build dominates), not concentrated in a few sets that could be dropped cheaply; and
+Success Metric 3 ("old links unchanged") is kept literal — every pre-v0.2 hand-written
+parameter set, not a curated subset. No record was narrowed, dropped, marked slow, or
+given a loosened tolerance (prohibition 2).
+
+### Ten slowest regression fixture cases
+
+`make test PYTEST_ARGS="tests/regression -q --durations=10"`: 85 passed in 18.24s.
+
+| Duration | Case |
+|---|---|
+| 0.81s | `test_calc.py::test_root_fillet_is_capped_with_a_warning` (build) |
+| 0.78s | `test_calc.py::test_oversized_recess_is_narrowed_to_fit_and_says_so` (build) |
+| 0.77s | `test_calc.py::test_recess_fillet_is_capped_to_the_narrowed_groove` (build) |
+| 0.76s | `test_api.py::test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed` (build) |
+| 0.75s | `test_api.py::test_a_failed_build_emits_build_failed_naming_the_class_and_the_level` (build) |
+| 0.74s | `test_api.py::test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling` (build) |
+| 0.67s | `README:export-teeth-24` (build) |
+| 0.67s | `test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids` (build) |
+| 0.65s | `test_api.py::test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started` (build) |
+| 0.65s | `test_api.py::test_a_gzip_request_after_an_identity_download_emits_source_compressed` (build) |
+
+No outlier: the slowest and tenth-slowest builds differ by 0.16s, and the cost is spread
+evenly across the 39 `build()` calls the fixture makes, matching the Decision A rationale
+above.
+
+### `make verify` wall time
+
+`time make verify`: **49.51s** total, against the recorded pre-fixture baseline of
+**32.47s** / 191 tests at `b3ca789` (this phase's own CONTEXT.md).
+
+### Tripwire proof
+
+`.venv/bin/python -c "import sys, pytest, spur.model as m; m._bore_rim_edges = lambda
+*a, **k: []; sys.exit(pytest.main(['tests/regression', '-q', '-p',
+'no:cacheprovider']))"` — the Phase 8 hex-selector defect in miniature: a bore-rim
+selector that silently selects no edges, handed to `.chamfer()`.
+
+Result: **32 failed, 53 passed in 13.46s** — exactly the 32 base records whose params
+have `bore_d > 0` and `bore_chamfer > 0` went red on their solid case; every derive case,
+the 7 bore-less or chamfer-less solid cases, the corpus-coverage test and the
+kernel-version test stayed green. `git status --porcelain -- src tests` printed nothing
+afterwards — the monkeypatch was in-process only, no file was touched. The fixture
+catches a silently vanished chamfer.
