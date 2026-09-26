@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 08 — Hex Bore
+**Current focus:** Phase 9 — Keyway Bore (first of the two shaft-fit profiles left; carries the hex × keyway 422 that D-01 moved here)
 `calc.bore_rim_limit(p)` and is checked against the Phase 7 fixture).
 
 ## Current Position
@@ -40,7 +40,7 @@ Last activity: 2026-09-26 — Phase 08 complete, transitioned to Phase 9
 
 **Velocity:**
 
-- Total plans completed via GSD: 23 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2; v0 was built and verified
+- Total plans completed via GSD: 27 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2, Phase 8: 4; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -56,8 +56,8 @@ Last activity: 2026-09-26 — Phase 08 complete, transitioned to Phase 9
 | 5. CI Observed Green | 6 | ~1h38m | ~16min |
 | 6. Address tech debt: merge gate + solid cache | 4 | ~56min | ~14min |
 | 7. Foundation — edge selection + regression fixture | 2 | ~50min | ~25min |
+| 8. Hex Bore | 4 | ~2h49m | ~42min |
 | 07 | 2 | - | - |
-| 08 | 4 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -104,6 +104,10 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 06 P04 | 17min | 3 tasks | 7 files |
 | Phase 07 P01 | 39min | 3 tasks | 8 files |
 | Phase 07 P02 | 11min | 3 tasks | 7 files |
+| Phase 08 P01 | ~19min | 3 tasks | 3 files |
+| Phase 08 P02 | 55min | 2 tasks | 8 files |
+| Phase 08 P03 | 25min | 2 tasks | 7 files |
+| Phase 08 P04 | 70min | 3 tasks | 11 files |
 | Phase 08 P01 | 15 min | 3 tasks | 3 files |
 | Phase 08 P02 | 55min | 2 tasks | 8 files |
 | Phase 08 P03 | 25 min | 2 tasks | 7 files |
@@ -119,7 +123,7 @@ fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar acc
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
 verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
-L05 proof; a selector never silently selects nothing) was appended in Phase 7.
+L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -143,6 +147,7 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 8] The round bore's chamfer reach is not checked: `check()`'s round branch compares `bore_radius(p)`, not `bore_mouth_limit(p)`, so a round bore one chamfer short of the root circle builds and the kernel fails at its own limit instead of a 422 naming the fields. Not fixed in Phase 8 because a fix refuses round links that build today (L05): `docs/tech_debt/active/2026-09-26-round-bore-chamfer-reach-is-not-checked.md` (must).
 - ⚠️ [Phase 7] CI resolves `cadquery`/`cadquery-ocp` from an unpinned `pyproject.toml`
   range while `tests/regression/pre_v0_2.json` pins one resolved kernel's exact topology;
   a kernel bump turns the fixture red for reasons that are not a spur regression. The
