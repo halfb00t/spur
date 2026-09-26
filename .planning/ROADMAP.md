@@ -38,7 +38,7 @@ with tooth measurements untouched.
 - [x] **Phase 7: Foundation — Generalized Edge Selection + Regression Fixture** - Fix the (completed 2026-09-26)
       bore-rim edge selector for any bore shape and lock a regression fixture every later
       phase extends
-- [ ] **Phase 8: Hex Bore** - A hexagonal bore profile, proving the generalized selector on
+- [x] **Phase 8: Hex Bore** - A hexagonal bore profile, proving the generalized selector on (completed 2026-09-26)
       real geometry
 - [ ] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit,
       documented depth datum
