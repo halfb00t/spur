@@ -74,12 +74,12 @@ extends.
 **Research flag**: No — the fix (compute the selection bound correctly per shape) is fully
 specified by `research/ARCHITECTURE.md`'s Q2; no open questions (`research/SUMMARY.md`
 "Phases with standard, well-documented patterns").
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — L05 regression fixture: 78-entry corpus → 44 records, `make fixture.regen`, replay test, measured cost (D-06 gate) (wave 1)
+- [x] 07-01-PLAN.md — L05 regression fixture: 78-entry corpus → 44 records, `make fixture.regen`, replay test, measured cost (D-06 gate) (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -269,7 +269,7 @@ in Phases 7–11; no open technical questions remain by this point.
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
-| 7. Foundation | v0.2 | 0/2 | Planned | - |
+| 7. Foundation | v0.2 | 1/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 0/? | Not started | - |
 | 9. Keyway Bore | v0.2 | 0/? | Not started | - |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |

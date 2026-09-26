@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 7
+current_phase: 07
 current_phase_name: Foundation — Generalized Edge Selection + Regression Fixture
-status: "Milestone v0.2 start shipped — PR #7 (land via make pr.land PR=7)"
-stopped_at: Phase 7 context gathered
-last_updated: "2026-09-26T05:34:15.911Z"
+status: executing
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-09-26T06:31:35.898Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 7 planning complete
-state_head: c1f01f02e94d3ef3e49e85584367253ae67eed5e
+last_activity_desc: Phase 07 execution started
+state_head: 87e854865906e73e877dd331832348cad5cceed2
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -26,15 +26,15 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.2 Fit to Shaft — planning complete (Phases 7–12, 20/20
+**Current focus:** Phase 07 — Foundation — Generalized Edge Selection + Regression Fixture
 requirements mapped) and open as PR #7; Phase 7 (Foundation) is next once it lands.
 
 ## Current Position
 
-Phase: 7 (Foundation — Generalized Edge Selection + Regression Fixture) — READY TO EXECUTE
-Plan: — (not yet planned)
-Status: Milestone v0.2 start shipped — PR #7 (land via make pr.land PR=7)
-Last activity: 2026-09-26 — Phase 7 planning complete
+Phase: 07 (Foundation — Generalized Edge Selection + Regression Fixture) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-09-26 — Phase 07 execution started
 
 ## Performance Metrics
 
@@ -95,6 +95,7 @@ verification passed 9/9, security 13/13 closed, Nyquist 11/11 green — no fix p
 | Phase 06 P02 | 9min | 2 tasks | 6 files |
 | Phase 06 P03 | 10min | 3 tasks | 6 files |
 | Phase 06 P04 | 17min | 3 tasks | 7 files |
+| Phase 07 P01 | 39min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,8 @@ v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
 `milestones/v0.1-phases/*/*-SUMMARY.md`, and decision-log entries L17–L25. Nothing here is
 pending; the next milestone starts this list fresh.
+
+- [Phase 07]: D-06 gate: measured make verify delta with the regression fixture was 16.27s, above the plan's 15.0s line. Human chose Option A: accept the cost, keep all 44 records built. — 16.27s is under the planner's ~20s ceiling; the cost is spread evenly across all 39 builds (no single outlier); Success Metric 3 stays literal rather than trimmed to a curated subset.
 
 ### Pending Todos
 
@@ -156,9 +159,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T04:15:19.180Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-foundation-generalized-edge-selection-regression-fixture/07-CONTEXT.md
+Last session: 2026-09-26T06:31:35.883Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
