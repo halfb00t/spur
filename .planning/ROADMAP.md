@@ -116,7 +116,7 @@ proving Phase 7's generalized selector against real geometry.
      bounding box.
 **Research flag**: No — `Workplane.polygon(circumscribed=True)` is numerically verified
 against the installed `.venv`; a small, well-bounded feature (`research/SUMMARY.md`).
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans executed
 
 Plans:
 **Wave 1**
@@ -133,7 +133,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 08-04-PLAN.md — `make bench.build` and the 16-row sweep at 200 teeth in `bench/RESULTS.md`, L27, round-bore chamfer-reach debt, final `make verify` (wave 4)
+- [x] 08-04-PLAN.md — `make bench.build` and the 16-row sweep at 200 teeth in `bench/RESULTS.md`, L27, round-bore chamfer-reach debt, final `make verify` (wave 4)
 
 ### Phase 9: Keyway Bore
 
@@ -295,7 +295,7 @@ in Phases 7–11; no open technical questions remain by this point.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
-| 8. Hex Bore | v0.2 | 3/4 | In Progress|  |
+| 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 0/? | Not started | - |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |

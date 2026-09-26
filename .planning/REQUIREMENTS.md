@@ -34,7 +34,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   the root circle or of a recess wall is a 422 naming `keyway_depth` and the conflicting
   dimension — refused, not capped, because a shallower keyway is a part the key does not
   fit.
-- [ ] **REQ-hex-bore**: User can make the bore a regular hexagon by setting `bore_hex`
+- [x] **REQ-hex-bore**: User can make the bore a regular hexagon by setting `bore_hex`
   (across-flats, mm, 0 = off). The hexagon **replaces** the whole round profile: `bore_d`
   and `bore_flat` do not apply to a hex bore, and the response's `warnings` name each of
   them that is non-zero, with its value. Both defaults are non-zero, so a shareable link
@@ -109,7 +109,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   configuration — including a recess combined with each cutout pattern, and the honeycomb
   at its cap — in `bench/RESULTS.md`, inside `SPUR_BUILD_TIMEOUT`. The honeycomb cap and
   the tip-chamfer cap come from that sweep (L17-style), not from inspection.
-- [ ] **REQ-derived-dimensions-additive**: The 19 existing `DerivedDimensions` fields keep
+- [x] **REQ-derived-dimensions-additive**: The 19 existing `DerivedDimensions` fields keep
   their names, types and values; new fields are `null` when their feature is off; mypy
   `disallow_any_explicit` stays on with no suppressions (L21).
 - [x] **REQ-edge-selection-proven**: Chamfer and fillet edge selectors never silently
@@ -176,7 +176,7 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-keyway-bore | Phase 9 | Pending |
 | REQ-keyway-composes-with-d-flat | Phase 9 | Pending |
 | REQ-keyway-wall-refused | Phase 9 | Pending |
-| REQ-hex-bore | Phase 8 | Pending |
+| REQ-hex-bore | Phase 8 | Complete |
 | REQ-hex-rim-chamfer | Phase 9 | Pending |
 | REQ-bore-derived-numbers | Phase 9 | Pending |
 | REQ-spoke-cutout | Phase 11 | Pending |
@@ -191,7 +191,7 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-defaults-off-regression | Phase 7 | Complete |
 | REQ-three-interfaces-extended | Phase 12 | Pending |
 | REQ-measured-build-time | Phase 12 | Pending |
-| REQ-derived-dimensions-additive | Phase 8 | Pending |
+| REQ-derived-dimensions-additive | Phase 8 | Complete |
 | REQ-edge-selection-proven | Phase 7 | Complete |
 
 **Coverage:**

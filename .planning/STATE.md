@@ -4,17 +4,17 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 08
 current_phase_name: Hex Bore
-status: executing
-stopped_at: Completed 08-03-PLAN.md
-last_updated: "2026-09-26T15:55:33.317Z"
+status: verifying
+stopped_at: Completed 08-04-PLAN.md
+last_updated: "2026-09-26T16:22:43.975Z"
 last_activity: 2026-09-26
 last_activity_desc: Phase 08 execution started
-state_head: 7bbf31e6d956f3a343ebc6bd69b7cc181d8237bf
+state_head: 26833963d5c600ed40ec5db9936f134f933feb27
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 17
 ---
 
@@ -33,7 +33,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 08 (Hex Bore) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-26 — Phase 08 execution started
 
 ## Performance Metrics
@@ -106,6 +106,7 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 08 P01 | 15 min | 3 tasks | 3 files |
 | Phase 08 P02 | 55min | 2 tasks | 8 files |
 | Phase 08 P03 | 25 min | 2 tasks | 7 files |
+| Phase 08 P04 | 70 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 08]: The hex is a replacement branch in model._cut_bore, never an intersection with the round profile (D-01) -- bore_d/bore_flat stay live in the schema and are simply ignored when bore_hex > 0; the ignored-field warning is 08-03's task.
 - [Phase 08]: D-03's chamfer bound sits on the root circle (bore_mouth_limit vs pr.rf - MIN_WALL), not the hex's side length -- the planning probe found the kernel copes with chamfer-vs-side at every allowed size (ratio 8, rel 1e-6 volume match), so no side rule was added and the probe became a test instead (Flagged Assumption A4).
 - [Phase 08]: The corner rule and the chamfered-corner rule never stack (if/elif, not two independent ifs) -- with bore_chamfer 0 the mouth equals the corner, so exactly one hex refusal can fire (Flagged Assumption A5).
+- [Phase 08]: L27 appended: hex bore field, replaces-never-refuses, derived numbers, D-03's measured root-circle bounds, and D-11's heaviest row (5.08s of 30s) -- decision_log.md stayed append-only. — One entry covering the whole phase, following L26's shape; the sweep never approached the 30s budget so no checkpoint:decision fired.
+- [Phase 08]: The round bore's unchecked chamfer-reach gap was filed as must-severity debt, not fixed -- a fix would refuse round links that build today (L05). — Measured on 19 and 40 teeth at chamfers of 0.4, 1 and 2mm; out of Phase 8's scope (the hex got its own matching rule).
 
 ### Pending Todos
 
@@ -186,8 +189,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T15:55:33.295Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-09-26T16:22:43.952Z
+Stopped at: Completed 08-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
