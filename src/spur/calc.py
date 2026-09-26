@@ -58,6 +58,22 @@ def bore_radius(p: GearParams) -> float:
     return (p.bore_d + p.bore_clearance) / 2 if p.bore_d > 0 else 0.0
 
 
+def bore_rim_limit(p: GearParams) -> float:
+    """The farthest any point on the bore's rim can sit from the axis -- the exact
+    geometric bound, no slack.
+
+    Round and D-flat both reduce to bore_radius(p): the D-flat hole is the round hole
+    intersected with a rectangle (model._cut_bore), a strict subset of the circle, so it
+    adds no point farther out. That stops being true once a bore shape has a vertex
+    outside the circle -- Phase 8's hex bore adds its circumradius (across-flats over
+    sqrt 3) here instead of widening this bound (research ARCHITECTURE.md Q2's rejected
+    anti-pattern: generalizing lim by widening it). calc.py knows no kernel tolerance;
+    the selection slack that turns this exact bound into a matching band belongs to
+    model.py, not here.
+    """
+    return bore_radius(p)
+
+
 def recess_radii(p: GearParams, rf: float) -> tuple[float, float] | None:
     """(inner, outer) radius of the face groove, narrowed to fit between the hub wall
     and the tooth rim, or None when there is no room for a groove at all.

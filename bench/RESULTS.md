@@ -360,3 +360,154 @@ needed; `4g` cleared on the first try.
 `compose.yaml` now ships `SPUR_WORKERS: "1"`, `SPUR_BUILD_WORKERS: "2"` and
 `mem_limit: 4g`, with the comment above `mem_limit` naming this peak, this headroom
 factor and this confirm result.
+
+## Regression fixture cost (Phase 7, D-06)
+
+The committed measurement record for `tests/regression/` (`docs/tech_debt/active/
+2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`, `REQ-defaults-off-regression`,
+D-06). D-06 requires the fixture's cost to `make verify` measured — two runs each way,
+same session — and a delta above 15.0 s to halt for a human trim decision instead of a
+silent subset.
+
+### Host state
+
+- CPU: Apple M2 Max, 12 cores
+- RAM: 32.0 GiB
+- Python: 3.12.13 (`.venv`)
+- Date: 2026-09-26, ~12:20-12:26 UTC
+- HEAD: `7cb4eb6` (`test(07-01): pin every pre-v0.2 parameter set in the regression fixture`)
+- `uptime` load averages at the start of this session: 2.34, 2.49, 2.19 — above this
+  project's usual "quiet" bar (`bench/RESULTS.md`'s Latency section names >1.5 on a
+  12-core host); the numbers below carry that caveat rather than being presented as
+  clean (L08).
+
+### Same-session, alternating runs
+
+Same HEAD, same session, alternating `--ignore=tests/regression` (A) against the full
+suite (B), twice each, to average out one noisy sample:
+
+| Run | Command | Result |
+|---|---|---|
+| A1 | `make test PYTEST_ARGS="--ignore=tests/regression -q"` | 191 passed in 32.05s |
+| B1 | `make test PYTEST_ARGS="-q"` | 276 passed in 48.41s |
+| A2 | `make test PYTEST_ARGS="--ignore=tests/regression -q"` | 191 passed in 32.15s |
+| B2 | `make test PYTEST_ARGS="-q"` | 276 passed in 48.33s |
+
+mean(A) = 32.10s, mean(B) = 48.37s -> **delta = 16.27s**, above the D-06 15.0s line.
+
+### D-06 gate: human decision
+
+The delta (16.27s) exceeded the 15.0s line, so this halted for a `checkpoint:decision`
+per D-06 and prohibition 2 (no silent subset). Planning-time evidence going into that
+decision: two standalone probes of the 39 builds alone, on this machine, on 2026-09-25,
+took 15.66s and 15.83s (load average 1.4-2.4) — the gate was expected to sit near the
+line before this session ever ran.
+
+**Decision: Option A — accept the measured cost, keep every one of the 44 records
+built.** Reason: 16.27s sits under the planner's own ~20s ceiling for accepting the cost
+as-is; the cost is spread across all 39 builds (see durations below — no single outlier
+build dominates), not concentrated in a few sets that could be dropped cheaply; and
+Success Metric 3 ("old links unchanged") is kept literal — every pre-v0.2 hand-written
+parameter set, not a curated subset. No record was narrowed, dropped, marked slow, or
+given a loosened tolerance (prohibition 2).
+
+### Ten slowest regression fixture cases
+
+`make test PYTEST_ARGS="tests/regression -q --durations=10"`: 85 passed in 18.24s.
+
+| Duration | Case |
+|---|---|
+| 0.81s | `test_calc.py::test_root_fillet_is_capped_with_a_warning` (build) |
+| 0.78s | `test_calc.py::test_oversized_recess_is_narrowed_to_fit_and_says_so` (build) |
+| 0.77s | `test_calc.py::test_recess_fillet_is_capped_to_the_narrowed_groove` (build) |
+| 0.76s | `test_api.py::test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed` (build) |
+| 0.75s | `test_api.py::test_a_failed_build_emits_build_failed_naming_the_class_and_the_level` (build) |
+| 0.74s | `test_api.py::test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling` (build) |
+| 0.67s | `README:export-teeth-24` (build) |
+| 0.67s | `test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids` (build) |
+| 0.65s | `test_api.py::test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started` (build) |
+| 0.65s | `test_api.py::test_a_gzip_request_after_an_identity_download_emits_source_compressed` (build) |
+
+No outlier: the slowest and tenth-slowest builds differ by 0.16s, and the cost is spread
+evenly across the 39 `build()` calls the fixture makes, matching the Decision A rationale
+above.
+
+### `make verify` wall time
+
+`time make verify`: **49.51s** total, against the recorded pre-fixture baseline of
+**32.47s** / 191 tests at `b3ca789` (this phase's own CONTEXT.md).
+
+### Tripwire proof
+
+`.venv/bin/python -c "import sys, pytest, spur.model as m; m._bore_rim_edges = lambda
+*a, **k: []; sys.exit(pytest.main(['tests/regression', '-q', '-p',
+'no:cacheprovider']))"` — the Phase 8 hex-selector defect in miniature: a bore-rim
+selector that silently selects no edges, handed to `.chamfer()`.
+
+Result: **32 failed, 53 passed in 13.46s** — exactly the 32 base records whose params
+have `bore_d > 0` and `bore_chamfer > 0` went red on their solid case; every derive case,
+the 7 bore-less or chamfer-less solid cases, the corpus-coverage test and the
+kernel-version test stayed green. `git status --porcelain -- src tests` printed nothing
+afterwards — the monkeypatch was in-process only, no file was touched. The fixture
+catches a silently vanished chamfer.
+
+### After the selector change (07-02)
+
+`calc.bore_rim_limit(p)`, `model.BORE_RIM_SLACK`, the two `BuildError` guards and their
+tests (D-15/D-16/D-17/D-18) added 13 tests (1 `calc.py` unit test, 10 selector-matrix
+rows, 2 zero-edge refusals) on top of 07-01's 276. `tests/regression/pre_v0_2.json` was
+never touched by this plan (`git diff --exit-code`, run after every task) — the
+selector change is behaviour-neutral for every pre-v0.2 set.
+
+#### Host state
+
+- CPU: Apple M2 Max, 12 cores
+- RAM: 32.0 GiB
+- Python: 3.12.13 (`.venv`)
+- Date: 2026-09-26, ~12:48 local (06:48 UTC)
+- HEAD: `bd4e477` (`feat(07-02): refuse an empty recess-floor selection and count both
+  selectors per bore shape`)
+- `uptime` load averages at measurement: 2.58, 2.47, 2.47 — same "not quiet" host as
+  07-01's session (>1.5 on this 12-core machine); carried as a caveat, not cleaned up
+  (L08).
+
+#### `make verify`, two runs
+
+| Run | Result | Wall time |
+|---|---|---|
+| 1 | `289 passed in 51.39s` | 52.30s (`time`, includes lint/typecheck/import-lint/no-fake-done) |
+| 2 | `289 passed in 51.28s` | 52.19s |
+
+mean(`make verify`) = **52.25s**, against 07-01's recorded **49.51s** (276 tests) and this
+phase's own pre-fixture baseline of **32.47s** / 191 tests at `b3ca789` — a **+2.74s**
+delta over 07-01 for these 13 new tests, and **+19.78s** over the pre-Phase-7 baseline
+(07-01's fixture plus 07-02's selector tests combined). No D-06-style gate applies here:
+D-06 named a ~15.0s line for the *fixture's* build cost specifically; the selector tests
+build far fewer solids (13 new tests vs. 39 fixture builds) and this delta was not the
+subject of that decision.
+
+#### Selector test durations
+
+`make test PYTEST_ARGS="tests/test_model.py tests/test_calc.py -q --durations=15"`:
+**50 passed in 10.61s**.
+
+| Duration | Case |
+|---|---|
+| 1.24s | `test_model.py::test_an_stl_export_matches_a_first_export_whatever_came_before` |
+| 0.65s | `test_model.py::test_a_gear_too_small_for_the_stock_recess_still_builds` |
+| 0.51s | `test_model.py::test_recess_removes_expected_volume` |
+| 0.46s | `test_model.py::test_builds_one_valid_solid[kw1]` |
+| 0.44s | `test_model.py::test_builds_one_valid_solid[kw8]` |
+| 0.43s | `test_model.py::test_builds_one_valid_solid[kw0]` |
+| 0.43s | `test_model.py::test_exports` |
+| 0.42s | `test_model.py::test_builds_one_valid_solid[kw6]` |
+| 0.41s | `test_model.py::test_builds_one_valid_solid[kw2]` |
+| 0.38s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[d-flat-both]` |
+| 0.37s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[round-both]` |
+| 0.35s | `test_model.py::test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore` |
+| 0.29s | `test_model.py::test_builds_one_valid_solid[kw5]` |
+| 0.26s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[d-flat-top]` |
+| 0.25s | `test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[d-flat-bottom]` |
+
+No outlier: the ten selector-matrix rows and two refusal tests each build one gear
+(≤0.4s), the same shape as the fixture's own cost.

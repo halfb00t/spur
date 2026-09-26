@@ -734,3 +734,91 @@ failure; a post-merge report that names a cause it did not itself read. Each is 
 test this phase added: the whole-buffer cut-line case in `tests/test_skip_tokens.py`, the
 unlisted-job case and the real-run probe in `tests/test_pr_land.py`, and the three
 `no_run_report` branch cases plus the live probe against `b72b0e1` and `20b63e4`.
+
+## L26 — The pre-v0.2 part is pinned by a regression fixture, and an edge selector never silently selects nothing
+
+Date: 2026-09-26.
+
+**The fixture.** `tests/regression/pre_v0_2.json` pins every pre-v0.2 hand-written
+parameter set (78 source-tagged entries from `tests/` and `README.md`, deduplicating to
+44 records: 39 built, 5 mate-only): `derive()`'s 19 fields exactly, warning text
+included; face and edge counts exactly; `Volume()` within `rel=1e-6`; six
+`BoundingBox()` corners within `abs=1e-6`. Each tolerance carries the number that set
+it: `Volume()` read identical (max diff 0.0) over three independent builds of the
+default gear; the bore chamfer is 1.05e-3 and the recess fillets 2.9e-3 of that volume
+(why `rel=1e-3` — `test_recess_removes_expected_volume`'s own tolerance — was rejected,
+as too loose to catch a vanished chamfer); the box's kernel-tolerance padding reads
+~1e-7 per side; the default gear's topology is 172 faces / 490 edges with the bore
+chamfer, 168 / 482 without (the sharpest cheap tripwire for a vanished chamfer or
+fillet). Export bytes are not compared (L24 — OCCT export is not byte-reproducible
+across independently built solids). Measured cost to `make verify`: 16.27s delta at
+capture (07-01, `bench/RESULTS.md` "Regression fixture cost (Phase 7, D-06)"), which
+exceeded the plan's 15.0s line and halted for a `checkpoint:decision`; the human chose
+Option A (07-01-SUMMARY.md) — accept the cost and keep all 44 records built, because
+16.27s sat under the planner's ~20s ceiling, the cost spread evenly across all 39
+builds with no single outlier, and Success Metric 3 ("old links unchanged") stays
+literal rather than trimmed to a curated subset. This plan (07-02) added 13 more tests
+(1 `calc.py` unit test, 10 selector-matrix rows, 2 zero-edge refusals) without touching
+the fixture at all — `git diff --exit-code tests/regression/pre_v0_2.json` after every
+task, and the fixture's own 85 cases stayed green throughout (`bench/RESULTS.md` "After
+the selector change (07-02)").
+
+**The regeneration rule** (D-03). The fixture changes only via `make fixture.regen`,
+only in its own commit whose message states what moved and why: a `cadquery`/
+`cadquery-ocp` pin bump (L12), or a deliberate contract change carrying its own `Lxx`.
+It never changes in a feature commit. A red fixture in Phases 8–12 is, by definition, a
+bug in that phase, not a reason to regenerate. `tests/regression/test_pre_v0_2.py::
+test_the_fixture_was_captured_on_the_kernel_this_run_uses` names the one exception this
+rule already anticipates — a resolved kernel drifting from the one the fixture was
+captured on — and CI resolving `cadquery`/`cadquery-ocp` from an unpinned range while
+the fixture pins one resolved kernel's exact topology is the `must`-severity debt item
+`docs/tech_debt/active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`.
+
+**The selector rule** (D-15..D-18). `calc.bore_rim_limit(p)` is the exact geometric
+bound per bore shape, no slack — `bore_radius(p)` for round and D-flat bores (the
+D-flat rim is the round hole intersected with a rectangle, a strict subset of the
+circle), 0.0 with no bore; Phase 8 adds the hex circumradius here rather than widening
+the band. `model.BORE_RIM_SLACK` (0.01 mm) is the selection slack, measured at 1e-7 mm
+(the kernel's post-boolean vertex and edge tolerance on both bore shapes, 2026-09-26)
+and kept five orders of magnitude above that while staying forty times under
+`MIN_WALL` (0.4 mm). Both position-based selectors raise `BuildError` on an empty
+selection while their feature is on: `_bore_rim_edges`, "Bore chamfer selected no
+bore-rim edges: a modelling defect in spur, not a conflict in these parameters. Set
+bore_chamfer to 0 to build this gear without it."; `_groove_floor_edges`, "Recess
+fillet selected no groove-floor edges: a modelling defect in spur, not a conflict in
+these parameters. Set recess_fillet to 0 to build this gear without it." Ten
+parametrized rows assert the exact selected-edge count and identity per bore shape,
+with and without recesses, with no bore, and at a recess's minimum hub clearance; two
+tests provoke each guard through the real build path. The runtime guard checks
+non-empty only — the tests, not the guard, assert the exact count, so every bore phase
+does not need to keep a second geometry model in step at runtime.
+
+**Rejected.** Python literals in the test module, and a generated Python module (D-01);
+a pytest flag that regenerates the fixture itself, and capture by hand with no tool
+(D-02); frozen for the whole milestone, and regenerate whenever red (D-03); fully
+expanded params in each record (D-04); harvesting the corpus by instrumenting
+`GearParams` during a suite run, and importing the source tests' own parametrize lists
+(D-05); a curated build subset, and a CI-only marker (D-06); `rel=1e-3` and exact float
+volume equality (D-11); three bounding-box extents, and a relative bbox tolerance
+(D-12); volume and bbox only, with no topology count (D-13); one test looping over
+every record instead of one parametrized case per record (D-14); letting the empty
+selection reach `_build_checked`'s catch-all and be relabelled "try smaller fillets or
+chamfers"; an `EdgeSelectionError(BuildError)` subclass (deferred, not refused); an
+internal error surfaced as HTTP 500 (D-15); a runtime exact-count guard,
+`bore_rim_edge_count(p)` (D-16); guarding the bore-rim selector alone and leaving the
+recess-floor selector unguarded (D-17); slack folded inside `bore_rim_limit` itself,
+and redesigning the selectors around positive identification of the cutter's own edges
+(both deferred) (D-18).
+
+**Reversibility.** Reversible: `tests/regression/` is local to the tests and the two
+guards are one `if not edges: raise BuildError(...)` each, inside `model.py`. The
+regeneration rule changes only by a superseding entry; the fixture's own JSON changes
+only through `make fixture.regen`.
+
+**Reason:** the regressions this pair exists to catch — a new cut step silently
+touching an old part, a reworded warning, a drifted default, a kernel bump that
+re-splits faces, and a selection bound too small for a new bore shape (the hex case,
+research SUMMARY.md Known Conflict #6, reproduced in miniature by this phase's own
+monkeypatch test). Both are now load-bearing: a chamfer or fillet that silently
+selects nothing can no longer ship a defective part, and a change to the pre-v0.2 part
+can no longer ship unnoticed.

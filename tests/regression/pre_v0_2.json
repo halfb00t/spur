@@ -1,0 +1,1869 @@
+{
+  "provenance": {
+    "cadquery": "2.8.0",
+    "cadquery-ocp": "7.9.3.1.1",
+    "captured": "2026-09-26",
+    "git_head": "6f06d77f605629a5a899057f862c2993ebd514e3",
+    "regenerate": "Rewrite only with `make fixture.regen`, in its own commit stating what moved and why (D-03) -- never as part of a feature commit.",
+    "src_clean": true
+  },
+  "records": {
+    "README:export-defaults": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {},
+      "solid": {
+        "edges": 490,
+        "faces": 172,
+        "volume": 4451.2562338579555,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "README:export-defaults",
+        "README:info-mate-40",
+        "README:curl-step",
+        "test_api.py::test_a_saturated_service_refuses_instead_of_queueing",
+        "test_api.py::test_an_all_default_gear_logs_params_as_an_empty_object_not_omitted",
+        "test_calc.py::test_default_dimensions",
+        "test_calc.py::test_a_derived_dimensions_result_cannot_be_changed",
+        "test_calc.py::test_caliper_reading_is_short_for_odd_tooth_counts[teeth=19]",
+        "test_calc.py::test_higher_pressure_angle_gives_finer_tips_and_thicker_roots[pa=25]",
+        "test_calc.py::test_centre_distance_unshifted_and_shifted[unshifted]",
+        "test_calc.py::test_tooth_thickness_and_gap_are_measured_on_the_same_circle[teeth=19]",
+        "test_cli.py::test_info_reports_the_mate_it_was_asked_about",
+        "test_cli.py::test_readme_export_examples_run[defaults]",
+        "test_model.py::test_builds_one_valid_solid[0]",
+        "test_model.py::test_exports",
+        "test_model.py::test_exported_stl_is_a_closed_consistently_oriented_shell",
+        "test_model.py::test_exporting_leaves_the_cached_solid_exact",
+        "test_model.py::test_an_stl_export_matches_a_first_export_whatever_came_before",
+        "test_pool.py::test_health_queue_available_falls_while_a_slot_is_held",
+        "test_records.py::test_build_failed_helper_never_carries_a_traceback_field"
+      ]
+    },
+    "README:export-teeth-24": {
+      "derived": {
+        "base_d": 22.553,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 26.0,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 24.0,
+        "recess_fillet": 0.5,
+        "recess_id": 10.75,
+        "recess_od": 20.7,
+        "root_d": 21.5,
+        "root_fillet": 0.5,
+        "root_gap": 1.176,
+        "root_thickness": 1.638,
+        "span": 7.716,
+        "span_teeth": 3,
+        "tip_d": 26.0,
+        "tip_thickness": 0.607,
+        "warnings": [
+          "Recess narrowed to 4.97 mm to fit between the bore wall and the tooth rim."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "bore_flat": 0,
+        "module": 1,
+        "pressure_angle": 20,
+        "teeth": 24
+      },
+      "solid": {
+        "edges": 603,
+        "faces": 209,
+        "volume": 1822.3972643512298,
+        "xmax": 13.0000001,
+        "xmin": -13.0000001,
+        "ymax": 13.000000100000001,
+        "ymin": -13.0000001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "README:export-teeth-24",
+        "test_api.py::test_a_gear_too_small_for_the_stock_recess_is_still_served",
+        "test_calc.py::test_small_gear_keeps_the_stock_bore_and_recess",
+        "test_cli.py::test_readme_export_examples_run[teeth-24]",
+        "test_model.py::test_a_gear_too_small_for_the_stock_recess_still_builds"
+      ]
+    },
+    "README:info-mate-40+mate=40": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": 51.625,
+        "mate_teeth": 40,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 3.5
+      },
+      "mate_teeth": 40,
+      "params": {
+        "teeth": 19
+      },
+      "sources": [
+        "README:info-mate-40",
+        "test_calc.py::test_centre_distance_unshifted_and_shifted[unshifted]",
+        "test_cli.py::test_info_reports_the_mate_it_was_asked_about"
+      ]
+    },
+    "test_api.py::test_a_cache_hit_that_still_needs_compressing_goes_through_admission_control": {
+      "derived": {
+        "base_d": 52.339,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 61.181,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 57.75,
+        "recess_fillet": 0.5,
+        "recess_id": 25.263,
+        "recess_od": 37.263,
+        "root_d": 53.375,
+        "root_fillet": 0.5,
+        "root_gap": 1.172,
+        "root_thickness": 3.909,
+        "span": 23.991,
+        "span_teeth": 5,
+        "tip_d": 61.25,
+        "tip_thickness": 0.868,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 33
+      },
+      "solid": {
+        "edges": 826,
+        "faces": 284,
+        "volume": 16598.644887477258,
+        "xmax": 30.6250001,
+        "xmin": -30.524503022192956,
+        "ymax": 30.607883774771647,
+        "ymin": -30.607883774771654,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_cache_hit_that_still_needs_compressing_goes_through_admission_control",
+        "test_api.py::test_an_already_compressed_download_needs_no_slot_at_all"
+      ]
+    },
+    "test_api.py::test_a_failed_build_emits_build_failed_naming_the_class_and_the_level": {
+      "derived": {
+        "base_d": 112.609,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 127.719,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 124.25,
+        "recess_fillet": 0.5,
+        "recess_id": 58.512,
+        "recess_od": 70.512,
+        "root_d": 119.875,
+        "root_fillet": 0.43,
+        "root_gap": 0.956,
+        "root_thickness": 4.348,
+        "span": 50.711,
+        "span_teeth": 10,
+        "tip_d": 127.75,
+        "tip_thickness": 0.944,
+        "warnings": [
+          "Root fillet reduced to 0.43 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 71
+      },
+      "solid": {
+        "edges": 1738,
+        "faces": 588,
+        "volume": 85191.32787927946,
+        "xmax": 63.87500010000001,
+        "xmin": -63.83161276266995,
+        "ymax": 63.868064881740715,
+        "ymin": -63.868064881740715,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_failed_build_emits_build_failed_naming_the_class_and_the_level"
+      ]
+    },
+    "test_api.py::test_a_fresh_build_emits_build_started_then_export_served_with_source_built": {
+      "derived": {
+        "base_d": 96.748,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 110.213,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 106.75,
+        "recess_fillet": 0.5,
+        "recess_id": 49.762,
+        "recess_od": 61.762,
+        "root_d": 102.375,
+        "root_fillet": 0.442,
+        "root_gap": 0.983,
+        "root_thickness": 4.289,
+        "span": 45.253,
+        "span_teeth": 9,
+        "tip_d": 110.25,
+        "tip_thickness": 0.932,
+        "warnings": [
+          "Root fillet reduced to 0.44 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 61
+      },
+      "solid": {
+        "edges": 1498,
+        "faces": 508,
+        "volume": 62090.496462174284,
+        "xmax": 55.125000099999994,
+        "xmin": -55.07394153899941,
+        "ymax": 55.11675795840993,
+        "ymin": -55.11675795840993,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_fresh_build_emits_build_started_then_export_served_with_source_built"
+      ]
+    },
+    "test_api.py::test_a_gear_is_compressed_once_per_cache_fill_not_once_per_download": {
+      "derived": {
+        "base_d": 50.753,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 59.5,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 56.0,
+        "recess_fillet": 0.5,
+        "recess_id": 24.388,
+        "recess_od": 36.388,
+        "root_d": 51.625,
+        "root_fillet": 0.5,
+        "root_gap": 1.188,
+        "root_thickness": 3.881,
+        "span": 23.943,
+        "span_teeth": 5,
+        "tip_d": 59.5,
+        "tip_thickness": 0.863,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 32
+      },
+      "solid": {
+        "edges": 802,
+        "faces": 276,
+        "volume": 15496.723064078953,
+        "xmax": 29.750000099999994,
+        "xmin": -29.7500001,
+        "ymax": 29.7500001,
+        "ymin": -29.7500001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_gear_is_compressed_once_per_cache_fill_not_once_per_download"
+      ]
+    },
+    "test_api.py::test_a_gzip_client_gets_compressed_bytes_an_identity_client_gets_the_raw_file": {
+      "derived": {
+        "base_d": 49.167,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 57.676,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 54.25,
+        "recess_fillet": 0.5,
+        "recess_id": 23.513,
+        "recess_od": 35.513,
+        "root_d": 49.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.205,
+        "root_thickness": 3.85,
+        "span": 23.896,
+        "span_teeth": 5,
+        "tip_d": 57.75,
+        "tip_thickness": 0.859,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 31
+      },
+      "solid": {
+        "edges": 778,
+        "faces": 268,
+        "volume": 14430.818177061561,
+        "xmax": 28.875000099999994,
+        "xmin": -28.767118075197924,
+        "ymax": 28.856499606364718,
+        "ymin": -28.85649960636471,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_gzip_client_gets_compressed_bytes_an_identity_client_gets_the_raw_file"
+      ]
+    },
+    "test_api.py::test_a_gzip_request_after_an_identity_download_emits_source_compressed": {
+      "derived": {
+        "base_d": 99.92,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 113.715,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 110.25,
+        "recess_fillet": 0.5,
+        "recess_id": 51.512,
+        "recess_od": 63.512,
+        "root_d": 105.875,
+        "root_fillet": 0.44,
+        "root_gap": 0.977,
+        "root_thickness": 4.303,
+        "span": 45.348,
+        "span_teeth": 9,
+        "tip_d": 113.75,
+        "tip_thickness": 0.935,
+        "warnings": [
+          "Root fillet reduced to 0.44 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 63
+      },
+      "solid": {
+        "edges": 1546,
+        "faces": 524,
+        "volume": 66422.07897684177,
+        "xmax": 56.875000099999994,
+        "xmin": -56.825684100851575,
+        "ymax": 56.86705668509398,
+        "ymin": -56.867056685093985,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_gzip_request_after_an_identity_download_emits_source_compressed"
+      ]
+    },
+    "test_api.py::test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started": {
+      "derived": {
+        "base_d": 98.334,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 112.0,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 108.5,
+        "recess_fillet": 0.5,
+        "recess_id": 50.637,
+        "recess_od": 62.637,
+        "root_d": 104.125,
+        "root_fillet": 0.441,
+        "root_gap": 0.98,
+        "root_thickness": 4.296,
+        "span": 45.3,
+        "span_teeth": 9,
+        "tip_d": 112.0,
+        "tip_thickness": 0.934,
+        "warnings": [
+          "Root fillet reduced to 0.44 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 62
+      },
+      "solid": {
+        "edges": 1522,
+        "faces": 516,
+        "volume": 64238.25013604011,
+        "xmax": 56.0000001,
+        "xmin": -56.00000009999999,
+        "ymax": 55.949827852053005,
+        "ymin": -55.94982785205302,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started"
+      ]
+    },
+    "test_api.py::test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling": {
+      "derived": {
+        "base_d": 114.195,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 129.5,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 126.0,
+        "recess_fillet": 0.5,
+        "recess_id": 59.387,
+        "recess_od": 71.387,
+        "root_d": 121.625,
+        "root_fillet": 0.429,
+        "root_gap": 0.954,
+        "root_thickness": 4.353,
+        "span": 50.759,
+        "span_teeth": 10,
+        "tip_d": 129.5,
+        "tip_thickness": 0.945,
+        "warnings": [
+          "Root fillet reduced to 0.43 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 72
+      },
+      "solid": {
+        "edges": 1762,
+        "faces": 596,
+        "volume": 87699.83692970668,
+        "xmax": 64.75000010000001,
+        "xmin": -64.75000010000001,
+        "ymax": 64.75000010000001,
+        "ymin": -64.75000010000001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling"
+      ]
+    },
+    "test_api.py::test_a_second_identical_download_is_served_from_the_byte_cache": {
+      "derived": {
+        "base_d": 34.893,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 42.0,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 38.5,
+        "recess_fillet": 0.5,
+        "recess_id": 15.638,
+        "recess_od": 27.638,
+        "root_d": 34.125,
+        "root_fillet": 0.5,
+        "root_gap": 1.502,
+        "root_thickness": 3.371,
+        "span": 18.485,
+        "span_teeth": 4,
+        "tip_d": 42.0,
+        "tip_thickness": 0.802,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 22
+      },
+      "solid": {
+        "edges": 562,
+        "faces": 196,
+        "volume": 6456.593681764914,
+        "xmax": 21.0000001,
+        "xmin": -21.000000100000005,
+        "ymax": 20.839523295845197,
+        "ymin": -20.839523295845193,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_a_second_identical_download_is_served_from_the_byte_cache"
+      ]
+    },
+    "test_api.py::test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed": {
+      "derived": {
+        "base_d": 115.781,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 131.22,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 127.75,
+        "recess_fillet": 0.5,
+        "recess_id": 60.262,
+        "recess_od": 72.262,
+        "root_d": 123.375,
+        "root_fillet": 0.428,
+        "root_gap": 0.952,
+        "root_thickness": 4.358,
+        "span": 55.789,
+        "span_teeth": 11,
+        "tip_d": 131.25,
+        "tip_thickness": 0.946,
+        "warnings": [
+          "Root fillet reduced to 0.43 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 73
+      },
+      "solid": {
+        "edges": 1786,
+        "faces": 604,
+        "volume": 90244.42222184881,
+        "xmax": 65.6250001,
+        "xmin": -65.58287969526108,
+        "ymax": 65.61827865839538,
+        "ymin": -65.61827865839541,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed"
+      ]
+    },
+    "test_api.py::test_impossible_mate_is_a_warning_not_a_number": {
+      "derived": {
+        "base_d": 10.166,
+        "bore_effective": null,
+        "caliper_over_tips": 11.9,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 10.5,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 4.025,
+        "root_fillet": 0.5,
+        "root_gap": 1.278,
+        "root_thickness": 0.83,
+        "span": 2.192,
+        "span_teeth": 1,
+        "tip_d": 11.9,
+        "tip_thickness": 1.716,
+        "warnings": [
+          "Below 51.0 teeth a cut gear would be undercut; this model uses a radial root instead."
+        ],
+        "web": null
+      },
+      "params": {
+        "bore_chamfer": 0,
+        "bore_d": 0,
+        "bore_flat": 0,
+        "pressure_angle": 14.5,
+        "profile_shift": -0.6,
+        "recess_sides": "none",
+        "teeth": 6
+      },
+      "solid": {
+        "edges": 144,
+        "faces": 50,
+        "volume": 378.4415961403185,
+        "xmax": 5.9500001000000005,
+        "xmin": -5.9500001,
+        "ymax": 5.526936241324113,
+        "ymin": -5.526936241324114,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_impossible_mate_is_a_warning_not_a_number",
+        "test_calc.py::test_impossible_pairs_have_no_centre_distance[0]",
+        "test_cli.py::test_cli_and_api_print_the_same_document[impossible]"
+      ]
+    },
+    "test_api.py::test_impossible_mate_is_a_warning_not_a_number+mate=40": {
+      "derived": {
+        "base_d": 10.166,
+        "bore_effective": null,
+        "caliper_over_tips": 11.9,
+        "centre_distance": null,
+        "mate_teeth": 40,
+        "pitch_d": 10.5,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 4.025,
+        "root_fillet": 0.5,
+        "root_gap": 1.278,
+        "root_thickness": 0.83,
+        "span": 2.192,
+        "span_teeth": 1,
+        "tip_d": 11.9,
+        "tip_thickness": 1.716,
+        "warnings": [
+          "Below 51.0 teeth a cut gear would be undercut; this model uses a radial root instead.",
+          "A 40-tooth gear cannot mesh with this one at any centre distance: a total profile shift of -0.6 is too negative for 46 teeth."
+        ],
+        "web": null
+      },
+      "mate_teeth": 40,
+      "params": {
+        "bore_chamfer": 0,
+        "bore_d": 0,
+        "bore_flat": 0,
+        "pressure_angle": 14.5,
+        "profile_shift": -0.6,
+        "recess_sides": "none",
+        "teeth": 6
+      },
+      "sources": [
+        "test_api.py::test_impossible_mate_is_a_warning_not_a_number",
+        "test_calc.py::test_impossible_pairs_have_no_centre_distance[0]",
+        "test_cli.py::test_cli_and_api_print_the_same_document[impossible]"
+      ]
+    },
+    "test_api.py::test_info_reports_the_mate": {
+      "derived": {
+        "base_d": 33.307,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 40.137,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 36.75,
+        "recess_fillet": 0.5,
+        "recess_id": 14.763,
+        "recess_od": 26.763,
+        "root_d": 32.375,
+        "root_fillet": 0.5,
+        "root_gap": 1.539,
+        "root_thickness": 3.304,
+        "span": 13.455,
+        "span_teeth": 3,
+        "tip_d": 40.25,
+        "tip_thickness": 0.793,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 21
+      },
+      "solid": {
+        "edges": 538,
+        "faces": 188,
+        "volume": 5751.768151569054,
+        "xmax": 20.1250001,
+        "xmin": -19.955445848530218,
+        "ymax": 20.094458569797684,
+        "ymin": -20.094458569797684,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_info_reports_the_mate",
+        "test_api.py::test_model_download",
+        "test_cli.py::test_cli_and_api_print_the_same_document[teeth-21]",
+        "test_cli.py::test_cli_and_api_print_the_same_document[teeth-21-mate]",
+        "test_pool.py::test_a_real_worker_builds_and_downloads",
+        "test_pool.py::test_the_same_gear_always_reaches_the_same_worker",
+        "test_pool.py::test_preview_fine_and_step_share_one_worker",
+        "test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced",
+        "test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced",
+        "test_pool.py::test_health_workers_replaced_increases_after_a_forced_termination",
+        "test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation",
+        "test_pool.py::test_two_same_slot_deaths_from_one_incident_replace_the_worker_once"
+      ]
+    },
+    "test_api.py::test_info_reports_the_mate+mate=40": {
+      "derived": {
+        "base_d": 33.307,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 40.137,
+        "centre_distance": 53.375,
+        "mate_teeth": 40,
+        "pitch_d": 36.75,
+        "recess_fillet": 0.5,
+        "recess_id": 14.763,
+        "recess_od": 26.763,
+        "root_d": 32.375,
+        "root_fillet": 0.5,
+        "root_gap": 1.539,
+        "root_thickness": 3.304,
+        "span": 13.455,
+        "span_teeth": 3,
+        "tip_d": 40.25,
+        "tip_thickness": 0.793,
+        "warnings": [],
+        "web": 3.5
+      },
+      "mate_teeth": 40,
+      "params": {
+        "teeth": 21
+      },
+      "sources": [
+        "test_api.py::test_info_reports_the_mate",
+        "test_cli.py::test_cli_and_api_print_the_same_document[teeth-21-mate]"
+      ]
+    },
+    "test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids": {
+      "derived": {
+        "base_d": 101.506,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 115.5,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 112.0,
+        "recess_fillet": 0.5,
+        "recess_id": 52.387,
+        "recess_od": 64.387,
+        "root_d": 107.625,
+        "root_fillet": 0.438,
+        "root_gap": 0.974,
+        "root_thickness": 4.309,
+        "span": 45.396,
+        "span_teeth": 9,
+        "tip_d": 115.5,
+        "tip_thickness": 0.936,
+        "warnings": [
+          "Root fillet reduced to 0.44 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 64
+      },
+      "solid": {
+        "edges": 1570,
+        "faces": 532,
+        "volume": 68641.93765518242,
+        "xmax": 57.7500001,
+        "xmin": -57.7500001,
+        "ymax": 57.75000009999999,
+        "ymin": -57.7500001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids"
+      ]
+    },
+    "test_calc.py::test_caliper_reading_is_short_for_odd_tooth_counts[teeth=20]": {
+      "derived": {
+        "base_d": 31.721,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 38.5,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 35.0,
+        "recess_fillet": 0.5,
+        "recess_id": 13.888,
+        "recess_od": 25.888,
+        "root_d": 30.625,
+        "root_fillet": 0.5,
+        "root_gap": 1.575,
+        "root_thickness": 3.236,
+        "span": 13.408,
+        "span_teeth": 3,
+        "tip_d": 38.5,
+        "tip_thickness": 0.783,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 20
+      },
+      "solid": {
+        "edges": 514,
+        "faces": 180,
+        "volume": 5083.327789464188,
+        "xmax": 19.2500001,
+        "xmin": -19.2500001,
+        "ymax": 19.2500001,
+        "ymin": -19.2500001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_caliper_reading_is_short_for_odd_tooth_counts[teeth=20]"
+      ]
+    },
+    "test_calc.py::test_centre_distance_unshifted_and_shifted[shifted]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 37.671,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.537,
+        "recess_od": 25.538,
+        "root_d": 29.925,
+        "root_fillet": 0.5,
+        "root_gap": 1.226,
+        "root_thickness": 3.722,
+        "span": 13.804,
+        "span_teeth": 3,
+        "tip_d": 37.8,
+        "tip_thickness": 0.576,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "profile_shift": 0.3
+      },
+      "solid": {
+        "edges": 490,
+        "faces": 172,
+        "volume": 4837.286294753958,
+        "xmax": 18.900000100000003,
+        "xmin": -18.687471082547003,
+        "ymax": 18.857044569044607,
+        "ymin": -18.857044569044607,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_centre_distance_unshifted_and_shifted[shifted]"
+      ]
+    },
+    "test_calc.py::test_centre_distance_unshifted_and_shifted[shifted]+mate=40": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 37.671,
+        "centre_distance": 52.139,
+        "mate_teeth": 40,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.537,
+        "recess_od": 25.538,
+        "root_d": 29.925,
+        "root_fillet": 0.5,
+        "root_gap": 1.226,
+        "root_thickness": 3.722,
+        "span": 13.804,
+        "span_teeth": 3,
+        "tip_d": 37.8,
+        "tip_thickness": 0.576,
+        "warnings": [],
+        "web": 3.5
+      },
+      "mate_teeth": 40,
+      "params": {
+        "profile_shift": 0.3
+      },
+      "sources": [
+        "test_calc.py::test_centre_distance_unshifted_and_shifted[shifted]"
+      ]
+    },
+    "test_calc.py::test_higher_pressure_angle_gives_finer_tips_and_thicker_roots[pa=20]": {
+      "derived": {
+        "base_d": 31.245,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 2.044,
+        "root_thickness": 2.731,
+        "span": 13.381,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 1.094,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "pressure_angle": 20
+      },
+      "solid": {
+        "edges": 490,
+        "faces": 172,
+        "volume": 4412.860573868844,
+        "xmax": 18.375000099999998,
+        "xmin": -18.206410408639123,
+        "ymax": 18.349303386429543,
+        "ymin": -18.349303386429547,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_higher_pressure_angle_gives_finer_tips_and_thicker_roots[pa=20]",
+        "test_model.py::test_builds_one_valid_solid[1]"
+      ]
+    },
+    "test_calc.py::test_impossible_pairs_have_no_centre_distance[1]": {
+      "derived": {
+        "base_d": 10.166,
+        "bore_effective": null,
+        "caliper_over_tips": 12.25,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 10.5,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 4.375,
+        "root_fillet": 0.5,
+        "root_gap": 1.351,
+        "root_thickness": 0.939,
+        "span": 2.28,
+        "span_teeth": 1,
+        "tip_d": 12.25,
+        "tip_thickness": 1.645,
+        "warnings": [
+          "Below 47.9 teeth a cut gear would be undercut; this model uses a radial root instead."
+        ],
+        "web": null
+      },
+      "params": {
+        "bore_chamfer": 0,
+        "bore_d": 0,
+        "bore_flat": 0,
+        "pressure_angle": 14.5,
+        "profile_shift": -0.5,
+        "recess_sides": "none",
+        "teeth": 6
+      },
+      "solid": {
+        "edges": 144,
+        "faces": 50,
+        "volume": 414.55806909822076,
+        "xmax": 6.125000100000003,
+        "xmin": -6.125000100000003,
+        "ymax": 5.666637137594186,
+        "ymin": -5.666637137594188,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_impossible_pairs_have_no_centre_distance[1]"
+      ]
+    },
+    "test_calc.py::test_impossible_pairs_have_no_centre_distance[1]+mate=12": {
+      "derived": {
+        "base_d": 10.166,
+        "bore_effective": null,
+        "caliper_over_tips": 12.25,
+        "centre_distance": null,
+        "mate_teeth": 12,
+        "pitch_d": 10.5,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 4.375,
+        "root_fillet": 0.5,
+        "root_gap": 1.351,
+        "root_thickness": 0.939,
+        "span": 2.28,
+        "span_teeth": 1,
+        "tip_d": 12.25,
+        "tip_thickness": 1.645,
+        "warnings": [
+          "Below 47.9 teeth a cut gear would be undercut; this model uses a radial root instead.",
+          "A 12-tooth gear cannot mesh with this one at any centre distance: a total profile shift of -0.5 is too negative for 18 teeth."
+        ],
+        "web": null
+      },
+      "mate_teeth": 12,
+      "params": {
+        "bore_chamfer": 0,
+        "bore_d": 0,
+        "bore_flat": 0,
+        "pressure_angle": 14.5,
+        "profile_shift": -0.5,
+        "recess_sides": "none",
+        "teeth": 6
+      },
+      "sources": [
+        "test_calc.py::test_impossible_pairs_have_no_centre_distance[1]"
+      ]
+    },
+    "test_calc.py::test_no_bore_ignores_d_flat": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": null,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 8.438,
+        "recess_od": 20.438,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "bore_d": 0
+      },
+      "solid": {
+        "edges": 476,
+        "faces": 166,
+        "volume": 5261.709393978873,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_no_bore_ignores_d_flat",
+        "test_model.py::test_builds_one_valid_solid[3]"
+      ]
+    },
+    "test_calc.py::test_oversized_recess_is_narrowed_to_fit_and_says_so": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 10.75,
+        "recess_od": 28.075,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [
+          "Recess narrowed to 8.66 mm to fit between the bore wall and the tooth rim."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "recess_width": 12
+      },
+      "solid": {
+        "edges": 490,
+        "faces": 172,
+        "volume": 3771.8639383246295,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_oversized_recess_is_narrowed_to_fit_and_says_so"
+      ]
+    },
+    "test_calc.py::test_recess_fillet_is_capped_to_the_narrowed_groove": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.9,
+        "recess_id": 10.75,
+        "recess_od": 28.075,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [
+          "Recess narrowed to 8.66 mm to fit between the bore wall and the tooth rim.",
+          "Recess fillet reduced to 0.90 mm to fit the groove."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "recess_fillet": 3,
+        "recess_width": 12
+      },
+      "solid": {
+        "edges": 490,
+        "faces": 172,
+        "volume": 3801.180483829087,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_recess_fillet_is_capped_to_the_narrowed_groove"
+      ]
+    },
+    "test_calc.py::test_recess_is_dropped_when_there_is_no_room_at_all": {
+      "derived": {
+        "base_d": 14.501,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 18.0,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 16.0,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 13.5,
+        "root_fillet": 0.452,
+        "root_gap": 1.005,
+        "root_thickness": 1.646,
+        "span": 7.553,
+        "span_teeth": 3,
+        "tip_d": 18.0,
+        "tip_thickness": 0.371,
+        "warnings": [
+          "Tip is only 0.37 mm wide; FDM needs about 0.4 mm.",
+          "Root fillet reduced to 0.45 mm to fit the tooth gap.",
+          "No room for a face recess between the bore wall and the tooth rim; it was left out."
+        ],
+        "web": null
+      },
+      "params": {
+        "bore_d": 9,
+        "bore_flat": 8,
+        "module": 1,
+        "teeth": 16
+      },
+      "solid": {
+        "edges": 398,
+        "faces": 136,
+        "volume": 975.9553137133735,
+        "xmax": 9.0000001,
+        "xmin": -9.0000001,
+        "ymax": 9.0000001,
+        "ymin": -9.0000001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_recess_is_dropped_when_there_is_no_room_at_all"
+      ]
+    },
+    "test_calc.py::test_root_fillet_is_capped_with_a_warning": {
+      "derived": {
+        "base_d": 36.252,
+        "bore_effective": 5.15,
+        "caliper_over_tips": 41.0,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 40.0,
+        "recess_fillet": 0.5,
+        "recess_id": 15.95,
+        "recess_od": 27.95,
+        "root_d": 38.75,
+        "root_fillet": 0.152,
+        "root_gap": 0.337,
+        "root_thickness": 1.184,
+        "span": 17.458,
+        "span_teeth": 12,
+        "tip_d": 41.0,
+        "tip_thickness": 0.199,
+        "warnings": [
+          "Tip is only 0.20 mm wide; FDM needs about 0.4 mm.",
+          "Root fillet reduced to 0.15 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "bore_d": 5,
+        "bore_flat": 0,
+        "module": 0.5,
+        "teeth": 80
+      },
+      "solid": {
+        "edges": 1947,
+        "faces": 657,
+        "volume": 7536.570108386644,
+        "xmax": 20.5000001,
+        "xmin": -20.5000001,
+        "ymax": 20.5000001,
+        "ymin": -20.5000001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_root_fillet_is_capped_with_a_warning"
+      ]
+    },
+    "test_calc.py::test_span_measurement[0]": {
+      "derived": {
+        "base_d": 31.245,
+        "bore_effective": null,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 2.044,
+        "root_thickness": 2.731,
+        "span": 13.381,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 1.094,
+        "warnings": [],
+        "web": null
+      },
+      "params": {
+        "bore_d": 0,
+        "module": 1.75,
+        "pressure_angle": 20,
+        "recess_sides": "none"
+      },
+      "solid": {
+        "edges": 456,
+        "faces": 154,
+        "volume": 6302.141947907595,
+        "xmax": 18.375000099999998,
+        "xmin": -18.206410408639123,
+        "ymax": 18.349303386429543,
+        "ymin": -18.349303386429547,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_span_measurement[0]"
+      ]
+    },
+    "test_calc.py::test_span_measurement[1]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": null,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": null
+      },
+      "params": {
+        "bore_d": 0,
+        "module": 1.75,
+        "pressure_angle": 25,
+        "recess_sides": "none"
+      },
+      "solid": {
+        "edges": 456,
+        "faces": 154,
+        "volume": 6340.537607896715,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_span_measurement[1]"
+      ]
+    },
+    "test_calc.py::test_span_measurement[2]": {
+      "derived": {
+        "base_d": 17.854,
+        "bore_effective": null,
+        "caliper_over_tips": 20.928,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 19.0,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 16.5,
+        "root_fillet": 0.5,
+        "root_gap": 1.205,
+        "root_thickness": 1.523,
+        "span": 7.646,
+        "span_teeth": 3,
+        "tip_d": 21.0,
+        "tip_thickness": 0.578,
+        "warnings": [],
+        "web": null
+      },
+      "params": {
+        "bore_d": 0,
+        "module": 1.0,
+        "pressure_angle": 20,
+        "recess_sides": "none"
+      },
+      "solid": {
+        "edges": 456,
+        "faces": 154,
+        "volume": 2045.5101052163168,
+        "xmax": 10.500000100000001,
+        "xmin": -10.400435731551951,
+        "ymax": 10.48403746716417,
+        "ymin": -10.484037467164171,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_span_measurement[2]"
+      ]
+    },
+    "test_calc.py::test_tooth_thickness_and_gap_are_measured_on_the_same_circle[teeth=40]": {
+      "derived": {
+        "base_d": 63.442,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 73.5,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 70.0,
+        "recess_fillet": 0.5,
+        "recess_id": 31.388,
+        "recess_od": 43.388,
+        "root_d": 65.625,
+        "root_fillet": 0.492,
+        "root_gap": 1.093,
+        "root_thickness": 4.061,
+        "span": 29.306,
+        "span_teeth": 6,
+        "tip_d": 73.5,
+        "tip_thickness": 0.892,
+        "warnings": [
+          "Root fillet reduced to 0.49 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 40
+      },
+      "solid": {
+        "edges": 994,
+        "faces": 340,
+        "volume": 25321.143190195435,
+        "xmax": 36.7500001,
+        "xmin": -36.7500001,
+        "ymax": 36.7500001,
+        "ymin": -36.7500001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_calc.py::test_tooth_thickness_and_gap_are_measured_on_the_same_circle[teeth=40]"
+      ]
+    },
+    "test_model.py::test_builds_one_valid_solid[2]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "bore_flat": 0
+      },
+      "solid": {
+        "edges": 483,
+        "faces": 169,
+        "volume": 4421.947381026907,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_builds_one_valid_solid[2]"
+      ]
+    },
+    "test_model.py::test_builds_one_valid_solid[4]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": null
+      },
+      "params": {
+        "recess_sides": "none"
+      },
+      "solid": {
+        "edges": 470,
+        "faces": 160,
+        "volume": 5871.946894783534,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_builds_one_valid_solid[4]"
+      ]
+    },
+    "test_model.py::test_builds_one_valid_solid[5]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 5.5
+      },
+      "params": {
+        "recess_sides": "top"
+      },
+      "solid": {
+        "edges": 480,
+        "faces": 166,
+        "volume": 5161.601564320747,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_builds_one_valid_solid[5]"
+      ]
+    },
+    "test_model.py::test_builds_one_valid_solid[6]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.0,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.0,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "bore_chamfer": 0,
+        "recess_fillet": 0,
+        "root_fillet": 0
+      },
+      "solid": {
+        "edges": 360,
+        "faces": 126,
+        "volume": 4435.834135489536,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873672,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_builds_one_valid_solid[6]"
+      ]
+    },
+    "test_model.py::test_builds_one_valid_solid[7]": {
+      "derived": {
+        "base_d": 10.876,
+        "bore_effective": 3.15,
+        "caliper_over_tips": 15.0,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 12.0,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 8.25,
+        "root_fillet": 0.5,
+        "root_gap": 1.441,
+        "root_thickness": 1.798,
+        "span": 6.732,
+        "span_teeth": 2,
+        "tip_d": 15.0,
+        "tip_thickness": 0.417,
+        "warnings": [
+          "Below 11.2 teeth a cut gear would be undercut; this model uses a radial root instead."
+        ],
+        "web": null
+      },
+      "params": {
+        "bore_d": 3,
+        "bore_flat": 0,
+        "module": 1.5,
+        "recess_sides": "none",
+        "teeth": 8
+      },
+      "solid": {
+        "edges": 199,
+        "faces": 69,
+        "volume": 724.3280995752004,
+        "xmax": 7.5000000999999985,
+        "xmin": -7.5000001,
+        "ymax": 7.500000099999999,
+        "ymin": -7.500000099999999,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_builds_one_valid_solid[7]"
+      ]
+    },
+    "test_model.py::test_builds_one_valid_solid[8]": {
+      "derived": {
+        "base_d": 75.175,
+        "bore_effective": 12.15,
+        "caliper_over_tips": 85.6,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 80.0,
+        "recess_fillet": 0.5,
+        "recess_id": 38.375,
+        "recess_od": 50.375,
+        "root_d": 76.6,
+        "root_fillet": 0.5,
+        "root_gap": 1.591,
+        "root_thickness": 4.425,
+        "span": 28.237,
+        "span_teeth": 5,
+        "tip_d": 85.6,
+        "tip_thickness": 1.224,
+        "warnings": [],
+        "web": 4.0
+      },
+      "params": {
+        "bore_d": 12,
+        "bore_flat": 11,
+        "face_width": 12,
+        "module": 2,
+        "pressure_angle": 20,
+        "profile_shift": 0.4,
+        "recess_depth": 4,
+        "teeth": 40
+      },
+      "solid": {
+        "edges": 994,
+        "faces": 340,
+        "volume": 54028.42115118457,
+        "xmax": 42.8000001,
+        "xmin": -42.8000001,
+        "ymax": 42.8000001,
+        "ymin": -42.8000001,
+        "zmax": 12.0000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_builds_one_valid_solid[8]"
+      ]
+    },
+    "test_model.py::test_recess_removes_expected_volume[no-recess]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": null,
+        "recess_id": null,
+        "recess_od": null,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": null
+      },
+      "params": {
+        "recess_fillet": 0,
+        "recess_sides": "none"
+      },
+      "solid": {
+        "edges": 470,
+        "faces": 160,
+        "volume": 5871.946894783534,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_recess_removes_expected_volume[no-recess]"
+      ]
+    },
+    "test_model.py::test_recess_removes_expected_volume[recess]": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.0,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {
+        "recess_fillet": 0
+      },
+      "solid": {
+        "edges": 482,
+        "faces": 168,
+        "volume": 4438.43816695051,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_model.py::test_recess_removes_expected_volume[recess]"
+      ]
+    },
+    "test_pool.py::test_each_build_failure_mode_maps_to_its_own_status_and_type": {
+      "derived": {
+        "base_d": 68.2,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 78.697,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 75.25,
+        "recess_fillet": 0.5,
+        "recess_id": 34.013,
+        "recess_od": 46.013,
+        "root_d": 70.875,
+        "root_fillet": 0.481,
+        "root_gap": 1.069,
+        "root_thickness": 4.109,
+        "span": 29.449,
+        "span_teeth": 6,
+        "tip_d": 78.75,
+        "tip_thickness": 0.9,
+        "warnings": [
+          "Root fillet reduced to 0.48 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 43
+      },
+      "solid": {
+        "edges": 1066,
+        "faces": 364,
+        "volume": 29600.013981078726,
+        "xmax": 39.3750001,
+        "xmin": -39.300236267605705,
+        "ymax": 39.36259377859475,
+        "ymin": -39.36259377859475,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_pool.py::test_each_build_failure_mode_maps_to_its_own_status_and_type"
+      ]
+    },
+    "test_pool.py::test_the_four_failure_types_are_pairwise_distinct": {
+      "derived": {
+        "base_d": 69.786,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 80.5,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 77.0,
+        "recess_fillet": 0.5,
+        "recess_id": 34.888,
+        "recess_od": 46.888,
+        "root_d": 72.625,
+        "root_fillet": 0.478,
+        "root_gap": 1.062,
+        "root_thickness": 4.123,
+        "span": 34.479,
+        "span_teeth": 7,
+        "tip_d": 80.5,
+        "tip_thickness": 0.902,
+        "warnings": [
+          "Root fillet reduced to 0.48 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 44
+      },
+      "solid": {
+        "edges": 1090,
+        "faces": 372,
+        "volume": 31098.438444610423,
+        "xmax": 40.2500001,
+        "xmin": -40.2500001,
+        "ymax": 40.2500001,
+        "ymin": -40.2500001,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_pool.py::test_the_four_failure_types_are_pairwise_distinct"
+      ]
+    },
+    "test_records.py::test_a_model_request_emits_one_export_served_line_that_json_loads_round_trips": {
+      "derived": {
+        "base_d": 65.028,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 75.195,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 71.75,
+        "recess_fillet": 0.5,
+        "recess_id": 32.263,
+        "recess_od": 44.263,
+        "root_d": 67.375,
+        "root_fillet": 0.488,
+        "root_gap": 1.084,
+        "root_thickness": 4.078,
+        "span": 29.354,
+        "span_teeth": 6,
+        "tip_d": 75.25,
+        "tip_thickness": 0.895,
+        "warnings": [
+          "Root fillet reduced to 0.49 mm to fit the tooth gap."
+        ],
+        "web": 3.5
+      },
+      "params": {
+        "teeth": 41
+      },
+      "solid": {
+        "edges": 1018,
+        "faces": 348,
+        "volume": 26711.369295188008,
+        "xmax": 37.6250001,
+        "xmin": -37.54618824158177,
+        "ymax": 37.61186518805238,
+        "ymin": -37.611865188052384,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "test_records.py::test_a_model_request_emits_one_export_served_line_that_json_loads_round_trips"
+      ]
+    }
+  }
+}

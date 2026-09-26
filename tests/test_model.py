@@ -6,8 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from spur.calc import profile, recess_radii
-from spur.model import TESSELLATION, Quality, _build_checked, build, export
+from spur.build_errors import BuildError
+from spur.calc import bore_radius, profile, recess_radii
+from spur.model import (
+    TESSELLATION,
+    TOL,
+    Quality,
+    _bore_rim_edges,
+    _build_checked,
+    _groove_floor_edges,
+    build,
+    export,
+)
 from spur.params import GearParams
 
 Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
@@ -32,6 +42,112 @@ def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     bb = s.BoundingBox()
     assert bb.zlen == pytest.approx(p.face_width)
     assert max(bb.xlen, bb.ylen) <= p.module * (p.teeth + 2 + 2 * p.profile_shift) + 1e-6
+
+
+@pytest.mark.parametrize(("kw", "rim", "floor"), [
+    pytest.param({}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, id="d-flat-both"),
+    pytest.param({"recess_sides": "top"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 2,
+                 id="d-flat-top"),
+    pytest.param({"recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 2,
+                 id="d-flat-bottom"),
+    pytest.param({"recess_sides": "none"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), None,
+                 id="d-flat-no-recess"),
+    pytest.param({"bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, id="round-both"),
+    pytest.param({"bore_flat": 0, "recess_sides": "top"}, collections.Counter({"CIRCLE": 2}), 2,
+                 id="round-top"),
+    pytest.param({"bore_flat": 0, "recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2}), 2,
+                 id="round-bottom"),
+    pytest.param({"bore_flat": 0, "recess_sides": "none"}, collections.Counter({"CIRCLE": 2}), None,
+                 id="round-no-recess"),
+    pytest.param({"bore_d": 0}, None, 4, id="no-bore"),
+    pytest.param({"recess_inner_d": 1.0}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4,
+                 id="d-flat-recess-at-hub-clearance"),
+])
+def test_each_edge_selector_picks_exactly_its_own_edges(
+        kw: dict[str, object],
+        rim: collections.Counter[str] | None,
+        floor: int | None) -> None:
+    """The exact edges each selector sees before its operator runs (REQ-edge-selection-
+    proven): the bore-rim chamfer and the recess-floor fillet each pick their own edges,
+    never each other's, and never the wrong count. bare_p (bore_chamfer=0,
+    recess_fillet=0) is the solid each selector sees in the pipeline just before its
+    operator would run -- the chamfer is the last build step, and the recess fillet only
+    adds faces away from the rim. Every selector argument comes from bare_p, not the
+    as-requested params: bore_chamfer feeds recess_radii()'s hub clearance, so a
+    hub-clamped recess moves when the chamfer is switched off, and radii taken from the
+    chamfered params would miss the bare solid's floor circles.
+
+    d-flat-recess-at-hub-clearance is the boundary row: recess_inner_d 1.0 clamps the
+    recess to its minimum hub clearance (bore_radius + MIN_WALL on the chamfer-off solid,
+    4.975 mm) -- the closest a recess edge can come to the rim band -- and the rim
+    selection stays exact.
+    """
+    bare_p = GearParams.model_validate({**kw, "bore_chamfer": 0, "recess_fillet": 0})
+    bare = build(bare_p)
+
+    rim_counter = (collections.Counter(e.geomType() for e in _bore_rim_edges(bare, bare_p))
+                   if bare_p.bore_d > 0 else None)
+
+    rr = recess_radii(bare_p, profile(bare_p).rf)
+    floor_count: int | None = None
+    if rr is not None:
+        heights: list[float] = []
+        if bare_p.recess_sides in ("both", "bottom"):
+            heights.append(bare_p.recess_depth)
+        if bare_p.recess_sides in ("both", "top"):
+            heights.append(bare_p.face_width - bare_p.recess_depth)
+        floor_edges = _groove_floor_edges(bare, rr, heights)
+        floor_count = len(floor_edges)
+        # Identity, not just count: a selector matching the same number of wrong-but-
+        # coincidentally-equal-count edges (e.g. groove-mouth circles, which share the
+        # floor circles' radii by construction) must still be caught.
+        for e in floor_edges:
+            assert min(abs(e.radius() - r) for r in rr) < TOL
+            assert min(abs(e.startPoint().z - z) for z in heights) < TOL
+
+    # One tuple assertion: a wrong floor count never hides behind a wrong rim count.
+    assert (rim_counter, floor_count) == (rim, floor)
+
+    if bare_p.bore_d > 0:
+        rim_edges = _bore_rim_edges(bare, bare_p)
+        for e in rim_edges:
+            a, b = e.startPoint(), e.endPoint()
+            assert min(abs(a.z), abs(a.z - bare_p.face_width)) < TOL
+            assert min(abs(b.z), abs(b.z - bare_p.face_width)) < TOL
+            if e.geomType() == "CIRCLE":
+                assert e.radius() == pytest.approx(bore_radius(bare_p), abs=TOL)
+        # Both end faces, not just "an" end face: a selector that returned both rim
+        # circles from z=0 and missed z=face_width entirely would still satisfy every
+        # per-edge check above. 0 for a z=0 edge, 1 for a z=face_width edge.
+        faces_hit = {round(e.startPoint().z / bare_p.face_width) for e in rim_edges}
+        assert faces_hit == {0, 1}
+
+
+def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-15: a bound too small for the bore shape (the Phase 8 hex failure in miniature)
+    must raise, not ship an unchamfered part. Patches the calc-side rim-limit function
+    on the model module to a bound inside the bore -- half the rim's farthest point,
+    well short of any edge. Calls _build_checked, never build(): build()'s lru_cache
+    would hand back a solid built before the patch, without running the selector at all.
+    """
+    monkeypatch.setattr("spur.model.bore_rim_limit", lambda p: bore_radius(p) / 2)
+    with pytest.raises(BuildError, match="selected no bore-rim edges") as exc_info:
+        _build_checked(GearParams())
+    # the catch-all must not relabel this defect as "try smaller fillets or chamfers"
+    assert "try smaller" not in str(exc_info.value)
+
+
+def test_a_recess_fillet_that_selects_no_floor_edges_is_a_build_error() -> None:
+    """D-15: a fillet call on a solid with no groove at all -- not provoked with a
+    bore-less solid, whose stock recess rim circles would fall inside the bore-rim band
+    instead (planning probe) and so is not a valid zero-edge case for this selector.
+    """
+    rr = recess_radii(GearParams(), profile(GearParams()).rf)
+    assert rr is not None, "the stock gear must have a recess"
+    no_groove = build(GearParams(recess_sides="none"))
+    with pytest.raises(BuildError, match="selected no groove-floor edges"):
+        _groove_floor_edges(no_groove, rr, [2.0, 5.5])
 
 
 def test_recess_removes_expected_volume() -> None:

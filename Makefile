@@ -19,7 +19,7 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 
 .DEFAULT_GOAL := help
 .PHONY: help venv verify lint typecheck lint-imports no-fake-done test serve \
-        check image test-image smoke up down logs lock vendor vendor-check \
+        check image test-image smoke up down logs lock vendor vendor-check fixture.regen \
         bench bench.latency bench.memory \
         worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
 
@@ -128,6 +128,9 @@ vendor:  ## rebuild the vendored three.js bundle (needs node)
 vendor-check:  ## fail if the committed bundle no longer matches web/
 	cd web && npm ci --silent && npm run build
 	git diff --exit-code -- src/spur/static/vendor
+
+fixture.regen: $(STAMP)  ## rewrite tests/regression/pre_v0_2.json (the L05 fixture); commit it alone, saying what moved and why
+	$(PY) tests/regression/capture.py
 
 # --- worktrees: isolated, parallel agent work ---------------------------------------
 

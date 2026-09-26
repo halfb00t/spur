@@ -17,7 +17,9 @@ Root fillet arcs come from `_fillet_corner()`, which solves the tangency directl
 
 **Edge re-selection** is separated out on purpose: `_groove_floor_edges()` matches
 circles by radius and z; `_bore_rim_edges()` matches by position, sampling three interior
-points, because a D-bore rim is not one geometric type.
+points, within `calc.bore_rim_limit(p)` plus `BORE_RIM_SLACK`, because a D-bore rim is
+not one geometric type. Both selectors raise `BuildError` when they match nothing while
+their feature is on (L26) — a selector never silently selects nothing.
 
 **Caching and export**: `build()` and `export()` both take `_LOCK`, then go through
 `_build_cached` (an `lru_cache` on the parameter object) and `_EXPORTS` (an LRU bounded by
@@ -33,7 +35,8 @@ and that is written down where it is defined.
   is a deliberate test affordance, not a public contract.
 - `export(p, fmt, quality) -> bytes` — what `app.py` and `cli.py` use.
 - `BuildError` — the only exception that leaves. `_build_checked()` wraps the assorted
-  `Standard_Failure` subclasses OCCT raises into it with an actionable message.
+  `Standard_Failure` subclasses OCCT raises into it with an actionable message; the two
+  edge selectors raise it themselves on an empty selection.
 
 **Invariant, checked rather than assumed:** `_build()` asserts exactly one solid and that
 it is valid before returning. This is also why the module can annotate intermediates

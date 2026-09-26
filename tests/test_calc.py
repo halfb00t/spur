@@ -7,6 +7,7 @@ from spur.calc import (
     MIN_WALL,
     DerivedDimensions,
     bore_radius,
+    bore_rim_limit,
     centre_distance,
     derive,
     inv,
@@ -102,6 +103,17 @@ def test_infeasible_parameters_name_their_fields(kw: dict[str, object], field: s
 
 def test_no_bore_ignores_d_flat() -> None:
     assert GearParams(bore_d=0).bore_flat == 8.0
+
+
+def test_the_bore_rim_limit_is_the_bore_radius_for_round_and_d_flat_bores() -> None:
+    """bore_rim_limit(p) is the exact geometric bound, no slack (D-18): round and D-flat
+    both reduce to bore_radius(p), because the D-flat hole is the round hole intersected
+    with a rectangle -- a strict subset of the circle."""
+    for p in (GearParams(bore_flat=0), GearParams(), GearParams(bore_d=0)):
+        assert bore_rim_limit(p) == bore_radius(p)
+    assert bore_rim_limit(GearParams(bore_flat=0)) == pytest.approx(4.575)
+    assert bore_rim_limit(GearParams()) == pytest.approx(4.575)
+    assert bore_rim_limit(GearParams(bore_d=0)) == 0.0
 
 
 def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:
