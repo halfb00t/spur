@@ -8,7 +8,7 @@ as an HTTP API and a CLI.
 Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI and three.js.
 
 - Involute flanks from module, tooth count, pressure angle and profile shift
-- Backlash, root fillets, D-flat or round bore with print clearance and chamfer
+- Backlash, root fillets, D-flat, round or hex bore with print clearance and chamfer
 - Annular face recesses (one or both sides) with filleted floors
 - Measurement aids: calipers across tips (corrected for odd tooth counts), span over
   *k* teeth (Wildhaber), centre distance to a mating gear
@@ -105,6 +105,7 @@ spur serve                                    # http://127.0.0.1:8000
 ```sh
 spur export -o gear.step                                  # defaults
 spur export -o gear.stl --teeth 24 --module 1 --pressure-angle 20 --bore-flat 0
+spur export -o hexgear.stl --bore-hex 6                   # 6 mm hex bore
 spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
 spur export --help                                        # every parameter
 ```
@@ -131,7 +132,8 @@ to a point, recesses that leave no web — return `422` with a message and the o
 fields in `detail[].ctx.fields`. Dimensions that can be trimmed without contradicting
 something you asked for are trimmed instead, and say so in `warnings`: the root fillet
 is capped to the tooth gap, and the face recess is narrowed to fit between the bore wall
-and the tooth rim. `503` with `Retry-After` means the build queue is full.
+and the tooth rim. A hex bore replaces the round bore and D-flat, and `warnings` names
+any round-bore field it ignored. `503` with `Retry-After` means the build queue is full.
 
 ## Parameters
 
@@ -146,9 +148,10 @@ Lengths in mm, angles in degrees.
 | `backlash` | 0.1 | Removed from the circular tooth thickness (printing clearance) |
 | `root_fillet` | 0.5 | Fillet radius at the tooth roots, capped to fit. 0 = sharp |
 | `face_width` | 7.5 | Overall thickness |
-| `bore_d` | 9 | Round part of the bore. 0 = no bore |
+| `bore_d` | 9 | Round part of the bore. 0 = no round bore |
 | `bore_flat` | 8 | Flat to opposite side of the bore. 0 = round bore |
-| `bore_clearance` | 0.15 | Added to bore and flat for print shrinkage. 0 for resin/SLS |
+| `bore_hex` | 0 | Across-flats of a hex bore; replaces the round bore and D-flat. Common hex stock: 5, 6, 8, 10, 12.7 mm. 0 = round bore |
+| `bore_clearance` | 0.15 | Added to bore, flat and hex across-flats for print shrinkage. 0 for resin/SLS |
 | `bore_chamfer` | 0.4 | Chamfer on both bore edges |
 | `recess_sides` | `both` | `both`, `top`, `bottom` or `none` |
 | `recess_depth` | 2 | Depth of each groove |

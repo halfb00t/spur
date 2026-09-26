@@ -87,6 +87,12 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert stl.stat().st_size > 1000
     assert "Recess narrowed" in capsys.readouterr().err
 
+    hexgear = tmp_path / "hexgear.stl"
+    cli.main(["export", "-o", str(hexgear), "--bore-hex", "6"])
+    assert hexgear.stat().st_size > 1000
+    assert ("warning: Hex bore replaces the round profile: bore_d (9 mm) and bore_flat "
+            "(8 mm) are ignored.") in capsys.readouterr().err
+
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:
