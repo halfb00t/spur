@@ -780,7 +780,7 @@ D-flat rim is the round hole intersected with a rectangle, a strict subset of th
 circle), 0.0 with no bore; Phase 8 adds the hex circumradius here rather than widening
 the band. `model.BORE_RIM_SLACK` (0.01 mm) is the selection slack, measured at 1e-7 mm
 (the kernel's post-boolean vertex and edge tolerance on both bore shapes, 2026-09-26)
-and kept three orders of magnitude below that while staying forty times under
+and kept five orders of magnitude above that while staying forty times under
 `MIN_WALL` (0.4 mm). Both position-based selectors raise `BuildError` on an empty
 selection while their feature is on: `_bore_rim_edges`, "Bore chamfer selected no
 bore-rim edges: a modelling defect in spur, not a conflict in these parameters. Set

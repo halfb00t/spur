@@ -50,7 +50,7 @@ TOL = 1e-6              # mm, for matching kernel geometry back to the numbers w
 BORE_RIM_SLACK = 0.01   # mm, how far past bore_rim_limit() a rim point may read and still
 # count. 10 microns, not TOL: it must clear the kernel's post-boolean vertex/edge
 # tolerance -- measured 1e-7 mm on both GearParams(bore_chamfer=0) and
-# GearParams(bore_flat=0, bore_chamfer=0), 2026-09-26 -- by three orders of magnitude,
+# GearParams(bore_flat=0, bore_chamfer=0), 2026-09-26 -- by five orders of magnitude,
 # and stay far below MIN_WALL (0.4 mm), the least clearance recess_radii() keeps between
 # the rim and the next end-face edge.
 
