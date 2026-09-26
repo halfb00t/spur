@@ -51,12 +51,14 @@ with tooth measurements untouched.
 ## Phase Details
 
 ### Phase 7: Foundation — Generalized Edge Selection + Regression Fixture
+
 **Goal**: The bore-rim edge selector works correctly for any bore shape, and a regression
 fixture proves every pre-v0.2 parameter set is unchanged — the foundation every later phase
 extends.
 **Depends on**: Nothing (first phase of v0.2; continues from v0.1 Phase 6)
 **Requirements**: REQ-defaults-off-regression, REQ-edge-selection-proven
 **Success Criteria** (what must be TRUE):
+
   1. `bore_rim_limit(p)` computes the correct edge-selection bound per bore shape (round and
      D-flat today; the function is shaped to extend to hex and keyway in Phases 8–9) — a
      unit test asserts `len(_bore_rim_edges(...)) > 0` whenever `bore_chamfer > 0`, for every
@@ -68,21 +70,29 @@ extends.
      README's example links, and passes at HEAD — this fixture is what every later phase
      re-runs, not a new ad hoc check.
   4. `make verify` is green with the new fixture and selector tests included.
+
 **Research flag**: No — the fix (compute the selection bound correctly per shape) is fully
 specified by `research/ARCHITECTURE.md`'s Q2; no open questions (`research/SUMMARY.md`
 "Phases with standard, well-documented patterns").
 **Plans**: 2 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 07-01-PLAN.md — L05 regression fixture: 78-entry corpus → 44 records, `make fixture.regen`, replay test, measured cost (D-06 gate) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 07-02-PLAN.md — `calc.bore_rim_limit(p)`, `BORE_RIM_SLACK`, both selectors raise `BuildError` on zero edges, exact count matrix, L26 (wave 2)
 
 ### Phase 8: Hex Bore
+
 **Goal**: A user can request a hexagonal bore and get a correctly measured hex profile,
 proving Phase 7's generalized selector against real geometry.
 **Depends on**: Phase 7
 **Requirements**: REQ-hex-bore, REQ-derived-dimensions-additive
 **Success Criteria** (what must be TRUE):
+
   1. Setting `bore_hex` (across-flats, mm, 0 = off) cuts a regular hexagon bore with
      `bore_clearance` added across the flats; the hexagon replaces the round profile —
      `bore_d` does not apply, and a non-zero `bore_d` alongside `bore_hex` produces a
@@ -103,12 +113,14 @@ against the installed `.venv`; a small, well-bounded feature (`research/SUMMARY.
 **Plans**: TBD
 
 ### Phase 9: Keyway Bore
+
 **Goal**: A user can cut a keyway into a round or D-flat bore with an explicit,
 DIN-6885-convention depth a human can verify with calipers on the printed part.
 **Depends on**: Phase 8
 **Requirements**: REQ-keyway-bore, REQ-keyway-composes-with-d-flat, REQ-keyway-wall-refused,
 REQ-hex-rim-chamfer, REQ-bore-derived-numbers
 **Success Criteria** (what must be TRUE):
+
   1. Setting `keyway_width`/`keyway_depth` (mm, 0 = off) cuts a keyway measured radially
      from the as-cut bore wall (`bore_d/2 + bore_clearance`) — the DIN 6885 / ISO R773 `t2`
      convention, stated in field help, with a warning that ANSI B17.1's "T" is a different
@@ -135,11 +147,13 @@ discuss time — a phase decision, not a research question.
 **Plans**: TBD
 
 ### Phase 10: Tooth-Tip Chamfer
+
 **Goal**: A user can break the tooth-tip edges for a safer, more printable part, with
 flanks, root fillets, bore and outside diameter untouched.
 **Depends on**: Phase 7 (independent of the bore work in Phases 8–9)
 **Requirements**: REQ-tip-chamfer, REQ-tip-chamfer-capped
 **Success Criteria** (what must be TRUE):
+
   1. Setting `tip_chamfer` (mm, 0 = off) breaks the tooth-tip arc edges at both end faces;
      flanks, root fillets, bore and cutouts are untouched and the outside diameter is
      unchanged.
@@ -162,6 +176,7 @@ cost before the cap is designed.
 **Plans**: TBD
 
 ### Phase 11: Body Cutouts
+
 **Goal**: A user can lighten the gear body with exactly one of three explicit cutout
 patterns — lightening holes, spoke arms, or a honeycomb web — each composing with any bore
 profile and with face recesses.
@@ -172,6 +187,7 @@ are independent of bore shape.
 REQ-one-cutout-pattern, REQ-cutout-conflicts-refused-early, REQ-cutout-composes,
 REQ-cutout-derived-numbers
 **Success Criteria** (what must be TRUE):
+
   1. Setting `hole_count`/`hole_d`/`hole_circle_d` (0 = off) cuts N equal round holes evenly
      spaced on a bolt circle through the full face width, batched in one `.cut(*cutters)`
      call, not a loop.
@@ -204,12 +220,14 @@ pattern) — no research flag needed for those sub-parts.
 **Plans**: TBD
 
 ### Phase 12: Composition Pass
+
 **Goal**: Every v0.2 feature composes correctly across the full matrix, the milestone's
 heaviest-configuration build time is measured, and all three interfaces stay in parity —
 closing out v0.2.
 **Depends on**: Phases 8, 9, 10, 11
 **Requirements**: REQ-measured-build-time, REQ-three-interfaces-extended
 **Success Criteria** (what must be TRUE):
+
   1. The full composition test matrix passes: recess × each bore shape, recess × each
      cutout pattern (cut through the recessed floor), each cutout pattern × each bore
      shape, and every refusal decided earlier — keyway × hex (Phase 8), two cutout patterns
