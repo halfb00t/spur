@@ -223,6 +223,8 @@ def cases() -> dict[str, Case]:
             mate_key = mate_keys.get((p, entry.mate))
             if mate_key is None:
                 case_key = f"{entry.tag}+mate={entry.mate}"
+                if case_key in result:
+                    raise ValueError(f"corpus key collision: {case_key}")
                 mate_keys[(p, entry.mate)] = case_key
                 result[case_key] = Case(params=entry.params, mate=entry.mate,
                                         sources=[entry.tag])
