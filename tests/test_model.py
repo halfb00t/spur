@@ -96,18 +96,31 @@ def test_each_edge_selector_picks_exactly_its_own_edges(
             heights.append(bare_p.recess_depth)
         if bare_p.recess_sides in ("both", "top"):
             heights.append(bare_p.face_width - bare_p.recess_depth)
-        floor_count = len(_groove_floor_edges(bare, rr, heights))
+        floor_edges = _groove_floor_edges(bare, rr, heights)
+        floor_count = len(floor_edges)
+        # Identity, not just count: a selector matching the same number of wrong-but-
+        # coincidentally-equal-count edges (e.g. groove-mouth circles, which share the
+        # floor circles' radii by construction) must still be caught.
+        for e in floor_edges:
+            assert min(abs(e.radius() - r) for r in rr) < TOL
+            assert min(abs(e.startPoint().z - z) for z in heights) < TOL
 
     # One tuple assertion: a wrong floor count never hides behind a wrong rim count.
     assert (rim_counter, floor_count) == (rim, floor)
 
     if bare_p.bore_d > 0:
-        for e in _bore_rim_edges(bare, bare_p):
+        rim_edges = _bore_rim_edges(bare, bare_p)
+        for e in rim_edges:
             a, b = e.startPoint(), e.endPoint()
             assert min(abs(a.z), abs(a.z - bare_p.face_width)) < TOL
             assert min(abs(b.z), abs(b.z - bare_p.face_width)) < TOL
             if e.geomType() == "CIRCLE":
                 assert e.radius() == pytest.approx(bore_radius(bare_p), abs=TOL)
+        # Both end faces, not just "an" end face: a selector that returned both rim
+        # circles from z=0 and missed z=face_width entirely would still satisfy every
+        # per-edge check above. 0 for a z=0 edge, 1 for a z=face_width edge.
+        faces_hit = {round(e.startPoint().z / bare_p.face_width) for e in rim_edges}
+        assert faces_hit == {0, 1}
 
 
 def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore(
