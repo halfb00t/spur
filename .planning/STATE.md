@@ -1,19 +1,20 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.1
-status: Awaiting next milestone
-stopped_at: Milestone v0.1 closed and archived — next /gsd-new-milestone
-last_updated: "2026-09-25T14:15:39.378Z"
-last_activity: 2026-09-25
-last_activity_desc: Milestone v0.1 completed and archived
-state_head: 700230b7fc35512d4036c22f4dab948c5d7534cc
+milestone: v0.2
+milestone_name: Fit to Shaft
+current_phase: 7
+current_phase_name: Foundation — Generalized Edge Selection + Regression Fixture
+status: "Milestone v0.2 start shipped — PR #7 (land via make pr.land PR=7)"
+stopped_at: Milestone v0.2 start open as PR #7 (`gsd/milestone-v0.2-start`); land it via `make pr.land PR=7`, then cut `gsd/phase-07-*` and run /gsd-discuss-phase 7
+last_updated: "2026-09-26T02:38:05.750Z"
+last_activity: 2026-09-26
+state_head: a023f085911129652f1545885bd6e10e46629c47
 progress:
   total_phases: 6
-  completed_phases: 6
-  total_plans: 21
-  completed_plans: 21
-milestone_name: Hardening
-current_phase: 06
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,16 +25,15 @@ See: .planning/PROJECT.md (updated 2026-09-25)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.1 shipped 2026-09-25 and archived under `milestones/`; the
-close branch lands via `make pr.land`, then `v0.1` is tagged on `main`. Next milestone not
-yet defined — `/gsd-new-milestone`.
+**Current focus:** Milestone v0.2 Fit to Shaft — planning complete (Phases 7–12, 20/20
+requirements mapped) and open as PR #7; Phase 7 (Foundation) is next once it lands.
 
 ## Current Position
 
-Phase: Milestone v0.1 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-25 — Milestone v0.1 completed and archived
+Phase: 7 of 12 (Foundation — Generalized Edge Selection + Regression Fixture)
+Plan: — (not yet planned)
+Status: Milestone v0.2 start shipped — PR #7 (land via make pr.land PR=7)
+Last activity: 2026-09-26
 
 ## Performance Metrics
 
@@ -155,10 +155,12 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-25T14:45:00Z
-Stopped at: Milestone v0.1 archived on `gsd/milestone-v0.1-close`; land it via PR + `make pr.land`, then tag `v0.1` on `main` and push the tag
+Last session: 2026-09-26T02:40:00Z
+Stopped at: Milestone v0.2 start open as PR #7 (`gsd/milestone-v0.2-start`); land it via `make pr.land PR=7`, then cut `gsd/phase-07-*` and run /gsd-discuss-phase 7
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Land PR #7 with `make pr.land PR=7` (the three required checks must be green on the current head)
+- Then `/gsd-discuss-phase 7` on a `gsd/phase-07-*` branch cut from the squash commit
+- Run `make verify` once at session start before the first SDK commit (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)

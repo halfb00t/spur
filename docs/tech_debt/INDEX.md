@@ -22,6 +22,7 @@ Severity (grep-able `Severity:` field):
 | nice | [No coverage floor in the gate](active/2026-09-21-no-coverage-floor.md) | after one measured baseline run |
 | nice | [The service has no authentication](active/2026-09-21-no-authentication.md) | the moment it is bound to anything but localhost |
 | nice | [Enji Guard not connected](active/2026-09-21-enji-guard-not-connected.md) | owner decides they want continuous AI audit |
+| nice | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook on a cold cache](active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | gsd exposes a commit-timeout setting, or an executor's warm retry also times out |
 
 ## Resolved
 
