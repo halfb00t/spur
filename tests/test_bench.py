@@ -1,5 +1,7 @@
 """Pure tests for `bench.memory`'s capping predicate (CR-02 review) -- no Docker daemon
-needed; `_is_capped` is a plain function over two byte counts.
+needed; `_is_capped` is a plain function over two byte counts. Also covers
+`bench.build_time`'s sweep file and budget predicate (08-04): the Phase 8 hex-bore sweep
+is D-11's exact cross product, and `Timing.inside` pins the budget boundary.
 
 Run as `.venv/bin/python -m pytest tests/test_bench.py -q` **from the repo root** -- the
 `-m` form is what puts the repo root on `sys.path`, which is what makes `import bench`
@@ -11,8 +13,10 @@ resolve at all: `bench` is not installed into the venv (it isn't listed in
 
 from __future__ import annotations
 
+import itertools
 import math
 
+from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
 
 
@@ -41,3 +45,26 @@ def test_the_tolerance_boundary_is_pinned_from_both_sides() -> None:
     just_outside = just_inside - 1
     assert _is_capped(just_inside, _SWEEP_MEM_LIMIT_BYTES)
     assert not _is_capped(just_outside, _SWEEP_MEM_LIMIT_BYTES)
+
+
+def test_the_hex_bore_sweep_is_every_combination_d_11_names() -> None:
+    """The committed Phase 8 sweep is D-11's full cross product -- 200 teeth,
+    module {1.75, 10} (module drives fine-STL export time, planning probe: 0.64s to
+    1.14s), bore_hex {200, 12.7}, recess_sides {both, none}, bore_chamfer {0.4, 3} (3 is
+    the field's `le`; no hex rule binds at 200 teeth). Every row is therefore a buildable
+    gear under 08-03's rules -- load_sweep would have raised otherwise."""
+    sets = load_sweep(DEFAULT_SWEEP)
+    assert len(sets) == 16
+    got = {(p.teeth, p.module, p.bore_hex, p.recess_sides, p.bore_chamfer)
+           for _, p in sets}
+    want = set(itertools.product((200,), (1.75, 10.0), (200.0, 12.7),
+                                  ("both", "none"), (0.4, 3.0)))
+    assert got == want
+
+
+def test_a_set_is_inside_the_timeout_until_its_build_plus_slower_export_passes_it() -> None:
+    """`SPUR_BUILD_TIMEOUT` wraps one build plus one export -- the slower of the two
+    exports, not both summed. Exactly the timeout is still inside it."""
+    assert Timing("x", 20.0, 10.0, 1.0).inside(30)
+    assert not Timing("x", 20.0, 10.01, 1.0).inside(30)
+    assert not Timing("x", 20.0, 1.0, 10.01).inside(30)
