@@ -35,7 +35,7 @@ Goals, success criteria and plan lists: `milestones/v0.1-ROADMAP.md`. Phase arti
 profiles, body cutouts and a tooth-tip chamfer, all additive on the shipped spur pipeline,
 with tooth measurements untouched.
 
-- [ ] **Phase 7: Foundation — Generalized Edge Selection + Regression Fixture** - Fix the
+- [x] **Phase 7: Foundation — Generalized Edge Selection + Regression Fixture** - Fix the (completed 2026-09-26)
       bore-rim edge selector for any bore shape and lock a regression fixture every later
       phase extends
 - [ ] **Phase 8: Hex Bore** - A hexagonal bore profile, proving the generalized selector on
