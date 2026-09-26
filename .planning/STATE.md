@@ -5,10 +5,10 @@ milestone_name: Fit to Shaft
 current_phase: 8
 current_phase_name: Hex Bore
 status: "Phase 7 shipped — PR #8"
-stopped_at: Phase 07 complete, ready to plan Phase 8
-last_updated: "2026-09-26T07:58:06.732Z"
+stopped_at: Phase 8 context gathered
+last_updated: "2026-09-26T09:40:12.721Z"
 last_activity: 2026-09-26
-state_head: 71ba2ac66f18a65f35f6eb86c274468e293c42cf
+state_head: b96ab17be9bfb5e8b7c69cd3f0428d65ed5cf4c8
 progress:
   total_phases: 6
   completed_phases: 1
@@ -173,9 +173,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T06:57:00.849Z
-Stopped at: Phase 07 complete, ready to plan Phase 8
-Resume file: None
+Last session: 2026-09-26T09:40:12.698Z
+Stopped at: Phase 8 context gathered
+Resume file: .planning/phases/08-hex-bore/08-CONTEXT.md
 
 ## Operator Next Steps
 
