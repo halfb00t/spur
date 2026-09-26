@@ -29,7 +29,14 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def derived(params: dict[str, object], mate: int | None) -> dict[str, object]:
-    """derive()'s 19 fields, JSON-ready (the warnings tuple becomes a list, D-10)."""
+    """Every `derive()` field, JSON-ready (the warnings tuple becomes a list, D-10).
+
+    A record holds the fields captured at `6f06d77`: 19 at that commit, now 21 after
+    Phase 8's two hex fields (`hex_across_flats`, `hex_across_corners`). The replay
+    (`test_pre_v0_2.py`) compares a record's own fields exactly and requires every field
+    added since the capture to read `null` (L27, REQ-derived-dimensions-additive) --
+    this file's JSON is not touched to make that true.
+    """
     return derive(GearParams.model_validate(params), mate_teeth=mate).model_dump(mode="json")
 
 
