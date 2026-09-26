@@ -22,6 +22,8 @@ const DIMS = [
   ['root_gap', 'Gap at root'],
   ['root_fillet', 'Root fillet used'],
   ['bore_effective', 'Bore Ø incl. clearance'],
+  ['hex_across_flats', 'Hex across flats incl. clearance'],
+  ['hex_across_corners', 'Hex across corners'],
   ['recess_id', 'Recess inner Ø'],
   ['recess_od', 'Recess outer Ø'],
   ['recess_fillet', 'Recess fillet used'],

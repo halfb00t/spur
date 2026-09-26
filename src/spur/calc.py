@@ -58,20 +58,43 @@ def bore_radius(p: GearParams) -> float:
     return (p.bore_d + p.bore_clearance) / 2 if p.bore_d > 0 else 0.0
 
 
+def hex_across_flats(p: GearParams) -> float:
+    """The hex bore's effective across-flats: clearance added across the flats
+    (REQ-hex-bore) -- what calipers read between two flats. 0.0 with no hex bore."""
+    return p.bore_hex + p.bore_clearance if p.bore_hex > 0 else 0.0
+
+
 def bore_rim_limit(p: GearParams) -> float:
     """The farthest any point on the bore's rim can sit from the axis -- the exact
     geometric bound, no slack.
 
     Round and D-flat both reduce to bore_radius(p): the D-flat hole is the round hole
     intersected with a rectangle (model._cut_bore), a strict subset of the circle, so it
-    adds no point farther out. That stops being true once a bore shape has a vertex
-    outside the circle -- Phase 8's hex bore adds its circumradius (across-flats over
-    sqrt 3) here instead of widening this bound (research ARCHITECTURE.md Q2's rejected
-    anti-pattern: generalizing lim by widening it). calc.py knows no kernel tolerance;
-    the selection slack that turns this exact bound into a matching band belongs to
-    model.py, not here.
+    adds no point farther out. A hex bore's rim reaches its corners, the circumradius --
+    across-flats over sqrt(3): 6.15 mm across flats puts the corners at 3.5507 mm, and
+    the built corners read the same within 4.4e-16 mm, 2026-09-26 (research
+    ARCHITECTURE.md Q2's rejected anti-pattern was generalizing lim by widening it
+    instead). calc.py knows no kernel tolerance; the selection slack that turns this
+    exact bound into a matching band belongs to model.py, not here.
     """
+    if p.bore_hex > 0:
+        return hex_across_flats(p) / math.sqrt(3)
     return bore_radius(p)
+
+
+def bore_mouth_limit(p: GearParams) -> float:
+    """The farthest the chamfered bore mouth reaches on an end face.
+
+    A round or D-flat rim carries the chamfer straight out (c). A hex carries it to the
+    corners, where two chamfered sides meet, at c / cos(30 deg) = 2c/sqrt(3) -- measured
+    exact on the pinned kernel at c = 0.4, 1 and 3 mm, 2026-09-26. R + c undercounts by
+    0.155c: with it, a 3 mm chamfer on a 6 mm hex ran the recess into an invalid solid at
+    2.586 mm and a kernel failure at 3 mm (research PITFALLS.md Pitfall 1). 0.0 with no
+    bore at all.
+    """
+    if p.bore_hex > 0:
+        return bore_rim_limit(p) + 2 / math.sqrt(3) * p.bore_chamfer
+    return bore_rim_limit(p) + (p.bore_chamfer if p.bore_d > 0 else 0.0)
 
 
 def recess_radii(p: GearParams, rf: float) -> tuple[float, float] | None:
@@ -85,9 +108,9 @@ def recess_radii(p: GearParams, rf: float) -> tuple[float, float] | None:
     """
     if p.recess_sides == "none" or p.recess_depth <= 0 or p.recess_width <= 0:
         return None
-    r_bore = bore_radius(p)
-    hub = r_bore + (p.bore_chamfer if p.bore_d > 0 else 0.0) + MIN_WALL  # clear of the hub wall
-    rim = rf - MIN_WALL                                                  # clear of the tooth rim
+    r_bore = bore_rim_limit(p)            # the bore's farthest point (radius, or hex corners)
+    hub = bore_mouth_limit(p) + MIN_WALL  # clear of the chamfered bore mouth
+    rim = rf - MIN_WALL                   # clear of the tooth rim
     if rim - hub < MIN_RECESS_WIDTH:
         return None
     width = min(p.recess_width, rim - hub)
@@ -213,7 +236,16 @@ class DerivedDimensions(BaseModel):
         description="Span (Wildhaber) measurement over span_teeth teeth, at zero backlash.",
         json_schema_extra={"unit": "mm"})
     bore_effective: float | None = Field(
-        description="Bore diameter including print clearance; null with no bore.",
+        description="Bore diameter including print clearance; null with no bore or "
+                    "with a hex bore.",
+        json_schema_extra={"unit": "mm"})
+    hex_across_flats: float | None = Field(
+        description="Hex bore across flats including print clearance, what calipers "
+                    "read between two flats; null with no hex bore.",
+        json_schema_extra={"unit": "mm"})
+    hex_across_corners: float | None = Field(
+        description="Hex bore across corners including print clearance, what calipers "
+                    "read between two opposite corners; null with no hex bore.",
         json_schema_extra={"unit": "mm"})
     recess_id: float | None = Field(
         description="Face recess inner diameter; null with no recess.",
@@ -315,7 +347,9 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         root_fillet=r3(rfil),
         span_teeth=k,
         span=r3(w),
-        bore_effective=r3(2 * bore_radius(p)) if p.bore_d > 0 else None,
+        bore_effective=r3(2 * bore_radius(p)) if p.bore_d > 0 and p.bore_hex == 0 else None,
+        hex_across_flats=r3(hex_across_flats(p)) if p.bore_hex > 0 else None,
+        hex_across_corners=r3(2 * bore_rim_limit(p)) if p.bore_hex > 0 else None,
         recess_id=r3(2 * rr[0]) if rr else None,
         recess_od=r3(2 * rr[1]) if rr else None,
         recess_fillet=r3(rec_fil) if rr else None,

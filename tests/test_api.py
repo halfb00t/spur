@@ -76,8 +76,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
     fields = {
         "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
         "root_thickness", "root_gap", "root_fillet", "span_teeth", "span",
-        "bore_effective", "recess_id", "recess_od", "recess_fillet", "web", "warnings",
-        "mate_teeth", "centre_distance",
+        "bore_effective", "hex_across_flats", "hex_across_corners", "recess_id",
+        "recess_od", "recess_fillet", "web", "warnings", "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -88,6 +88,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
 
     assert component["properties"]["pitch_d"]["unit"] == "mm"
     assert component["properties"]["centre_distance"]["unit"] == "mm"  # nullable, still a length
+    assert component["properties"]["hex_across_flats"]["unit"] == "mm"
+    assert component["properties"]["hex_across_corners"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
@@ -135,6 +137,46 @@ def test_infeasible_is_422_with_fields() -> None:
     detail = r.json()["detail"][0]
     assert "D-flat" in detail["msg"]
     assert detail["ctx"]["fields"] == ["bore_flat"]
+
+
+def test_a_hex_bore_link_is_served_with_its_two_numbers() -> None:
+    """?bore_hex=6 end to end (D-01, D-04, D-05): the schema, /api/info's two new
+    numbers with bore_effective null, the plain-default case with both hex fields null,
+    the le-200 refusal, and both export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["bore_hex"]["group"] == "Bore"
+    assert props["bore_hex"]["unit"] == "mm"
+    assert props["bore_hex"]["maximum"] == 200
+    assert props["bore_hex"]["default"] == 0
+    names = list(props)
+    assert names.index("bore_hex") == names.index("bore_flat") + 1
+
+    r = client.get("/api/info", params={"bore_hex": 6})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_across_flats"] == pytest.approx(6.15)
+    assert body["hex_across_corners"] == pytest.approx(7.101)
+    assert body["bore_effective"] is None
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_across_flats"] is None
+    assert body["hex_across_corners"] is None
+    assert body["bore_effective"] == pytest.approx(9.15)
+
+    r = client.get("/api/info", params={"bore_hex": 200.05})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["loc"] == ["query", "bore_hex"]
+
+    r = client.get("/api/model.stl", params={"bore_hex": 6, "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"bore_hex": 6})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
 
 
 def test_bad_type_is_422_on_the_field() -> None:
