@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 08
 current_phase_name: Hex Bore
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-09-26T15:01:43.412Z"
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-09-26T15:30:29.295Z"
 last_activity: 2026-09-26
 last_activity_desc: Phase 08 execution started
-state_head: fddf9b8c506585aa60d4898258b40781af64c4e0
+state_head: a4722150fb7377776745b477324d924721e3980d
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
   percent: 17
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 08 (Hex Bore) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-26 — Phase 08 execution started
 
@@ -104,6 +104,7 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 07 P01 | 39min | 3 tasks | 8 files |
 | Phase 07 P02 | 11min | 3 tasks | 7 files |
 | Phase 08 P01 | 15 min | 3 tasks | 3 files |
+| Phase 08 P02 | 55min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 07]: D-06 gate: measured make verify delta with the regression fixture was 16.27s, above the plan's 15.0s line. Human chose Option A: accept the cost, keep all 44 records built. — 16.27s is under the planner's ~20s ceiling; the cost is spread evenly across all 39 builds (no single outlier); Success Metric 3 stays literal rather than trimmed to a curated subset.
 - [Phase 07]: L26 logged: the pre-v0.2 fixture (07-01) and the two edge-selector guards (07-02) as one standing rule -- a selector never silently selects nothing. — 07-CONTEXT.md's Claude's Discretion recommended one entry covering D-03 and D-15..D-18; follows L24/L25's paragraph shape.
 - [Phase 08]: Human approved all four proposed texts (REQUIREMENTS REQ-hex-bore, REQ-keyway-bore; ROADMAP Phase 8 SC2, Phase 9 SC2 + Phase 12 SC1) verbatim at the Task 2 checkpoint, no wording changes. — ROADMAP.md was written only through edit-phase's write_updated_phase step (scoped Edit per phase section, milestone-scope check before/after), never a direct whole-file write, per D-01.
+- [Phase 08]: recess_radii()'s hub clearance is measured from bore_mouth_limit(p) (the chamfered mouth), not bore_radius(p) + chamfer -- a hex's chamfer reaches its corner at 2c/sqrt(3), not c, and the old formula would have driven a 3 mm chamfer on a 6 mm hex into an invalid solid (research PITFALLS.md Pitfall 1); round and D-flat compute identical floats in identical order, so the fixture stayed byte-unchanged.
+- [Phase 08]: The replay's comparison, not the fixture, absorbed the two new DerivedDimensions fields: recorded fields still compare exactly, every field added since the capture must read null (REQ-derived-dimensions-additive).
+- [Phase 08]: The hex is a replacement branch in model._cut_bore, never an intersection with the round profile (D-01) -- bore_d/bore_flat stay live in the schema and are simply ignored when bore_hex > 0; the ignored-field warning is 08-03's task.
 
 ### Pending Todos
 
@@ -179,8 +183,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T15:01:22.592Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-09-26T15:30:29.272Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
