@@ -71,7 +71,11 @@ extends.
 **Research flag**: No — the fix (compute the selection bound correctly per shape) is fully
 specified by `research/ARCHITECTURE.md`'s Q2; no open questions (`research/SUMMARY.md`
 "Phases with standard, well-documented patterns").
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — L05 regression fixture: 78-entry corpus → 44 records, `make fixture.regen`, replay test, measured cost (D-06 gate) (wave 1)
+- [ ] 07-02-PLAN.md — `calc.bore_rim_limit(p)`, `BORE_RIM_SLACK`, both selectors raise `BuildError` on zero edges, exact count matrix, L26 (wave 2)
 
 ### Phase 8: Hex Bore
 **Goal**: A user can request a hexagonal bore and get a correctly measured hex profile,
@@ -247,7 +251,7 @@ in Phases 7–11; no open technical questions remain by this point.
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
-| 7. Foundation | v0.2 | 0/? | Not started | - |
+| 7. Foundation | v0.2 | 0/2 | Planned | - |
 | 8. Hex Bore | v0.2 | 0/? | Not started | - |
 | 9. Keyway Bore | v0.2 | 0/? | Not started | - |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
