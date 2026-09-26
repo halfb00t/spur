@@ -22,12 +22,12 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-25)
+See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 07 — Foundation — Generalized Edge Selection + Regression Fixture
-requirements mapped) and open as PR #7; Phase 7 (Foundation) is next once it lands.
+**Current focus:** Phase 8 — Hex Bore (first feature phase of v0.2; extends
+`calc.bore_rim_limit(p)` and is checked against the Phase 7 fixture).
 
 ## Current Position
 
@@ -40,7 +40,7 @@ Last activity: 2026-09-26 — Phase 07 complete, transitioned to Phase 8
 
 **Velocity:**
 
-- Total plans completed via GSD: 21 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4; v0 was built and verified
+- Total plans completed via GSD: 23 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -55,6 +55,7 @@ Last activity: 2026-09-26 — Phase 07 complete, transitioned to Phase 8
 | 4. Typed Derived-Dimensions Contract | 3 | ~1h10m | ~23min |
 | 5. CI Observed Green | 6 | ~1h38m | ~16min |
 | 6. Address tech debt: merge gate + solid cache | 4 | ~56min | ~14min |
+| 7. Foundation — edge selection + regression fixture | 2 | ~50min | ~25min |
 | 07 | 2 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
@@ -71,6 +72,10 @@ Phase 6's four plans took ~56m: 06-01 (~20 min, estimated from commit timestamps
 was not captured) and 06-04 (17 min, the three-report tracer with a live `gh` read) dominated;
 06-02 and 06-03 were 9 and 10 measured minutes. Code review came back clean (2 info),
 verification passed 9/9, security 13/13 closed, Nyquist 11/11 green — no fix pass, no gap plan.
+Phase 7's two plans took ~50m: 07-01 (39 min, spanning a D-06 decision checkpoint — the fixture's
+16.27 s `make verify` cost crossed the 15.0 s line and the human accepted it) and 07-02 (11 min of
+committed work; ~22 min wall including the tolerance probe and two benchmark runs). Verification
+passed 4/4; `make verify` 289 tests; code review pending at transition time.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -108,7 +113,8 @@ Full decision log: PROJECT.md "Key Decisions" table (L01–L25, from
 fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar accepted with
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
-verdict, amending L22) were appended in Phase 6.
+verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
+L05 proof; a selector never silently selects nothing) was appended in Phase 7.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -124,6 +130,12 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 7] CI resolves `cadquery`/`cadquery-ocp` from an unpinned `pyproject.toml`
+  range while `tests/regression/pre_v0_2.json` pins one resolved kernel's exact topology;
+  a kernel bump turns the fixture red for reasons that are not a spur regression. The
+  fixture's provenance header and one named version test localise it, but the pin itself
+  is open: `docs/tech_debt/active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`
+  (must).
 - ⚠️ [Phase 2] The ten-concurrent `/api/health` latency bar (≤2.00x idle p95) was waived,
   not demonstrated: eight runs across four sessions read 1.31x–2.45x and never ≤2.00x on
   both runs of one session. The caveat and two uninvestigated observations (every second
@@ -168,6 +180,8 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Land PR #7 with `make pr.land PR=7` (the three required checks must be green on the current head)
-- Then `/gsd-discuss-phase 7` on a `gsd/phase-07-*` branch cut from the squash commit
+- `/gsd-secure-phase 7` — `workflow.security_enforcement` is on and Phase 7 has no SECURITY.md yet
+- `/gsd-validate-phase 7` — Nyquist validation hook is on (Phase 6 precedent: 11/11)
+- Open a PR for `gsd/phase-07-foundation-generalized-edge-selection-regression-fixture` and land it with `make pr.land PR=N`
+- Then `/gsd-discuss-phase 8` on a `gsd/phase-08-*` branch cut from the squash commit
 - Run `make verify` once at session start before the first SDK commit (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)

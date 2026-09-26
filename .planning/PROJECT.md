@@ -126,6 +126,18 @@ pytest — L13). Full list with sources and acceptance evidence:
   exact, content-equivalent exports, the autouse cache reset deleted); five debt files
   retired in their fixing commits; L24/L25 carry the measured numbers; verified 9/9,
   review clean, 13/13 threats closed, `make verify` 191 tests — Phase 6
+- ✓ REQ-defaults-off-regression — `tests/regression/pre_v0_2.json` pins, for every
+  pre-v0.2 hand-written parameter set (78 source-tagged entries → 44 records), `derive()`'s
+  19 fields exactly and `build()`'s volume, bounding box and face/edge counts; written only
+  by `make fixture.regen`, replayed as 85 pytest cases; proven to go red on a silently
+  vanished chamfer (32 cases); costs 16.27 s on `make verify` (measured, accepted over the
+  15.0 s line by the human — D-06). Export byte-identity is not pinned (L26) — Phase 7
+- ✓ REQ-edge-selection-proven — `calc.bore_rim_limit(p)` is the exact per-shape rim bound
+  (no kernel import); `BORE_RIM_SLACK` = 0.01 mm sits five orders above the measured
+  1e-7 mm kernel tolerance and 40× below `MIN_WALL`; both position-based selectors raise
+  `BuildError` on an empty selection while their feature is on; a 10-row `Counter`
+  matrix asserts the exact selected edges per bore shape with and without recesses;
+  the fixture stayed byte-unchanged through the change (L26) — Phase 7
 
 ### Active
 
@@ -140,8 +152,6 @@ Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
 - [ ] Tooth-tip chamfer
 - [ ] Cutouts compose with face recesses, any bore profile and each other; direct conflicts
       are 422s naming the fields
-- [ ] Every pre-v0.2 parameter set yields identical derived dimensions and an identical
-      export
 - [ ] A measured build time per feature at its heaviest allowed configuration, inside the
       timeout
 
@@ -264,6 +274,7 @@ quick reference.
 | L23 | Python 3.12 only — `requires-python`, ruff `target-version`, the CI matrix, the Makefile interpreter and the README agree (supersedes L01's 3.10 floor; `cadquery-ocp` publishes wheels for nothing newer) | ✓ Good — `make verify` green on 3.12 (183 tests); CI job is `test (3.12)` alone |
 | L24 | A cached solid never carries a mesh: STL export runs `exportStl` on `shape.copy()`, never on the process-global cached `cq.Solid` (`Clean_s` rejected: 4–13 % faster but leaves the mesh on the cached object for the whole export window); copy costs +1.4 to +17.6 ms per export and +3.2 to +7.7 MiB peak RSS on a 200-tooth fine export, measured; the autouse cache-reset fixture deleted | ✓ Good — `.BoundingBox()` exact after any export, a preview after a fine export is a preview (9,066 vs 46,278 triangles) |
 | L25 | The merge gate reads the whole commit message and the run's own verdict (amends L22): the commit-msg hook takes git's entire buffer with no cut line; `pr.land` refuses `conclusion != success` and runs from an up-to-date `main`; after the merge it reports only what it observed; the read-to-merge window rests on the ruleset's up-to-date policy, not on anything `pr.land` reads (`--match-head-commit` pins the head, not the base) | ✓ Good — proven live on run 36116930241 and commits b72b0e1 / 20b63e4 |
+| L26 | The pre-v0.2 part is pinned by a regression fixture (`tests/regression/pre_v0_2.json`, written only by `make fixture.regen`, 44 records / 85 cases, every later phase re-runs it unmodified), and an edge selector never silently selects nothing: `_bore_rim_edges` and `_groove_floor_edges` raise `BuildError` on an empty selection while their feature is on; the bore-rim bound lives in `calc.bore_rim_limit(p)` with a measured 0.01 mm slack in `model.py` | ✓ Good — fixture cost 16.27 s on `make verify`, accepted over the 15.0 s D-06 line (human decision); tripwire 32 red / 0 derive; `make verify` 289 tests |
 
 ## Success Metric (Milestone v0.1)
 
@@ -316,4 +327,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-25 after starting milestone v0.2 (`/gsd-new-milestone`).*
+*Last updated: 2026-09-26 after Phase 7 (Foundation — generalized edge selection + regression fixture).*
