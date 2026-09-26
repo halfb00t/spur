@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 8
+current_phase: 08
 current_phase_name: Hex Bore
-status: "Phase 7 shipped — PR #8"
+status: executing
 stopped_at: Phase 8 context gathered
-last_updated: "2026-09-26T13:41:05.922Z"
+last_updated: "2026-09-26T14:56:29.222Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 8 planning complete
-state_head: 360fa4a2d1b85d6e585b2d20a1712d5847267134
+last_activity_desc: Phase 08 execution started
+state_head: 2066f7e7340e8ae7acc12585415726eeaf07298f
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 6
   completed_plans: 2
-  percent: 0
+  percent: 17
 ---
 
 # Project State
@@ -26,15 +26,15 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 8 — Hex Bore (first feature phase of v0.2; extends
+**Current focus:** Phase 08 — Hex Bore
 `calc.bore_rim_limit(p)` and is checked against the Phase 7 fixture).
 
 ## Current Position
 
-Phase: 8 (Hex Bore) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 7 shipped — PR #8
-Last activity: 2026-09-26 — Phase 8 planning complete
+Phase: 08 (Hex Bore) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 08
+Last activity: 2026-09-26 — Phase 08 execution started
 
 ## Performance Metrics
 
@@ -165,6 +165,9 @@ None yet.
 
 - Phase 5 edited: edited fields: goal, success_criteria (reframed per 05-CONTEXT.md D-10), Phases-list one-liner
 - Phase 6 added: Address tech debt: merge gate + solid cache
+- Phase 8 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
+- Phase 9 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
+- Phase 12 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 
 ## Deferred Items
 
