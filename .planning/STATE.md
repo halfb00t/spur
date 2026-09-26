@@ -4,12 +4,11 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 8
 current_phase_name: Hex Bore
-status: planning
+status: "Phase 7 shipped — PR #8"
 stopped_at: Phase 07 complete, ready to plan Phase 8
-last_updated: "2026-09-26T07:06:04.151Z"
+last_updated: "2026-09-26T07:58:06.732Z"
 last_activity: 2026-09-26
-last_activity_desc: Phase 07 complete, transitioned to Phase 8
-state_head: f4e1aec515ab1c56af814277bff794b6d7328675
+state_head: 71ba2ac66f18a65f35f6eb86c274468e293c42cf
 progress:
   total_phases: 6
   completed_phases: 1
@@ -33,8 +32,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 8 — Hex Bore
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-26 — Phase 07 complete, transitioned to Phase 8
+Status: Phase 7 shipped — PR #8
+Last activity: 2026-09-26
 
 ## Performance Metrics
 
