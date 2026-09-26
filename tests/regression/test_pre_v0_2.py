@@ -12,8 +12,9 @@ Face and edge counts compare exactly: 172 faces / 490 edges with the default bor
 chamfer, 168 / 482 without (D-13).
 
 A red test here in Phases 8-12 is that phase's bug, never this fixture's (D-03). Fix the
-regression, then run `make fixture.regen` in its own commit stating what moved and why --
-never as part of a feature commit.
+code until this test is green again; `make fixture.regen` is for a cadquery/cadquery-ocp
+pin bump (L12) or a deliberate, `Lxx`-carrying contract change only -- never to launder a
+fix.
 """
 
 from __future__ import annotations
