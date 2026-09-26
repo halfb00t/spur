@@ -60,6 +60,14 @@ def test_the_fixture_records_every_corpus_set() -> None:
                     for case_id, case in cases().items()}
     assert fixture_index == corpus_index
 
+    # The comparison above matches on params/mate/sources alone, so a record that lost
+    # its "solid" key (a capture.py bug, or a hand-edited JSON) would still pass it --
+    # exactly the un-mated (built) records D-07/L26's guarantee is about. Every record
+    # with no mate_teeth is built by capture.py and must carry its solid snapshot.
+    missing_solid = [record_id for record_id, record in _RECORDS.items()
+                     if "mate_teeth" not in record and "solid" not in record]
+    assert not missing_solid, f"non-mated record(s) missing a solid snapshot: {missing_solid}"
+
 
 def test_the_fixture_was_captured_on_the_kernel_this_run_uses() -> None:
     """Pitfall 11: an unpinned kernel bump otherwise shows up as dozens of unexplained
