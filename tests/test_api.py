@@ -179,6 +179,47 @@ def test_a_hex_bore_link_is_served_with_its_two_numbers() -> None:
     assert r.content.startswith(b"ISO-10303-21;")
 
 
+def test_a_hex_bore_the_root_cannot_hold_is_422_naming_bore_hex() -> None:
+    """D-03a over HTTP: a corner beyond the root is a 422 naming only bore_hex."""
+    r = client.get("/api/info", params={"bore_hex": 24.2, "bore_chamfer": 0})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["bore_hex"]
+    assert "Hex bore is too large for the root diameter" in detail["msg"]
+
+    r = client.get("/api/info", params={"bore_hex": 23.4})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["bore_chamfer", "bore_hex"]
+
+
+def test_a_hex_bore_chamfer_reaching_the_root_is_422_naming_both_fields() -> None:
+    """D-03b over HTTP: a chamfer that carries the corners to the root is a 422 naming
+    bore_chamfer and bore_hex, at the measured boundary."""
+    r = client.get("/api/info", params={"bore_hex": 23.35})
+    assert r.status_code == 200
+
+    r = client.get("/api/info", params={"bore_hex": 23.4})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["bore_chamfer", "bore_hex"]
+    assert "Bore chamfer is too large for this hex bore" in detail["msg"]
+
+
+def test_a_hex_link_with_a_d_flat_builds_and_says_both_round_fields_are_ignored() -> None:
+    """D-01/D-02 over HTTP: a hex link that also carries a non-default bore_flat builds
+    (never a 422) and warns about both ignored round fields."""
+    r = client.get("/api/info", params={"bore_hex": 6, "bore_flat": 3})
+    assert r.status_code == 200
+    warnings = r.json()["warnings"]
+    assert ("Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (3 mm) "
+            "are ignored.") in warnings
+
+    r = client.get("/api/model.stl", params={"bore_hex": 6, "bore_flat": 3,
+                                             "quality": "preview"})
+    assert r.status_code == 200
+
+
 def test_bad_type_is_422_on_the_field() -> None:
     r = client.get("/api/info", params={"teeth": "many"})
     assert r.status_code == 422

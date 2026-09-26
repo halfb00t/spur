@@ -173,12 +173,39 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         errors.append(("Neighbouring teeth merge at the root; lower the profile shift.",
                        ("profile_shift",)))
 
-    r_bore = bore_radius(p)
-    if p.bore_d > 0 and r_bore > pr.rf - MIN_WALL:
-        errors.append(("Bore is too large for the root diameter.", ("bore_d",)))
-    if p.bore_d > 0 and p.bore_flat > 0 and not p.bore_d / 2 < p.bore_flat < p.bore_d:
-        errors.append((f"D-flat must be between {p.bore_d / 2:g} and {p.bore_d:g} mm "
-                       "(flat to opposite side).", ("bore_flat",)))
+    if p.bore_hex > 0:
+        # The hexagon replaces the round profile (D-01), so bore_d and bore_flat are
+        # not checked here -- derive() reports them as ignored, and a 422 naming a
+        # field the response calls ignored would contradict it (D-03).
+        if bore_rim_limit(p) > pr.rf - MIN_WALL:
+            errors.append((
+                "Hex bore is too large for the root diameter: its corners "
+                f"({2 * bore_rim_limit(p):.2f} mm across) must stay {MIN_WALL:g} mm "
+                f"inside the root circle ({2 * pr.rf:.2f} mm); reduce bore_hex.",
+                ("bore_hex",)))
+        # No rule compares the chamfer with the hex's side: measured 2026-09-26 on the
+        # pinned kernel, a 0.375 mm side took every chamfer up to the field's 3 mm
+        # bound (ratio 8), removed volume matching the analytic hex frustum within
+        # 1e-9. What fails is the chamfered corner crossing the root circle --
+        # "BRep_API: command not done" 0.05 mm past it where a corner meets a tooth
+        # gap (19 teeth), while it built 0.30 mm past where a corner meets a tooth
+        # (40 teeth). So the rule sits on the root circle, with MIN_WALL, wherever the
+        # corners land, not on the side. With bore_chamfer 0 the mouth is the corner,
+        # so only the rule above can fire.
+        elif bore_mouth_limit(p) > pr.rf - MIN_WALL:
+            errors.append((
+                "Bore chamfer is too large for this hex bore: at the corners it "
+                f"reaches {2 * bore_mouth_limit(p):.2f} mm across, which must stay "
+                f"{MIN_WALL:g} mm inside the root circle ({2 * pr.rf:.2f} mm); reduce "
+                "bore_chamfer or bore_hex.",
+                ("bore_chamfer", "bore_hex")))
+    else:
+        r_bore = bore_radius(p)
+        if p.bore_d > 0 and r_bore > pr.rf - MIN_WALL:
+            errors.append(("Bore is too large for the root diameter.", ("bore_d",)))
+        if p.bore_d > 0 and p.bore_flat > 0 and not p.bore_d / 2 < p.bore_flat < p.bore_d:
+            errors.append((f"D-flat must be between {p.bore_d / 2:g} and {p.bore_d:g} mm "
+                           "(flat to opposite side).", ("bore_flat",)))
     if p.bore_chamfer > 0 and p.bore_chamfer >= p.face_width / 2:
         errors.append(("Bore chamfer must be less than half the face width.",
                        ("bore_chamfer",)))
@@ -303,6 +330,16 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     if p.teeth < z_min:
         warnings.append(f"Below {z_min:.1f} teeth a cut gear would be undercut; "
                         "this model uses a radial root instead.")
+
+    if p.bore_hex > 0:
+        # D-02: a hex bore replaces the round profile (D-01); this is the one place
+        # that says so, naming only the fields the user set away from 0.
+        ignored = [f"{name} ({value:g} mm)" for name, value in
+                  (("bore_d", p.bore_d), ("bore_flat", p.bore_flat)) if value > 0]
+        if ignored:
+            warnings.append(
+                f"Hex bore replaces the round profile: {' and '.join(ignored)} "
+                f"{'are' if len(ignored) > 1 else 'is'} ignored.")
 
     rr = recess_radii(p, pr.rf)
     sides = {"both": 2, "top": 1, "bottom": 1}.get(p.recess_sides, 0)

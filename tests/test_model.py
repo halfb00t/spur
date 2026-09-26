@@ -214,6 +214,31 @@ def test_the_pre_hex_rim_bound_would_have_chamfered_nothing_on_a_hex_wider_than_
 
 
 @pytest.mark.parametrize("kw", [
+    pytest.param({"bore_hex": 24.15, "bore_chamfer": 0}, id="corner-limit"),
+    pytest.param({"bore_hex": 23.35}, id="chamfered-corner-limit"),
+])
+def test_the_largest_hex_each_root_rule_allows_builds(kw: dict[str, object]) -> None:
+    """D-03: one step inside each root rule's boundary builds a valid solid; the step
+    past it is test_calc.py's refusal."""
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+def test_the_kernel_chamfers_a_hex_bore_far_past_its_side_length() -> None:
+    """D-03's probe, recorded as a test: the side (0.375 mm) is 8x smaller than the
+    3 mm chamfer and the kernel still cuts the exact mouth, which is why check() has no
+    chamfer-against-side rule. Removed volume matches the analytic hex frustum within
+    rel 1e-6; planning read 82.618824 mm3 both ways, 2026-09-26."""
+    bare = _build_checked(GearParams(bore_hex=0.5, bore_chamfer=0, recess_sides="none"))
+    cham = _build_checked(GearParams(bore_hex=0.5, bore_chamfer=3, recess_sides="none"))
+    w, c = 0.65, 3.0  # effective across-flats (0.5 + 0.15 default clearance), chamfer
+    a1 = math.sqrt(3) / 2 * w ** 2
+    a2 = math.sqrt(3) / 2 * (w + 2 * c) ** 2
+    expected = 2 * (c / 3 * (a1 + a2 + math.sqrt(a1 * a2)) - a1 * c)
+    assert bare.Volume() - cham.Volume() == pytest.approx(expected, rel=1e-6)
+
+
+@pytest.mark.parametrize("kw", [
     pytest.param({"bore_flat": 0}, id="round"),
     pytest.param({}, id="d-flat"),
     pytest.param({"bore_hex": 6}, id="hex"),

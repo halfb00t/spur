@@ -150,6 +150,80 @@ def test_a_hex_bore_reports_across_flats_and_corners_and_no_round_diameter(
     assert d.bore_effective == bore
 
 
+def test_a_hex_bore_is_refused_when_its_corners_reach_the_root_and_builds_one_step_inside() -> None:
+    """D-03a: the corner rule ignores the chamfer (it fires with bore_chamfer=0), and
+    refuses one step past the root -- boundary values measured on the pinned kernel,
+    2026-09-26."""
+    GearParams(bore_hex=24.15, bore_chamfer=0)  # one step inside: builds
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_hex": 24.2, "bore_chamfer": 0})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["bore_hex"]
+    assert err["msg"] == (
+        "Hex bore is too large for the root diameter: its corners (28.12 mm across) "
+        "must stay 0.4 mm inside the root circle (28.88 mm); reduce bore_hex.")
+
+    # The default chamfer alone does not stack the chamfer rule onto the corner rule:
+    # only bore_hex is named.
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_hex": 24.2})
+    assert exc.value.errors()[0]["ctx"]["fields"] == ["bore_hex"]
+
+
+def test_a_hex_bore_chamfer_that_carries_the_corners_to_the_root_is_refused_naming_both() -> None:
+    """D-03b: the chamfered-corner rule, bound measured on the pinned kernel,
+    2026-09-26 -- boundary one step either side of 23.4."""
+    GearParams(bore_hex=23.35)  # one step inside: builds
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_hex": 23.4})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["bore_chamfer", "bore_hex"]
+    assert err["msg"] == (
+        "Bore chamfer is too large for this hex bore: at the corners it reaches "
+        "28.12 mm across, which must stay 0.4 mm inside the root circle (28.88 mm); "
+        "reduce bore_chamfer or bore_hex.")
+
+
+def test_a_hex_bore_skips_the_round_bore_rules() -> None:
+    """D-03: with bore_hex > 0 the round-profile rules do not run -- a bore_flat that
+    would fail the D-flat range check and a bore_d that would fail the round
+    root-diameter check both build under a hex. The shape-independent chamfer-vs-face-
+    width rule still applies and names only bore_chamfer."""
+    GearParams(bore_hex=6, bore_flat=3)   # round D-flat range would refuse bore_flat=3
+    GearParams(bore_hex=6, bore_d=30)     # round root-diameter rule would refuse bore_d=30
+
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_hex": 6, "face_width": 5, "bore_chamfer": 2.5})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["bore_chamfer"]
+
+
+@pytest.mark.parametrize(("kw", "expected"), [
+    ({"bore_hex": 6},
+     "Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored."),
+    ({"bore_hex": 6, "bore_flat": 0},
+     "Hex bore replaces the round profile: bore_d (9 mm) is ignored."),
+    ({"bore_hex": 6, "bore_d": 0},
+     "Hex bore replaces the round profile: bore_flat (8 mm) is ignored."),
+    ({"bore_hex": 6, "bore_d": 0, "bore_flat": 0}, None),
+    ({"bore_hex": 6, "bore_d": 12.7, "bore_flat": 11.5},
+     "Hex bore replaces the round profile: bore_d (12.7 mm) and bore_flat (11.5 mm) "
+     "are ignored."),
+])
+def test_a_hex_bore_warns_about_each_round_field_it_ignores(
+        kw: dict[str, object], expected: str | None) -> None:
+    """D-02: one sentence, naming only the non-zero ignored fields with their values;
+    no warning at all when both round fields are zero."""
+    d = derive(GearParams.model_validate(kw))
+    if expected is None:
+        assert not any(w.startswith("Hex bore replaces") for w in d.warnings)
+    else:
+        assert expected in d.warnings
+
+
 def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:
     """Thickness + gap must add up to the pitch on the root circle.
 
