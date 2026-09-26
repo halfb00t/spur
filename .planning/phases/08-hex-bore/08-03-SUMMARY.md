@@ -21,6 +21,7 @@ actuals:
   tokens: 4722
   tasks: 2
   commits: 2
+  plan_head_before: eed22b0248b8a4bb7b7d5dd358b06c895621f21e
 
 # Tech tracking
 tech-stack:
