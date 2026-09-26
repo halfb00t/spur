@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 08
 current_phase_name: Hex Bore
 status: executing
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-09-26T15:30:29.295Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-09-26T15:55:33.317Z"
 last_activity: 2026-09-26
 last_activity_desc: Phase 08 execution started
-state_head: a4722150fb7377776745b477324d924721e3980d
+state_head: 7bbf31e6d956f3a343ebc6bd69b7cc181d8237bf
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 17
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 08 (Hex Bore) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-09-26 — Phase 08 execution started
 
@@ -105,6 +105,7 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 07 P02 | 11min | 3 tasks | 7 files |
 | Phase 08 P01 | 15 min | 3 tasks | 3 files |
 | Phase 08 P02 | 55min | 2 tasks | 8 files |
+| Phase 08 P03 | 25 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 08]: recess_radii()'s hub clearance is measured from bore_mouth_limit(p) (the chamfered mouth), not bore_radius(p) + chamfer -- a hex's chamfer reaches its corner at 2c/sqrt(3), not c, and the old formula would have driven a 3 mm chamfer on a 6 mm hex into an invalid solid (research PITFALLS.md Pitfall 1); round and D-flat compute identical floats in identical order, so the fixture stayed byte-unchanged.
 - [Phase 08]: The replay's comparison, not the fixture, absorbed the two new DerivedDimensions fields: recorded fields still compare exactly, every field added since the capture must read null (REQ-derived-dimensions-additive).
 - [Phase 08]: The hex is a replacement branch in model._cut_bore, never an intersection with the round profile (D-01) -- bore_d/bore_flat stay live in the schema and are simply ignored when bore_hex > 0; the ignored-field warning is 08-03's task.
+- [Phase 08]: D-03's chamfer bound sits on the root circle (bore_mouth_limit vs pr.rf - MIN_WALL), not the hex's side length -- the planning probe found the kernel copes with chamfer-vs-side at every allowed size (ratio 8, rel 1e-6 volume match), so no side rule was added and the probe became a test instead (Flagged Assumption A4).
+- [Phase 08]: The corner rule and the chamfered-corner rule never stack (if/elif, not two independent ifs) -- with bore_chamfer 0 the mouth equals the corner, so exactly one hex refusal can fire (Flagged Assumption A5).
 
 ### Pending Todos
 
@@ -183,8 +186,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T15:30:29.272Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-09-26T15:55:33.295Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

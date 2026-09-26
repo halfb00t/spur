@@ -116,7 +116,7 @@ proving Phase 7's generalized selector against real geometry.
      bounding box.
 **Research flag**: No — `Workplane.polygon(circumscribed=True)` is numerically verified
 against the installed `.venv`; a small, well-bounded feature (`research/SUMMARY.md`).
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 
 Plans:
 **Wave 1**
@@ -129,7 +129,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 08-03-PLAN.md — Refusals before CAD (corner and chamfered corner vs root, measured), the ignored-field warning, API/CLI parity, README and help text (wave 3)
+- [x] 08-03-PLAN.md — Refusals before CAD (corner and chamfered corner vs root, measured), the ignored-field warning, API/CLI parity, README and help text (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -295,7 +295,7 @@ in Phases 7–11; no open technical questions remain by this point.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
-| 8. Hex Bore | v0.2 | 2/4 | In Progress|  |
+| 8. Hex Bore | v0.2 | 3/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 0/? | Not started | - |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
