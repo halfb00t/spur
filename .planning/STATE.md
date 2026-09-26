@@ -2,9 +2,13 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-status: planning
-last_updated: "2026-09-25T14:48:09.649Z"
-last_activity: 2026-09-25
+current_phase: 7
+current_phase_name: Foundation — Generalized Edge Selection + Regression Fixture
+status: "Milestone v0.2 start shipped — PR #7 (land via make pr.land PR=7)"
+stopped_at: Milestone v0.1 archived on `gsd/milestone-v0.1-close`; land it via PR + `make pr.land`, then tag `v0.1` on `main` and push the tag
+last_updated: "2026-09-26T02:38:05.750Z"
+last_activity: 2026-09-26
+state_head: a023f085911129652f1545885bd6e10e46629c47
 progress:
   total_phases: 6
   completed_phases: 0
@@ -29,8 +33,8 @@ yet defined — `/gsd-new-milestone`.
 
 Phase: 7 of 12 (Foundation — Generalized Edge Selection + Regression Fixture)
 Plan: — (not yet planned)
-Status: Ready to plan
-Last activity: 2026-09-25 — v0.2 roadmap created (Phases 7–12, 20/20 requirements mapped)
+Status: Milestone v0.2 start shipped — PR #7 (land via make pr.land PR=7)
+Last activity: 2026-09-26
 
 ## Performance Metrics
 
