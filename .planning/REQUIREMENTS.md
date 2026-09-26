@@ -91,7 +91,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 
 ### Contract (cross-cutting)
 
-- [ ] **REQ-defaults-off-regression**: Every new parameter defaults to off. A regression
+- [x] **REQ-defaults-off-regression**: Every new parameter defaults to off. A regression
   fixture proves that every pre-v0.2 parameter set — the defaults, every existing test's
   parameters, and the README's example links — yields identical `DerivedDimensions` (all
   19 fields) and an identical solid volume and bounding box after **each** phase. Export
@@ -108,7 +108,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 - [ ] **REQ-derived-dimensions-additive**: The 19 existing `DerivedDimensions` fields keep
   their names, types and values; new fields are `null` when their feature is off; mypy
   `disallow_any_explicit` stays on with no suppressions (L21).
-- [ ] **REQ-edge-selection-proven**: Chamfer and fillet edge selectors never silently
+- [x] **REQ-edge-selection-proven**: Chamfer and fillet edge selectors never silently
   select zero or the wrong edges. A test asserts the selected-edge count for every bore
   profile and every cutout pattern, with and without recesses; a selector that finds
   nothing while its feature is on raises a build error rather than shipping an
@@ -184,13 +184,14 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-cutout-derived-numbers | Phase 11 | Pending |
 | REQ-tip-chamfer | Phase 10 | Pending |
 | REQ-tip-chamfer-capped | Phase 10 | Pending |
-| REQ-defaults-off-regression | Phase 7 | Pending |
+| REQ-defaults-off-regression | Phase 7 | Complete |
 | REQ-three-interfaces-extended | Phase 12 | Pending |
 | REQ-measured-build-time | Phase 12 | Pending |
 | REQ-derived-dimensions-additive | Phase 8 | Pending |
-| REQ-edge-selection-proven | Phase 7 | Pending |
+| REQ-edge-selection-proven | Phase 7 | Complete |
 
 **Coverage:**
+
 - v0.2 requirements: 20 total
 - Mapped to phases: 20
 - Unmapped: 0 ✓

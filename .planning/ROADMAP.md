@@ -74,7 +74,7 @@ extends.
 **Research flag**: No — the fix (compute the selection bound correctly per shape) is fully
 specified by `research/ARCHITECTURE.md`'s Q2; no open questions (`research/SUMMARY.md`
 "Phases with standard, well-documented patterns").
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans executed
 
 Plans:
 **Wave 1**
@@ -83,7 +83,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07-02-PLAN.md — `calc.bore_rim_limit(p)`, `BORE_RIM_SLACK`, both selectors raise `BuildError` on zero edges, exact count matrix, L26 (wave 2)
+- [x] 07-02-PLAN.md — `calc.bore_rim_limit(p)`, `BORE_RIM_SLACK`, both selectors raise `BuildError` on zero edges, exact count matrix, L26 (wave 2)
 
 ### Phase 8: Hex Bore
 
@@ -269,7 +269,7 @@ in Phases 7–11; no open technical questions remain by this point.
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
-| 7. Foundation | v0.2 | 1/2 | In Progress|  |
+| 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 0/? | Not started | - |
 | 9. Keyway Bore | v0.2 | 0/? | Not started | - |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
