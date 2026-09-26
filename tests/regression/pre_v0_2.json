@@ -1,0 +1,50 @@
+{
+  "provenance": {
+    "cadquery": "2.8.0",
+    "cadquery-ocp": "7.9.3.1.1",
+    "captured": "2026-09-26",
+    "git_head": "c640ed8b072abf690e4adf0ab817c07f08987542",
+    "regenerate": "Rewrite only with `make fixture.regen`, in its own commit stating what moved and why (D-03) -- never as part of a feature commit.",
+    "src_clean": true
+  },
+  "records": {
+    "README:export-defaults": {
+      "derived": {
+        "base_d": 30.135,
+        "bore_effective": 9.15,
+        "caliper_over_tips": 36.624,
+        "centre_distance": null,
+        "mate_teeth": null,
+        "pitch_d": 33.25,
+        "recess_fillet": 0.5,
+        "recess_id": 13.013,
+        "recess_od": 25.013,
+        "root_d": 28.875,
+        "root_fillet": 0.5,
+        "root_gap": 1.609,
+        "root_thickness": 3.166,
+        "span": 13.36,
+        "span_teeth": 3,
+        "tip_d": 36.75,
+        "tip_thickness": 0.772,
+        "warnings": [],
+        "web": 3.5
+      },
+      "params": {},
+      "solid": {
+        "edges": 490,
+        "faces": 172,
+        "volume": 4451.2562338579555,
+        "xmax": 18.3750001,
+        "xmin": -18.183943771873665,
+        "ymax": 18.34008373008546,
+        "ymin": -18.340083730085453,
+        "zmax": 7.5000001,
+        "zmin": -1e-07
+      },
+      "sources": [
+        "README:export-defaults"
+      ]
+    }
+  }
+}
