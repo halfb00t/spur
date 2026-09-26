@@ -511,3 +511,69 @@ subject of that decision.
 
 No outlier: the ten selector-matrix rows and two refusal tests each build one gear
 (≤0.4s), the same shape as the fixture's own cost.
+
+## Hex bore build and export time (Phase 8, D-11)
+
+The committed measurement record for the hex bore's heaviest allowed configuration
+(ROADMAP Phase 8 SC4, D-11). `REQ-measured-build-time` asks for build time plus fine-STL
+and STEP export time per feature, at 200 teeth, re-measured combined in Phase 12; this is
+the hex bore's own entry. The runner is `make bench.build` (D-12,
+`bench/build_time.py`), over the committed sweep `bench/sweeps/hex_bore.json`. The sweep
+has 16 rows, not 8, because the planning probe found module drives fine-STL export time
+(0.64s to 1.14s and 10.2 MB to 15.7 MB at `bore_hex` 200, recess both, chamfer 3), so
+module {1.75, 10} joins `bore_hex` {200, 12.7} x `recess_sides` {both, none} x
+`bore_chamfer` {0.4, 3} — D-11's own condition. 3 mm is the chamfer maximum because the
+field's `le` is 3 mm, and at 200 teeth neither hex rule binds: measured this session, the
+chamfered mouth reaches 119.02 mm against the root-circle limit of 172.41 mm
+(`rf - MIN_WALL`).
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `a3a651b`
+- Sweep: `bench/sweeps/hex_bore.json`
+- Load averages at start (script's own `os.getloadavg()`): 3.47, 3.12, 2.67
+- `uptime` at the same time: load averages 4.78, 3.23, 2.68
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+- Both readings sit above this project's usual "quiet" bar (>1.5 on this 12-core host,
+  Phase 7's own convention) — the numbers below carry that caveat rather than being
+  presented as clean (L08).
+
+### Sweep
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 | 4.44 | 0.64 | 0.40 | 5.08 | yes |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=3 | 4.32 | 0.61 | 0.39 | 4.93 | yes |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=none bore_chamfer=0.4 | 1.57 | 0.49 | 0.40 | 2.06 | yes |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=none bore_chamfer=3 | 1.58 | 0.50 | 0.40 | 2.07 | yes |
+| teeth=200 module=1.75 bore_hex=12.7 recess_sides=both bore_chamfer=0.4 | 2.13 | 0.72 | 0.39 | 2.85 | yes |
+| teeth=200 module=1.75 bore_hex=12.7 recess_sides=both bore_chamfer=3 | 2.14 | 0.72 | 0.39 | 2.85 | yes |
+| teeth=200 module=1.75 bore_hex=12.7 recess_sides=none bore_chamfer=0.4 | 1.58 | 0.52 | 0.39 | 2.10 | yes |
+| teeth=200 module=1.75 bore_hex=12.7 recess_sides=none bore_chamfer=3 | 1.58 | 0.52 | 0.40 | 2.10 | yes |
+| teeth=200 module=10 bore_hex=200 recess_sides=both bore_chamfer=0.4 | 2.13 | 1.11 | 0.40 | 3.24 | yes |
+| teeth=200 module=10 bore_hex=200 recess_sides=both bore_chamfer=3 | 2.15 | 1.10 | 0.40 | 3.25 | yes |
+| teeth=200 module=10 bore_hex=200 recess_sides=none bore_chamfer=0.4 | 1.58 | 0.58 | 0.40 | 2.15 | yes |
+| teeth=200 module=10 bore_hex=200 recess_sides=none bore_chamfer=3 | 1.58 | 0.57 | 0.40 | 2.15 | yes |
+| teeth=200 module=10 bore_hex=12.7 recess_sides=both bore_chamfer=0.4 | 2.16 | 1.14 | 0.40 | 3.30 | yes |
+| teeth=200 module=10 bore_hex=12.7 recess_sides=both bore_chamfer=3 | 2.13 | 1.13 | 0.41 | 3.26 | yes |
+| teeth=200 module=10 bore_hex=12.7 recess_sides=none bore_chamfer=0.4 | 1.58 | 0.58 | 0.40 | 2.16 | yes |
+| teeth=200 module=10 bore_hex=12.7 recess_sides=none bore_chamfer=3 | 1.58 | 0.58 | 0.41 | 2.16 | yes |
+
+**Heaviest:** teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 --
+5.08 s of 30 s.
+
+The heaviest row (5.08 s) sits at about a sixth of the 30 s timeout, and below the worst
+single build already on record ("### `SPUR_BUILD_TIMEOUT`" above, 7.39 s at 200 teeth
+under ten concurrent requests) — the hex bore's heaviest configuration costs less than
+the plain round bore already did under load.
+
+### make verify wall time
+
+`time make verify`: **330 passed in 60.79s** — **61.74s** wall time (`time`, includes
+lint/typecheck/import-lint/no-fake-done), against Phase 7's recorded **52.25s** / 289
+tests. The phase's hex tests (41 new: the D-01/D-02/D-03/D-04/D-05 unit and matrix tests,
+the two new test_bench.py cases) add **+9.49s** to the gate, measured rather than
+assumed.
