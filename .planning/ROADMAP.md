@@ -110,7 +110,24 @@ proving Phase 7's generalized selector against real geometry.
      bounding box.
 **Research flag**: No — `Workplane.polygon(circumscribed=True)` is numerically verified
 against the installed `.venv`; a small, well-bounded feature (`research/SUMMARY.md`).
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 08-01-PLAN.md — D-01 first: amend REQ-hex-bore and SC2 (the hex replaces `bore_flat` too; the keyway 422 moves to Phase 9) through the edit-phase tooling, one human confirmation (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 08-02-PLAN.md — Tracer: `?bore_hex=6` end to end (field, cut, `bore_rim_limit`/`bore_mouth_limit`, two derived fields, UI rows, replay additive-field rule), then proof on the built solid: 12 rim edges, measured flats/corners, MIN_WALL to the recess (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 08-03-PLAN.md — Refusals before CAD (corner and chamfered corner vs root, measured), the ignored-field warning, API/CLI parity, README and help text (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 08-04-PLAN.md — `make bench.build` and the 16-row sweep at 200 teeth in `bench/RESULTS.md`, L27, round-bore chamfer-reach debt, final `make verify` (wave 4)
 
 ### Phase 9: Keyway Bore
 
