@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 08
 current_phase_name: Hex Bore
 status: executing
-stopped_at: Phase 8 context gathered
-last_updated: "2026-09-26T14:56:29.222Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-09-26T15:01:43.412Z"
 last_activity: 2026-09-26
 last_activity_desc: Phase 08 execution started
-state_head: 2066f7e7340e8ae7acc12585415726eeaf07298f
+state_head: fddf9b8c506585aa60d4898258b40781af64c4e0
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 6
-  completed_plans: 2
+  completed_plans: 3
   percent: 17
 ---
 
@@ -32,8 +32,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 08 (Hex Bore) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 08
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-09-26 — Phase 08 execution started
 
 ## Performance Metrics
@@ -103,6 +103,7 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 06 P04 | 17min | 3 tasks | 7 files |
 | Phase 07 P01 | 39min | 3 tasks | 8 files |
 | Phase 07 P02 | 11min | 3 tasks | 7 files |
+| Phase 08 P01 | 15 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,7 @@ pending; the next milestone starts this list fresh.
 
 - [Phase 07]: D-06 gate: measured make verify delta with the regression fixture was 16.27s, above the plan's 15.0s line. Human chose Option A: accept the cost, keep all 44 records built. — 16.27s is under the planner's ~20s ceiling; the cost is spread evenly across all 39 builds (no single outlier); Success Metric 3 stays literal rather than trimmed to a curated subset.
 - [Phase 07]: L26 logged: the pre-v0.2 fixture (07-01) and the two edge-selector guards (07-02) as one standing rule -- a selector never silently selects nothing. — 07-CONTEXT.md's Claude's Discretion recommended one entry covering D-03 and D-15..D-18; follows L24/L25's paragraph shape.
+- [Phase 08]: Human approved all four proposed texts (REQUIREMENTS REQ-hex-bore, REQ-keyway-bore; ROADMAP Phase 8 SC2, Phase 9 SC2 + Phase 12 SC1) verbatim at the Task 2 checkpoint, no wording changes. — ROADMAP.md was written only through edit-phase's write_updated_phase step (scoped Edit per phase section, milestone-scope check before/after), never a direct whole-file write, per D-01.
 
 ### Pending Todos
 
@@ -177,9 +179,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T09:40:12.698Z
-Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-hex-bore/08-CONTEXT.md
+Last session: 2026-09-26T15:01:22.592Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

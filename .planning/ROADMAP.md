@@ -116,12 +116,12 @@ proving Phase 7's generalized selector against real geometry.
      bounding box.
 **Research flag**: No — `Workplane.polygon(circumscribed=True)` is numerically verified
 against the installed `.venv`; a small, well-bounded feature (`research/SUMMARY.md`).
-**Plans**: 4 plans
+**Plans**: 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 08-01-PLAN.md — D-01 first: amend REQ-hex-bore and SC2 (the hex replaces `bore_flat` too; the keyway 422 moves to Phase 9) through the edit-phase tooling, one human confirmation (wave 1)
+- [x] 08-01-PLAN.md — D-01 first: amend REQ-hex-bore and SC2 (the hex replaces `bore_flat` too; the keyway 422 moves to Phase 9) through the edit-phase tooling, one human confirmation (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -295,7 +295,7 @@ in Phases 7–11; no open technical questions remain by this point.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
-| 8. Hex Bore | v0.2 | 0/? | Not started | - |
+| 8. Hex Bore | v0.2 | 1/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 0/? | Not started | - |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
