@@ -29,7 +29,15 @@ if TYPE_CHECKING:
 
 from . import int_env
 from .build_errors import BuildError
-from .calc import Profile, bore_radius, profile, recess_fillet, recess_radii, root_fillet
+from .calc import (
+    Profile,
+    bore_radius,
+    bore_rim_limit,
+    profile,
+    recess_fillet,
+    recess_radii,
+    root_fillet,
+)
 from .params import GearParams
 
 Format = Literal["stl", "step"]
@@ -39,6 +47,12 @@ Quality = Literal["preview", "fine"]
 TESSELLATION: dict[str, tuple[float, float]] = {"preview": (0.08, 0.5), "fine": (0.01, 0.1)}
 FLANK_POINTS = 16
 TOL = 1e-6              # mm, for matching kernel geometry back to the numbers we asked for
+BORE_RIM_SLACK = 0.01   # mm, how far past bore_rim_limit() a rim point may read and still
+# count. 10 microns, not TOL: it must clear the kernel's post-boolean vertex/edge
+# tolerance -- measured 1e-7 mm on both GearParams(bore_chamfer=0) and
+# GearParams(bore_flat=0, bore_chamfer=0), 2026-09-26 -- by three orders of magnitude,
+# and stay far below MIN_WALL (0.4 mm), the least clearance recess_radii() keeps between
+# the rim and the next end-face edge.
 
 _LOCK = threading.RLock()
 
@@ -190,7 +204,7 @@ def _cut_bore(solid: cq.Shape, p: GearParams) -> cq.Shape:
     solid = solid.cut(hole.val())  # type: ignore[arg-type]  # .val() is typed as a 4-way union
     if p.bore_chamfer > 0:
         solid = solid.chamfer(  # type: ignore[attr-defined]  # see _cut_face_recesses
-            p.bore_chamfer, None, _bore_rim_edges(solid, r_bore, p.face_width))
+            p.bore_chamfer, None, _bore_rim_edges(solid, p))
     return solid
 
 
@@ -210,26 +224,35 @@ def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],
             and any(abs(e.startPoint().z - z) < TOL for z in floor_z)]
 
 
-def _bore_rim_edges(solid: cq.Shape, r_bore: float, face_width: float) -> list[cq.Edge]:
+def _bore_rim_edges(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
     """The bore opening on the two end faces.
 
     Selected by position, not by type: a D-bore rim is an arc plus a straight line. The
     only other edges on an end face belong to a recess, and recess_radii() keeps at
     least MIN_WALL plus the chamfer between that and the bore, so a radius test
-    separates them.
+    separates them. The band comes from calc.bore_rim_limit(p), the exact geometric
+    bound, plus BORE_RIM_SLACK's measured margin. This selector runs only when
+    p.bore_chamfer > 0, so an empty result here is a modelling defect, never an answer
+    (D-15): a chamfer that silently selects nothing must never ship an unchamfered part.
     """
-    lim = r_bore + 0.01
+    lim = bore_rim_limit(p) + BORE_RIM_SLACK
 
     def on_rim(e: cq.Edge) -> bool:
         a, b = e.startPoint(), e.endPoint()
-        if abs(a.z - b.z) > TOL or TOL < a.z < face_width - TOL:
+        if abs(a.z - b.z) > TOL or TOL < a.z < p.face_width - TOL:
             return False
         if max(math.hypot(a.x, a.y), math.hypot(b.x, b.y)) > lim:
             return False
         return all(math.hypot(q.x, q.y) < lim
                    for q in (e.positionAt(s / 4) for s in range(1, 4)))
 
-    return [e for e in solid.Edges() if on_rim(e)]
+    edges = [e for e in solid.Edges() if on_rim(e)]
+    if not edges:
+        raise BuildError(
+            "Bore chamfer selected no bore-rim edges: a modelling defect in spur, not a "
+            "conflict in these parameters. Set bore_chamfer to 0 to build this gear "
+            "without it.")
+    return edges
 
 
 # --- build and export ----------------------------------------------------------------

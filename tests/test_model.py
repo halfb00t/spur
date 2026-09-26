@@ -6,8 +6,17 @@ from pathlib import Path
 
 import pytest
 
-from spur.calc import profile, recess_radii
-from spur.model import TESSELLATION, Quality, _build_checked, build, export
+from spur.calc import bore_radius, profile, recess_radii
+from spur.model import (
+    TESSELLATION,
+    TOL,
+    Quality,
+    _bore_rim_edges,
+    _build_checked,
+    _groove_floor_edges,
+    build,
+    export,
+)
 from spur.params import GearParams
 
 Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
@@ -32,6 +41,51 @@ def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     bb = s.BoundingBox()
     assert bb.zlen == pytest.approx(p.face_width)
     assert max(bb.xlen, bb.ylen) <= p.module * (p.teeth + 2 + 2 * p.profile_shift) + 1e-6
+
+
+@pytest.mark.parametrize(("kw", "rim", "floor"), [
+    pytest.param({}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, id="d-flat-both"),
+])
+def test_each_edge_selector_picks_exactly_its_own_edges(
+        kw: dict[str, object],
+        rim: collections.Counter[str] | None,
+        floor: int | None) -> None:
+    """The exact edges each selector sees before its operator runs (REQ-edge-selection-
+    proven): the bore-rim chamfer and the recess-floor fillet each pick their own edges,
+    never each other's, and never the wrong count. bare_p (bore_chamfer=0,
+    recess_fillet=0) is the solid each selector sees in the pipeline just before its
+    operator would run -- the chamfer is the last build step, and the recess fillet only
+    adds faces away from the rim. Every selector argument comes from bare_p, not the
+    as-requested params: bore_chamfer feeds recess_radii()'s hub clearance, so a
+    hub-clamped recess moves when the chamfer is switched off, and radii taken from the
+    chamfered params would miss the bare solid's floor circles.
+    """
+    bare_p = GearParams.model_validate({**kw, "bore_chamfer": 0, "recess_fillet": 0})
+    bare = build(bare_p)
+
+    rim_counter = (collections.Counter(e.geomType() for e in _bore_rim_edges(bare, bare_p))
+                   if bare_p.bore_d > 0 else None)
+
+    rr = recess_radii(bare_p, profile(bare_p).rf)
+    floor_count: int | None = None
+    if rr is not None:
+        heights: list[float] = []
+        if bare_p.recess_sides in ("both", "bottom"):
+            heights.append(bare_p.recess_depth)
+        if bare_p.recess_sides in ("both", "top"):
+            heights.append(bare_p.face_width - bare_p.recess_depth)
+        floor_count = len(_groove_floor_edges(bare, rr, heights))
+
+    # One tuple assertion: a wrong floor count never hides behind a wrong rim count.
+    assert (rim_counter, floor_count) == (rim, floor)
+
+    if bare_p.bore_d > 0:
+        for e in _bore_rim_edges(bare, bare_p):
+            a, b = e.startPoint(), e.endPoint()
+            assert min(abs(a.z), abs(a.z - bare_p.face_width)) < TOL
+            assert min(abs(b.z), abs(b.z - bare_p.face_width)) < TOL
+            if e.geomType() == "CIRCLE":
+                assert e.radius() == pytest.approx(bore_radius(bare_p), abs=TOL)
 
 
 def test_recess_removes_expected_volume() -> None:
