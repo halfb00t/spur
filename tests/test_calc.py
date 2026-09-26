@@ -6,10 +6,12 @@ from pydantic import ValidationError
 from spur.calc import (
     MIN_WALL,
     DerivedDimensions,
+    bore_mouth_limit,
     bore_radius,
     bore_rim_limit,
     centre_distance,
     derive,
+    hex_across_flats,
     inv,
     profile,
     span_measurement,
@@ -114,6 +116,38 @@ def test_the_bore_rim_limit_is_the_bore_radius_for_round_and_d_flat_bores() -> N
     assert bore_rim_limit(GearParams(bore_flat=0)) == pytest.approx(4.575)
     assert bore_rim_limit(GearParams()) == pytest.approx(4.575)
     assert bore_rim_limit(GearParams(bore_d=0)) == 0.0
+
+
+def test_the_bore_rim_limit_is_a_hex_bores_circumradius() -> None:
+    """bore_rim_limit(p) for a hex is the circumradius, across-flats over sqrt(3)
+    (L26's seam); bore_mouth_limit(p) carries the chamfer to the corners at 2c/sqrt(3),
+    not straight out at c (research PITFALLS.md Pitfall 1)."""
+    assert bore_rim_limit(GearParams(bore_hex=6)) == pytest.approx(6.15 / math.sqrt(3))
+    assert bore_rim_limit(GearParams(bore_hex=6, bore_d=0)) == pytest.approx(
+        6.15 / math.sqrt(3))
+    assert hex_across_flats(GearParams(bore_hex=6)) == pytest.approx(6.15)
+    assert bore_mouth_limit(GearParams(bore_hex=6)) == pytest.approx(
+        (6.15 + 2 * 0.4) / math.sqrt(3))
+    assert bore_mouth_limit(GearParams(bore_flat=0)) == pytest.approx(4.975)
+    assert bore_mouth_limit(GearParams(bore_d=0)) == 0.0
+
+
+@pytest.mark.parametrize(("kw", "flats", "corners", "bore"), [
+    ({"bore_hex": 6}, 6.15, 7.101, None),
+    ({"bore_hex": 6, "bore_clearance": 0}, 6.0, 6.928, None),
+    ({"bore_hex": 6, "bore_d": 0}, 6.15, 7.101, None),
+    ({}, None, None, 9.15),
+    ({"bore_d": 0}, None, None, None),
+])
+def test_a_hex_bore_reports_across_flats_and_corners_and_no_round_diameter(
+        kw: dict[str, object], flats: float | None, corners: float | None,
+        bore: float | None) -> None:
+    """The three bore numbers derive() prints, compared with == because they are
+    rounded once, at construction (D-10)."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.hex_across_flats == flats
+    assert d.hex_across_corners == corners
+    assert d.bore_effective == bore
 
 
 def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:
