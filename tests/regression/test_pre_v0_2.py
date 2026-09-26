@@ -1,10 +1,12 @@
 """Every pre-v0.2 parameter set still derives and builds the same part (L05, Success
 Metric 3 of milestone v0.2: "old links unchanged").
 
-Comparison contract: `DerivedDimensions` compares exactly, warning text included --
+Comparison contract: the fields a record holds compare exactly, warning text included --
 `derive()` is Python-computed and rounded to 3 dp at construction, so exact is honest
-(D-10). `build().Volume()` compares at `rel=1e-6`: `Volume()` read identical (max diff
-0.0) over three independent builds on the pinned kernel, and the default 0.4 mm bore
+(D-10) -- and every field added to `DerivedDimensions` since the capture must read null
+for a pre-v0.2 set (REQ-derived-dimensions-additive). `build().Volume()` compares at
+`rel=1e-6`: `Volume()` read identical (max diff 0.0) over three independent builds on
+the pinned kernel, and the default 0.4 mm bore
 chamfer is only 1.05e-3 of the volume, so a looser tolerance would let a vanished chamfer
 through (D-11). The six bounding-box corners compare at `abs=1e-6`: OCCT pads the box by
 about 1e-7 per side, and a translated part must fail too, not only a resized one (D-12).
@@ -38,8 +40,13 @@ _CORNERS = ("xmin", "xmax", "ymin", "ymax", "zmin", "zmax")
 
 @pytest.mark.parametrize("record", _ALL_RECORDS)
 def test_a_pre_v0_2_parameter_set_derives_the_same_dimensions(record: Record) -> None:
+    """The fields a record holds compare exactly; a field added to DerivedDimensions
+    since the capture (REQ-derived-dimensions-additive) must read null for every one --
+    a feature that is off by default for a set that predates it."""
     got = derived(record["params"], record.get("mate_teeth"))
-    assert got == record["derived"]
+    recorded = record["derived"]
+    assert {k: v for k, v in got.items() if k in recorded} == recorded
+    assert all(v is None for k, v in got.items() if k not in recorded)
 
 
 @pytest.mark.parametrize("record", _SOLID_RECORDS)
