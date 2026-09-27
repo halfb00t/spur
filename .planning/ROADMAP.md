@@ -40,7 +40,7 @@ with tooth measurements untouched.
       phase extends
 - [x] **Phase 8: Hex Bore** - A hexagonal bore profile, proving the generalized selector on (completed 2026-09-26)
       real geometry
-- [ ] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit,
+- [x] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit, (completed 2026-09-27)
       documented depth datum
 - [ ] **Phase 10: Tooth-Tip Chamfer** - An edge-break chamfer on the tooth-tip arcs
 - [ ] **Phase 11: Body Cutouts** - Lightening holes, spoke arms, or a honeycomb web — one
