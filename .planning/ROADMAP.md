@@ -169,7 +169,28 @@ REQ-hex-rim-chamfer, REQ-bore-derived-numbers
 bore wall, DIN 6885 / ISO R773 `t2`; recorded in `REQUIREMENTS.md`, REQ-keyway-bore).
 The phase logs it as a new `Lxx` and settles the keyway-vs-D-flat placement rule at
 discuss time — a phase decision, not a research question.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 09-01-PLAN.md — D-20 first: amend SC1 (as-cut wall datum), SC3 (recess yields; corner vs root), SC4 (pre-keyway count plus built-solid proof), REQ-keyway-bore and REQ-keyway-wall-refused through the edit-phase tooling, one human confirmation (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 09-02-PLAN.md — Tracer: `?keyway_width=3&keyway_depth=1.4` end to end (fields, slot cut after the chamfer, recess yields to the corner, two derived fields, UI rows), then proof on the built solid: datum, surviving chamfer, sharp slot, pre-keyway rim counts (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 09-03-PLAN.md — Refusals before CAD (hex, no bore, half-set, wider than the bore, into the D-flat, corner vs root) with API/CLI parity; D-12's round chamfer reach refused at the measured contact, debt resolved (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 09-04-PLAN.md — The 32-row keyway sweep at 200 teeth through `make bench.build`, recorded in `bench/RESULTS.md` (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 09-05-PLAN.md — README (bullet, rows, keyed example run as a test, datum/sharp-slot/floor-radius notes), L28, architecture docs, final `make verify` (wave 5)
 
 ### Phase 10: Tooth-Tip Chamfer
 

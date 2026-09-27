@@ -169,6 +169,16 @@ text (D-16); the composition matrix (Phase 12).
   rule with its measurement (08 D-03's method). Rejected: a fixed ratio such as
   `w_eff ≤ bore_effective / 2` (an opinion; no standard states a hard limit — ANSI's
   `w ≈ d/4` is a sizing rule of thumb).
+  — **Resolved 2026-09-27 (plan-phase, human decision):** 09-RESEARCH.md probed widths to
+  166 % of `bore_d` on a small and a large bore and the kernel never failed — there is no
+  kernel boundary to measure. The bound is **geometric**: refuse when `keyway_width +
+  bore_clearance >= bore_d + bore_clearance` (the slot's sides no longer meet the bore wall;
+  past this the slot cuts below the bore's equator on both sides and the part is not a keyed
+  bore), 422 naming `keyway_width` and `bore_d`. The rule's comment records the 166 %
+  measurement and that the bound is definitional, not a kernel limit; tested one step either
+  side. Rejected at this point: the same bound minus `MIN_WALL` (a margin guarding a sliver
+  the kernel demonstrably handles); dropping D-11 (a wider-than-bore keyway clear of the root
+  would build silently).
 - **D-12:** **The must-severity debt `docs/tech_debt/active/2026-09-26-round-bore-chamfer-
   reach-is-not-checked.md` is folded in** (its trigger — "when Phase 9 edits `check()`'s
   round branch" — fires here). One narrow task: measure where the kernel actually fails
