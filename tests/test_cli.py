@@ -93,6 +93,11 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert ("warning: Hex bore replaces the round profile: bore_d (9 mm) and bore_flat "
             "(8 mm) are ignored.") in capsys.readouterr().err
 
+    keyed = tmp_path / "keyedgear.step"
+    cli.main(["export", "-o", str(keyed), "--keyway-width", "3", "--keyway-depth", "1.4"])
+    assert keyed.read_bytes().startswith(b"ISO-10303-21;")
+    assert "warning:" not in capsys.readouterr().err
+
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:

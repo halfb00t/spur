@@ -8,7 +8,8 @@ as an HTTP API and a CLI.
 Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI and three.js.
 
 - Involute flanks from module, tooth count, pressure angle and profile shift
-- Backlash, root fillets, D-flat, round or hex bore with print clearance and chamfer
+- Backlash, root fillets, D-flat, round or hex bore with print clearance and chamfer,
+  and a keyway in a round or D-flat bore
 - Annular face recesses (one or both sides) with filleted floors
 - Measurement aids: calipers across tips (corrected for odd tooth counts), span over
   *k* teeth (Wildhaber), centre distance to a mating gear
@@ -106,6 +107,7 @@ spur serve                                    # http://127.0.0.1:8000
 spur export -o gear.step                                  # defaults
 spur export -o gear.stl --teeth 24 --module 1 --pressure-angle 20 --bore-flat 0
 spur export -o hexgear.stl --bore-hex 6                   # 6 mm hex bore
+spur export -o keyedgear.step --keyway-width 3 --keyway-depth 1.4  # keyway in the default D-flat bore
 spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
 spur export --help                                        # every parameter
 ```
@@ -133,7 +135,10 @@ fields in `detail[].ctx.fields`. Dimensions that can be trimmed without contradi
 something you asked for are trimmed instead, and say so in `warnings`: the root fillet
 is capped to the tooth gap, and the face recess is narrowed to fit between the bore wall
 and the tooth rim. A hex bore replaces the round bore and D-flat, and `warnings` names
-any round-bore field it ignored. `503` with `Retry-After` means the build queue is full.
+any round-bore field it ignored. A keyway pushes the face recess outward to keep its
+wall, and the recess is narrowed or dropped like any other trim; a keyway on a hex bore,
+one as wide as the bore, one that runs into the D-flat, or one whose floor comes too
+close to the root is refused. `503` with `Retry-After` means the build queue is full.
 
 ## Parameters
 
@@ -150,8 +155,10 @@ Lengths in mm, angles in degrees.
 | `face_width` | 7.5 | Overall thickness |
 | `bore_d` | 9 | Round part of the bore. 0 = no round bore |
 | `bore_flat` | 8 | Flat to opposite side of the bore. 0 = round bore |
+| `keyway_width` | 0 | Width of a keyway slot in a round or D-flat bore, cut a quarter turn from the D-flat; bore_clearance is added. Its edges stay sharp: bore_chamfer chamfers the round part only. 0 = no keyway |
+| `keyway_depth` | 0 | Depth from the as-cut bore wall (bore clearance included) to the keyway floor: the DIN 6885 / ISO R773 t2 convention. ANSI B17.1's T is measured across the bore and is a different number. 0 = no keyway |
 | `bore_hex` | 0 | Across-flats of a hex bore; replaces the round bore and D-flat. Common hex stock: 5, 6, 8, 10, 12.7 mm. 0 = round bore |
-| `bore_clearance` | 0.15 | Added to bore, flat and hex across-flats for print shrinkage. 0 for resin/SLS |
+| `bore_clearance` | 0.15 | Added to bore, flat, hex across-flats and keyway width for print shrinkage. 0 for resin/SLS |
 | `bore_chamfer` | 0.4 | Chamfer on both bore edges |
 | `recess_sides` | `both` | `both`, `top`, `bottom` or `none` |
 | `recess_depth` | 2 | Depth of each groove |
@@ -194,6 +201,16 @@ while a bore too wide for the root is still refused.
   pressure angle. A total profile shift negative enough makes the right-hand side
   negative, and then no such angle exists — the pair cannot mesh at any distance. That
   is reported as a warning rather than a number.
+- The keyway is a rectangular slot on the bore's side a quarter turn from the D-flat,
+  through the full face width. Its depth runs from the as-cut bore wall,
+  `(bore_d + bore_clearance)/2` with the clearance included, to a flat floor: the DIN
+  6885 / ISO R773 t2 convention; ANSI B17.1's T is measured across the bore and is a
+  different number. `/api/info` prints `keyway_floor_to_wall`, what a pin and calipers
+  read from the keyway floor across the bore to the opposite wall, and
+  `keyway_width_effective`, the slot width with its clearance, what calipers read
+  across the slot. The slot's own edges stay sharp (`bore_chamfer` chamfers the round
+  part of the bore only), and its floor corners are square: DIN 6885's small
+  floor-corner radius is not modelled.
 
 ## Development
 
