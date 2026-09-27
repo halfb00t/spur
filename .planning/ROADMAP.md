@@ -175,7 +175,7 @@ DIN-6885-convention depth a human can verify with calipers on the printed part.
 bore wall, DIN 6885 / ISO R773 `t2`; recorded in `REQUIREMENTS.md`, REQ-keyway-bore).
 The phase logs it as a new `Lxx` and settles the keyway-vs-D-flat placement rule at
 discuss time — a phase decision, not a research question.
-**Plans**: 3/5 plans executed
+**Plans**: 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -192,7 +192,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 09-04-PLAN.md — The 32-row keyway sweep at 200 teeth through `make bench.build`, recorded in `bench/RESULTS.md` (wave 4)
+- [x] 09-04-PLAN.md — The 32-row keyway sweep at 200 teeth through `make bench.build`, recorded in `bench/RESULTS.md` (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -323,7 +323,7 @@ in Phases 7–11; no open technical questions remain by this point.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
-| 9. Keyway Bore | v0.2 | 3/5 | In Progress|  |
+| 9. Keyway Bore | v0.2 | 4/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |

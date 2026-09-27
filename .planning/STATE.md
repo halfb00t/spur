@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 09
 current_phase_name: Keyway Bore
 status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-09-27T14:28:27.617Z"
+stopped_at: Completed 09-04-PLAN.md
+last_updated: "2026-09-27T14:54:58.047Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 09 execution started
-state_head: 52693787f35dd0f7c7fb0064b74b06003644131f
+state_head: aca848770054b7544c37260c4c8cb02f5537f049
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 17
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 09 (Keyway Bore) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-27 — Phase 09 execution started
 
@@ -115,6 +115,7 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 09 P01 | 14min | 3 tasks | 3 files |
 | Phase 09 P02 | 27min | 2 tasks | 7 files |
 | Phase 09 P03 | 45min | 2 tasks | 7 files |
+| Phase 09 P04 | 23min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 09]: D-14's datum verified on the built solid; D-09's yield measured (recess narrows/drops, never a 422); D-07's amended proof (pre-keyway matrix + built-solid chamfer/sharp-slot); D-05 proven sharp on the finished solid.
 - [Phase 09]: D-12 re-measured 2026-09-27 on the pinned kernel (not carried over unverified): a 20-step bisection over 12 configurations landed identically everywhere -- last failing gap -3.8e-8 mm, first building gap 1.9e-8 mm, gap 0.0 failing on all 12, teeth-independent unlike the hex corner (L27). ROOT_CONTACT = 1e-9 mm. One configuration failed to build at exactly 1e-9 mm despite check() accepting it there -- a sub-2e-8 mm residual band matching 09-RESEARCH.md's Flagged Assumption A1, unreachable by any settable field value; documented in the resolved debt file rather than treated as a fresh gate trigger.
 - [Phase 09]: D-11's bound (keyway_width >= bore_d) is definitional, not kernel-measured -- re-confirmed the kernel never fails as keyway_width approaches bore_d, so no crash boundary exists to search for.
+- [Phase 09]: 09-04's keyway sweep measured all 32 rows inside SPUR_BUILD_TIMEOUT=30s on the first run (heaviest 4.85s of 30s) -- the 08 D-11 gate never fired. — The heaviest row is a 3 x 1.4 mm keyway that keeps its face recess, not the largest keyway the rules allow, which pushes the recess out and builds in about half the time -- confirming the planning probe that the sweep must measure both keyway sizes to find the heaviest configuration.
 
 ### Pending Todos
 
@@ -203,8 +205,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-27T14:28:27.589Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-09-27T14:54:58.018Z
+Stopped at: Completed 09-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
