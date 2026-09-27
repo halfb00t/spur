@@ -7,13 +7,16 @@ the frozen `DerivedDimensions` document `derive()` returns.
 
 | Piece | Does |
 |---|---|
-| `MIN_WALL`, `MIN_TIP_FDM`, `MIN_RECESS_WIDTH` | the three physical constants the rules are written against, in mm |
+| `MIN_WALL`, `MIN_TIP_FDM`, `MIN_RECESS_WIDTH`, `ROOT_CONTACT` | the physical constants the rules are written against, in mm — `ROOT_CONTACT` is the measured contact threshold for a chamfered round or D-flat bore mouth reaching the root circle |
 | `inv(a)` | the involute function, `tan(a) - a` |
 | `Profile` + `profile(p)` | radii (`r`, `rb`, `ra`, `rf`), pitch half-angle, `r_start`, `half_angle(rho)` |
 | `bore_radius(p)` | bore radius including print clearance, 0 when there is no bore |
 | `hex_across_flats(p)` | the hex bore's effective across-flats including clearance, 0 with no hex |
+| `keyway_width_effective(p)` | the keyway's width including print clearance, 0 with no keyway |
+| `keyway_corner_radius(p)` | the keyway floor corner's radius from the axis, 0 with no keyway |
+| `keyway_flat_wall(p)` | the round bore wall left between the D-flat's corner and the keyway's side |
 | `bore_rim_limit(p)` | the farthest point of the bore wall: `bore_radius(p)`, or a hex's corners |
-| `bore_mouth_limit(p)` | the chamfered mouth's farthest reach — the datum `recess_radii()` clears by `MIN_WALL`, and `check()` keeps `MIN_WALL` inside the root |
+| `bore_mouth_limit(p)` | the chamfered mouth's farthest reach, or a keyway's floor corner, whichever is farther — the datum `recess_radii()` clears by `MIN_WALL`, and `check()` keeps `MIN_WALL` inside the root |
 | `recess_radii(p, rf)` | the groove's effective `(inner, outer)` radius, or `None` |
 | `root_fillet(p)`, `recess_fillet(p, rf)` | the fillet radii actually used, after capping |
 | `_tooth(pr)` | tip thickness, root thickness and root gap — all measured on the root circle |

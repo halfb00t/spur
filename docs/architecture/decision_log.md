@@ -904,3 +904,140 @@ fewer) and the bench script.
 **Reason:** a hex bore is the first bore shape with points outside the round radius, so it
 is the first real test of L26's selector seam and of the recess datum. Both moved to the
 bore's true extent — the chamfered corner, not a round stand-in.
+
+## L28 — A keyway is a slot cut after the bore's chamfer, its depth measured from the as-cut bore wall
+
+Date: 2026-09-27.
+
+**The fields** (D-16, D-17). `keyway_width` and `keyway_depth` join `GearParams`' Bore
+group, mm, 0 = off, 0 to 200 in steps of 0.05, declared after `bore_flat` and before
+`bore_hex`. Help text states the DIN 6885 / ISO R773 `t2` convention and warns that ANSI
+B17.1's "T" is measured across the bore and is a different quantity; it names no size —
+a looked-up number is one someone cuts metal to (L08). There is no `keyway_clearance`
+field: `bore_clearance` is added to the width, as it already is to the bore and the hex
+across-flats. Rejected: a DIN 6885 example row in help text, even as an example.
+
+**Placement and composition** (D-01, D-04, D-13). The keyway sits on +Y, a quarter turn
+from the D-flat on +X, one fixed position stated in `model._cut_keyway`'s docstring, not
+a field — so the wall opposite the keyway is always the round wall, and the derived
+floor-to-wall number is the same formula whether or not a flat exists. `bore_flat` stays
+when a keyway is added: `?keyway_width=3&keyway_depth=1.4` on the default parameters is a
+D-flat bore with a keyway. A keyway on a hex bore, or with no round bore at all, is a 422
+naming the fields (`calc.check()`, before the per-shape branches). Rejected: −X, opposite
+the flat (the 422 becomes unreachable and the opposite wall becomes the flat — a second
+formula); a `keyway_angle` field (a third parameter, angle-dependent rules, not asked
+for).
+
+**The datum** (D-14). The keyway floor sits at `bore_radius(p) + keyway_depth`, where
+`bore_radius(p) = (bore_d + bore_clearance)/2` is the as-cut bore wall — the DIN 6885 /
+ISO R773 `t2` convention. ROADMAP Phase 9's SC1 and REQ-keyway-bore originally wrote that
+wall as `bore_d/2 + bore_clearance`, a point `bore_clearance/2` outside the wall that
+exists on the part (research PITFALLS.md Pitfall 9); 09-01 (`69948df`) amended both texts
+to the as-cut formula before any code was written. The built solid measures the slot's
+floor `keyway_depth` outside the kernel-read bore-wall radius within `model.TOL` (1e-6
+mm) — 5.975 mm floor, 4.575 mm wall, 1.4 mm depth, on both a D-flat and a round bore
+(09-02). Rejected: keeping the original formula literally — nobody can measure a point
+that sits inside material.
+
+**Chamfer and build order, measured** (D-05, D-06, D-07, D-08). `model._build` calls the
+unchanged `_cut_bore` — which cuts and chamfers the round or D-flat rim exactly as before
+— and only then `_cut_keyway`, which subtracts a rectangular slot with a flat floor and
+square floor corners, through the full face width. The order is not a style choice: a
+one-shot chamfer cut after the keyway existed failed with "BRep_API: command not done"
+on a D-flat bore in every variant probed (recess on or off, either depth or chamfer
+tried, either rotation), while chamfer-then-cut built every time — 178 faces / 508 edges
+on the default keyed D-flat link (research, then re-confirmed 09-02). Consequently the
+keyway's own three rim edges (two sides, the floor) stay sharp on every bore shape;
+`bore_chamfer` reaches only the round part of the rim. `calc.bore_rim_limit(p)` is
+unchanged for a keyway bore — the rim selector runs before the slot exists, and a spy on
+the real pipeline proved it takes exactly the pre-keyway edges
+(`Counter({"CIRCLE": 2, "LINE": 2})` D-flat, `Counter({"CIRCLE": 2})` round, 09-02). DIN
+6885's small floor-corner radius is not modelled — a fixed radius or a field, if a real
+key ever needs it. Rejected: chamfering the keyway's own edges too (deliverable on a
+round bore only, with extra recess clearance, and not on a D-flat bore with a one-shot
+chamfer); two separate chamfer operations after the keyway (valid but no behavioural
+gain over one).
+
+**The recess yields** (D-09). `calc.bore_mouth_limit(p)` takes the larger of the
+chamfered rim's reach and the keyway's un-chamfered floor corner
+(`calc.keyway_corner_radius(p)`), so `recess_radii()` keeps `MIN_WALL` from the corner
+and narrows or drops the recess with the existing warnings — never a 422. Measured
+reason: the DIN-6885-correct 3 × 1.4 mm key on the default 9 mm bore puts its corner
+0.327 mm from the default recess hub wall, under `MIN_WALL` — the roadmap's original
+"or a recess wall" refusal would have refused the default gear with its own correctly
+sized key. This supersedes that clause of ROADMAP SC3 and REQ-keyway-wall-refused
+(09-01, `69948df`). The default keyed link's recess moves out to 13.158 / 25.158 mm with
+no warning; a 3 × 5 mm keyway narrows it to 3.93 mm; a 3 × 9 mm keyway drops it entirely
+(09-02). Rejected: the 422 as written; a hybrid rule that yields when `recess_inner_d`
+is 0 and refuses when set (a new distinction the recess contract does not otherwise
+draw).
+
+**The refusals** (D-02, D-03, D-10, D-11, D-13). A keyway on a hex bore, with no round
+bore, or with only one of its two fields set is a 422 naming the fields, decided before
+the per-shape branches. In the round/D-flat branch: a keyway that leaves less than
+`MIN_WALL` of round bore wall between the D-flat's corner and its own side
+(`calc.keyway_flat_wall(p)`) is a 422 naming `bore_flat` and `keyway_width`; a keyway
+whose floor corner comes within `MIN_WALL` of the root circle is a 422 naming
+`keyway_depth` and `keyway_width`; a keyway as wide as the bore (`keyway_width >=
+bore_d`) is a 422 naming `keyway_width` and `bore_d`. 09-03 re-confirmed none of these
+three is a kernel limit: the kernel built a keyway tangent to and notching the D-flat, a
+floor 0.12 mm past the root, and a slot at 166% of `bore_d`, as one valid solid every
+time (a `model_copy(update=...)`-bypassed-validation test, since `model_construct`'s
+keyword arguments fail mypy strict against pydantic's plugin-typed initialiser). D-11's
+bound is therefore stated as definitional in the rule's own comment, not a searched-for
+kernel failure. Rejected: a fixed ratio such as `keyway_width <= bore_effective / 2`
+(an opinion, no standard states a hard limit); refusing keyway-vs-D-flat only on
+geometric overlap (a near-tangent sliver reaches the kernel after a timed build).
+
+**The round bore's own chamfer reach** (D-12). The must-severity debt
+`docs/tech_debt/active/2026-09-26-round-bore-chamfer-reach-is-not-checked.md` is resolved
+(`4b6a5b9`, moved to `docs/tech_debt/resolved/`). 09-03 re-measured the kernel's real
+boundary rather than trusting the planning-time probe: a 20-step bisection over twelve
+(teeth, module, chamfer, shape) configurations landed identically on every one — last
+failing gap −3.8e-8 mm, first building gap 1.9e-8 mm, gap 0.0 failing on all twelve —
+teeth-independent, unlike the hex corner (L27). `calc.ROOT_CONTACT = 1e-9` mm refuses a
+round or D-flat bore whose chamfered mouth reaches the root circle, naming
+`bore_chamfer` and `bore_d`, at that measured contact point — never at
+`bore_mouth_limit(p) > rf − MIN_WALL` like the hex, so no round or D-flat link that
+builds today is refused (L05); the two round rules never stack (`elif`). One
+configuration failed to build at a gap of exactly `ROOT_CONTACT` even though `check()`
+accepts it there — a sub-2e-8 mm residual band below the kernel's own ~1e-7 mm
+tolerance, unreachable by any value the 0.05 mm field step can set, recorded in the
+resolved debt file rather than treated as a fresh trigger. Rejected: refusing at
+`rf − MIN_WALL` (refuses round links that build today with a thin wall); deferring
+again.
+
+**The numbers** (D-15). `DerivedDimensions` gains `keyway_floor_to_wall`
+(`bore_effective + keyway_depth` — what a pin-and-caliper check reads from the floor
+across the bore to the opposite wall) and `keyway_width_effective`
+(`keyway_width + bore_clearance` — what calipers read across the slot), both `null` with
+no keyway. On the default keyed link they read 10.55 and 3.15 mm, matched on the built
+solid within 5e-4 mm (09-02). Both land as `DIMS` rows in the web UI and as README rows
+this phase. Rejected: the floor-to-wall number alone (the as-cut slot width would appear
+nowhere in the response).
+
+**The measurement.** `bench/sweeps/keyway_bore.json` is a 32-row cross product (module
+{1.75, 10} × `bore_flat` {0, 150} × keyway {the largest each rule allows, 3 × 1.4 mm} ×
+`recess_sides` {both, none} × `bore_chamfer` {0.4, 3}) at 200 teeth on the largest bore
+the rules allow (`bore_d` 200) — every row inside `SPUR_BUILD_TIMEOUT=30s` on the first
+run (09-04). The heaviest row, quoted from `bench/RESULTS.md` "Keyway bore build and export time (Phase 9)":
+`teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4
+recess_sides=both bore_chamfer=0.4` — build 4.20 s, fine STL 0.66 s, STEP 0.41 s, build +
+slower export **4.85 s of 30 s**. It is a small keyway,
+not the largest the rules allow: the largest keyway at module 1.75 pushes the face
+recess out entirely and builds in about half the time, confirming the planning
+hypothesis that the sweep had to measure both keyway sizes to find the heaviest
+configuration, not assume the largest is heaviest.
+
+**Reversibility.** Costly: D-01 (the keyway's position), D-09 (the recess yields rather
+than refuses), D-14 (the datum) and D-15 (the two published numbers) — each is part of
+every keyed link ever published, or of L21's typed contract. Reversible: the refusal
+rules D-02/D-10/D-11/D-12 (relaxing one only lets refused links build, never fewer) and
+the sweep.
+
+**Reason:** the keyway is the first bore feature that composes with an existing shape
+instead of replacing it, so it is the first to add an edge to the part after the rim
+selector has already run. Cutting it after the chamfer keeps L26's selector seam exact —
+the selector never has to learn a second geometric type — and measuring its depth from
+the wall that actually exists on the part, rather than a nominal point inside material,
+keeps the printed numbers ones a user can check with a pin and a pair of calipers (L08).
