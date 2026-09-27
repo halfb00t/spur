@@ -4,12 +4,11 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 9
 current_phase_name: Keyway Bore
-status: planning
+status: "Phase 08 shipped — PR #9"
 stopped_at: Phase 08 complete, ready to plan Phase 9
-last_updated: "2026-09-26T16:38:09.502Z"
-last_activity: 2026-09-26
-last_activity_desc: Phase 08 complete, transitioned to Phase 9
-state_head: 27e7ddff5aca48d57d48a15226162c02797f7601
+last_updated: "2026-09-27T03:07:05.204Z"
+last_activity: 2026-09-27
+state_head: dfed81aa0c8fd15ecab1563ce556cb4f374be917
 progress:
   total_phases: 6
   completed_phases: 1
@@ -33,8 +32,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 9 — Keyway Bore
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-26 — Phase 08 complete, transitioned to Phase 9
+Status: Phase 08 shipped — PR #9
+Last activity: 2026-09-27
 
 ## Performance Metrics
 
