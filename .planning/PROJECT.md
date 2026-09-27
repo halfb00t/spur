@@ -139,13 +139,24 @@ pytest — L13). Full list with sources and acceptance evidence:
   matrix asserts the exact selected edges per bore shape with and without recesses;
   the fixture stayed byte-unchanged through the change (L26) — Phase 7
 - ✓ REQ-hex-bore + REQ-derived-dimensions-additive — `bore_hex` (across-flats, mm, default off) replaces the whole round/D-flat profile: `bore_d`/`bore_flat` ignored and warned, never refused (D-01 superseded the original `bore_flat` 422; hex × keyway 422 moved to Phase 9); two measured root-circle refusals at the chamfered corner (D-03); `hex_across_flats`/`hex_across_corners` added to `DerivedDimensions` with the 44-record pre-v0.2 fixture byte-unchanged and every post-fixture field required null on replay; heaviest allowed configuration 5.08 s of the 30 s budget via `make bench.build`; verified 30/30, `make verify` 330 tests, code review clean (1 info) (L27) — Phase 8
+- ✓ REQ-keyway-bore + REQ-keyway-composes-with-d-flat + REQ-keyway-wall-refused (REQ-hex-rim-chamfer
+  and REQ-bore-derived-numbers extended) — `keyway_width`/`keyway_depth` (mm, default off) cut one
+  rectangular slot after the chamfered bore, so the rim selector never sees the keyway and the slot's
+  own edges stay sharp; depth is measured from the as-cut bore wall `(bore_d + bore_clearance)/2`
+  (the DIN 6885 / ISO R773 `t2` convention, D-14) and read back on the built solid within 1e-6 mm;
+  the D-flat is kept; six refusals in `calc.check()` (hex × keyway, no bore, half-set, width ≥ bore,
+  into the D-flat's wall, floor corner within MIN_WALL of the root — never capped) plus the round
+  bore's chamfer-reach rule at the kernel's measured contact (`ROOT_CONTACT` 1e-9 mm; refuses no link
+  that built before; closes the Phase 8 must-debt); the face recess yields to the keyway corner with
+  the existing warnings; `keyway_floor_to_wall`/`keyway_width_effective` added to `DerivedDimensions`
+  with the 44-record fixture byte-unchanged; heaviest of 32 sweep rows 4.85 s of 30 s; verified 12/12,
+  `make verify` 396 tests (L28) — Phase 9
 
 ### Active
 
 Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- [ ] Keyway bore with explicit width, depth and clearance
 - [ ] Spoke-arm body cutout with an explicit arm count
 - [ ] Circular lightening-hole cutout with an explicit hole count
 - [ ] Hexagonal-pattern cutout, cell count capped to the build timeout
@@ -276,6 +287,7 @@ quick reference.
 | L25 | The merge gate reads the whole commit message and the run's own verdict (amends L22): the commit-msg hook takes git's entire buffer with no cut line; `pr.land` refuses `conclusion != success` and runs from an up-to-date `main`; after the merge it reports only what it observed; the read-to-merge window rests on the ruleset's up-to-date policy, not on anything `pr.land` reads (`--match-head-commit` pins the head, not the base) | ✓ Good — proven live on run 36116930241 and commits b72b0e1 / 20b63e4 |
 | L26 | The pre-v0.2 part is pinned by a regression fixture (`tests/regression/pre_v0_2.json`, written only by `make fixture.regen`, 44 records / 85 cases, every later phase re-runs it unmodified), and an edge selector never silently selects nothing: `_bore_rim_edges` and `_groove_floor_edges` raise `BuildError` on an empty selection while their feature is on; the bore-rim bound lives in `calc.bore_rim_limit(p)` with a measured 0.01 mm slack in `model.py` | ✓ Good — fixture cost 16.27 s on `make verify`, accepted over the 15.0 s D-06 line (human decision); tripwire 32 red / 0 derive; `make verify` 289 tests |
 | L27 | A hex bore replaces the whole round profile and its limits are the chamfered corner's, measured: `bore_hex` (0–200 mm, step 0.05, default 0) cuts `polygon(6, A/F + bore_clearance, circumscribed=True)` in place of the round/D-flat hole; `bore_d` and `bore_flat` are ignored with one warning naming each non-zero field (never a 422 — supersedes the original REQ-hex-bore sentence; hex × keyway stays a 422 and is Phase 9's); `check()` refuses a hex whose corners, or whose chamfered mouth (`bore_mouth_limit = rim + 2c/√3`), come within MIN_WALL of the root circle — no side-length rule, because the kernel chamfers a 0.375 mm side at the 3 mm bound; `recess_radii()` clears the chamfered mouth for every bore shape; the replay compares recorded fields exactly and requires later fields null; `make bench.build` runs a committed sweep file so Phases 9–12 reuse it | ✓ Good — 30/30 must-haves; `make verify` 330 tests; heaviest sweep row 5.08 s of 30 s (teeth 200, m 1.75, hex 200, recess both, chamfer 0.4); fixture byte-unchanged; round bore's own chamfer reach filed as `must` debt |
+| L28 | A keyway is a slot cut after the bore's chamfer, its depth measured from the as-cut bore wall: `keyway_width`/`keyway_depth` (0–200 mm, step 0.05, default 0) cut a slot of width `keyway_width + bore_clearance` from the axis to a flat floor at `bore_radius(p) + keyway_depth` centred on +Y (a quarter turn from the D-flat), after `_cut_bore` so the rim selector's counts are the pre-keyway ones and the slot's edges are never chamfered; D-02/D-10/D-11 are the part's rules (arc wall to the D-flat's corner, floor corner vs the root, width < bore) and D-12 the kernel's measured contact; the recess yields to the keyway corner; no standard-table keyway size anywhere in help or docs | ✓ Good — 12/12 must-haves; `make verify` 396 tests; datum read back within 1e-6 mm; heaviest sweep row 4.85 s of 30 s (a 3 × 1.4 keyway that keeps its recess, lighter than the largest keyway); fixture byte-unchanged; Phase 8's round-chamfer debt resolved in `4b6a5b9` |
 
 ## Success Metric (Milestone v0.1)
 
@@ -328,4 +340,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-26 after Phase 8 (Hex Bore).*
+*Last updated: 2026-09-27 after Phase 9 (Keyway Bore).*
