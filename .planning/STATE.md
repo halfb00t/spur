@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 9
+current_phase: 09
 current_phase_name: Keyway Bore
-status: "Phase 08 shipped — PR #9"
+status: executing
 stopped_at: Phase 9 context gathered
-last_updated: "2026-09-27T12:27:57.860Z"
+last_updated: "2026-09-27T13:07:28.177Z"
 last_activity: 2026-09-27
-last_activity_desc: Phase 9 planning complete
-state_head: 8adbc18e2a7d1e1dbea4c2dfdcd1aadac423272d
+last_activity_desc: Phase 09 execution started
+state_head: d03533bd0e0b7f403795d9530f51ee494fbce112
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 11
   completed_plans: 6
-  percent: 0
+  percent: 17
 ---
 
 # Project State
@@ -26,15 +26,15 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 9 — Keyway Bore (first of the two shaft-fit profiles left; carries the hex × keyway 422 that D-01 moved here)
+**Current focus:** Phase 09 — Keyway Bore
 `calc.bore_rim_limit(p)` and is checked against the Phase 7 fixture).
 
 ## Current Position
 
-Phase: 9 (Keyway Bore) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 08 shipped — PR #9
-Last activity: 2026-09-27 — Phase 9 planning complete
+Phase: 09 (Keyway Bore) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 09
+Last activity: 2026-09-27 — Phase 09 execution started
 
 ## Performance Metrics
 
@@ -186,6 +186,7 @@ None yet.
 - Phase 8 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 9 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 12 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
+- Phase 9 edited: edited fields: requirements, success_criteria (per 09-CONTEXT.md D-20)
 
 ## Deferred Items
 

@@ -19,21 +19,24 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 
 - [ ] **REQ-keyway-bore**: User can cut a keyway into the bore by setting `keyway_width`
   and `keyway_depth` in mm (0 = no keyway). Depth is measured radially from the **as-cut
-  bore wall** (`bore_d/2 + bore_clearance`) to the keyway floor — the DIN 6885 / ISO R773
-  `t2` convention — and the field help states this and warns that ANSI B17.1's "T" is a
-  gauge dimension across the bore, not a depth. `bore_clearance` is added to the keyway
-  width as it already is to the bore. No standard-table sizing anywhere: help text may
-  cite DIN 6885 ranges as examples but never fills a value. A keyway with `bore_d = 0` is
-  a 422 naming both fields. A keyway together with `bore_hex` is a 422 naming the fields,
-  moved here from REQ-hex-bore by Phase 8 D-01 because this phase brings the keyway fields
-  that refusal names.
+  bore wall** (`(bore_d + bore_clearance)/2`, Phase 9 D-14) to the keyway floor — the DIN
+  6885 / ISO R773 `t2` convention — and the field help states this and warns that ANSI
+  B17.1's "T" is a gauge dimension across the bore, not a depth. `bore_clearance` is added
+  to the keyway width as it already is to the bore. No standard-table sizing anywhere:
+  help text may cite DIN 6885 ranges as examples but never fills a value. A keyway with
+  `bore_d = 0` is a 422 naming both fields. A keyway together with `bore_hex` is a 422
+  naming the fields, moved here from REQ-hex-bore by Phase 8 D-01 because this phase
+  brings the keyway fields that refusal names.
 - [ ] **REQ-keyway-composes-with-d-flat**: A keyway and a D-flat can coexist on one bore
   (placement rule decided in the phase); a keyway that would intersect the flat is a 422
   naming both fields.
-- [ ] **REQ-keyway-wall-refused**: A keyway whose floor would come within `MIN_WALL` of
-  the root circle or of a recess wall is a 422 naming `keyway_depth` and the conflicting
-  dimension — refused, not capped, because a shallower keyway is a part the key does not
-  fit.
+- [ ] **REQ-keyway-wall-refused**: A keyway whose floor corner would come within
+  `MIN_WALL` of the root circle is a 422 naming `keyway_depth` and `keyway_width` —
+  refused, not capped, because a shallower keyway is a part the key does not fit. A face
+  recess yields to the keyway instead: `recess_radii()` keeps `MIN_WALL` from the
+  keyway's floor corner and narrows or drops the recess with the existing warnings, never
+  a 422 (Phase 9 D-09/D-10 superseded the earlier recess-wall refusal, which refused the
+  default gear with its own correctly sized key).
 - [x] **REQ-hex-bore**: User can make the bore a regular hexagon by setting `bore_hex`
   (across-flats, mm, 0 = off). The hexagon **replaces** the whole round profile: `bore_d`
   and `bore_flat` do not apply to a hex bore, and the response's `warnings` name each of
@@ -208,4 +211,4 @@ corner-to-corner field), which Phase 9's success criteria confirm still holds.
 
 ---
 *Requirements defined: 2026-09-25*
-*Last updated: 2026-09-26 — REQ-hex-bore and REQ-keyway-bore amended per Phase 8 D-01 (08-CONTEXT.md)*
+*Last updated: 2026-09-27 — REQ-keyway-bore and REQ-keyway-wall-refused amended per Phase 9 D-09/D-10/D-14 (09-CONTEXT.md)*
