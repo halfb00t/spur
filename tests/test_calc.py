@@ -13,7 +13,10 @@ from spur.calc import (
     derive,
     hex_across_flats,
     inv,
+    keyway_corner_radius,
+    keyway_width_effective,
     profile,
+    recess_radii,
     span_measurement,
 )
 from spur.params import GearParams
@@ -222,6 +225,63 @@ def test_a_hex_bore_warns_about_each_round_field_it_ignores(
         assert not any(w.startswith("Hex bore replaces") for w in d.warnings)
     else:
         assert expected in d.warnings
+
+
+def test_a_keyway_reaches_its_floor_corner_and_the_recess_clears_it() -> None:
+    """D-06/D-09/D-14: the keyway's own two helpers, bore_mouth_limit taking the max
+    with the corner, and recess_radii() yielding to it -- all 0.0/unchanged with no
+    keyway."""
+    k = GearParams(keyway_width=3, keyway_depth=1.4)
+    assert keyway_width_effective(k) == pytest.approx(3.15)
+    c = keyway_corner_radius(k)
+    assert c == pytest.approx(math.hypot(5.975, 1.575))
+    assert bore_mouth_limit(k) == pytest.approx(c)
+    # The chamfer dominates once it reaches past the (un-chamfered) keyway corner.
+    assert bore_mouth_limit(GearParams(keyway_width=3, keyway_depth=1.4,
+                                       bore_chamfer=3)) == pytest.approx(7.575)
+    rr = recess_radii(k, profile(k).rf)
+    assert rr == pytest.approx((c + MIN_WALL, c + MIN_WALL + 6))
+
+    assert keyway_width_effective(GearParams()) == 0.0
+    assert keyway_corner_radius(GearParams()) == 0.0
+    assert bore_mouth_limit(GearParams()) == pytest.approx(4.975)
+
+
+@pytest.mark.parametrize(("kw", "floor_to_wall", "width"), [
+    ({"keyway_width": 3, "keyway_depth": 1.4}, 10.55, 3.15),
+    ({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0}, 10.55, 3.15),
+    ({"keyway_width": 3, "keyway_depth": 1.4, "bore_clearance": 0}, 10.4, 3.0),
+    ({}, None, None),
+    ({"bore_d": 0}, None, None),
+    ({"bore_hex": 6}, None, None),
+])
+def test_a_keyway_reports_floor_to_wall_and_width_and_null_without_one(
+        kw: dict[str, object], floor_to_wall: float | None, width: float | None) -> None:
+    """The two printed numbers derive() adds (D-15), compared with == because they are
+    rounded once, at construction (D-10): a D-flat coexists (D-04), bore_clearance moves
+    both, and a keyway needs bore_d > 0 and no hex to exist at all."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.keyway_floor_to_wall == floor_to_wall
+    assert d.keyway_width_effective == width
+
+
+def test_the_recess_yields_to_a_keyway_and_says_so_only_when_it_narrows_or_drops() -> None:
+    """D-09 (supersedes SC3's "or a recess wall" clause): the recess narrows or drops
+    with the existing warnings, never a ValidationError, as the keyway corner reaches
+    farther out."""
+    d = derive(GearParams(keyway_width=3, keyway_depth=1.4))
+    assert d.recess_id == pytest.approx(13.158)
+    assert d.recess_od == pytest.approx(25.158)
+    assert d.warnings == ()
+
+    d = derive(GearParams(keyway_width=3, keyway_depth=5))
+    assert any("Recess narrowed to 3.93 mm to fit between the bore wall and the "
+              "tooth rim." in w for w in d.warnings)
+
+    d = derive(GearParams(keyway_width=3, keyway_depth=9))
+    assert d.recess_id is None
+    assert any("No room for a face recess between the bore wall and the tooth rim; "
+              "it was left out." in w for w in d.warnings)
 
 
 def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:

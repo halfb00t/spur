@@ -4,10 +4,19 @@ import struct
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 
+import cadquery as cq
 import pytest
 
 from spur.build_errors import BuildError
-from spur.calc import MIN_WALL, bore_radius, bore_rim_limit, derive, profile, recess_radii
+from spur.calc import (
+    MIN_WALL,
+    bore_radius,
+    bore_rim_limit,
+    derive,
+    keyway_width_effective,
+    profile,
+    recess_radii,
+)
 from spur.model import (
     TESSELLATION,
     TOL,
@@ -36,6 +45,9 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
      "face_width": 12, "bore_d": 12, "bore_flat": 11, "recess_depth": 4},
     {"bore_hex": 6},
     {"bore_hex": 12.7, "bore_d": 0, "bore_flat": 0},
+    {"keyway_width": 3, "keyway_depth": 1.4},
+    {"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+    {"keyway_width": 3, "keyway_depth": 1.4, "bore_chamfer": 0, "recess_sides": "none"},
 ])
 def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     p = GearParams.model_validate(kw)
@@ -77,8 +89,38 @@ def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
                  id="hex-recess-at-hub-clearance"),
     pytest.param({"bore_hex": 12.7}, collections.Counter({"LINE": 12}), 4,
                  id="hex-wider-than-round-bore"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, id="keyway-d-flat-both"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_sides": "top"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, id="keyway-d-flat-top"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_sides": "bottom"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, id="keyway-d-flat-bottom"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_sides": "none"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None,
+                 id="keyway-d-flat-no-recess"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), 4, id="keyway-round-both"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0,
+                  "recess_sides": "top"}, collections.Counter({"CIRCLE": 2}), 2,
+                 id="keyway-round-top"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0,
+                  "recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2}), 2,
+                 id="keyway-round-bottom"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0,
+                  "recess_sides": "none"}, collections.Counter({"CIRCLE": 2}), None,
+                 id="keyway-round-no-recess"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_inner_d": 1.0},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4,
+                 id="keyway-recess-at-hub-clearance"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 5},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4,
+                 id="keyway-deep-recess-narrowed"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 9},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None,
+                 id="keyway-recess-dropped"),
 ])
 def test_each_edge_selector_picks_exactly_its_own_edges(
+        monkeypatch: pytest.MonkeyPatch,
         kw: dict[str, object],
         rim: collections.Counter[str] | None,
         floor: int | None) -> None:
@@ -86,20 +128,28 @@ def test_each_edge_selector_picks_exactly_its_own_edges(
     proven): the bore-rim chamfer and the recess-floor fillet each pick their own edges,
     never each other's, and never the wrong count. bare_p (bore_chamfer=0,
     recess_fillet=0) is the solid each selector sees in the pipeline just before its
-    operator would run -- the chamfer is the last build step, and the recess fillet only
-    adds faces away from the rim. Every selector argument comes from bare_p, not the
-    as-requested params: bore_chamfer feeds recess_radii()'s hub clearance, so a
-    hub-clamped recess moves when the chamfer is switched off, and radii taken from the
-    chamfered params would miss the bare solid's floor circles.
+    operator would run -- the chamfer is the last step before the keyway slot, and the
+    recess fillet only adds faces away from the rim. Every selector argument comes from
+    bare_p, not the as-requested params: bore_chamfer feeds recess_radii()'s hub
+    clearance, so a hub-clamped recess moves when the chamfer is switched off, and radii
+    taken from the chamfered params would miss the bare solid's floor circles.
+
+    _cut_keyway is patched out (a no-op) and the solid is built with _build_checked,
+    bypassing build()'s lru_cache, because the slot does not exist when the selector
+    runs (D-06): on the finished keyed solid the slot splits each rim arc (planning read
+    C4 L2 / C4 instead of C2 L2 / C2). For rows with no keyway the patched step is the
+    real step's own no-op.
 
     d-flat-recess-at-hub-clearance is the boundary row: recess_inner_d 1.0 clamps the
     recess to its minimum hub clearance (bore_radius + MIN_WALL on the chamfer-off solid,
     4.975 mm) -- the closest a recess edge can come to the rim band -- and the rim
     selection stays exact. The hex rows are Phase 7's selector shown on real geometry
-    (ROADMAP Phase 8 SC1).
+    (ROADMAP Phase 8 SC1). The keyway rows prove SC4 as amended, the pre-keyway count for
+    round and D-flat with a keyway (D-07).
     """
+    monkeypatch.setattr("spur.model._cut_keyway", lambda solid, _p: solid)
     bare_p = GearParams.model_validate({**kw, "bore_chamfer": 0, "recess_fillet": 0})
-    bare = build(bare_p)
+    bare = _build_checked(bare_p)
 
     # The gate reads the shape-independent rim extent, not the round diameter: a hex
     # with a zero round bore still has a bore.
@@ -197,6 +247,133 @@ def test_the_same_hex_link_builds_the_same_solid_twice() -> None:
     assert a.Volume() == pytest.approx(b.Volume(), rel=1e-9)
 
 
+@pytest.mark.parametrize(("kw", "rim"), [
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), id="d-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), id="round"),
+])
+def test_the_rim_chamfer_on_a_keyed_bore_takes_the_pre_keyway_edges(
+        monkeypatch: pytest.MonkeyPatch, kw: dict[str, object],
+        rim: collections.Counter[str]) -> None:
+    """D-06/D-07's ordering, observed in the real chamfered pipeline: the rim selector
+    runs exactly once, on the pre-keyway rim, when a real keyed link is built end to
+    end (default 0.4 mm chamfer, never a patched-out slot)."""
+    real = _bore_rim_edges
+    calls: list[collections.Counter[str]] = []
+
+    def spy(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
+        edges = real(solid, p)
+        calls.append(collections.Counter(e.geomType() for e in edges))
+        return edges
+
+    monkeypatch.setattr("spur.model._bore_rim_edges", spy)
+    _build_checked(GearParams.model_validate(kw))  # never build(): the cache would skip it
+    assert calls == [rim]
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_chamfer": 0}, id="d-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_chamfer": 0, "bore_flat": 0},
+                 id="round"),
+])
+def test_a_keyway_floor_sits_keyway_depth_outside_the_as_cut_bore_wall(
+        kw: dict[str, object]) -> None:
+    """ROADMAP SC1's "measured against the stated datum by a test, not just the
+    parameter round-tripping" -- the keyway analogue of the hex measurement test. The
+    superseded text's datum would put this floor 0.075 mm further out (D-14)."""
+    p = GearParams.model_validate(kw)
+    s = build(p)
+    d = derive(p)
+
+    floors = [f for f in s.Faces()
+              if f.geomType() == "PLANE" and abs(abs(f.normalAt().y) - 1) < 1e-9]
+    assert len(floors) == 1  # planning: 1 in 9 configurations, research A3 widened
+    bb = floors[0].BoundingBox()
+    assert bb.ylen < TOL
+
+    assert bb.ymin == pytest.approx(bore_radius(p) + p.keyway_depth, abs=TOL)
+    assert bb.xlen == pytest.approx(keyway_width_effective(p), abs=TOL)
+
+    # The bore wall's own radius, read back from the kernel -- chamfer 0, so the rim is
+    # the as-cut wall itself.
+    rim_radii = [e.radius() for e in _bore_rim_edges(s, p) if e.geomType() == "CIRCLE"]
+    wall = rim_radii[0]
+    assert all(r == pytest.approx(wall, abs=TOL) for r in rim_radii)
+    assert bb.ymin - wall == pytest.approx(p.keyway_depth, abs=TOL)
+
+    assert d.keyway_floor_to_wall is not None
+    assert d.keyway_width_effective is not None
+    assert bb.ymin + wall == pytest.approx(d.keyway_floor_to_wall, abs=5e-4)
+    assert bb.xlen == pytest.approx(d.keyway_width_effective, abs=5e-4)
+
+    if p.bore_flat > 0:
+        # D-04: the D-flat stays when a keyway is added.
+        flat_faces = [f for f in s.Faces()
+                      if f.geomType() == "PLANE" and abs(abs(f.normalAt().x) - 1) < 1e-9]
+        assert any(f.BoundingBox().xmin
+                   == pytest.approx(p.bore_flat + p.bore_clearance - bore_radius(p), abs=TOL)
+                   for f in flat_faces)
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4}, id="d-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0}, id="round"),
+])
+def test_the_bore_chamfer_survives_the_keyway_and_the_slot_edges_stay_sharp(
+        kw: dict[str, object]) -> None:
+    """D-05/D-07's built-solid proof. A chamfered slot would move its end-face outline
+    out by the chamfer, so no end-face edge would sit at the nominal width and floor;
+    planning read 4 / 4 / 4 / 2 on both shapes."""
+    p = GearParams.model_validate(kw)
+    s = build(p)
+    hw = keyway_width_effective(p) / 2
+    floor = bore_radius(p) + p.keyway_depth
+
+    def on_end_face(e: cq.Edge) -> bool:
+        a, b = e.startPoint(), e.endPoint()
+        if abs(a.z - b.z) > TOL:
+            return False
+        return abs(a.z) < TOL or abs(a.z - p.face_width) < TOL
+
+    ends = [e for e in s.Edges() if on_end_face(e)]
+
+    # Chamfer survived: 4 circles at the mouth radius, split by the slot on each face.
+    mouths = [e for e in ends if e.geomType() == "CIRCLE"
+             and e.radius() == pytest.approx(bore_radius(p) + p.bore_chamfer, abs=TOL)]
+    assert len(mouths) == 4
+    cones = [f for f in s.Faces() if f.geomType() == "CONE"]
+    assert len(cones) == 4
+
+    # Slot sharp: two vertical sides and one floor line per end face, at nominal size.
+    lines = [e for e in ends if e.geomType() == "LINE"]
+    sides = [e for e in lines
+             if abs(e.startPoint().x - e.endPoint().x) < TOL
+             and abs(abs(e.startPoint().x) - hw) < TOL]
+    floor_lines = [e for e in lines
+                  if abs(e.startPoint().y - floor) < TOL and abs(e.endPoint().y - floor) < TOL]
+    assert len(sides) == 4
+    assert len(floor_lines) == 2
+
+    def faces_hit(es: Sequence[cq.Edge]) -> set[int]:
+        return {round(e.startPoint().z / p.face_width) for e in es}
+
+    assert faces_hit(sides) == {0, 1}
+    assert faces_hit(floor_lines) == {0, 1}
+
+
+def test_the_same_keyed_link_builds_the_same_solid_twice() -> None:
+    """The same-link-same-part property (L05), for a keyway: two independent builds of
+    one parameter set agree on topology and volume. Uses _build_checked, bypassing the
+    lru_cache, so both builds actually run the kernel."""
+    p = GearParams(keyway_width=3, keyway_depth=1.4)
+    a = _build_checked(p)
+    b = _build_checked(p)
+    assert len(a.Faces()) == len(b.Faces())
+    assert len(a.Edges()) == len(b.Edges())
+    assert a.Volume() == pytest.approx(b.Volume(), rel=1e-9)
+
+
 def test_the_pre_hex_rim_bound_would_have_chamfered_nothing_on_a_hex_wider_than_the_round_bore(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """ROADMAP SC1's "the v0.1 selector would have selected zero edges here", reproduced
@@ -242,13 +419,16 @@ def test_the_kernel_chamfers_a_hex_bore_far_past_its_side_length() -> None:
     pytest.param({"bore_flat": 0}, id="round"),
     pytest.param({}, id="d-flat"),
     pytest.param({"bore_hex": 6}, id="hex"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 5}, id="keyway-corner"),
 ])
 def test_a_recess_at_its_hub_clearance_keeps_min_wall_from_the_chamfered_bore_mouth(
         kw: dict[str, object]) -> None:
     """The assumption-delta invariant (08-02-PLAN.md): recess_radii() clears every bore
     shape's chamfered mouth by MIN_WALL. With the hub at R + c (the plain chamfer,
     not the corner-carried 2c/sqrt(3)) the hex row goes invalid at 2.586 mm and fails
-    at 3 mm (planning probe, research PITFALLS.md Pitfall 1)."""
+    at 3 mm (planning probe, research PITFALLS.md Pitfall 1). The keyway row is D-09's
+    yield, measured: with bore_chamfer 3 the corner (9.7037 mm) still lies beyond the
+    chamfered mouth (7.575 mm), so the measured mouth is the keyway corner."""
     p = GearParams.model_validate({**kw, "bore_chamfer": 3, "recess_inner_d": 1.0})
     s = build(p)
     assert s.isValid()
