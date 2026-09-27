@@ -822,3 +822,85 @@ research SUMMARY.md Known Conflict #6, reproduced in miniature by this phase's o
 monkeypatch test). Both are now load-bearing: a chamfer or fillet that silently
 selects nothing can no longer ship a defective part, and a change to the pre-v0.2 part
 can no longer ship unnoticed.
+
+## L27 — A hex bore replaces the whole round profile, and its limits are the chamfered corner's, measured
+
+Date: 2026-09-26.
+
+**The field** (D-07, D-08). `bore_hex` — the across-flats in mm — joins `GearParams`'
+Bore group after `bore_flat`, from 0 to 200 in steps of 0.05. Its help text gives
+commodity stock as examples ("5, 6, 8, 10, 12.7 mm") and names no standard: FEATURES.md
+found none for gear hex bores. The cut is `Workplane.polygon(6, effective_af,
+circumscribed=True)`, with a flat facing +X (the same side the D-flat sits on) and no
+rotation parameter.
+
+**Replaces, never refuses** (D-01, D-02). `bore_d` and `bore_flat` are ignored — never
+refused — and named in one warning sentence with their values when non-zero (e.g. "Hex
+bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored."). This
+supersedes the old REQ-hex-bore wording and ROADMAP Phase 8 SC2's `bore_flat` 422
+sentence, because `bore_flat`'s default of 8.0 would otherwise refuse every plain hex
+link (`?bore_hex=6` alone) — a default the user never set must not block the part (L05).
+The hex x keyway 422 moved to REQ-keyway-bore and Phase 9 (`fddf9b8`, 08-01). Rejected: a
+422 gated on `model_fields_set` (transport-coupled — a script sending the full form would
+be refused for a value it never chose); the 422 as written; one warning per field; a
+warning only for non-default fields; a union with the round bore (REQUIREMENTS.md "Out of
+Scope").
+
+**The numbers** (D-04, D-05, D-06). `bore_effective` is `null` on a hex bore — a hexagon
+has no diameter. `DerivedDimensions` gains `hex_across_flats` (across-flats including
+clearance) and `hex_across_corners` (corner-to-corner diameter), both `null` off a hex
+bore: for `bore_hex` 6 they read 6.15 and 7.101 mm, measured this session, and the built
+solid's corners agree within 5e-4 mm. Both land as UI rows. The replay
+(`test_pre_v0_2.py`) now compares the fields a record holds exactly and requires every
+field added since the capture to read `null` — refining L26's replay without touching
+`pre_v0_2.json`, and this is `REQ-derived-dimensions-additive` enforced for every
+pre-v0.2 set. Rejected: repurposing `bore_effective` for the hex (its published
+description and UI label would become wrong); reporting the corners only (the fit
+dimension would appear nowhere in the response).
+
+**The limits, measured** (D-03). Two rules in `check()`, before any CAD work: the
+corner-vs-root rule (a 422 naming only `bore_hex`) refuses one step past the measured
+boundary (24.2 mm) and builds one step inside it (24.15 mm); the chamfered-corner-vs-root
+rule (a 422 naming `bore_chamfer` and `bore_hex`) refuses at 23.4 mm and builds at 23.35
+mm (08-03-SUMMARY.md D1/D2). The side never limits the chamfer: the planning probe found
+the kernel chamfers a 0.375 mm side at the field's full 3 mm bound (ratio 8), with removed
+volume matching the analytic hex frustum within `rel=1e-6` — so no side rule was added,
+and the probe became a test instead. Both rules sit on the root circle with `MIN_WALL`,
+not on the hex's side, because that is where the kernel actually fails: it raised
+"BRep_API: command not done" 0.05 mm past the root where a corner meets a tooth gap (19
+teeth), but built 0.30 mm past it where a corner meets a tooth (40 teeth) — the failure
+depends on where each corner lands, not on a fixed margin. `recess_radii()`'s hub
+clearance is `bore_mouth_limit(p) + MIN_WALL`, where a hex's chamfered mouth reaches its
+corner at `2c/sqrt(3)`, not `c`: `R + c` undercounted by 0.155c and drove a 3 mm chamfer
+on a 6 mm hex into an invalid solid at 2.586 mm and a kernel failure at 3 mm (research
+PITFALLS.md Pitfall 1) — which is also why no fuzzy boolean (`tol=`) was needed; no
+tangency is reachable by construction. The corner rule and the chamfered-corner rule
+never stack (`if`/`elif`, not two independent `if`s): with `bore_chamfer` 0 the mouth
+equals the corner, so exactly one hex refusal can fire. Rejected: capping the chamfer and
+warning (the user asked for that chamfer on that hex — a direct conflict, L03's refuse
+branch); leaving it to `_build_checked`'s catch-all ("try smaller fillets or chamfers",
+after a timed build in a worker slot, without naming `bore_hex`); a chamfer-against-side
+rule (measured unnecessary).
+
+**The measurement** (D-11, D-12). `make bench.build` (`bench/build_time.py`) times build,
+fine-STL and STEP export per parameter set, from a committed JSON sweep file, reused
+unchanged by Phases 9-12 (its own `make typecheck`/ruff scope). The 16-row Phase 8 sweep
+(D-11's 8-row cross product x module {1.75, 10}, added because the planning probe showed
+module drives fine-STL export time) recorded every row inside `SPUR_BUILD_TIMEOUT=30s`;
+the heaviest was `teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4`
+at **5.08 s of 30 s** (`bench/RESULTS.md` "Hex bore build and export time (Phase 8,
+D-11)") — below the worst single build already on record (7.39 s, "###
+`SPUR_BUILD_TIMEOUT`"). Rejected: a single configuration (assumes the default recess and
+chamfer are the heavy case rather than showing it); build time only (Phase 12's
+`REQ-measured-build-time` wants export time per feature too); an ad hoc command pasted
+into RESULTS.md (each later phase would re-derive it).
+
+**Reversibility.** Costly: D-01 (a link that builds alongside `bore_flat` cannot become a
+refusal later without breaking a published link, L05) and D-04 (`bore_effective`'s meaning
+under L21's typed contract — changing it later is a contract change with its own `Lxx`).
+Reversible: the two root-circle rules (relaxing either only lets more links build, never
+fewer) and the bench script.
+
+**Reason:** a hex bore is the first bore shape with points outside the round radius, so it
+is the first real test of L26's selector seam and of the recess datum. Both moved to the
+bore's true extent — the chamfered corner, not a round stand-in.

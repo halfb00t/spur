@@ -24,6 +24,7 @@ Severity (grep-able `Severity:` field):
 | nice | [Enji Guard not connected](active/2026-09-21-enji-guard-not-connected.md) | owner decides they want continuous AI audit |
 | nice | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook on a cold cache](active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | gsd exposes a commit-timeout setting, or an executor's warm retry also times out |
 | must | [CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly](active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md) | a fresh `pip install -e '.[dev]'` resolves a `cadquery`/`cadquery-ocp` pair different from the fixture's provenance |
+| must | [A round bore's chamfer reach is not checked against the root circle](active/2026-09-26-round-bore-chamfer-reach-is-not-checked.md) | Phase 9 edits check()'s round branch for the keyway, or a user reports the kernel error at a bore near its root limit |
 
 ## Resolved
 

@@ -4,6 +4,7 @@ VENV        ?= .venv
 IMAGE       ?= spur:latest
 PLATFORM    ?=
 PYTEST_ARGS ?=
+SWEEP       ?=
 
 # cadquery-ocp publishes wheels up to CPython 3.12, and spur supports 3.12 only (L23).
 # Choosing the interpreter here instead of using a bare `python3` is what stops pip
@@ -20,7 +21,7 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 .DEFAULT_GOAL := help
 .PHONY: help venv verify lint typecheck lint-imports no-fake-done test serve \
         check image test-image smoke up down logs lock vendor vendor-check fixture.regen \
-        bench bench.latency bench.memory \
+        bench bench.latency bench.memory bench.build \
         worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
 
 help:  ## list the targets
@@ -116,6 +117,11 @@ bench.latency: $(STAMP)  ## /api/health under load, on the host -- run `make ser
 
 bench.memory: $(STAMP)  ## container memory sweep over the 40-gear corpus; manages its own containers
 	$(PY) -m bench.memory sweep
+
+# bench.build needs no service: it times spur.model in-process, the code a worker runs
+# (D-12), so it never depends on `make serve` or Docker the way the two targets above do.
+bench.build: $(STAMP)  ## build, fine STL and STEP time per set vs SPUR_BUILD_TIMEOUT; SWEEP=<json> (default: the Phase 8 hex-bore sweep)
+	$(PY) -m bench.build_time $(SWEEP)
 
 # --- generated artefacts -----------------------------------------------------------
 

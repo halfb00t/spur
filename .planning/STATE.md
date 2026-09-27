@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 8
-current_phase_name: Hex Bore
-status: "Phase 7 shipped — PR #8"
-stopped_at: Phase 07 complete, ready to plan Phase 8
-last_updated: "2026-09-26T07:58:06.732Z"
-last_activity: 2026-09-26
-state_head: 71ba2ac66f18a65f35f6eb86c274468e293c42cf
+current_phase: 9
+current_phase_name: Keyway Bore
+status: "Phase 08 shipped — PR #9"
+stopped_at: Phase 08 complete, ready to plan Phase 9
+last_updated: "2026-09-27T03:07:05.204Z"
+last_activity: 2026-09-27
+state_head: dfed81aa0c8fd15ecab1563ce556cb4f374be917
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 6
+  completed_plans: 6
   percent: 17
 ---
 
@@ -25,21 +25,21 @@ See: .planning/PROJECT.md (updated 2026-09-26)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 8 — Hex Bore (first feature phase of v0.2; extends
+**Current focus:** Phase 9 — Keyway Bore (first of the two shaft-fit profiles left; carries the hex × keyway 422 that D-01 moved here)
 `calc.bore_rim_limit(p)` and is checked against the Phase 7 fixture).
 
 ## Current Position
 
-Phase: 8 — Hex Bore
+Phase: 9 — Keyway Bore
 Plan: Not started
-Status: Phase 7 shipped — PR #8
-Last activity: 2026-09-26
+Status: Phase 08 shipped — PR #9
+Last activity: 2026-09-27
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed via GSD: 23 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2; v0 was built and verified
+- Total plans completed via GSD: 27 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2, Phase 8: 4; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -55,6 +55,7 @@ Last activity: 2026-09-26
 | 5. CI Observed Green | 6 | ~1h38m | ~16min |
 | 6. Address tech debt: merge gate + solid cache | 4 | ~56min | ~14min |
 | 7. Foundation — edge selection + regression fixture | 2 | ~50min | ~25min |
+| 8. Hex Bore | 4 | ~2h49m | ~42min |
 | 07 | 2 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
@@ -102,6 +103,14 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 06 P04 | 17min | 3 tasks | 7 files |
 | Phase 07 P01 | 39min | 3 tasks | 8 files |
 | Phase 07 P02 | 11min | 3 tasks | 7 files |
+| Phase 08 P01 | ~19min | 3 tasks | 3 files |
+| Phase 08 P02 | 55min | 2 tasks | 8 files |
+| Phase 08 P03 | 25min | 2 tasks | 7 files |
+| Phase 08 P04 | 70min | 3 tasks | 11 files |
+| Phase 08 P01 | 15 min | 3 tasks | 3 files |
+| Phase 08 P02 | 55min | 2 tasks | 8 files |
+| Phase 08 P03 | 25 min | 2 tasks | 7 files |
+| Phase 08 P04 | 70 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -113,7 +122,7 @@ fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar acc
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
 verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
-L05 proof; a selector never silently selects nothing) was appended in Phase 7.
+L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -122,6 +131,14 @@ pending; the next milestone starts this list fresh.
 
 - [Phase 07]: D-06 gate: measured make verify delta with the regression fixture was 16.27s, above the plan's 15.0s line. Human chose Option A: accept the cost, keep all 44 records built. — 16.27s is under the planner's ~20s ceiling; the cost is spread evenly across all 39 builds (no single outlier); Success Metric 3 stays literal rather than trimmed to a curated subset.
 - [Phase 07]: L26 logged: the pre-v0.2 fixture (07-01) and the two edge-selector guards (07-02) as one standing rule -- a selector never silently selects nothing. — 07-CONTEXT.md's Claude's Discretion recommended one entry covering D-03 and D-15..D-18; follows L24/L25's paragraph shape.
+- [Phase 08]: Human approved all four proposed texts (REQUIREMENTS REQ-hex-bore, REQ-keyway-bore; ROADMAP Phase 8 SC2, Phase 9 SC2 + Phase 12 SC1) verbatim at the Task 2 checkpoint, no wording changes. — ROADMAP.md was written only through edit-phase's write_updated_phase step (scoped Edit per phase section, milestone-scope check before/after), never a direct whole-file write, per D-01.
+- [Phase 08]: recess_radii()'s hub clearance is measured from bore_mouth_limit(p) (the chamfered mouth), not bore_radius(p) + chamfer -- a hex's chamfer reaches its corner at 2c/sqrt(3), not c, and the old formula would have driven a 3 mm chamfer on a 6 mm hex into an invalid solid (research PITFALLS.md Pitfall 1); round and D-flat compute identical floats in identical order, so the fixture stayed byte-unchanged.
+- [Phase 08]: The replay's comparison, not the fixture, absorbed the two new DerivedDimensions fields: recorded fields still compare exactly, every field added since the capture must read null (REQ-derived-dimensions-additive).
+- [Phase 08]: The hex is a replacement branch in model._cut_bore, never an intersection with the round profile (D-01) -- bore_d/bore_flat stay live in the schema and are simply ignored when bore_hex > 0; the ignored-field warning is 08-03's task.
+- [Phase 08]: D-03's chamfer bound sits on the root circle (bore_mouth_limit vs pr.rf - MIN_WALL), not the hex's side length -- the planning probe found the kernel copes with chamfer-vs-side at every allowed size (ratio 8, rel 1e-6 volume match), so no side rule was added and the probe became a test instead (Flagged Assumption A4).
+- [Phase 08]: The corner rule and the chamfered-corner rule never stack (if/elif, not two independent ifs) -- with bore_chamfer 0 the mouth equals the corner, so exactly one hex refusal can fire (Flagged Assumption A5).
+- [Phase 08]: L27 appended: hex bore field, replaces-never-refuses, derived numbers, D-03's measured root-circle bounds, and D-11's heaviest row (5.08s of 30s) -- decision_log.md stayed append-only. — One entry covering the whole phase, following L26's shape; the sweep never approached the 30s budget so no checkpoint:decision fired.
+- [Phase 08]: The round bore's unchecked chamfer-reach gap was filed as must-severity debt, not fixed -- a fix would refuse round links that build today (L05). — Measured on 19 and 40 teeth at chamfers of 0.4, 1 and 2mm; out of Phase 8's scope (the hex got its own matching rule).
 
 ### Pending Todos
 
@@ -129,6 +146,7 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 8] The round bore's chamfer reach is not checked: `check()`'s round branch compares `bore_radius(p)`, not `bore_mouth_limit(p)`, so a round bore one chamfer short of the root circle builds and the kernel fails at its own limit instead of a 422 naming the fields. Not fixed in Phase 8 because a fix refuses round links that build today (L05): `docs/tech_debt/active/2026-09-26-round-bore-chamfer-reach-is-not-checked.md` (must).
 - ⚠️ [Phase 7] CI resolves `cadquery`/`cadquery-ocp` from an unpinned `pyproject.toml`
   range while `tests/regression/pre_v0_2.json` pins one resolved kernel's exact topology;
   a kernel bump turns the fixture red for reasons that are not a spur regression. The
@@ -164,6 +182,9 @@ None yet.
 
 - Phase 5 edited: edited fields: goal, success_criteria (reframed per 05-CONTEXT.md D-10), Phases-list one-liner
 - Phase 6 added: Address tech debt: merge gate + solid cache
+- Phase 8 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
+- Phase 9 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
+- Phase 12 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 
 ## Deferred Items
 
@@ -173,8 +194,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T06:57:00.849Z
-Stopped at: Phase 07 complete, ready to plan Phase 8
+Last session: 2026-09-26T16:22:43.952Z
+Stopped at: Phase 08 complete, ready to plan Phase 9
 Resume file: None
 
 ## Operator Next Steps

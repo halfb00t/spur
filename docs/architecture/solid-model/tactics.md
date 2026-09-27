@@ -6,7 +6,7 @@
 
 ```
 profile(p) ─▶ _gear_blank ─▶ _cut_face_recesses ─▶ _cut_bore ─▶ one validated Solid
-                (outline,       (annulus cut,          (circle or D,
+                (outline,       (annulus cut,          (circle, D or hex,
                  extrude)        floor fillets)         rim chamfers)
 ```
 
@@ -17,9 +17,10 @@ Root fillet arcs come from `_fillet_corner()`, which solves the tangency directl
 
 **Edge re-selection** is separated out on purpose: `_groove_floor_edges()` matches
 circles by radius and z; `_bore_rim_edges()` matches by position, sampling three interior
-points, within `calc.bore_rim_limit(p)` plus `BORE_RIM_SLACK`, because a D-bore rim is
-not one geometric type. Both selectors raise `BuildError` when they match nothing while
-their feature is on (L26) — a selector never silently selects nothing.
+points, within `calc.bore_rim_limit(p)` (a hex bore's corners) plus `BORE_RIM_SLACK`,
+because a D-bore rim is not one geometric type. Both selectors raise `BuildError` when
+they match nothing while their feature is on (L26) — a selector never silently selects
+nothing.
 
 **Caching and export**: `build()` and `export()` both take `_LOCK`, then go through
 `_build_cached` (an `lru_cache` on the parameter object) and `_EXPORTS` (an LRU bounded by

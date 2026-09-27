@@ -33,6 +33,7 @@ from .calc import (
     Profile,
     bore_radius,
     bore_rim_limit,
+    hex_across_flats,
     profile,
     recess_fillet,
     recess_radii,
@@ -192,15 +193,25 @@ def _cut_face_recesses(solid: cq.Shape, p: GearParams, rf: float) -> cq.Shape:
 
 
 def _cut_bore(solid: cq.Shape, p: GearParams) -> cq.Shape:
-    """Round or D-shaped bore, chamfered on both rims."""
-    if p.bore_d <= 0:
+    """Round, D-shaped or hexagonal bore, chamfered on both rims."""
+    if p.bore_hex > 0:
+        # circumscribed=True makes the polygon's diameter argument the across-flats (the
+        # hexagon is drawn around that circle). The kernel's default puts a flat facing
+        # +X -- the D-flat's side -- with a vertex on +-Y, and there is no rotation
+        # parameter (planning probe, 2026-09-26).
+        hole = (cq.Workplane("XY")
+                .polygon(6, hex_across_flats(p), circumscribed=True)
+                .extrude(p.face_width))
+    elif p.bore_d > 0:
+        r_bore = bore_radius(p)
+        hole = cq.Workplane("XY").circle(r_bore).extrude(p.face_width)
+        if p.bore_flat > 0:
+            flat = p.bore_flat + p.bore_clearance          # flat to opposite side
+            keep = cq.Workplane("XY").center(
+                flat - 2 * r_bore, 0).rect(2 * r_bore, 2 * r_bore + 2)
+            hole = hole.intersect(keep.extrude(p.face_width))
+    else:
         return solid
-    r_bore = bore_radius(p)
-    hole = cq.Workplane("XY").circle(r_bore).extrude(p.face_width)
-    if p.bore_flat > 0:
-        flat = p.bore_flat + p.bore_clearance          # flat to opposite side
-        keep = cq.Workplane("XY").center(flat - 2 * r_bore, 0).rect(2 * r_bore, 2 * r_bore + 2)
-        hole = hole.intersect(keep.extrude(p.face_width))
     solid = solid.cut(hole.val())  # type: ignore[arg-type]  # .val() is typed as a 4-way union
     if p.bore_chamfer > 0:
         solid = solid.chamfer(  # type: ignore[attr-defined]  # see _cut_face_recesses
@@ -241,13 +252,14 @@ def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],
 def _bore_rim_edges(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
     """The bore opening on the two end faces.
 
-    Selected by position, not by type: a D-bore rim is an arc plus a straight line. The
-    only other edges on an end face belong to a recess, and recess_radii() keeps at
-    least MIN_WALL plus the chamfer between that and the bore, so a radius test
-    separates them. The band comes from calc.bore_rim_limit(p), the exact geometric
-    bound, plus BORE_RIM_SLACK's measured margin. This selector runs only when
-    p.bore_chamfer > 0, so an empty result here is a modelling defect, never an answer
-    (D-15): a chamfer that silently selects nothing must never ship an unchamfered part.
+    Selected by position, not by type: a D-bore rim is an arc plus a straight line, a
+    hex rim six lines per face. The only other edges on an end face belong to a recess,
+    and recess_radii() keeps at least MIN_WALL between the chamfered bore mouth and the
+    recess, so a radius test separates them. The band comes from calc.bore_rim_limit(p),
+    the exact geometric bound, plus BORE_RIM_SLACK's measured margin. This selector runs
+    only when p.bore_chamfer > 0, so an empty result here is a modelling defect, never an
+    answer (D-15): a chamfer that silently selects nothing must never ship an unchamfered
+    part.
     """
     lim = bore_rim_limit(p) + BORE_RIM_SLACK
 

@@ -38,7 +38,7 @@ with tooth measurements untouched.
 - [x] **Phase 7: Foundation — Generalized Edge Selection + Regression Fixture** - Fix the (completed 2026-09-26)
       bore-rim edge selector for any bore shape and lock a regression fixture every later
       phase extends
-- [ ] **Phase 8: Hex Bore** - A hexagonal bore profile, proving the generalized selector on
+- [x] **Phase 8: Hex Bore** - A hexagonal bore profile, proving the generalized selector on (completed 2026-09-26)
       real geometry
 - [ ] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit,
       documented depth datum
@@ -99,7 +99,13 @@ proving Phase 7's generalized selector against real geometry.
      `warnings` entry rather than being silently ignored; `bore_chamfer` chamfers all six
      rim edges on both faces, proven by an edge-count assertion — Phase 7's selector fix
      shown on real geometry (the v0.1 selector would have selected zero edges here).
-  2. `bore_hex` together with `bore_flat` or a keyway field is a 422 naming the fields.
+  2. `bore_hex` with a non-zero `bore_flat` still builds. The hexagon replaces the
+     whole round profile, so `bore_flat` is ignored like `bore_d`, and one `warnings`
+     entry names each ignored non-zero field with its value. This is never a 422
+     (08-CONTEXT.md D-01/D-02; this supersedes the criterion's earlier `bore_flat` 422,
+     which `bore_flat`'s non-zero default would have fired on every link that only adds
+     `bore_hex`). `bore_hex` together with a keyway field is a 422 naming the fields,
+     delivered with the keyway fields in Phase 9.
   3. `DerivedDimensions` gains its first new field (hex corner-to-corner diameter), `null`
      when `bore_hex == 0`; the 19 existing fields keep their names, types and values; `make
      verify` stays green under `disallow_any_explicit` with no suppressions.
@@ -110,7 +116,24 @@ proving Phase 7's generalized selector against real geometry.
      bounding box.
 **Research flag**: No — `Workplane.polygon(circumscribed=True)` is numerically verified
 against the installed `.venv`; a small, well-bounded feature (`research/SUMMARY.md`).
-**Plans**: TBD
+**Plans**: 4/4 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 08-01-PLAN.md — D-01 first: amend REQ-hex-bore and SC2 (the hex replaces `bore_flat` too; the keyway 422 moves to Phase 9) through the edit-phase tooling, one human confirmation (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 08-02-PLAN.md — Tracer: `?bore_hex=6` end to end (field, cut, `bore_rim_limit`/`bore_mouth_limit`, two derived fields, UI rows, replay additive-field rule), then proof on the built solid: 12 rim edges, measured flats/corners, MIN_WALL to the recess (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 08-03-PLAN.md — Refusals before CAD (corner and chamfered corner vs root, measured), the ignored-field warning, API/CLI parity, README and help text (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 08-04-PLAN.md — `make bench.build` and the 16-row sweep at 200 teeth in `bench/RESULTS.md`, L27, round-bore chamfer-reach debt, final `make verify` (wave 4)
 
 ### Phase 9: Keyway Bore
 
@@ -128,7 +151,9 @@ REQ-hex-rim-chamfer, REQ-bore-derived-numbers
      with a keyway is a 422 naming both fields; the built solid's keyway floor position is
      measured against the stated datum by a test, not just the parameter round-tripping.
   2. A keyway and a D-flat coexist on one bore under this phase's placement rule; a keyway
-     that would intersect the flat is a 422 naming both fields.
+     that would intersect the flat is a 422 naming both fields. A keyway field together
+     with `bore_hex` is a 422 naming the fields (moved here from Phase 8 SC2 by
+     08-CONTEXT.md D-01).
   3. A keyway whose floor would come within `MIN_WALL` of the root circle or a recess wall
      is refused — 422 naming `keyway_depth` and the conflicting dimension — never capped.
   4. `bore_chamfer` correctly chamfers all six rim edges of a hex bore on both faces
@@ -230,7 +255,7 @@ closing out v0.2.
 
   1. The full composition test matrix passes: recess × each bore shape, recess × each
      cutout pattern (cut through the recessed floor), each cutout pattern × each bore
-     shape, and every refusal decided earlier — keyway × hex (Phase 8), two cutout patterns
+     shape, and every refusal decided earlier — keyway × hex (Phase 9), two cutout patterns
      on one part (Phase 11, REQ-one-cutout-pattern) — is exercised across the matrix with
      the 422 naming the fields.
   2. Every new v0.2 parameter is on the web form (in its own group), the API query and the
@@ -270,7 +295,7 @@ in Phases 7–11; no open technical questions remain by this point.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
-| 8. Hex Bore | v0.2 | 0/? | Not started | - |
+| 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 0/? | Not started | - |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |

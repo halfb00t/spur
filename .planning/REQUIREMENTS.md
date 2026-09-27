@@ -24,7 +24,9 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   gauge dimension across the bore, not a depth. `bore_clearance` is added to the keyway
   width as it already is to the bore. No standard-table sizing anywhere: help text may
   cite DIN 6885 ranges as examples but never fills a value. A keyway with `bore_d = 0` is
-  a 422 naming both fields.
+  a 422 naming both fields. A keyway together with `bore_hex` is a 422 naming the fields,
+  moved here from REQ-hex-bore by Phase 8 D-01 because this phase brings the keyway fields
+  that refusal names.
 - [ ] **REQ-keyway-composes-with-d-flat**: A keyway and a D-flat can coexist on one bore
   (placement rule decided in the phase); a keyway that would intersect the flat is a 422
   naming both fields.
@@ -32,12 +34,14 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   the root circle or of a recess wall is a 422 naming `keyway_depth` and the conflicting
   dimension — refused, not capped, because a shallower keyway is a part the key does not
   fit.
-- [ ] **REQ-hex-bore**: User can make the bore a regular hexagon by setting `bore_hex`
-  (across-flats, mm, 0 = off). The hexagon **replaces** the round profile: `bore_d` does
-  not apply to a hex bore, and the response's `warnings` say so when `bore_d` is also
-  non-zero (its default is non-zero, so a shareable link that only adds `bore_hex` still
-  works). `bore_clearance` is added across the flats. `bore_hex` together with `bore_flat`
-  or a keyway is a 422 naming the fields.
+- [x] **REQ-hex-bore**: User can make the bore a regular hexagon by setting `bore_hex`
+  (across-flats, mm, 0 = off). The hexagon **replaces** the whole round profile: `bore_d`
+  and `bore_flat` do not apply to a hex bore, and the response's `warnings` name each of
+  them that is non-zero, with its value. Both defaults are non-zero, so a shareable link
+  that only adds `bore_hex` still works — Phase 8 D-01/D-02 superseded the earlier
+  `bore_flat` 422, which would have refused every such link. `bore_clearance` is added
+  across the flats. `bore_hex` together with a keyway is a 422 naming the fields,
+  delivered with the keyway fields (REQ-keyway-bore, Phase 9).
 - [ ] **REQ-hex-rim-chamfer**: `bore_chamfer` chamfers all six rim edges of a hex bore on
   both faces, and both the arc and the straight rim edges of a keyway bore's round part.
   The rim edge selector is generalised per bore shape — today it selects by a scalar
@@ -105,7 +109,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   configuration — including a recess combined with each cutout pattern, and the honeycomb
   at its cap — in `bench/RESULTS.md`, inside `SPUR_BUILD_TIMEOUT`. The honeycomb cap and
   the tip-chamfer cap come from that sweep (L17-style), not from inspection.
-- [ ] **REQ-derived-dimensions-additive**: The 19 existing `DerivedDimensions` fields keep
+- [x] **REQ-derived-dimensions-additive**: The 19 existing `DerivedDimensions` fields keep
   their names, types and values; new fields are `null` when their feature is off; mypy
   `disallow_any_explicit` stays on with no suppressions (L21).
 - [x] **REQ-edge-selection-proven**: Chamfer and fillet edge selectors never silently
@@ -172,7 +176,7 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-keyway-bore | Phase 9 | Pending |
 | REQ-keyway-composes-with-d-flat | Phase 9 | Pending |
 | REQ-keyway-wall-refused | Phase 9 | Pending |
-| REQ-hex-bore | Phase 8 | Pending |
+| REQ-hex-bore | Phase 8 | Complete |
 | REQ-hex-rim-chamfer | Phase 9 | Pending |
 | REQ-bore-derived-numbers | Phase 9 | Pending |
 | REQ-spoke-cutout | Phase 11 | Pending |
@@ -187,7 +191,7 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-defaults-off-regression | Phase 7 | Complete |
 | REQ-three-interfaces-extended | Phase 12 | Pending |
 | REQ-measured-build-time | Phase 12 | Pending |
-| REQ-derived-dimensions-additive | Phase 8 | Pending |
+| REQ-derived-dimensions-additive | Phase 8 | Complete |
 | REQ-edge-selection-proven | Phase 7 | Complete |
 
 **Coverage:**
@@ -204,4 +208,4 @@ corner-to-corner field), which Phase 9's success criteria confirm still holds.
 
 ---
 *Requirements defined: 2026-09-25*
-*Last updated: 2026-09-25 after the v0.2 roadmap (Phases 7–12) — 20/20 requirements mapped*
+*Last updated: 2026-09-26 — REQ-hex-bore and REQ-keyway-bore amended per Phase 8 D-01 (08-CONTEXT.md)*

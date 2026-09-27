@@ -87,6 +87,12 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert stl.stat().st_size > 1000
     assert "Recess narrowed" in capsys.readouterr().err
 
+    hexgear = tmp_path / "hexgear.stl"
+    cli.main(["export", "-o", str(hexgear), "--bore-hex", "6"])
+    assert hexgear.stat().st_size > 1000
+    assert ("warning: Hex bore replaces the round profile: bore_d (9 mm) and bore_flat "
+            "(8 mm) are ignored.") in capsys.readouterr().err
+
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:
@@ -94,6 +100,31 @@ def test_infeasible_parameters_exit_2_and_name_the_problem(
         cli.main(["info", "--bore-flat", "3"])
     assert exc.value.code == 2
     assert "D-flat" in capsys.readouterr().err
+
+
+def test_a_hex_bore_the_root_cannot_hold_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-03a on the CLI: the same refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--bore-hex", "25"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "Hex bore is too large for the root diameter" in err
+    assert "reduce bore_hex" in err
+
+
+def test_cli_and_api_print_the_same_hex_bore_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a hex link: same document, same key order, same D-02
+    warning."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--bore-hex", "6"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info", params={"bore_hex": 6}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert any("Hex bore replaces the round profile" in w for w in cli_out["warnings"])
 
 
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:

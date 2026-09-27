@@ -1,0 +1,114 @@
+[
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 12.7,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 12.7,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 12.7,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 12.7,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 12.7,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 12.7,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 12.7,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 12.7,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  }
+]

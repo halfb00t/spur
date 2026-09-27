@@ -24,7 +24,7 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 
 class GearParams(BaseModel):
-    """Involute spur gear with optional D-bore and annular face recesses."""
+    """Involute spur gear with optional D-flat or hex bore and annular face recesses."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -52,12 +52,18 @@ class GearParams(BaseModel):
 
     # --- Bore ------------------------------------------------------------------
     bore_d: float = _f(9.0, 0, 200, title="Bore Ø", group="Bore", unit="mm", step=0.05,
-                       help="Round part of the bore. 0 = solid, no bore.")
+                       help="Round part of the bore. 0 = no round bore.")
     bore_flat: float = _f(8.0, 0, 200, title="D-flat", group="Bore", unit="mm", step=0.05,
                           help="Flat to opposite side of the bore. 0 = round bore.")
+    bore_hex: float = _f(0.0, 0, 200, title="Hex bore A/F", group="Bore", unit="mm",
+                         step=0.05,
+                         help="Across-flats of a hex bore; replaces the round bore and "
+                              "D-flat. Common hex stock: 5, 6, 8, 10, 12.7 mm. "
+                              "0 = round bore.")
     bore_clearance: float = _f(0.15, 0, 1, title="Bore clearance", group="Bore", unit="mm",
                                step=0.01,
-                               help="Added to bore and flat for print shrinkage. 0 for resin/SLS.")
+                               help="Added to bore, flat and "
+                                    "hex across-flats for print shrinkage. 0 for resin/SLS.")
     bore_chamfer: float = _f(0.4, 0, 3, title="Bore chamfer", group="Bore", unit="mm",
                              step=0.05, help="Chamfer on both bore edges. 0 = none.")
 

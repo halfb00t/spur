@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from spur.build_errors import BuildError
-from spur.calc import bore_radius, profile, recess_radii
+from spur.calc import MIN_WALL, bore_radius, bore_rim_limit, derive, profile, recess_radii
 from spur.model import (
     TESSELLATION,
     TOL,
@@ -34,6 +34,8 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     {"teeth": 8, "module": 1.5, "bore_d": 3, "bore_flat": 0, "recess_sides": "none"},
     {"teeth": 40, "module": 2, "profile_shift": 0.4, "pressure_angle": 20,
      "face_width": 12, "bore_d": 12, "bore_flat": 11, "recess_depth": 4},
+    {"bore_hex": 6},
+    {"bore_hex": 12.7, "bore_d": 0, "bore_flat": 0},
 ])
 def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     p = GearParams.model_validate(kw)
@@ -62,6 +64,19 @@ def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     pytest.param({"bore_d": 0}, None, 4, id="no-bore"),
     pytest.param({"recess_inner_d": 1.0}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4,
                  id="d-flat-recess-at-hub-clearance"),
+    pytest.param({"bore_hex": 6}, collections.Counter({"LINE": 12}), 4, id="hex-both"),
+    pytest.param({"bore_hex": 6, "recess_sides": "top"}, collections.Counter({"LINE": 12}), 2,
+                 id="hex-top"),
+    pytest.param({"bore_hex": 6, "recess_sides": "bottom"}, collections.Counter({"LINE": 12}), 2,
+                 id="hex-bottom"),
+    pytest.param({"bore_hex": 6, "recess_sides": "none"}, collections.Counter({"LINE": 12}), None,
+                 id="hex-no-recess"),
+    pytest.param({"bore_hex": 6, "bore_d": 0}, collections.Counter({"LINE": 12}), 4,
+                 id="hex-no-round-bore"),
+    pytest.param({"bore_hex": 6, "recess_inner_d": 1.0}, collections.Counter({"LINE": 12}), 4,
+                 id="hex-recess-at-hub-clearance"),
+    pytest.param({"bore_hex": 12.7}, collections.Counter({"LINE": 12}), 4,
+                 id="hex-wider-than-round-bore"),
 ])
 def test_each_edge_selector_picks_exactly_its_own_edges(
         kw: dict[str, object],
@@ -80,13 +95,16 @@ def test_each_edge_selector_picks_exactly_its_own_edges(
     d-flat-recess-at-hub-clearance is the boundary row: recess_inner_d 1.0 clamps the
     recess to its minimum hub clearance (bore_radius + MIN_WALL on the chamfer-off solid,
     4.975 mm) -- the closest a recess edge can come to the rim band -- and the rim
-    selection stays exact.
+    selection stays exact. The hex rows are Phase 7's selector shown on real geometry
+    (ROADMAP Phase 8 SC1).
     """
     bare_p = GearParams.model_validate({**kw, "bore_chamfer": 0, "recess_fillet": 0})
     bare = build(bare_p)
 
+    # The gate reads the shape-independent rim extent, not the round diameter: a hex
+    # with a zero round bore still has a bore.
     rim_counter = (collections.Counter(e.geomType() for e in _bore_rim_edges(bare, bare_p))
-                   if bare_p.bore_d > 0 else None)
+                   if bore_rim_limit(bare_p) > 0 else None)
 
     rr = recess_radii(bare_p, profile(bare_p).rf)
     floor_count: int | None = None
@@ -108,7 +126,7 @@ def test_each_edge_selector_picks_exactly_its_own_edges(
     # One tuple assertion: a wrong floor count never hides behind a wrong rim count.
     assert (rim_counter, floor_count) == (rim, floor)
 
-    if bare_p.bore_d > 0:
+    if bore_rim_limit(bare_p) > 0:
         rim_edges = _bore_rim_edges(bare, bare_p)
         for e in rim_edges:
             a, b = e.startPoint(), e.endPoint()
@@ -136,6 +154,113 @@ def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bo
         _build_checked(GearParams())
     # the catch-all must not relabel this defect as "try smaller fillets or chamfers"
     assert "try smaller" not in str(exc_info.value)
+
+
+def test_a_hex_bore_measures_the_across_flats_and_corners_it_reports() -> None:
+    """The printed numbers are what calipers read on the built part -- the Phase 8
+    analogue of Phase 9's datum test."""
+    p = GearParams(bore_hex=6, bore_chamfer=0, recess_sides="none")
+    s = build(p)
+    d = derive(p)
+    rim = _bore_rim_edges(s, p)
+    assert len(rim) == 12
+
+    vertex_radii = [math.hypot(q.x, q.y)
+                    for e in rim for q in (e.startPoint(), e.endPoint())]
+    for r in vertex_radii:
+        assert r == pytest.approx(bore_rim_limit(p), abs=TOL)
+
+    assert d.hex_across_corners is not None
+    assert 2 * max(vertex_radii) == pytest.approx(d.hex_across_corners, abs=5e-4)
+
+    mids = [(e.positionAt(0.5), math.hypot(e.positionAt(0.5).x, e.positionAt(0.5).y))
+            for e in rim]
+    assert d.hex_across_flats is not None
+    assert 2 * min(r for _, r in mids) == pytest.approx(d.hex_across_flats, abs=5e-4)
+
+    # A flat faces +X (the orientation comment in _cut_bore): the rim-edge midpoint
+    # with the largest x has x = half the across-flats, y = 0.
+    flat_mid = max((m for m, _ in mids), key=lambda v: v.x)
+    assert flat_mid.x == pytest.approx(d.hex_across_flats / 2, abs=1e-6)
+    assert flat_mid.y == pytest.approx(0.0, abs=1e-6)
+
+
+def test_the_same_hex_link_builds_the_same_solid_twice() -> None:
+    """The same-link-same-part property (L05), for a hex bore: two independent builds
+    of one parameter set agree on topology and volume. Uses _build_checked, bypassing
+    the lru_cache, so both builds actually run the kernel."""
+    p = GearParams(bore_hex=6)
+    a = _build_checked(p)
+    b = _build_checked(p)
+    assert len(a.Faces()) == len(b.Faces())
+    assert len(a.Edges()) == len(b.Edges())
+    assert a.Volume() == pytest.approx(b.Volume(), rel=1e-9)
+
+
+def test_the_pre_hex_rim_bound_would_have_chamfered_nothing_on_a_hex_wider_than_the_round_bore(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """ROADMAP SC1's "the v0.1 selector would have selected zero edges here", reproduced
+    on a hex whose corners (7.419 mm) lie outside the round bore's radius (4.575 mm) --
+    a hex smaller than the round bore would still have been caught by the old band,
+    which is why this row uses 12.7. Calls _build_checked, never build(): build()'s
+    lru_cache would hand back a solid built before the patch, without running the
+    selector at all.
+    """
+    assert _build_checked(GearParams(bore_hex=12.7)).isValid()
+
+    monkeypatch.setattr("spur.model.bore_rim_limit", bore_radius)
+    with pytest.raises(BuildError, match="selected no bore-rim edges"):
+        _build_checked(GearParams(bore_hex=12.7))
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"bore_hex": 24.15, "bore_chamfer": 0}, id="corner-limit"),
+    pytest.param({"bore_hex": 23.35}, id="chamfered-corner-limit"),
+])
+def test_the_largest_hex_each_root_rule_allows_builds(kw: dict[str, object]) -> None:
+    """D-03: one step inside each root rule's boundary builds a valid solid; the step
+    past it is test_calc.py's refusal."""
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+def test_the_kernel_chamfers_a_hex_bore_far_past_its_side_length() -> None:
+    """D-03's probe, recorded as a test: the side (0.375 mm) is 8x smaller than the
+    3 mm chamfer and the kernel still cuts the exact mouth, which is why check() has no
+    chamfer-against-side rule. Removed volume matches the analytic hex frustum within
+    rel 1e-6; planning read 82.618824 mm3 both ways, 2026-09-26."""
+    bare = _build_checked(GearParams(bore_hex=0.5, bore_chamfer=0, recess_sides="none"))
+    cham = _build_checked(GearParams(bore_hex=0.5, bore_chamfer=3, recess_sides="none"))
+    w, c = 0.65, 3.0  # effective across-flats (0.5 + 0.15 default clearance), chamfer
+    a1 = math.sqrt(3) / 2 * w ** 2
+    a2 = math.sqrt(3) / 2 * (w + 2 * c) ** 2
+    expected = 2 * (c / 3 * (a1 + a2 + math.sqrt(a1 * a2)) - a1 * c)
+    assert bare.Volume() - cham.Volume() == pytest.approx(expected, rel=1e-6)
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"bore_flat": 0}, id="round"),
+    pytest.param({}, id="d-flat"),
+    pytest.param({"bore_hex": 6}, id="hex"),
+])
+def test_a_recess_at_its_hub_clearance_keeps_min_wall_from_the_chamfered_bore_mouth(
+        kw: dict[str, object]) -> None:
+    """The assumption-delta invariant (08-02-PLAN.md): recess_radii() clears every bore
+    shape's chamfered mouth by MIN_WALL. With the hub at R + c (the plain chamfer,
+    not the corner-carried 2c/sqrt(3)) the hex row goes invalid at 2.586 mm and fails
+    at 3 mm (planning probe, research PITFALLS.md Pitfall 1)."""
+    p = GearParams.model_validate({**kw, "bore_chamfer": 3, "recess_inner_d": 1.0})
+    s = build(p)
+    assert s.isValid()
+    assert len(s.Solids()) == 1
+
+    rr = recess_radii(p, profile(p).rf)
+    assert rr is not None
+    r_in = rr[0]
+
+    mouth = max(math.hypot(v.X, v.Y) for v in s.Vertices()
+                if abs(v.Z - p.face_width) < TOL and math.hypot(v.X, v.Y) < r_in - TOL)
+    assert r_in - mouth == pytest.approx(MIN_WALL, abs=1e-6)
 
 
 def test_a_recess_fillet_that_selects_no_floor_edges_is_a_build_error() -> None:
