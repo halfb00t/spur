@@ -175,12 +175,12 @@ DIN-6885-convention depth a human can verify with calipers on the printed part.
 bore wall, DIN 6885 / ISO R773 `t2`; recorded in `REQUIREMENTS.md`, REQ-keyway-bore).
 The phase logs it as a new `Lxx` and settles the keyway-vs-D-flat placement rule at
 discuss time — a phase decision, not a research question.
-**Plans**: 5 plans
+**Plans**: 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 09-01-PLAN.md — D-20 first: amend SC1 (as-cut wall datum), SC3 (recess yields; corner vs root), SC4 (pre-keyway count plus built-solid proof), REQ-keyway-bore and REQ-keyway-wall-refused through the edit-phase tooling, one human confirmation (wave 1)
+- [x] 09-01-PLAN.md — D-20 first: amend SC1 (as-cut wall datum), SC3 (recess yields; corner vs root), SC4 (pre-keyway count plus built-solid proof), REQ-keyway-bore and REQ-keyway-wall-refused through the edit-phase tooling, one human confirmation (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -323,7 +323,7 @@ in Phases 7–11; no open technical questions remain by this point.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
-| 9. Keyway Bore | v0.2 | 0/? | Not started | - |
+| 9. Keyway Bore | v0.2 | 1/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |

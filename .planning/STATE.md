@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 09
 current_phase_name: Keyway Bore
 status: executing
-stopped_at: Phase 9 context gathered
-last_updated: "2026-09-27T13:07:28.177Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-09-27T13:12:43.106Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 09 execution started
-state_head: d03533bd0e0b7f403795d9530f51ee494fbce112
+state_head: 69948df5e34d8e742f9a6cbc87faa86e527eff68
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 11
-  completed_plans: 6
+  completed_plans: 7
   percent: 17
 ---
 
@@ -32,8 +32,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 09 (Keyway Bore) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 09
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-09-27 — Phase 09 execution started
 
 ## Performance Metrics
@@ -112,6 +112,7 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 08 P02 | 55min | 2 tasks | 8 files |
 | Phase 08 P03 | 25 min | 2 tasks | 7 files |
 | Phase 08 P04 | 70 min | 3 tasks | 11 files |
+| Phase 09 P01 | 14min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 08]: The corner rule and the chamfered-corner rule never stack (if/elif, not two independent ifs) -- with bore_chamfer 0 the mouth equals the corner, so exactly one hex refusal can fire (Flagged Assumption A5).
 - [Phase 08]: L27 appended: hex bore field, replaces-never-refuses, derived numbers, D-03's measured root-circle bounds, and D-11's heaviest row (5.08s of 30s) -- decision_log.md stayed append-only. — One entry covering the whole phase, following L26's shape; the sweep never approached the 30s budget so no checkpoint:decision fired.
 - [Phase 08]: The round bore's unchecked chamfer-reach gap was filed as must-severity debt, not fixed -- a fix would refuse round links that build today (L05). — Measured on 19 and 40 teeth at chamfers of 0.4, 1 and 2mm; out of Phase 8's scope (the hex got its own matching rule).
+- [Phase 09]: Human approved all four proposed texts (REQUIREMENTS REQ-keyway-bore, REQ-keyway-wall-refused; ROADMAP Phase 9 Requirements line, SC1, SC3, SC4) verbatim at the Task 2 checkpoint, no wording changes. — ROADMAP.md was written only through edit-phase's write_updated_phase step (scoped Edit of the Phase 9 section, milestone-scope check before/after), never a direct whole-file write, per D-20.
 
 ### Pending Todos
 
@@ -196,9 +198,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-27T10:22:08.355Z
-Stopped at: Phase 9 context gathered
-Resume file: .planning/phases/09-keyway-bore/09-CONTEXT.md
+Last session: 2026-09-27T13:12:43.074Z
+Stopped at: Completed 09-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
