@@ -387,6 +387,58 @@ def test_a_keyway_whose_floor_corner_nears_the_root_is_refused_naming_both() -> 
         "keyway_depth or keyway_width.")
 
 
+def test_a_round_bore_chamfer_that_touches_the_root_is_refused_naming_both() -> None:
+    """D-12: the fold-in of the round-bore-chamfer-reach debt, at the measured contact
+    point (ROOT_CONTACT), never at bore_mouth_limit(p) > rf - MIN_WALL (L05)."""
+    GearParams(bore_d=24.7, bore_chamfer=2, bore_flat=0)
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_d": 24.75, "bore_chamfer": 2, "bore_flat": 0})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["bore_chamfer", "bore_d"]
+    assert err["msg"] == (
+        "Bore chamfer reaches the root circle: the chamfered bore mouth is 28.900 mm "
+        "across and the root circle 28.875 mm, and the mouth must stay inside it; "
+        "reduce bore_chamfer or bore_d.")
+
+    # The exact contacts: a plain kwarg, the default chamfer (the round rule does not
+    # fire), and a step-aligned pair whose gap is +1.8e-15 mm in floats.
+    for kw in (
+        {"bore_d": 24.725, "bore_chamfer": 2, "bore_flat": 0},
+        {"bore_d": 27.925, "bore_flat": 0},
+        {"bore_d": 26.325, "bore_chamfer": 1.2, "bore_flat": 0},
+    ):
+        with pytest.raises(ValidationError) as exc:
+            GearParams.model_validate(kw)
+        assert exc.value.errors()[0]["ctx"]["fields"] == ["bore_chamfer", "bore_d"]
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_d": 24.725, "bore_chamfer": 2, "bore_flat": 0})
+    assert exc.value.errors()[0]["msg"] == (
+        "Bore chamfer reaches the root circle: the chamfered bore mouth is 28.875 mm "
+        "across and the root circle 28.875 mm, and the mouth must stay inside it; "
+        "reduce bore_chamfer or bore_d.")
+
+    GearParams(bore_d=27.9, bore_flat=0)
+    GearParams(teeth=40, bore_d=61.45, bore_chamfer=2, bore_flat=0)
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"teeth": 40, "bore_d": 61.5, "bore_chamfer": 2,
+                                   "bore_flat": 0})
+    assert exc.value.errors()[0]["ctx"]["fields"] == ["bore_chamfer", "bore_d"]
+
+    GearParams(bore_d=24.7, bore_chamfer=2, bore_flat=22)
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_d": 24.75, "bore_chamfer": 2, "bore_flat": 22})
+    assert exc.value.errors()[0]["ctx"]["fields"] == ["bore_chamfer", "bore_d"]
+
+
+def test_the_round_bore_rules_never_stack() -> None:
+    """The too-large rule and D-12's chamfer-reach rule are if/elif: past the root a
+    bore is refused once, naming only bore_d."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_d": 30, "bore_flat": 0})
+    assert exc.value.errors()[0]["ctx"]["fields"] == ["bore_d"]
+
+
 def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:
     """Thickness + gap must add up to the pitch on the root circle.
 

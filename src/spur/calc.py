@@ -15,6 +15,20 @@ if TYPE_CHECKING:
 MIN_WALL = 0.4          # mm, thinnest wall allowed anywhere in the body
 MIN_TIP_FDM = 0.4       # mm, below this a tip is roughly one extrusion line wide
 MIN_RECESS_WIDTH = 1.0  # mm, below this a face groove is not worth cutting
+ROOT_CONTACT = 1e-9     # mm, how close a chamfered round or D-flat bore mouth may sit
+# to the root circle before it counts as touching it. Re-measured 2026-09-27 on the
+# pinned kernel: a 20-step bisection over 12 configurations (8-200 teeth, module 0.5-10,
+# chamfer 1-3 mm, round and D-flat) landed identically on every one -- last failing gap
+# -3.8e-8 mm, first building gap 1.9e-8 mm, gap 0.0 failing on all 12 -- the boundary
+# does not move with tooth count, unlike the hex corner (L27). 1e-9 sits above the
+# 1.8e-15 mm float residue of a step-aligned contact (bore_d 26.325, chamfer 1.2 on the
+# default gear) and below every measured building gap; a gap of exactly 0.0025 mm (the
+# smallest non-zero step-aligned gap: bore_d, module, clearance, chamfer and profile
+# shift each move on their own 0.05/0.01 mm step) built on all 12. One configuration
+# (19 teeth, module 1.75, chamfer 2, round) failed to build at a gap of exactly 1e-9 mm
+# even though check() would accept it (gap == ROOT_CONTACT is not < ROOT_CONTACT) --
+# this sub-2e-8 mm residual band is orders of magnitude below the field's 0.05 mm step
+# and cannot be produced by any value a user or the API can set.
 
 
 def inv(a: float) -> float:
@@ -266,6 +280,19 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         r_bore = bore_radius(p)
         if p.bore_d > 0 and r_bore > pr.rf - MIN_WALL:
             errors.append(("Bore is too large for the root diameter.", ("bore_d",)))
+        # D-12: the rule sits at the measured contact point, not at bore_mouth_limit(p) >
+        # rf - MIN_WALL like the hex (L27), so no round or D-flat link that builds today
+        # is refused (09-CONTEXT.md D-12, L05); it reads the chamfered rim, not
+        # bore_mouth_limit, because a keyway corner has its own rule (D-10). The two
+        # round rules never stack (elif): past the too-large rule the mouth is past the
+        # root anyway.
+        elif p.bore_d > 0 and r_bore + p.bore_chamfer > pr.rf - ROOT_CONTACT:
+            mouth = r_bore + p.bore_chamfer
+            errors.append((
+                "Bore chamfer reaches the root circle: the chamfered bore mouth is "
+                f"{2 * mouth:.3f} mm across and the root circle {2 * pr.rf:.3f} mm, and "
+                "the mouth must stay inside it; reduce bore_chamfer or bore_d.",
+                ("bore_chamfer", "bore_d")))
         if p.bore_d > 0 and p.bore_flat > 0 and not p.bore_d / 2 < p.bore_flat < p.bore_d:
             errors.append((f"D-flat must be between {p.bore_d / 2:g} and {p.bore_d:g} mm "
                            "(flat to opposite side).", ("bore_flat",)))

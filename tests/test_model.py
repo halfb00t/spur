@@ -445,6 +445,34 @@ def test_the_kernel_chamfers_a_hex_bore_far_past_its_side_length() -> None:
 
 
 @pytest.mark.parametrize("kw", [
+    pytest.param({"bore_d": 24.7, "bore_chamfer": 2, "bore_flat": 0}, id="round-chamfer-2"),
+    pytest.param({"bore_d": 24.7, "bore_chamfer": 2, "bore_flat": 22}, id="d-flat-chamfer-2"),
+    pytest.param({"bore_d": 27.9, "bore_flat": 0}, id="round-default-chamfer"),
+    pytest.param({"teeth": 40, "bore_d": 61.45, "bore_chamfer": 2, "bore_flat": 0},
+                 id="round-40-teeth"),
+])
+def test_the_largest_round_bore_the_chamfer_rule_allows_builds(kw: dict[str, object]) -> None:
+    """D-12: one step inside the measured contact boundary builds a valid solid; the
+    step past it is test_calc.py's refusal."""
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"bore_d": 24.725, "bore_chamfer": 2, "bore_flat": 0}, id="round"),
+    pytest.param({"bore_d": 24.725, "bore_chamfer": 2, "bore_flat": 22}, id="d-flat"),
+])
+def test_the_kernel_fails_where_a_round_bore_chamfer_touches_the_root(
+        kw: dict[str, object]) -> None:
+    """D-12's measurement recorded as a test: the exact contact (validation bypassed via
+    model_copy()) is where the kernel itself fails, not a margin short of it -- if a
+    kernel bump makes this contact build, this goes red and the rule's premise must be
+    re-measured."""
+    with pytest.raises(BuildError, match="Geometry kernel failed"):
+        _build_checked(GearParams().model_copy(update=kw))
+
+
+@pytest.mark.parametrize("kw", [
     pytest.param({"bore_flat": 0}, id="round"),
     pytest.param({}, id="d-flat"),
     pytest.param({"bore_hex": 6}, id="hex"),
