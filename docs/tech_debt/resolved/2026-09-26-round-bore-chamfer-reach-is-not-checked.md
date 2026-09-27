@@ -3,8 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-26
-Resolved in: fix(09-03): refuse a round or D-flat bore whose chamfered mouth reaches the
-  root circle (D-12)
+Resolved in: 4b6a5b9
 Source: Phase 8 planning probe (08-03-PLAN.md `<interfaces>`)
 Related files:
 - src/spur/calc.py (check()'s round branch; bore_mouth_limit)
