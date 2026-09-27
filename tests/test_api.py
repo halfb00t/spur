@@ -270,6 +270,45 @@ def test_a_hex_link_with_a_d_flat_builds_and_says_both_round_fields_are_ignored(
     assert r.status_code == 200
 
 
+@pytest.mark.parametrize(("params", "fields"), [
+    pytest.param({"bore_hex": 6, "keyway_width": 3, "keyway_depth": 1.4},
+                 ["bore_hex", "keyway_depth", "keyway_width"], id="hex"),
+    pytest.param({"bore_d": 0, "keyway_width": 3, "keyway_depth": 1.4},
+                 ["bore_d", "keyway_depth", "keyway_width"], id="no-bore"),
+    pytest.param({"keyway_width": 3},
+                 ["keyway_depth", "keyway_width"], id="half-set"),
+    pytest.param({"bore_flat": 0, "keyway_width": 9, "keyway_depth": 1.4},
+                 ["bore_d", "keyway_width"], id="too-wide"),
+    pytest.param({"keyway_width": 6.5, "keyway_depth": 1.4},
+                 ["bore_flat", "keyway_width"], id="into-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 9.4},
+                 ["keyway_depth", "keyway_width"], id="too-deep"),
+])
+def test_a_keyway_conflict_is_422_naming_its_fields(
+        params: dict[str, object], fields: list[str]) -> None:
+    """The six keyway refusals (D-13, D-03, D-11, D-02, D-10) over HTTP, on both
+    /api/info and /api/model.stl (the check runs before any CAD work either way)."""
+    r = client.get("/api/info", params=params)
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == fields
+
+    r = client.get("/api/model.stl", params={**params, "quality": "preview"})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == fields
+
+
+@pytest.mark.parametrize("params", [
+    pytest.param({"keyway_width": 6.45, "keyway_depth": 1.4}, id="d-02-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 9.35}, id="d-10-root"),
+    pytest.param({"bore_flat": 0, "keyway_width": 8.95, "keyway_depth": 1.4},
+                 id="d-11-bore"),
+])
+def test_the_largest_keyway_each_rule_allows_is_served(params: dict[str, object]) -> None:
+    """One step inside each keyway rule is a 200, not a 422."""
+    r = client.get("/api/info", params=params)
+    assert r.status_code == 200
+
+
 def test_bad_type_is_422_on_the_field() -> None:
     r = client.get("/api/info", params={"teeth": "many"})
     assert r.status_code == 422

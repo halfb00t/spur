@@ -14,6 +14,7 @@ from spur.calc import (
     hex_across_flats,
     inv,
     keyway_corner_radius,
+    keyway_flat_wall,
     keyway_width_effective,
     profile,
     recess_radii,
@@ -282,6 +283,108 @@ def test_the_recess_yields_to_a_keyway_and_says_so_only_when_it_narrows_or_drops
     assert d.recess_id is None
     assert any("No room for a face recess between the bore wall and the tooth rim; "
               "it was left out." in w for w in d.warnings)
+
+
+@pytest.mark.parametrize(("kw", "msg", "fields"), [
+    pytest.param(
+        {"bore_hex": 6, "keyway_width": 3, "keyway_depth": 1.4},
+        "A keyway cannot be cut into a hex bore: set bore_hex to 0 for a keyed round "
+        "or D-flat bore, or set keyway_width and keyway_depth to 0.",
+        ["bore_hex", "keyway_depth", "keyway_width"], id="hex"),
+    pytest.param(
+        {"bore_d": 0, "keyway_width": 3, "keyway_depth": 1.4},
+        "A keyway needs a round bore to cut into: set bore_d, or set keyway_width and "
+        "keyway_depth to 0.",
+        ["bore_d", "keyway_depth", "keyway_width"], id="no-bore"),
+    pytest.param(
+        {"keyway_width": 3},
+        "A keyway needs both keyway_width and keyway_depth: set both above 0, or both "
+        "to 0.",
+        ["keyway_depth", "keyway_width"], id="half-set-width"),
+    pytest.param(
+        {"keyway_depth": 1.4},
+        "A keyway needs both keyway_width and keyway_depth: set both above 0, or both "
+        "to 0.",
+        ["keyway_depth", "keyway_width"], id="half-set-depth"),
+])
+def test_a_keyway_needs_a_round_bore_and_both_of_its_fields(
+        kw: dict[str, object], msg: str, fields: list[str]) -> None:
+    """D-13 (before the shape branches) and D-03: exact sentence and fields."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["msg"] == msg
+    assert err["ctx"]["fields"] == fields
+
+
+def test_a_keyway_on_a_hex_bore_with_only_one_field_set_names_both_sentences_hex_first() -> None:
+    """D-13 and D-03 can both fire on one set: the hex sentence comes first (the order
+    check() appends them), and the merged, sorted fields cover all three names."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_hex": 6, "keyway_width": 3})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["msg"].startswith("A keyway cannot be cut into a hex bore")
+    assert "A keyway needs both keyway_width and keyway_depth" in err["msg"]
+    assert err["ctx"]["fields"] == ["bore_hex", "keyway_depth", "keyway_width"]
+
+
+def test_a_keyway_as_wide_as_the_bore_is_refused_and_one_step_narrower_is_accepted() -> None:
+    """D-11: no kernel boundary exists (research pushed to 166% of bore_d without a
+    failure); the bound is definitional, one step either side of keyway_width == bore_d."""
+    GearParams(bore_flat=0, keyway_width=8.95, keyway_depth=1.4)
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"bore_flat": 0, "keyway_width": 9, "keyway_depth": 1.4})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["bore_d", "keyway_width"]
+    assert err["msg"] == (
+        "Keyway is too wide for the bore: keyway_width (9 mm) must be less than "
+        "bore_d (9 mm), or its sides no longer meet the bore wall; reduce keyway_width.")
+
+
+def test_a_keyway_that_leaves_less_than_min_wall_to_the_d_flat_is_refused_naming_both() -> None:
+    """D-02: the arc of round wall between the D-flat's corner and the keyway's side,
+    one step either side of the boundary the kernel builds every width up to."""
+    GearParams(keyway_width=6.45, keyway_depth=1.4)
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"keyway_width": 6.5, "keyway_depth": 1.4})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["bore_flat", "keyway_width"]
+    assert err["msg"] == (
+        "Keyway runs too close to the D-flat: it leaves 0.381 mm of round bore wall "
+        "between the flat and the keyway's side, which must be at least 0.4 mm; "
+        "reduce keyway_width or increase bore_flat.")
+
+    # Past the flat's corner the wall is negative; the message never prints that.
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"keyway_width": 7.5, "keyway_depth": 1.4})
+    assert "it leaves 0.000 mm of round bore wall" in exc.value.errors()[0]["msg"]
+
+    # A round bore (no D-flat) has no wall to run into.
+    GearParams(keyway_width=6.5, keyway_depth=1.4, bore_flat=0)
+
+    assert keyway_flat_wall(GearParams(keyway_width=3, keyway_depth=1.4)) == pytest.approx(
+        2.4956, abs=1e-4)
+    assert keyway_flat_wall(GearParams(keyway_width=6.45, keyway_depth=1.4)) == pytest.approx(
+        0.4174, abs=1e-4)
+
+
+def test_a_keyway_whose_floor_corner_nears_the_root_is_refused_naming_both() -> None:
+    """D-10: the floor corner, not the centreline; never capped -- the accepted depth is
+    honoured in full (REQ-keyway-wall-refused)."""
+    assert derive(GearParams(keyway_width=3, keyway_depth=9.35)).keyway_floor_to_wall == 18.5
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"keyway_width": 3, "keyway_depth": 9.4})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["keyway_depth", "keyway_width"]
+    assert err["msg"] == (
+        "Keyway is too deep for the root diameter: its floor corners reach 28.13 mm "
+        "across, which must stay 0.4 mm inside the root circle (28.88 mm); reduce "
+        "keyway_depth or keyway_width.")
 
 
 def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:

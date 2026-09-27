@@ -401,6 +401,35 @@ def test_the_largest_hex_each_root_rule_allows_builds(kw: dict[str, object]) -> 
     assert s.isValid()
 
 
+@pytest.mark.parametrize("kw", [
+    pytest.param({"keyway_width": 6.45, "keyway_depth": 1.4}, id="d-02-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 9.35}, id="d-10-root"),
+    pytest.param({"bore_flat": 0, "keyway_width": 8.95, "keyway_depth": 1.4}, id="d-11-bore"),
+])
+def test_the_largest_keyway_each_rule_allows_builds(kw: dict[str, object]) -> None:
+    """D-02/D-10/D-11: one step inside each rule's boundary builds a valid solid; the
+    step past it is test_calc.py's refusal."""
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"keyway_width": 7.0, "keyway_depth": 1.4}, id="d-02-tangent"),
+    pytest.param({"keyway_width": 7.5, "keyway_depth": 1.4}, id="d-02-notched"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 9.9}, id="d-10-past-root"),
+    pytest.param({"bore_flat": 0, "keyway_width": 9.0, "keyway_depth": 1.4},
+                 id="d-11-as-wide-as-the-bore"),
+])
+def test_the_kernel_cuts_one_valid_solid_past_each_keyway_rule(kw: dict[str, object]) -> None:
+    """The rules are the part's, not the kernel's: validation bypassed
+    (model_copy(), which -- like model_construct() -- never re-runs _feasible), the
+    kernel still cuts one valid solid past every one of D-02/D-10/D-11's boundaries, the
+    way 08-03 recorded the hex side probe as a test, so a kernel bump that changes it
+    goes red."""
+    s = _build_checked(GearParams().model_copy(update=kw))
+    assert s.isValid()
+
+
 def test_the_kernel_chamfers_a_hex_bore_far_past_its_side_length() -> None:
     """D-03's probe, recorded as a test: the side (0.375 mm) is 8x smaller than the
     3 mm chamfer and the kernel still cuts the exact mouth, which is why check() has no
