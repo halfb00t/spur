@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 09
 current_phase_name: Keyway Bore
 status: executing
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-09-27T13:12:43.106Z"
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-09-27T13:42:04.755Z"
 last_activity: 2026-09-27
 last_activity_desc: Phase 09 execution started
-state_head: 69948df5e34d8e742f9a6cbc87faa86e527eff68
+state_head: 863772eed018b9efea5e45b8acbc4cc6f827e615
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
   percent: 17
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 09 (Keyway Bore) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-27 — Phase 09 execution started
 
@@ -113,6 +113,7 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 08 P03 | 25 min | 2 tasks | 7 files |
 | Phase 08 P04 | 70 min | 3 tasks | 11 files |
 | Phase 09 P01 | 14min | 3 tasks | 3 files |
+| Phase 09 P02 | 27min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -142,6 +143,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 08]: L27 appended: hex bore field, replaces-never-refuses, derived numbers, D-03's measured root-circle bounds, and D-11's heaviest row (5.08s of 30s) -- decision_log.md stayed append-only. — One entry covering the whole phase, following L26's shape; the sweep never approached the 30s budget so no checkpoint:decision fired.
 - [Phase 08]: The round bore's unchecked chamfer-reach gap was filed as must-severity debt, not fixed -- a fix would refuse round links that build today (L05). — Measured on 19 and 40 teeth at chamfers of 0.4, 1 and 2mm; out of Phase 8's scope (the hex got its own matching rule).
 - [Phase 09]: Human approved all four proposed texts (REQUIREMENTS REQ-keyway-bore, REQ-keyway-wall-refused; ROADMAP Phase 9 Requirements line, SC1, SC3, SC4) verbatim at the Task 2 checkpoint, no wording changes. — ROADMAP.md was written only through edit-phase's write_updated_phase step (scoped Edit of the Phase 9 section, milestone-scope check before/after), never a direct whole-file write, per D-20.
+- [Phase 09]: D-14's datum verified on the built solid; D-09's yield measured (recess narrows/drops, never a 422); D-07's amended proof (pre-keyway matrix + built-solid chamfer/sharp-slot); D-05 proven sharp on the finished solid.
 
 ### Pending Todos
 
@@ -198,8 +200,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-27T13:12:43.074Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-09-27T13:42:04.727Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
