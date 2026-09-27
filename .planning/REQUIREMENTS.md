@@ -30,7 +30,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 - [ ] **REQ-keyway-composes-with-d-flat**: A keyway and a D-flat can coexist on one bore
   (placement rule decided in the phase); a keyway that would intersect the flat is a 422
   naming both fields.
-- [ ] **REQ-keyway-wall-refused**: A keyway whose floor corner would come within
+- [x] **REQ-keyway-wall-refused**: A keyway whose floor corner would come within
   `MIN_WALL` of the root circle is a 422 naming `keyway_depth` and `keyway_width` —
   refused, not capped, because a shallower keyway is a part the key does not fit. A face
   recess yields to the keyway instead: `recess_radii()` keeps `MIN_WALL` from the
@@ -45,7 +45,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   `bore_flat` 422, which would have refused every such link. `bore_clearance` is added
   across the flats. `bore_hex` together with a keyway is a 422 naming the fields,
   delivered with the keyway fields (REQ-keyway-bore, Phase 9).
-- [ ] **REQ-hex-rim-chamfer**: `bore_chamfer` chamfers all six rim edges of a hex bore on
+- [x] **REQ-hex-rim-chamfer**: `bore_chamfer` chamfers all six rim edges of a hex bore on
   both faces, and both the arc and the straight rim edges of a keyway bore's round part.
   The rim edge selector is generalised per bore shape — today it selects by a scalar
   radius (`r_bore + 0.01`) and would silently select zero edges on a hex bore.
@@ -178,9 +178,9 @@ research flags): `ROADMAP.md` "Phase Details".
 |-------------|-------|--------|
 | REQ-keyway-bore | Phase 9 | Pending |
 | REQ-keyway-composes-with-d-flat | Phase 9 | Pending |
-| REQ-keyway-wall-refused | Phase 9 | Pending |
+| REQ-keyway-wall-refused | Phase 9 | Complete |
 | REQ-hex-bore | Phase 8 | Complete |
-| REQ-hex-rim-chamfer | Phase 9 | Pending |
+| REQ-hex-rim-chamfer | Phase 9 | Complete |
 | REQ-bore-derived-numbers | Phase 9 | Pending |
 | REQ-spoke-cutout | Phase 11 | Pending |
 | REQ-hole-cutout | Phase 11 | Pending |
