@@ -505,6 +505,8 @@ phase's own work, not to be fixed here.
 
 1. **Does D-11's geometric-sanity bound need human confirmation, or is it Claude's
    Discretion under D-20's list?**
+   **(RESOLVED 2026-09-27 — 09-CONTEXT.md D-11 addendum: the human chose the geometric
+   bound `keyway_width + bore_clearance >= bore_d + bore_clearance`; no kernel boundary exists.)**
    - What we know: 09-CONTEXT.md's "Claude's Discretion" section explicitly names "the
      flat-rule measure (D-02) and the exact kernel boundary for it, D-10 and D-11" as the
      planner's to measure and write down.
@@ -520,6 +522,9 @@ phase's own work, not to be fixed here.
 2. **Should the D-12 fix's exact refusal margin be `rf` or `rf` minus a small epsilon
    (say, `TOL` or `BORE_RIM_SLACK`) to leave a hair of margin against float roundoff at
    the boundary?**
+   **(RESOLVED 2026-09-27 — 09-03-PLAN.md Task 2: a 20-step bisection on 12 configurations
+   puts the failure at `bore_mouth_limit(p) == rf`, teeth-independent; `ROOT_CONTACT = 1e-9`
+   guards float roundoff at the boundary, re-measured by the task itself.)**
    - What we know: this session's coarsest step (0.05 mm) shows FAIL at `mouth == rf`
      and OK at `mouth - rf = -0.05`; the true crossing is somewhere in that 0.05 mm band.
    - What's unclear: the exact sub-0.05mm crossing point, and whether it is float-stable
