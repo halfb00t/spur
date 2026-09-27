@@ -64,6 +64,23 @@ def hex_across_flats(p: GearParams) -> float:
     return p.bore_hex + p.bore_clearance if p.bore_hex > 0 else 0.0
 
 
+def keyway_width_effective(p: GearParams) -> float:
+    """The keyway's effective width, clearance added as it is to the bore
+    (REQ-keyway-bore) -- what calipers read across the slot. 0.0 with no keyway."""
+    return p.keyway_width + p.bore_clearance if p.keyway_width > 0 else 0.0
+
+
+def keyway_corner_radius(p: GearParams) -> float:
+    """The keyway's farthest point from the axis: its floor corner, un-chamfered
+    because the slot is cut after the rim chamfer (D-06). The floor sits at
+    bore_radius(p) + keyway_depth, the as-cut wall plus the depth (D-14) -- a
+    3 x 1.4 mm keyway on the default 9 mm bore puts the corner at 6.1791 mm. 0.0 with
+    no keyway."""
+    if p.keyway_width > 0 and p.keyway_depth > 0:
+        return math.hypot(bore_radius(p) + p.keyway_depth, keyway_width_effective(p) / 2)
+    return 0.0
+
+
 def bore_rim_limit(p: GearParams) -> float:
     """The farthest any point on the bore's rim can sit from the axis -- the exact
     geometric bound, no slack.
@@ -91,10 +108,20 @@ def bore_mouth_limit(p: GearParams) -> float:
     0.155c: with it, a 3 mm chamfer on a 6 mm hex ran the recess into an invalid solid at
     2.586 mm and a kernel failure at 3 mm (research PITFALLS.md Pitfall 1). 0.0 with no
     bore at all.
+
+    A keyway's floor corner is the farthest end-face point when it lies beyond the
+    chamfered rim, and the recess yields to it as it yields to a hex corner
+    (09-CONTEXT.md D-09): the 3 x 1.4 mm keyway on the default bore puts its corner
+    0.327 mm from the default recess hub wall, under MIN_WALL. No fuzzy boolean (tol=)
+    is needed here: the slot's faces lie inside the bore or inside material, so this
+    clearance keeps MIN_WALL between the corner and the recess by construction (research
+    Pitfall 3, 09-CONTEXT.md Claude's Discretion). recess_radii() itself is unchanged --
+    it already reads bore_mouth_limit(p).
     """
     if p.bore_hex > 0:
         return bore_rim_limit(p) + 2 / math.sqrt(3) * p.bore_chamfer
-    return bore_rim_limit(p) + (p.bore_chamfer if p.bore_d > 0 else 0.0)
+    return max(bore_rim_limit(p) + (p.bore_chamfer if p.bore_d > 0 else 0.0),
+               keyway_corner_radius(p))
 
 
 def recess_radii(p: GearParams, rf: float) -> tuple[float, float] | None:
@@ -274,6 +301,15 @@ class DerivedDimensions(BaseModel):
         description="Hex bore across corners including print clearance, what calipers "
                     "read between two opposite corners; null with no hex bore.",
         json_schema_extra={"unit": "mm"})
+    keyway_floor_to_wall: float | None = Field(
+        description="Keyway floor to the opposite bore wall, including print "
+                    "clearance: what a pin and calipers read across the bore through "
+                    "the keyway; null with no keyway.",
+        json_schema_extra={"unit": "mm"})
+    keyway_width_effective: float | None = Field(
+        description="Keyway width including print clearance, what calipers read "
+                    "across the slot; null with no keyway.",
+        json_schema_extra={"unit": "mm"})
     recess_id: float | None = Field(
         description="Face recess inner diameter; null with no recess.",
         json_schema_extra={"unit": "mm"})
@@ -387,6 +423,13 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         bore_effective=r3(2 * bore_radius(p)) if p.bore_d > 0 and p.bore_hex == 0 else None,
         hex_across_flats=r3(hex_across_flats(p)) if p.bore_hex > 0 else None,
         hex_across_corners=r3(2 * bore_rim_limit(p)) if p.bore_hex > 0 else None,
+        # The opposite wall is always the round wall, because the keyway sits a quarter
+        # turn from the D-flat (D-01) -- floor-to-wall is bore_effective + keyway_depth
+        # whether or not a flat exists.
+        keyway_floor_to_wall=(r3(2 * bore_radius(p) + p.keyway_depth)
+                              if keyway_corner_radius(p) > 0 else None),
+        keyway_width_effective=(r3(keyway_width_effective(p))
+                                if keyway_corner_radius(p) > 0 else None),
         recess_id=r3(2 * rr[0]) if rr else None,
         recess_od=r3(2 * rr[1]) if rr else None,
         recess_fillet=r3(rec_fil) if rr else None,

@@ -76,8 +76,9 @@ def test_openapi_documents_the_typed_contracts() -> None:
     fields = {
         "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
         "root_thickness", "root_gap", "root_fillet", "span_teeth", "span",
-        "bore_effective", "hex_across_flats", "hex_across_corners", "recess_id",
-        "recess_od", "recess_fillet", "web", "warnings", "mate_teeth", "centre_distance",
+        "bore_effective", "hex_across_flats", "hex_across_corners", "keyway_floor_to_wall",
+        "keyway_width_effective", "recess_id", "recess_od", "recess_fillet", "web",
+        "warnings", "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -90,6 +91,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["centre_distance"]["unit"] == "mm"  # nullable, still a length
     assert component["properties"]["hex_across_flats"]["unit"] == "mm"
     assert component["properties"]["hex_across_corners"]["unit"] == "mm"
+    assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
+    assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
@@ -149,7 +152,7 @@ def test_a_hex_bore_link_is_served_with_its_two_numbers() -> None:
     assert props["bore_hex"]["maximum"] == 200
     assert props["bore_hex"]["default"] == 0
     names = list(props)
-    assert names.index("bore_hex") == names.index("bore_flat") + 1
+    assert names.index("bore_hex") == names.index("keyway_depth") + 1
 
     r = client.get("/api/info", params={"bore_hex": 6})
     assert r.status_code == 200
@@ -175,6 +178,53 @@ def test_a_hex_bore_link_is_served_with_its_two_numbers() -> None:
     assert len(r.content) > 84
 
     r = client.get("/api/model.step", params={"bore_hex": 6})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_keyed_link_is_served_with_its_two_numbers() -> None:
+    """?keyway_width=3&keyway_depth=1.4 end to end (D-01, D-04, D-14, D-15): the schema,
+    /api/info's two new numbers with the recess moved out to clear the keyway corner,
+    the plain-default case with both keyway fields null, the le-200 refusal, and both
+    export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    for name in ("keyway_width", "keyway_depth"):
+        assert props[name]["group"] == "Bore"
+        assert props[name]["unit"] == "mm"
+        assert props[name]["minimum"] == 0
+        assert props[name]["maximum"] == 200
+        assert props[name]["default"] == 0
+    names = list(props)
+    assert names.index("keyway_width") == names.index("bore_flat") + 1
+    assert names.index("keyway_depth") == names.index("keyway_width") + 1
+
+    r = client.get("/api/info", params={"keyway_width": 3, "keyway_depth": 1.4})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["keyway_floor_to_wall"] == pytest.approx(10.55)
+    assert body["keyway_width_effective"] == pytest.approx(3.15)
+    assert body["bore_effective"] == pytest.approx(9.15)  # D-04: still a D-flat bore
+    assert body["recess_id"] == pytest.approx(13.158)
+    assert body["recess_od"] == pytest.approx(25.158)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["keyway_floor_to_wall"] is None
+    assert body["keyway_width_effective"] is None
+
+    r = client.get("/api/info", params={"keyway_width": 200.05})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["loc"] == ["query", "keyway_width"]
+
+    r = client.get("/api/model.stl", params={"keyway_width": 3, "keyway_depth": 1.4,
+                                             "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"keyway_width": 3, "keyway_depth": 1.4})
     assert r.status_code == 200
     assert r.content.startswith(b"ISO-10303-21;")
 

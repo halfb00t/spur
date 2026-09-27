@@ -24,7 +24,8 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 
 class GearParams(BaseModel):
-    """Involute spur gear with optional D-flat or hex bore and annular face recesses."""
+    """Involute spur gear with optional D-flat or hex bore, a keyway, and annular face
+    recesses."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -55,6 +56,19 @@ class GearParams(BaseModel):
                        help="Round part of the bore. 0 = no round bore.")
     bore_flat: float = _f(8.0, 0, 200, title="D-flat", group="Bore", unit="mm", step=0.05,
                           help="Flat to opposite side of the bore. 0 = round bore.")
+    keyway_width: float = _f(0.0, 0, 200, title="Keyway width", group="Bore",
+                             unit="mm", step=0.05,
+                             help="Width of a keyway slot in a round or D-flat bore, "
+                                  "cut a quarter turn from the D-flat; bore_clearance "
+                                  "is added. Its edges stay sharp: bore_chamfer "
+                                  "chamfers the round part only. 0 = no keyway.")
+    keyway_depth: float = _f(0.0, 0, 200, title="Keyway depth", group="Bore",
+                             unit="mm", step=0.05,
+                             help="Depth from the as-cut bore wall (bore clearance "
+                                  "included) to the keyway floor: the DIN 6885 / ISO "
+                                  "R773 t2 convention. ANSI B17.1's T is measured "
+                                  "across the bore and is a different number. "
+                                  "0 = no keyway.")
     bore_hex: float = _f(0.0, 0, 200, title="Hex bore A/F", group="Bore", unit="mm",
                          step=0.05,
                          help="Across-flats of a hex bore; replaces the round bore and "
@@ -62,8 +76,8 @@ class GearParams(BaseModel):
                               "0 = round bore.")
     bore_clearance: float = _f(0.15, 0, 1, title="Bore clearance", group="Bore", unit="mm",
                                step=0.01,
-                               help="Added to bore, flat and "
-                                    "hex across-flats for print shrinkage. 0 for resin/SLS.")
+                               help="Added to bore, flat, hex across-flats and keyway "
+                                    "width for print shrinkage. 0 for resin/SLS.")
     bore_chamfer: float = _f(0.4, 0, 3, title="Bore chamfer", group="Bore", unit="mm",
                              step=0.05, help="Chamfer on both bore edges. 0 = none.")
 
