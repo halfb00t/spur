@@ -4,12 +4,11 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 10
 current_phase_name: Tooth-Tip Chamfer
-status: planning
+status: "Phase 09 shipped — PR #10"
 stopped_at: Phase 09 complete, ready to plan Phase 10
-last_updated: "2026-09-27T15:36:43.138Z"
-last_activity: 2026-09-27
-last_activity_desc: Phase 09 complete, transitioned to Phase 10
-state_head: e7a03fca9874527be9a4a81d53de11ebc8c39942
+last_updated: "2026-09-28T06:40:13.701Z"
+last_activity: 2026-09-28
+state_head: 31269e290ff08ecb37c1553f168fa78ef512c7e7
 progress:
   total_phases: 6
   completed_phases: 1
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 10 — Tooth-Tip Chamfer
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-27 — Phase 09 complete, transitioned to Phase 10
+Status: Phase 09 shipped — PR #10
+Last activity: 2026-09-28
 
 ## Performance Metrics
 
