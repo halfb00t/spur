@@ -26,22 +26,10 @@ from pydantic import ValidationError
 
 from bench import machine_facts
 from spur import int_env, model
-from spur.calc import Profile, profile, root_fillet
+from spur.calc import profile, root_fillet, spline_start
 from spur.params import GearParams
 
 TOL = model.TOL
-
-
-def spline_start(pr: Profile, fillet: float) -> float:
-    """Radius where model._outline's involute spline begins.
-
-    Mirrors model.py:123-125 exactly -- not imported, because the field this radius
-    belongs to does not exist yet. 10-02 moves these three lines into spur.calc, after
-    which this module imports that function instead of duplicating it.
-    """
-    r_line = max(pr.rb, pr.rf + 2.0 * fillet) if fillet > 0 else pr.rb
-    r_line = min(r_line, pr.rf + 0.5 * (pr.ra - pr.rf))
-    return max(r_line, pr.r_start)
 
 
 def tip_arcs(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:

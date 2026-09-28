@@ -156,6 +156,22 @@ def test_cli_and_api_print_the_same_keyed_document(
     assert list(cli_out) == list(DerivedDimensions.model_fields)
 
 
+def test_cli_and_api_print_the_same_tip_chamfer_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a capped tip chamfer: same document, same key order, the
+    pitch-circle warning, tip_chamfer_effective 1.75."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--tip-chamfer", "3"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info", params={"tip_chamfer": 3}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert cli_out["tip_chamfer_effective"] == pytest.approx(1.75)
+    assert cli_out["warnings"] == [
+        "Tip chamfer reduced to 1.75 mm to keep it above the pitch circle."]
+
+
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])

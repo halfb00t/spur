@@ -48,6 +48,12 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     {"keyway_width": 3, "keyway_depth": 1.4},
     {"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
     {"keyway_width": 3, "keyway_depth": 1.4, "bore_chamfer": 0, "recess_sides": "none"},
+    {"tip_chamfer": 0.4},
+    {"tip_chamfer": 3},  # capped to 1.75 (pitch circle)
+    # capped to 2.937 (involute flank, D-04) -- without that third cap term this link
+    # would carry the analytic caps' c=3 straight to the kernel and fail (10-01).
+    {"tip_chamfer": 3, "profile_shift": 1.0, "pressure_angle": 14.5},
+    {"tip_chamfer": 0.4, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
 ])
 def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     p = GearParams.model_validate(kw)
