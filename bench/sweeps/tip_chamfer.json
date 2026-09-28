@@ -1,0 +1,57 @@
+[
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "tip_chamfer": 0.4,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "tip_chamfer": 0.4,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "tip_chamfer": 1.75,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "tip_chamfer": 0.4,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "tip_chamfer": 0.4,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "tip_chamfer": 3,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "tip_chamfer": 3,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 0.2,
+    "backlash": 0.07,
+    "tip_chamfer": 0.2,
+    "recess_sides": "both"
+  }
+]
