@@ -479,6 +479,18 @@ def derive(p: GearParams, mate_teeth: int | None = None,
             warnings.append(
                 f"Hex bore replaces the round profile: {' and '.join(ignored)} "
                 f"{'are' if len(ignored) > 1 else 'is'} ignored.")
+    else:
+        # D-12 refuses only at the measured kernel contact (ROOT_CONTACT), 400 million
+        # times tighter than MIN_WALL, so a wall a few hundredths of a mm thick builds
+        # with no error -- unlike every other bore-vs-root rule in this file, which
+        # refuses at MIN_WALL itself. Warn instead of refusing: the boundary stays put
+        # (09-REVIEW.md WR-01, L05), this only surfaces what check() already let through.
+        wall_gap = pr.rf - (bore_radius(p) + p.bore_chamfer)
+        if p.bore_d > 0 and 0 <= wall_gap < MIN_WALL:
+            warnings.append(
+                f"Bore chamfer leaves only {wall_gap:.2f} mm of wall to the root "
+                f"circle, under the {MIN_WALL:g} mm this design holds everywhere else; "
+                "reduce bore_chamfer or bore_d for more margin.")
 
     rr = recess_radii(p, pr.rf)
     sides = {"both": 2, "top": 1, "bottom": 1}.get(p.recess_sides, 0)
