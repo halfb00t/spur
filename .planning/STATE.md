@@ -4,12 +4,11 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
-status: planning
+status: "Phase 10 shipped — PR #11"
 stopped_at: Phase 10 complete, ready to plan Phase 11
-last_updated: "2026-09-28T14:00:48.311Z"
+last_updated: "2026-09-28T15:20:46.155Z"
 last_activity: 2026-09-28
-last_activity_desc: Phase 10 complete, transitioned to Phase 11
-state_head: 4f191abf391036e9b8397f85c2d560d02e0e8de0
+state_head: 9d7e1344c64df6db46cec68cd05e0a84d0cfcd40
 progress:
   total_phases: 6
   completed_phases: 1
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 11 — Body Cutouts
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-28 — Phase 10 complete, transitioned to Phase 11
+Status: Phase 10 shipped — PR #11
+Last activity: 2026-09-28
 
 ## Performance Metrics
 
