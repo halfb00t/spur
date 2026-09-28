@@ -3,10 +3,12 @@
 import json
 from pathlib import Path
 
+import cadquery as cq
 import pytest
 from fastapi.testclient import TestClient
 
 import spur.app
+import spur.model
 from spur import cli
 from spur.app import InfoQuery
 from spur.calc import DerivedDimensions
@@ -176,3 +178,25 @@ def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])
     assert "must end in .stl or .step" in str(exc.value)
+
+
+def test_a_tip_chamfer_that_selects_no_tip_arcs_stops_the_export_and_writes_nothing(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """States the exit status D-14 decided. cmd_export turns every BuildError into
+    `SystemExit("error: ...")`, which exits 1, and has done so since v0 (docs/
+    architecture/cli.md "Errors"); exit 2 stays argparse's parameter-error code. D-14, as
+    amended 2026-09-28, routes this guard to exit 1 like every BuildError, so this test
+    pins the CLI as it behaves and as decided."""
+    spur.model._build_cached.cache_clear()
+    real = spur.model._tip_edges
+
+    def wrapper(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
+        return real(solid, ra + 1.0, face_width)  # a radius where no arc exists
+
+    monkeypatch.setattr("spur.model._tip_edges", wrapper)
+    out = tmp_path / "gear.stl"
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["export", "-o", str(out), "--teeth", "67", "--tip-chamfer", "0.4",
+                  "--quality", "preview"])
+    assert str(exc.value.code).startswith("error: Tip chamfer selected no tip-arc edges")
+    assert not out.exists()

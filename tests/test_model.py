@@ -24,6 +24,7 @@ from spur.model import (
     _bore_rim_edges,
     _build_checked,
     _groove_floor_edges,
+    _tip_edges,
     build,
     export,
 )
@@ -64,72 +65,77 @@ def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     assert max(bb.xlen, bb.ylen) <= p.module * (p.teeth + 2 + 2 * p.profile_shift) + 1e-6
 
 
-@pytest.mark.parametrize(("kw", "rim", "floor"), [
-    pytest.param({}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, id="d-flat-both"),
-    pytest.param({"recess_sides": "top"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 2,
+@pytest.mark.parametrize(("kw", "rim", "floor", "tip"), [
+    pytest.param({}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38, id="d-flat-both"),
+    pytest.param({"recess_sides": "top"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, 38,
                  id="d-flat-top"),
-    pytest.param({"recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 2,
+    pytest.param({"recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, 38,
                  id="d-flat-bottom"),
-    pytest.param({"recess_sides": "none"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), None,
+    pytest.param({"recess_sides": "none"}, collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
                  id="d-flat-no-recess"),
-    pytest.param({"bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, id="round-both"),
-    pytest.param({"bore_flat": 0, "recess_sides": "top"}, collections.Counter({"CIRCLE": 2}), 2,
+    pytest.param({"bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, 38, id="round-both"),
+    pytest.param({"bore_flat": 0, "recess_sides": "top"}, collections.Counter({"CIRCLE": 2}), 2, 38,
                  id="round-top"),
     pytest.param({"bore_flat": 0, "recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2}), 2,
-                 id="round-bottom"),
+                 38, id="round-bottom"),
     pytest.param({"bore_flat": 0, "recess_sides": "none"}, collections.Counter({"CIRCLE": 2}), None,
-                 id="round-no-recess"),
-    pytest.param({"bore_d": 0}, None, 4, id="no-bore"),
-    pytest.param({"recess_inner_d": 1.0}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4,
+                 38, id="round-no-recess"),
+    pytest.param({"bore_d": 0}, None, 4, 38, id="no-bore"),
+    pytest.param({"recess_inner_d": 1.0}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
                  id="d-flat-recess-at-hub-clearance"),
-    pytest.param({"bore_hex": 6}, collections.Counter({"LINE": 12}), 4, id="hex-both"),
-    pytest.param({"bore_hex": 6, "recess_sides": "top"}, collections.Counter({"LINE": 12}), 2,
+    pytest.param({"bore_hex": 6}, collections.Counter({"LINE": 12}), 4, 38, id="hex-both"),
+    pytest.param({"bore_hex": 6, "recess_sides": "top"}, collections.Counter({"LINE": 12}), 2, 38,
                  id="hex-top"),
     pytest.param({"bore_hex": 6, "recess_sides": "bottom"}, collections.Counter({"LINE": 12}), 2,
-                 id="hex-bottom"),
+                 38, id="hex-bottom"),
     pytest.param({"bore_hex": 6, "recess_sides": "none"}, collections.Counter({"LINE": 12}), None,
-                 id="hex-no-recess"),
-    pytest.param({"bore_hex": 6, "bore_d": 0}, collections.Counter({"LINE": 12}), 4,
+                 38, id="hex-no-recess"),
+    pytest.param({"bore_hex": 6, "bore_d": 0}, collections.Counter({"LINE": 12}), 4, 38,
                  id="hex-no-round-bore"),
-    pytest.param({"bore_hex": 6, "recess_inner_d": 1.0}, collections.Counter({"LINE": 12}), 4,
+    pytest.param({"bore_hex": 6, "recess_inner_d": 1.0}, collections.Counter({"LINE": 12}), 4, 38,
                  id="hex-recess-at-hub-clearance"),
-    pytest.param({"bore_hex": 12.7}, collections.Counter({"LINE": 12}), 4,
+    pytest.param({"bore_hex": 12.7}, collections.Counter({"LINE": 12}), 4, 38,
                  id="hex-wider-than-round-bore"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4},
-                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, id="keyway-d-flat-both"),
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38, id="keyway-d-flat-both"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_sides": "top"},
-                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, id="keyway-d-flat-top"),
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, 38, id="keyway-d-flat-top"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_sides": "bottom"},
-                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, id="keyway-d-flat-bottom"),
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 2, 38, id="keyway-d-flat-bottom"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_sides": "none"},
-                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None,
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
                  id="keyway-d-flat-no-recess"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
-                 collections.Counter({"CIRCLE": 2}), 4, id="keyway-round-both"),
+                 collections.Counter({"CIRCLE": 2}), 4, 38, id="keyway-round-both"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0,
-                  "recess_sides": "top"}, collections.Counter({"CIRCLE": 2}), 2,
+                  "recess_sides": "top"}, collections.Counter({"CIRCLE": 2}), 2, 38,
                  id="keyway-round-top"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0,
-                  "recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2}), 2,
+                  "recess_sides": "bottom"}, collections.Counter({"CIRCLE": 2}), 2, 38,
                  id="keyway-round-bottom"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0,
-                  "recess_sides": "none"}, collections.Counter({"CIRCLE": 2}), None,
+                  "recess_sides": "none"}, collections.Counter({"CIRCLE": 2}), None, 38,
                  id="keyway-round-no-recess"),
     pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "recess_inner_d": 1.0},
-                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4,
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
                  id="keyway-recess-at-hub-clearance"),
     pytest.param({"keyway_width": 3, "keyway_depth": 5},
-                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4,
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
                  id="keyway-deep-recess-narrowed"),
     pytest.param({"keyway_width": 3, "keyway_depth": 9},
-                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None,
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
                  id="keyway-recess-dropped"),
+    pytest.param({"teeth": 200}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 400,
+                 id="teeth-200"),
+    pytest.param({"teeth": 200, "module": 0.2, "backlash": 0.07},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 400, id="module-0.2"),
 ])
 def test_each_edge_selector_picks_exactly_its_own_edges(
         monkeypatch: pytest.MonkeyPatch,
         kw: dict[str, object],
         rim: collections.Counter[str] | None,
-        floor: int | None) -> None:
+        floor: int | None,
+        tip: int) -> None:
     """The exact edges each selector sees before its operator runs (REQ-edge-selection-
     proven): the bore-rim chamfer and the recess-floor fillet each pick their own edges,
     never each other's, and never the wrong count. bare_p (bore_chamfer=0,
@@ -152,6 +158,14 @@ def test_each_edge_selector_picks_exactly_its_own_edges(
     selection stays exact. The hex rows are Phase 7's selector shown on real geometry
     (ROADMAP Phase 8 SC1). The keyway rows prove SC4 as amended, the pre-keyway count for
     round and D-flat with a keyway (D-07).
+
+    The tip column is read on bare_p's solid (Phase 10, D-13). The tip arcs are
+    _outline's own edges at ra, and the rim chamfer, the floor fillet and the keyway all
+    sit inside the root circle, so the tip selector never overlaps them: every existing
+    row gets 38 (2 x 19 teeth). teeth-200 and module-0.2 are D-13's extremes: 400 arcs
+    in one selection, and the finest tips the model allows (backlash 0.07; 0.08 is
+    refused). The real pipeline, with a chamfer, the fillets and a keyway all present, is
+    observed in test_the_tip_chamfer_takes_exactly_the_tip_arcs_in_the_real_pipeline.
     """
     monkeypatch.setattr("spur.model._cut_keyway", lambda solid, _p: solid)
     bare_p = GearParams.model_validate({**kw, "bore_chamfer": 0, "recess_fillet": 0})
@@ -179,8 +193,15 @@ def test_each_edge_selector_picks_exactly_its_own_edges(
             assert min(abs(e.radius() - r) for r in rr) < TOL
             assert min(abs(e.startPoint().z - z) for z in heights) < TOL
 
-    # One tuple assertion: a wrong floor count never hides behind a wrong rim count.
-    assert (rim_counter, floor_count) == (rim, floor)
+    tips = _tip_edges(bare, profile(bare_p).ra, bare_p.face_width)
+    for e in tips:
+        assert e.geomType() == "CIRCLE"
+        assert e.radius() == pytest.approx(profile(bare_p).ra, abs=TOL)
+    assert (collections.Counter(round(e.startPoint().z / bare_p.face_width) for e in tips)
+            == {0: bare_p.teeth, 1: bare_p.teeth})
+
+    # One tuple assertion: a wrong floor or tip count never hides behind a wrong rim count.
+    assert (rim_counter, floor_count, len(tips)) == (rim, floor, tip)
 
     if bore_rim_limit(bare_p) > 0:
         rim_edges = _bore_rim_edges(bare, bare_p)
@@ -209,6 +230,47 @@ def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bo
     with pytest.raises(BuildError, match="selected no bore-rim edges") as exc_info:
         _build_checked(GearParams())
     # the catch-all must not relabel this defect as "try smaller fillets or chamfers"
+    assert "try smaller" not in str(exc_info.value)
+
+
+@pytest.mark.parametrize(("kw", "faces"), [
+    pytest.param({"tip_chamfer": 0.4}, 210, id="d-flat"),
+    pytest.param({"tip_chamfer": 0.4, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 213, id="keyway-round"),
+    pytest.param({"tip_chamfer": 0.4, "bore_hex": 6}, 222, id="hex"),
+])
+def test_the_tip_chamfer_takes_exactly_the_tip_arcs_in_the_real_pipeline(
+        monkeypatch: pytest.MonkeyPatch, kw: dict[str, object], faces: int) -> None:
+    """D-13 in the real pipeline. The chamfered bore's cones, the filleted floors and
+    the keyway slot are all present, and the selector is called once and takes exactly
+    the tip arcs."""
+    real = _tip_edges
+    calls: list[tuple[collections.Counter[str], collections.Counter[int]]] = []
+
+    def spy(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
+        edges = real(solid, ra, face_width)
+        calls.append((collections.Counter(e.geomType() for e in edges),
+                      collections.Counter(round(e.startPoint().z / face_width) for e in edges)))
+        return edges
+
+    monkeypatch.setattr("spur.model._tip_edges", spy)
+    p = GearParams.model_validate(kw)
+    s = _build_checked(p)  # never build(): its cache could skip the step
+    assert calls == [(collections.Counter({"CIRCLE": 38}), collections.Counter({0: 19, 1: 19}))]
+    assert len(s.Faces()) == faces
+
+
+def test_a_tip_chamfer_that_selects_no_tip_arcs_is_a_build_error_not_a_sharp_tip(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-14's guard, in the rim guard's words. Use _build_checked, never build()."""
+    real = _tip_edges
+
+    def wrapper(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
+        return real(solid, ra + 1.0, face_width)  # a radius where no arc exists
+
+    monkeypatch.setattr("spur.model._tip_edges", wrapper)
+    with pytest.raises(BuildError, match="selected no tip-arc edges") as exc_info:
+        _build_checked(GearParams(tip_chamfer=0.4))
     assert "try smaller" not in str(exc_info.value)
 
 

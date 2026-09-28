@@ -4,9 +4,11 @@ from collections.abc import Iterator
 from concurrent.futures.process import BrokenProcessPool
 from typing import cast
 
+import cadquery as cq
 import pytest
 from fastapi.testclient import TestClient
 
+import spur.model
 from spur.app import STATIC, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
 from spur.calc import DerivedDimensions
@@ -778,3 +780,26 @@ def test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed
     assert _field(failed[0], "duration_ms") is not None
 
     assert not _event_records(caplog, "export.served")
+
+
+def test_a_tip_chamfer_that_selects_no_tip_arcs_is_a_422_naming_the_defect(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-14's guard over HTTP: an empty tip-arc selection is a BuildError, which the
+    API maps to a 422 naming the defect, not the catch-all's "try smaller"."""
+    spur.model._build_cached.cache_clear()
+    real = spur.model._tip_edges
+
+    def wrapper(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
+        return real(solid, ra + 1.0, face_width)  # a radius where no arc exists
+
+    monkeypatch.setattr("spur.model._tip_edges", wrapper)
+    # teeth=67: a count no other test in this suite downloads, so the byte cache cannot
+    # short-circuit this request before the patched selector runs (the teeth=71 comment's
+    # reason, above).
+    r = client.get("/api/model.stl",
+                   params={"teeth": 67, "tip_chamfer": 0.4, "quality": "preview"})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["type"] == "build_error"
+    assert "Tip chamfer selected no tip-arc edges" in detail["msg"]
+    assert "try smaller" not in detail["msg"]
