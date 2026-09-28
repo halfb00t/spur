@@ -5,23 +5,28 @@
 **Build pipeline**, one decision per step, in `_build(p)`:
 
 ```
-profile(p) ─▶ _gear_blank ─▶ _cut_face_recesses ─▶ _cut_bore ─▶ _cut_keyway ─▶ one validated Solid
-                (outline,       (annulus cut,          (circle, D or hex,   (slot, after
-                 extrude)        floor fillets)         rim chamfers)        the chamfer)
+profile(p) ─▶ _gear_blank ─▶ _cut_face_recesses ─▶ _cut_bore ─▶ _cut_keyway ─▶ _chamfer_tips ─▶ one validated Solid
+                (outline,       (annulus cut,          (circle, D or hex,   (slot, after      (tip arcs,
+                 extrude)        floor fillets)         rim chamfers)        the chamfer)      last)
 ```
 
 `_outline(pr, fillet)` assembles the closed wire tooth by tooth: a straight or filleted
 lead-in from the root circle, a B-spline on each involute flank (16 points, biased toward
 the tip), a three-point arc across the tip, and an arc along the root to the next tooth.
-Root fillet arcs come from `_fillet_corner()`, which solves the tangency directly.
+Root fillet arcs come from `_fillet_corner()`, which solves the tangency directly. The
+spline's start comes from `calc.spline_start`, so the outline and the tip chamfer's cap
+(below) read the same radius.
 
 **Edge re-selection** is separated out on purpose: `_groove_floor_edges()` matches
 circles by radius and z; `_bore_rim_edges()` matches by position, sampling three interior
 points, within `calc.bore_rim_limit(p)` (a hex bore's corners) plus `BORE_RIM_SLACK`,
-because a D-bore rim is not one geometric type. Both selectors raise `BuildError` when
-they match nothing while their feature is on (L26) — a selector never silently selects
-nothing. The keyway slot is cut after `_bore_rim_edges` runs, so the selector never sees
-it and the keyway's edges stay sharp (L28).
+because a D-bore rim is not one geometric type; `_tip_edges()` matches circles at `ra`
+with both endpoints on an end face — the end-face test distinguishes the tip arcs from
+the ones a chamfer moves onto the two faces, so a re-chamfer never re-selects itself.
+All three selectors raise `BuildError` when they match nothing while their feature is on
+(L26) — a selector never silently selects nothing. The keyway slot is cut after
+`_bore_rim_edges` runs, so the selector never sees it and the keyway's edges stay sharp
+(L28).
 
 **Caching and export**: `build()` and `export()` both take `_LOCK`, then go through
 `_build_cached` (an `lru_cache` on the parameter object) and `_EXPORTS` (an LRU bounded by

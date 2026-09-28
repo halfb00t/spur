@@ -1041,3 +1041,98 @@ selector has already run. Cutting it after the chamfer keeps L26's selector seam
 the selector never has to learn a second geometric type — and measuring its depth from
 the wall that actually exists on the part, rather than a nominal point inside material,
 keeps the printed numbers ones a user can check with a pin and a pair of calipers (L08).
+
+## L29 — The tooth-tip chamfer is a 3D edge break on the end-face tip arcs, capped at the tip land, the pitch circle and the start of the involute
+
+Date: 2026-09-28.
+
+**The field** (D-10, D-11). `tip_chamfer` joins `GearParams`' Teeth group, declared after
+`root_fillet`, mm, 0 = off, 0 to 3 in steps of 0.05. The help text names the purpose and
+no size; the research-era sizing figure has no source (research SUMMARY.md Known
+Conflict #2) and appears nowhere in help text, README or docs. Rejected: the Body group
+(the dimension it eats, not what it is); a one-field group.
+
+**The cut** (D-03, D-13). The 2026-09-25 reading: `solid.chamfer(c, None, edges)` on the
+built solid — `bore_chamfer`'s exact call and meaning, symmetric 45 degrees, `c` off the
+end face and `c` off the tip. Not a corner in `_outline`, which would change the meshing
+profile, and not tip relief. `_tip_edges` selects the `CIRCLE` edges at `ra` with both
+endpoints on an end face; the end-face test has a measured reason — after a chamfer of
+`c` the tip land keeps `2 x teeth` arcs at `ra`, now sitting at `z = c` and
+`z = face_width - c`, so a radius test alone would pick those moved arcs again on a
+re-chamfer. `_chamfer_tips` runs last in `_build`, after `_cut_keyway`: the tip band is
+farthest from every other cut, and the selector may assume the final outline.
+
+**The cap** (D-01, D-02, D-04). Three limits, the smallest applied: `0.45 x face_width`
+(a land stays on the tip between the two chamfers — `root_fillet`'s and
+`recess_fillet`'s own 0.45 family); `ra - r`, the addendum (the chamfer's footprint on
+the end face stays above the pitch circle); and a measured kernel boundary. D-04 fired:
+10-01's spike (`bench/RESULTS.md` "Tooth-tip chamfer spike") found the kernel failing
+inside the first two caps wherever the root fillet's straight lead-in reaches above the
+pitch circle — a 20-step bisection on six configurations landed within about 2 microns
+of `pred = ra - spline_start` on five of six, teeth-independent between 19 and 40 teeth;
+the sixth (module 1, profile_shift 1.0) built 0.04 mm past `pred`, conservative there,
+never optimistic. A 405-set grid found 0 failures at `pred` or 0.05 mm inside it across
+163 conservative sets, 17 of which also built at the larger analytic cap. The 200-tooth
+pair confirmed the boundary at the size that matters for the budget: `pred - 0.001` mm
+builds, `pred + 0.05` mm does not. The rule is one analytic radius, `ra - spline_start`,
+so D-04's "no single rule keeps every buildable chamfer buildable" checkpoint did not
+apply — the boundary held across tooth count and module everywhere it was measured.
+`spline_start` moved out of `model._outline` into `calc.spline_start` so the outline and
+the cap read one number. `TIP_CHAMFER_MARGIN` is 0.001 mm because
+`tip_chamfer_effective`'s 3-dp rounding can move a cap up by half a step (2.9365 mm
+rounds to 2.937 mm), and a cap sitting exactly at the measured contact could round past
+it. Always a cap, never a 422 (L03). Rejected: the analytic caps alone (a 422 from
+`_build_checked`'s catch-all for a trimmable size); a constant margin taken from one
+configuration (the boundary moves with module, profile shift and root fillet); a
+tip-arc-width bound (the arc length does not bound an end-face chamfer, D-02's
+rationale).
+
+**The number** (D-08, D-09). `tip_chamfer_effective`, `float | None`, `null` when
+`tip_chamfer` is 0, rounded to 3 dp at construction, one `DIMS` row — mirrors
+`root_fillet` and `recess_fillet`, which also report applied values. One warning in the
+existing "reduced to X mm to …" family, naming whichever limit bound — the tip land, the
+pitch circle or the measured boundary. `X` is printed with `:g` of the applied value, the
+same number `tip_chamfer_effective` carries, and the comparison is at 3 dp so a limit's
+own float residue never warns and prints the request back.
+
+**The cost** (D-05, D-06, D-07). 10-01's spike (measurement only, before the field
+existed) timed `Mixin3D.chamfer()` at 38/80/400 edges: 0.29–0.51 s, 0.79–1.07 s and
+11.85–12.81 s respectively — cost scales with edge count, not with `c` or module
+(changing `c` from the small value to the analytic cap moved the 200-tooth chamfer time
+by only 2–4 %, inside that session's run-to-run noise). 10-04's 9-row sweep at 200 teeth
+(`bench/sweeps/tip_chamfer.json`, D-06's cross product) found every row inside
+`SPUR_BUILD_TIMEOUT=30s`; the heaviest, `teeth=200 module=1.75 tip_chamfer=1.75
+recess_sides=both`, read **14.87 s of 30 s** (`bench/RESULTS.md` "Tooth-tip chamfer
+build and export time (Phase 10)"). That leaves the timeout's margin at about 2.0x, half
+of the 4x `SPUR_BUILD_TIMEOUT`'s default was sized against — filed as must-severity debt,
+`docs/tech_debt/active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md`.
+D-07's over-budget checkpoint never fired: every row measured comfortably inside 30 s on
+the first run, so no human decision was needed on the field's `le` or a teeth-dependent
+cap. Because the spike found cost tracks edge count, not chamfer size, a lower `le`
+would not have lowered the heaviest row's cost — D-07's first offer would not have
+helped here; recorded for Phase 12's composed sweep to weigh instead.
+
+**The proof** (D-12, D-13, D-14). `_tip_edges` (position-based, guarded) gets a column
+on the 30-row selector matrix — every existing bore/recess row plus a 200-tooth and a
+module-0.2 row (10-03) — and a real-pipeline spy proves it is called exactly once,
+selecting `Counter({"CIRCLE": 38})` split 19/19 across faces, on three bore shapes with
+the bore chamfer, recess and keyway all present. The built-solid proof measures the
+chamfer directly: `+2 x teeth` (`+38` at 19 teeth) CONE faces, `+6 x teeth` (`+114`)
+edges, volume `-22.7557` mm3, bounding box and `tip_d` unchanged, the rim and
+groove-floor selectors' counts unchanged, no tip arc left on an end face, and the
+45-degree geometry (moved circles at `ra`, sharp circles at `ra - c`) confirmed on all
+three bore shapes. A tripwire shows that proof fail when the chamfer step is silently
+skipped, while `derive()` still prints the chamfer as applied — the L08 failure it
+exists to catch. The empty-selection guard is a `BuildError` (model), a 422 naming the
+field (API), and a stopped CLI export that writes nothing and exits 1, never argparse's
+exit 2 (D-14 as amended 2026-09-28: the "exit 2" first written in D-14 contradicted
+`cmd_export`, which turns every `BuildError` into a string `SystemExit` that exits 1;
+exit 2 stays argparse's own parameter-error code, per 10-03-SUMMARY.md). The flank
+limit's kernel boundary held one step either side: the cap (2.937 mm on
+`{profile_shift 1.0, pressure_angle 14.5}`) builds `+38` faces over the unchamfered
+baseline; one 0.05 mm step past the measured contact (2.9875 mm) the kernel returns an
+invalid solid.
+
+**Reversibility.** Costly: a link that sets `tip_chamfer` above a limit gets a different
+part and a different warning if the rule changes later (L05 protects only links that
+omit the field).
