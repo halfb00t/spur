@@ -85,12 +85,12 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 
 ### Tooth-tip chamfer
 
-- [ ] **REQ-tip-chamfer**: User can break the tooth-tip edges by setting `tip_chamfer`
+- [x] **REQ-tip-chamfer**: User can break the tooth-tip edges by setting `tip_chamfer`
   (mm, 0 = off): an edge-break chamfer on the tooth-tip arc edges at both end faces,
   selected by position; flanks, root fillets, bore and cutouts are untouched and the
   outside diameter is unchanged. No sizing guidance in help text unless it is sourced
   (the "0.1–0.2 × module" figure floated during research has no source).
-- [ ] **REQ-tip-chamfer-capped**: A chamfer larger than the tip land allows is capped and
+- [x] **REQ-tip-chamfer-capped**: A chamfer larger than the tip land allows is capped and
   reported in `warnings` (trimmable, L03). The chamfer operator's cost at the heaviest
   allowed configuration (maximum teeth × maximum chamfer) is measured against
   `SPUR_BUILD_TIMEOUT` and recorded; if it cannot fit, the cap is lowered and the number
@@ -189,8 +189,8 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-cutout-conflicts-refused-early | Phase 11 | Pending |
 | REQ-cutout-composes | Phase 11 | Pending |
 | REQ-cutout-derived-numbers | Phase 11 | Pending |
-| REQ-tip-chamfer | Phase 10 | Pending |
-| REQ-tip-chamfer-capped | Phase 10 | Pending |
+| REQ-tip-chamfer | Phase 10 | Complete |
+| REQ-tip-chamfer-capped | Phase 10 | Complete |
 | REQ-defaults-off-regression | Phase 7 | Complete |
 | REQ-three-interfaces-extended | Phase 12 | Pending |
 | REQ-measured-build-time | Phase 12 | Pending |

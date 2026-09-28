@@ -4,17 +4,17 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 10
 current_phase_name: Tooth-Tip Chamfer
-status: executing
-stopped_at: Completed 10-04-PLAN.md
-last_updated: "2026-09-28T13:26:56.489Z"
+status: verifying
+stopped_at: Completed 10-05-PLAN.md
+last_updated: "2026-09-28T13:46:44.695Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 10 execution started
-state_head: bbe888f2a715fcf09c99f737cefd37dde864fceb
+state_head: d600bc456c17884cf52254334b2ddb1fff8658c1
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
   percent: 17
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 10 (Tooth-Tip Chamfer) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-28 — Phase 10 execution started
 
 ## Performance Metrics
@@ -132,6 +132,7 @@ code review pending at transition time.
 | Phase 10 P02 | ~24min | 2 tasks | 9 files |
 | Phase 10 P03 | 19min | 2 tasks | 3 files |
 | Phase 10 P04 | ~17min | 2 tasks | 5 files |
+| Phase 10 P05 | 16min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -176,6 +177,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 10]: 10-03: the kernel-boundary test patches spur.model.tip_chamfer_effective directly (2.9875) rather than the tip_chamfer field, because the field's own cap would clamp any settable value back inside the boundary before it reached the kernel.
 - [Phase 10]: 10-04: the tooth-tip chamfer's heaviest 200-tooth row (14.87s of 30s) was filed as must-debt, since it crosses the 7.5s quarter-of-timeout trigger the SPUR_BUILD_TIMEOUT default's own 4x rationale set.
 - [Phase 10]: 10-04: D-07's over-budget checkpoint never fired -- all 9 tip-chamfer sweep rows built inside 30s on the first run, heaviest 14.87s, so no human decision was needed on the field's le or a teeth-dependent cap.
+- [Phase 10]: 10-05: The root fillet's straight lead-in issue is filed as must-debt, not fixed -- correcting it means either an outline change with its own Lxx and fixture regeneration, or a README correction, both outside this phase's feature (CLAUDE.md 'note the tangent').
+- [Phase 10]: 10-05: L29 appended after L28 (0 deleted lines): the field, cut, three-limit cap with D-04's measured boundary, derived field/warning, spike/sweep cost, proof and reversibility, each cited to a SUMMARY sha or bench/RESULTS.md, none re-estimated.
 
 ### Pending Todos
 
@@ -240,8 +243,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-28T13:26:56.454Z
-Stopped at: Completed 10-04-PLAN.md
+Last session: 2026-09-28T13:46:44.660Z
+Stopped at: Completed 10-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
