@@ -42,7 +42,7 @@ with tooth measurements untouched.
       real geometry
 - [x] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit, (completed 2026-09-27)
       documented depth datum
-- [ ] **Phase 10: Tooth-Tip Chamfer** - An edge-break chamfer on the tooth-tip arcs
+- [x] **Phase 10: Tooth-Tip Chamfer** - An edge-break chamfer on the tooth-tip arcs (completed 2026-09-28)
 - [ ] **Phase 11: Body Cutouts** - Lightening holes, spoke arms, or a honeycomb web — one
       pattern per part
 - [ ] **Phase 12: Composition Pass** - The full feature matrix, the heaviest-configuration
@@ -225,7 +225,7 @@ flanks, root fillets, bore and outside diameter untouched.
 (end-face edge break; no unsourced guidance), but `Mixin3D.chamfer()` at maximum teeth is
 the one v0.2 operator in L09's cost family, so the plan opens with a measured spike of its
 cost before the cap is designed.
-**Plans**: 5/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 **Wave 1**
