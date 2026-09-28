@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 10
-current_phase_name: tooth-tip-chamfer
-status: "Phase 09 shipped — PR #10"
-stopped_at: Phase 10 context gathered
-last_updated: "2026-09-28T11:17:39.860Z"
+current_phase_name: Tooth-Tip Chamfer
+status: executing
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-09-28T12:15:54.627Z"
 last_activity: 2026-09-28
-last_activity_desc: Phase 10 planning complete
-state_head: 25b2216bc338469fccd91b434c74f6add7438382
+last_activity_desc: Phase 10 execution started
+state_head: 54a21923cda98259b99454f00288bf466d9b1dfb
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 16
-  completed_plans: 11
-  percent: 0
+  completed_plans: 12
+  percent: 17
 ---
 
 # Project State
@@ -26,14 +26,14 @@ See: .planning/PROJECT.md (updated 2026-09-27)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 10 — Tooth-Tip Chamfer (an edge-break chamfer on the tooth-tip arcs; flanks, root fillets, bore and outside diameter untouched; depends on Phase 7 only, independent of the Phase 8–9 bore work)
+**Current focus:** Phase 10 — Tooth-Tip Chamfer
 
 ## Current Position
 
-Phase: 10 (tooth-tip-chamfer) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 09 shipped — PR #10
-Last activity: 2026-09-28 — Phase 10 planning complete
+Phase: 10 (Tooth-Tip Chamfer) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-09-28 — Phase 10 execution started
 
 ## Performance Metrics
 
@@ -128,6 +128,7 @@ code review pending at transition time.
 | Phase 09 P03 | 45min | 2 tasks | 7 files |
 | Phase 09 P04 | 23min | 2 tasks | 3 files |
 | Phase 09 P05 | ~21min | 2 tasks | 5 files |
+| Phase 10 P01 | 52min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 09]: D-11's bound (keyway_width >= bore_d) is definitional, not kernel-measured -- re-confirmed the kernel never fails as keyway_width approaches bore_d, so no crash boundary exists to search for.
 - [Phase 09]: 09-04's keyway sweep measured all 32 rows inside SPUR_BUILD_TIMEOUT=30s on the first run (heaviest 4.85s of 30s) -- the 08 D-11 gate never fired. — The heaviest row is a 3 x 1.4 mm keyway that keeps its face recess, not the largest keyway the rules allow, which pushes the recess out and builds in about half the time -- confirming the planning probe that the sweep must measure both keyway sizes to find the heaviest configuration.
 - [Phase 09]: L28 appended after L27 (0 deleted lines): the keyway's fields, datum formula, build order, recess yield, every refusal, D-12's fix, the two derived numbers and the sweep's heaviest row (4.85s of 30s), each cited to its SUMMARY sha or measurement.
+- [Phase 10]: The tip-arc selector tests both endpoints' z against {0, face_width} to distinguish original tip arcs from moved ones after a chamfer -- confirmed at 200 teeth and module 0.2/10, not just 19 teeth.
+- [Phase 10]: pred = ra - spline_start is the measured D-04 kernel boundary, teeth-independent where compared (19/40 teeth agree to ~2 microns); one flagged set (module 1, x 1.0) is conservative by 0.04mm.
+- [Phase 10]: Chamfer cost is dominated by edge count (38/80/400 edges), not c or module -- a lower tip_chamfer le would not reduce the heaviest 200-tooth row's cost; D-07's over-budget checkpoint never fires (heaviest 15.90s of 30s).
+- [Phase 10]: 17 of 163 grid sets where pred sits inside the analytic cap also built at the (larger) analytic cap -- the pred-based rule is conservative, trims some buildable chamfers, never a 422.
 
 ### Pending Todos
 
@@ -226,9 +231,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-28T08:48:45.404Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-tooth-tip-chamfer/10-CONTEXT.md
+Last session: 2026-09-28T12:15:54.591Z
+Stopped at: Completed 10-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

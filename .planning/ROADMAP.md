@@ -225,12 +225,12 @@ flanks, root fillets, bore and outside diameter untouched.
 (end-face edge break; no unsourced guidance), but `Mixin3D.chamfer()` at maximum teeth is
 the one v0.2 operator in L09's cost family, so the plan opens with a measured spike of its
 cost before the cap is designed.
-**Plans**: 5 plans
+**Plans**: 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 10-01-PLAN.md — D-05 spike, measurement only: the chamfer operator on the 2 x teeth tip arcs at 19/40/200 teeth and module 0.2/1.75/10, the kernel boundary bisected against the analytic caps, a 405-set grid, recorded in `bench/RESULTS.md` before any field exists (wave 1)
+- [x] 10-01-PLAN.md — D-05 spike, measurement only: the chamfer operator on the 2 x teeth tip arcs at 19/40/200 teeth and module 0.2/1.75/10, the kernel boundary bisected against the analytic caps, a 405-set grid, recorded in `bench/RESULTS.md` before any field exists (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -345,6 +345,6 @@ in Phases 7–11; no open technical questions remain by this point.
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
-| 10. Tooth-Tip Chamfer | v0.2 | 0/5 | Not started | - |
+| 10. Tooth-Tip Chamfer | v0.2 | 1/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |
