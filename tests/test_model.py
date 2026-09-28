@@ -16,6 +16,7 @@ from spur.calc import (
     keyway_width_effective,
     profile,
     recess_radii,
+    tip_chamfer_effective,
 )
 from spur.model import (
     TESSELLATION,
@@ -554,6 +555,130 @@ def test_the_kernel_can_fail_inside_the_root_contact_residual_band() -> None:
     p = GearParams(bore_d=24.724999998, bore_chamfer=2, bore_flat=0)
     with pytest.raises(BuildError, match="Geometry kernel produced an invalid solid"):
         _build_checked(p)
+
+
+def _assert_only_the_tip_arcs_were_chamfered(cut: cq.Solid, plain: cq.Solid,
+                                             p: GearParams, p0: GearParams) -> None:
+    """D-12 and ROADMAP SC1 on the built solid: flanks, roots, bore, recess and keyway
+    untouched, outside diameter unchanged. p sets tip_chamfer; p0 is the same gear
+    without it. Shared by the proof
+    (test_the_tip_chamfer_breaks_only_the_tip_arcs_on_the_built_solid) and the tripwire
+    (test_the_tip_chamfer_proof_fails_when_the_tip_step_is_skipped), which shows this
+    proof fail on a silently vanished chamfer (D-14).
+    """
+    c = tip_chamfer_effective(p)
+    pr = profile(p)
+    n = p.teeth
+    fw = p.face_width
+
+    d_faces = (collections.Counter(f.geomType() for f in cut.Faces())
+              - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert d_faces == collections.Counter({"CONE": 2 * n})
+    d_faces_reverse = (collections.Counter(f.geomType() for f in plain.Faces())
+                      - collections.Counter(f.geomType() for f in cut.Faces()))
+    assert not d_faces_reverse
+
+    assert len(cut.Edges()) - len(plain.Edges()) == 6 * n
+    assert cut.Volume() < plain.Volume()
+
+    bb_cut, bb_plain = cut.BoundingBox(), plain.BoundingBox()
+    for attr in ("xmin", "xmax", "ymin", "ymax", "zmin", "zmax"):
+        assert getattr(bb_cut, attr) == pytest.approx(getattr(bb_plain, attr), abs=TOL)
+    assert derive(p).tip_d == derive(p0).tip_d
+
+    if bore_rim_limit(p0) > 0:
+        assert (collections.Counter(e.geomType() for e in _bore_rim_edges(cut, p0))
+                == collections.Counter(e.geomType() for e in _bore_rim_edges(plain, p0)))
+
+    rr = recess_radii(p0, pr.rf)
+    if rr is not None:
+        heights: list[float] = []
+        if p0.recess_sides in ("both", "bottom"):
+            heights.append(p0.recess_depth)
+        if p0.recess_sides in ("both", "top"):
+            heights.append(p0.face_width - p0.recess_depth)
+        assert (len(_groove_floor_edges(cut, rr, heights))
+                == len(_groove_floor_edges(plain, rr, heights)))
+
+    # No tip arc left on an end face.
+    with pytest.raises(BuildError, match="selected no tip-arc edges"):
+        _tip_edges(cut, pr.ra, fw)
+
+    # 45 degrees, c off the face and c off the tip: the tip circle at radius ra moved
+    # from z in {0, fw} to z in {c, fw - c} (n arcs each), and a new sharp circle at the
+    # reduced radius ra - c sits exactly on each end face (n arcs each).
+    moved = [e for e in cut.Edges() if e.geomType() == "CIRCLE" and abs(e.radius() - pr.ra) < TOL]
+    assert (collections.Counter(round(e.startPoint().z, 6) for e in moved)
+            == {round(c, 6): n, round(fw - c, 6): n})
+
+    def on_end_face(e: cq.Edge) -> bool:
+        a, b = e.startPoint(), e.endPoint()
+        return (any(abs(a.z - z) < TOL for z in (0.0, fw))
+                and any(abs(b.z - z) < TOL for z in (0.0, fw)))
+
+    sharp = [e for e in cut.Edges()
+            if e.geomType() == "CIRCLE" and abs(e.radius() - (pr.ra - c)) < TOL
+            and on_end_face(e)]
+    assert (collections.Counter(round(e.startPoint().z / fw) for e in sharp) == {0: n, 1: n})
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({}, id="d-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0}, id="keyway-round"),
+    pytest.param({"bore_hex": 6}, id="hex"),
+])
+def test_the_tip_chamfer_breaks_only_the_tip_arcs_on_the_built_solid(
+        kw: dict[str, object]) -> None:
+    """D-12 and ROADMAP SC1 on the built solid: flanks, roots, bore, recess and keyway
+    untouched, outside diameter unchanged.
+
+    The rows carry bore_chamfer 0 and recess_fillet 0 so that the rim and floor
+    selectors still have sharp edges to count on both solids. On a chamfered rim the
+    selector finds none (09's amended SC4). The real pipeline with those features is
+    Task 1's spy test.
+
+    Planning read +38 CONE faces, +114 edges and -22.7557 mm3 on all three rows.
+    """
+    p0 = GearParams.model_validate({**kw, "bore_chamfer": 0, "recess_fillet": 0})
+    p = GearParams.model_validate({**kw, "bore_chamfer": 0, "recess_fillet": 0,
+                                   "tip_chamfer": 1.0})
+    _assert_only_the_tip_arcs_were_chamfered(_build_checked(p), _build_checked(p0), p, p0)
+
+
+def test_the_tip_chamfer_proof_fails_when_the_tip_step_is_skipped(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-14's tripwire, Phase 7's precedent: the proof demonstrably catches a silently
+    vanished chamfer."""
+    monkeypatch.setattr("spur.model._chamfer_tips", lambda solid, _p, _pr: solid)
+    p0 = GearParams(bore_chamfer=0, recess_fillet=0)
+    p = GearParams(bore_chamfer=0, recess_fillet=0, tip_chamfer=1.0)
+    assert derive(p).tip_chamfer_effective == 1.0  # the number still prints -- L08's failure
+    with pytest.raises(AssertionError):
+        _assert_only_the_tip_arcs_were_chamfered(_build_checked(p), _build_checked(p0), p, p0)
+
+
+def test_the_largest_tip_chamfer_the_flank_limit_allows_builds() -> None:
+    """D-04, one step inside the measured contact builds."""
+    p = GearParams(profile_shift=1.0, pressure_angle=14.5, tip_chamfer=3)
+    pr = profile(p)
+    assert min(0.45 * p.face_width, pr.ra - pr.r, 3.0) == 3.0  # D-01/D-02 alone allow 3.0
+    assert tip_chamfer_effective(p) == 2.937
+    s = _build_checked(p)
+    assert s.isValid()
+    baseline = _build_checked(GearParams(profile_shift=1.0, pressure_angle=14.5))
+    assert len(s.Faces()) == len(baseline.Faces()) + 38
+
+
+def test_the_kernel_fails_one_step_past_the_start_of_the_involute(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-04's measurement recorded as a test, in the ROOT_CONTACT test's shape. The
+    contact is ra - spline_start = 2.9375, the top of the root fillet's straight lead-in
+    under the involute spline. One 0.05 mm step past it, the kernel returns one solid
+    that is not valid. If a kernel bump makes this build, this test goes red and the
+    flank limit's premise must be re-measured (bench/tip_chamfer_spike.py)."""
+    monkeypatch.setattr("spur.model.tip_chamfer_effective", lambda _p: 2.9875)
+    with pytest.raises(BuildError, match="Geometry kernel produced an invalid solid"):
+        _build_checked(GearParams(profile_shift=1.0, pressure_angle=14.5, tip_chamfer=3))
 
 
 @pytest.mark.parametrize("kw", [
