@@ -283,8 +283,6 @@ Resume file: None
 ## Operator Next Steps
 
 - `/gsd-code-review 10 --codex` — optional: a Codex pass over the CR-01 fix diff (`60d02f7`), the one phase-10 diff no second lane has read yet
-- `/gsd-secure-phase 10` — `workflow.security_enforcement` is on and Phase 10 has no SECURITY.md yet
-- `/gsd-validate-phase 10` — Nyquist validation hook is on (Phase 9 precedent: `09-VALIDATION.md`)
 - Open a PR for `gsd/phase-10-tooth-tip-chamfer` and land it with `make pr.land PR=N`
 - `/gsd-map-codebase --paths bench` — the codebase-drift gate warned on every Phase 10 wave: the map predates `bench/`
 - Then `/gsd-discuss-phase 11` on a `gsd/phase-11-*` branch cut from the squash commit (Phase 11 has no CONTEXT.md yet)
