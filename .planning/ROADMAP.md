@@ -225,7 +225,7 @@ flanks, root fillets, bore and outside diameter untouched.
 (end-face edge break; no unsourced guidance), but `Mixin3D.chamfer()` at maximum teeth is
 the one v0.2 operator in L09's cost family, so the plan opens with a measured spike of its
 cost before the cap is designed.
-**Plans**: 1/5 plans executed
+**Plans**: 2/5 plans executed
 
 Plans:
 **Wave 1**
@@ -234,7 +234,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 10-02-PLAN.md — Tracer: `?tip_chamfer=0.4` end to end (field, three-limit cap with D-04's measured involute-start term, `tip_chamfer_effective`, the guarded tip selector as the last build step, DIMS row), then the cap pinned one step either side of each limit (wave 2)
+- [x] 10-02-PLAN.md — Tracer: `?tip_chamfer=0.4` end to end (field, three-limit cap with D-04's measured involute-start term, `tip_chamfer_effective`, the guarded tip selector as the last build step, DIMS row), then the cap pinned one step either side of each limit (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -345,6 +345,6 @@ in Phases 7–11; no open technical questions remain by this point.
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
-| 10. Tooth-Tip Chamfer | v0.2 | 1/5 | In Progress|  |
+| 10. Tooth-Tip Chamfer | v0.2 | 2/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |

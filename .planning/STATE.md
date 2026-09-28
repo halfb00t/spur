@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 10
 current_phase_name: Tooth-Tip Chamfer
 status: executing
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-09-28T12:15:54.627Z"
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-09-28T12:39:42.852Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 10 execution started
-state_head: 54a21923cda98259b99454f00288bf466d9b1dfb
+state_head: 92382751746f3e30e106f7abae68f8b0bdf9a9b7
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 10 (Tooth-Tip Chamfer) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-09-28 — Phase 10 execution started
 
@@ -129,6 +129,7 @@ code review pending at transition time.
 | Phase 09 P04 | 23min | 2 tasks | 3 files |
 | Phase 09 P05 | ~21min | 2 tasks | 5 files |
 | Phase 10 P01 | 52min | 2 tasks | 2 files |
+| Phase 10 P02 | ~24min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 10]: pred = ra - spline_start is the measured D-04 kernel boundary, teeth-independent where compared (19/40 teeth agree to ~2 microns); one flagged set (module 1, x 1.0) is conservative by 0.04mm.
 - [Phase 10]: Chamfer cost is dominated by edge count (38/80/400 edges), not c or module -- a lower tip_chamfer le would not reduce the heaviest 200-tooth row's cost; D-07's over-budget checkpoint never fires (heaviest 15.90s of 30s).
 - [Phase 10]: 17 of 163 grid sets where pred sits inside the analytic cap also built at the (larger) analytic cap -- the pred-based rule is conservative, trims some buildable chamfers, never a 422.
+- [Phase 10]: 10-02: tip_chamfer_limit(p) returns a 3-way min() over (limit, reason) tuples rather than three ifs, so an exact tie between two limits breaks on the reason text deterministically with no extra branching. — Continues root_fillet's/recess_fillet's cap-function shape; avoids writing and testing a fourth branch for the tie case.
+- [Phase 10]: 10-02: model._chamfer_tips assigns the chamfer() result to the solid variable before returning it, matching _cut_bore's shape, instead of returning the call directly. — Mixin3D.chamfer's return type is untyped (Any); mypy's no-any-return check fires on a bare return of the chamfer call but not when the same expression is assigned to a cq.Shape-typed variable first.
 
 ### Pending Todos
 
@@ -231,8 +234,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-28T12:15:54.591Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-09-28T12:39:42.819Z
+Stopped at: Completed 10-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
