@@ -541,15 +541,26 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     if rfil < p.root_fillet:
         warnings.append(f"Root fillet reduced to {rfil:.2f} mm to fit the tooth gap.")
     tch = tip_chamfer_effective(p)
-    if tch < p.tip_chamfer:
-        # Compared against the raw request, like root_fillet/recess_fillet above --
-        # not round(p.tip_chamfer, 3), which let a request under 0.0005 mm (rounds to
-        # 0.0 on both sides) escape the warning entirely (10-REVIEW.md WR-01). tch is
-        # already rounded (tip_chamfer_effective), so a limit's own float residue still
-        # never warns and prints the request back (0.1999999999999993 at 200 teeth,
-        # module 0.2 rounds to the same 0.2 the request carries) -- and :g of the
-        # applied value is the same number tip_chamfer_effective carries (D-09, L08).
+    if tch < round(p.tip_chamfer, 3):
+        # A limit only actually binds when it sits below the request at the 0.001 mm
+        # resolution the chamfer is cut at (tip_chamfer_effective rounds to 3 dp;
+        # model.py cuts exactly that value, L08) -- this is the original comparison
+        # from before WR-01's fix, restored. It keeps a limit's own float residue
+        # silent (0.1999999999999993 at 200 teeth, module 0.2 rounds to the same 0.2
+        # the request carries) and it keeps an ordinary request like 0.1234 -> 0.123
+        # silent too: that rounding is the model's print resolution, shared with
+        # root_fillet, recess_fillet and bore_chamfer, not a reduction -- attributing
+        # it to tip_chamfer_limit's reason text was a false cause (10-REVIEW.md CR-01).
         warnings.append(f"Tip chamfer reduced to {tch:g} mm {tip_chamfer_limit(p)[1]}.")
+    elif p.tip_chamfer > 0 and tch == 0.0:
+        # The one rounding case where the built part actually differs from the
+        # request: a chamfer was asked for and none was cut. A parameter the user set
+        # must never silently change the part (CLAUDE.md), so this warns -- and names
+        # the true cause (print resolution), never a limit that was nowhere close to
+        # binding (10-REVIEW.md WR-01/CR-01). tch == 0.0 is exact: tip_chamfer_effective
+        # already rounded it, so no tolerance is needed.
+        warnings.append(f"Tip chamfer {p.tip_chamfer:g} mm is below the 0.001 mm resolution "
+                        "it is cut at and was not cut.")
     z_min = 2 * (1 - p.profile_shift) / math.sin(pr.alpha) ** 2
     if p.teeth < z_min:
         warnings.append(f"Below {z_min:.1f} teeth a cut gear would be undercut; "
