@@ -81,7 +81,7 @@ Both commands ran directly in the main checkout (`workflow.use_worktrees: false`
 `.planning/config.json` — no isolated worktree was created for this run; the fixer
 edited and committed on `gsd/phase-10-tooth-tip-chamfer` directly).
 
-### CR-01: The tip-chamfer warning states a false geometric cause whenever rounding, not a limit, changes the value
+### CR-01: The tip-chamfer warning states a false geometric cause whenever rounding, not a limit, changes the value (external: codex)
 
 **Files modified:** `src/spur/calc.py`, `tests/test_calc.py`
 **Commit:** `60d02f7`
