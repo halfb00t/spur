@@ -277,3 +277,13 @@ None - no external service configuration required.
 ---
 *Phase: 10-tooth-tip-chamfer*
 *Completed: 2026-09-28*
+
+## Self-Check: PASSED
+
+- FOUND: src/spur/params.py
+- FOUND: src/spur/calc.py
+- FOUND: src/spur/model.py
+- FOUND: .planning/phases/10-tooth-tip-chamfer/10-02-SUMMARY.md
+- FOUND commit: b92ef7e
+- FOUND commit: 9238275
+- FOUND commit: 8f0a2b2 (metadata)
