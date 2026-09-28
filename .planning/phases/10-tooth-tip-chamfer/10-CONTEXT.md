@@ -181,7 +181,10 @@ any sizing rule; the analytic 2D chamfer (see Deferred).
   matrix patches `_cut_keyway`) and asserts D-12's proof fails — the proof demonstrably
   catches a silently vanished chamfer (Phase 7's tripwire precedent). One test asserts
   that an empty tip selection while `tip_chamfer > 0` is a `BuildError` naming the
-  defect, routed 422 on the API and exit 2 on the CLI. Rejected: the guard test alone
+  defect, routed 422 on the API and, like every `BuildError`, exit 1 on the CLI
+  (amended 2026-09-28 at planning: the "exit 2" first written here contradicted
+  `cmd_export`, which turns every `BuildError` into a string `SystemExit`; exit 2 stays
+  argparse's parameter-error code). Rejected: the guard test alone
   (trusts the face-count assertion without demonstrating it).
 
 ### Contract and process (carried forward; recorded so the plan carries them)

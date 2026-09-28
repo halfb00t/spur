@@ -615,7 +615,12 @@ cost spike rather than assuming L09's fix generalizes.
 
 **If this table is empty:** N/A — see above.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Both questions were resolved at planning (2026-09-28) on the planning-time probes recorded in
+10-01's `<interfaces>` block. The answers are provisional until 10-01's D-05 spike runs and
+records the authoritative numbers in `bench/RESULTS.md`; neither answer is the spike's
+measurement.
 
 1. **Does the kernel boundary (D-04) move with tooth count or module the way the hex
    corner (L27) does, or stay fixed the way `ROOT_CONTACT` does?**
@@ -628,6 +633,21 @@ cost spike rather than assuming L09's fix generalizes.
      to answer this before the cap rule is finalized (D-04 already requires this); if
      the boundary moves in a way no single rule can capture, D-04 says surface it as a
      checkpoint rather than choosing.
+   - **RESOLVED at planning (provisional until 10-01 lands):** it follows neither precedent
+     as a constant. The boundary is one analytic radius, `ra - spline_start`: the top of the
+     straight lead-in the root fillet puts under the outline's involute spline. Planning-time
+     probes on the pinned kernel (2026-09-28, recorded in 10-01's `<interfaces>` block; not
+     the D-05 spike, which has not run) found it independent of tooth count where probed
+     (bisection gave 2.9375 at 19 and 40 teeth; 200 teeth builds at 2.9365 and is invalid at
+     2.9875), and moving with the root fillet, module and shift exactly as that radius does
+     (root_fillet 1.0 at x 1.0: predicted 2.3835, last building 2.3834982). One rule held on
+     all 169 configurations probed and was conservative, never optimistic, where it differed
+     (module 1 at x 1.0 builds 0.04 mm past it; 17 of 163 grid sets build at the analytic
+     cap), so D-04's "no single rule" checkpoint does not fire. 10-02 adds the third cap
+     term, `ra - spline_start` less `TIP_CHAMFER_MARGIN` (10-02 A1). The spike (10-01 Task 2)
+     re-measures the boundary and records the authoritative numbers in `bench/RESULTS.md`;
+     if any configuration fails at or inside that radius, 10-01's gate halts for D-04's
+     checkpoint and 10-02..10-05 are revised before they run.
 
 2. **Does the D-07 over-budget checkpoint fire, and if so what `le` value clears it?**
    - What we know: Phase 8's heaviest hex row was 5.08s of 30s chamfering ≤12 edges;
@@ -638,6 +658,16 @@ cost spike rather than assuming L09's fix generalizes.
      close to 400 simultaneous chamfered edges.
    - Recommendation: this is exactly what the D-05 spike exists to answer; do not guess
      at a number here.
+   - **RESOLVED at planning (provisional until 10-01 lands):** no, on the planning-time
+     probes (same provenance as question 1; not the spike). The chamfer call scales worse
+     than linearly (38 edges 0.28-0.53 s, 80 edges 0.79-1.01 s, 400 edges 11.7-12.7 s) and
+     does not move with c (0.05 to 3.0) or module. A full 200-tooth chamfered request came to
+     about 15-16 s of the 30 s `SPUR_BUILD_TIMEOUT`, so no `le` value needs choosing; and
+     since a smaller chamfer is not cheaper, a lower `le` would not have cleared an
+     over-budget row. The authoritative numbers come from two runs not yet taken: the D-05
+     spike (10-01 Task 2, `bench/RESULTS.md` "Tooth-tip chamfer spike (Phase 10, D-05)") and
+     the 9-row sweep (10-04 Task 2, "Tooth-tip chamfer build and export time (Phase 10)").
+     Either halts for D-07's `checkpoint:decision` if a row exceeds the timeout.
 
 ## Environment Availability
 
@@ -663,7 +693,7 @@ importable this session) and the existing `bench/` tooling.
 | REQ-tip-chamfer | Tip chamfer selects only the `2×teeth` tip-arc edges; flanks/root/bore/cutouts untouched | unit (selector matrix column) | `pytest tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges -x` | ✅ (extend existing test, D-13) |
 | REQ-tip-chamfer | Chamfer proven on built solid (face/edge delta, volume, bbox, `tip_d`) | unit (built-solid proof) | new test in `tests/test_model.py`, shape of `test_the_bore_chamfer_survives_the_keyway_and_the_slot_edges_stay_sharp` (D-12) | ❌ Wave 0 — new test |
 | REQ-tip-chamfer | No-op tripwire (D-14) | unit | new test, shape of the existing tripwire precedent (monkeypatch the tip step to a no-op, assert D-12's proof fails) | ❌ Wave 0 — new test |
-| REQ-tip-chamfer | Empty tip selection is a `BuildError`, routed 422/exit 2 | unit + integration | new test, shape of `test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore` | ❌ Wave 0 — new test |
+| REQ-tip-chamfer | Empty tip selection is a `BuildError`, routed 422/exit 1 | unit + integration | new test, shape of `test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore` | ❌ Wave 0 — new test |
 | REQ-tip-chamfer-capped | Cap applied and warned (D-01/D-02/D-04, D-09) | unit | new tests in `tests/test_calc.py`, shape of `test_a_bore_chamfer_under_min_wall_from_the_root_warns_with_the_measured_gap` | ❌ Wave 0 — new tests |
 | REQ-tip-chamfer-capped | Kernel boundary tested one step either side (D-04) | unit | new tests, shape of `test_the_largest_round_bore_the_chamfer_rule_allows_builds` / `test_the_kernel_fails_where_a_round_bore_chamfer_touches_the_root` | ❌ Wave 0 — new tests, values from the spike |
 | REQ-tip-chamfer-capped | Heaviest configuration measured against `SPUR_BUILD_TIMEOUT` | manual/bench (not `make verify`) | `make bench.build SWEEP=bench/sweeps/tip_chamfer.json` | ❌ Wave 0 — new sweep file |

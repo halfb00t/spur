@@ -225,7 +225,28 @@ flanks, root fillets, bore and outside diameter untouched.
 (end-face edge break; no unsourced guidance), but `Mixin3D.chamfer()` at maximum teeth is
 the one v0.2 operator in L09's cost family, so the plan opens with a measured spike of its
 cost before the cap is designed.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 10-01-PLAN.md — D-05 spike, measurement only: the chamfer operator on the 2 x teeth tip arcs at 19/40/200 teeth and module 0.2/1.75/10, the kernel boundary bisected against the analytic caps, a 405-set grid, recorded in `bench/RESULTS.md` before any field exists (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 10-02-PLAN.md — Tracer: `?tip_chamfer=0.4` end to end (field, three-limit cap with D-04's measured involute-start term, `tip_chamfer_effective`, the guarded tip selector as the last build step, DIMS row), then the cap pinned one step either side of each limit (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 10-03-PLAN.md — Proof: tip column on every selector-matrix row plus 200-tooth and module-0.2 rows, the real-pipeline spy, the empty-selection guard (model, API, CLI), the built-solid proof and its tripwire, the kernel boundary either side (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 10-04-PLAN.md — The 9-row D-06 sweep at 200 teeth through `make bench.build`, recorded in `bench/RESULTS.md` with the timeout margin; D-07's over-budget gate (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 10-05-PLAN.md — README (bullet, row, example run as a test, geometry note), L29, architecture docs, debt records, final `make verify` (wave 5)
 
 ### Phase 11: Body Cutouts
 
@@ -324,6 +345,6 @@ in Phases 7–11; no open technical questions remain by this point.
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
-| 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
+| 10. Tooth-Tip Chamfer | v0.2 | 0/5 | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |

@@ -214,7 +214,7 @@ must re-measure at 200 teeth / module 0.2 before hard-coding it).
 **Analog:** the no-op-patch tripwire precedent (Phase 7 shape) — monkeypatch the new tip
 chamfer step to a no-op, assert the built-solid proof (D-12) then fails. **Analog:**
 `test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore` (named in
-RESEARCH.md's test map) for the empty-selection `BuildError` guard, routed 422/exit 2.
+RESEARCH.md's test map) for the empty-selection `BuildError` guard, routed 422/exit 1.
 
 ---
 
