@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 10
 current_phase_name: Tooth-Tip Chamfer
 status: executing
-stopped_at: Completed 10-02-PLAN.md
-last_updated: "2026-09-28T12:39:42.852Z"
+stopped_at: Completed 10-03-PLAN.md
+last_updated: "2026-09-28T13:06:31.935Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 10 execution started
-state_head: 92382751746f3e30e106f7abae68f8b0bdf9a9b7
+state_head: bd5f98c02b5a3fa1ff36b368aa5e3ca152cf0740
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 10 (Tooth-Tip Chamfer) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-09-28 — Phase 10 execution started
 
@@ -130,6 +130,7 @@ code review pending at transition time.
 | Phase 09 P05 | ~21min | 2 tasks | 5 files |
 | Phase 10 P01 | 52min | 2 tasks | 2 files |
 | Phase 10 P02 | ~24min | 2 tasks | 9 files |
+| Phase 10 P03 | 19min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -170,6 +171,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 10]: 17 of 163 grid sets where pred sits inside the analytic cap also built at the (larger) analytic cap -- the pred-based rule is conservative, trims some buildable chamfers, never a 422.
 - [Phase 10]: 10-02: tip_chamfer_limit(p) returns a 3-way min() over (limit, reason) tuples rather than three ifs, so an exact tie between two limits breaks on the reason text deterministically with no extra branching. — Continues root_fillet's/recess_fillet's cap-function shape; avoids writing and testing a fourth branch for the tie case.
 - [Phase 10]: 10-02: model._chamfer_tips assigns the chamfer() result to the solid variable before returning it, matching _cut_bore's shape, instead of returning the call directly. — Mixin3D.chamfer's return type is untyped (Any); mypy's no-any-return check fires on a bare return of the chamfer call but not when the same expression is assigned to a cq.Shape-typed variable first.
+- [Phase 10]: 10-03: the built-solid proof and its tripwire share one helper (_assert_only_the_tip_arcs_were_chamfered) so both use the same face/edge/volume/bounding-box/selector checks -- Phase 7's tripwire precedent, a third instance.
+- [Phase 10]: 10-03: the kernel-boundary test patches spur.model.tip_chamfer_effective directly (2.9875) rather than the tip_chamfer field, because the field's own cap would clamp any settable value back inside the boundary before it reached the kernel.
 
 ### Pending Todos
 
@@ -234,8 +237,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-28T12:39:42.819Z
-Stopped at: Completed 10-02-PLAN.md
+Last session: 2026-09-28T13:06:31.901Z
+Stopped at: Completed 10-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
