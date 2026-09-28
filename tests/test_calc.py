@@ -439,6 +439,44 @@ def test_the_round_bore_rules_never_stack() -> None:
     assert exc.value.errors()[0]["ctx"]["fields"] == ["bore_d"]
 
 
+@pytest.mark.parametrize(("kw", "expected"), [
+    # One step either side of MIN_WALL on the default gear (rf 14.4375 mm, chamfer 0.4):
+    # bore_d 27.1 leaves 0.4125 mm of wall, 27.15 leaves 0.3875 mm.
+    ({"bore_d": 27.1, "bore_flat": 0}, None),
+    ({"bore_d": 27.15, "bore_flat": 0}, "0.39 mm"),
+    ({"bore_d": 27.905, "bore_flat": 0}, "0.01 mm"),
+    # A D-flat does not move the number: the chamfered mouth meets the root on the round
+    # part of the wall either way.
+    ({"bore_d": 27.525, "bore_flat": 27.4}, "0.20 mm"),
+    # bore_clearance is part of the as-cut wall: the same bore_d warns with the default
+    # 0.15 mm (0.3625 mm left) and not without it (0.4375 mm left).
+    ({"bore_d": 27.2, "bore_flat": 0}, "0.36 mm"),
+    ({"bore_d": 27.2, "bore_flat": 0, "bore_clearance": 0}, None),
+    # A hex bore ignores bore_d, so a value that warns on a round bore says nothing here;
+    # no bore has no mouth to measure from; the two default links stay silent.
+    ({"bore_hex": 20, "bore_d": 27.525, "bore_flat": 0}, None),
+    ({"bore_d": 0, "bore_flat": 0}, None),
+    ({}, None),
+    ({"keyway_width": 3, "keyway_depth": 1.4}, None),
+])
+def test_a_bore_chamfer_under_min_wall_from_the_root_warns_with_the_measured_gap(
+        kw: dict[str, object], expected: str | None) -> None:
+    """09-REVIEW.md WR-01: D-12 refuses only at ROOT_CONTACT, so a wall thinner than
+    MIN_WALL is accepted (L05 -- the boundary stays put); derive() says so with the gap
+    it measured, and only inside (0, MIN_WALL). One step further (bore_d 27.925, gap 0)
+    is D-12's refusal, tested in
+    test_a_round_bore_chamfer_that_touches_the_root_is_refused_naming_both."""
+    d = derive(GearParams.model_validate(kw))
+    thin = [w for w in d.warnings if w.startswith("Bore chamfer leaves only")]
+    if expected is None:
+        assert thin == []
+    else:
+        assert len(thin) == 1
+        assert f"leaves only {expected} of wall to the root circle" in thin[0]
+        assert "reduce bore_chamfer or bore_d for more margin" in thin[0]
+
+
+
 def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:
     """Thickness + gap must add up to the pitch on the root circle.
 

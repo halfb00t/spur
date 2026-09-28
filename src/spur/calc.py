@@ -27,11 +27,12 @@ ROOT_CONTACT = 1e-9     # mm, how close a chamfered round or D-flat bore mouth m
 # shift each move on their own 0.05/0.01 mm step) built on all 12. One configuration
 # (19 teeth, module 1.75, chamfer 2, round) failed to build at a gap of exactly 1e-9 mm
 # even though check() would accept it (gap == ROOT_CONTACT is not < ROOT_CONTACT) --
-# this sub-2e-8 mm residual band is orders of magnitude below the field's 0.05 mm step
-# and unreachable through the UI's own stepped widgets. It is NOT proven unreachable in
-# general: `step` in params.py's _f() is JSON-schema metadata only, not a pydantic
-# `multiple_of`, so an API/CLI caller sending an ordinary 8-9 significant-figure bore_d
-# can land inside this band (09-REVIEW.md WR-02) -- reproduced live at bore_d
+# this sub-2e-8 mm residual band is orders of magnitude below the field's 0.05 mm step,
+# so the UI's step buttons never land in it -- but nothing enforces the step: `step` in
+# params.py's _f() is JSON-schema metadata only, not a pydantic `multiple_of`, and
+# app.js forwards a typed value as-is, so a value typed into the field, a shared link
+# or an API/CLI caller sending an 11-significant-figure bore_d can land inside this
+# band (09-REVIEW.md WR-02) -- reproduced live at bore_d
 # 24.724999998 (19T, m1.75, chamfer 2, round): check() accepts it (gap
 # 1.000000082740371e-09 > ROOT_CONTACT) and the kernel still raises BuildError, pinned
 # by test_model.py's test_the_kernel_can_fail_inside_the_root_contact_residual_band.
