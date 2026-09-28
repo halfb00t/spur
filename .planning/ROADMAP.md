@@ -225,7 +225,7 @@ flanks, root fillets, bore and outside diameter untouched.
 (end-face edge break; no unsourced guidance), but `Mixin3D.chamfer()` at maximum teeth is
 the one v0.2 operator in L09's cost family, so the plan opens with a measured spike of its
 cost before the cap is designed.
-**Plans**: 3/5 plans executed
+**Plans**: 4/5 plans executed
 
 Plans:
 **Wave 1**
@@ -242,7 +242,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 10-04-PLAN.md — The 9-row D-06 sweep at 200 teeth through `make bench.build`, recorded in `bench/RESULTS.md` with the timeout margin; D-07's over-budget gate (wave 4)
+- [x] 10-04-PLAN.md — The 9-row D-06 sweep at 200 teeth through `make bench.build`, recorded in `bench/RESULTS.md` with the timeout margin; D-07's over-budget gate (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -345,6 +345,6 @@ in Phases 7–11; no open technical questions remain by this point.
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
-| 10. Tooth-Tip Chamfer | v0.2 | 3/5 | In Progress|  |
+| 10. Tooth-Tip Chamfer | v0.2 | 4/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |

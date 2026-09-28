@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 10
 current_phase_name: Tooth-Tip Chamfer
 status: executing
-stopped_at: Completed 10-03-PLAN.md
-last_updated: "2026-09-28T13:06:31.935Z"
+stopped_at: Completed 10-04-PLAN.md
+last_updated: "2026-09-28T13:26:56.489Z"
 last_activity: 2026-09-28
 last_activity_desc: Phase 10 execution started
-state_head: bd5f98c02b5a3fa1ff36b368aa5e3ca152cf0740
+state_head: bbe888f2a715fcf09c99f737cefd37dde864fceb
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 10 (Tooth-Tip Chamfer) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-09-28 — Phase 10 execution started
 
@@ -131,6 +131,7 @@ code review pending at transition time.
 | Phase 10 P01 | 52min | 2 tasks | 2 files |
 | Phase 10 P02 | ~24min | 2 tasks | 9 files |
 | Phase 10 P03 | 19min | 2 tasks | 3 files |
+| Phase 10 P04 | ~17min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -173,6 +174,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 10]: 10-02: model._chamfer_tips assigns the chamfer() result to the solid variable before returning it, matching _cut_bore's shape, instead of returning the call directly. — Mixin3D.chamfer's return type is untyped (Any); mypy's no-any-return check fires on a bare return of the chamfer call but not when the same expression is assigned to a cq.Shape-typed variable first.
 - [Phase 10]: 10-03: the built-solid proof and its tripwire share one helper (_assert_only_the_tip_arcs_were_chamfered) so both use the same face/edge/volume/bounding-box/selector checks -- Phase 7's tripwire precedent, a third instance.
 - [Phase 10]: 10-03: the kernel-boundary test patches spur.model.tip_chamfer_effective directly (2.9875) rather than the tip_chamfer field, because the field's own cap would clamp any settable value back inside the boundary before it reached the kernel.
+- [Phase 10]: 10-04: the tooth-tip chamfer's heaviest 200-tooth row (14.87s of 30s) was filed as must-debt, since it crosses the 7.5s quarter-of-timeout trigger the SPUR_BUILD_TIMEOUT default's own 4x rationale set.
+- [Phase 10]: 10-04: D-07's over-budget checkpoint never fired -- all 9 tip-chamfer sweep rows built inside 30s on the first run, heaviest 14.87s, so no human decision was needed on the field's le or a teeth-dependent cap.
 
 ### Pending Todos
 
@@ -237,8 +240,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-28T13:06:31.901Z
-Stopped at: Completed 10-03-PLAN.md
+Last session: 2026-09-28T13:26:56.454Z
+Stopped at: Completed 10-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
