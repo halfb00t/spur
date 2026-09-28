@@ -203,12 +203,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 10] Code review WR-01 is open: `derive()` rounds both sides of the tip-chamfer
-  comparison to 3 dp before deciding whether to warn, so a nonzero `tip_chamfer` below
-  0.0005 mm builds the unchamfered part and reports `tip_chamfer_effective: 0.0` with no
-  warning — a silent discard of an explicit request, unreachable from the UI's 0.05 mm step
-  but reachable from the API and CLI (`10-REVIEW.md`, ledger `10-REVIEW-DISPOSITION.md`).
-  Close it with `/gsd-code-review 10 --fix` before the PR.
+- ℹ️ [Phase 10] Code review WR-01 (a nonzero `tip_chamfer` under 0.0005 mm was silently
+  discarded) and CR-01 (its first fix attributed print-precision rounding to a geometric
+  limit — found by the Codex lane, confirmed internally) are both fixed: `54fe020`,
+  `60d02f7`. A request that rounds to nothing now warns with its true cause; sub-µm
+  rounding of a nonzero request stays silent like every other 3-dp field (human decision
+  2026-09-28). IN-01/IN-02 stay open (info) in `10-REVIEW-DISPOSITION.md`.
 - ⚠️ [Phase 10] The tip chamfer's heaviest row (14.87 s) leaves ~2× of the 30 s
   `SPUR_BUILD_TIMEOUT` where the default was sized against ~4×; Phase 12 re-measures every
   feature combined. `docs/tech_debt/active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md` (must).
@@ -282,7 +282,7 @@ Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-code-review 10 --fix` — WR-01 (silent discard of a sub-0.0005 mm `tip_chamfer`) is open in `10-REVIEW-DISPOSITION.md`; close it before the PR
+- `/gsd-code-review 10 --codex` — optional: a Codex pass over the CR-01 fix diff (`60d02f7`), the one phase-10 diff no second lane has read yet
 - `/gsd-secure-phase 10` — `workflow.security_enforcement` is on and Phase 10 has no SECURITY.md yet
 - `/gsd-validate-phase 10` — Nyquist validation hook is on (Phase 9 precedent: `09-VALIDATION.md`)
 - Open a PR for `gsd/phase-10-tooth-tip-chamfer` and land it with `make pr.land PR=N`

@@ -163,7 +163,8 @@ pytest — L13). Full list with sources and acceptance evidence:
   step is skipped; the boundary holds one step either side); the 44-record fixture
   byte-unchanged; help text names no size — the research-era sizing figure has no source;
   heaviest of 9 sweep rows 14.87 s of 30 s (must-debt filed: the timeout margin is now ~2×);
-  verified 5/5, `make verify` 453 tests, review 0 critical / 1 warning open (WR-01) (L29)
+  verified 5/5, `make verify` 455 tests; review WR-01 (silent sub-resolution discard) and the
+  Codex-found CR-01 (a warning naming a limit that was not binding) fixed, 2 info open (L29)
   — Phase 10
 
 ### Active
