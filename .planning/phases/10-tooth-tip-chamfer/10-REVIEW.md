@@ -2,32 +2,13 @@
 phase: 10-tooth-tip-chamfer
 reviewed: 2026-09-28T00:00:00Z
 depth: standard
-files_reviewed: 20
+files_reviewed: 2
 files_reviewed_list:
-  - bench/RESULTS.md
-  - bench/sweeps/tip_chamfer.json
-  - bench/tip_chamfer_spike.py
-  - docs/architecture/decision_log.md
-  - docs/architecture/gear-maths/implementation.md
-  - docs/architecture/solid-model/tactics.md
-  - docs/tech_debt/active/2026-09-21-cadquery-shape-typing.md
-  - docs/tech_debt/active/2026-09-28-cli-md-claims-exit-2-where-cmd-export-exits-1.md
-  - docs/tech_debt/active/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md
-  - docs/tech_debt/active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md
-  - docs/tech_debt/INDEX.md
-  - README.md
   - src/spur/calc.py
-  - src/spur/model.py
-  - src/spur/params.py
-  - src/spur/static/app.js
-  - tests/test_api.py
-  - tests/test_bench.py
   - tests/test_calc.py
-  - tests/test_cli.py
-  - tests/test_model.py
 findings:
-  critical: 0
-  warning: 1
+  critical: 1
+  warning: 0
   info: 2
   total: 3
 status: issues_found
@@ -37,100 +18,122 @@ status: issues_found
 
 **Reviewed:** 2026-09-28T00:00:00Z
 **Depth:** standard
-**Files Reviewed:** 20
+**Files Reviewed:** 2
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the phase-10 delta only (`git diff 277a98f..HEAD`) against the listed files: the
-new `tip_chamfer` field, its three-limit cap (`calc.tip_chamfer_limit`/
-`tip_chamfer_effective`), the kernel cut and selector (`model._chamfer_tips`/
-`_tip_edges`), the `calc.spline_start` extraction from `model._outline`, the bench spike
-and committed sweep, docs, and the accompanying tests. `make verify` (ruff, mypy
-`--strict`, import-linter, pytest) passes clean — 453 tests, 0 failures — and I traced
-the geometry logic, the cap arithmetic, and the cross-file consistency between
-`calc.py`'s three limit terms and `model.py`'s cut/selector by hand rather than trusting
-the green run.
+Incremental re-review of the one fix commit since the previous 10-REVIEW.md
+(`54fe020`, "fix(10): WR-01 warn when a tip chamfer request rounds away to nothing"),
+scoped to `git diff 367d77a..HEAD -- src/spur/calc.py tests/test_calc.py`. Ran
+`.venv/bin/python -m pytest tests/test_calc.py -q` (91 passed) and hand-verified the
+new branch against the pinned kernel via the REPL (not predicted).
 
-The implementation is unusually well-measured for a v1 review target — the flank cap is
-backed by a 20-step bisection on 6 configurations plus a 405-set grid, and three items of
-honestly-filed tech debt (CLI exit-code doc drift, the root-fillet lead-in claim, the
-build-timeout margin) are already disclosed exactly as the codebase's own process
-requires, with content that matches the bench numbers I could verify independently. I did
-not re-raise those as new findings since they are correctly filed, not silently dropped.
+**WR-01 (previous review): verified fixed for the case it targeted.** The comparison in
+`derive()` now reads `if tch < p.tip_chamfer:` instead of
+`if tch < round(p.tip_chamfer, 3):`, so `GearParams(tip_chamfer=0.0004)` — which used to
+round to `0.0` on both sides of the old comparison and warn nothing — now produces one
+"Tip chamfer reduced to 0 mm ..." warning, matching root_fillet/recess_fillet's own
+raw-request comparison. Confirmed by hand and by the new
+`test_a_sub_print_precision_tip_chamfer_request_still_warns`.
 
-I found one genuine, reproducible warning-suppression gap introduced by this phase's new
-`derive()` comparison (a sub-print-precision `tip_chamfer` request is silently rounded
-away with no "reduced" warning, unlike every sibling capped field), and two minor
-quality/maintainability items. No blockers.
+**But the fix introduces a new, broader defect (CR-01, independently confirmed from the
+codex evidence file's P3 finding):** the warning's *reason* clause
+(`tip_chamfer_limit(p)[1]`) is not actually tied to what caused the reduction. It always
+reports whichever of the three geometric limits is numerically smallest for the current
+parameters — even when none of them bound the value at all, and the entire "reduction"
+is 3-decimal-place rounding of an ordinary request. I reproduced this for
+`tip_chamfer=0.1234` (not merely the sub-0.0005 mm edge case the fix's own test covers):
+the pitch-circle limit for the default gear is `1.75` mm, nowhere close to binding, yet
+`derive()` prints "Tip chamfer reduced to 0.123 mm to keep it above the pitch circle." —
+a fabricated cause for an entirely mundane 3-dp rounding step. This is exactly the class
+of thing CLAUDE.md's standing rule exists to prevent ("A number the tool prints is a
+number someone will cut metal to... never a plausible one"): the *number* here (`0.123`)
+is correct, but the *stated reason* is a plausible-sounding falsehood, unlike
+`root_fillet`/`recess_fillet`'s single fixed reason strings, which are always true
+because those fields have only one capping source. `tip_chamfer_limit`'s three
+candidate reasons make this new comparison's simplicity (compare raw vs. applied, borrow
+the smallest limit's text) unsound: picking "the smallest limit's reason" is only valid
+when that limit is what actually reduced the value.
 
-## Warnings
+## Critical Issues
 
-### WR-01: A `tip_chamfer` request under 0.0005 mm is silently rounded to nothing, with no warning
+### CR-01: The tip-chamfer warning states a false geometric cause whenever rounding, not a limit, changes the value (external: codex)
 
-**File:** `src/spur/calc.py:543-549`
+**File:** `src/spur/calc.py:544-552`
 
-**Issue:** `derive()`'s warning gate for the tip chamfer rounds *both* sides of the
-comparison to 3 dp before deciding whether to warn:
+**Issue:** The fixed comparison is:
 
 ```python
 tch = tip_chamfer_effective(p)
-if tch < round(p.tip_chamfer, 3):
+if tch < p.tip_chamfer:
     warnings.append(f"Tip chamfer reduced to {tch:g} mm {tip_chamfer_limit(p)[1]}.")
 ```
 
-This is deliberate for the case the surrounding comment describes (a *limit's* own float
-residue, e.g. 0.1999999999999993, must not warn when the request is exactly 0.2). But it
-has a side effect the comment doesn't cover: when the *request itself* is small enough
-that `round(p.tip_chamfer, 3)` is `0.0` — i.e. `0 < p.tip_chamfer < 0.0005` — the
-comparison becomes `0.0 < 0.0`, which is always false, so no warning fires at all, even
-though the requested chamfer was not applied.
+`tip_chamfer_effective(p)` is `round(min(p.tip_chamfer, tip_chamfer_limit(p)[0]), 3)`.
+The `tch < p.tip_chamfer` test only tells you the *final rounded value* differs from the
+*raw request* — it does not tell you *why*. There are two structurally different reasons
+that inequality can be true:
 
-Verified directly against the pinned kernel:
+1. `tip_chamfer_limit(p)[0] < p.tip_chamfer` — a real geometric limit bound the value.
+   Here `tip_chamfer_limit(p)[1]` is the correct explanation.
+2. `tip_chamfer_limit(p)[0] >= p.tip_chamfer`, but `round(p.tip_chamfer, 3) !=
+   p.tip_chamfer` — the request itself had more precision than the model prints, and
+   plain 3-decimal rounding (not any limit) produced the visible difference. Here
+   `tip_chamfer_limit(p)[1]` is **not** the reason at all; the geometric limit is not
+   remotely close to binding.
+
+Verified directly against the pinned code (not predicted):
 
 ```
 >>> from spur.params import GearParams
->>> from spur.calc import derive
->>> from spur.model import _build_checked
->>> p0, p1 = GearParams(), GearParams(tip_chamfer=0.0004)
->>> derive(p1).tip_chamfer_effective, derive(p1).warnings
-(0.0, ())
->>> s0, s1 = _build_checked(p0), _build_checked(p1)
->>> len(s0.Faces()) == len(s1.Faces()), abs(s0.Volume() - s1.Volume()) < 1e-9
-(True, True)
+>>> from spur.calc import derive, tip_chamfer_effective, tip_chamfer_limit
+>>> p = GearParams(tip_chamfer=0.1234)
+>>> tip_chamfer_limit(p)
+(1.75, 'to keep it above the pitch circle')
+>>> tip_chamfer_effective(p)
+0.123
+>>> derive(p).warnings
+('Tip chamfer reduced to 0.123 mm to keep it above the pitch circle.',)
 ```
 
-The built part for `tip_chamfer=0.0004` is byte-for-byte the same as the unchamfered
-default (no chamfer cut at all — `model._chamfer_tips`'s `if c <= 0: return solid` skips
-it), `tip_chamfer_effective` prints `0.0` (not `null`, since the gate is `p.tip_chamfer >
-0`), and `warnings` is empty. This is a direct instance of the project's own standing
-rule "cap and warn... never silent" (CLAUDE.md, `docs/CODING_VALUES.md` "Failure
-handling") being violated for a field this exact phase introduces: the sibling fields
-`root_fillet` and `recess_fillet` compare the *raw* (unrounded) requested value instead
-and do warn in the equivalent case (`GearParams(root_fillet=0.0004)` prints `"Root fillet
-reduced to 0.00 mm to fit the tooth gap."` even though the message's stated reason is
-technically wrong there too — it still tells the caller something changed). `tip_chamfer`
-is the only capped field in this codebase that can silently discard a nonzero user
-request with zero signal.
+The pitch-circle cap is `1.75` mm; the request (`0.1234`) is nowhere near it. The
+"reduction" from `0.1234` to `0.123` is ordinary 3-dp rounding, yet the warning asserts a
+geometric cause that is false for this call. This is not confined to the sub-0.0005 mm
+edge case the fix's own test (`test_a_sub_print_precision_tip_chamfer_request_still_warns`)
+covers — it fires for **any** `tip_chamfer` value with more precision than 3 decimal
+places, wherever that value sits well inside all three limits. That is a large,
+easily-reachable input space for any direct `/api/info`, `/api/model.stl` or
+`spur export --tip-chamfer` caller sending a value with 4+ significant decimals (exactly
+the caller class `calc.py`'s own `ROOT_CONTACT` docstring already worries about for
+`bore_d`); the web UI's 0.05 mm step happens not to trigger it, but nothing in the model
+enforces that step (same gap `ROOT_CONTACT`'s docstring notes for other fields).
 
-This is unreachable through the web UI (its step is 0.05 mm), but reachable from any
-direct `/api/info`, `/api/model.stl` or `spur export --tip-chamfer` caller sending a
-high-precision value — exactly the class of caller `calc.py`'s own `ROOT_CONTACT`
-docstring already worries about for `bore_d`.
+The new regression test only checks the message *prefix*
+(`tip_warnings[0].startswith("Tip chamfer reduced to 0 mm")`), so it cannot catch a wrong
+*suffix* — the false reason clause passes unnoticed. `make verify` and
+`pytest tests/test_calc.py -q` both stay green with this bug present (91 passed,
+confirmed above).
 
-**Fix:** Compare against the raw request, like `root_fillet`/`recess_fillet` do, rather
-than rounding both sides:
+**Fix:** Only attribute the reduction to a geometric limit when that limit is actually
+what produced the value; otherwise state plainly that the request was rounded to the
+model's print precision. For example, compare the *limit* against the *raw request* to
+decide which explanation applies:
 
 ```python
 tch = tip_chamfer_effective(p)
-if tch < p.tip_chamfer and round(tip_chamfer_limit(p)[0], 3) < round(p.tip_chamfer, 3):
-    warnings.append(f"Tip chamfer reduced to {tch:g} mm {tip_chamfer_limit(p)[1]}.")
+limit, reason = tip_chamfer_limit(p)
+if round(limit, 3) < round(p.tip_chamfer, 3):
+    warnings.append(f"Tip chamfer reduced to {tch:g} mm {reason}.")
+elif tch < p.tip_chamfer:
+    # No geometric limit bound this request; the model only prints 3 dp, and this
+    # request had more precision than that.
+    warnings.append(f"Tip chamfer reduced to {tch:g} mm; requested value was rounded "
+                    "to the model's print precision.")
 ```
-or, more simply, warn whenever `tch != round(p.tip_chamfer, 3)` is false only because of
-a *limit's* residue — i.e. keep the 3-dp comparison for the limit-vs-request check the
-comment describes, but always warn separately when `p.tip_chamfer > 0` and `tch == 0.0`
-(a full round-to-nothing is never the "print residue" case the current comparison was
-built to protect against).
+Add a test with a value like `0.1234` (well inside every limit but not 3-dp-aligned) that
+asserts the *full* warning string, not just its prefix, so this class of message-content
+bug cannot regress silently again.
 
 ## Info
 
@@ -138,35 +141,32 @@ built to protect against).
 
 **File:** `bench/tip_chamfer_spike.py:201`, `bench/tip_chamfer_spike.py:286`
 
-**Issue:** Both `boundary()`'s `hi = min(3.0, 0.45 * p.face_width)` and `grid_check()`'s
-`cap = min(0.45 * p.face_width, pr.ra - pr.r, 3.0)` repeat the literal `3.0`, which is
-`GearParams.model_fields["tip_chamfer"].metadata`'s `le=3` copied by hand. If the field's
-upper bound is ever changed (as `docs/CODING_VALUES.md` notes new fields are meant to
-flow through the schema automatically), this bench script's grid would silently stop
-representing the field's real analytic ceiling and no test would catch the drift — the
-bench script isn't part of `make verify`'s pytest run.
+**Issue:** Carried forward unchanged from the previous review — out of this diff's
+scope (`bench/tip_chamfer_spike.py` was not touched by `54fe020`), still valid: verified
+lines 201 and 286 are unchanged and still hardcode the literal `3.0` that mirrors
+`GearParams.model_fields["tip_chamfer"]`'s `le=3` bound by hand, with no test in
+`make verify`'s pytest run guarding against drift if that field bound ever changes.
 
-**Fix:** Read the bound from the field instead of repeating it, e.g.
-`GearParams.model_fields["tip_chamfer"].metadata` (or a `le` extracted the same way
-`_add_gear_args` in `cli.py` reads `field.annotation`), so a future field-bound change is
-reflected here without a second hand-edit.
+**Fix:** Unchanged from the previous review: read the bound from the field
+(`GearParams.model_fields["tip_chamfer"].metadata`) instead of repeating the literal.
 
 ### IN-02: `DerivedDimensions.tip_chamfer_effective`'s null-gate reads the raw field, not the applied value
 
-**File:** `src/spur/calc.py:618`
+**File:** `src/spur/calc.py:621`
 
-**Issue:** `tip_chamfer_effective=r3(tch) if p.tip_chamfer > 0 else None` — the same
-underlying rounding-to-zero case as WR-01 means a request the model quietly cuts nothing
-for still prints a non-`null` `0.0`, rather than `null` ("no tip chamfer") or a value that
-comes with the "reduced" warning WR-01's fix would add. Once WR-01 is fixed the printed
-`0.0` will at least always ship with an explanatory warning; consider whether `tch > 0`
-is closer to the field's own documented contract ("null with no tip chamfer") than
-`p.tip_chamfer > 0`, since `tch` (not the raw request) is what the built part actually
-reflects.
+**Issue:** `tip_chamfer_effective=r3(tch) if p.tip_chamfer > 0 else None` still gates on
+the raw request rather than on `tch`. As the fix report notes, WR-01's fix resolved the
+*silent* half of this (a request that rounds to nothing now always ships with a
+"reduced" warning), but the field still prints a non-`null` `0.0` rather than `null`
+("no tip chamfer") for that case, and — per CR-01 above — the accompanying warning can
+now carry a fabricated geometric reason rather than an honest one. The two remaining
+questions (whether `0.0` vs `null` is more honest for this field, and CR-01's message
+content) are entangled: fixing CR-01's message text does not by itself resolve whether
+`0.0` is the right printed value here.
 
-**Fix:** Low priority, and coupled to how WR-01 is resolved — a warning fixes the "silent"
-half of this; whether `0.0` vs `null` is the more honest value for the field is a smaller
-follow-on decision.
+**Fix:** Low priority, and coupled to CR-01's resolution — reconsider `tch > 0` as the
+null-gate once the warning text itself is fixed, since `tch` (not the raw request) is
+what the built part actually reflects.
 
 ---
 

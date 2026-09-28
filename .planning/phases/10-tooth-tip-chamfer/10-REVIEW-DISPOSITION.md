@@ -3,10 +3,10 @@ phase: 10
 review: 10-REVIEW.md
 titles: json
 findings:
-  - id: WR-01
-    severity: warning
-    disposition: fixed
-    title: "A `tip_chamfer` request under 0.0005 mm is silently rounded to nothing, with no warning"
+  - id: CR-01
+    severity: critical
+    disposition: open
+    title: "The tip-chamfer warning states a false geometric cause whenever rounding, not a limit, changes the value (external: codex)"
   - id: IN-01
     severity: info
     disposition: open
@@ -15,18 +15,23 @@ findings:
     severity: info
     disposition: open
     title: "`DerivedDimensions.tip_chamfer_effective`'s null-gate reads the raw field, not the applied value"
-open: 2
-total: 3
-recorded: 2026-09-28T14:23:14.700Z
+  - id: WR-01
+    severity: warning
+    disposition: fixed
+    title: "A `tip_chamfer` request under 0.0005 mm is silently rounded to nothing, with no warning"
+open: 3
+total: 4
+recorded: 2026-09-28T14:34:03.807Z
 ---
 
 # Phase 10: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 10-REVIEW-FIX.md |
+| CR-01 | critical | open | - |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
+| WR-01 | warning | fixed | 10-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
