@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A `tip_chamfer` request under 0.0005 mm is silently rounded to nothing, with no warning"
   - id: IN-01
     severity: info
@@ -15,16 +15,16 @@ findings:
     severity: info
     disposition: open
     title: "`DerivedDimensions.tip_chamfer_effective`'s null-gate reads the raw field, not the applied value"
-open: 3
+open: 2
 total: 3
-recorded: 2026-09-28T14:04:10.216Z
+recorded: 2026-09-28T14:23:14.700Z
 ---
 
 # Phase 10: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
+| WR-01 | warning | fixed | 10-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 
