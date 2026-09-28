@@ -472,6 +472,21 @@ def test_the_kernel_fails_where_a_round_bore_chamfer_touches_the_root(
         _build_checked(GearParams().model_copy(update=kw))
 
 
+def test_the_kernel_can_fail_inside_the_root_contact_residual_band() -> None:
+    """09-REVIEW.md WR-02: check() only guarantees gap > ROOT_CONTACT (1e-9 mm), but the
+    bisection behind ROOT_CONTACT only proved the kernel builds reliably from
+    gap >= 1.9e-8 mm up. bore_d 24.724999998 (19T, m1.75, chamfer 2, round -- the debt
+    file's own configuration) lands at gap 1.000000082740371e-09, inside that unproven
+    band: check() accepts it (no ValidationError, no model_copy() bypass needed -- an
+    ordinary 9-significant-figure bore_d an API/CLI caller could plausibly send, not
+    adversarial bit-manipulation), and the kernel still raises BuildError. Pinned so a
+    future cadquery/cadquery-ocp bump that changes behaviour in this band goes red here
+    instead of silently."""
+    p = GearParams(bore_d=24.724999998, bore_chamfer=2, bore_flat=0)
+    with pytest.raises(BuildError, match="Geometry kernel produced an invalid solid"):
+        _build_checked(p)
+
+
 @pytest.mark.parametrize("kw", [
     pytest.param({"bore_flat": 0}, id="round"),
     pytest.param({}, id="d-flat"),
