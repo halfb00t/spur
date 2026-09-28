@@ -628,6 +628,20 @@ def test_a_tip_chamfer_is_capped_to_whichever_limit_binds_first(
     assert tip_warnings == ([warning] if warning else [])
 
 
+def test_a_sub_print_precision_tip_chamfer_request_still_warns() -> None:
+    """10-REVIEW.md WR-01: a request under 0.0005 mm rounds to 0.0 on both sides of the
+    old comparison (round(p.tip_chamfer, 3) == 0.0 too), so no limit ever binds and the
+    request is silently dropped. Compared against the raw request instead (like
+    root_fillet/recess_fillet), this must still warn -- the part built is the
+    unchamfered default, not what was asked for."""
+    p = GearParams(tip_chamfer=0.0004)
+    d = derive(p)
+    assert tip_chamfer_effective(p) == 0.0
+    tip_warnings = [w for w in d.warnings if w.startswith("Tip chamfer")]
+    assert len(tip_warnings) == 1
+    assert tip_warnings[0].startswith("Tip chamfer reduced to 0 mm")
+
+
 def test_the_tip_chamfer_field_is_bounded_zero_to_three() -> None:
     with pytest.raises(ValidationError):
         GearParams(tip_chamfer=3.05)
