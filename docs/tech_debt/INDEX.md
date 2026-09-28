@@ -25,6 +25,7 @@ Severity (grep-able `Severity:` field):
 | nice | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook on a cold cache](active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | gsd exposes a commit-timeout setting, or an executor's warm retry also times out |
 | must | [CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly](active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md) | a fresh `pip install -e '.[dev]'` resolves a `cadquery`/`cadquery-ocp` pair different from the fixture's provenance |
 | must | [`cli.md` claims exit 2 where `cmd_export` exits 1](active/2026-09-28-cli-md-claims-exit-2-where-cmd-export-exits-1.md) | `cmd_export` error handling or cli.md "Errors" is next touched, or an `Lxx` moves build failures to exit 2 |
+| must | [A 200-tooth tip chamfer narrows SPUR_BUILD_TIMEOUT's margin](active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md) | Phase 12's composed sweep, a BuildTimeout on a tip-chamfered gear, or slower hardware |
 
 ## Resolved
 

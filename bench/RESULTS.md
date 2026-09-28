@@ -786,3 +786,72 @@ construction, not a source of a new 422.
 **Verdict:** held -- 18 cost rows ok, 6 boundary sets held, grid 163/405 conservative
 with 0 failures, heaviest 200-tooth request teeth=200 module=0.2 backlash=0.07 c=0.05 --
 15.90 s of 30 s.
+
+## Tooth-tip chamfer build and export time (Phase 10)
+
+The committed measurement record for the tooth-tip chamfer at its heaviest allowed
+configuration (ROADMAP Phase 10 SC4; `REQ-measured-build-time`'s per-feature entry,
+re-measured combined in Phase 12). The runner is `make bench.build` over the committed
+sweep `bench/sweeps/tip_chamfer.json`, reused unchanged from Phase 8 (08 D-12). The
+sweep has 9 rows, per D-06: `module` {1.75, 10} (module drives fine-STL export time,
+Phase 8's probe) x `tip_chamfer` {0.4, the largest each module allows -- 1.75 mm at the
+pitch circle for module 1.75, 3 mm at the field's own `le` for module 10} x
+`recess_sides` {both, none} (a recess is the heaviest factor Phase 8 and 9 both found),
+on the default bore -- 8 rows -- plus one row at module 0.2, backlash 0.07 (the finest
+tips this model allows, at the backlash that keeps the tooth tip above `check()`'s
+0.05 mm floor), with its recess. 10-01's spike found the chamfer's cost does not depend
+on `c` (edge count dominates, not chamfer depth or module), so the 0.4 mm rows here are
+a check on that finding, not expected to be the heaviest.
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `e63ae4c`
+- Sweep: `bench/sweeps/tip_chamfer.json`
+- Load averages at start (script's own `os.getloadavg()`): 3.29, 4.08, 4.36
+- `uptime` moments before the run: load averages 3.88, 4.42, 4.51
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+- Both readings sit above this project's usual "quiet" bar (>1.5 on this 12-core host,
+  Phase 7's own convention) -- the numbers below carry that caveat rather than being
+  presented as clean (L08).
+
+### Sweep
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 tip_chamfer=0.4 recess_sides=both | 13.95 | 0.81 | 0.50 | 14.77 | yes |
+| teeth=200 module=1.75 tip_chamfer=0.4 recess_sides=none | 13.21 | 0.76 | 0.48 | 13.97 | yes |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both | 14.17 | 0.70 | 0.48 | 14.87 | yes |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=none | 13.38 | 0.62 | 0.50 | 14.01 | yes |
+| teeth=200 module=10 tip_chamfer=0.4 recess_sides=both | 13.40 | 1.22 | 0.48 | 14.63 | yes |
+| teeth=200 module=10 tip_chamfer=0.4 recess_sides=none | 12.63 | 0.77 | 0.48 | 13.40 | yes |
+| teeth=200 module=10 tip_chamfer=3 recess_sides=both | 13.51 | 1.20 | 0.49 | 14.71 | yes |
+| teeth=200 module=10 tip_chamfer=3 recess_sides=none | 12.75 | 0.76 | 0.48 | 13.51 | yes |
+| teeth=200 module=0.2 backlash=0.07 tip_chamfer=0.2 recess_sides=both | 14.32 | 0.52 | 0.46 | 14.84 | yes |
+
+**Heaviest:** teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both -- 14.87 s of 30 s.
+
+The heaviest row (14.87 s) sits at about half the 30 s timeout -- roughly 3x Phase 8's
+heaviest hex row (5.08 s) and Phase 9's heaviest keyway row (4.85 s), and about 2x the
+7.39 s worst single build already on record ("### `SPUR_BUILD_TIMEOUT`" above, 200 teeth
+under ten concurrent requests). The chamfer operator is the dominant cost, exactly as
+10-01's spike found: at ~13-14 s of bare build against the spike's own 12.50-12.81 s
+chamfer-only measurement on the same 400-edge case, the chamfer step accounts for the
+large majority of every row's build time here too.
+
+### SPUR_BUILD_TIMEOUT margin
+
+`SPUR_BUILD_TIMEOUT`'s 30 s default was set at about 4x the 7.39 s worst build on record
+("### `SPUR_BUILD_TIMEOUT`" above). The heaviest tip-chamfer row (14.87 s) leaves only
+30 / 14.87 ~= **2.0x** of that margin -- half of what the default was sized against. This
+sweep builds one gear at a time, so behaviour under ten concurrent builds is not measured
+here, and nothing is extrapolated from it.
+
+### make verify wall time
+
+`time make verify`: **453 passed in 97.18s** -- **98.17s** wall time (`time`, includes
+lint/typecheck/import-lint/no-fake-done), against Phase 9's recorded **78.21s** / 396
+tests. The phase's tip-chamfer tests (57 new, across 10-01 through 10-04) add **+19.96s**
+to the gate, measured rather than assumed.
