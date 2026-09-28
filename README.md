@@ -10,6 +10,7 @@ Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI
 - Involute flanks from module, tooth count, pressure angle and profile shift
 - Backlash, root fillets, D-flat, round or hex bore with print clearance and chamfer,
   and a keyway in a round or D-flat bore
+- An edge-break chamfer on the tooth tips at both faces
 - Annular face recesses (one or both sides) with filleted floors
 - Measurement aids: calipers across tips (corrected for odd tooth counts), span over
   *k* teeth (Wildhaber), centre distance to a mating gear
@@ -108,6 +109,7 @@ spur export -o gear.step                                  # defaults
 spur export -o gear.stl --teeth 24 --module 1 --pressure-angle 20 --bore-flat 0
 spur export -o hexgear.stl --bore-hex 6                   # 6 mm hex bore
 spur export -o keyedgear.step --keyway-width 3 --keyway-depth 1.4  # keyway in the default D-flat bore
+spur export -o chamfered.stl --tip-chamfer 0.4             # tooth-tip edge break
 spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
 spur export --help                                        # every parameter
 ```
@@ -133,8 +135,9 @@ Parameters that can't make a sound part — a bore wider than the root, teeth th
 to a point, recesses that leave no web — return `422` with a message and the offending
 fields in `detail[].ctx.fields`. Dimensions that can be trimmed without contradicting
 something you asked for are trimmed instead, and say so in `warnings`: the root fillet
-is capped to the tooth gap, and the face recess is narrowed to fit between the bore wall
-and the tooth rim. A hex bore replaces the round bore and D-flat, and `warnings` names
+is capped to the tooth gap, the tip chamfer to what the tooth allows, and the face
+recess is narrowed to fit between the bore wall and the tooth rim. A hex bore replaces
+the round bore and D-flat, and `warnings` names
 any round-bore field it ignored. A keyway pushes the face recess outward to keep its
 wall, and the recess is narrowed or dropped like any other trim; a keyway on a hex bore,
 one as wide as the bore, one that runs into the D-flat, or one whose floor comes too
@@ -152,6 +155,7 @@ Lengths in mm, angles in degrees.
 | `profile_shift` | 0 | Coefficient *x*; positive thickens the root and moves the tip outward |
 | `backlash` | 0.1 | Removed from the circular tooth thickness (printing clearance) |
 | `root_fillet` | 0.5 | Fillet radius at the tooth roots, capped to fit. 0 = sharp |
+| `tip_chamfer` | 0 | Chamfer on the tooth-tip edges at both faces: an edge break for handling and printing, capped to fit the tooth. 0 = none |
 | `face_width` | 7.5 | Overall thickness |
 | `bore_d` | 9 | Round part of the bore. 0 = no round bore |
 | `bore_flat` | 8 | Flat to opposite side of the bore. 0 = round bore |
@@ -195,6 +199,17 @@ while a bore too wide for the root is still refused.
   fillet operator, which is far slower on a many-toothed profile. Where a fillet needs
   room above the base circle, the flank starts with a short chord onto the involute,
   in the non-working root zone.
+- The tip chamfer is a 45-degree edge break on each tooth's tip arc at both faces,
+  `tip_chamfer` off the end face and the same off the tip, cut on the finished solid.
+  It touches only those arcs: the flanks, the root fillets, the bore and the recess are
+  untouched, and the outside diameter is unchanged. It is capped, with a warning, to
+  whichever is smallest of: 45% of the face width (a land stays on the tip between the
+  two faces' chamfers), the addendum (its footprint stays above the pitch circle), and
+  the start of the involute above the root fillet's straight lead-in, where the kernel
+  stops being able to cut it (measured; decision log L29). `/api/info` prints
+  `tip_chamfer_effective`, the chamfer actually cut. It is the one cut here the kernel
+  does edge by edge on every tooth: at 200 teeth it adds about 12 s to a build (400
+  edges chamfered in one operation; bench/RESULTS.md's tip-chamfer spike).
 - Backlash is taken from the tooth thickness, so the part still meshes at nominal
   centre distance.
 - Centre distance to a mate solves `inv(aw) = inv(a) + 2·tan(a)·Σx/Σz` for the working

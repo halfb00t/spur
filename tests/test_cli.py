@@ -100,6 +100,11 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert keyed.read_bytes().startswith(b"ISO-10303-21;")
     assert "warning:" not in capsys.readouterr().err
 
+    chamfered = tmp_path / "chamfered.stl"
+    cli.main(["export", "-o", str(chamfered), "--tip-chamfer", "0.4"])
+    assert chamfered.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:
