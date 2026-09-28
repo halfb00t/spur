@@ -40,7 +40,7 @@ with tooth measurements untouched.
       phase extends
 - [x] **Phase 8: Hex Bore** - A hexagonal bore profile, proving the generalized selector on (completed 2026-09-26)
       real geometry
-- [ ] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit,
+- [x] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit, (completed 2026-09-27)
       documented depth datum
 - [ ] **Phase 10: Tooth-Tip Chamfer** - An edge-break chamfer on the tooth-tip arcs
 - [ ] **Phase 11: Body Cutouts** - Lightening holes, spoke arms, or a honeycomb web — one
@@ -140,26 +140,32 @@ Plans:
 **Goal**: A user can cut a keyway into a round or D-flat bore with an explicit,
 DIN-6885-convention depth a human can verify with calipers on the printed part.
 **Depends on**: Phase 8
-**Requirements**: REQ-keyway-bore, REQ-keyway-composes-with-d-flat, REQ-keyway-wall-refused,
-REQ-hex-rim-chamfer, REQ-bore-derived-numbers
+**Requirements**: REQ-keyway-bore, REQ-keyway-composes-with-d-flat, REQ-keyway-wall-refused, REQ-hex-rim-chamfer, REQ-bore-derived-numbers
 **Success Criteria** (what must be TRUE):
 
   1. Setting `keyway_width`/`keyway_depth` (mm, 0 = off) cuts a keyway measured radially
-     from the as-cut bore wall (`bore_d/2 + bore_clearance`) — the DIN 6885 / ISO R773 `t2`
-     convention, stated in field help, with a warning that ANSI B17.1's "T" is a different
-     (diametral gauge) quantity; `bore_clearance` is added to the keyway width; `bore_d = 0`
-     with a keyway is a 422 naming both fields; the built solid's keyway floor position is
-     measured against the stated datum by a test, not just the parameter round-tripping.
+     from the as-cut bore wall (`(bore_d + bore_clearance)/2`, 09-CONTEXT.md D-14) — the
+     DIN 6885 / ISO R773 `t2` convention, stated in field help, with a warning that ANSI
+     B17.1's "T" is a different (diametral gauge) quantity; `bore_clearance` is added to
+     the keyway width; `bore_d = 0` with a keyway is a 422 naming both fields; the built
+     solid's keyway floor position is measured against the stated datum by a test, not
+     just the parameter round-tripping.
   2. A keyway and a D-flat coexist on one bore under this phase's placement rule; a keyway
      that would intersect the flat is a 422 naming both fields. A keyway field together
      with `bore_hex` is a 422 naming the fields (moved here from Phase 8 SC2 by
      08-CONTEXT.md D-01).
-  3. A keyway whose floor would come within `MIN_WALL` of the root circle or a recess wall
-     is refused — 422 naming `keyway_depth` and the conflicting dimension — never capped.
+  3. A keyway whose floor corner would come within `MIN_WALL` of the root circle is
+     refused — 422 naming `keyway_depth` and `keyway_width` — never capped; a face recess
+     yields to the keyway corner instead, narrowed or dropped with the existing warnings,
+     never a 422 (09-CONTEXT.md D-09/D-10; this supersedes the earlier recess-wall
+     refusal).
   4. `bore_chamfer` correctly chamfers all six rim edges of a hex bore on both faces
      (extending Phase 8) and both the arc and the straight rim edges of a keyway bore's
-     round part, proven by an edge-count assertion for every bore shape, with and without a
-     keyway.
+     round part, proven by the exact edge count the rim selector takes before the keyway
+     is cut, for every bore shape with and without a keyway, and by a built-solid test
+     that the chamfer survives the slot and the keyway's own edges stay sharp
+     (09-CONTEXT.md D-05/D-07; on a finished, chamfered solid the rim selector finds no
+     edges, so a count taken there is not a proof).
   5. `DerivedDimensions` reports the keyway floor-to-opposite-wall distance and the hex
      corner-to-corner diameter (added in Phase 8), both `null` when their feature is off; a
      new `Lxx` decision-log entry states the keyway depth datum; measured build time at the
@@ -169,7 +175,28 @@ REQ-hex-rim-chamfer, REQ-bore-derived-numbers
 bore wall, DIN 6885 / ISO R773 `t2`; recorded in `REQUIREMENTS.md`, REQ-keyway-bore).
 The phase logs it as a new `Lxx` and settles the keyway-vs-D-flat placement rule at
 discuss time — a phase decision, not a research question.
-**Plans**: TBD
+**Plans**: 5/5 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 09-01-PLAN.md — D-20 first: amend SC1 (as-cut wall datum), SC3 (recess yields; corner vs root), SC4 (pre-keyway count plus built-solid proof), REQ-keyway-bore and REQ-keyway-wall-refused through the edit-phase tooling, one human confirmation (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 09-02-PLAN.md — Tracer: `?keyway_width=3&keyway_depth=1.4` end to end (fields, slot cut after the chamfer, recess yields to the corner, two derived fields, UI rows), then proof on the built solid: datum, surviving chamfer, sharp slot, pre-keyway rim counts (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 09-03-PLAN.md — Refusals before CAD (hex, no bore, half-set, wider than the bore, into the D-flat, corner vs root) with API/CLI parity; D-12's round chamfer reach refused at the measured contact, debt resolved (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 09-04-PLAN.md — The 32-row keyway sweep at 200 teeth through `make bench.build`, recorded in `bench/RESULTS.md` (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 09-05-PLAN.md — README (bullet, rows, keyed example run as a test, datum/sharp-slot/floor-radius notes), L28, architecture docs, final `make verify` (wave 5)
 
 ### Phase 10: Tooth-Tip Chamfer
 
@@ -296,7 +323,7 @@ in Phases 7–11; no open technical questions remain by this point.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7. Foundation | v0.2 | 2/2 | In Progress|  |
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
-| 9. Keyway Bore | v0.2 | 0/? | Not started | - |
+| 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 0/? | Not started | - |
 | 11. Body Cutouts | v0.2 | 0/? | Not started | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |

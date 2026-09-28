@@ -1,0 +1,322 @@
+[
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 40.3,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 40.3,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 40.3,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 40.3,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 65,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 65,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 65,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 65,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 199.95,
+    "keyway_depth": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 99.3,
+    "keyway_depth": 200,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 3
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "none",
+    "bore_chamfer": 3
+  }
+]

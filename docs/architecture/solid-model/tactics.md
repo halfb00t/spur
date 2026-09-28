@@ -5,9 +5,9 @@
 **Build pipeline**, one decision per step, in `_build(p)`:
 
 ```
-profile(p) ─▶ _gear_blank ─▶ _cut_face_recesses ─▶ _cut_bore ─▶ one validated Solid
-                (outline,       (annulus cut,          (circle, D or hex,
-                 extrude)        floor fillets)         rim chamfers)
+profile(p) ─▶ _gear_blank ─▶ _cut_face_recesses ─▶ _cut_bore ─▶ _cut_keyway ─▶ one validated Solid
+                (outline,       (annulus cut,          (circle, D or hex,   (slot, after
+                 extrude)        floor fillets)         rim chamfers)        the chamfer)
 ```
 
 `_outline(pr, fillet)` assembles the closed wire tooth by tooth: a straight or filleted
@@ -20,7 +20,8 @@ circles by radius and z; `_bore_rim_edges()` matches by position, sampling three
 points, within `calc.bore_rim_limit(p)` (a hex bore's corners) plus `BORE_RIM_SLACK`,
 because a D-bore rim is not one geometric type. Both selectors raise `BuildError` when
 they match nothing while their feature is on (L26) — a selector never silently selects
-nothing.
+nothing. The keyway slot is cut after `_bore_rim_edges` runs, so the selector never sees
+it and the keyway's edges stay sharp (L28).
 
 **Caching and export**: `build()` and `export()` both take `_LOCK`, then go through
 `_build_cached` (an `lru_cache` on the parameter object) and `_EXPORTS` (an LRU bounded by

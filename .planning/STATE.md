@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 9
-current_phase_name: Keyway Bore
-status: "Phase 08 shipped — PR #9"
-stopped_at: Phase 08 complete, ready to plan Phase 9
-last_updated: "2026-09-27T03:07:05.204Z"
-last_activity: 2026-09-27
-state_head: dfed81aa0c8fd15ecab1563ce556cb4f374be917
+current_phase: 10
+current_phase_name: Tooth-Tip Chamfer
+status: "Phase 09 shipped — PR #10"
+stopped_at: Phase 09 complete, ready to plan Phase 10
+last_updated: "2026-09-28T06:40:13.701Z"
+last_activity: 2026-09-28
+state_head: 31269e290ff08ecb37c1553f168fa78ef512c7e7
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 11
+  completed_plans: 11
   percent: 17
 ---
 
@@ -21,25 +21,24 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-26)
+See: .planning/PROJECT.md (updated 2026-09-27)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 9 — Keyway Bore (first of the two shaft-fit profiles left; carries the hex × keyway 422 that D-01 moved here)
-`calc.bore_rim_limit(p)` and is checked against the Phase 7 fixture).
+**Current focus:** Phase 10 — Tooth-Tip Chamfer (an edge-break chamfer on the tooth-tip arcs; flanks, root fillets, bore and outside diameter untouched; depends on Phase 7 only, independent of the Phase 8–9 bore work)
 
 ## Current Position
 
-Phase: 9 — Keyway Bore
+Phase: 10 — Tooth-Tip Chamfer
 Plan: Not started
-Status: Phase 08 shipped — PR #9
-Last activity: 2026-09-27
+Status: Phase 09 shipped — PR #10
+Last activity: 2026-09-28
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed via GSD: 27 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2, Phase 8: 4; v0 was built and verified
+- Total plans completed via GSD: 32 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2, Phase 8: 4, Phase 9: 5; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -57,6 +56,7 @@ Last activity: 2026-09-27
 | 7. Foundation — edge selection + regression fixture | 2 | ~50min | ~25min |
 | 8. Hex Bore | 4 | ~2h49m | ~42min |
 | 07 | 2 | - | - |
+| 9. Keyway Bore | 5 | ~2h10m | ~26min |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -76,6 +76,12 @@ Phase 7's two plans took ~50m: 07-01 (39 min, spanning a D-06 decision checkpoin
 16.27 s `make verify` cost crossed the 15.0 s line and the human accepted it) and 07-02 (11 min of
 committed work; ~22 min wall including the tolerance probe and two benchmark runs). Verification
 passed 4/4; `make verify` 289 tests; code review pending at transition time.
+Phase 9's five plans took ~2h10m: 09-03 (~45 min — six refusal rules plus the D-12 boundary
+re-measured by 20-step bisection on 12 configurations) dominated; 09-02 (27 min, the tracer plus the
+kernel proofs) next; 09-01 (14 min, spanning the human-verify checkpoint on the amendment wording),
+09-04 (~23 min, 32 sweep rows all inside 30 s on the first run) and 09-05 (~21 min) were routine.
+Verification passed 12/12; `make verify` 396 tests; the two Rule-3 deviations were lint/type-only;
+code review pending at transition time.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -111,6 +117,16 @@ passed 4/4; `make verify` 289 tests; code review pending at transition time.
 | Phase 08 P02 | 55min | 2 tasks | 8 files |
 | Phase 08 P03 | 25 min | 2 tasks | 7 files |
 | Phase 08 P04 | 70 min | 3 tasks | 11 files |
+| Phase 09 P01 | 14min | 3 tasks | 3 files |
+| Phase 09 P02 | 27min | 2 tasks | 7 files |
+| Phase 09 P03 | ~45min | 2 tasks | 8 files |
+| Phase 09 P04 | ~23min | 2 tasks | 3 files |
+| Phase 09 P05 | ~21min | 2 tasks | 5 files |
+| Phase 09 P01 | 14min | 3 tasks | 3 files |
+| Phase 09 P02 | 27min | 2 tasks | 7 files |
+| Phase 09 P03 | 45min | 2 tasks | 7 files |
+| Phase 09 P04 | 23min | 2 tasks | 3 files |
+| Phase 09 P05 | ~21min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -139,6 +155,12 @@ pending; the next milestone starts this list fresh.
 - [Phase 08]: The corner rule and the chamfered-corner rule never stack (if/elif, not two independent ifs) -- with bore_chamfer 0 the mouth equals the corner, so exactly one hex refusal can fire (Flagged Assumption A5).
 - [Phase 08]: L27 appended: hex bore field, replaces-never-refuses, derived numbers, D-03's measured root-circle bounds, and D-11's heaviest row (5.08s of 30s) -- decision_log.md stayed append-only. — One entry covering the whole phase, following L26's shape; the sweep never approached the 30s budget so no checkpoint:decision fired.
 - [Phase 08]: The round bore's unchecked chamfer-reach gap was filed as must-severity debt, not fixed -- a fix would refuse round links that build today (L05). — Measured on 19 and 40 teeth at chamfers of 0.4, 1 and 2mm; out of Phase 8's scope (the hex got its own matching rule).
+- [Phase 09]: Human approved all four proposed texts (REQUIREMENTS REQ-keyway-bore, REQ-keyway-wall-refused; ROADMAP Phase 9 Requirements line, SC1, SC3, SC4) verbatim at the Task 2 checkpoint, no wording changes. — ROADMAP.md was written only through edit-phase's write_updated_phase step (scoped Edit of the Phase 9 section, milestone-scope check before/after), never a direct whole-file write, per D-20.
+- [Phase 09]: D-14's datum verified on the built solid; D-09's yield measured (recess narrows/drops, never a 422); D-07's amended proof (pre-keyway matrix + built-solid chamfer/sharp-slot); D-05 proven sharp on the finished solid.
+- [Phase 09]: D-12 re-measured 2026-09-27 on the pinned kernel (not carried over unverified): a 20-step bisection over 12 configurations landed identically everywhere -- last failing gap -3.8e-8 mm, first building gap 1.9e-8 mm, gap 0.0 failing on all 12, teeth-independent unlike the hex corner (L27). ROOT_CONTACT = 1e-9 mm. One configuration failed to build at exactly 1e-9 mm despite check() accepting it there -- a sub-2e-8 mm residual band matching 09-RESEARCH.md's Flagged Assumption A1, unreachable by any settable field value; documented in the resolved debt file rather than treated as a fresh gate trigger.
+- [Phase 09]: D-11's bound (keyway_width >= bore_d) is definitional, not kernel-measured -- re-confirmed the kernel never fails as keyway_width approaches bore_d, so no crash boundary exists to search for.
+- [Phase 09]: 09-04's keyway sweep measured all 32 rows inside SPUR_BUILD_TIMEOUT=30s on the first run (heaviest 4.85s of 30s) -- the 08 D-11 gate never fired. — The heaviest row is a 3 x 1.4 mm keyway that keeps its face recess, not the largest keyway the rules allow, which pushes the recess out and builds in about half the time -- confirming the planning probe that the sweep must measure both keyway sizes to find the heaviest configuration.
+- [Phase 09]: L28 appended after L27 (0 deleted lines): the keyway's fields, datum formula, build order, recess yield, every refusal, D-12's fix, the two derived numbers and the sweep's heaviest row (4.85s of 30s), each cited to its SUMMARY sha or measurement.
 
 ### Pending Todos
 
@@ -146,7 +168,15 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 8] The round bore's chamfer reach is not checked: `check()`'s round branch compares `bore_radius(p)`, not `bore_mouth_limit(p)`, so a round bore one chamfer short of the root circle builds and the kernel fails at its own limit instead of a 422 naming the fields. Not fixed in Phase 8 because a fix refuses round links that build today (L05): `docs/tech_debt/active/2026-09-26-round-bore-chamfer-reach-is-not-checked.md` (must).
+- ⚠️ [Phase 9] `gsd_run query commit`'s hard-coded 30 s timeout cannot complete this repo's
+  `make verify` pre-commit hook, now ~78 s warm (396 tests): 09-04 and 09-05 each hit it and fell
+  back to plain `git commit` with hooks running (never `--no-verify`). The filed must-debt
+  `docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md` now fires on a
+  warm run too, not only cold — its trigger has widened.
+- ℹ️ [Phase 9] The Phase 8 round-bore chamfer-reach gap is closed (09-03, `4b6a5b9`): the rule sits
+  at the kernel's measured contact (`ROOT_CONTACT` 1e-9 mm) and refuses no link the pinned kernel
+  built before. One residual float band (last failing gap −3.8e-8 mm, first building +1.9e-8 mm)
+  is unreachable from any settable field value; recorded in the resolved debt file.
 - ⚠️ [Phase 7] CI resolves `cadquery`/`cadquery-ocp` from an unpinned `pyproject.toml`
   range while `tests/regression/pre_v0_2.json` pins one resolved kernel's exact topology;
   a kernel bump turns the fixture red for reasons that are not a spur regression. The
@@ -185,6 +215,7 @@ None yet.
 - Phase 8 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 9 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 12 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
+- Phase 9 edited: edited fields: requirements, success_criteria (per 09-CONTEXT.md D-20)
 
 ## Deferred Items
 
@@ -194,14 +225,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-26T16:22:43.952Z
-Stopped at: Phase 08 complete, ready to plan Phase 9
+Last session: 2026-09-27T15:40:31.000Z
+Stopped at: Phase 09 complete, ready to plan Phase 10
 Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-secure-phase 7` — `workflow.security_enforcement` is on and Phase 7 has no SECURITY.md yet
-- `/gsd-validate-phase 7` — Nyquist validation hook is on (Phase 6 precedent: 11/11)
-- Open a PR for `gsd/phase-07-foundation-generalized-edge-selection-regression-fixture` and land it with `make pr.land PR=N`
-- Then `/gsd-discuss-phase 8` on a `gsd/phase-08-*` branch cut from the squash commit
+- `/gsd-secure-phase 9` — `workflow.security_enforcement` is on and Phase 9 has no SECURITY.md yet
+- `/gsd-validate-phase 9` — Nyquist validation hook is on (Phase 6 precedent: 11/11)
+- Open a PR for `gsd/phase-09-keyway-bore` and land it with `make pr.land PR=N`
+- Then `/gsd-discuss-phase 10` on a `gsd/phase-10-*` branch cut from the squash commit (Phase 10 has no CONTEXT.md yet)
 - Run `make verify` once at session start before the first SDK commit (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)

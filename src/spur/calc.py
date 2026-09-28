@@ -15,6 +15,27 @@ if TYPE_CHECKING:
 MIN_WALL = 0.4          # mm, thinnest wall allowed anywhere in the body
 MIN_TIP_FDM = 0.4       # mm, below this a tip is roughly one extrusion line wide
 MIN_RECESS_WIDTH = 1.0  # mm, below this a face groove is not worth cutting
+ROOT_CONTACT = 1e-9     # mm, how close a chamfered round or D-flat bore mouth may sit
+# to the root circle before it counts as touching it. Re-measured 2026-09-27 on the
+# pinned kernel: a 20-step bisection over 12 configurations (8-200 teeth, module 0.5-10,
+# chamfer 1-3 mm, round and D-flat) landed identically on every one -- last failing gap
+# -3.8e-8 mm, first building gap 1.9e-8 mm, gap 0.0 failing on all 12 -- the boundary
+# does not move with tooth count, unlike the hex corner (L27). 1e-9 sits above the
+# 1.8e-15 mm float residue of a step-aligned contact (bore_d 26.325, chamfer 1.2 on the
+# default gear) and below every measured building gap; a gap of exactly 0.0025 mm (the
+# smallest non-zero step-aligned gap: bore_d, module, clearance, chamfer and profile
+# shift each move on their own 0.05/0.01 mm step) built on all 12. One configuration
+# (19 teeth, module 1.75, chamfer 2, round) failed to build at a gap of exactly 1e-9 mm
+# even though check() would accept it (gap == ROOT_CONTACT is not < ROOT_CONTACT) --
+# this sub-2e-8 mm residual band is orders of magnitude below the field's 0.05 mm step,
+# so the UI's step buttons never land in it -- but nothing enforces the step: `step` in
+# params.py's _f() is JSON-schema metadata only, not a pydantic `multiple_of`, and
+# app.js forwards a typed value as-is, so a value typed into the field, a shared link
+# or an API/CLI caller sending an 11-significant-figure bore_d can land inside this
+# band (09-REVIEW.md WR-02) -- reproduced live at bore_d
+# 24.724999998 (19T, m1.75, chamfer 2, round): check() accepts it (gap
+# 1.000000082740371e-09 > ROOT_CONTACT) and the kernel still raises BuildError, pinned
+# by test_model.py's test_the_kernel_can_fail_inside_the_root_contact_residual_band.
 
 
 def inv(a: float) -> float:
@@ -64,6 +85,39 @@ def hex_across_flats(p: GearParams) -> float:
     return p.bore_hex + p.bore_clearance if p.bore_hex > 0 else 0.0
 
 
+def keyway_width_effective(p: GearParams) -> float:
+    """The keyway's effective width, clearance added as it is to the bore
+    (REQ-keyway-bore) -- what calipers read across the slot. 0.0 with no keyway."""
+    return p.keyway_width + p.bore_clearance if p.keyway_width > 0 else 0.0
+
+
+def keyway_corner_radius(p: GearParams) -> float:
+    """The keyway's farthest point from the axis: its floor corner, un-chamfered
+    because the slot is cut after the rim chamfer (D-06). The floor sits at
+    bore_radius(p) + keyway_depth, the as-cut wall plus the depth (D-14) -- a
+    3 x 1.4 mm keyway on the default 9 mm bore puts the corner at 6.1791 mm. 0.0 with
+    no keyway."""
+    if p.keyway_width > 0 and p.keyway_depth > 0:
+        return math.hypot(bore_radius(p) + p.keyway_depth, keyway_width_effective(p) / 2)
+    return 0.0
+
+
+def keyway_flat_wall(p: GearParams) -> float:
+    """The round bore wall left between the D-flat's corner and the keyway's side,
+    measured as an arc on the as-cut wall (D-02's chosen measure): with r = the as-cut
+    bore wall and flat_x the flat's distance from the axis (the plane model._cut_bore
+    cuts), the wall is the arc between the flat's corner angle and the keyway side's
+    foot angle. 2.4956 mm for the default 3 mm keyway on the default D-flat, 0.4174 mm
+    at keyway_width 6.45 mm (the widest the kernel still builds with MIN_WALL of wall),
+    0.0 at keyway_width 7.0 mm (the side lands on the flat's corner) -- negative once
+    the slot's side lies past the flat's corner. check() calls this only with a D-flat
+    inside its range (bore_d/2 < bore_flat < bore_d) and a keyway narrower than the bore
+    (keyway_width < bore_d), so both acos arguments stay inside [-1, 1]."""
+    r = bore_radius(p)
+    flat_x = p.bore_flat + p.bore_clearance - r
+    return r * (math.acos(keyway_width_effective(p) / 2 / r) - math.acos(flat_x / r))
+
+
 def bore_rim_limit(p: GearParams) -> float:
     """The farthest any point on the bore's rim can sit from the axis -- the exact
     geometric bound, no slack.
@@ -91,10 +145,20 @@ def bore_mouth_limit(p: GearParams) -> float:
     0.155c: with it, a 3 mm chamfer on a 6 mm hex ran the recess into an invalid solid at
     2.586 mm and a kernel failure at 3 mm (research PITFALLS.md Pitfall 1). 0.0 with no
     bore at all.
+
+    A keyway's floor corner is the farthest end-face point when it lies beyond the
+    chamfered rim, and the recess yields to it as it yields to a hex corner
+    (09-CONTEXT.md D-09): the 3 x 1.4 mm keyway on the default bore puts its corner
+    0.327 mm from the default recess hub wall, under MIN_WALL. No fuzzy boolean (tol=)
+    is needed here: the slot's faces lie inside the bore or inside material, so this
+    clearance keeps MIN_WALL between the corner and the recess by construction (research
+    Pitfall 3, 09-CONTEXT.md Claude's Discretion). recess_radii() itself is unchanged --
+    it already reads bore_mouth_limit(p).
     """
     if p.bore_hex > 0:
         return bore_rim_limit(p) + 2 / math.sqrt(3) * p.bore_chamfer
-    return bore_rim_limit(p) + (p.bore_chamfer if p.bore_d > 0 else 0.0)
+    return max(bore_rim_limit(p) + (p.bore_chamfer if p.bore_d > 0 else 0.0),
+               keyway_corner_radius(p))
 
 
 def recess_radii(p: GearParams, rf: float) -> tuple[float, float] | None:
@@ -173,6 +237,26 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         errors.append(("Neighbouring teeth merge at the root; lower the profile shift.",
                        ("profile_shift",)))
 
+    # D-13/D-03 decide which branch below even applies, so they run first and name
+    # both keyway fields -- a keyway is the pair, and a half-set one also trips D-03,
+    # which names both anyway (09-CONTEXT.md D-13).
+    has_keyway = p.keyway_width > 0 or p.keyway_depth > 0
+    if has_keyway and p.bore_hex > 0:
+        errors.append((
+            "A keyway cannot be cut into a hex bore: set bore_hex to 0 for a keyed "
+            "round or D-flat bore, or set keyway_width and keyway_depth to 0.",
+            ("bore_hex", "keyway_depth", "keyway_width")))
+    elif has_keyway and p.bore_d == 0:
+        errors.append((
+            "A keyway needs a round bore to cut into: set bore_d, or set "
+            "keyway_width and keyway_depth to 0.",
+            ("bore_d", "keyway_depth", "keyway_width")))
+    if (p.keyway_width > 0) != (p.keyway_depth > 0):
+        errors.append((
+            "A keyway needs both keyway_width and keyway_depth: set both above 0, "
+            "or both to 0.",
+            ("keyway_depth", "keyway_width")))
+
     if p.bore_hex > 0:
         # The hexagon replaces the round profile (D-01), so bore_d and bore_flat are
         # not checked here -- derive() reports them as ignored, and a 422 naming a
@@ -203,9 +287,62 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         r_bore = bore_radius(p)
         if p.bore_d > 0 and r_bore > pr.rf - MIN_WALL:
             errors.append(("Bore is too large for the root diameter.", ("bore_d",)))
+        # D-12: the rule sits at the measured contact point, not at bore_mouth_limit(p) >
+        # rf - MIN_WALL like the hex (L27), so no round or D-flat link that builds today
+        # is refused (09-CONTEXT.md D-12, L05); it reads the chamfered rim, not
+        # bore_mouth_limit, because a keyway corner has its own rule (D-10). The two
+        # round rules never stack (elif): past the too-large rule the mouth is past the
+        # root anyway.
+        elif p.bore_d > 0 and r_bore + p.bore_chamfer > pr.rf - ROOT_CONTACT:
+            mouth = r_bore + p.bore_chamfer
+            errors.append((
+                "Bore chamfer reaches the root circle: the chamfered bore mouth is "
+                f"{2 * mouth:.3f} mm across and the root circle {2 * pr.rf:.3f} mm, and "
+                "the mouth must stay inside it; reduce bore_chamfer or bore_d.",
+                ("bore_chamfer", "bore_d")))
         if p.bore_d > 0 and p.bore_flat > 0 and not p.bore_d / 2 < p.bore_flat < p.bore_d:
             errors.append((f"D-flat must be between {p.bore_d / 2:g} and {p.bore_d:g} mm "
                            "(flat to opposite side).", ("bore_flat",)))
+        # D-11: no kernel limit exists here -- research cut slots to 166% of bore_d on a
+        # 9.15 and a 30.15 mm bore and every cut was one valid solid; planning built
+        # keyway_width equal to bore_d (sides tangent to the bore) valid too. The bound
+        # is definitional (09-CONTEXT.md D-11, resolved 2026-09-27): at keyway_width +
+        # bore_clearance >= bore_d + bore_clearance the slot's sides stop meeting the
+        # bore wall and the part is no longer a keyed bore. bore_clearance is on both
+        # sides, so the comparison drops it.
+        keyed = p.bore_d > 0 and keyway_corner_radius(p) > 0
+        if keyed and p.keyway_width >= p.bore_d:
+            errors.append((
+                f"Keyway is too wide for the bore: keyway_width ({p.keyway_width:g} mm) "
+                f"must be less than bore_d ({p.bore_d:g} mm), or its sides no longer "
+                "meet the bore wall; reduce keyway_width.",
+                ("bore_d", "keyway_width")))
+        # D-02: the kernel built the default D-flat with a keyway at every width tried
+        # (0.417 mm of wall at 6.45, 0.381 at 6.5, 0 at 7.0 where the side lands on the
+        # flat's corner, and 7.5 notching the flat), so MIN_WALL is the part's rule: it
+        # keeps a near-tangent sliver of round wall from reaching the kernel (research
+        # PITFALLS.md Pitfall 1). The measure is the arc on the as-cut wall from the
+        # flat's corner to the foot of the keyway's side.
+        elif (keyed and p.bore_flat > 0 and p.bore_d / 2 < p.bore_flat < p.bore_d
+              and keyway_flat_wall(p) < MIN_WALL):
+            errors.append((
+                "Keyway runs too close to the D-flat: it leaves "
+                f"{max(keyway_flat_wall(p), 0.0):.3f} mm of round bore wall between the "
+                f"flat and the keyway's side, which must be at least {MIN_WALL:g} mm; "
+                "reduce keyway_width or increase bore_flat.",
+                ("bore_flat", "keyway_width")))
+        # D-10: the floor corner, not the floor centreline, is the keyway's nearest
+        # point to the root (09-CONTEXT.md D-10). The kernel built floors past the root
+        # (depth 9.9 on the default gear puts the corners 0.12 mm past it and opens the
+        # slot into a tooth gap), so MIN_WALL is the part's rule. Never capped: a
+        # shallower keyway is a part the key does not fit (REQ-keyway-wall-refused, L03).
+        if keyed and keyway_corner_radius(p) + MIN_WALL > pr.rf:
+            errors.append((
+                "Keyway is too deep for the root diameter: its floor corners reach "
+                f"{2 * keyway_corner_radius(p):.2f} mm across, which must stay "
+                f"{MIN_WALL:g} mm inside the root circle ({2 * pr.rf:.2f} mm); reduce "
+                "keyway_depth or keyway_width.",
+                ("keyway_depth", "keyway_width")))
     if p.bore_chamfer > 0 and p.bore_chamfer >= p.face_width / 2:
         errors.append(("Bore chamfer must be less than half the face width.",
                        ("bore_chamfer",)))
@@ -274,6 +411,15 @@ class DerivedDimensions(BaseModel):
         description="Hex bore across corners including print clearance, what calipers "
                     "read between two opposite corners; null with no hex bore.",
         json_schema_extra={"unit": "mm"})
+    keyway_floor_to_wall: float | None = Field(
+        description="Keyway floor to the opposite bore wall, including print "
+                    "clearance: what a pin and calipers read across the bore through "
+                    "the keyway; null with no keyway.",
+        json_schema_extra={"unit": "mm"})
+    keyway_width_effective: float | None = Field(
+        description="Keyway width including print clearance, what calipers read "
+                    "across the slot; null with no keyway.",
+        json_schema_extra={"unit": "mm"})
     recess_id: float | None = Field(
         description="Face recess inner diameter; null with no recess.",
         json_schema_extra={"unit": "mm"})
@@ -340,6 +486,18 @@ def derive(p: GearParams, mate_teeth: int | None = None,
             warnings.append(
                 f"Hex bore replaces the round profile: {' and '.join(ignored)} "
                 f"{'are' if len(ignored) > 1 else 'is'} ignored.")
+    else:
+        # D-12 refuses only at the measured kernel contact (ROOT_CONTACT), 400 million
+        # times tighter than MIN_WALL, so a wall a few hundredths of a mm thick builds
+        # with no error -- unlike every other bore-vs-root rule in this file, which
+        # refuses at MIN_WALL itself. Warn instead of refusing: the boundary stays put
+        # (09-REVIEW.md WR-01, L05), this only surfaces what check() already let through.
+        wall_gap = pr.rf - (bore_radius(p) + p.bore_chamfer)
+        if p.bore_d > 0 and 0 <= wall_gap < MIN_WALL:
+            warnings.append(
+                f"Bore chamfer leaves only {wall_gap:.2f} mm of wall to the root "
+                f"circle, under the {MIN_WALL:g} mm this design holds everywhere else; "
+                "reduce bore_chamfer or bore_d for more margin.")
 
     rr = recess_radii(p, pr.rf)
     sides = {"both": 2, "top": 1, "bottom": 1}.get(p.recess_sides, 0)
@@ -387,6 +545,13 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         bore_effective=r3(2 * bore_radius(p)) if p.bore_d > 0 and p.bore_hex == 0 else None,
         hex_across_flats=r3(hex_across_flats(p)) if p.bore_hex > 0 else None,
         hex_across_corners=r3(2 * bore_rim_limit(p)) if p.bore_hex > 0 else None,
+        # The opposite wall is always the round wall, because the keyway sits a quarter
+        # turn from the D-flat (D-01) -- floor-to-wall is bore_effective + keyway_depth
+        # whether or not a flat exists.
+        keyway_floor_to_wall=(r3(2 * bore_radius(p) + p.keyway_depth)
+                              if keyway_corner_radius(p) > 0 else None),
+        keyway_width_effective=(r3(keyway_width_effective(p))
+                                if keyway_corner_radius(p) > 0 else None),
         recess_id=r3(2 * rr[0]) if rr else None,
         recess_od=r3(2 * rr[1]) if rr else None,
         recess_fillet=r3(rec_fil) if rr else None,

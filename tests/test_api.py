@@ -76,8 +76,9 @@ def test_openapi_documents_the_typed_contracts() -> None:
     fields = {
         "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
         "root_thickness", "root_gap", "root_fillet", "span_teeth", "span",
-        "bore_effective", "hex_across_flats", "hex_across_corners", "recess_id",
-        "recess_od", "recess_fillet", "web", "warnings", "mate_teeth", "centre_distance",
+        "bore_effective", "hex_across_flats", "hex_across_corners", "keyway_floor_to_wall",
+        "keyway_width_effective", "recess_id", "recess_od", "recess_fillet", "web",
+        "warnings", "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -90,6 +91,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["centre_distance"]["unit"] == "mm"  # nullable, still a length
     assert component["properties"]["hex_across_flats"]["unit"] == "mm"
     assert component["properties"]["hex_across_corners"]["unit"] == "mm"
+    assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
+    assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
@@ -149,7 +152,7 @@ def test_a_hex_bore_link_is_served_with_its_two_numbers() -> None:
     assert props["bore_hex"]["maximum"] == 200
     assert props["bore_hex"]["default"] == 0
     names = list(props)
-    assert names.index("bore_hex") == names.index("bore_flat") + 1
+    assert names.index("bore_hex") == names.index("keyway_depth") + 1
 
     r = client.get("/api/info", params={"bore_hex": 6})
     assert r.status_code == 200
@@ -175,6 +178,53 @@ def test_a_hex_bore_link_is_served_with_its_two_numbers() -> None:
     assert len(r.content) > 84
 
     r = client.get("/api/model.step", params={"bore_hex": 6})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_keyed_link_is_served_with_its_two_numbers() -> None:
+    """?keyway_width=3&keyway_depth=1.4 end to end (D-01, D-04, D-14, D-15): the schema,
+    /api/info's two new numbers with the recess moved out to clear the keyway corner,
+    the plain-default case with both keyway fields null, the le-200 refusal, and both
+    export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    for name in ("keyway_width", "keyway_depth"):
+        assert props[name]["group"] == "Bore"
+        assert props[name]["unit"] == "mm"
+        assert props[name]["minimum"] == 0
+        assert props[name]["maximum"] == 200
+        assert props[name]["default"] == 0
+    names = list(props)
+    assert names.index("keyway_width") == names.index("bore_flat") + 1
+    assert names.index("keyway_depth") == names.index("keyway_width") + 1
+
+    r = client.get("/api/info", params={"keyway_width": 3, "keyway_depth": 1.4})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["keyway_floor_to_wall"] == pytest.approx(10.55)
+    assert body["keyway_width_effective"] == pytest.approx(3.15)
+    assert body["bore_effective"] == pytest.approx(9.15)  # D-04: still a D-flat bore
+    assert body["recess_id"] == pytest.approx(13.158)
+    assert body["recess_od"] == pytest.approx(25.158)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["keyway_floor_to_wall"] is None
+    assert body["keyway_width_effective"] is None
+
+    r = client.get("/api/info", params={"keyway_width": 200.05})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["loc"] == ["query", "keyway_width"]
+
+    r = client.get("/api/model.stl", params={"keyway_width": 3, "keyway_depth": 1.4,
+                                             "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"keyway_width": 3, "keyway_depth": 1.4})
     assert r.status_code == 200
     assert r.content.startswith(b"ISO-10303-21;")
 
@@ -217,6 +267,45 @@ def test_a_hex_link_with_a_d_flat_builds_and_says_both_round_fields_are_ignored(
 
     r = client.get("/api/model.stl", params={"bore_hex": 6, "bore_flat": 3,
                                              "quality": "preview"})
+    assert r.status_code == 200
+
+
+@pytest.mark.parametrize(("params", "fields"), [
+    pytest.param({"bore_hex": 6, "keyway_width": 3, "keyway_depth": 1.4},
+                 ["bore_hex", "keyway_depth", "keyway_width"], id="hex"),
+    pytest.param({"bore_d": 0, "keyway_width": 3, "keyway_depth": 1.4},
+                 ["bore_d", "keyway_depth", "keyway_width"], id="no-bore"),
+    pytest.param({"keyway_width": 3},
+                 ["keyway_depth", "keyway_width"], id="half-set"),
+    pytest.param({"bore_flat": 0, "keyway_width": 9, "keyway_depth": 1.4},
+                 ["bore_d", "keyway_width"], id="too-wide"),
+    pytest.param({"keyway_width": 6.5, "keyway_depth": 1.4},
+                 ["bore_flat", "keyway_width"], id="into-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 9.4},
+                 ["keyway_depth", "keyway_width"], id="too-deep"),
+])
+def test_a_keyway_conflict_is_422_naming_its_fields(
+        params: dict[str, object], fields: list[str]) -> None:
+    """The six keyway refusals (D-13, D-03, D-11, D-02, D-10) over HTTP, on both
+    /api/info and /api/model.stl (the check runs before any CAD work either way)."""
+    r = client.get("/api/info", params=params)
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == fields
+
+    r = client.get("/api/model.stl", params={**params, "quality": "preview"})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == fields
+
+
+@pytest.mark.parametrize("params", [
+    pytest.param({"keyway_width": 6.45, "keyway_depth": 1.4}, id="d-02-flat"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 9.35}, id="d-10-root"),
+    pytest.param({"bore_flat": 0, "keyway_width": 8.95, "keyway_depth": 1.4},
+                 id="d-11-bore"),
+])
+def test_the_largest_keyway_each_rule_allows_is_served(params: dict[str, object]) -> None:
+    """One step inside each keyway rule is a 200, not a 422."""
+    r = client.get("/api/info", params=params)
     assert r.status_code == 200
 
 

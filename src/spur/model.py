@@ -34,6 +34,7 @@ from .calc import (
     bore_radius,
     bore_rim_limit,
     hex_across_flats,
+    keyway_width_effective,
     profile,
     recess_fillet,
     recess_radii,
@@ -219,6 +220,30 @@ def _cut_bore(solid: cq.Shape, p: GearParams) -> cq.Shape:
     return solid
 
 
+def _cut_keyway(solid: cq.Shape, p: GearParams) -> cq.Shape:
+    """A rectangular keyway slot through the full face width, flat floor, square floor
+    corners (D-08) -- cut after _cut_bore has chamfered the rim, so the chamfer is
+    notched and the keyway's own edges (two sides, floor) stay sharp (D-05).
+
+    +Y is a quarter turn from the D-flat on +X, one fixed position stated here, not a
+    field (D-01): the wall opposite the keyway is always the round wall, so the floor-
+    to-wall distance derive() prints is bore_effective + keyway_depth whether or not a
+    flat exists. The box starts on the axis, inside the bore, and ends at the floor.
+
+    The order is not a style choice: chamfering the rim after the slot failed with
+    "BRep_API: command not done" on a D-flat bore in every variant probed this session,
+    while chamfer-then-cut built every time (178 faces / 508 edges on the default keyed
+    D-flat link, research Pattern 1, 2026-09-27) -- D-06.
+    """
+    if not (p.keyway_width > 0 and p.keyway_depth > 0):
+        # A keyway exists only with both fields set; 09-03's check() refuses a
+        # half-set one before this ever runs.
+        return solid
+    w = keyway_width_effective(p)
+    floor = bore_radius(p) + p.keyway_depth
+    return solid.cut(cq.Solid.makeBox(w, floor, p.face_width, pnt=cq.Vector(-w / 2, 0, 0)))
+
+
 # --- picking kernel geometry back out ------------------------------------------------
 
 def _ring(r_in: float, r_out: float, z0: float, height: float) -> cq.Shape:
@@ -259,7 +284,8 @@ def _bore_rim_edges(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
     the exact geometric bound, plus BORE_RIM_SLACK's measured margin. This selector runs
     only when p.bore_chamfer > 0, so an empty result here is a modelling defect, never an
     answer (D-15): a chamfer that silently selects nothing must never ship an unchamfered
-    part.
+    part. A keyway's slot is cut after this selector runs (D-06), so its edges are never
+    candidates here either.
     """
     lim = bore_rim_limit(p) + BORE_RIM_SLACK
 
@@ -288,6 +314,7 @@ def _build(p: GearParams) -> cq.Solid:
     solid = _gear_blank(pr, root_fillet(p), p.face_width)
     solid = _cut_face_recesses(solid, p, pr.rf)
     solid = _cut_bore(solid, p)
+    solid = _cut_keyway(solid, p)
 
     solids = solid.Solids()
     if len(solids) != 1 or not solids[0].isValid():

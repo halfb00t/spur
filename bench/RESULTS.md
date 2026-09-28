@@ -577,3 +577,92 @@ lint/typecheck/import-lint/no-fake-done), against Phase 7's recorded **52.25s** 
 tests. The phase's hex tests (41 new: the D-01/D-02/D-03/D-04/D-05 unit and matrix tests,
 the two new test_bench.py cases) add **+9.49s** to the gate, measured rather than
 assumed.
+
+## Keyway bore build and export time (Phase 9)
+
+The committed measurement record for the keyway bore's heaviest allowed configuration
+(ROADMAP Phase 9 SC5, D-11/D-12's shape). `REQ-measured-build-time` asks for build time
+plus fine-quality STL and STEP export time per feature, at 200 teeth, re-measured
+combined in Phase 12; this is the keyway's own entry. The runner is `make bench.build`
+(08 D-12), over the committed sweep `bench/sweeps/keyway_bore.json`, reused unchanged
+from Phase 8. The sweep has 32 rows: 200 teeth on the largest bore the rules allow
+(`bore_d` 200, the field's `le`), module {1.75, 10} because module drives fine-STL export
+time (Phase 8's probe), round and D-flat {`bore_flat` 0, 150} because the D-flat is the
+composition D-02 guards, `bore_chamfer` {0.4, 3} (3 is the field's `le`; D-12's rule does
+not bind here -- the chamfered mouth reaches 103.075 mm from the axis at module 1.75,
+69.74 mm inside the 172.8125 mm root radius), and, for each (module, `bore_flat`) pair,
+both the largest keyway the rules allow (199.95 x 40.3 round / 99.3 x 65 D-flat at module
+1.75; 199.95 x 200 round / 99.3 x 200 D-flat at module 10, where `keyway_depth`'s own
+`le` binds before the root ever would) and a 3 x 1.4 mm keyway. The 3 x 1.4 rows are in
+the sweep, not just the largest keyway, because the planning probe found the largest
+keyway at module 1.75 pushes the face recess out entirely, making those rows lighter
+than a keyed gear that keeps its recess (09-CONTEXT.md Claude's Discretion: sweep rows)
+-- the heaviest configuration is found by measuring both, not by assuming the biggest
+keyway is the heaviest.
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `575b3a9`
+- Sweep: `bench/sweeps/keyway_bore.json`
+- Load averages at start (script's own `os.getloadavg()`): 6.10, 5.08, 4.98
+- `uptime` moments before the run: load averages 4.87, 4.33, 4.74
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+- Both readings sit above this project's usual "quiet" bar (>1.5 on this 12-core host,
+  Phase 7's own convention) -- the numbers below carry that caveat rather than being
+  presented as clean (L08).
+
+### Sweep
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=40.3 recess_sides=both bore_chamfer=0.4 | 1.93 | 0.61 | 0.41 | 2.54 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=40.3 recess_sides=both bore_chamfer=3 | 1.86 | 0.59 | 0.41 | 2.46 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=40.3 recess_sides=none bore_chamfer=0.4 | 1.88 | 0.58 | 0.41 | 2.46 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=40.3 recess_sides=none bore_chamfer=3 | 1.88 | 0.58 | 0.42 | 2.46 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 4.17 | 0.66 | 0.43 | 4.83 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=3 | 4.11 | 0.66 | 0.41 | 4.78 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=0.4 | 1.88 | 0.73 | 0.41 | 2.62 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=3 | 1.81 | 0.70 | 0.41 | 2.52 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=65 recess_sides=both bore_chamfer=0.4 | 1.97 | 0.58 | 0.41 | 2.55 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=65 recess_sides=both bore_chamfer=3 | 1.95 | 0.58 | 0.42 | 2.53 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=65 recess_sides=none bore_chamfer=0.4 | 1.96 | 0.57 | 0.41 | 2.53 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=65 recess_sides=none bore_chamfer=3 | 1.96 | 0.57 | 0.42 | 2.53 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 4.20 | 0.66 | 0.41 | 4.85 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=3 | 4.16 | 0.68 | 0.41 | 4.84 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=0.4 | 1.96 | 0.62 | 0.41 | 2.58 | yes |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=3 | 1.91 | 0.61 | 0.41 | 2.52 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=200 recess_sides=both bore_chamfer=0.4 | 2.64 | 1.17 | 0.41 | 3.81 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=200 recess_sides=both bore_chamfer=3 | 2.65 | 1.15 | 0.41 | 3.80 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=200 recess_sides=none bore_chamfer=0.4 | 1.87 | 0.72 | 0.41 | 2.59 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=199.95 keyway_depth=200 recess_sides=none bore_chamfer=3 | 1.88 | 0.75 | 0.42 | 2.63 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 2.67 | 1.14 | 0.42 | 3.81 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=3 | 2.63 | 1.15 | 0.41 | 3.78 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=0.4 | 1.87 | 1.11 | 0.42 | 2.97 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=0 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=3 | 1.81 | 1.13 | 0.41 | 2.94 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=200 recess_sides=both bore_chamfer=0.4 | 2.67 | 1.13 | 0.41 | 3.80 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=200 recess_sides=both bore_chamfer=3 | 2.66 | 1.15 | 0.41 | 3.81 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=200 recess_sides=none bore_chamfer=0.4 | 2.00 | 0.67 | 0.41 | 2.67 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=99.3 keyway_depth=200 recess_sides=none bore_chamfer=3 | 2.00 | 0.68 | 0.42 | 2.68 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 2.67 | 1.16 | 0.42 | 3.83 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=3 | 2.65 | 1.14 | 0.42 | 3.79 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=0.4 | 1.98 | 0.79 | 0.41 | 2.77 | yes |
+| teeth=200 module=10 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=none bore_chamfer=3 | 1.90 | 0.81 | 0.41 | 2.71 | yes |
+
+**Heaviest:** teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 -- 4.85 s of 30 s.
+
+The heaviest row (4.85 s) sits at about a sixth of the 30 s timeout, close to but lighter
+than Phase 8's heaviest hex row (5.08 s), and well below the worst single build already
+on record ("### `SPUR_BUILD_TIMEOUT`" above, 7.39 s at 200 teeth under ten concurrent
+requests) -- as the planning probe predicted, the heaviest keyway row is a 3 x 1.4 mm
+keyway that keeps its face recess, not the largest keyway the rules allow, which pushes
+the recess out entirely and builds in about half the time (2.46-2.55 s at module 1.75).
+
+### make verify wall time
+
+`time make verify`: **396 passed in 77.20s** — **78.21s** wall time (`time`, includes
+lint/typecheck/import-lint/no-fake-done), against Phase 8's recorded **61.74s** / 330
+tests. The phase's keyway tests (66 new, across 09-01 through 09-04) add **+16.47s** to
+the gate, measured rather than assumed.

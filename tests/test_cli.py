@@ -93,6 +93,11 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert ("warning: Hex bore replaces the round profile: bore_d (9 mm) and bore_flat "
             "(8 mm) are ignored.") in capsys.readouterr().err
 
+    keyed = tmp_path / "keyedgear.step"
+    cli.main(["export", "-o", str(keyed), "--keyway-width", "3", "--keyway-depth", "1.4"])
+    assert keyed.read_bytes().startswith(b"ISO-10303-21;")
+    assert "warning:" not in capsys.readouterr().err
+
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:
@@ -125,6 +130,30 @@ def test_cli_and_api_print_the_same_hex_bore_document(
     assert cli_out == api_out
     assert list(cli_out) == list(DerivedDimensions.model_fields)
     assert any("Hex bore replaces the round profile" in w for w in cli_out["warnings"])
+
+
+def test_a_keyway_the_root_cannot_hold_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-10 on the CLI: the same refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--keyway-width", "3", "--keyway-depth", "9.4"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "Keyway is too deep for the root diameter" in err
+    assert "reduce keyway_depth or keyway_width" in err
+
+
+def test_cli_and_api_print_the_same_keyed_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a keyed link: same document, same key order."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--keyway-width", "3", "--keyway-depth", "1.4"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info",
+                         params={"keyway_width": 3, "keyway_depth": 1.4}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
 
 
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
