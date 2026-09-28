@@ -75,10 +75,10 @@ def test_openapi_documents_the_typed_contracts() -> None:
 
     fields = {
         "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
-        "root_thickness", "root_gap", "root_fillet", "span_teeth", "span",
-        "bore_effective", "hex_across_flats", "hex_across_corners", "keyway_floor_to_wall",
-        "keyway_width_effective", "recess_id", "recess_od", "recess_fillet", "web",
-        "warnings", "mate_teeth", "centre_distance",
+        "root_thickness", "root_gap", "root_fillet", "tip_chamfer_effective", "span_teeth",
+        "span", "bore_effective", "hex_across_flats", "hex_across_corners",
+        "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
+        "recess_fillet", "web", "warnings", "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -93,6 +93,7 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["hex_across_corners"]["unit"] == "mm"
     assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
     assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
+    assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
@@ -225,6 +226,53 @@ def test_a_keyed_link_is_served_with_its_two_numbers() -> None:
     assert len(r.content) > 84
 
     r = client.get("/api/model.step", params={"keyway_width": 3, "keyway_depth": 1.4})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut() -> None:
+    """?tip_chamfer=0.4 end to end (D-01, D-02, D-04, D-08, D-09, D-10): the schema,
+    /api/info's applied value and cap warning, the plain-default null case, the field's
+    le-3 refusal, and both export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["tip_chamfer"]["group"] == "Teeth"
+    assert props["tip_chamfer"]["unit"] == "mm"
+    assert props["tip_chamfer"]["minimum"] == 0
+    assert props["tip_chamfer"]["maximum"] == 3
+    assert props["tip_chamfer"]["default"] == 0
+    assert props["tip_chamfer"]["step"] == 0.05
+    names = list(props)
+    assert names.index("tip_chamfer") == names.index("root_fillet") + 1
+    assert names.index("face_width") == names.index("tip_chamfer") + 1
+
+    r = client.get("/api/info", params={"tip_chamfer": 0.4})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["tip_chamfer_effective"] == pytest.approx(0.4)
+    assert body["tip_d"] == pytest.approx(36.75)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info", params={"tip_chamfer": 3})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["tip_chamfer_effective"] == pytest.approx(1.75)
+    assert body["warnings"] == [
+        "Tip chamfer reduced to 1.75 mm to keep it above the pitch circle."]
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    assert r.json()["tip_chamfer_effective"] is None
+
+    r = client.get("/api/info", params={"tip_chamfer": 3.05})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["loc"] == ["query", "tip_chamfer"]
+
+    r = client.get("/api/model.stl", params={"tip_chamfer": 0.4, "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"tip_chamfer": 0.4})
     assert r.status_code == 200
     assert r.content.startswith(b"ISO-10303-21;")
 

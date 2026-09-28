@@ -36,6 +36,18 @@ ROOT_CONTACT = 1e-9     # mm, how close a chamfered round or D-flat bore mouth m
 # 24.724999998 (19T, m1.75, chamfer 2, round): check() accepts it (gap
 # 1.000000082740371e-09 > ROOT_CONTACT) and the kernel still raises BuildError, pinned
 # by test_model.py's test_the_kernel_can_fail_inside_the_root_contact_residual_band.
+TIP_CHAMFER_MARGIN = 0.001  # mm, how far inside the start of the involute spline the
+# tip chamfer's footprint stops. Measured 2026-09-28 (bench/RESULTS.md "Tooth-tip
+# chamfer spike"): a 20-step bisection on six configurations (19/40 teeth, module 1,
+# profile shifts and root fillets that push the spline start above the pitch circle)
+# found the kernel's chamfer failing within about 2 microns of pred = ra - spline_start
+# on five of six (last building 0.9-1.9e-6 mm inside pred, first failing 0.9-1.0e-6 mm
+# past it), teeth-independent where compared; the sixth built 0.04 mm past pred, so the
+# rule is conservative there, never optimistic. A 405-set grid had 0 failures at pred or
+# 0.05 mm inside it. The margin is one printed step, not the contact itself, because
+# tip_chamfer_effective rounds to 3 dp at construction and round() can move a value up
+# by half a step (2.9365 mm rounds to 2.937 mm) -- a cap sitting exactly at the contact
+# could round past it.
 
 
 def inv(a: float) -> float:
@@ -204,6 +216,22 @@ def root_fillet(p: GearParams) -> float:
     return round(min(p.root_fillet, 0.45 * gap), 3) if gap > 0 else 0.0
 
 
+def spline_start(pr: Profile, fillet: float) -> float:
+    """Radius where the outline's involute spline begins: the base circle (or the root
+    circle, if larger), raised to make room for the root fillet's straight lead-in when
+    one is needed, and never past halfway from root to tip.
+
+    model._outline starts the flank spline here, and tip_chamfer_limit keeps the tip
+    chamfer's footprint above it, because the kernel cannot carry an end-face chamfer
+    from the involute spline across onto the straight lead-in (bench/RESULTS.md "Tooth-
+    tip chamfer spike"). Not Profile.r_start: that is the theoretical involute start,
+    this is where the modelled spline actually starts.
+    """
+    r_line = max(pr.rb, pr.rf + 2.0 * fillet) if fillet > 0 else pr.rb
+    r_line = min(r_line, pr.rf + 0.5 * (pr.ra - pr.rf))
+    return max(r_line, pr.r_start)
+
+
 def recess_fillet(p: GearParams, rf: float) -> float:
     """Recess floor fillet actually used: the requested radius, capped to the groove.
 
@@ -214,6 +242,42 @@ def recess_fillet(p: GearParams, rf: float) -> float:
         return 0.0
     width = rr[1] - rr[0]
     return round(min(p.recess_fillet, 0.45 * width, 0.45 * p.recess_depth), 3)
+
+
+def tip_chamfer_limit(p: GearParams) -> tuple[float, str]:
+    """(limit, reason): the smallest of three bounds on the tip chamfer, and which one
+    binds. Compared as a tuple so a tie is broken by the reason text, deterministically.
+
+    - 0.45 x face_width: the axial cap. Both end faces are chamfered, so the tip land
+      between them is face_width - 2c; this is root_fillet's and recess_fillet's own
+      0.45 family -- 10% of the dimension the cut eats always remains.
+    - ra - r: the radial cap. The chamfer's footprint on the end face reaches inward
+      from the tip circle to about ra - c and stays above the pitch circle, so the
+      working flank is untouched at the faces.
+    - ra - spline_start(...) - TIP_CHAMFER_MARGIN: the kernel's own limit, measured, not
+      a design rule (bench/RESULTS.md "Tooth-tip chamfer spike") -- it binds only where
+      the root fillet's straight lead-in reaches above the pitch circle (a large profile
+      shift or root fillet for the module).
+    """
+    pr = profile(p)
+    return min(
+        (0.45 * p.face_width, "to leave a land on the tooth tip between the two faces' "
+                              "chamfers"),
+        (pr.ra - pr.r, "to keep it above the pitch circle"),
+        (pr.ra - spline_start(pr, root_fillet(p)) - TIP_CHAMFER_MARGIN,
+         "to keep it on the involute flank, above the straight lead-in from the root "
+         "fillet"),
+    )
+
+
+def tip_chamfer_effective(p: GearParams) -> float:
+    """Tip chamfer actually cut on the tooth-tip edges at both faces: the requested
+    size, trimmed to what the tooth allows and never refused (L03,
+    REQ-tip-chamfer-capped). model.py cuts exactly this value, so the part and the
+    printed number cannot disagree (L08)."""
+    if p.tip_chamfer <= 0:
+        return 0.0
+    return round(min(p.tip_chamfer, tip_chamfer_limit(p)[0]), 3)
 
 
 def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
@@ -395,6 +459,10 @@ class DerivedDimensions(BaseModel):
     root_fillet: float = Field(
         description="Root fillet radius actually used, after capping to the gap.",
         json_schema_extra={"unit": "mm"})
+    tip_chamfer_effective: float | None = Field(
+        description="Tip chamfer actually cut on the tooth-tip edges at both faces, "
+                    "after the cap; null with no tip chamfer.",
+        json_schema_extra={"unit": "mm"})
     span_teeth: int = Field(description="Number of teeth the span measurement is taken over.")
     span: float = Field(
         description="Span (Wildhaber) measurement over span_teeth teeth, at zero backlash.",
@@ -472,6 +540,13 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     rfil = root_fillet(p)
     if rfil < p.root_fillet:
         warnings.append(f"Root fillet reduced to {rfil:.2f} mm to fit the tooth gap.")
+    tch = tip_chamfer_effective(p)
+    if tch < round(p.tip_chamfer, 3):
+        # Compared at the printed 3-dp resolution, so a limit's own float residue never
+        # warns and prints the request back (0.1999999999999993 at 200 teeth, module
+        # 0.2) -- and :g of the applied value is the same number tip_chamfer_effective
+        # carries (D-09, L08).
+        warnings.append(f"Tip chamfer reduced to {tch:g} mm {tip_chamfer_limit(p)[1]}.")
     z_min = 2 * (1 - p.profile_shift) / math.sin(pr.alpha) ** 2
     if p.teeth < z_min:
         warnings.append(f"Below {z_min:.1f} teeth a cut gear would be undercut; "
@@ -540,6 +615,7 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         # length is rounded once, at construction (D-10), so the rule stays true if
         # either helper's rounding ever changes.
         root_fillet=r3(rfil),
+        tip_chamfer_effective=r3(tch) if p.tip_chamfer > 0 else None,
         span_teeth=k,
         span=r3(w),
         bore_effective=r3(2 * bore_radius(p)) if p.bore_d > 0 and p.bore_hex == 0 else None,

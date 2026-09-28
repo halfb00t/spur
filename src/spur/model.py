@@ -39,6 +39,8 @@ from .calc import (
     recess_fillet,
     recess_radii,
     root_fillet,
+    spline_start,
+    tip_chamfer_effective,
 )
 from .params import GearParams
 
@@ -119,10 +121,11 @@ def _outline(pr: Profile, fillet: float) -> cq.Wire:
     involute when the fillet needs room (the chord sits in the non-working root zone
     and deviates from the involute by microns). Fillet arcs are computed here rather
     than with OCCT's fillet operator, which is ~50x slower on a many-toothed outline.
+
+    calc.spline_start places the spline's start, so the tip chamfer's cap reads the
+    same radius the outline is built from.
     """
-    r_line = max(pr.rb, pr.rf + 2.0 * fillet) if fillet > 0 else pr.rb
-    r_line = min(r_line, pr.rf + 0.5 * (pr.ra - pr.rf))
-    r0 = max(r_line, pr.r_start)                  # where the involute spline starts
+    r0 = spline_start(pr, fillet)  # where the involute spline starts
     straight = r0 > pr.rf + 1e-6
     radii = [r0 + (pr.ra - r0) * (i / (FLANK_POINTS - 1)) ** 1.5 for i in range(FLANK_POINTS)]
     pitch = 2 * math.pi / pr.z
@@ -244,6 +247,25 @@ def _cut_keyway(solid: cq.Shape, p: GearParams) -> cq.Shape:
     return solid.cut(cq.Solid.makeBox(w, floor, p.face_width, pnt=cq.Vector(-w / 2, 0, 0)))
 
 
+def _chamfer_tips(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
+    """An end-face edge break on the tooth-tip arcs: bore_chamfer's exact call and
+    meaning, symmetric 45 degrees, c off the end face and c off the tip (D-03).
+
+    The reading decided 2026-09-25: a 3D edge operation on the built solid, not a
+    corner in _outline and not tip relief. The last step (D-13): the tip band is the
+    region farthest from every other cut, and the selector can assume the final
+    outline. The cost (bench/RESULTS.md "Tooth-tip chamfer spike"): about 12 s at 200
+    teeth (400 edges), the same at any c -- the one v0.2 cut in L09's cost family,
+    where the analytic remedy is ruled out by the reading.
+    """
+    c = tip_chamfer_effective(p)
+    if c <= 0:
+        return solid
+    solid = solid.chamfer(  # type: ignore[attr-defined]  # see _cut_face_recesses
+        c, None, _tip_edges(solid, pr.ra, p.face_width))
+    return solid
+
+
 # --- picking kernel geometry back out ------------------------------------------------
 
 def _ring(r_in: float, r_out: float, z0: float, height: float) -> cq.Shape:
@@ -307,6 +329,34 @@ def _bore_rim_edges(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
     return edges
 
 
+def _tip_edges(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
+    """The tooth-tip arcs on the two end faces, selected by position (D-13): the tip
+    arc is _outline's three-point arc across each tooth at radius ra, one per tooth on
+    each end face, and no other edge of the solid is a CIRCLE at ra (measured on the
+    selector matrix, every bore shape, 200 teeth and module 0.2 included).
+
+    The end-face test has a measured reason: after a chamfer of c the tip land keeps
+    2 x teeth arcs at ra, now sitting at z = c and z = face_width - c -- a radius test
+    alone would pick those moved arcs again on a re-chamfer. Runs only while the applied
+    chamfer is above 0, so an empty result here is a modelling defect, never an answer
+    (L26): a chamfer that silently selects nothing must never ship an unchamfered part.
+    """
+    def on_tip(e: cq.Edge) -> bool:
+        if e.geomType() != "CIRCLE" or abs(e.radius() - ra) >= TOL:
+            return False
+        a, b = e.startPoint(), e.endPoint()
+        return (any(abs(a.z - z) < TOL for z in (0.0, face_width))
+                and any(abs(b.z - z) < TOL for z in (0.0, face_width)))
+
+    edges = [e for e in solid.Edges() if on_tip(e)]
+    if not edges:
+        raise BuildError(
+            "Tip chamfer selected no tip-arc edges: a modelling defect in spur, not a "
+            "conflict in these parameters. Set tip_chamfer to 0 to build this gear "
+            "without it.")
+    return edges
+
+
 # --- build and export ----------------------------------------------------------------
 
 def _build(p: GearParams) -> cq.Solid:
@@ -315,6 +365,7 @@ def _build(p: GearParams) -> cq.Solid:
     solid = _cut_face_recesses(solid, p, pr.rf)
     solid = _cut_bore(solid, p)
     solid = _cut_keyway(solid, p)
+    solid = _chamfer_tips(solid, p, pr)
 
     solids = solid.Solids()
     if len(solids) != 1 or not solids[0].isValid():

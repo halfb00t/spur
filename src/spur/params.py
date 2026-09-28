@@ -24,8 +24,8 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 
 class GearParams(BaseModel):
-    """Involute spur gear with optional D-flat or hex bore, a keyway, and annular face
-    recesses."""
+    """Involute spur gear with an optional tooth-tip chamfer, D-flat or hex bore, a
+    keyway, and annular face recesses."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -46,6 +46,11 @@ class GearParams(BaseModel):
     root_fillet: float = _f(0.5, 0, 3, title="Root fillet", group="Teeth", unit="mm",
                             step=0.05,
                             help="Fillet radius at the tooth roots, capped to fit. 0 = sharp.")
+    tip_chamfer: float = _f(0.0, 0, 3, title="Tip chamfer", group="Teeth", unit="mm",
+                            step=0.05,
+                            help="Chamfer on the tooth-tip edges at both faces: an edge "
+                                 "break for handling and printing, capped to fit the "
+                                 "tooth. 0 = none.")
 
     # --- Body ------------------------------------------------------------------
     face_width: float = _f(7.5, 1, 100, title="Face width", group="Body", unit="mm",
