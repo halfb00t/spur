@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
 status: executing
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-09-29T07:07:48.007Z"
+stopped_at: Completed 11-05-PLAN.md
+last_updated: "2026-09-29T07:49:37.563Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 11 execution started
-state_head: 69019484f2e15ffea35d589abfe6bf9342d980cb
+state_head: baad230b6d69fcb7ff6a53ed3af2d47891d4aa5e
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 25
-  completed_plans: 20
+  completed_plans: 21
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 11 (Body Cutouts) — EXECUTING
-Plan: 5 of 9
+Plan: 6 of 9
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 11 execution started
 
@@ -150,6 +150,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 11 P02 | ~35min | 2 tasks | 2 files |
 | Phase 11 P03 | ~55min | 2 tasks | 8 files |
 | Phase 11 P04 | 37min | 2 tasks | 8 files |
+| Phase 11-body-cutouts P05 | 50min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -210,6 +211,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 11]: The hub-ring opening between adjacent bar feet is measured as an arc, following keyway_flat_wall's arc precedent (research Pitfall 4), not a chord.
 - [Phase 11]: _fillet_corner's rim-side mirror (inside=True, D-05) was hand-checked against a 3-4-5-style tangent case before trusting it at every sector corner; the built tracer's face/edge deltas match the planning probe exactly.
 - [Phase 11]: 11-04: RED and GREEN for both tasks landed in one feat commit each -- workflow.tdd_mode is not enabled, so the mechanical RED/GREEN/REFACTOR commit-pattern gate does not apply (11-03's precedent).
+- [Phase 11]: 11-05: HEX_CELL_CAP = 120 cells written from bench/RESULTS.md's measured Cap line and nowhere else (D-12, D-24); the tracer (?hex_cell=3&hex_wall=1) cuts 18 whole cells, walls 1.525/2.149 mm, reproduced exactly. — Whole-cell lattice and raise-to-fit moved from bench/honeycomb_spike.py into spur.calc unchanged, so there is one definition (L08); the spike imports them back.
+- [Phase 11]: 11-05: cutout_walls' honeycomb branch reads the exact nearest-edge/farthest-vertex reach on the cut cells, not the whole-cell test's conservative circumradius -- the naive bound would have under-reported the tracer's hub wall by 0.232 mm (Flagged Assumption A3). — A cell's flat can face the axis and be closer than any corner; the circumradius used for containment is deliberately conservative, not the true wall (L08).
+- [Phase 11]: 11-05: 11-05's own verify script's len(warnings)==1 assertion at teeth=200 fails as literally written -- the pre-existing root-fillet cap (present without any honeycomb field) also warns there, unrelated to this phase; documented as an Issue Encountered, nothing fixed in code. — Root-fillet capping at 200 teeth predates this phase and is correct; only the plan's own verify-script assumption of exactly one warning at that input was wrong.
 
 ### Pending Todos
 
@@ -291,8 +295,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-29T07:07:47.968Z
-Stopped at: Completed 11-04-PLAN.md
+Last session: 2026-09-29T07:49:37.522Z
+Stopped at: Completed 11-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

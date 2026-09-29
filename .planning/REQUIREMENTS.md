@@ -70,7 +70,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   smallest size that fits and a warning names the requested and the applied size; cells
   are never silently dropped, and the cap is analytic (from a measured per-cell cost), so
   the same link yields the same count on every machine.
-- [ ] **REQ-one-cutout-pattern**: Exactly one cutout pattern per part. Two non-zero
+- [x] **REQ-one-cutout-pattern**: Exactly one cutout pattern per part. Two non-zero
   pattern selectors (`spoke_count`, `hole_count`, `hex_cell`) is a 422 naming both fields.
 - [ ] **REQ-cutout-conflicts-refused-early**: A cutout that would breach the hub wall
   (bore + bore chamfer + `MIN_WALL`) or the rim wall (root circle − `MIN_WALL`), or whose
@@ -187,7 +187,7 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-spoke-cutout | Phase 11 | Pending |
 | REQ-hole-cutout | Phase 11 | Pending |
 | REQ-honeycomb-cutout | Phase 11 | Pending |
-| REQ-one-cutout-pattern | Phase 11 | Pending |
+| REQ-one-cutout-pattern | Phase 11 | Complete |
 | REQ-cutout-conflicts-refused-early | Phase 11 | Pending |
 | REQ-cutout-composes | Phase 11 | Pending |
 | REQ-cutout-derived-numbers | Phase 11 | Pending |
