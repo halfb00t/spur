@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
 status: executing
-stopped_at: Completed 11-03-PLAN.md
-last_updated: "2026-09-29T06:28:18.949Z"
+stopped_at: Completed 11-04-PLAN.md
+last_updated: "2026-09-29T07:07:48.007Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 11 execution started
-state_head: 365412d5581a5df9612df356461f9c40b1ffbe25
+state_head: 69019484f2e15ffea35d589abfe6bf9342d980cb
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 25
-  completed_plans: 19
+  completed_plans: 20
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 11 (Body Cutouts) — EXECUTING
-Plan: 4 of 9
+Plan: 5 of 9
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 11 execution started
 
@@ -149,6 +149,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 11 P01 | ~15min | 3 tasks | 3 files |
 | Phase 11 P02 | ~35min | 2 tasks | 2 files |
 | Phase 11 P03 | ~55min | 2 tasks | 8 files |
+| Phase 11 P04 | 37min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -205,6 +206,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 11]: Cut spelling measured: star (cut(*prisms)) -- all three spellings read within 0.03s at the cap's cell count, none cleared D-24's 10% bar
 - [Phase 11]: 11-03: three independent hole rules (hub, rim, neighbour, D-16/D-17) via _under_min_wall(round(wall,6) < MIN_WALL), so a wall sized exactly to MIN_WALL is accepted despite step-aligned float residue (measured 0.39999999999999947 at the tracer's hub boundary); a hole wider than the web trips both wall sentences at once.
 - [Phase 11]: 11-03: Task 2's RED and GREEN landed in one feat commit, not separate test(...)/feat(...) commits -- workflow.tdd_mode is not enabled in config.json, so the mechanical RED/GREEN/REFACTOR commit-pattern gate does not apply (Phase 8 precedent, 08-03-SUMMARY.md); RED was still run and confirmed failing before GREEN was written.
+- [Phase 11]: The arm rule (11-01's human ruling): 0 < spoke_width < MIN_WALL is refused naming spoke_width, like every other wall in the part.
+- [Phase 11]: The hub-ring opening between adjacent bar feet is measured as an arc, following keyway_flat_wall's arc precedent (research Pitfall 4), not a chord.
+- [Phase 11]: _fillet_corner's rim-side mirror (inside=True, D-05) was hand-checked against a 3-4-5-style tangent case before trusting it at every sector corner; the built tracer's face/edge deltas match the planning probe exactly.
+- [Phase 11]: 11-04: RED and GREEN for both tasks landed in one feat commit each -- workflow.tdd_mode is not enabled, so the mechanical RED/GREEN/REFACTOR commit-pattern gate does not apply (11-03's precedent).
 
 ### Pending Todos
 
@@ -286,8 +291,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-29T06:28:18.908Z
-Stopped at: Completed 11-03-PLAN.md
+Last session: 2026-09-29T07:07:47.968Z
+Stopped at: Completed 11-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

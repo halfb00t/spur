@@ -291,7 +291,7 @@ build-time relationship needs a dedicated benchmark sweep before any cap formula
 (`research/SUMMARY.md` "Research Flags"). Holes and spoke arms are well-documented patterns
 (`polarArray`/`cut(*cutters)`, generalizing `_cut_face_recesses`'s existing two-call
 pattern) — no research flag needed for those sub-parts.
-**Plans**: 3/9 plans executed
+**Plans**: 4/9 plans executed
 
 Plans:
 **Wave 1**
@@ -308,7 +308,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 11-04-PLAN.md — Spokes: five fields, sector cutters with analytic corner arcs, the fillet cap, the spoke refusals and the one-pattern rule (wave 4)
+- [x] 11-04-PLAN.md — Spokes: five fields, sector cutters with analytic corner arcs, the fillet cap, the spoke refusals and the one-pattern rule (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -384,5 +384,5 @@ in Phases 7–11; no open technical questions remain by this point.
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
-| 11. Body Cutouts | v0.2 | 3/9 | In Progress|  |
+| 11. Body Cutouts | v0.2 | 4/9 | In Progress|  |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |
