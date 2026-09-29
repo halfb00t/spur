@@ -10,12 +10,15 @@ import pytest
 from spur.build_errors import BuildError
 from spur.calc import (
     MIN_WALL,
+    bore_mouth_limit,
     bore_radius,
     bore_rim_limit,
     derive,
+    hex_cells,
     keyway_width_effective,
     profile,
     recess_radii,
+    spoke_fillet_effective,
     tip_chamfer_effective,
 )
 from spur.model import (
@@ -24,6 +27,7 @@ from spur.model import (
     Quality,
     _bore_rim_edges,
     _build_checked,
+    _fillet_corner,
     _groove_floor_edges,
     _tip_edges,
     build,
@@ -56,6 +60,12 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     # would carry the analytic caps' c=3 straight to the kernel and fail (10-01).
     {"tip_chamfer": 3, "profile_shift": 1.0, "pressure_angle": 14.5},
     {"tip_chamfer": 0.4, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+    {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20},
+    {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1, "spoke_fillet": 1},
+    # Sharp corners (spoke_fillet 0) and the N=1 "C-shaped sector" case (D-02, D-03).
+    {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1},
+    {"spoke_count": 1, "spoke_width": 2, "hub_d": 12, "rim_wall": 1, "spoke_fillet": 1},
+    {"hex_cell": 3, "hex_wall": 1},
 ])
 def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     p = GearParams.model_validate(kw)
@@ -234,11 +244,146 @@ def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bo
     assert "try smaller" not in str(exc_info.value)
 
 
+# Row sets used below (11-CONTEXT.md <interfaces>): the same links 11-03/11-04/11-05's
+# own tracer tests cut. SPOKES' hub_d 13.2 (not 12) is wide enough to clear the keyed
+# round bore's mouth (the keyway floor corner, 6.179 mm) as well as the plain, D-flat
+# and hex mouths, so one dict works on every bore shape (planning probe 2026-09-29).
+HOLES = {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}
+SPOKES = {"spoke_count": 4, "spoke_width": 2, "hub_d": 13.2, "rim_wall": 1, "spoke_fillet": 1}
+CELLS = {"hex_cell": 3, "hex_wall": 1}
+
+
+@pytest.mark.parametrize(("kw", "rim", "floor", "tip"), [
+    # Each pattern on each bore shape, both recesses (12 rows): rim and floor keep the
+    # no-cutout matrix's own counts (test_each_edge_selector_picks_exactly_its_own_edges)
+    # because both selectors run inside _cut_bore/_cut_face_recesses, before _cut_body
+    # in _build -- these rows prove it on the real pipeline with a cutout present,
+    # rather than assume it from the no-cutout matrix.
+    pytest.param({**HOLES}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="d-flat-holes"),
+    pytest.param({**SPOKES}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="d-flat-spokes"),
+    pytest.param({**CELLS}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="d-flat-cells"),
+    pytest.param({**HOLES, "bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, 38,
+                 id="round-holes"),
+    pytest.param({**SPOKES, "bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, 38,
+                 id="round-spokes"),
+    pytest.param({**CELLS, "bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, 38,
+                 id="round-cells"),
+    pytest.param({**HOLES, "bore_hex": 6}, collections.Counter({"LINE": 12}), 4, 38,
+                 id="hex-holes"),
+    pytest.param({**SPOKES, "bore_hex": 6}, collections.Counter({"LINE": 12}), 4, 38,
+                 id="hex-spokes"),
+    pytest.param({**CELLS, "bore_hex": 6}, collections.Counter({"LINE": 12}), 4, 38,
+                 id="hex-cells"),
+    pytest.param({**HOLES, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), 4, 38, id="keyway-holes"),
+    pytest.param({**SPOKES, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), 4, 38, id="keyway-spokes"),
+    pytest.param({**CELLS, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), 4, 38, id="keyway-cells"),
+    # No recess (3 rows): the floor selector is never called at all.
+    pytest.param({**HOLES, "recess_sides": "none"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
+                 id="no-recess-holes"),
+    pytest.param({**SPOKES, "recess_sides": "none"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
+                 id="no-recess-spokes"),
+    pytest.param({**CELLS, "recess_sides": "none"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
+                 id="no-recess-cells"),
+    # Each pattern at its closest approach to the root circle (3 rows, D-17): the
+    # cutter's outer wall sits exactly MIN_WALL inside rf -- the rim/floor/tip counts
+    # are unaffected because neither selector reads the cutout geometry.
+    pytest.param({**HOLES, "hole_circle_d": 24.075},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="holes-at-rim-limit"),
+    pytest.param({**SPOKES, "rim_wall": 0.4},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="spokes-at-rim-limit"),
+    pytest.param({**CELLS, "hex_wall": 0.4},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="cells-at-rim-limit"),
+    # 200 teeth (1 row, D-13's own extreme): the tip count scales with teeth; the
+    # rim/floor counts do not, because neither depends on tooth count.
+    pytest.param({**HOLES, "teeth": 200},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 400,
+                 id="teeth-200-holes"),
+])
+def test_every_selector_takes_only_its_own_edges_with_a_body_cutout(
+        monkeypatch: pytest.MonkeyPatch,
+        kw: dict[str, object],
+        rim: collections.Counter[str],
+        floor: int | None,
+        tip: int) -> None:
+    """REQ-edge-selection-proven extended to cutouts (research PITFALLS.md Pitfall 1,
+    Pitfall 5). The rim and floor selectors (_bore_rim_edges, _groove_floor_edges) run
+    inside _cut_bore/_cut_face_recesses, both before _cut_body in _build, so a cutout
+    present or not never changes what they see -- these rows prove it on the real
+    pipeline (_build_checked, never build(): its lru_cache could skip the cutout step)
+    rather than assume it from the no-cutout matrix
+    (test_each_edge_selector_picks_exactly_its_own_edges).
+
+    The tip selector (_tip_edges) runs after _cut_body (10 D-13), so it is called
+    directly here on the finished solid -- exactly what _chamfer_tips would receive,
+    the last step -- and no cutout edge reaches it: a hole's own circles have radius
+    hole_d/2, a spoke's arcs are the fillet radius or the hub/rim radii (never ra), and
+    a honeycomb cell has no CIRCLE edge at all, while every pattern's own D-17 wall
+    rule keeps its cutter inside rf - MIN_WALL, strictly below ra.
+    """
+    real_rim = _bore_rim_edges
+    real_floor = _groove_floor_edges
+    rim_calls: list[collections.Counter[str]] = []
+    floor_calls: list[int] = []
+
+    def rim_spy(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
+        edges = real_rim(solid, p)
+        rim_calls.append(collections.Counter(e.geomType() for e in edges))
+        return edges
+
+    def floor_spy(solid: cq.Shape, radii: tuple[float, ...],
+                  floor_z: list[float]) -> list[cq.Edge]:
+        edges = real_floor(solid, radii, floor_z)
+        floor_calls.append(len(edges))
+        return edges
+
+    monkeypatch.setattr("spur.model._bore_rim_edges", rim_spy)
+    monkeypatch.setattr("spur.model._groove_floor_edges", floor_spy)
+    p = GearParams.model_validate(kw)
+    s = _build_checked(p)  # never build(): its cache could skip the cutout step
+
+    assert len(rim_calls) == 1  # called exactly once, cutout or not
+    assert len(floor_calls) == (1 if floor is not None else 0)  # not at all with no recess
+
+    tips = _tip_edges(s, profile(p).ra, p.face_width)
+    for e in tips:
+        assert e.geomType() == "CIRCLE"
+        assert e.radius() == pytest.approx(profile(p).ra, abs=TOL)
+    assert (collections.Counter(round(e.startPoint().z / p.face_width) for e in tips)
+            == {0: p.teeth, 1: p.teeth})
+
+    # One tuple assertion: a wrong floor or tip count never hides behind a wrong rim
+    # count (test_each_edge_selector_picks_exactly_its_own_edges' own pattern).
+    assert (rim_calls[0], floor_calls[0] if floor_calls else None, len(tips)) == (rim, floor, tip)
+
+
 @pytest.mark.parametrize(("kw", "faces"), [
     pytest.param({"tip_chamfer": 0.4}, 210, id="d-flat"),
     pytest.param({"tip_chamfer": 0.4, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
                  213, id="keyway-round"),
     pytest.param({"tip_chamfer": 0.4, "bore_hex": 6}, 222, id="hex"),
+    # 11-07: a cutout composes with the tip chamfer -- _cut_body runs before
+    # _chamfer_tips (D-13), so the selector still sees only the 2 x 19 tip arcs, none
+    # of a cutout's own circles (a hole's radius hole_d/2, a spoke fillet's radius, a
+    # honeycomb cell has no CIRCLE at all). 216/338 measured on the pinned kernel
+    # 2026-09-29: 172 plain faces + the cutout's own faces + 38 tip cones each.
+    pytest.param({"tip_chamfer": 0.4, "hole_count": 6, "hole_d": 4, "hole_circle_d": 20},
+                 216, id="hole-cutout"),
+    pytest.param({"tip_chamfer": 0.4, "spoke_count": 4, "spoke_width": 2, "hub_d": 13.2,
+                  "rim_wall": 1, "spoke_fillet": 1}, 264, id="spoke-cutout"),
+    pytest.param({"tip_chamfer": 0.4, "hex_cell": 3, "hex_wall": 1}, 338,
+                 id="honeycomb-cutout"),
 ])
 def test_the_tip_chamfer_takes_exactly_the_tip_arcs_in_the_real_pipeline(
         monkeypatch: pytest.MonkeyPatch, kw: dict[str, object], faces: int) -> None:
@@ -729,6 +874,511 @@ def test_recess_removes_expected_volume() -> None:
     r_in, r_out = rr
     ring = math.pi * (r_out ** 2 - r_in ** 2) * p.recess_depth * 2
     assert solid - build(p).Volume() == pytest.approx(ring, rel=1e-3)
+
+
+def test_the_hole_link_cuts_six_holes_through_the_recessed_floor() -> None:
+    """?hole_count=6&hole_d=4&hole_circle_d=20 on the default gear (REQ-cutout-composes):
+    six holes cut through the recessed floor in one cut call, hole 0 on +X (D-03), the
+    recess floor fillet's four TORUS faces untouched. _build_checked, not build(): the
+    lru_cache on build() would hand back a solid built by an earlier test's GearParams()
+    call for a "bare" GearParams() here, instead of a freshly built one.
+    """
+    p0 = GearParams()
+    p = GearParams(hole_count=6, hole_d=4, hole_circle_d=20)
+    plain = _build_checked(p0)
+    cut = _build_checked(p)
+
+    d_faces = (collections.Counter(f.geomType() for f in cut.Faces())
+              - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert d_faces == collections.Counter({"CYLINDER": 6})
+    r_faces = (collections.Counter(f.geomType() for f in plain.Faces())
+              - collections.Counter(f.geomType() for f in cut.Faces()))
+    assert not r_faces
+
+    assert len(cut.Edges()) - len(plain.Edges()) == 18
+
+    web = p.face_width - 2 * p.recess_depth  # the 3.5 mm web between the two recesses
+    assert plain.Volume() - cut.Volume() == pytest.approx(
+        6 * math.pi * (p.hole_d / 2) ** 2 * web, rel=1e-6)
+
+    assert sum(1 for f in cut.Faces() if f.geomType() == "TORUS") == 4
+    assert sum(1 for f in plain.Faces() if f.geomType() == "TORUS") == 4
+
+    mid = p.face_width / 2
+    assert cut.isInside(cq.Vector(10, 0, mid)) is False  # hole 0, centred on +X (D-03)
+    assert cut.isInside(cq.Vector(10 * math.cos(math.pi / 6), 10 * math.sin(math.pi / 6),
+                                  mid)) is True  # between holes 0 and 1
+
+
+def test_the_spoke_link_cuts_four_filleted_sectors() -> None:
+    """?spoke_count=4&spoke_width=2&hub_d=12&rim_wall=1&spoke_fillet=1 on the default
+    gear (D-01...D-05): four filleted sectors cut through the full face width in one
+    cut call, arm 0 centred on +X (D-03), the recess floor fillet's four TORUS faces
+    split into 16 under the arms (research Pattern 2, planning probe 2026-09-29).
+    _build_checked, not build(): the lru_cache on build() would hand back a solid built
+    by an earlier test's GearParams() call for a "bare" GearParams() here.
+    """
+    p0 = GearParams()
+    p = GearParams(spoke_count=4, spoke_width=2, hub_d=12, rim_wall=1, spoke_fillet=1)
+    plain = _build_checked(p0)
+    cut = _build_checked(p)
+
+    d_faces = (collections.Counter(f.geomType() for f in cut.Faces())
+              - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert d_faces == collections.Counter({"PLANE": 14, "CYLINDER": 40, "TORUS": 16})
+    assert len(cut.Edges()) - len(plain.Edges()) == 240
+
+    mid = p.face_width / 2
+    assert cut.isInside(cq.Vector(10, 0, mid)) is True     # arm 0, centred on +X (D-03)
+    assert cut.isInside(cq.Vector(10 * math.cos(math.radians(45)),
+                                  10 * math.sin(math.radians(45)), mid)) is False
+
+
+def test_a_rim_corner_fillet_is_tangent_to_the_rim_circle_and_the_bar_side() -> None:
+    """The hand-computed sanity case D-05's mirrored _fillet_corner needed before
+    trusting it at every sector corner (research Pattern 2, Assumption A1): R 10, the
+    bar side is the line y = 1 running inward, rho 1. The tangent point on the circle
+    is R from the axis, the tangent point on the line lies exactly on y = 1, and both
+    sit rho from the arc's own centre -- the general tangency properties, not just this
+    one set of coordinates.
+    """
+    p0 = cq.Vector(math.sqrt(99), 1, 0)
+    p1 = cq.Vector(0, 1, 0)
+    on_root, mid, on_line = _fillet_corner(p0, p1, 10, 1, -1, inside=True)
+
+    assert (on_root.x, on_root.y) == pytest.approx((9.749960, 2.222222), abs=1e-6)
+    assert (on_line.x, on_line.y) == pytest.approx((8.774964, 1.0), abs=1e-6)
+
+    centre = cq.Vector(math.sqrt(77), 2, 0)
+    assert math.hypot(on_root.x, on_root.y) == pytest.approx(10.0, abs=1e-9)
+    assert on_line.y == pytest.approx(1.0, abs=1e-9)
+    assert math.hypot(on_root.x - centre.x, on_root.y - centre.y) == pytest.approx(1.0, abs=1e-9)
+    assert math.hypot(on_line.x - centre.x, on_line.y - centre.y) == pytest.approx(1.0, abs=1e-9)
+    assert math.hypot(mid.x - centre.x, mid.y - centre.y) == pytest.approx(1.0, abs=1e-9)
+
+
+def test_the_honeycomb_link_cuts_eighteen_whole_cells() -> None:
+    """?hex_cell=3&hex_wall=1 on the default gear (D-07...D-13): 18 whole hexagonal
+    cells cut through the full face width in one cut call. _build_checked, not
+    build(): the lru_cache on build() would hand back a solid built by an earlier
+    test's GearParams() call for a "bare" GearParams() here.
+    """
+    p0 = GearParams()
+    p = GearParams(hex_cell=3, hex_wall=1)
+    plain = _build_checked(p0)
+    cut = _build_checked(p)
+
+    d_faces = (collections.Counter(f.geomType() for f in cut.Faces())
+              - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert d_faces == collections.Counter({"PLANE": 108, "CYLINDER": 10, "TORUS": 10})
+    assert len(cut.Edges()) - len(plain.Edges()) == 494
+
+    mid = p.face_width / 2
+    assert cut.isInside(cq.Vector(6.49, 0, mid)) is True    # a cell facing the axis
+    assert cut.isInside(cq.Vector(6.51, 0, mid)) is False   # inside the cut cell
+
+
+# tests/test_calc.py's own SPOKE base dict (the boundary rows below reuse its exact
+# refusal-boundary values, measured for 11-03/11-04's own tests).
+SPOKES_MIN = {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1}
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.75}, id="hole-hub"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.075}, id="hole-rim"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.6, "hole_circle_d": 40},
+                 id="hole-neighbour"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 0.4}, id="spoke-rim"),
+    pytest.param({**SPOKES_MIN, "hub_d": 10.75}, id="spoke-hub"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 8.0375}, id="spoke-annulus"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.67, "hub_d": 12, "rim_wall": 0.4},
+                 id="spoke-opening"),
+    pytest.param({**SPOKES_MIN, "spoke_width": 0.4}, id="spoke-arm"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.4}, id="honeycomb-wall"),
+])
+def test_the_largest_cutout_each_wall_rule_allows_builds(kw: dict[str, object]) -> None:
+    """D-16/D-17: one step inside each cutout wall rule's boundary builds a valid
+    solid; the step past it is test_calc.py's own refusal
+    (test_a_hole_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly,
+    test_a_spoke_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly,
+    test_a_honeycomb_rule_refuses_one_step_past_it_and_names_its_fields), whose own
+    boundary values these rows reuse exactly -- the rules are the part's MIN_WALL, not
+    a kernel boundary (08 D-03's precedent, applied here to every cutout rule at once).
+    The arm rule (11-01's human ruling, kept by 11-04) is included.
+    """
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.7}, id="hole-hub"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.1}, id="hole-rim"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.65, "hole_circle_d": 40},
+                 id="hole-neighbour"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 0.35}, id="spoke-rim"),
+    pytest.param({**SPOKES_MIN, "hub_d": 10.7}, id="spoke-hub"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 8.05}, id="spoke-annulus"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.72, "hub_d": 12, "rim_wall": 0.4},
+                 id="spoke-opening"),
+    pytest.param({**SPOKES_MIN, "spoke_width": 0.35}, id="spoke-arm"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.35}, id="honeycomb-wall"),
+])
+def test_the_kernel_cuts_one_valid_solid_past_each_cutout_rule(kw: dict[str, object]) -> None:
+    """The rules are the part's MIN_WALL, not the kernel's (09's keyway test's own
+    words): validation bypassed (model_copy(), which never re-runs _feasible), the
+    kernel still cuts one valid solid one 0.05 mm field-step past every cutout wall
+    rule -- the same rows test_calc.py's refusal tests pin as ValidationErrors, here
+    built for real on the pinned kernel (planning probe 2026-09-29). A kernel bump that
+    changes this goes red here, the way 08-03/09-03 already do for the bore and keyway
+    rules.
+    """
+    s = _build_checked(GearParams().model_copy(update=kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 16.0125}, id="hole-on-r-in"),
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 22.0125}, id="hole-on-r-out"),
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 21.0125},
+                 id="hole-inside-r-out"),
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 17.0125},
+                 id="hole-outside-r-in"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 13.0125, "rim_wall": 1},
+                 id="spoke-hub-arc-on-r-in-sharp"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 13.0125, "rim_wall": 1,
+                  "spoke_fillet": 1}, id="spoke-hub-arc-on-r-in-filleted"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1.93125},
+                 id="spoke-rim-arc-on-r-out-sharp"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1.93125,
+                  "spoke_fillet": 1}, id="spoke-rim-arc-on-r-out-filleted"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 10.75, "rim_wall": 0.4,
+                  "recess_sides": "none"}, id="spoke-both-min-wall-no-recess"),
+    pytest.param({"hex_cell": 3, "hex_wall": 1, "recess_inner_d": 13}, id="cell-flat-on-r-in"),
+])
+def test_a_cutter_tangent_to_a_recess_wall_or_fillet_builds_without_a_fuzzy_boolean(
+        kw: dict[str, object]) -> None:
+    """CONTEXT Claude's Discretion tol= (research PITFALLS.md Pitfall 1): a hole or a
+    cell can legitimately sit tangent to a recess wall -- unlike Phases 8-10, tangency
+    is reachable here, and a user cannot be told their hole is placed "too exactly". On
+    the default gear's recess (r_in 6.50625, r_out 12.50625, measured 2026-09-29): a
+    3 mm hole with an edge exactly on r_in, on r_out, and 0.5 mm either side of each; a
+    spoke's hub arc tangent to r_in and its rim arc tangent to r_out, each sharp and
+    with a 1 mm fillet (D-05's analytic arcs, not the 3D operator, so tangency to the
+    recess wall is a 2D sketch condition, not a kernel fillet case); a spoke web with
+    both the hub and the rim at exactly MIN_WALL on a recess-less gear (tangent to
+    nothing at all); a honeycomb cell's -X flat tangent to r_in (recess_inner_d 13 puts
+    r_in at 6.5 mm, matching the cell centred at (8, 0)'s flat-to-axis distance). Every
+    row here built one valid solid with the plain cut(*cutters) -- no row needed a
+    fuzzy boolean tolerance, so none is shipped (see the comment above _cut_body's cut).
+    """
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"spoke_count": 1, "spoke_width": 2, "hub_d": 12, "rim_wall": 1,
+                  "spoke_fillet": 5}, id="one-arm"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.67, "hub_d": 12, "rim_wall": 1,
+                  "spoke_fillet": 5}, id="twelve-arms-at-the-opening-boundary"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 8.0375,
+                  "spoke_fillet": 5}, id="annulus-at-min-wall"),
+    pytest.param({"spoke_count": 2, "spoke_width": 11, "hub_d": 12, "rim_wall": 1,
+                  "spoke_fillet": 5}, id="eleven-mm-bars-on-a-twelve-mm-hub"),
+])
+def test_a_spoke_fillet_at_its_cap_builds_on_extreme_sectors(kw: dict[str, object]) -> None:
+    """D-06: spoke_fillet 5 (always capped, the field's own le) on the most awkward
+    sectors the rules allow -- one arm (a "C"-shaped sector spanning almost the whole
+    ring), twelve arms right at the opening boundary D-16 permits, an annulus exactly
+    MIN_WALL wide, and 11 mm bars on a 12 mm hub. Each builds one valid solid with the
+    fillet actually capped below the request (measured 2026-09-29: 3.347, 0.202, 0.18,
+    2.22 mm respectively, all < 5)."""
+    p = GearParams.model_validate(kw)
+    s = _build_checked(p)
+    assert s.isValid()
+    assert spoke_fillet_effective(p) < 5
+
+
+# Row sets for the built-solid proof below (11-CONTEXT.md <interfaces>). HOLES and CELLS
+# (245-251 above) are the same dicts 11-05/11-07 already use; SPOKES12/SPOKES13/
+# HOLES_ACROSS are new here -- SPOKES (246) is the selector matrix's own row (hub_d 13.2,
+# spoke_fillet baked in), not this plan's SPOKES12/SPOKES13 pair.
+HOLES_ACROSS = {"hole_count": 6, "hole_d": 3, "hole_circle_d": 24}
+SPOKES12 = {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1}
+SPOKES13 = {"spoke_count": 4, "spoke_width": 2, "hub_d": 13.2, "rim_wall": 1}
+
+
+def _spoke_bar_area(rh: float, rr: float, o: float) -> float:
+    """One spoke bar's area (D-01/D-02), analytic: model._spoke_sector's foot() puts
+    every bar corner exactly on the hub/rim circle, so the bar's straight sides sit at
+    theta = +-asin(o / r) on the circle of radius r for every r between rh and rr -- the
+    bar's area is the polar integral of 2 * r * asin(o / r) dr from rh to rr, whose
+    antiderivative is S(r) = r^2 * asin(o / r) + o * sqrt(r^2 - o^2). Used by the sharp-
+    spoke row below to compute the removed volume from the parameters, matching the
+    built solid (measured 2026-09-29: formula and kernel agree to 1e-9 mm3 on the
+    default gear's SPOKES12 row) rather than a pinned literal.
+    """
+    def s(r: float) -> float:
+        return r * r * math.asin(o / r) + o * math.sqrt(r * r - o * o)
+    return s(rr) - s(rh)
+
+
+def _honeycomb_farthest_vertex_angle(p: GearParams, rf: float) -> float:
+    """The angle (radians) of the farthest honeycomb-cell vertex from the axis (D-08:
+    flats face +-X, vertices +-Y -- the same polygon(6, size, circumscribed=True) vertex
+    layout calc._hex_reach uses internally). Read off hex_cells(p, rf)'s own cell
+    centres rather than a hand-picked value, so the probe angle in the built-solid proof
+    below always matches the cell the kernel actually cut.
+    """
+    size, cells = hex_cells(p, rf)
+    r = size / math.sqrt(3)
+    farthest = max(
+        ((cx + r * math.cos(math.radians(30 + 60 * i)),
+          cy + r * math.sin(math.radians(30 + 60 * i)))
+         for cx, cy in cells for i in range(6)),
+        key=lambda v: math.hypot(*v))
+    return math.atan2(farthest[1], farthest[0])
+
+
+def _assert_the_cutout_is_what_derive_prints(
+        cut: cq.Solid, plain: cq.Solid, p: GearParams, p0: GearParams, *,
+        d_faces: collections.Counter[str], d_edges: int, d_volume: float,
+        hub_angle: float, rim_angle: float) -> None:
+    """Shared by the proof
+    (test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid) and the tripwire
+    (test_the_cutout_proof_fails_when_the_cutout_step_is_skipped) -- 10-03's shape. The
+    cut is exactly what derive() describes: face-type deltas, edge count, removed
+    volume, and the bounding box and tip diameter unchanged by a cutout. The printed
+    walls (cutout_hub_wall, cutout_rim_wall) are read back off the solid at the caller's
+    own hub_angle/rim_angle: the probe points come from the printed numbers, never a
+    hand-picked location (L08) -- material just inside the hub wall and void just
+    outside it, void just inside the rim wall and material just outside it.
+    """
+    faces_delta = (collections.Counter(f.geomType() for f in cut.Faces())
+                  - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert faces_delta == d_faces
+    faces_reverse = (collections.Counter(f.geomType() for f in plain.Faces())
+                     - collections.Counter(f.geomType() for f in cut.Faces()))
+    assert not faces_reverse
+
+    assert len(cut.Edges()) - len(plain.Edges()) == d_edges
+    assert plain.Volume() - cut.Volume() == pytest.approx(d_volume, rel=1e-6)
+
+    bb_cut, bb_plain = cut.BoundingBox(), plain.BoundingBox()
+    for attr in ("xmin", "xmax", "ymin", "ymax", "zmin", "zmax"):
+        assert getattr(bb_cut, attr) == pytest.approx(getattr(bb_plain, attr), abs=TOL)
+    assert derive(p).tip_d == derive(p0).tip_d
+
+    d = derive(p)
+    assert d.cutout_hub_wall is not None
+    assert d.cutout_rim_wall is not None
+    r_hub = bore_mouth_limit(p) + d.cutout_hub_wall
+    r_rim = profile(p).rf - d.cutout_rim_wall
+    z = p.face_width / 2
+
+    def at(r: float, theta: float) -> cq.Vector:
+        return cq.Vector(r * math.cos(theta), r * math.sin(theta), z)
+
+    assert cut.isInside(at(r_hub - 0.01, hub_angle)) is True
+    assert cut.isInside(at(r_hub + 0.01, hub_angle)) is False
+    assert cut.isInside(at(r_rim - 0.01, rim_angle)) is False
+    assert cut.isInside(at(r_rim + 0.01, rim_angle)) is True
+
+
+@pytest.mark.parametrize("kind", ["holes", "spokes-sharp", "spokes-filleted", "cells"])
+def test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid(kind: str) -> None:
+    """REQ-cutout-derived-numbers on the built solid, recess_sides "none" so the recess
+    fillet's own faces never mix into the cutout's delta (Task 1). Measured 2026-09-29 on
+    the pinned kernel (cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1): HOLES +6 CYLINDER, +18
+    edges, 565.486678 mm3; sharp SPOKES12 +8 PLANE +8 CYLINDER, +48 edges, 2959.086823
+    mm3 (the analytic bar-area formula below matches to 1e-9 mm3); filleted SPOKES12 +8
+    PLANE +24 CYLINDER, +96 edges, 2934.725405 mm3 (no closed form for a filleted
+    sector's volume -- pinned, not derived, L08) plus 32 CIRCLE edges of radius
+    spoke_fillet_effective(p) split 16/16 across the end faces; CELLS +108 PLANE, +324
+    edges, 1052.220866 mm3 (18 whole cells at the requested 3 mm size, matching the
+    analytic hexagon-area formula to 1e-9 mm3). Arm 0 and hole 0 sit on +X (D-03); the
+    (8, 0) cell's -X flat faces +X (D-08) -- hub_angle 0 for holes and cells, pi/4 for
+    spokes (the middle of sector 0, since arm 0 itself is on +X).
+    """
+    p0 = GearParams(recess_sides="none")
+    plain = _build_checked(p0)
+
+    if kind == "holes":
+        p = GearParams.model_validate({**HOLES, "recess_sides": "none"})
+        cut = _build_checked(p)
+        _assert_the_cutout_is_what_derive_prints(
+            cut, plain, p, p0,
+            d_faces=collections.Counter({"CYLINDER": 6}), d_edges=18,
+            d_volume=p.hole_count * math.pi * (p.hole_d / 2) ** 2 * p.face_width,
+            hub_angle=0.0, rim_angle=0.0)
+    elif kind == "spokes-sharp":
+        p = GearParams.model_validate({**SPOKES12, "recess_sides": "none"})
+        cut = _build_checked(p)
+        pr = profile(p)
+        rh, rr, o = p.hub_d / 2, pr.rf - p.rim_wall, p.spoke_width / 2
+        volume = (math.pi * (rr * rr - rh * rh)
+                 - p.spoke_count * _spoke_bar_area(rh, rr, o)) * p.face_width
+        _assert_the_cutout_is_what_derive_prints(
+            cut, plain, p, p0,
+            d_faces=collections.Counter({"PLANE": 8, "CYLINDER": 8}), d_edges=48,
+            d_volume=volume, hub_angle=math.pi / 4, rim_angle=math.pi / 4)
+    elif kind == "spokes-filleted":
+        p = GearParams.model_validate({**SPOKES12, "spoke_fillet": 1, "recess_sides": "none"})
+        cut = _build_checked(p)
+        _assert_the_cutout_is_what_derive_prints(
+            cut, plain, p, p0,
+            d_faces=collections.Counter({"PLANE": 8, "CYLINDER": 24}), d_edges=96,
+            # No closed form for a filleted sector's removed volume; measured on the
+            # pinned kernel 2026-09-29 and pinned (L08), like the sharp row's formula
+            # cross-check above but without one to check it against.
+            d_volume=2934.725405,
+            hub_angle=math.pi / 4, rim_angle=math.pi / 4)
+        rho = spoke_fillet_effective(p)
+        fillet_edges = [e for e in cut.Edges()
+                        if e.geomType() == "CIRCLE" and abs(e.radius() - rho) < TOL]
+        assert len(fillet_edges) == 32
+        assert (collections.Counter(round(e.startPoint().z / p.face_width) for e in fillet_edges)
+                == {0: 16, 1: 16})
+    else:  # cells
+        p = GearParams.model_validate({**CELLS, "recess_sides": "none"})
+        cut = _build_checked(p)
+        pr = profile(p)
+        size, cells = hex_cells(p, pr.rf)
+        d = derive(p)
+        assert d.hex_cell_count == len(cells)
+        volume = len(cells) * (math.sqrt(3) / 2) * size * size * p.face_width
+        rim_angle = _honeycomb_farthest_vertex_angle(p, pr.rf)
+        _assert_the_cutout_is_what_derive_prints(
+            cut, plain, p, p0,
+            d_faces=collections.Counter({"PLANE": 6 * d.hex_cell_count}), d_edges=324,
+            d_volume=volume, hub_angle=0.0, rim_angle=rim_angle)
+
+
+@pytest.mark.parametrize(("kw", "d_faces", "d_edges", "d_volume", "angle"), [
+    pytest.param({**HOLES, "recess_sides": "none"},
+                 collections.Counter({"CYLINDER": 6}), 18, 565.486678, 0.0, id="holes"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1, "recess_sides": "none"},
+                 collections.Counter({"PLANE": 8, "CYLINDER": 24}), 96, 2934.725405,
+                 math.pi / 4, id="spokes-filleted"),
+    pytest.param({**CELLS, "recess_sides": "none"},
+                 collections.Counter({"PLANE": 108}), 324, 1052.220866, 0.0, id="cells"),
+])
+def test_the_cutout_proof_fails_when_the_cutout_step_is_skipped(
+        monkeypatch: pytest.MonkeyPatch, kw: dict[str, object],
+        d_faces: collections.Counter[str], d_edges: int, d_volume: float,
+        angle: float) -> None:
+    """L08's failure, 10-03's tripwire shape: patches _cut_body to a no-op -- the cut
+    solid comes back identical to the plain one, so every delta the proof checks reads
+    zero -- and shows the proof above fail while derive() still prints the cutout's
+    wall, the number the part no longer matches."""
+    monkeypatch.setattr("spur.model._cut_body", lambda solid, _p, _pr: solid)
+    p0 = GearParams(recess_sides="none")
+    p = GearParams.model_validate(kw)
+    assert derive(p).cutout_hub_wall is not None  # the number still prints -- L08's failure
+    with pytest.raises(AssertionError):
+        _assert_the_cutout_is_what_derive_prints(
+            _build_checked(p), _build_checked(p0), p, p0,
+            d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
+            hub_angle=angle, rim_angle=angle)
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param(HOLES, id="holes"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1}, id="spokes-filleted"),
+    pytest.param(CELLS, id="cells"),
+])
+def test_the_same_cutout_link_builds_the_same_solid_twice(kw: dict[str, object]) -> None:
+    """The same-link-same-part property (L05), for each body cutout pattern, on the
+    default gear (its own recess intact): two independent builds of one parameter set
+    agree on topology and volume. Uses _build_checked, bypassing the lru_cache, so both
+    builds actually run the kernel."""
+    p = GearParams.model_validate(kw)
+    a = _build_checked(p)
+    b = _build_checked(p)
+    assert len(a.Faces()) == len(b.Faces())
+    assert len(a.Edges()) == len(b.Edges())
+    assert a.Volume() == pytest.approx(b.Volume(), rel=1e-9)
+
+
+def _assert_the_recess_fillet_survives(cut: cq.Solid, p: GearParams, torus: int) -> None:
+    """REQ-cutout-composes' counted proof (Task 2): with both recesses, the floor
+    fillet survives on every floor edge each cutout pattern leaves -- no sharp
+    floor-to-wall circle remains anywhere on the finished solid -- and the TORUS face
+    count is the one the pinned kernel reads. What a through-cut does to a toroidal
+    fillet face (split into pieces, never removed from a surviving edge) is measured on
+    the pinned kernel and pinned here (research A4), not derived: no closed form gives
+    the fragment count after an arbitrary boolean cut.
+    """
+    assert cut.isValid()
+    assert len(cut.Solids()) == 1
+
+    rr = recess_radii(p, profile(p).rf)
+    assert rr is not None, "the row must carry a recess to prove the fillet survives"
+    heights: list[float] = []
+    if p.recess_sides in ("both", "bottom"):
+        heights.append(p.recess_depth)
+    if p.recess_sides in ("both", "top"):
+        heights.append(p.face_width - p.recess_depth)
+
+    try:
+        sharp = len(_groove_floor_edges(cut, rr, heights))
+    except BuildError:
+        sharp = 0
+    assert sharp == 0
+
+    assert sum(1 for f in cut.Faces() if f.geomType() == "TORUS") == torus
+
+
+@pytest.mark.parametrize(("kw", "torus"), [
+    pytest.param(HOLES, 4, id="d-flat-holes"),
+    pytest.param(HOLES_ACROSS, 14, id="d-flat-holes-across"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1}, 20, id="d-flat-spokes"),
+    pytest.param(CELLS, 14, id="d-flat-cells"),
+    pytest.param({**HOLES, "bore_flat": 0}, 4, id="round-holes"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1, "bore_flat": 0}, 20, id="round-spokes"),
+    pytest.param({**CELLS, "bore_flat": 0}, 14, id="round-cells"),
+    pytest.param({**HOLES, "bore_hex": 6}, 14, id="hex-holes"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1, "bore_hex": 6}, 12, id="hex-spokes"),
+    pytest.param({**CELLS, "bore_hex": 6}, 40, id="hex-cells"),
+    pytest.param({**HOLES, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 4, id="keyed-holes"),
+    # SPOKES13 (hub_d 13.2, clears the keyed round bore's 6.179 mm mouth): not probed in
+    # planning (11-CONTEXT.md <interfaces>) -- measured here on the pinned kernel,
+    # 2026-09-29.
+    pytest.param({**SPOKES13, "spoke_fillet": 1, "keyway_width": 3, "keyway_depth": 1.4,
+                  "bore_flat": 0}, 12, id="keyed-spokes"),
+    pytest.param({**CELLS, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 4, id="keyed-cells"),
+])
+def test_the_recess_floor_fillet_survives_every_cutout_on_every_bore(
+        kw: dict[str, object], torus: int) -> None:
+    """REQ-cutout-composes' counted proof: with both recesses (the field's own
+    default), on every bore shape (D-flat, round, hex, keyed round) and every pattern,
+    the recess floor fillet survives on every floor edge the cutout leaves -- no sharp
+    floor-to-wall circle anywhere on the finished solid. TORUS counts are the pinned
+    kernel's own, measured 2026-09-29; every one matches the planning probe in
+    11-CONTEXT.md <interfaces> except keyed-spokes, which planning did not measure."""
+    p = GearParams.model_validate(kw)
+    cut = _build_checked(p)
+    _assert_the_recess_fillet_survives(cut, p, torus)
+
+
+@pytest.mark.parametrize(("kw", "torus"), [
+    pytest.param({**HOLES_ACROSS}, 14, id="d-flat-holes-across"),
+    pytest.param({**CELLS}, 14, id="d-flat-cells"),
+])
+def test_the_fillet_survival_proof_fails_when_the_recess_fillet_is_skipped(
+        monkeypatch: pytest.MonkeyPatch, kw: dict[str, object], torus: int) -> None:
+    """The survival proof's own tripwire: with recess_fillet patched to 0, the groove
+    floor's sharp corners survive the cutout instead of being rounded away, so
+    _groove_floor_edges matches them rather than raising -- the proof's own
+    assert sharp == 0 is what catches a skipped fillet here, not a raised BuildError
+    (measured 2026-09-29: both rows leave 14 sharp floor circles with the fillet
+    skipped)."""
+    monkeypatch.setattr("spur.model.recess_fillet", lambda _p, _rf: 0.0)
+    p = GearParams.model_validate(kw)
+    cut = _build_checked(p)
+    with pytest.raises(AssertionError):
+        _assert_the_recess_fillet_survives(cut, p, torus)
 
 
 def test_exports() -> None:

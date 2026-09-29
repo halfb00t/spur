@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 11
-current_phase_name: Body Cutouts
-status: "Phase 10 shipped — PR #11"
-stopped_at: Phase 10 complete, ready to plan Phase 11
-last_updated: "2026-09-28T15:20:46.155Z"
-last_activity: 2026-09-28
-state_head: 9d7e1344c64df6db46cec68cd05e0a84d0cfcd40
+current_phase: 12
+current_phase_name: Composition Pass
+status: "Phase 11 shipped — PR #12"
+stopped_at: Phase 11 complete, ready to plan Phase 12
+last_updated: "2026-09-29T12:46:08.050Z"
+last_activity: 2026-09-29
+state_head: 95eba1013bc77e645695e58341df8580667ce9fd
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 25
+  completed_plans: 25
   percent: 17
 ---
 
@@ -21,18 +21,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-28)
+See: .planning/PROJECT.md (updated 2026-09-29)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 11 — Body Cutouts (exactly one of lightening holes, spoke arms or a honeycomb web, composing with any bore profile and with face recesses; the first phase to combine a recess with a heavy cut against the 30 s budget)
+**Current focus:** Phase 12 — Composition Pass
 
 ## Current Position
 
-Phase: 11 — Body Cutouts
+Phase: 12 — Composition Pass
 Plan: Not started
-Status: Phase 10 shipped — PR #11
-Last activity: 2026-09-28
+Status: Phase 11 shipped — PR #12
+Last activity: 2026-09-29
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Last activity: 2026-09-28
 | 9. Keyway Bore | 5 | ~2h10m | ~26min |
 | 10. Tooth-Tip Chamfer | 5 | ~2h08m | ~26min |
 | 10 | 5 | - | - |
+| 11 | 9 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -145,6 +146,15 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 10 P03 | 19min | 2 tasks | 3 files |
 | Phase 10 P04 | ~17min | 2 tasks | 5 files |
 | Phase 10 P05 | 16min | 3 tasks | 8 files |
+| Phase 11 P01 | ~15min | 3 tasks | 3 files |
+| Phase 11 P02 | ~35min | 2 tasks | 2 files |
+| Phase 11 P03 | ~55min | 2 tasks | 8 files |
+| Phase 11 P04 | 37min | 2 tasks | 8 files |
+| Phase 11-body-cutouts P05 | 50min | 2 tasks | 9 files |
+| Phase 11 P06 | 45min (Task 3; Task 1 prior executor) | 3 tasks | 10 files |
+| Phase 11 P07 | ~28min | 2 tasks | 2 files |
+| Phase 11 P08 | ~35min | 2 tasks | 1 files |
+| Phase 11 P09 | ~31min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -156,7 +166,7 @@ fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar acc
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
 verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
-L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8.
+L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -195,6 +205,29 @@ pending; the next milestone starts this list fresh.
 - [Phase 10]: 10-04: D-07's over-budget checkpoint never fired -- all 9 tip-chamfer sweep rows built inside 30s on the first run, heaviest 14.87s, so no human decision was needed on the field's le or a teeth-dependent cap.
 - [Phase 10]: 10-05: The root fillet's straight lead-in issue is filed as must-debt, not fixed -- correcting it means either an outline change with its own Lxx and fixture regeneration, or a README correction, both outside this phase's feature (CLAUDE.md 'note the tangent').
 - [Phase 10]: 10-05: L29 appended after L28 (0 deleted lines): the field, cut, three-limit cap with D-04's measured boundary, derived field/warning, spike/sweep cost, proof and reversibility, each cited to a SUMMARY sha or bench/RESULTS.md, none re-estimated.
+- [Phase 11]: Human approved REQ-spoke-cutout's amended wording and the proposed Phase 11 SC2 wording exactly as drafted, no changes.
+- [Phase 11]: Human kept the spoke-arm wall rule (Flagged Assumption A1): 0 < spoke_width < MIN_WALL is refused with a 422 naming spoke_width, like every other wall in the part. 11-04 implements this on the human's word.
+- [Phase 11]: HEX_CELL_CAP measured at 120 cells (7.15s of 7.5s budget, next row 150 cells at 7.95s over) -- 11-02's honeycomb spike, verdict held on the first run
+- [Phase 11]: Cut spelling measured: star (cut(*prisms)) -- all three spellings read within 0.03s at the cap's cell count, none cleared D-24's 10% bar
+- [Phase 11]: 11-03: three independent hole rules (hub, rim, neighbour, D-16/D-17) via _under_min_wall(round(wall,6) < MIN_WALL), so a wall sized exactly to MIN_WALL is accepted despite step-aligned float residue (measured 0.39999999999999947 at the tracer's hub boundary); a hole wider than the web trips both wall sentences at once.
+- [Phase 11]: 11-03: Task 2's RED and GREEN landed in one feat commit, not separate test(...)/feat(...) commits -- workflow.tdd_mode is not enabled in config.json, so the mechanical RED/GREEN/REFACTOR commit-pattern gate does not apply (Phase 8 precedent, 08-03-SUMMARY.md); RED was still run and confirmed failing before GREEN was written.
+- [Phase 11]: The arm rule (11-01's human ruling): 0 < spoke_width < MIN_WALL is refused naming spoke_width, like every other wall in the part.
+- [Phase 11]: The hub-ring opening between adjacent bar feet is measured as an arc, following keyway_flat_wall's arc precedent (research Pitfall 4), not a chord.
+- [Phase 11]: _fillet_corner's rim-side mirror (inside=True, D-05) was hand-checked against a 3-4-5-style tangent case before trusting it at every sector corner; the built tracer's face/edge deltas match the planning probe exactly.
+- [Phase 11]: 11-04: RED and GREEN for both tasks landed in one feat commit each -- workflow.tdd_mode is not enabled, so the mechanical RED/GREEN/REFACTOR commit-pattern gate does not apply (11-03's precedent).
+- [Phase 11]: 11-05: HEX_CELL_CAP = 120 cells written from bench/RESULTS.md's measured Cap line and nowhere else (D-12, D-24); the tracer (?hex_cell=3&hex_wall=1) cuts 18 whole cells, walls 1.525/2.149 mm, reproduced exactly. — Whole-cell lattice and raise-to-fit moved from bench/honeycomb_spike.py into spur.calc unchanged, so there is one definition (L08); the spike imports them back.
+- [Phase 11]: 11-05: cutout_walls' honeycomb branch reads the exact nearest-edge/farthest-vertex reach on the cut cells, not the whole-cell test's conservative circumradius -- the naive bound would have under-reported the tracer's hub wall by 0.232 mm (Flagged Assumption A3). — A cell's flat can face the axis and be closer than any corner; the circumradius used for containment is deliberately conservative, not the true wall (L08).
+- [Phase 11]: 11-05: 11-05's own verify script's len(warnings)==1 assertion at teeth=200 fails as literally written -- the pre-existing root-fillet cap (present without any honeycomb field) also warns there, unrelated to this phase; documented as an Issue Encountered, nothing fixed in code. — Root-fillet capping at 200 teeth predates this phase and is correct; only the plan's own verify-script assumption of exactly one warning at that input was wrong.
+- [Phase 11]: [Phase 11] D-18's gate fired: 200-count hole/spoke rows crossing a recess groove measured 41.85s and 65.70-68.70s of SPUR_BUILD_TIMEOUT=30s; the honeycomb cap row measured 8.65s against D-11's 7.5s share. Human accepted the recommendation: hole_count le 200->60, spoke_count le 200->40, HEX_CELL_CAP unchanged at 120 (the honeycomb over-share row accepted as measured). Re-run confirmed every row of both sweeps inside 30s at the new le (heaviest 11.79s holes, 18.52s spokes). — The recess-crossing cost is geometric and near-linear (~0.33s/sector, ~0.21s/hole on the worst rows, loaded host); 200 arms at 0.4mm is not a part anyone cuts; 40 spokes and 60 holes each stack on Phase 12's 14.87s tip-chamfer row with margin under the same load; a count-rule would reintroduce the field-dependent limit D-07/D-12 avoided for configurations nobody needs.
+- [Phase 11]: [Phase 11] 11-06: the re-run's arithmetic total (heaviest spoke row 18.52s + Phase 10's 14.87s tip-chamfer row = 33.39s) crosses 30s under this run's exceptional host load (32.17) -- filed as must-severity debt rather than rounded to match the decision's ~2s margin expectation. — Task 3's own scope is the le, not a new build-time guarantee on an arithmetic sum Phase 12 measures for real; the reading is plausibly load-inflated but recorded honestly per L08, not silently accepted.
+- [Phase 11]: 11-07: the real-pipeline spy reads the same rim/floor Counter values the no-cutout matrix already established, because both selectors run on the solid before their own operator applies, strictly before _cut_body -- verified against all 19 rows before writing the test.
+- [Phase 11]: 11-07: every one-step-past cutout-rule row reuses test_calc.py's own refusal boundary exactly (spoke opening past-the-rule is spoke_width 2.72, not the plan's provisional 2.77) -- the shipped test_calc.py value is the ground truth, not the planning-time estimate.
+- [Phase 11]: 11-07: no tol= was needed -- all ten tangent-cutter rows (holes, spoke hub/rim arcs sharp and filleted, a recess-less double-MIN_WALL spoke web, a honeycomb flat tangent to the recess wall) built one valid solid with the plain cut(*cutters) on the pinned kernel, so _cut_body ships none, only a comment recording the measurement.
+- [Phase 11]: 11-08: sharp-spoke and honeycomb removed-volume checked against a closed-form analytic formula (matches the kernel to 1e-9 mm3), not a pinned literal; the filleted-spoke row has no closed form and stays pinned.
+- [Phase 11]: 11-08: the keyed-round SPOKES13 fillet-1 recess-survival row (not probed in planning) measured TORUS 12 on the pinned kernel; every other row of the 13-row survival matrix matched the planning probe exactly, no sharp floor-to-wall circle survived any row.
+- [Phase 11]: 11-09: L30 appended after L29 (0 deleted lines) in L29's paragraph shape -- fields, cut, honeycomb, cap, refusals, numbers, cost, proof and reversibility -- every number cited to a SUMMARY sha or bench/RESULTS.md section, none re-estimated (D-25).
+- [Phase 11]: 11-09: make verify's wall time at the phase's end measured 621 passed in 177.62s -- 178.55s wall (host load 3.07-4.65), against Phase 10's 453 passed / 98.17s; the phase's 168 new tests add +80.38s to the gate.
+- [Phase 11]: 11-09: three deferred ideas filed under docs/ideas/ with INDEX rows -- a spoke/hole rotation field, a teeth/module-dependent honeycomb cap, and conditional form fields -- verbatim from 11-CONTEXT.md's Deferred Ideas section.
 
 ### Pending Todos
 
@@ -202,6 +235,25 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 11] The spokes' heaviest re-run row (18.52 s, `spoke_count` le 40) plus Phase 10's
+  14.87 s tip-chamfer row is an arithmetic 33.39 s over the 30 s `SPUR_BUILD_TIMEOUT` — two
+  single-feature readings under a load of 32.17, not a composed build. Accepted at UAT (test 4)
+  as deferred to Phase 12's real composed sweep, its named trigger:
+  `docs/tech_debt/active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md` (must).
+- ⚠️ [Phase 11] All six code-review findings (WR-01…WR-05, IN-01) still sit at disposition
+  `open` in `11-REVIEW-DISPOSITION.md` — none fixed, skipped or deferred. WR-02 (L30's
+  "the boundary itself builds, one step past it does not" sentence, the reverse of what
+  `test_the_kernel_cuts_one_valid_solid_past_each_cutout_rule` proves) and WR-04 (README says
+  the reverse half-set case is "rejected"; it builds nothing and warns) were reproduced during
+  verification and are one-sentence doc fixes. WR-01 (the honeycomb spike's `slower()`/verdict
+  can discard a failed trial) is unfixed; `HEX_CELL_CAP = 120` and its 8.65 s row were accepted
+  as measured under a loaded host (UAT tests 2–3), not re-measured. UAT test 5 accepted the
+  triage expectation; the dispositions themselves are still to be set.
+- ⚠️ [Phase 11] `gsd_run query commit`'s 30 s timeout killed the `make verify` hook on the UAT
+  commit this session (~3 min cold at 621 tests, pytest at ~9 cores) — and the orphaned
+  pre-commit process kept running with `state.json` stashed; waited for it to exit and restore
+  the stash, then a plain `git commit` with hooks (hook passed, ~3 min). The Phase 9/10 items
+  below stand; the debt's trigger now covers a cold run of three minutes.
 - ℹ️ [Phase 10] Code review WR-01 (a nonzero `tip_chamfer` under 0.0005 mm was silently
   discarded) and CR-01 (its first fix attributed print-precision rounding to a geometric
   limit — found by the Codex lane, confirmed internally) are both fixed: `54fe020`,
@@ -266,6 +318,7 @@ None yet.
 - Phase 9 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 12 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 9 edited: edited fields: requirements, success_criteria (per 09-CONTEXT.md D-20)
+- Phase 11 edited: edited fields: success_criteria (per 11-CONTEXT.md D-21)
 
 ## Deferred Items
 
@@ -275,14 +328,23 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-28T14:09:01.000Z
-Stopped at: Phase 10 complete, ready to plan Phase 11
+Last session: 2026-09-29T12:28:02.000Z
+Stopped at: Phase 11 complete, ready to plan Phase 12
 Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-code-review 10 --codex` — optional: a Codex pass over the CR-01 fix diff (`60d02f7`), the one phase-10 diff no second lane has read yet
-- Open a PR for `gsd/phase-10-tooth-tip-chamfer` and land it with `make pr.land PR=N`
-- `/gsd-map-codebase --paths bench` — the codebase-drift gate warned on every Phase 10 wave: the map predates `bench/`
-- Then `/gsd-discuss-phase 11` on a `gsd/phase-11-*` branch cut from the squash commit (Phase 11 has no CONTEXT.md yet)
-- Expect `gsd_run query commit` to time out on every commit (hook ~100 s > 30 s) and fall back to a plain `git commit` with hooks; check for a pre-commit stash patch after each timeout (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)
+- Set a disposition on each of the six `11-REVIEW.md` findings in `11-REVIEW-DISPOSITION.md`
+  (WR-02 and WR-04 are one-sentence doc fixes in `docs/architecture/decision_log.md` L30 and
+  `README.md`; WR-01 is the spike's verdict logic) — ideally before the PR, so the branch lands
+  with the record closed
+- Open a PR for `gsd/phase-11-body-cutouts` and land it with `make pr.land PR=N`
+- `/gsd-map-codebase --paths bench` — carried over from Phase 10 (not verified done): the
+  codebase map predates `bench/`
+- Then `/gsd-discuss-phase 12` on a `gsd/phase-12-*` branch cut from the squash commit
+  (Phase 12 has no CONTEXT.md yet)
+- Expect `gsd_run query commit` to time out on every commit (hook ~3 min cold, > 30 s) and
+  fall back to a plain `git commit` with hooks; if the wrapper reports a timeout, wait for the
+  orphaned `pre_commit hook-impl` process to exit before touching tracked files — it holds
+  `state.json` in a stash and restores it on exit
+  (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)

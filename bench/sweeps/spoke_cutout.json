@@ -1,0 +1,82 @@
+[
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "spoke_count": 40,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "spoke_count": 40,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "spoke_count": 40,
+    "spoke_width": 4.3,
+    "hub_d": 300,
+    "rim_wall": 10,
+    "spoke_fillet": 5,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "spoke_count": 40,
+    "spoke_width": 4.3,
+    "hub_d": 300,
+    "rim_wall": 10,
+    "spoke_fillet": 5,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "spoke_count": 40,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "spoke_count": 40,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "spoke_count": 40,
+    "spoke_width": 5.85,
+    "hub_d": 400,
+    "rim_wall": 100,
+    "spoke_fillet": 5,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "spoke_count": 40,
+    "spoke_width": 5.85,
+    "hub_d": 400,
+    "rim_wall": 100,
+    "spoke_fillet": 5,
+    "recess_sides": "none"
+  }
+]

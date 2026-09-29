@@ -48,6 +48,17 @@ TIP_CHAMFER_MARGIN = 0.001  # mm, how far inside the start of the involute splin
 # tip_chamfer_effective rounds to 3 dp at construction and round() can move a value up
 # by half a step (2.9365 mm rounds to 2.937 mm) -- a cap sitting exactly at the contact
 # could round past it.
+HEX_CELL_CAP = 120  # cells, the most whole honeycomb cells one part may have. Measured
+# 2026-09-29 (bench/RESULTS.md "Honeycomb cell-count spike (Phase 11, D-24)") on a
+# 12-CPU arm64 host, load averages 8-9 (well above this project's own "quiet" bar):
+# at 200 teeth, module 10, both recesses -- the largest web a honeycomb can sit on,
+# so the cap always binds there (D-11) -- the 120-cell row (a 149.1 mm cell) read
+# 7.15 s of the 7.5 s budget (a quarter of SPUR_BUILD_TIMEOUT); the next row (150
+# cells) read 7.95 s, over budget. The module-1.75 confirmation at the same 120 cells
+# read 7.25 s, 0.25 s of headroom -- narrower than the cap row's own 0.35 s but still
+# inside budget, so the module-10 configuration still sets the cap. One constant, not
+# a per-cell cost model (D-12): the same on every machine, conservative on smaller
+# gears -- a quieter host would only raise what this measured, never lower it.
 
 
 def inv(a: float) -> float:
@@ -280,6 +291,253 @@ def tip_chamfer_effective(p: GearParams) -> float:
     return round(min(p.tip_chamfer, tip_chamfer_limit(p)[0]), 3)
 
 
+def cutout_walls(p: GearParams, rf: float) -> tuple[float, float] | None:
+    """(hub wall, rim wall) of the one body-cutout pattern set, unrounded, or None with
+    no pattern set (D-20).
+
+    The hub side is measured from the farthest point of the chamfered bore mouth,
+    bore_mouth_limit(p), the same datum recess_radii() clears (D-17, L27/L28) -- exact
+    for a round or D-flat bore, the corner's reach for a hex or keyed bore, and so a
+    lower bound where a cutout faces a flat (L08). The rim side is measured from the
+    root circle, rf. Spokes read hub_d and rim_wall directly (D-01): the rim corner
+    arcs stay inside rf - rim_wall, so the rim wall is exactly rim_wall. The honeycomb
+    reads the walls off the cut cells themselves -- exact on the polygons
+    model._cell_cutters cuts, so the walls read at least hex_wall: the whole-cell
+    test's circumradius (size / sqrt(3)) is a conservative bound for containment, not
+    the true nearest point, which can be a flat closer to the axis than any corner
+    (Flagged Assumption A3 -- the naive centre_radius - reach bound under-reports the
+    tracer's inner-ring wall by 0.232 mm, 6.268 mm instead of the true 6.5 mm).
+    """
+    if p.spoke_count > 0:
+        return p.hub_d / 2 - bore_mouth_limit(p), p.rim_wall
+    if p.hole_count > 0:
+        inner = p.hole_circle_d / 2 - p.hole_d / 2
+        outer = p.hole_circle_d / 2 + p.hole_d / 2
+        return inner - bore_mouth_limit(p), rf - outer
+    if p.hex_cell > 0:
+        size, cells = hex_cells(p, rf)
+        reaches = [_hex_reach(cx, cy, size) for cx, cy in cells]
+        nearest = min(r[0] for r in reaches)
+        farthest = max(r[1] for r in reaches)
+        return nearest - bore_mouth_limit(p), rf - farthest
+    return None
+
+
+def spoke_opening(p: GearParams) -> float:
+    """The arc between the feet of adjacent bar sides on the hub circle (D-06):
+    keyway_flat_wall's arc measure (research Pitfall 4, Open Q1), applied to two bar
+    feet instead of a flat's corner and a keyway's side. This is the narrowest gap a
+    sector has -- beyond the hub the bars diverge -- so both D-06's fillet cap and
+    D-16's neighbour rule read this one number. 0.0 when spoke_width >= hub_d (the
+    bars would meet or cross at the hub before reaching it). Callers pass
+    spoke_count >= 1 and hub_d > 0 -- check()'s half-set rule (D-15) guarantees both
+    before this is ever called.
+    """
+    if p.spoke_width >= p.hub_d:
+        return 0.0
+    r = p.hub_d / 2
+    return r * (2 * math.pi / p.spoke_count - 2 * math.asin(p.spoke_width / p.hub_d))
+
+
+def spoke_fillet_limit(p: GearParams) -> tuple[float, str]:
+    """(limit, reason): the smaller of the two dimensions a sector's corner fillets
+    share -- root_fillet's 0.45-of-the-shared-dimension family (two corner arcs share
+    each dimension, so 10% of it always stays). Compared as a tuple, tip_chamfer_limit's
+    shape, so a tie is broken by the reason text, deterministically.
+    """
+    pr = profile(p)
+    return min(
+        (0.45 * spoke_opening(p), "to fit the opening between the arms at the hub"),
+        (0.45 * (pr.rf - p.rim_wall - p.hub_d / 2),
+         "to fit between the hub and the rim wall"),
+    )
+
+
+def spoke_fillet_effective(p: GearParams) -> float:
+    """Spoke fillet actually cut at the corners of each cut-out sector: the requested
+    radius, capped to what fits the sector, and never refused (L03) -- always a cap,
+    never a 422. model.py cuts exactly this value, so the part and the printed number
+    cannot disagree (L08). 0.0 with no spokes or spoke_fillet 0 (sharp corners)."""
+    if p.spoke_count == 0 or p.spoke_fillet <= 0:
+        return 0.0
+    return round(min(p.spoke_fillet, spoke_fillet_limit(p)[0]), 3)
+
+
+def _under_min_wall(wall: float) -> bool:
+    """True when a cutout wall is thinner than MIN_WALL, comparing at 1e-6 mm rather
+    than the raw float.
+
+    Step-aligned inputs carry float residue (bore_mouth_limit(p) reads
+    4.9750000000000005 on the default gear, math.sin(math.pi / 6) reads
+    0.49999999999999994), so a wall sized to exactly MIN_WALL can compute as
+    0.39999999999999947 -- comparing the raw float would refuse a wall the user sized
+    exactly to the rule. 1e-6 mm is far below the 0.05 mm field step (so no settable
+    wall lands in the rounding band) and far above the ~1e-15 mm residue (so it never
+    accepts a wall that is genuinely thinner). Every cutout MIN_WALL rule added from
+    here on goes through this; the pre-existing bore/keyway rules are untouched.
+    """
+    return round(wall, 6) < MIN_WALL
+
+
+def _listed(items: list[str]) -> str:
+    """"a", "a and b", "a, b and c" -- the joining every cutout sentence with more than
+    one named field uses, so a two-field list still reads exactly as the existing hole
+    sentences did (D-15's half-set rule, D-17's hub/rim/annulus rules)."""
+    if len(items) <= 1:
+        return "".join(items)
+    return ", ".join(items[:-1]) + f" and {items[-1]}"
+
+
+def hole_gap(p: GearParams) -> float:
+    """Wall left between two neighbouring holes, measured on the line joining their
+    centres (D-16): the chord between adjacent centres, hole_circle_d * sin(pi /
+    hole_count), less one hole diameter. Callers pass hole_count >= 2 -- with one hole
+    there is no neighbour."""
+    return p.hole_circle_d * math.sin(math.pi / p.hole_count) - p.hole_d
+
+
+def whole_cells(cell: float, wall: float, inner: float, outer: float,
+                ) -> tuple[tuple[float, float], ...]:
+    """The centres of every whole hexagonal cell on the axis-centred lattice whose
+    flats face +-X and vertices +-Y -- model._cut_bore's own convention (D-08): pitch
+    `cell + wall`, rows spaced `pitch * sqrt(3) / 2` along Y, centres
+    `x = pitch * (a + b / 2)`, `y = pitch * b * sqrt(3) / 2`. A centre is kept when its
+    hexagon -- corner reach `cell / sqrt(3)` -- lies entirely inside `[inner, outer]`:
+    `inner + cell / sqrt(3) <= hypot(x, y) <= outer - cell / sqrt(3)` (D-07, inclusive).
+    The origin cell (a = b = 0) always fails this test because inner > 0, so it is
+    never cut -- it sits inside the bore. Returns `()` when the band is empty. Rows
+    iterate b ascending then a ascending, so the same arguments return the same tuple
+    every time (D-24's spelling comparison and the cap search both rely on this
+    order). Lives here so check(), cutout_walls(), derive() and model._cell_cutters
+    all read the one enumeration (L08); bench/honeycomb_spike.py imports it back.
+    """
+    if outer <= inner:
+        return ()
+    pitch = cell + wall
+    row_h = pitch * math.sqrt(3) / 2
+    reach = cell / math.sqrt(3)
+    lo, hi = inner + reach, outer - reach
+    if hi < lo:
+        return ()
+    # |y| <= outer bounds b; a row or two of rounding slack is harmless -- the hypot
+    # test below is the exact filter, this just keeps the search off the unbounded
+    # plane (D-07's "no candidate outside the square is visited").
+    b_max = int(outer / row_h) + 1
+    cells: list[tuple[float, float]] = []
+    for b in range(-b_max, b_max + 1):
+        y = pitch * b * math.sqrt(3) / 2
+        if abs(y) > outer:
+            continue
+        a_span = outer / pitch
+        a_lo = math.floor(-a_span - b / 2)
+        a_hi = math.ceil(a_span - b / 2)
+        for a in range(a_lo, a_hi + 1):
+            x = pitch * (a + b / 2)
+            if abs(x) > outer:
+                continue
+            r = math.hypot(x, y)
+            if lo <= r <= hi:
+                cells.append((x, y))
+    return tuple(cells)
+
+
+def cell_count_floor(cell: float, wall: float, inner: float, outer: float) -> float:
+    """A guaranteed lower bound on `len(whole_cells(cell, wall, inner, outer))` --
+    D-13's area estimate, taken as a floor rather than an approximation: the centre
+    band `[inner + cell/sqrt(3), outer - cell/sqrt(3)]` eroded by the pitch hexagon's
+    own circumradius (`pitch / sqrt(3)`) leaves a band where every point lies in the
+    Voronoi cell of a lattice point that is itself inside the original band -- so the
+    eroded band's area over one Voronoi cell's area (`sqrt(3)/2 * pitch**2`, a regular
+    hexagon of across-flats `pitch`) never overcounts. Planning checked 1920 (cell,
+    wall, inner, outer) sets against the exact `whole_cells()` count: 0 violations.
+    0.0 when the eroded band is empty (`hi2 <= lo2`).
+    """
+    pitch = cell + wall
+    reach = cell / math.sqrt(3)
+    erosion = pitch / math.sqrt(3)
+    lo2 = inner + reach + erosion
+    hi2 = outer - reach - erosion
+    if hi2 <= lo2:
+        return 0.0
+    return math.pi * (hi2**2 - lo2**2) / (math.sqrt(3) / 2 * pitch**2)
+
+
+def cells_within(cap: int, cell: float, wall: float, inner: float, outer: float,
+                 ) -> tuple[float, tuple[tuple[float, float], ...]]:
+    """D-13's raise-to-fit: steps `cell` up by 0.05 mm (the field's own step) from the
+    request until the exact whole-cell count is `<= cap`. `cell_count_floor`'s
+    guaranteed lower bound is checked first at each step -- a size whose floor already
+    exceeds `cap` can never have fitted, so the exact enumeration (`whole_cells`) never
+    runs for a size that was going to be skipped anyway; this is what keeps the search
+    cheap even where the unconstrained count would be in the millions (D-13's own
+    example: a 200-tooth module-10 web at cell 3 / wall 1 implies roughly 2.2e5 cells).
+    """
+    k = 0
+    while True:
+        s = round(cell + 0.05 * k, 3)
+        if cell_count_floor(s, wall, inner, outer) <= cap:
+            found = whole_cells(s, wall, inner, outer)
+            if len(found) <= cap:
+                return s, found
+        k += 1
+
+
+def hex_cells(p: GearParams, rf: float) -> tuple[float, tuple[tuple[float, float], ...]]:
+    """The honeycomb actually cut: (across-flats applied, cell centres) -- the one
+    result model._cell_cutters cuts, check() counts and derive() reports (L08).
+    `(0.0, ())` with `hex_cell <= 0` -- no honeycomb. Otherwise `cells_within`'s
+    raise-to-fit over the web annulus (D-09): `hex_wall` outside the chamfered bore
+    mouth (`bore_mouth_limit(p)`, the recess's own datum) and `hex_wall` inside the
+    root circle (`rf`).
+
+    Measured (`.venv/bin/python -m timeit`, best of 5, arm64, Python 3.12.13,
+    2026-09-29, the same 12-CPU host the honeycomb spike ran on): `derive()` alone
+    costs 14.1 usec on `GearParams()` (no honeycomb, beside 09-05's 11.5 usec
+    baseline), 115 usec on the tracer link (`hex_cell=3, hex_wall=1`, 18 cells), and
+    15.6 msec at the heaviest input (`teeth=200, module=10, hex_cell=3, hex_wall=0.4`
+    -- the smallest allowed wall, the most candidate cells to search). One full
+    request makes three `hex_cells` calls: `check()` at construction, then
+    `cutout_walls()` and `derive()` itself each call it once more -- `derive()`'s own
+    two calls are what these numbers measure; `check()`'s third call costs the same
+    again. No cache is added: this is what it costs.
+    """
+    if p.hex_cell <= 0:
+        return 0.0, ()
+    return cells_within(HEX_CELL_CAP, p.hex_cell, p.hex_wall,
+                        bore_mouth_limit(p) + p.hex_wall, rf - p.hex_wall)
+
+
+def _point_segment_distance(px: float, py: float, ax: float, ay: float,
+                            bx: float, by: float) -> float:
+    """Distance from (px, py) to the segment (ax, ay)-(bx, by), the exact minimum over
+    the whole edge rather than just its two endpoints -- a hexagon's flat can be the
+    nearest point to the axis, not either of its corners (D-08)."""
+    dx, dy = bx - ax, by - ay
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / length_sq))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+
+
+def _hex_reach(cx: float, cy: float, size: float) -> tuple[float, float]:
+    """(nearest point to the axis, farthest vertex from the axis) of one honeycomb
+    hexagon centred at (cx, cy), across-flats size, flats on +-X and vertices on +-Y
+    (D-08) -- the same `polygon(6, size, circumscribed=True)` `model._cell_cutters`
+    cuts. The nearest point can be a flat (the tracer's inner ring faces the axis with
+    a flat, 6.5 mm, not the 6.268 mm a circumradius test would read -- Flagged
+    Assumption A3) or a vertex, so this walks all six edges rather than assuming
+    either.
+    """
+    r = size / math.sqrt(3)
+    verts = [(cx + r * math.cos(math.radians(30 + 60 * i)),
+             cy + r * math.sin(math.radians(30 + 60 * i))) for i in range(6)]
+    farthest = max(math.hypot(vx, vy) for vx, vy in verts)
+    nearest = min(_point_segment_distance(0.0, 0.0, *verts[i], *verts[(i + 1) % 6])
+                 for i in range(6))
+    return nearest, farthest
+
+
 def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
     """Reasons the parameters can't produce a sound part, each with the fields involved.
 
@@ -417,6 +675,156 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         if web < MIN_WALL:
             errors.append((f"Recesses leave a {web:.2f} mm web; reduce the depth.",
                            ("recess_depth",)))
+
+    # --- body cutout ---
+    # With two or more patterns set, neither pattern's own rules below run: the part
+    # cannot exist as drawn (REQ-one-cutout-pattern), and one sentence says why instead
+    # of every per-pattern rule firing on fields that make no sense set together.
+    chosen = [(name, value) for name, value in
+              (("spoke_count", p.spoke_count), ("hole_count", p.hole_count),
+               ("hex_cell", p.hex_cell))
+              if value > 0]
+    if len(chosen) >= 2:
+        errors.append((
+            "Only one body cutout pattern per part: "
+            f"{_listed([f'{n} ({v:g})' for n, v in chosen])} are "
+            f"{'both' if len(chosen) == 2 else 'all'} set; keep one and set the "
+            "others to 0.",
+            tuple(n for n, _ in chosen)))
+    elif p.spoke_count > 0:
+        # D-15: the half-set rule runs first -- with a dimension still 0 there is no
+        # geometry to measure a wall against, so the rules below never fire on a
+        # half-set pattern (they would misname the zero field as a wall breach).
+        zero = [f for f in ("hub_d", "rim_wall", "spoke_width") if getattr(p, f) == 0]
+        if zero:
+            errors.append((
+                f"Spoke arms need {_listed(zero)}: set "
+                f"{'it' if len(zero) == 1 else 'them'} above 0, or set spoke_count "
+                "to 0.",
+                tuple(zero)))
+        else:
+            # 11-01-SUMMARY.md: the human kept the spoke-arm wall rule (Flagged
+            # Assumption A1) -- 0 < spoke_width < MIN_WALL is refused like every other
+            # wall in the part, not silently accepted as thin-but-printable.
+            if _under_min_wall(p.spoke_width):
+                errors.append((
+                    f"Spoke arms {p.spoke_width:g} mm wide are thinner than the "
+                    f"{MIN_WALL:g} mm every wall in the part keeps; increase "
+                    "spoke_width.",
+                    ("spoke_width",)))
+            if _under_min_wall(p.rim_wall):
+                errors.append((
+                    f"The rim wall ({p.rim_wall:g} mm) is thinner than {MIN_WALL:g} "
+                    "mm; increase rim_wall.",
+                    ("rim_wall",)))
+            # D-17: naming only the cutout's own field -- the bore is the fit to the
+            # shaft, and the sentence quotes the mouth so the cause stays visible.
+            mouth = bore_mouth_limit(p)
+            if _under_min_wall(p.hub_d / 2 - mouth):
+                errors.append((
+                    f"The spoke hub is too small for the bore: hub_d ({p.hub_d:g} mm) "
+                    f"must be at least {2 * (mouth + MIN_WALL):.2f} mm, {MIN_WALL:g} "
+                    f"mm outside the bore mouth ({2 * mouth:.2f} mm across); increase "
+                    "hub_d.",
+                    ("hub_d",)))
+            ann = pr.rf - p.rim_wall - p.hub_d / 2
+            if _under_min_wall(ann):
+                errors.append((
+                    f"Spokes leave no room to cut: between the hub ({p.hub_d:g} mm) "
+                    f"and the rim wall ({2 * (pr.rf - p.rim_wall):.2f} mm across) "
+                    f"there is {max(ann, 0.0):.3f} mm, which must be at least "
+                    f"{MIN_WALL:g} mm; reduce hub_d or rim_wall.",
+                    ("hub_d", "rim_wall")))
+            # D-16: the opening exists only where the annulus does; the planning probe
+            # built openings down to 0.01 mm, so this is the part's own MIN_WALL rule,
+            # not a kernel limit.
+            elif _under_min_wall(spoke_opening(p)):
+                errors.append((
+                    "Spoke arms leave too little room between them at the hub: "
+                    f"{p.spoke_count} arms of {p.spoke_width:g} mm on a "
+                    f"{p.hub_d:g} mm hub leave {max(spoke_opening(p), 0.0):.3f} mm, "
+                    f"which must be at least {MIN_WALL:g} mm; reduce spoke_count or "
+                    "spoke_width, or increase hub_d.",
+                    ("hub_d", "spoke_count", "spoke_width")))
+    elif p.hole_count > 0:
+        # D-15: the half-set rule runs first -- with a dimension still 0 there is no
+        # geometry to measure a wall against, so the three rules below never fire on a
+        # half-set pattern (they would misname the zero field as a wall breach).
+        zero = [f for f in ("hole_circle_d", "hole_d") if getattr(p, f) == 0]
+        if zero:
+            errors.append((
+                f"Lightening holes need {' and '.join(zero)}: set "
+                f"{'it' if len(zero) == 1 else 'them'} above 0, or set hole_count to 0.",
+                tuple(zero)))
+        else:
+            # None of the three implies another: a hole can be too close to the bore, to
+            # the root, or to its neighbour independently, so all three run every time
+            # (not elif) -- a hole wider than the web breaches both the hub and rim at
+            # once and must say so twice (REQ-cutout-conflicts-refused-early).
+            inner = p.hole_circle_d / 2 - p.hole_d / 2
+            outer = p.hole_circle_d / 2 + p.hole_d / 2
+            if _under_min_wall(inner - bore_mouth_limit(p)):
+                errors.append((
+                    "Lightening holes come too close to the bore: their inner edges "
+                    f"are {2 * inner:.2f} mm across and must stay {MIN_WALL:g} mm "
+                    f"outside the bore mouth ({2 * bore_mouth_limit(p):.2f} mm "
+                    "across); increase hole_circle_d or reduce hole_d.",
+                    ("hole_circle_d", "hole_d")))
+            if _under_min_wall(pr.rf - outer):
+                errors.append((
+                    "Lightening holes come too close to the root circle: their outer "
+                    f"edges are {2 * outer:.2f} mm across and must stay {MIN_WALL:g} "
+                    f"mm inside the root circle ({2 * pr.rf:.2f} mm); reduce "
+                    "hole_circle_d or hole_d.",
+                    ("hole_circle_d", "hole_d")))
+            # D-16: the planning probe built holes 0.001 mm apart, and tangent to the
+            # recess walls, and every one was one valid solid -- these rules are the
+            # part's own MIN_WALL, not a kernel limit (11-07 pins it against the kernel).
+            if p.hole_count >= 2 and _under_min_wall(hole_gap(p)):
+                errors.append((
+                    "Lightening holes are too close to each other: "
+                    f"{p.hole_count} holes of {p.hole_d:g} mm on a {p.hole_circle_d:g} "
+                    f"mm circle leave {max(hole_gap(p), 0.0):.3f} mm between "
+                    f"neighbours, which must be at least {MIN_WALL:g} mm; reduce "
+                    "hole_count or hole_d, or increase hole_circle_d.",
+                    ("hole_circle_d", "hole_count", "hole_d")))
+    elif p.hex_cell > 0:
+        # D-15: the half-set rule runs first -- with hex_wall still 0 there is no wall
+        # to size a lattice against, so the rules below never fire on a half-set
+        # honeycomb; each presupposes the one before it, so this is an if/elif chain
+        # rather than three independent rules (08's shape).
+        if p.hex_wall == 0:
+            errors.append((
+                "A honeycomb needs hex_wall: set it to at least 0.4 mm, or set "
+                "hex_cell to 0.",
+                ("hex_wall",)))
+        elif _under_min_wall(p.hex_wall):
+            errors.append((
+                f"The honeycomb wall ({p.hex_wall:g} mm) is thinner than "
+                f"{MIN_WALL:g} mm; increase hex_wall.",
+                ("hex_wall",)))
+        elif round(p.hex_cell, 3) == 0:
+            errors.append((
+                f"Honeycomb cell {p.hex_cell:g} mm "
+                "is below the 0.001 mm resolution cells are cut at: set hex_cell to "
+                "0 for no honeycomb, or larger.",
+                ("hex_cell",)))
+        else:
+            size, cells = hex_cells(p, pr.rf)
+            if not cells:
+                inner = bore_mouth_limit(p) + p.hex_wall
+                outer = pr.rf - p.hex_wall
+                errors.append((
+                    f"No whole honeycomb cell fits between {inner:.2f} and "
+                    f"{outer:.2f} mm from the axis (hex_wall outside the bore mouth "
+                    f"and inside the root circle): a {size:g} mm cell reaches "
+                    f"{size / math.sqrt(3):.2f} mm from its centre; reduce hex_cell "
+                    "or hex_wall.",
+                    ("hex_cell", "hex_wall")))
+        # No hub or rim breach rule exists here: D-09's boundaries (hex_wall outside
+        # the bore mouth, inside the root circle) and D-07's whole-cell test keep
+        # every cell inside by construction -- a cell that would breach either is
+        # simply never cut (D-17).
     return errors
 
 
@@ -500,6 +908,28 @@ class DerivedDimensions(BaseModel):
     web: float | None = Field(
         description="Thickness left between the recesses; null with no recess.",
         json_schema_extra={"unit": "mm"})
+    cutout_hub_wall: float | None = Field(
+        description="Thinnest wall left between the body cutout and the bore, measured "
+                    "from the farthest point of the chamfered bore mouth (a hex bore's "
+                    "corners, a keyway's floor corners): exact for a round or D-flat "
+                    "bore, a lower bound where a cutout faces a flat; null with no "
+                    "cutout.",
+        json_schema_extra={"unit": "mm"})
+    cutout_rim_wall: float | None = Field(
+        description="Thinnest wall left between the body cutout and the root circle; "
+                    "null with no cutout.",
+        json_schema_extra={"unit": "mm"})
+    spoke_fillet_effective: float | None = Field(
+        description="Spoke fillet actually cut at the corners of each cut-out sector, "
+                    "after the cap; null with no spokes or no spoke fillet.",
+        json_schema_extra={"unit": "mm"})
+    hex_cell_effective: float | None = Field(
+        description="Honeycomb cell across-flats actually cut, raised from the "
+                    "request when the whole-cell count would exceed the cap; null "
+                    "with no honeycomb.",
+        json_schema_extra={"unit": "mm"})
+    hex_cell_count: int | None = Field(
+        description="Whole honeycomb cells cut; null with no honeycomb.")
     # A tuple, not a list: pydantic's `frozen=True` locks the attributes, not the objects
     # they hold, so a list here could still be edited in place by any reader of a shared
     # result -- the one field that would make "frozen" a lie (04-REVIEW.md WR-01).
@@ -602,6 +1032,62 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         warnings.append("No room for a face recess between the bore wall and the tooth "
                         "rim; it was left out.")
 
+    # D-06: only actually binds with spokes on and a fillet requested -- the same
+    # shape as the tip-chamfer warning above, including the sub-print-precision branch
+    # (10-REVIEW.md WR-01/CR-01's rule, applied here to the spoke fillet's own 0.001 mm
+    # cut resolution).
+    sfe = spoke_fillet_effective(p) if p.spoke_count > 0 and p.spoke_fillet > 0 else None
+    if sfe is not None:
+        if sfe < round(p.spoke_fillet, 3):
+            warnings.append(f"Spoke fillet reduced to {sfe:g} mm {spoke_fillet_limit(p)[1]}.")
+        elif sfe == 0.0:
+            warnings.append(f"Spoke fillet {p.spoke_fillet:g} mm is below the 0.001 mm "
+                            "resolution it is cut at and was not cut.")
+
+    if p.spoke_count == 0:
+        # D-15: spoke_count 0 (the default) builds nothing regardless of the other
+        # four spoke fields, exactly like the hex bore ignoring bore_d/bore_flat above
+        # -- the same sentence shape, naming only the fields the user actually set.
+        ignored = [f"{name} ({value:g} mm)" for name, value in
+                  (("spoke_width", p.spoke_width), ("hub_d", p.hub_d),
+                   ("rim_wall", p.rim_wall), ("spoke_fillet", p.spoke_fillet))
+                  if value > 0]
+        if ignored:
+            warnings.append(
+                f"No spoke arms with spoke_count 0: {_listed(ignored)} "
+                f"{'are' if len(ignored) > 1 else 'is'} ignored.")
+
+    if p.hole_count == 0:
+        # D-15: hole_count 0 (the default) builds nothing regardless of hole_d/
+        # hole_circle_d, exactly like the hex bore ignoring bore_d/bore_flat above --
+        # the same sentence shape, naming only the fields the user actually set.
+        ignored = [f"{name} ({value:g} mm)" for name, value in
+                  (("hole_d", p.hole_d), ("hole_circle_d", p.hole_circle_d)) if value > 0]
+        if ignored:
+            warnings.append(
+                f"No lightening holes with hole_count 0: {' and '.join(ignored)} "
+                f"{'are' if len(ignored) > 1 else 'is'} ignored.")
+
+    if p.hex_cell > 0:
+        size, cells = hex_cells(p, pr.rf)
+        if size > round(p.hex_cell, 3):
+            warnings.append(
+                f"Honeycomb cells enlarged from {p.hex_cell:g} mm to {size:g} mm "
+                f"across flats to keep the count within the {HEX_CELL_CAP}-cell "
+                "limit.")
+        hce, hcc = size, len(cells)
+    else:
+        hce, hcc = None, None
+        if p.hex_wall > 0:
+            # D-15: hex_wall set with hex_cell 0 (the default) builds no honeycomb --
+            # the same sentence shape as the spoke/hole ignored-dimensions warnings
+            # above, naming the one field the user set away from 0.
+            warnings.append(
+                f"No honeycomb with hex_cell 0: hex_wall ({p.hex_wall:g} mm) is "
+                "ignored.")
+
+    walls = cutout_walls(p, pr.rf)
+
     # The mate is folded into this one document rather than patched on afterward
     # (D-02): a single construction site means a derive() bug that produces the wrong
     # shape fails loudly instead of quietly matching dict[str, Any] (D-09).
@@ -646,6 +1132,11 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         recess_od=r3(2 * rr[1]) if rr else None,
         recess_fillet=r3(rec_fil) if rr else None,
         web=r3(p.face_width - sides * p.recess_depth) if rr else None,
+        cutout_hub_wall=r3(walls[0]) if walls else None,
+        cutout_rim_wall=r3(walls[1]) if walls else None,
+        spoke_fillet_effective=r3(sfe) if sfe is not None else None,
+        hex_cell_effective=r3(hce) if hce is not None else None,
+        hex_cell_count=hcc,
         warnings=tuple(warnings),
         mate_teeth=mate_teeth,
         centre_distance=None if aw is None else r3(aw),

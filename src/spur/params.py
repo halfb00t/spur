@@ -25,7 +25,8 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 class GearParams(BaseModel):
     """Involute spur gear with an optional tooth-tip chamfer, D-flat or hex bore, a
-    keyway, and annular face recesses."""
+    keyway, annular face recesses, a spoke pattern, a lightening-hole pattern and a
+    honeycomb web."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -99,6 +100,61 @@ class GearParams(BaseModel):
                                help="0 = centred so the hub wall equals the rim wall.")
     recess_fillet: float = _f(0.5, 0, 5, title="Recess fillet", group="Recess", unit="mm",
                               step=0.05, help="Fillet at the groove floor corners.")
+
+    # --- Spokes ------------------------------------------------------------------
+    # D-18's `le` lowered 200 -> 40 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md "Body
+    # cutout build and export time (Phase 11)", measured 2026-09-29, host load 5-10):
+    # three of the four 200-sector rows crossing a recess groove read 65.70-68.70 s of
+    # SPUR_BUILD_TIMEOUT=30 s, ~0.3 s/sector and near-linear; 40 sectors leave margin
+    # beside Phase 12's 14.87 s tip-chamfer row (re-measured in the same section).
+    spoke_count: int = _f(0, 0, 40, title="Spoke arms", group="Spokes", step=1,
+                          help="Number of straight arms joining a hub ring to a rim "
+                               "ring; the sectors between them are cut through the "
+                               "full face width. Arm 0 is centred on +X. 0 = no "
+                               "spokes.")
+    spoke_width: float = _f(0.0, 0, 100, title="Arm width", group="Spokes", unit="mm",
+                            step=0.05,
+                            help="Width of each arm, the same along its whole length.")
+    hub_d: float = _f(0.0, 0, 400, title="Hub Ø", group="Spokes", unit="mm", step=0.05,
+                      help="Outer diameter of the hub ring the arms start from.")
+    rim_wall: float = _f(0.0, 0, 100, title="Rim wall", group="Spokes", unit="mm",
+                         step=0.05,
+                         help="Radial thickness of the rim ring, measured inward from "
+                              "the root circle.")
+    spoke_fillet: float = _f(0.0, 0, 5, title="Spoke fillet", group="Spokes", unit="mm",
+                             step=0.05,
+                             help="Radius rounding the corners of each cut-out "
+                                  "sector, capped to fit. 0 = sharp.")
+
+    # --- Holes -------------------------------------------------------------------
+    # D-18's `le` lowered 200 -> 60 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md "Body
+    # cutout build and export time (Phase 11)", measured 2026-09-29, host load 5-10): the
+    # 200-hole row crossing the module-1.75 recess groove read 41.85 s of
+    # SPUR_BUILD_TIMEOUT=30 s (the split recess fillet, Pitfall 8), ~0.2 s/hole and
+    # near-linear; 60 holes leave margin beside Phase 12's 14.87 s tip-chamfer row
+    # (re-measured in the same section).
+    hole_count: int = _f(0, 0, 60, title="Lightening holes", group="Holes", step=1,
+                         help="Number of equal round holes cut through the full face "
+                              "width, evenly spaced on the hole circle with hole 0 "
+                              "centred on +X. 0 = no holes.")
+    hole_d: float = _f(0.0, 0, 100, title="Hole Ø", group="Holes", unit="mm", step=0.05,
+                       help="Diameter of each lightening hole.")
+    hole_circle_d: float = _f(0.0, 0, 400, title="Hole circle Ø", group="Holes",
+                              unit="mm", step=0.05,
+                              help="Diameter of the circle the hole centres sit on.")
+
+    # --- Honeycomb -----------------------------------------------------------------
+    hex_cell: float = _f(0.0, 0, 100, title="Honeycomb cell A/F", group="Honeycomb",
+                         unit="mm", step=0.05,
+                         help="Across-flats of each hexagonal through-hole. Only "
+                              "whole cells are cut, filling the web between the bore "
+                              "mouth and the root circle; the cell count is derived "
+                              "and capped, and above the cap the cell size is raised "
+                              "until it fits. 0 = no honeycomb.")
+    hex_wall: float = _f(0.0, 0, 100, title="Honeycomb wall", group="Honeycomb",
+                         unit="mm", step=0.05,
+                         help="Wall between cells, and between the cells and both "
+                              "the bore mouth and the root circle.")
 
     @model_validator(mode="after")
     def _feasible(self) -> GearParams:

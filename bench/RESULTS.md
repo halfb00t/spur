@@ -855,3 +855,359 @@ here, and nothing is extrapolated from it.
 lint/typecheck/import-lint/no-fake-done), against Phase 9's recorded **78.21s** / 396
 tests. The phase's tip-chamfer tests (57 new, across 10-01 through 10-04) add **+19.96s**
 to the gate, measured rather than assumed.
+
+## Honeycomb cell-count spike (Phase 11, D-24)
+
+The committed measurement record for the ROADMAP Phase 11 SC3 research flag: a
+build-time-vs-cell-count sweep before any cap formula is written, L17's methodology.
+D-11 sets the honeycomb's share at 7.5 s -- a quarter of `SPUR_BUILD_TIMEOUT` -- beside
+the 14.87 s tip-chamfer row Phase 12 will stack it on. The probe raises `hex_cell` in
+0.05 mm steps until the exact whole-cell count on the axis-centred lattice fits each
+target, then cuts the whole cells as hexagonal prisms through `spur.model._build_checked`
+plus one `solid.cut(*prisms)` call, with no `hex_cell`/`hex_wall` field in `GearParams`
+yet -- the field, the cap and the cutter are 11-05 through 11-09, planned on these
+numbers. Command: `.venv/bin/python -m bench.honeycomb_spike`.
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `35f0137`
+- Load averages at start (script's own `os.getloadavg()`): 8.28, 6.26, 5.41
+- `uptime` moments before the run: load averages 9.35, 6.39, 5.44
+- SPUR_BUILD_TIMEOUT: 30 s
+- BUDGET_S: 7.5 s (a quarter of `SPUR_BUILD_TIMEOUT`, D-11)
+- Both readings sit well above this project's usual "quiet" bar (>1.5 on this 12-core
+  host, Phase 7's own convention) -- the numbers below carry that caveat rather than
+  being presented as clean (L08). A cap measured under this load is conservative, never
+  optimistic: a quiet host would read every row faster, if anything raising the cap the
+  sweep would find, never lowering it.
+
+### Cost by cell count
+
+| Set | Cell (mm) | Cells | Bare (s) | Cut (s) | STL (s) | STEP (s) | Request (s) | dFaces | Why | Run 1 / Run 2 request (s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| teeth=200 module=10 target=0 | 3 | 0 | 2.20 | 0.00 | 0.00 | 0.00 | 2.20 | 0 | ok | 2.20 / 2.15 |
+| teeth=200 module=10 target=25 | 305.3 | 18 | 2.26 | 1.45 | 0.66 | 0.52 | 4.37 | 218 | ok | 4.30 / 4.37 |
+| teeth=200 module=10 target=50 | 235 | 42 | 2.25 | 3.13 | 0.78 | 0.69 | 6.16 | 482 | ok | 6.16 / 6.16 |
+| teeth=200 module=10 target=75 | 190.3 | 72 | 2.26 | 3.86 | 0.83 | 0.81 | 6.95 | 602 | ok | 6.95 / 6.75 |
+| teeth=200 module=10 target=100 | 167.2 | 96 | 2.21 | 3.99 | 0.88 | 0.86 | 7.09 | 806 | ok | 7.09 / 7.03 |
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.34 | 3.88 | 0.91 | 0.92 | 7.15 | 950 | ok | 7.15 / 6.96 |
+| teeth=200 module=10 target=150 | 137.35 | 150 | 2.22 | 4.67 | 0.93 | 1.06 | 7.95 | 1130 | ok | 7.56 / 7.95 |
+| teeth=200 module=10 target=175 | 129.3 | 168 | 2.23 | 5.93 | 1.08 | 1.23 | 9.38 | 1286 | ok | 9.29 / 9.38 |
+| teeth=200 module=10 target=200 | 120.5 | 198 | 2.65 | 8.84 | 1.07 | 1.41 | 12.90 | 1598 | ok | 12.90 / 12.80 |
+| teeth=200 module=10 target=250 | 111.65 | 240 | 2.21 | 7.68 | 1.14 | 1.61 | 11.50 | 1730 | ok | 11.31 / 11.50 |
+| teeth=200 module=10 target=300 | 100.35 | 300 | 2.31 | 10.10 | 1.15 | 1.93 | 14.34 | 2270 | ok | 14.34 / 14.13 |
+
+The `target=0` row is the first measurement of this gear (200 teeth, module 10, both
+recesses) on the pinned kernel: a bare build of **2.20-2.65 s**, steady across every row
+regardless of cell count -- the cut and its exports are the variable cost, not the build.
+Cut time grows with cell count but not linearly or monotonically: 18 cells cost 1.45 s to
+cut (0.081 s/cell), 300 cells cost 10.10 s (0.034 s/cell) -- a large fixed part from
+walking the ~1620-face body dominates at low counts (L09's cost family), and the
+198-cell row (8.84 s) reads slower than the 240-cell row (7.68 s) immediately after it,
+which the 8-9 load average at the time of the run is the more likely explanation for than
+any real reversal in cost. Fine-STL and STEP both grow with the cut's own face count
+(`dFaces`, 218 at 18 cells to 2270 at 300): STL 0.66-1.15 s, STEP 0.52-1.93 s, together a
+minority of most rows' request time next to the cut itself. The heaviest rows here (200,
+250 and 300 cells, all above the cap this spike measures below) read 11.50-14.34 s,
+roughly the same order as Phase 10's heaviest tip-chamfer row (14.87 s) -- confirming
+D-11's premise that an uncapped honeycomb on this gear is not a cheap cut.
+
+### Cut spelling
+
+| Set | Cell (mm) | Cells | Bare (s) | Cut (s) | STL (s) | STEP (s) | Request (s) | dFaces | Why | Spelling |
+|---|---|---|---|---|---|---|---|---|---|---|
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.16 | 3.75 | 0.88 | 0.89 | 6.81 | 950 | ok | star |
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.16 | 3.74 | 0.90 | 0.94 | 6.84 | 950 | ok | compound |
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.17 | 3.75 | 0.87 | 0.91 | 6.83 | 950 | ok | fuse |
+**Spelling:** star
+
+The three spellings read within 0.03 s of each other on 120 cells -- inside this run's
+own noise, not a real margin -- so `cut(*prisms)` stays the default per D-24's >10% rule:
+none of the alternatives cleared it.
+
+### Cap
+
+**Cap:** HEX_CELL_CAP = 120 -- teeth=200 module=10 target=125 reads 7.15 s of 7.5 s; the next row (150 cells) reads 7.95 s.
+
+The constant is the cell count the row actually cut (120), not its target (125): no
+honeycomb link cuts more cells than were measured inside 7.5 s at D-11's configuration.
+
+### Confirmation at module 1.75
+
+| Set | Cell (mm) | Cells | Bare (s) | Cut (s) | STL (s) | STEP (s) | Request (s) | dFaces | Why |
+|---|---|---|---|---|---|---|---|---|---|
+| teeth=200 module=1.75 target=125 | 25.25 | 120 | 2.16 | 4.21 | 0.80 | 0.89 | 7.25 | 930 | ok |
+
+The module-1.75 gear at the cap's 120 cells reads 7.25 s against the cap row's 7.15 s at
+module 10 -- confirming the planning probe's flagged finding (Flagged Assumption A2) that
+the smaller-module gear is the heavier one, though by a much narrower margin here (0.10 s)
+than the planning probe read at 150 cells (8.4 s vs 7.6 s, under load). Both readings sit
+inside the 7.5 s budget, so D-11's module-10 configuration still sets the cap, but the
+confirmation row leaves only 0.25 s of headroom -- tighter than the cap row's own 0.35 s.
+
+### Enumeration cost
+
+`cells_within(120, 3.0, 0.4, inner, outer)` at teeth=200 module=10: 7.371 ms (best of 5).
+
+### Verdict
+
+**Verdict:** held -- HEX_CELL_CAP = 120 cells (7.15 s of 7.5 s), spelling star, confirmation 7.25 s of 7.5 s.
+
+## Body cutout build and export time (Phase 11)
+
+The committed measurement record for every body cutout pattern at its heaviest allowed
+configuration (ROADMAP SC5; `REQ-measured-build-time`'s per-feature entry, re-measured
+combined in Phase 12). The runner is `make bench.build` over three committed sweeps,
+`bench/sweeps/hole_cutout.json`, `bench/sweeps/spoke_cutout.json` and
+`bench/sweeps/honeycomb.json`, unchanged from `bench/build_time.py` (08 D-12). Each sweep
+is 200 teeth (D-18's `le` on `hole_count`/`spoke_count`, one instance per tooth) x module
+{1.75, 10} (module drives fine-STL export time, Phase 8's probe) x a small and a large
+size for holes and spokes (09-04's lesson: the heaviest row is not the largest feature,
+so both are measured) x `recess_sides` {both, none} (a recess is the heaviest factor
+every prior phase's sweep has found) -- 8 rows each, 24 rows total. The honeycomb sweep
+holds `hex_cell` at 3 mm (the sweep's own chosen input, the value 11-02's spike
+measured; the field's default is 0 = off) and varies `hex_wall` {0.4, 5} instead, so
+every one of its four gears (module x recess) is raised past 3 mm to `HEX_CELL_CAP`
+(11-05's raise-to-fit) rather than measuring a cell size that was never going to be
+requested. The planning probe (11-06-PLAN.md's `<interfaces>`)
+predicted the module-1.75 small-hole-with-recess row at 41.06 s and the recess-bearing
+spoke rows at 68-70 s; both predictions are confirmed measured, not estimated, below.
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `e908b29`
+- Sweeps: `bench/sweeps/hole_cutout.json`, `bench/sweeps/spoke_cutout.json`,
+  `bench/sweeps/honeycomb.json`
+- `uptime` moments before each run: hole 4.51, 5.17, 5.97; spoke 6.48, 6.19, 6.31;
+  honeycomb 9.71, 10.35, 8.39
+- Load averages at start (each script's own `os.getloadavg()`): hole 6.79, 6.24, 6.33;
+  spoke 10.38, 10.49, 8.43; honeycomb 8.31, 9.65, 8.25
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+- Every reading across all three runs sits well above this project's usual "quiet" bar
+  (>1.5 on this 12-core host, Phase 7's own convention) -- the numbers below carry that
+  caveat rather than being presented as clean (L08). A row measured this loaded is
+  conservative, never optimistic: a quieter host would read every row faster, if
+  anything shrinking the gate's list, never growing it.
+
+### Holes
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 hole_count=200 hole_d=1 hole_circle_d=183.4 recess_sides=both | 22.48 | 19.38 | 0.93 | 41.85 | **NO** |
+| teeth=200 module=1.75 hole_count=200 hole_d=1 hole_circle_d=183.4 recess_sides=none | 3.51 | 3.72 | 0.61 | 7.23 | yes |
+| teeth=200 module=1.75 hole_count=200 hole_d=4.9 hole_circle_d=339.9 recess_sides=both | 4.46 | 2.19 | 0.61 | 6.65 | yes |
+| teeth=200 module=1.75 hole_count=200 hole_d=4.9 hole_circle_d=339.9 recess_sides=none | 3.71 | 1.94 | 0.61 | 5.65 | yes |
+| teeth=200 module=10 hole_count=200 hole_d=1 hole_circle_d=400 recess_sides=both | 4.16 | 1.79 | 0.47 | 5.95 | yes |
+| teeth=200 module=10 hole_count=200 hole_d=1 hole_circle_d=400 recess_sides=none | 3.51 | 4.65 | 0.62 | 8.16 | yes |
+| teeth=200 module=10 hole_count=200 hole_d=5.85 hole_circle_d=400 recess_sides=both | 4.50 | 1.76 | 0.45 | 6.26 | yes |
+| teeth=200 module=10 hole_count=200 hole_d=5.85 hole_circle_d=400 recess_sides=none | 3.73 | 4.14 | 0.62 | 7.87 | yes |
+
+**Heaviest:** teeth=200 module=1.75 hole_count=200 hole_d=1 hole_circle_d=183.4 recess_sides=both -- 41.85 s of 30 s.
+
+The heaviest row is the *small* hole (1 mm) on module 1.75, with a recess -- not the
+large hole. At `hole_circle_d` 183.4 the hole centres sit exactly where the plan's
+`<interfaces>` block placed them: straddling the recess groove's outer wall (the
+`recess_inner_d`/`recess_width`-derived band at 85.69-91.69 mm radius on this gear).
+Every one of the 200 holes crossing that boundary splits the recess floor fillet into
+many small faces (Pitfall 8) rather than leaving it whole, and fine-STL tessellation
+pays for it directly: 19.38 s of the row's 41.85 s, more than STL's cost on every other
+row in this table combined. The cut itself is also the row's own heaviest (22.48 s vs.
+3.51-4.50 s elsewhere). The large-hole rows (4.9/5.85 mm) sit on a bolt circle far
+outside the recess band at both moduli, so their fillet never splits and every one reads
+5.65-7.87 s regardless of recess -- confirming the plan's own framing that the heaviest
+row is a geometry interaction, not the largest feature. This single row (41.85 s) is
+the only hole row over budget; it is close to the planning probe's 41.06 s prediction
+(+0.79 s, inside this run's load noise).
+
+### Spokes
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 spoke_count=200 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 63.09 | 2.60 | 2.55 | 65.70 | **NO** |
+| teeth=200 module=1.75 spoke_count=200 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=none | 12.86 | 3.40 | 1.90 | 16.26 | yes |
+| teeth=200 module=1.75 spoke_count=200 spoke_width=4.3 hub_d=300 rim_wall=10 spoke_fillet=5 recess_sides=both | 11.12 | 3.86 | 2.01 | 14.98 | yes |
+| teeth=200 module=1.75 spoke_count=200 spoke_width=4.3 hub_d=300 rim_wall=10 spoke_fillet=5 recess_sides=none | 10.45 | 3.71 | 1.91 | 14.16 | yes |
+| teeth=200 module=10 spoke_count=200 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 65.65 | 3.05 | 2.58 | 68.70 | **NO** |
+| teeth=200 module=10 spoke_count=200 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=none | 14.16 | 6.09 | 1.90 | 20.25 | yes |
+| teeth=200 module=10 spoke_count=200 spoke_width=5.85 hub_d=400 rim_wall=100 spoke_fillet=5 recess_sides=both | 63.45 | 3.22 | 2.63 | 66.67 | **NO** |
+| teeth=200 module=10 spoke_count=200 spoke_width=5.85 hub_d=400 rim_wall=100 spoke_fillet=5 recess_sides=none | 10.89 | 4.14 | 1.91 | 15.04 | yes |
+
+**Heaviest:** teeth=200 module=10 spoke_count=200 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both -- 68.70 s of 30 s.
+
+Three of the four `recess_sides=both` rows are over budget (63-69 s); the fourth --
+module 1.75, `spoke_width` 4.3, `hub_d` 300, `rim_wall` 10 -- reads 14.98 s, a sixth of
+the others despite also carrying a recess. The difference is geometric, not a cost of
+"recess" in general: at module 1.75 the recess band sits at 85.69-91.69 mm radius, and
+this row's sectors span 150-162.81 mm (`hub_d/2` to `rf`) -- entirely above the recess
+band, so the cut never crosses it. Every over-budget row's sectors do cross the recess
+band on their own gear (module 1.75's small-hub row spans 26-172.61 mm; both module-10
+rows span well past 493.04-499.04 mm at either 26-987.3 mm or 200-887.5 mm) -- each
+sector crossing the groove's walls and its floor fillet the same way the heaviest hole
+row's cutters did. The measured cost is close to the planning probe's own estimate
+(~0.3 s per sector crossing the groove, 200 sectors ~= 60 s): the three over-budget rows
+read 63.09-65.65 s of *build* alone, plus 2.55-2.63 s more for export -- the heaviest
+individual operation this project has measured for any single sweep row to date, well
+past Phase 10's 14.87 s tip-chamfer row. Every `recess_sides=none` row, regardless of
+sector shape or module, reads 14.16-20.25 s -- inside budget, confirming the recess
+crossing (not the sector width) is what drives the cost here.
+
+### Honeycomb at the cap
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both | 7.76 | 0.78 | 0.89 | 8.65 | yes |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=none | 4.54 | 0.86 | 0.98 | 5.52 | yes |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=5 recess_sides=both | 6.56 | 0.79 | 0.85 | 7.42 | yes |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=5 recess_sides=none | 4.56 | 0.87 | 0.97 | 5.54 | yes |
+| teeth=200 module=10 hex_cell=3 hex_wall=0.4 recess_sides=both | 6.45 | 0.89 | 0.89 | 7.34 | yes |
+| teeth=200 module=10 hex_cell=3 hex_wall=0.4 recess_sides=none | 4.61 | 0.97 | 0.98 | 5.59 | yes |
+| teeth=200 module=10 hex_cell=3 hex_wall=5 recess_sides=both | 6.46 | 0.91 | 0.88 | 7.37 | yes |
+| teeth=200 module=10 hex_cell=3 hex_wall=5 recess_sides=none | 4.55 | 0.99 | 0.98 | 5.54 | yes |
+
+**Heaviest:** teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both -- 8.65 s of 30 s.
+
+Every row is comfortably inside the 30 s absolute timeout (worst margin 3.47x, the
+heaviest row against 30 s). But D-11 set the honeycomb's own share at 7.5 s -- a quarter
+of `SPUR_BUILD_TIMEOUT`, beside the 14.87 s tip-chamfer row Phase 12 stacks it on -- and
+the heaviest row here (8.65 s, module 1.75, `hex_wall` 0.4, both recesses) reads 1.153x
+that share, 1.15 s over it. This is Flagged Assumption A2 firing: 11-02's spike measured
+the cap row at 7.15-7.25 s with a different `hex_wall`, and this sweep's thinner-wall,
+both-recess combination (raised to `HEX_CELL_CAP` at a larger 25.85 mm cell, per
+`calc.hex_cells`) is measurably heavier than either of 11-02's readings. The other seven
+rows all stay inside 7.5 s (5.52-7.42 s); only this one combination -- the thinnest legal
+wall with both recesses on, the module the smaller-module confirmation already flagged
+as heavier -- crosses it.
+
+### SPUR_BUILD_TIMEOUT margin
+
+`SPUR_BUILD_TIMEOUT`'s 30 s default was set at about 4x the 7.39 s worst build on record
+(the "### `SPUR_BUILD_TIMEOUT`" section above). Four rows across two patterns are over
+that 30 s timeout on their own, before this section's gate is decided: one hole row
+(41.85 s, 1.4x the timeout) and three spoke rows (65.70-68.70 s, 2.19-2.29x the timeout)
+-- for these, there is no margin to report; D-18's `le` of 200 does not fit at these
+sizes on this measured kernel. Among the rows that already build inside 30 s, the
+heaviest is a spoke row (20.25 s, module 10, `spoke_width` 0.4, no recess), leaving
+1.48x margin; the heaviest in-budget hole row is 8.16 s, leaving 3.68x. Naively placed
+beside Phase 10's 14.87 s tip-chamfer row (Phase 12's own combined re-measurement, not
+predicted here), the in-budget totals already read 35.12 s for the heaviest spoke row
+(over 30 s on its own) and 23.03 s for the heaviest hole row (6.97 s of headroom) --
+arithmetic only, not a real combined build; Phase 12 re-measures the actual composition.
+This sweep builds one gear at a time, so behaviour under concurrent builds is not
+measured here either.
+
+### Gate
+
+Four rows read over `SPUR_BUILD_TIMEOUT` (30 s):
+
+- `teeth=200 module=1.75 hole_count=200 hole_d=1 hole_circle_d=183.4 recess_sides=both` --
+  41.85 s (build 22.48 s, fine STL 19.38 s -- the split recess fillet, Pitfall 8)
+- `teeth=200 module=1.75 spoke_count=200 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both` --
+  65.70 s (build 63.09 s -- cut-heavy, 200 sectors crossing the recess groove)
+- `teeth=200 module=10 spoke_count=200 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both` --
+  68.70 s (build 65.65 s -- cut-heavy, same crossing)
+- `teeth=200 module=10 spoke_count=200 spoke_width=5.85 hub_d=400 rim_wall=100 spoke_fillet=5 recess_sides=both` --
+  66.67 s (build 63.45 s -- cut-heavy, same crossing)
+
+One row reads over the honeycomb's own D-11 share (7.5 s, a quarter of
+`SPUR_BUILD_TIMEOUT`), while staying inside the 30 s absolute timeout:
+
+- `teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both` -- 8.65 s of 7.5 s
+  (7.76 s build, 0.89 s STEP export)
+
+Per this plan's must-have and prohibition, none of these five rows is dropped, re-picked
+or re-run to green -- they are recorded above exactly as measured. Task 2's checkpoint
+decision: lower `hole_count`'s and `spoke_count`'s `le` from 200 to 60 and 40 (D-18's
+first offer, the orchestrator's recommendation, accepted verbatim); the honeycomb's one
+over-share row is accepted as measured, `HEX_CELL_CAP` unchanged at 120. The re-run below
+proves the new `le`.
+
+### Re-run after the gate (lower-le)
+
+`hole_count`'s and `spoke_count`'s `le` lowered to 60 and 40 (`feat` commit `2224697`);
+`bench/sweeps/hole_cutout.json` and `bench/sweeps/spoke_cutout.json` re-generated at the
+new count on every row, same sizes and moduli as the first run, and re-run through
+`make bench.build`. The honeycomb sweep is unchanged and was not re-run -- its one
+over-share row was accepted, not gated on a new limit.
+
+#### Host state (re-run)
+
+- Machine, Python and kernel versions: unchanged from the first run's host state
+- HEAD: `9d523b5` (the commit the sweep files were re-read from; the `feat` commit that
+  changed `le` and the sweep files landed after this run started)
+- `uptime` moments before each run: hole 3.72; spoke 3.72 (same reading, back-to-back runs)
+- Load averages at start (`os.getloadavg()`): hole 9.27, 5.84, 4.92; spoke 32.17, 14.18,
+  8.21 -- both readings are again well above this project's "quiet" bar (>1.5), the spoke
+  run markedly more loaded than either the first run (5-10) or the hole re-run; the same
+  L08 caveat applies -- a quieter host reads every row faster, never slower.
+
+#### Holes at `le` 60
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both | 8.62 | 3.17 | 0.57 | 11.79 | yes |
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=none | 2.41 | 1.70 | 0.52 | 4.11 | yes |
+| teeth=200 module=1.75 hole_count=60 hole_d=4.9 hole_circle_d=339.9 recess_sides=both | 3.19 | 1.08 | 0.46 | 4.27 | yes |
+| teeth=200 module=1.75 hole_count=60 hole_d=4.9 hole_circle_d=339.9 recess_sides=none | 2.47 | 0.95 | 0.46 | 3.42 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=1 hole_circle_d=400 recess_sides=both | 3.07 | 1.19 | 0.41 | 4.26 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=1 hole_circle_d=400 recess_sides=none | 2.41 | 1.74 | 0.50 | 4.15 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=5.85 hole_circle_d=400 recess_sides=both | 3.24 | 1.19 | 0.41 | 4.43 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=5.85 hole_circle_d=400 recess_sides=none | 2.41 | 1.68 | 0.47 | 4.10 | yes |
+
+**Heaviest:** teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both -- 11.79 s of 30 s.
+
+Every hole row is now inside budget -- the same row that overran at `le` 200 (41.85 s) is
+still the heaviest at `le` 60 (11.79 s, 2.54x margin), confirming the cost scales with
+count on this row (the recess-crossing fillet split, Pitfall 8) rather than being fixed.
+
+#### Spokes at `le` 40
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 16.89 | 0.79 | 0.80 | 17.69 | yes |
+| teeth=200 module=1.75 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=none | 6.73 | 0.86 | 0.63 | 7.59 | yes |
+| teeth=200 module=1.75 spoke_count=40 spoke_width=4.3 hub_d=300 rim_wall=10 spoke_fillet=5 recess_sides=both | 4.16 | 1.02 | 0.69 | 5.18 | yes |
+| teeth=200 module=1.75 spoke_count=40 spoke_width=4.3 hub_d=300 rim_wall=10 spoke_fillet=5 recess_sides=none | 3.41 | 0.91 | 0.65 | 4.33 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 17.55 | 0.97 | 0.83 | 18.52 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=none | 7.58 | 1.04 | 0.63 | 8.63 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=5.85 hub_d=400 rim_wall=100 spoke_fillet=5 recess_sides=both | 13.83 | 1.03 | 0.82 | 14.86 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=5.85 hub_d=400 rim_wall=100 spoke_fillet=5 recess_sides=none | 3.49 | 1.12 | 0.64 | 4.61 | yes |
+
+**Heaviest:** teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both -- 18.52 s of 30 s.
+
+Every spoke row is now inside budget -- the row that overran at `le` 200 on this same
+module (68.70 s) is the heaviest at `le` 40 (18.52 s, 1.62x margin). This run's load
+(32.17 at start) is the highest recorded anywhere in this section, well above the first
+run's own 5-10 and above the hole re-run's 9.27 -- the 18.52 s figure is likely
+conservative, not a quiet-host number.
+
+#### Room beside Phase 10's tip-chamfer row
+
+Naive addition only (this sweep builds one gear at a time; Phase 12 re-measures the real
+composition, as the first run's own margin section already noted): heaviest hole re-run
+(11.79 s) plus Phase 10's 14.87 s tip-chamfer row totals 26.66 s, 3.34 s inside 30 s.
+Heaviest spoke re-run (18.52 s) plus the same 14.87 s totals 33.39 s -- 3.39 s **over**
+30 s, not the ~2 s margin the gate's decision anticipated from the planning estimate. This
+arithmetic total was measured under this run's exceptional load (32.17); the accepted
+decision's rationale (~0.3 s/sector, projecting margin at typical load) is not
+contradicted by a single reading taken under 20x the "quiet" load, but the gap is real
+enough at this reading to record rather than round away (L08) -- filed as
+`docs/tech_debt/active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md`
+(must), not fixed here: Task 3's own scope is the `le`, not a new build-time guarantee on
+an arithmetic sum Phase 12 measures for real.
+
+### make verify wall time
+
+`time make verify` (host: 12 CPUs, arm64, 32.0 GiB RAM, Python 3.12.13, load averages
+3.07/4.04/4.65 at start, HEAD `67e0e3b`): **621 passed in 177.62s** -- **178.55s** wall
+time (`time`, includes lint/typecheck/import-lint/no-fake-done), against Phase 10's
+recorded **453 passed** / **98.17s** wall. The phase's body-cutout tests (168 new, across
+11-01 through 11-08) add **+80.38s** to the gate, measured rather than assumed. The wall
+time is now past 150 s, so every commit's pre-commit hook -- which runs this same `make
+verify` -- takes about that long too (D-23;
+`docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md`).

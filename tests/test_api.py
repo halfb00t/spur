@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 import spur.model
 from spur.app import STATIC, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
-from spur.calc import DerivedDimensions
+from spur.calc import HEX_CELL_CAP, DerivedDimensions
 from spur.model import Format, Quality, export
 from spur.params import GearParams
 
@@ -80,7 +80,9 @@ def test_openapi_documents_the_typed_contracts() -> None:
         "root_thickness", "root_gap", "root_fillet", "tip_chamfer_effective", "span_teeth",
         "span", "bore_effective", "hex_across_flats", "hex_across_corners",
         "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
-        "recess_fillet", "web", "warnings", "mate_teeth", "centre_distance",
+        "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall",
+        "spoke_fillet_effective", "hex_cell_effective", "hex_cell_count", "warnings",
+        "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -96,7 +98,12 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
     assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
     assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
+    assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
+    assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
+    assert component["properties"]["spoke_fillet_effective"]["unit"] == "mm"
+    assert component["properties"]["hex_cell_effective"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
+    assert "unit" not in component["properties"]["hex_cell_count"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
     assert health_response["content"]["application/json"]["schema"] == {
@@ -123,7 +130,8 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     dims_keys = re.findall(r"^\s*\['(\w+)',", source, re.MULTILINE)
     assert len(dims_keys) >= 15  # a regex that silently stopped matching must fail, not pass
 
-    for read_form in (".span_teeth", "info.centre_distance", "info.warnings"):
+    for read_form in (".span_teeth", "info.centre_distance", "info.warnings",
+                     ".hex_cell_count"):
         assert read_form in source
 
     model_fields = set(DerivedDimensions.model_fields)
@@ -277,6 +285,217 @@ def test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut() -> None:
     r = client.get("/api/model.step", params={"tip_chamfer": 0.4})
     assert r.status_code == 200
     assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_hole_link_is_served_with_its_walls() -> None:
+    """?hole_count=6&hole_d=4&hole_circle_d=20 end to end (D-03, D-17, D-19, D-20): the
+    schema, /api/info's two new numbers, the plain-default null case, and both export
+    formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["hole_count"]["group"] == "Holes"
+    assert props["hole_count"]["type"] == "integer"
+    assert props["hole_count"]["minimum"] == 0
+    assert props["hole_count"]["maximum"] == 60
+    assert props["hole_count"]["default"] == 0
+    assert props["hole_count"]["step"] == 1
+    assert props["hole_d"]["unit"] == "mm"
+    assert props["hole_d"]["maximum"] == 100
+    assert props["hole_d"]["step"] == 0.05
+    assert props["hole_d"]["default"] == 0
+    assert props["hole_circle_d"]["maximum"] == 400
+    names = list(props)
+    assert names.index("hole_count") == names.index("spoke_fillet") + 1
+    assert names.index("hole_d") == names.index("hole_count") + 1
+    assert names.index("hole_circle_d") == names.index("hole_d") + 1
+
+    r = client.get("/api/info", params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 20})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["cutout_hub_wall"] == pytest.approx(3.025)
+    assert body["cutout_rim_wall"] == pytest.approx(2.438)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["cutout_hub_wall"] is None
+    assert body["cutout_rim_wall"] is None
+
+    r = client.get("/api/model.stl", params={"hole_count": 6, "hole_d": 4,
+                                             "hole_circle_d": 20, "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step",
+                   params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 20})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_hole_conflict_is_422_naming_its_fields() -> None:
+    """D-17, REQ-cutout-conflicts-refused-early: a hole set that breaches the hub wall
+    is refused before any build, on both /api/info and /api/model.stl."""
+    r = client.get("/api/info", params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.7})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hole_circle_d", "hole_d"]
+    assert "Lightening holes come too close to the bore" in detail["msg"]
+
+    r = client.get("/api/model.stl", params={"hole_count": 6, "hole_d": 4,
+                                             "hole_circle_d": 14.7, "quality": "preview"})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == ["hole_circle_d", "hole_d"]
+
+
+def test_a_spoke_link_is_served_with_the_fillet_it_cut() -> None:
+    """?spoke_count=4&spoke_width=2&hub_d=12&rim_wall=1&spoke_fillet=1 end to end
+    (D-01, D-04, D-18, D-19, D-20): the schema's Spokes group, /api/info's cap and
+    walls, the plain-default null case, and both export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["spoke_count"]["group"] == "Spokes"
+    assert props["spoke_count"]["type"] == "integer"
+    assert props["spoke_count"]["minimum"] == 0
+    assert props["spoke_count"]["maximum"] == 40
+    assert props["spoke_count"]["default"] == 0
+    assert props["spoke_count"]["step"] == 1
+    assert props["spoke_width"]["unit"] == "mm"
+    assert props["spoke_width"]["maximum"] == 100
+    assert props["spoke_width"]["step"] == 0.05
+    assert props["spoke_width"]["default"] == 0
+    assert props["hub_d"]["maximum"] == 400
+    assert props["rim_wall"]["maximum"] == 100
+    assert props["spoke_fillet"]["maximum"] == 5
+    names = list(props)
+    assert names.index("spoke_count") == names.index("recess_fillet") + 1
+    assert names.index("spoke_width") == names.index("spoke_count") + 1
+    assert names.index("hub_d") == names.index("spoke_width") + 1
+    assert names.index("rim_wall") == names.index("hub_d") + 1
+    assert names.index("spoke_fillet") == names.index("rim_wall") + 1
+
+    r = client.get("/api/info", params={"spoke_count": 4, "spoke_width": 2, "hub_d": 12,
+                                        "rim_wall": 1, "spoke_fillet": 1})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["spoke_fillet_effective"] == pytest.approx(1.0)
+    assert body["cutout_hub_wall"] == pytest.approx(1.025)
+    assert body["cutout_rim_wall"] == pytest.approx(1.0)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info", params={"spoke_count": 4, "spoke_width": 2, "hub_d": 12,
+                                        "rim_wall": 1, "spoke_fillet": 5})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["spoke_fillet_effective"] == pytest.approx(3.337)
+    assert body["warnings"] == [
+        "Spoke fillet reduced to 3.337 mm to fit the opening between the arms at "
+        "the hub."]
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["spoke_fillet_effective"] is None
+    assert body["cutout_hub_wall"] is None
+    assert body["cutout_rim_wall"] is None
+
+    r = client.get("/api/model.stl", params={"spoke_count": 4, "spoke_width": 2,
+                                             "hub_d": 12, "rim_wall": 1,
+                                             "spoke_fillet": 1, "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"spoke_count": 4, "spoke_width": 2,
+                                               "hub_d": 12, "rim_wall": 1,
+                                               "spoke_fillet": 1})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_honeycomb_link_is_served_with_its_cells() -> None:
+    """?hex_cell=3&hex_wall=1 end to end (D-07...D-13, D-19, D-20): the schema's
+    Honeycomb group, /api/info's cell count and exact walls, the plain-default null
+    case, a large-gear raise-to-fit with its warning, and both export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["hex_cell"]["group"] == "Honeycomb"
+    assert props["hex_cell"]["unit"] == "mm"
+    assert props["hex_cell"]["maximum"] == 100
+    assert props["hex_cell"]["step"] == 0.05
+    assert props["hex_cell"]["default"] == 0
+    assert props["hex_wall"]["unit"] == "mm"
+    assert props["hex_wall"]["maximum"] == 100
+    names = list(props)
+    assert names.index("hex_cell") == names.index("hole_circle_d") + 1
+    assert names.index("hex_wall") == names.index("hex_cell") + 1
+
+    r = client.get("/api/info", params={"hex_cell": 3, "hex_wall": 1})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_cell_effective"] == pytest.approx(3.0)
+    assert body["hex_cell_count"] == 18
+    assert body["cutout_hub_wall"] == pytest.approx(1.525, abs=1e-3)
+    assert body["cutout_rim_wall"] == pytest.approx(2.149, abs=1e-3)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_cell_effective"] is None
+    assert body["hex_cell_count"] is None
+
+    r = client.get("/api/info", params={"teeth": 200, "hex_cell": 3, "hex_wall": 1})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_cell_effective"] > 3
+    assert (body["hex_cell_effective"] - 3) / 0.05 == pytest.approx(
+        round((body["hex_cell_effective"] - 3) / 0.05))
+    assert 0 < body["hex_cell_count"] <= HEX_CELL_CAP
+    assert any(w.startswith("Honeycomb cells enlarged from 3 mm to ")
+              for w in body["warnings"])
+
+    r = client.get("/api/model.stl", params={"hex_cell": 3, "hex_wall": 1,
+                                             "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"hex_cell": 3, "hex_wall": 1})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_two_cutout_patterns_are_422_naming_both() -> None:
+    """REQ-one-cutout-pattern over HTTP: spokes and holes both set is refused before
+    any build, on both /api/info and /api/model.step."""
+    params = {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1,
+             "hole_count": 6, "hole_d": 4, "hole_circle_d": 20}
+    r = client.get("/api/info", params=params)
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hole_count", "spoke_count"]
+    assert "Only one body cutout pattern per part" in detail["msg"]
+
+    r = client.get("/api/model.step", params=params)
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == ["hole_count", "spoke_count"]
+
+
+def test_a_honeycomb_that_cannot_exist_is_422_naming_its_fields() -> None:
+    """D-10, D-14, REQ-cutout-conflicts-refused-early: a honeycomb wall under MIN_WALL,
+    and a cell too large for any whole cell to fit, are both 422s naming their fields
+    before any build, on /api/info and /api/model.stl."""
+    r = client.get("/api/info", params={"hex_cell": 3, "hex_wall": 0.35})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hex_wall"]
+    assert "thinner than 0.4 mm" in detail["msg"]
+
+    r = client.get("/api/model.stl", params={"hex_cell": 5.1, "hex_wall": 1,
+                                             "quality": "preview"})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hex_cell", "hex_wall"]
+    assert "No whole honeycomb cell fits" in detail["msg"]
 
 
 def test_a_hex_bore_the_root_cannot_hold_is_422_naming_bore_hex() -> None:

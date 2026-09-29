@@ -55,31 +55,33 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 
 ### Body cutouts
 
-- [ ] **REQ-spoke-cutout**: User can cut spoke arms by setting `spoke_count` (0 = off),
-  `spoke_width`, `hub_d` and `rim_wall`: N straight arms between a hub ring and a rim
-  ring, the sectors between the arms cut through the full face width.
-- [ ] **REQ-hole-cutout**: User can cut lightening holes by setting `hole_count` (0 =
+- [x] **REQ-spoke-cutout**: User can cut spoke arms by setting `spoke_count` (0 = off),
+  `spoke_width`, `hub_d`, `rim_wall` and `spoke_fillet`: N straight arms between a hub
+  ring and a rim ring, the sectors between the arms cut through the full face width,
+  their corners rounded by `spoke_fillet` (0 = sharp), capped to fit
+  (Phase 11 D-04/D-21).
+- [x] **REQ-hole-cutout**: User can cut lightening holes by setting `hole_count` (0 =
   off), `hole_d` and `hole_circle_d`: N equal round holes evenly spaced on a bolt circle,
   through the full face width.
-- [ ] **REQ-honeycomb-cutout**: User can cut a honeycomb web by setting `hex_cell`
+- [x] **REQ-honeycomb-cutout**: User can cut a honeycomb web by setting `hex_cell`
   (cell across-flats, mm, 0 = off) and `hex_wall`: hexagonal through-holes fill the web
   between the hub wall and the rim wall. The cell count is derived and reported. When the
   derived count exceeds the measured build-time cap, the cell size is raised to the
   smallest size that fits and a warning names the requested and the applied size; cells
   are never silently dropped, and the cap is analytic (from a measured per-cell cost), so
   the same link yields the same count on every machine.
-- [ ] **REQ-one-cutout-pattern**: Exactly one cutout pattern per part. Two non-zero
+- [x] **REQ-one-cutout-pattern**: Exactly one cutout pattern per part. Two non-zero
   pattern selectors (`spoke_count`, `hole_count`, `hex_cell`) is a 422 naming both fields.
-- [ ] **REQ-cutout-conflicts-refused-early**: A cutout that would breach the hub wall
+- [x] **REQ-cutout-conflicts-refused-early**: A cutout that would breach the hub wall
   (bore + bore chamfer + `MIN_WALL`) or the rim wall (root circle − `MIN_WALL`), or whose
   holes or arms overlap each other, is refused **before any CAD work starts**: 422 on the
   API, exit 2 on the CLI, the same message naming the fields — validated in `calc.py`,
   never a build error after a timed build.
-- [ ] **REQ-cutout-composes**: Any cutout composes with face recesses (it cuts through the
+- [x] **REQ-cutout-composes**: Any cutout composes with face recesses (it cuts through the
   recessed floor, and the floor fillet remains on the floor edges that survive — proven
   by a test that counts the filleted edges) and with any bore profile (round, D-flat,
   keyway, hex).
-- [ ] **REQ-cutout-derived-numbers**: `DerivedDimensions` reports the thinnest remaining
+- [x] **REQ-cutout-derived-numbers**: `DerivedDimensions` reports the thinnest remaining
   wall on the hub side and on the rim side, and the honeycomb cell count actually cut —
   `null` when no cutout is set.
 
@@ -182,13 +184,13 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-hex-bore | Phase 8 | Complete |
 | REQ-hex-rim-chamfer | Phase 9 | Complete |
 | REQ-bore-derived-numbers | Phase 9 | Complete |
-| REQ-spoke-cutout | Phase 11 | Pending |
-| REQ-hole-cutout | Phase 11 | Pending |
-| REQ-honeycomb-cutout | Phase 11 | Pending |
-| REQ-one-cutout-pattern | Phase 11 | Pending |
-| REQ-cutout-conflicts-refused-early | Phase 11 | Pending |
-| REQ-cutout-composes | Phase 11 | Pending |
-| REQ-cutout-derived-numbers | Phase 11 | Pending |
+| REQ-spoke-cutout | Phase 11 | Complete |
+| REQ-hole-cutout | Phase 11 | Complete |
+| REQ-honeycomb-cutout | Phase 11 | Complete |
+| REQ-one-cutout-pattern | Phase 11 | Complete |
+| REQ-cutout-conflicts-refused-early | Phase 11 | Complete |
+| REQ-cutout-composes | Phase 11 | Complete |
+| REQ-cutout-derived-numbers | Phase 11 | Complete |
 | REQ-tip-chamfer | Phase 10 | Complete |
 | REQ-tip-chamfer-capped | Phase 10 | Complete |
 | REQ-defaults-off-regression | Phase 7 | Complete |
@@ -211,4 +213,4 @@ corner-to-corner field), which Phase 9's success criteria confirm still holds.
 
 ---
 *Requirements defined: 2026-09-25*
-*Last updated: 2026-09-27 — REQ-keyway-bore and REQ-keyway-wall-refused amended per Phase 9 D-09/D-10/D-14 (09-CONTEXT.md)*
+*Last updated: 2026-09-29 — REQ-spoke-cutout amended for spoke_fillet per Phase 11 D-04/D-21 (11-CONTEXT.md)*

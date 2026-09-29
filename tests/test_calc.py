@@ -5,15 +5,21 @@ import pytest
 from pydantic import ValidationError
 
 from spur.calc import (
+    HEX_CELL_CAP,
     MIN_WALL,
     TIP_CHAMFER_MARGIN,
     DerivedDimensions,
     bore_mouth_limit,
     bore_radius,
     bore_rim_limit,
+    cell_count_floor,
+    cells_within,
     centre_distance,
+    cutout_walls,
     derive,
     hex_across_flats,
+    hex_cells,
+    hole_gap,
     inv,
     keyway_corner_radius,
     keyway_flat_wall,
@@ -24,6 +30,7 @@ from spur.calc import (
     span_measurement,
     spline_start,
     tip_chamfer_effective,
+    whole_cells,
 )
 from spur.params import GearParams
 
@@ -725,3 +732,570 @@ def test_a_rounded_tip_chamfer_cap_stays_inside_the_measured_kernel_boundary() -
         assert margin >= TIP_CHAMFER_MARGIN / 2 - 1e-12
         assert tip_chamfer_effective(p) > 0
     assert checked == 405
+
+
+@pytest.mark.parametrize(("kw", "refused", "fields", "msg_start"), [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.75}, False, (), "",
+                 id="hub-accept-exact"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.7}, True,
+                 ("hole_circle_d", "hole_d"),
+                 "Lightening holes come too close to the bore", id="hub-refuse-one-step"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}, False, (), "",
+                 id="hub-accept-margin"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.075}, False, (), "",
+                 id="rim-accept-exact"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.05}, False, (), "",
+                 id="rim-accept-margin"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.1}, True,
+                 ("hole_circle_d", "hole_d"),
+                 "Lightening holes come too close to the root circle", id="rim-refuse-one-step"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.6, "hole_circle_d": 40},
+                 False, (), "", id="neighbour-accept-exact"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.65, "hole_circle_d": 40},
+                 True, ("hole_circle_d", "hole_count", "hole_d"),
+                 "Lightening holes are too close to each other", id="neighbour-refuse-one-step"),
+])
+def test_a_hole_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly(
+        kw: dict[str, object], refused: bool, fields: tuple[str, ...],
+        msg_start: str) -> None:
+    """D-15, D-16, D-17: each rule refuses one step past MIN_WALL and accepts it
+    exactly, comparing round(wall, 6) so the step-aligned float residue (0.4 computing
+    as 0.39999999999999947) does not refuse a wall the user sized to exactly MIN_WALL."""
+    if not refused:
+        GearParams.model_validate(kw)  # does not raise
+        return
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == sorted(fields)
+    assert err["msg"].startswith(msg_start)
+
+
+def test_a_hole_wider_than_the_web_is_refused_at_both_walls() -> None:
+    """A hole wider than the web breaches both the hub and the rim independently --
+    neither rule implies the other, so both sentences appear and both fields are named
+    once each, deduplicated by GearParams._feasible."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"hole_count": 1, "hole_d": 10, "hole_circle_d": 19})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hole_circle_d", "hole_d"]
+    assert "Lightening holes come too close to the bore" in err["msg"]
+    assert "Lightening holes come too close to the root circle" in err["msg"]
+
+
+@pytest.mark.parametrize(("kw", "fields", "msg"), [
+    pytest.param({"hole_count": 6}, ["hole_circle_d", "hole_d"],
+                 "Lightening holes need hole_circle_d and hole_d: set them above 0, "
+                 "or set hole_count to 0.", id="both-zero"),
+    pytest.param({"hole_count": 6, "hole_d": 4}, ["hole_circle_d"],
+                 "Lightening holes need hole_circle_d: set it above 0, or set "
+                 "hole_count to 0.", id="circle-zero"),
+    pytest.param({"hole_count": 6, "hole_circle_d": 20}, ["hole_d"],
+                 "Lightening holes need hole_d: set it above 0, or set hole_count to 0.",
+                 id="d-zero"),
+])
+def test_a_half_set_hole_pattern_names_only_its_zero_fields(
+        kw: dict[str, object], fields: list[str], msg: str) -> None:
+    """D-15: hole_count above 0 with one or both dimensions still 0 is a 422 naming only
+    the fields that are 0, before the wall rules ever run."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == fields
+    assert err["msg"] == msg
+
+
+@pytest.mark.parametrize(("kw", "warning"), [
+    pytest.param({"hole_d": 4, "hole_circle_d": 20},
+                 "No lightening holes with hole_count 0: hole_d (4 mm) and "
+                 "hole_circle_d (20 mm) are ignored.", id="both-set"),
+    pytest.param({"hole_d": 4},
+                 "No lightening holes with hole_count 0: hole_d (4 mm) is ignored.",
+                 id="d-only"),
+    pytest.param({"hole_circle_d": 20},
+                 "No lightening holes with hole_count 0: hole_circle_d (20 mm) is "
+                 "ignored.", id="circle-only"),
+])
+def test_hole_dimensions_without_a_count_are_ignored_and_named(
+        kw: dict[str, object], warning: str) -> None:
+    """D-15: hole_count 0 (the default) builds nothing regardless of hole_d/
+    hole_circle_d, and derive() says so naming only the fields the user set."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.cutout_hub_wall is None
+    assert d.cutout_rim_wall is None
+    assert d.warnings == (warning,)
+
+
+@pytest.mark.parametrize(("kw", "hub", "rim"), [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}, 3.025, 2.438,
+                 id="d-flat-and-round"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20, "bore_hex": 6,
+                 "bore_flat": 0}, 3.987, 2.438, id="hex-bore"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20, "keyway_width": 3,
+                 "keyway_depth": 1.4}, 1.821, 2.438, id="keyed-round"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20, "bore_d": 0,
+                 "bore_flat": 0}, 8.0, 2.438, id="no-bore"),
+])
+def test_a_cutout_reports_its_thinnest_walls_and_null_without_one(
+        kw: dict[str, object], hub: float, rim: float) -> None:
+    """D-17, D-20: the tracer link's two walls per bore shape, rounded once at
+    construction; None/None with no cutout (hole_count 0, the default)."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.cutout_hub_wall == pytest.approx(hub)
+    assert d.cutout_rim_wall == pytest.approx(rim)
+    d0 = derive(GearParams())
+    assert d0.cutout_hub_wall is None
+    assert d0.cutout_rim_wall is None
+
+
+def test_the_hole_count_is_an_integer_from_0_to_60() -> None:
+    """D-18's `le` lowered from 200 to 60 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md
+    "Body cutout build and export time (Phase 11)", measured 2026-09-29): the 200-hole
+    row crossing the module-1.75 recess groove read 41.85 s of SPUR_BUILD_TIMEOUT=30 s.
+    Field-level ValidationErrors (not the "infeasible" custom error) one step either
+    side of the new bound, and for the wrong type."""
+    for bad in ({"hole_count": 61, "hole_d": 1, "hole_circle_d": 10},
+               {"hole_count": -1, "hole_d": 1, "hole_circle_d": 10},
+               {"hole_count": 2.5, "hole_d": 1, "hole_circle_d": 10}):
+        with pytest.raises(ValidationError) as exc:
+            GearParams.model_validate(bad)
+        assert exc.value.errors()[0]["type"] != "infeasible"
+    GearParams.model_validate({"hole_count": 1, "hole_d": 4, "hole_circle_d": 20})
+    GearParams.model_validate({"teeth": 200, "hole_count": 60, "hole_d": 1,
+                               "hole_circle_d": 183.4, "bore_flat": 0,
+                               "recess_sides": "none"})
+
+
+def test_the_hole_gap_and_walls_helpers_match_the_planning_probe() -> None:
+    """hole_gap(p) is the wall between neighbouring hole centres (D-16); cutout_walls(p,
+    rf) is unrounded, used directly by check() before derive() rounds it."""
+    p = GearParams.model_validate({"teeth": 40, "hole_count": 6, "hole_d": 19.6,
+                                   "hole_circle_d": 40})
+    assert hole_gap(p) == pytest.approx(0.399999999999995)
+    p2 = GearParams.model_validate({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20})
+    pr2 = profile(p2)
+    walls = cutout_walls(p2, pr2.rf)
+    assert walls is not None
+    assert walls == pytest.approx((3.0249999999999995, 2.4375))
+
+
+SPOKE = {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1}
+
+
+def test_two_cutout_patterns_on_one_part_are_refused_naming_both() -> None:
+    """REQ-one-cutout-pattern: two or more non-zero pattern selectors is one 422
+    naming every chosen selector, before any per-pattern rule runs -- a half-set hole
+    pattern beside a complete spoke pattern still gives only this one sentence, never
+    the half-set hole sentence too."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hole_count": 6, "hole_d": 4,
+                                   "hole_circle_d": 20})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hole_count", "spoke_count"]
+    assert err["msg"] == ("Only one body cutout pattern per part: spoke_count (4) and "
+                          "hole_count (6) are both set; keep one and set the others "
+                          "to 0.")
+
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hole_count": 6})  # half-set hole
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hole_count", "spoke_count"]
+    assert "Only one body cutout pattern per part" in err["msg"]
+    assert "Lightening holes need" not in err["msg"]
+
+
+@pytest.mark.parametrize(("kw", "fields", "msg"), [
+    pytest.param({"spoke_count": 4}, ["hub_d", "rim_wall", "spoke_width"],
+                 "Spoke arms need hub_d, rim_wall and spoke_width: set them above 0, "
+                 "or set spoke_count to 0.", id="all-zero"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2}, ["hub_d", "rim_wall"],
+                 "Spoke arms need hub_d and rim_wall: set them above 0, or set "
+                 "spoke_count to 0.", id="two-zero"),
+    pytest.param({"spoke_count": 4, "hub_d": 12, "rim_wall": 1}, ["spoke_width"],
+                 "Spoke arms need spoke_width: set it above 0, or set spoke_count "
+                 "to 0.", id="one-zero"),
+])
+def test_a_half_set_spoke_pattern_names_only_its_zero_fields(
+        kw: dict[str, object], fields: list[str], msg: str) -> None:
+    """D-15: spoke_count above 0 with one or more of hub_d/rim_wall/spoke_width still
+    0 is a 422 naming only the fields that are 0, before the wall rules ever run."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == fields
+    assert err["msg"] == msg
+
+
+@pytest.mark.parametrize(("kw", "refused", "fields", "msg_start"), [
+    pytest.param({**SPOKE, "spoke_width": 0.4}, False, (), "", id="arm-accept-exact"),
+    pytest.param({**SPOKE, "spoke_width": 0.35}, True, ("spoke_width",),
+                 "Spoke arms 0.35 mm wide are thinner", id="arm-refuse-one-step"),
+    pytest.param({**SPOKE, "rim_wall": 0.4}, False, (), "", id="rim-accept-exact"),
+    pytest.param({**SPOKE, "rim_wall": 0.35}, True, ("rim_wall",),
+                 "The rim wall (0.35 mm) is thinner", id="rim-refuse-one-step"),
+    pytest.param({**SPOKE, "hub_d": 10.75}, False, (), "", id="hub-accept-exact"),
+    pytest.param({**SPOKE, "hub_d": 10.7}, True, ("hub_d",),
+                 "The spoke hub is too small for the bore", id="hub-refuse-one-step"),
+    pytest.param({**SPOKE, "rim_wall": 8.0375}, False, (), "",
+                 id="annulus-accept-exact"),
+    pytest.param({**SPOKE, "rim_wall": 8.05}, True, ("hub_d", "rim_wall"),
+                 "Spokes leave no room to cut", id="annulus-refuse-one-step"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.67, "hub_d": 12, "rim_wall": 0.4},
+                 False, (), "", id="opening-accept-exact"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.72, "hub_d": 12, "rim_wall": 0.4},
+                 True, ("hub_d", "spoke_count", "spoke_width"),
+                 "Spoke arms leave too little room between them at the hub",
+                 id="opening-refuse-one-step"),
+])
+def test_a_spoke_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly(
+        kw: dict[str, object], refused: bool, fields: tuple[str, ...],
+        msg_start: str) -> None:
+    """D-16, D-17: each spoke rule refuses one step past MIN_WALL and accepts it
+    exactly, comparing round(wall, 6) so the step-aligned float residue does not
+    refuse a wall the user sized to exactly MIN_WALL. The arm rule (11-01 A1: the
+    human kept it) is included."""
+    if not refused:
+        GearParams.model_validate(kw)  # does not raise
+        return
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == sorted(fields)
+    assert err["msg"].startswith(msg_start)
+
+
+def test_a_spoke_hub_inside_a_keyway_corner_is_refused() -> None:
+    """D-17: the spoke hub reads bore_mouth_limit(p), which for a keyed round bore is
+    the keyway's own floor corner (D-10, L27/L28) -- a 3 x 1.4 mm keyway on the
+    default bore puts the mouth at 6.179098, so hub_d 12 leaves -0.179 mm and is
+    refused naming only hub_d; hub_d 13.2 builds."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hub_d": 12, "keyway_width": 3,
+                                   "keyway_depth": 1.4})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hub_d"]
+    assert "13.16 mm" in err["msg"]
+
+    GearParams.model_validate({**SPOKE, "hub_d": 13.2, "keyway_width": 3,
+                               "keyway_depth": 1.4})  # does not raise
+
+
+@pytest.mark.parametrize(("sf", "effective", "warning"), [
+    pytest.param(3.3, 3.3, None, id="kept-no-warning"),
+    pytest.param(3.35, 3.337,
+                 "Spoke fillet reduced to 3.337 mm to fit the opening between the "
+                 "arms at the hub.", id="capped-at-opening"),
+    pytest.param(5, 3.337,
+                 "Spoke fillet reduced to 3.337 mm to fit the opening between the "
+                 "arms at the hub.", id="capped-at-field-max"),
+])
+def test_a_spoke_fillet_is_capped_to_whichever_limit_binds_first(
+        sf: float, effective: float, warning: str | None) -> None:
+    """D-06: spoke_fillet_effective is 0.45 x the smaller of the hub opening and the
+    annulus width, capped and warned (L03), never refused."""
+    d = derive(GearParams.model_validate({**SPOKE, "spoke_fillet": sf}))
+    assert d.spoke_fillet_effective == pytest.approx(effective)
+    assert d.warnings == ((warning,) if warning else ())
+
+    # hub_d 12, rim_wall 6 narrows the annulus below the hub opening -- the other
+    # limit binds, and the reason sentence names it.
+    d2 = derive(GearParams.model_validate({"spoke_count": 4, "spoke_width": 2,
+                                           "hub_d": 12, "rim_wall": 6,
+                                           "spoke_fillet": 2}))
+    assert d2.spoke_fillet_effective == pytest.approx(1.097)
+    assert d2.warnings == (
+        "Spoke fillet reduced to 1.097 mm to fit between the hub and the rim wall.",)
+
+
+def test_a_sub_print_precision_spoke_fillet_request_still_warns() -> None:
+    """10-REVIEW.md WR-01/CR-01's rule, applied to the spoke fillet's own 0.001 mm cut
+    resolution: a nonzero request that rounds to 0 cuts no fillet and says so, naming
+    the true cause (print resolution), not a limit nowhere close to binding."""
+    d = derive(GearParams.model_validate({**SPOKE, "spoke_fillet": 0.0004}))
+    assert d.spoke_fillet_effective == pytest.approx(0.0)
+    assert d.warnings == (
+        "Spoke fillet 0.0004 mm is below the 0.001 mm resolution it is cut at and "
+        "was not cut.",)
+
+    d0 = derive(GearParams.model_validate({**SPOKE, "spoke_fillet": 0}))
+    assert d0.spoke_fillet_effective is None
+    assert d0.warnings == ()
+
+
+@pytest.mark.parametrize(("kw", "warning"), [
+    pytest.param({"spoke_width": 2, "hub_d": 12, "rim_wall": 1, "spoke_fillet": 1},
+                 "No spoke arms with spoke_count 0: spoke_width (2 mm), hub_d (12 mm), "
+                 "rim_wall (1 mm) and spoke_fillet (1 mm) are ignored.", id="all-set"),
+    pytest.param({"spoke_width": 2},
+                 "No spoke arms with spoke_count 0: spoke_width (2 mm) is ignored.",
+                 id="width-only"),
+    pytest.param({"hub_d": 12},
+                 "No spoke arms with spoke_count 0: hub_d (12 mm) is ignored.",
+                 id="hub-only"),
+])
+def test_spoke_dimensions_without_a_count_are_ignored_and_named(
+        kw: dict[str, object], warning: str) -> None:
+    """D-15: spoke_count 0 (the default) builds nothing regardless of the other four
+    spoke fields, and derive() says so naming only the fields the user set."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.cutout_hub_wall is None
+    assert d.cutout_rim_wall is None
+    assert d.spoke_fillet_effective is None
+    assert d.warnings == (warning,)
+
+
+def test_the_spoke_count_is_an_integer_from_0_to_40() -> None:
+    """D-18's `le` lowered from 200 to 40 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md
+    "Body cutout build and export time (Phase 11)", measured 2026-09-29): three of the
+    four 200-sector recess-crossing rows read 65.70-68.70 s of SPUR_BUILD_TIMEOUT=30 s.
+    Field-level ValidationErrors (not the "infeasible" custom error) one step either
+    side of the new bound, and for the wrong type."""
+    for bad in ({"spoke_count": 41, "spoke_width": 1, "hub_d": 10, "rim_wall": 1},
+               {"spoke_count": -1, "spoke_width": 1, "hub_d": 10, "rim_wall": 1},
+               {"spoke_count": 2.5, "spoke_width": 1, "hub_d": 10, "rim_wall": 1}):
+        with pytest.raises(ValidationError) as exc:
+            GearParams.model_validate(bad)
+        assert exc.value.errors()[0]["type"] != "infeasible"
+    GearParams.model_validate({"spoke_count": 1, "spoke_width": 1, "hub_d": 12,
+                               "rim_wall": 1})
+    GearParams.model_validate({"teeth": 200, "spoke_count": 40, "spoke_width": 0.4,
+                               "hub_d": 52, "rim_wall": 0.4, "bore_flat": 0,
+                               "recess_sides": "none"})
+
+
+def test_multiple_refusals_come_in_check_order_and_name_each_field_once() -> None:
+    """REQ-cutout-conflicts-refused-early: several breaches arrive as one message, the
+    sentences in check()'s fixed order (arm, rim, hub), and ctx.fields lists each
+    named field once, sorted."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"spoke_count": 4, "spoke_width": 0.3, "hub_d": 10,
+                                   "rim_wall": 0.3})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hub_d", "rim_wall", "spoke_width"]
+    arm_at = err["msg"].index("Spoke arms 0.3 mm wide")
+    rim_at = err["msg"].index("The rim wall (0.3 mm)")
+    hub_at = err["msg"].index("The spoke hub is too small")
+    assert arm_at < rim_at < hub_at
+    assert cutout_walls(GearParams(), profile(GearParams()).rf) is None
+
+
+def test_a_honeycomb_cuts_whole_cells_only_on_an_axis_centred_lattice() -> None:
+    """D-07, D-08: every cell centre is a lattice point pitch*(a + b/2, b*sqrt(3)/2)
+    for integers a, b, none at the origin; rows run b ascending then a ascending, so
+    the same arguments return the same tuple on a second call; the count read off the
+    web annulus differs by bore shape, the lattice formula does not."""
+    p = GearParams(hex_cell=3, hex_wall=1)
+    pr = profile(p)
+    size, cells = hex_cells(p, pr.rf)
+    assert size == pytest.approx(3.0)
+    assert len(cells) == 18
+
+    pitch = size + p.hex_wall
+    row_h = pitch * math.sqrt(3) / 2
+
+    def key(c: tuple[float, float]) -> tuple[int, int]:
+        b = round(c[1] / row_h)
+        a = round(c[0] / pitch - b / 2)
+        return b, a
+
+    for x, y in cells:
+        b, a = key((x, y))
+        assert (x, y) == pytest.approx((pitch * (a + b / 2), pitch * b * math.sqrt(3) / 2))
+        assert (x, y) != (0.0, 0.0)
+    assert [key(c) for c in cells] == sorted(key(c) for c in cells)
+    assert hex_cells(p, pr.rf)[1] == cells  # repeat-call identity
+
+    for kw, count in (
+        ({}, 18), ({"bore_flat": 0}, 18),
+        ({"bore_hex": 6, "bore_d": 0, "bore_flat": 0}, 24),
+        ({"keyway_width": 3, "keyway_depth": 1.4}, 12),
+        ({"bore_d": 0, "bore_flat": 0}, 30),
+    ):
+        p_bore = GearParams.model_validate({**kw, "hex_cell": 3, "hex_wall": 1})
+        assert len(hex_cells(p_bore, profile(p_bore).rf)[1]) == count
+
+
+def test_a_honeycomb_over_the_cap_is_raised_in_field_steps_to_the_first_size_that_fits() -> None:
+    """D-13: a 200-tooth request is raised by 0.05 mm steps from the request until the
+    exact whole-cell count is <= HEX_CELL_CAP; the size one step below still has a
+    bigger count, and the warning names the request, the applied size and the cap."""
+    p = GearParams(teeth=200, hex_cell=3, hex_wall=1)
+    pr = profile(p)
+    size, cells = hex_cells(p, pr.rf)
+    assert size > 3.0
+    assert (size - 3.0) / 0.05 == pytest.approx(round((size - 3.0) / 0.05))
+    assert len(cells) <= HEX_CELL_CAP
+
+    inner = bore_mouth_limit(p) + p.hex_wall
+    outer = pr.rf - p.hex_wall
+    one_step_down = round(size - 0.05, 3)
+    assert len(whole_cells(one_step_down, p.hex_wall, inner, outer)) > HEX_CELL_CAP
+
+    d = derive(p)
+    assert d.hex_cell_effective == pytest.approx(size)
+    assert d.hex_cell_count == len(cells)
+    # Root fillet also caps at 200 teeth (pre-existing, unrelated to the honeycomb) --
+    # the honeycomb's own warning is checked by substring, not exact tuple equality.
+    assert any(w == f"Honeycomb cells enlarged from 3 mm to {size:g} mm across flats "
+                    f"to keep the count within the {HEX_CELL_CAP}-cell limit."
+              for w in d.warnings)
+
+
+def test_a_count_exactly_at_the_cap_is_not_raised() -> None:
+    """D-13: cells_within's raise-to-fit is exact at the boundary -- a cap equal to
+    the request's own count returns the request unraised, one lower forces a raise."""
+    size, cells = cells_within(18, 3.0, 1.0, 5.975, 13.4375)
+    assert size == pytest.approx(3.0)
+    assert len(cells) == 18
+
+    size17, cells17 = cells_within(17, 3.0, 1.0, 5.975, 13.4375)
+    assert size17 > 3.0
+    assert len(cells17) <= 17
+    one_step_down = round(size17 - 0.05, 3)
+    assert len(whole_cells(one_step_down, 1.0, 5.975, 13.4375)) > 17
+
+
+def test_the_count_floor_never_exceeds_the_exact_count() -> None:
+    """D-13: cell_count_floor is a guaranteed lower bound on len(whole_cells(...)) --
+    skipping a size by it never skips one that actually fits."""
+    cells_grid = [0.5, 1, 2, 3, 5, 8, 12, 20, 30, 40]
+    walls = (0.4, 1, 3)
+    bands = ((5, 15), (5.975, 13.4375), (2, 100), (50, 60))
+    checked = 0
+    for cell in cells_grid:
+        for wall in walls:
+            for inner, outer in bands:
+                floor = cell_count_floor(cell, wall, inner, outer)
+                exact = len(whole_cells(cell, wall, inner, outer))
+                assert floor <= exact + 1e-9
+                checked += 1
+    assert checked == len(cells_grid) * len(walls) * len(bands)  # a shrunken grid fails
+
+
+@pytest.mark.parametrize(("kw", "refused", "fields", "msg_start"), [
+    pytest.param({"hex_cell": 3}, True, ("hex_wall",),
+                 "A honeycomb needs hex_wall", id="honeycomb-no-wall"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.4}, False, (), "",
+                 id="honeycomb-wall-accept-exact"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.35}, True, ("hex_wall",),
+                 "The honeycomb wall (0.35 mm) is thinner than 0.4 mm",
+                 id="honeycomb-wall-refuse-one-step"),
+    pytest.param({"hex_cell": 0.0004, "hex_wall": 1}, True, ("hex_cell",),
+                 "Honeycomb cell 0.0004 mm is below the 0.001 mm resolution",
+                 id="honeycomb-cell-below-resolution"),
+    pytest.param({"hex_cell": 5.05, "hex_wall": 1}, False, (), "",
+                 id="honeycomb-no-fit-accept-exact"),
+    pytest.param({"hex_cell": 5.1, "hex_wall": 1}, True, ("hex_cell", "hex_wall"),
+                 "No whole honeycomb cell fits between 5.98 and 13.44 mm from the axis",
+                 id="honeycomb-no-fit-refuse-one-step"),
+])
+def test_a_honeycomb_rule_refuses_one_step_past_it_and_names_its_fields(
+        kw: dict[str, object], refused: bool, fields: tuple[str, ...],
+        msg_start: str) -> None:
+    """D-10, D-14, D-15: the half-set, min-wall, precision and no-whole-cell rules
+    each refuse one step past their boundary and accept it exactly."""
+    if not refused:
+        GearParams.model_validate(kw)  # does not raise
+        return
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == sorted(fields)
+    assert err["msg"].startswith(msg_start)
+
+
+def test_three_cutout_patterns_are_refused_naming_all_three() -> None:
+    """REQ-one-cutout-pattern's third selector: all three set is one sentence naming
+    all three, before any per-pattern rule runs; any two of the three still name just
+    those two (11-04's own two-pattern test, extended)."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hole_count": 6, "hole_d": 4,
+                                   "hole_circle_d": 20, "hex_cell": 3, "hex_wall": 1})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hex_cell", "hole_count", "spoke_count"]
+    assert err["msg"] == (
+        "Only one body cutout pattern per part: spoke_count (4), hole_count (6) and "
+        "hex_cell (3) are all set; keep one and set the others to 0.")
+
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20,
+                                   "hex_cell": 3, "hex_wall": 1})
+    err = exc.value.errors()[0]
+    assert err["ctx"]["fields"] == ["hex_cell", "hole_count"]
+    assert "hole_count (6) and hex_cell (3) are both set" in err["msg"]
+
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hex_cell": 3, "hex_wall": 1})
+    err = exc.value.errors()[0]
+    assert err["ctx"]["fields"] == ["hex_cell", "spoke_count"]
+    assert "spoke_count (4) and hex_cell (3) are both set" in err["msg"]
+
+
+def test_a_honeycomb_wall_without_a_cell_is_ignored_and_named() -> None:
+    """D-15's reverse: hex_wall set with hex_cell 0 (the default) builds no honeycomb,
+    and derive() names the ignored field with its value."""
+    d = derive(GearParams(hex_wall=1))
+    assert d.hex_cell_effective is None
+    assert d.hex_cell_count is None
+    assert d.cutout_hub_wall is None
+    assert d.cutout_rim_wall is None
+    assert d.warnings == ("No honeycomb with hex_cell 0: hex_wall (1 mm) is ignored.",)
+
+    d0 = derive(GearParams())
+    assert d0.warnings == ()
+
+
+@pytest.mark.parametrize(("kw", "hub", "rim"), [
+    pytest.param({}, 1.525, 2.149, id="d-flat"),
+    pytest.param({"bore_hex": 6, "bore_d": 0, "bore_flat": 0}, 1.184, 2.149, id="hex"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4}, 2.709, 2.149, id="keyway"),
+    pytest.param({"bore_d": 0, "bore_flat": 0}, 2.5, 2.149, id="no-bore"),
+])
+def test_the_honeycomb_walls_are_measured_on_the_cut_cells(
+        kw: dict[str, object], hub: float, rim: float) -> None:
+    """D-20, A3: the exact nearest edge and farthest vertex of the cut cells, not the
+    whole-cell test's conservative circumradius -- each wall reads at least hex_wall."""
+    p = GearParams.model_validate({**kw, "hex_cell": 3, "hex_wall": 1})
+    d = derive(p)
+    # Both pinned walls read >= hex_wall (1 mm), so pinning them exact is the
+    # ">= hex_wall" property too -- a wall thinner than hex_wall would fail these.
+    assert d.cutout_hub_wall == pytest.approx(hub, abs=1e-3)
+    assert d.cutout_rim_wall == pytest.approx(rim, abs=1e-3)
+
+
+def test_the_cutout_numbers_follow_the_recess_numbers_in_order() -> None:
+    """D-20: web, cutout_hub_wall, cutout_rim_wall, spoke_fillet_effective,
+    hex_cell_effective, hex_cell_count, then warnings, mate_teeth, centre_distance --
+    the same order /api/info and spur info print."""
+    names = list(DerivedDimensions.model_fields)
+    order = ["web", "cutout_hub_wall", "cutout_rim_wall", "spoke_fillet_effective",
+             "hex_cell_effective", "hex_cell_count", "warnings", "mate_teeth",
+             "centre_distance"]
+    assert [n for n in names if n in order] == order
+
+
+def test_the_honeycomb_fields_are_bounded_zero_to_a_hundred() -> None:
+    """recess_width's family bound (0-100): field-level ValidationErrors one step
+    either side of the bound, and for the wrong type -- not the "infeasible" custom
+    error."""
+    for bad in ({"hex_cell": 100.05, "hex_wall": 1},
+               {"hex_cell": -0.05, "hex_wall": 1},
+               {"hex_cell": 3, "hex_wall": 100.05},
+               {"hex_cell": 3, "hex_wall": -0.05}):
+        with pytest.raises(ValidationError) as exc:
+            GearParams.model_validate(bad)
+        assert exc.value.errors()[0]["type"] != "infeasible"
+    # 100 mm passes the field bound; a big enough gear has room for a cell that size.
+    GearParams.model_validate({"teeth": 200, "module": 10, "hex_cell": 100,
+                               "hex_wall": 1})

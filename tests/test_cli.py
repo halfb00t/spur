@@ -105,6 +105,23 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert chamfered.stat().st_size > 1000
     assert "warning:" not in capsys.readouterr().err
 
+    holes = tmp_path / "holes.stl"
+    cli.main(["export", "-o", str(holes), "--hole-count", "6", "--hole-d", "4",
+              "--hole-circle-d", "20"])
+    assert holes.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
+    spokes = tmp_path / "spokes.stl"
+    cli.main(["export", "-o", str(spokes), "--spoke-count", "4", "--spoke-width", "2",
+              "--hub-d", "12", "--rim-wall", "1", "--spoke-fillet", "1"])
+    assert spokes.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
+    honeycomb = tmp_path / "honeycomb.stl"
+    cli.main(["export", "-o", str(honeycomb), "--hex-cell", "3", "--hex-wall", "1"])
+    assert honeycomb.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:
@@ -177,6 +194,95 @@ def test_cli_and_api_print_the_same_tip_chamfer_document(
     assert cli_out["tip_chamfer_effective"] == pytest.approx(1.75)
     assert cli_out["warnings"] == [
         "Tip chamfer reduced to 1.75 mm to keep it above the pitch circle."]
+
+
+def test_cli_and_api_print_the_same_hole_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a hole link: same document, same key order, both walls."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--hole-count", "6", "--hole-d", "4", "--hole-circle-d", "20"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info",
+                         params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert cli_out["cutout_hub_wall"] == pytest.approx(3.025)
+    assert cli_out["cutout_rim_wall"] == pytest.approx(2.438)
+
+
+def test_a_hole_too_close_to_the_bore_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-17 on the CLI: the same hub refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--hole-count", "6", "--hole-d", "4", "--hole-circle-d", "14.7"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "Lightening holes come too close to the bore" in err
+    assert "increase hole_circle_d or reduce hole_d" in err
+
+
+def test_cli_and_api_print_the_same_spoke_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a spoke link: same document, same key order, and the
+    fillet cap's warning when spoke_fillet is set past its limit."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--spoke-count", "4", "--spoke-width", "2", "--hub-d", "12",
+              "--rim-wall", "1", "--spoke-fillet", "5"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info", params={"spoke_count": 4, "spoke_width": 2,
+                                              "hub_d": 12, "rim_wall": 1,
+                                              "spoke_fillet": 5}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert cli_out["spoke_fillet_effective"] == pytest.approx(3.337)
+    assert cli_out["warnings"] == [
+        "Spoke fillet reduced to 3.337 mm to fit the opening between the arms at "
+        "the hub."]
+
+
+def test_a_rim_wall_under_min_wall_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-17 on the CLI: the same rim-wall refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--spoke-count", "4", "--spoke-width", "2", "--hub-d", "12",
+                  "--rim-wall", "0.35"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "The rim wall (0.35 mm) is thinner than 0.4 mm" in err
+    assert "increase rim_wall" in err
+
+
+def test_cli_and_api_print_the_same_honeycomb_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a honeycomb link: same document, same key order, and the
+    raise-to-fit warning on a large gear."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--teeth", "200", "--hex-cell", "3", "--hex-wall", "1"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info",
+                         params={"teeth": 200, "hex_cell": 3, "hex_wall": 1}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert cli_out["hex_cell_effective"] > 3
+    # Root fillet also caps at 200 teeth (pre-existing, unrelated to the honeycomb) --
+    # the honeycomb's own warning is checked by substring, not an exact single-length
+    # tuple.
+    assert any(w.startswith("Honeycomb cells enlarged from 3 mm to ")
+              for w in cli_out["warnings"])
+
+
+def test_a_honeycomb_wall_under_min_wall_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-10 on the CLI: the same wall refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--hex-cell", "3", "--hex-wall", "0.35"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "The honeycomb wall (0.35 mm) is thinner than 0.4 mm" in err
+    assert "increase hex_wall" in err
 
 
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:

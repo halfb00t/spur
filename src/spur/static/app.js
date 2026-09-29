@@ -31,6 +31,10 @@ const DIMS = [
   ['recess_od', 'Recess outer Ø'],
   ['recess_fillet', 'Recess fillet used'],
   ['web', 'Web thickness'],
+  ['cutout_hub_wall', 'Thinnest wall, cutout to bore'],
+  ['cutout_rim_wall', 'Thinnest wall, cutout to root'],
+  ['spoke_fillet_effective', 'Spoke fillet used'],
+  ['hex_cell_effective', (d) => `Honeycomb cell A/F (${d.hex_cell_count} cells)`],
 ];
 
 const fmt = (v) => Number(v).toFixed(3).replace(/\.?0+$/, '');

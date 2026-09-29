@@ -5,10 +5,17 @@
 **Build pipeline**, one decision per step, in `_build(p)`:
 
 ```
-profile(p) ─▶ _gear_blank ─▶ _cut_face_recesses ─▶ _cut_bore ─▶ _cut_keyway ─▶ _chamfer_tips ─▶ one validated Solid
-                (outline,       (annulus cut,          (circle, D or hex,   (slot, after      (tip arcs,
-                 extrude)        floor fillets)         rim chamfers)        the chamfer)      last)
+profile(p) ─▶ _gear_blank ─▶ _cut_face_recesses ─▶ _cut_bore ─▶ _cut_keyway ─▶ _cut_body ─▶ _chamfer_tips ─▶ one validated Solid
+                (outline,       (annulus cut,          (circle, D or hex,   (slot, after      (one pattern's   (tip arcs,
+                 extrude)        floor fillets)         rim chamfers)        the chamfer)      cutters, one      last)
+                                                                                                cut(*cutters))
 ```
+
+`_cut_body` subtracts every cutter of the one body-cutout pattern set (spoke sectors, holes
+or honeycomb cells — never more than one, `REQ-one-cutout-pattern`) in a single boolean cut
+call after the recess floor fillet and the bore-rim chamfer are already baked geometry, so
+no selector before the tip step ever sees a cutout edge — only `_tip_edges`, run after it,
+is shown (by a real-pipeline spy) to take exactly the tip arcs.
 
 `_outline(pr, fillet)` assembles the closed wire tooth by tooth: a straight or filleted
 lead-in from the root circle, a B-spline on each involute flank (16 points, biased toward

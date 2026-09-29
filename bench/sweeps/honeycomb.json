@@ -1,0 +1,58 @@
+[
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hex_cell": 3,
+    "hex_wall": 0.4,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hex_cell": 3,
+    "hex_wall": 0.4,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hex_cell": 3,
+    "hex_wall": 5,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hex_cell": 3,
+    "hex_wall": 5,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hex_cell": 3,
+    "hex_wall": 0.4,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hex_cell": 3,
+    "hex_wall": 0.4,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hex_cell": 3,
+    "hex_wall": 5,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hex_cell": 3,
+    "hex_wall": 5,
+    "recess_sides": "none"
+  }
+]
