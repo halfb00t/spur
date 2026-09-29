@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
 status: executing
-stopped_at: Completed 11-02-PLAN.md
-last_updated: "2026-09-29T05:23:49.542Z"
+stopped_at: Completed 11-03-PLAN.md
+last_updated: "2026-09-29T06:28:18.949Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 11 execution started
-state_head: fb2e34c6aacc2613ee65480ac34ed1d97eccaff5
+state_head: 365412d5581a5df9612df356461f9c40b1ffbe25
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 25
-  completed_plans: 18
+  completed_plans: 19
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 11 (Body Cutouts) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 11 execution started
 
@@ -148,6 +148,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 10 P05 | 16min | 3 tasks | 8 files |
 | Phase 11 P01 | ~15min | 3 tasks | 3 files |
 | Phase 11 P02 | ~35min | 2 tasks | 2 files |
+| Phase 11 P03 | ~55min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -202,6 +203,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 11]: Human kept the spoke-arm wall rule (Flagged Assumption A1): 0 < spoke_width < MIN_WALL is refused with a 422 naming spoke_width, like every other wall in the part. 11-04 implements this on the human's word.
 - [Phase 11]: HEX_CELL_CAP measured at 120 cells (7.15s of 7.5s budget, next row 150 cells at 7.95s over) -- 11-02's honeycomb spike, verdict held on the first run
 - [Phase 11]: Cut spelling measured: star (cut(*prisms)) -- all three spellings read within 0.03s at the cap's cell count, none cleared D-24's 10% bar
+- [Phase 11]: 11-03: three independent hole rules (hub, rim, neighbour, D-16/D-17) via _under_min_wall(round(wall,6) < MIN_WALL), so a wall sized exactly to MIN_WALL is accepted despite step-aligned float residue (measured 0.39999999999999947 at the tracer's hub boundary); a hole wider than the web trips both wall sentences at once.
+- [Phase 11]: 11-03: Task 2's RED and GREEN landed in one feat commit, not separate test(...)/feat(...) commits -- workflow.tdd_mode is not enabled in config.json, so the mechanical RED/GREEN/REFACTOR commit-pattern gate does not apply (Phase 8 precedent, 08-03-SUMMARY.md); RED was still run and confirmed failing before GREEN was written.
 
 ### Pending Todos
 
@@ -283,8 +286,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-29T05:23:49.499Z
-Stopped at: Completed 11-02-PLAN.md
+Last session: 2026-09-29T06:28:18.908Z
+Stopped at: Completed 11-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
