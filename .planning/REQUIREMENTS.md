@@ -72,7 +72,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   the same link yields the same count on every machine.
 - [x] **REQ-one-cutout-pattern**: Exactly one cutout pattern per part. Two non-zero
   pattern selectors (`spoke_count`, `hole_count`, `hex_cell`) is a 422 naming both fields.
-- [ ] **REQ-cutout-conflicts-refused-early**: A cutout that would breach the hub wall
+- [x] **REQ-cutout-conflicts-refused-early**: A cutout that would breach the hub wall
   (bore + bore chamfer + `MIN_WALL`) or the rim wall (root circle − `MIN_WALL`), or whose
   holes or arms overlap each other, is refused **before any CAD work starts**: 422 on the
   API, exit 2 on the CLI, the same message naming the fields — validated in `calc.py`,
@@ -188,7 +188,7 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-hole-cutout | Phase 11 | Pending |
 | REQ-honeycomb-cutout | Phase 11 | Pending |
 | REQ-one-cutout-pattern | Phase 11 | Complete |
-| REQ-cutout-conflicts-refused-early | Phase 11 | Pending |
+| REQ-cutout-conflicts-refused-early | Phase 11 | Complete |
 | REQ-cutout-composes | Phase 11 | Pending |
 | REQ-cutout-derived-numbers | Phase 11 | Pending |
 | REQ-tip-chamfer | Phase 10 | Complete |
