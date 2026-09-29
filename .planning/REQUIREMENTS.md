@@ -77,7 +77,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   holes or arms overlap each other, is refused **before any CAD work starts**: 422 on the
   API, exit 2 on the CLI, the same message naming the fields — validated in `calc.py`,
   never a build error after a timed build.
-- [ ] **REQ-cutout-composes**: Any cutout composes with face recesses (it cuts through the
+- [x] **REQ-cutout-composes**: Any cutout composes with face recesses (it cuts through the
   recessed floor, and the floor fillet remains on the floor edges that survive — proven
   by a test that counts the filleted edges) and with any bore profile (round, D-flat,
   keyway, hex).
@@ -189,7 +189,7 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-honeycomb-cutout | Phase 11 | Pending |
 | REQ-one-cutout-pattern | Phase 11 | Complete |
 | REQ-cutout-conflicts-refused-early | Phase 11 | Complete |
-| REQ-cutout-composes | Phase 11 | Pending |
+| REQ-cutout-composes | Phase 11 | Complete |
 | REQ-cutout-derived-numbers | Phase 11 | Pending |
 | REQ-tip-chamfer | Phase 10 | Complete |
 | REQ-tip-chamfer-capped | Phase 10 | Complete |

@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
 status: executing
-stopped_at: Completed 11-07-PLAN.md
-last_updated: "2026-09-29T09:28:04.756Z"
+stopped_at: Completed 11-08-PLAN.md
+last_updated: "2026-09-29T10:00:02.062Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 11 execution started
-state_head: eca02a9f4bbe5284f1f664c131a537eb4b8a9e07
+state_head: a84c800da34ee774d5d9dc8ebca010040566fda9
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 25
-  completed_plans: 23
+  completed_plans: 24
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 11 (Body Cutouts) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
 Last activity: 2026-09-29 — Phase 11 execution started
 
@@ -153,6 +153,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 11-body-cutouts P05 | 50min | 2 tasks | 9 files |
 | Phase 11 P06 | 45min (Task 3; Task 1 prior executor) | 3 tasks | 10 files |
 | Phase 11 P07 | ~28min | 2 tasks | 2 files |
+| Phase 11 P08 | ~35min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -221,6 +222,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 11]: 11-07: the real-pipeline spy reads the same rim/floor Counter values the no-cutout matrix already established, because both selectors run on the solid before their own operator applies, strictly before _cut_body -- verified against all 19 rows before writing the test.
 - [Phase 11]: 11-07: every one-step-past cutout-rule row reuses test_calc.py's own refusal boundary exactly (spoke opening past-the-rule is spoke_width 2.72, not the plan's provisional 2.77) -- the shipped test_calc.py value is the ground truth, not the planning-time estimate.
 - [Phase 11]: 11-07: no tol= was needed -- all ten tangent-cutter rows (holes, spoke hub/rim arcs sharp and filleted, a recess-less double-MIN_WALL spoke web, a honeycomb flat tangent to the recess wall) built one valid solid with the plain cut(*cutters) on the pinned kernel, so _cut_body ships none, only a comment recording the measurement.
+- [Phase 11]: 11-08: sharp-spoke and honeycomb removed-volume checked against a closed-form analytic formula (matches the kernel to 1e-9 mm3), not a pinned literal; the filleted-spoke row has no closed form and stays pinned.
+- [Phase 11]: 11-08: the keyed-round SPOKES13 fillet-1 recess-survival row (not probed in planning) measured TORUS 12 on the pinned kernel; every other row of the 13-row survival matrix matched the planning probe exactly, no sharp floor-to-wall circle survived any row.
 
 ### Pending Todos
 
@@ -302,8 +305,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-29T09:28:04.713Z
-Stopped at: Completed 11-07-PLAN.md
+Last session: 2026-09-29T10:00:02.016Z
+Stopped at: Completed 11-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
