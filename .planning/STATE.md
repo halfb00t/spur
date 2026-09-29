@@ -4,12 +4,12 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
-status: "Phase 10 shipped — PR #11"
+status: executing
 stopped_at: Phase 11 context gathered
-last_updated: "2026-09-29T04:19:11.566Z"
+last_updated: "2026-09-29T04:50:32.282Z"
 last_activity: 2026-09-29
-last_activity_desc: Phase 11 planning complete
-state_head: c5a3c673d665046b9cb6d3ed0f70e9c28e4c4d4d
+last_activity_desc: Phase 11 execution started
+state_head: 83e8f5cd7fd03f4032056f6360864b2b0e91aec2
 progress:
   total_phases: 6
   completed_phases: 1
@@ -26,14 +26,14 @@ See: .planning/PROJECT.md (updated 2026-09-28)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 11 — Body Cutouts (exactly one of lightening holes, spoke arms or a honeycomb web, composing with any bore profile and with face recesses; the first phase to combine a recess with a heavy cut against the 30 s budget)
+**Current focus:** Phase 11 — Body Cutouts
 
 ## Current Position
 
-Phase: 11 (Body Cutouts) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 10 shipped — PR #11
-Last activity: 2026-09-29 — Phase 11 planning complete
+Phase: 11 (Body Cutouts) — EXECUTING
+Plan: 1 of 9
+Status: Executing Phase 11
+Last activity: 2026-09-29 — Phase 11 execution started
 
 ## Performance Metrics
 
@@ -267,6 +267,7 @@ None yet.
 - Phase 9 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 12 edited: edited fields: success_criteria (per 08-CONTEXT.md D-01)
 - Phase 9 edited: edited fields: requirements, success_criteria (per 09-CONTEXT.md D-20)
+- Phase 11 edited: edited fields: success_criteria (per 11-CONTEXT.md D-21)
 
 ## Deferred Items
 

@@ -266,7 +266,8 @@ REQ-cutout-derived-numbers
      call, not a loop.
   2. Setting `spoke_count`/`spoke_width`/`hub_d`/`rim_wall` (0 = off) cuts N straight arms
      between a hub ring and a rim ring, the sectors between them cut through the full face
-     width.
+     width, their corners rounded by `spoke_fillet` (0 = sharp), capped to fit
+     (11-CONTEXT.md D-04/D-06/D-21).
   3. Setting `hex_cell`/`hex_wall` (0 = off) cuts a honeycomb web whose cell count is derived
      and reported; a build-time-vs-cell-count sweep runs before any cap formula is written
      (mirroring L17's methodology) and is logged as a new `Lxx`; when the derived count

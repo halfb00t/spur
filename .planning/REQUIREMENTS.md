@@ -56,8 +56,10 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 ### Body cutouts
 
 - [ ] **REQ-spoke-cutout**: User can cut spoke arms by setting `spoke_count` (0 = off),
-  `spoke_width`, `hub_d` and `rim_wall`: N straight arms between a hub ring and a rim
-  ring, the sectors between the arms cut through the full face width.
+  `spoke_width`, `hub_d`, `rim_wall` and `spoke_fillet`: N straight arms between a hub
+  ring and a rim ring, the sectors between the arms cut through the full face width,
+  their corners rounded by `spoke_fillet` (0 = sharp), capped to fit
+  (Phase 11 D-04/D-21).
 - [ ] **REQ-hole-cutout**: User can cut lightening holes by setting `hole_count` (0 =
   off), `hole_d` and `hole_circle_d`: N equal round holes evenly spaced on a bolt circle,
   through the full face width.
@@ -211,4 +213,4 @@ corner-to-corner field), which Phase 9's success criteria confirm still holds.
 
 ---
 *Requirements defined: 2026-09-25*
-*Last updated: 2026-09-27 — REQ-keyway-bore and REQ-keyway-wall-refused amended per Phase 9 D-09/D-10/D-14 (09-CONTEXT.md)*
+*Last updated: 2026-09-29 — REQ-spoke-cutout amended for spoke_fillet per Phase 11 D-04/D-21 (11-CONTEXT.md)*
