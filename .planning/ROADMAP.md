@@ -291,7 +291,7 @@ build-time relationship needs a dedicated benchmark sweep before any cap formula
 (`research/SUMMARY.md` "Research Flags"). Holes and spoke arms are well-documented patterns
 (`polarArray`/`cut(*cutters)`, generalizing `_cut_face_recesses`'s existing two-call
 pattern) — no research flag needed for those sub-parts.
-**Plans**: 5/9 plans executed
+**Plans**: 6/9 plans executed
 
 Plans:
 **Wave 1**
@@ -316,7 +316,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 11-06-PLAN.md — The three per-pattern sweeps at 200 teeth through `make bench.build`, recorded; D-18's over-budget gate (predicted to fire) and the chosen limit applied and re-measured (wave 6)
+- [x] 11-06-PLAN.md — The three per-pattern sweeps at 200 teeth through `make bench.build`, recorded; D-18's over-budget gate (predicted to fire) and the chosen limit applied and re-measured (wave 6)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -384,5 +384,5 @@ in Phases 7–11; no open technical questions remain by this point.
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
-| 11. Body Cutouts | v0.2 | 5/9 | In Progress|  |
+| 11. Body Cutouts | v0.2 | 6/9 | In Progress|  |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |
