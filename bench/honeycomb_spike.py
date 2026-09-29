@@ -15,7 +15,6 @@ Markdown and exits 1 when the verdict fails.
 
 from __future__ import annotations
 
-import math
 import os
 import platform
 import subprocess
@@ -29,7 +28,13 @@ import cadquery as cq
 
 from bench import machine_facts
 from spur import int_env, model
-from spur.calc import bore_mouth_limit, profile
+from spur.calc import (  # noqa: F401 -- cell_count_floor/whole_cells re-exported below
+    bore_mouth_limit,
+    cell_count_floor,
+    cells_within,
+    profile,
+    whole_cells,
+)
 from spur.params import GearParams
 
 # A quarter of the 30 s SPUR_BUILD_TIMEOUT (D-11): the tip chamfer alone already reads
@@ -37,92 +42,11 @@ from spur.params import GearParams
 # the honeycomb's own share must leave room beside it rather than claim half.
 BUDGET_S = 7.5
 
-
-def whole_cells(cell: float, wall: float, inner: float, outer: float,
-                ) -> tuple[tuple[float, float], ...]:
-    """The centres of every whole hexagonal cell on the axis-centred lattice whose
-    flats face +-X and vertices +-Y -- model._cut_bore's own convention (D-08): pitch
-    `cell + wall`, rows spaced `pitch * sqrt(3) / 2` along Y, centres
-    `x = pitch * (a + b / 2)`, `y = pitch * b * sqrt(3) / 2`. A centre is kept when its
-    hexagon -- corner reach `cell / sqrt(3)` -- lies entirely inside `[inner, outer]`:
-    `inner + cell / sqrt(3) <= hypot(x, y) <= outer - cell / sqrt(3)` (D-07, inclusive).
-    The origin cell (a = b = 0) always fails this test because inner > 0, so it is
-    never cut -- it sits inside the bore. Returns `()` when the band is empty. Rows
-    iterate b ascending then a ascending, so the same arguments return the same tuple
-    every time (D-24's spelling comparison and the cap search both rely on this order).
-    11-05 moves this function into `spur.calc` unchanged, after which this module
-    imports it.
-    """
-    if outer <= inner:
-        return ()
-    pitch = cell + wall
-    row_h = pitch * math.sqrt(3) / 2
-    reach = cell / math.sqrt(3)
-    lo, hi = inner + reach, outer - reach
-    if hi < lo:
-        return ()
-    # |y| <= outer bounds b; a row or two of rounding slack is harmless -- the hypot
-    # test below is the exact filter, this just keeps the search off the unbounded
-    # plane (D-07's "no candidate outside the square is visited").
-    b_max = int(outer / row_h) + 1
-    cells: list[tuple[float, float]] = []
-    for b in range(-b_max, b_max + 1):
-        y = pitch * b * math.sqrt(3) / 2
-        if abs(y) > outer:
-            continue
-        a_span = outer / pitch
-        a_lo = math.floor(-a_span - b / 2)
-        a_hi = math.ceil(a_span - b / 2)
-        for a in range(a_lo, a_hi + 1):
-            x = pitch * (a + b / 2)
-            if abs(x) > outer:
-                continue
-            r = math.hypot(x, y)
-            if lo <= r <= hi:
-                cells.append((x, y))
-    return tuple(cells)
-
-
-def cell_count_floor(cell: float, wall: float, inner: float, outer: float) -> float:
-    """A guaranteed lower bound on `len(whole_cells(cell, wall, inner, outer))` --
-    D-13's area estimate, taken as a floor rather than an approximation: the centre
-    band `[inner + cell/sqrt(3), outer - cell/sqrt(3)]` eroded by the pitch hexagon's
-    own circumradius (`pitch / sqrt(3)`) leaves a band where every point lies in the
-    Voronoi cell of a lattice point that is itself inside the original band -- so the
-    eroded band's area over one Voronoi cell's area (`sqrt(3)/2 * pitch**2`, a regular
-    hexagon of across-flats `pitch`) never overcounts. Planning checked 1920 (cell,
-    wall, inner, outer) sets against the exact `whole_cells()` count: 0 violations.
-    0.0 when the eroded band is empty (`hi2 <= lo2`).
-    """
-    pitch = cell + wall
-    reach = cell / math.sqrt(3)
-    erosion = pitch / math.sqrt(3)
-    lo2 = inner + reach + erosion
-    hi2 = outer - reach - erosion
-    if hi2 <= lo2:
-        return 0.0
-    return math.pi * (hi2**2 - lo2**2) / (math.sqrt(3) / 2 * pitch**2)
-
-
-def cells_within(cap: int, cell: float, wall: float, inner: float, outer: float,
-                 ) -> tuple[float, tuple[tuple[float, float], ...]]:
-    """D-13's raise-to-fit: steps `cell` up by 0.05 mm (the field's own step) from the
-    request until the exact whole-cell count is `<= cap`. `cell_count_floor`'s
-    guaranteed lower bound is checked first at each step -- a size whose floor already
-    exceeds `cap` can never have fitted, so the exact enumeration (`whole_cells`) never
-    runs for a size that was going to be skipped anyway; this is what keeps the search
-    cheap even where the unconstrained count would be in the millions (D-13's own
-    example: a 200-tooth module-10 web at cell 3 / wall 1 implies roughly 2.2e5 cells).
-    11-05 moves this and the two functions above into `spur.calc` unchanged.
-    """
-    k = 0
-    while True:
-        s = round(cell + 0.05 * k, 3)
-        if cell_count_floor(s, wall, inner, outer) <= cap:
-            found = whole_cells(s, wall, inner, outer)
-            if len(found) <= cap:
-                return s, found
-        k += 1
+# whole_cells and cell_count_floor moved into spur.calc unchanged by 11-05
+# (D-07...D-09, D-13's raise-to-fit); this spike no longer calls them directly
+# (cells_within does), but re-imports both so
+# bench.honeycomb_spike.whole_cells is spur.calc.whole_cells still holds -- one
+# definition of the lattice and the raise, measured and shipped (L08).
 
 
 def hex_prisms(cell: float, face_width: float,

@@ -62,6 +62,7 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     # Sharp corners (spoke_fillet 0) and the N=1 "C-shaped sector" case (D-02, D-03).
     {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1},
     {"spoke_count": 1, "spoke_width": 2, "hub_d": 12, "rim_wall": 1, "spoke_fillet": 1},
+    {"hex_cell": 3, "hex_wall": 1},
 ])
 def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     p = GearParams.model_validate(kw)
@@ -816,6 +817,27 @@ def test_a_rim_corner_fillet_is_tangent_to_the_rim_circle_and_the_bar_side() -> 
     assert math.hypot(on_root.x - centre.x, on_root.y - centre.y) == pytest.approx(1.0, abs=1e-9)
     assert math.hypot(on_line.x - centre.x, on_line.y - centre.y) == pytest.approx(1.0, abs=1e-9)
     assert math.hypot(mid.x - centre.x, mid.y - centre.y) == pytest.approx(1.0, abs=1e-9)
+
+
+def test_the_honeycomb_link_cuts_eighteen_whole_cells() -> None:
+    """?hex_cell=3&hex_wall=1 on the default gear (D-07...D-13): 18 whole hexagonal
+    cells cut through the full face width in one cut call. _build_checked, not
+    build(): the lru_cache on build() would hand back a solid built by an earlier
+    test's GearParams() call for a "bare" GearParams() here.
+    """
+    p0 = GearParams()
+    p = GearParams(hex_cell=3, hex_wall=1)
+    plain = _build_checked(p0)
+    cut = _build_checked(p)
+
+    d_faces = (collections.Counter(f.geomType() for f in cut.Faces())
+              - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert d_faces == collections.Counter({"PLANE": 108, "CYLINDER": 10, "TORUS": 10})
+    assert len(cut.Edges()) - len(plain.Edges()) == 494
+
+    mid = p.face_width / 2
+    assert cut.isInside(cq.Vector(6.49, 0, mid)) is True    # a cell facing the axis
+    assert cut.isInside(cq.Vector(6.51, 0, mid)) is False   # inside the cut cell
 
 
 def test_exports() -> None:

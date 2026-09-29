@@ -48,6 +48,17 @@ TIP_CHAMFER_MARGIN = 0.001  # mm, how far inside the start of the involute splin
 # tip_chamfer_effective rounds to 3 dp at construction and round() can move a value up
 # by half a step (2.9365 mm rounds to 2.937 mm) -- a cap sitting exactly at the contact
 # could round past it.
+HEX_CELL_CAP = 120  # cells, the most whole honeycomb cells one part may have. Measured
+# 2026-09-29 (bench/RESULTS.md "Honeycomb cell-count spike (Phase 11, D-24)") on a
+# 12-CPU arm64 host, load averages 8-9 (well above this project's own "quiet" bar):
+# at 200 teeth, module 10, both recesses -- the largest web a honeycomb can sit on,
+# so the cap always binds there (D-11) -- the 120-cell row (a 149.1 mm cell) read
+# 7.15 s of the 7.5 s budget (a quarter of SPUR_BUILD_TIMEOUT); the next row (150
+# cells) read 7.95 s, over budget. The module-1.75 confirmation at the same 120 cells
+# read 7.25 s, 0.25 s of headroom -- narrower than the cap row's own 0.35 s but still
+# inside budget, so the module-10 configuration still sets the cap. One constant, not
+# a per-cell cost model (D-12): the same on every machine, conservative on smaller
+# gears -- a quieter host would only raise what this measured, never lower it.
 
 
 def inv(a: float) -> float:
@@ -282,15 +293,20 @@ def tip_chamfer_effective(p: GearParams) -> float:
 
 def cutout_walls(p: GearParams, rf: float) -> tuple[float, float] | None:
     """(hub wall, rim wall) of the one body-cutout pattern set, unrounded, or None with
-    no pattern set. This plan adds the spoke branch alongside 11-03's holes branch
-    (D-20); 11-05 adds the honeycomb branch.
+    no pattern set (D-20).
 
     The hub side is measured from the farthest point of the chamfered bore mouth,
     bore_mouth_limit(p), the same datum recess_radii() clears (D-17, L27/L28) -- exact
     for a round or D-flat bore, the corner's reach for a hex or keyed bore, and so a
     lower bound where a cutout faces a flat (L08). The rim side is measured from the
     root circle, rf. Spokes read hub_d and rim_wall directly (D-01): the rim corner
-    arcs stay inside rf - rim_wall, so the rim wall is exactly rim_wall.
+    arcs stay inside rf - rim_wall, so the rim wall is exactly rim_wall. The honeycomb
+    reads the walls off the cut cells themselves -- exact on the polygons
+    model._cell_cutters cuts, so the walls read at least hex_wall: the whole-cell
+    test's circumradius (size / sqrt(3)) is a conservative bound for containment, not
+    the true nearest point, which can be a flat closer to the axis than any corner
+    (Flagged Assumption A3 -- the naive centre_radius - reach bound under-reports the
+    tracer's inner-ring wall by 0.232 mm, 6.268 mm instead of the true 6.5 mm).
     """
     if p.spoke_count > 0:
         return p.hub_d / 2 - bore_mouth_limit(p), p.rim_wall
@@ -298,6 +314,12 @@ def cutout_walls(p: GearParams, rf: float) -> tuple[float, float] | None:
         inner = p.hole_circle_d / 2 - p.hole_d / 2
         outer = p.hole_circle_d / 2 + p.hole_d / 2
         return inner - bore_mouth_limit(p), rf - outer
+    if p.hex_cell > 0:
+        size, cells = hex_cells(p, rf)
+        reaches = [_hex_reach(cx, cy, size) for cx, cy in cells]
+        nearest = min(r[0] for r in reaches)
+        farthest = max(r[1] for r in reaches)
+        return nearest - bore_mouth_limit(p), rf - farthest
     return None
 
 
@@ -372,6 +394,137 @@ def hole_gap(p: GearParams) -> float:
     hole_count), less one hole diameter. Callers pass hole_count >= 2 -- with one hole
     there is no neighbour."""
     return p.hole_circle_d * math.sin(math.pi / p.hole_count) - p.hole_d
+
+
+def whole_cells(cell: float, wall: float, inner: float, outer: float,
+                ) -> tuple[tuple[float, float], ...]:
+    """The centres of every whole hexagonal cell on the axis-centred lattice whose
+    flats face +-X and vertices +-Y -- model._cut_bore's own convention (D-08): pitch
+    `cell + wall`, rows spaced `pitch * sqrt(3) / 2` along Y, centres
+    `x = pitch * (a + b / 2)`, `y = pitch * b * sqrt(3) / 2`. A centre is kept when its
+    hexagon -- corner reach `cell / sqrt(3)` -- lies entirely inside `[inner, outer]`:
+    `inner + cell / sqrt(3) <= hypot(x, y) <= outer - cell / sqrt(3)` (D-07, inclusive).
+    The origin cell (a = b = 0) always fails this test because inner > 0, so it is
+    never cut -- it sits inside the bore. Returns `()` when the band is empty. Rows
+    iterate b ascending then a ascending, so the same arguments return the same tuple
+    every time (D-24's spelling comparison and the cap search both rely on this
+    order). Lives here so check(), cutout_walls(), derive() and model._cell_cutters
+    all read the one enumeration (L08); bench/honeycomb_spike.py imports it back.
+    """
+    if outer <= inner:
+        return ()
+    pitch = cell + wall
+    row_h = pitch * math.sqrt(3) / 2
+    reach = cell / math.sqrt(3)
+    lo, hi = inner + reach, outer - reach
+    if hi < lo:
+        return ()
+    # |y| <= outer bounds b; a row or two of rounding slack is harmless -- the hypot
+    # test below is the exact filter, this just keeps the search off the unbounded
+    # plane (D-07's "no candidate outside the square is visited").
+    b_max = int(outer / row_h) + 1
+    cells: list[tuple[float, float]] = []
+    for b in range(-b_max, b_max + 1):
+        y = pitch * b * math.sqrt(3) / 2
+        if abs(y) > outer:
+            continue
+        a_span = outer / pitch
+        a_lo = math.floor(-a_span - b / 2)
+        a_hi = math.ceil(a_span - b / 2)
+        for a in range(a_lo, a_hi + 1):
+            x = pitch * (a + b / 2)
+            if abs(x) > outer:
+                continue
+            r = math.hypot(x, y)
+            if lo <= r <= hi:
+                cells.append((x, y))
+    return tuple(cells)
+
+
+def cell_count_floor(cell: float, wall: float, inner: float, outer: float) -> float:
+    """A guaranteed lower bound on `len(whole_cells(cell, wall, inner, outer))` --
+    D-13's area estimate, taken as a floor rather than an approximation: the centre
+    band `[inner + cell/sqrt(3), outer - cell/sqrt(3)]` eroded by the pitch hexagon's
+    own circumradius (`pitch / sqrt(3)`) leaves a band where every point lies in the
+    Voronoi cell of a lattice point that is itself inside the original band -- so the
+    eroded band's area over one Voronoi cell's area (`sqrt(3)/2 * pitch**2`, a regular
+    hexagon of across-flats `pitch`) never overcounts. Planning checked 1920 (cell,
+    wall, inner, outer) sets against the exact `whole_cells()` count: 0 violations.
+    0.0 when the eroded band is empty (`hi2 <= lo2`).
+    """
+    pitch = cell + wall
+    reach = cell / math.sqrt(3)
+    erosion = pitch / math.sqrt(3)
+    lo2 = inner + reach + erosion
+    hi2 = outer - reach - erosion
+    if hi2 <= lo2:
+        return 0.0
+    return math.pi * (hi2**2 - lo2**2) / (math.sqrt(3) / 2 * pitch**2)
+
+
+def cells_within(cap: int, cell: float, wall: float, inner: float, outer: float,
+                 ) -> tuple[float, tuple[tuple[float, float], ...]]:
+    """D-13's raise-to-fit: steps `cell` up by 0.05 mm (the field's own step) from the
+    request until the exact whole-cell count is `<= cap`. `cell_count_floor`'s
+    guaranteed lower bound is checked first at each step -- a size whose floor already
+    exceeds `cap` can never have fitted, so the exact enumeration (`whole_cells`) never
+    runs for a size that was going to be skipped anyway; this is what keeps the search
+    cheap even where the unconstrained count would be in the millions (D-13's own
+    example: a 200-tooth module-10 web at cell 3 / wall 1 implies roughly 2.2e5 cells).
+    """
+    k = 0
+    while True:
+        s = round(cell + 0.05 * k, 3)
+        if cell_count_floor(s, wall, inner, outer) <= cap:
+            found = whole_cells(s, wall, inner, outer)
+            if len(found) <= cap:
+                return s, found
+        k += 1
+
+
+def hex_cells(p: GearParams, rf: float) -> tuple[float, tuple[tuple[float, float], ...]]:
+    """The honeycomb actually cut: (across-flats applied, cell centres) -- the one
+    result model._cell_cutters cuts, check() counts and derive() reports (L08).
+    `(0.0, ())` with `hex_cell <= 0` -- no honeycomb. Otherwise `cells_within`'s
+    raise-to-fit over the web annulus (D-09): `hex_wall` outside the chamfered bore
+    mouth (`bore_mouth_limit(p)`, the recess's own datum) and `hex_wall` inside the
+    root circle (`rf`).
+    """
+    if p.hex_cell <= 0:
+        return 0.0, ()
+    return cells_within(HEX_CELL_CAP, p.hex_cell, p.hex_wall,
+                        bore_mouth_limit(p) + p.hex_wall, rf - p.hex_wall)
+
+
+def _point_segment_distance(px: float, py: float, ax: float, ay: float,
+                            bx: float, by: float) -> float:
+    """Distance from (px, py) to the segment (ax, ay)-(bx, by), the exact minimum over
+    the whole edge rather than just its two endpoints -- a hexagon's flat can be the
+    nearest point to the axis, not either of its corners (D-08)."""
+    dx, dy = bx - ax, by - ay
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, ((px - ax) * dx + (py - ay) * dy) / length_sq))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+
+
+def _hex_reach(cx: float, cy: float, size: float) -> tuple[float, float]:
+    """(nearest point to the axis, farthest vertex from the axis) of one honeycomb
+    hexagon centred at (cx, cy), across-flats size, flats on +-X and vertices on +-Y
+    (D-08) -- the same `polygon(6, size, circumscribed=True)` `model._cell_cutters`
+    cuts. The nearest point can be a flat (the tracer's inner ring faces the axis with
+    a flat, 6.5 mm, not the 6.268 mm a circumradius test would read -- Flagged
+    Assumption A3) or a vertex, so this walks all six edges rather than assuming
+    either.
+    """
+    r = size / math.sqrt(3)
+    verts = [(cx + r * math.cos(math.radians(30 + 60 * i)),
+             cy + r * math.sin(math.radians(30 + 60 * i))) for i in range(6)]
+    farthest = max(math.hypot(vx, vy) for vx, vy in verts)
+    nearest = min(_point_segment_distance(0.0, 0.0, *verts[i], *verts[(i + 1) % 6])
+                 for i in range(6))
+    return nearest, farthest
 
 
 def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
@@ -516,7 +669,7 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
     # With two or more patterns set, neither pattern's own rules below run: the part
     # cannot exist as drawn (REQ-one-cutout-pattern), and one sentence says why instead
     # of every per-pattern rule firing on fields that make no sense set together.
-    # 11-05 appends ("hex_cell", p.hex_cell) to this tuple.
+    # 11-05 Task 2 appends ("hex_cell", p.hex_cell) to this tuple.
     chosen = [(name, value) for name, value in
               (("spoke_count", p.spoke_count), ("hole_count", p.hole_count))
               if value > 0]
@@ -624,6 +777,7 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
                     f"neighbours, which must be at least {MIN_WALL:g} mm; reduce "
                     "hole_count or hole_d, or increase hole_circle_d.",
                     ("hole_circle_d", "hole_count", "hole_d")))
+    # 11-05 Task 2 appends an elif p.hex_cell > 0 branch here (D-10, D-14, D-15).
     return errors
 
 
@@ -722,6 +876,13 @@ class DerivedDimensions(BaseModel):
         description="Spoke fillet actually cut at the corners of each cut-out sector, "
                     "after the cap; null with no spokes or no spoke fillet.",
         json_schema_extra={"unit": "mm"})
+    hex_cell_effective: float | None = Field(
+        description="Honeycomb cell across-flats actually cut, raised from the "
+                    "request when the whole-cell count would exceed the cap; null "
+                    "with no honeycomb.",
+        json_schema_extra={"unit": "mm"})
+    hex_cell_count: int | None = Field(
+        description="Whole honeycomb cells cut; null with no honeycomb.")
     # A tuple, not a list: pydantic's `frozen=True` locks the attributes, not the objects
     # they hold, so a list here could still be edited in place by any reader of a shared
     # result -- the one field that would make "frozen" a lie (04-REVIEW.md WR-01).
@@ -860,6 +1021,19 @@ def derive(p: GearParams, mate_teeth: int | None = None,
                 f"No lightening holes with hole_count 0: {' and '.join(ignored)} "
                 f"{'are' if len(ignored) > 1 else 'is'} ignored.")
 
+    if p.hex_cell > 0:
+        size, cells = hex_cells(p, pr.rf)
+        if size > round(p.hex_cell, 3):
+            warnings.append(
+                f"Honeycomb cells enlarged from {p.hex_cell:g} mm to {size:g} mm "
+                f"across flats to keep the count within the {HEX_CELL_CAP}-cell "
+                "limit.")
+        hce, hcc = size, len(cells)
+    else:
+        hce, hcc = None, None
+        # 11-05 Task 2 warns here when hex_wall > 0 (D-15's reverse, the ignored-
+        # dimensions sentence).
+
     walls = cutout_walls(p, pr.rf)
 
     # The mate is folded into this one document rather than patched on afterward
@@ -909,6 +1083,8 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         cutout_hub_wall=r3(walls[0]) if walls else None,
         cutout_rim_wall=r3(walls[1]) if walls else None,
         spoke_fillet_effective=r3(sfe) if sfe is not None else None,
+        hex_cell_effective=r3(hce) if hce is not None else None,
+        hex_cell_count=hcc,
         warnings=tuple(warnings),
         mate_teeth=mate_teeth,
         centre_distance=None if aw is None else r3(aw),

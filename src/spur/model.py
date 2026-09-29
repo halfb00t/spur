@@ -34,6 +34,7 @@ from .calc import (
     bore_radius,
     bore_rim_limit,
     hex_across_flats,
+    hex_cells,
     keyway_width_effective,
     profile,
     recess_fillet,
@@ -344,6 +345,22 @@ def _spoke_cutters(p: GearParams, rf: float) -> list[cq.Solid]:
             for k in range(p.spoke_count)]
 
 
+def _cell_cutters(p: GearParams, rf: float) -> list[cq.Solid]:
+    """Whole honeycomb cells: hexagonal prisms at hex_cells(p, rf)'s applied size and
+    centres (D-07...D-09), flats on +-X and vertices on +-Y -- the hex bore's own
+    convention (_cut_bore's polygon(circumscribed=True) call above). Exactly the cells
+    calc.py enumerates, at exactly the size derive() prints, so the part and the
+    printed number cannot disagree (L08)."""
+    size, centres = hex_cells(p, rf)
+    proto = (cq.Workplane("XY").polygon(6, size, circumscribed=True)
+            .extrude(p.face_width).val())
+    # .val() is typed as a 4-way union; narrowed with isinstance for mypy only
+    # (cli.py's precedent) -- no new type-checker suppression added here.
+    if not isinstance(proto, cq.Solid):
+        raise TypeError(f"honeycomb cell prototype is not a Solid: {type(proto)}")
+    return [proto.translate(cq.Vector(x, y, 0)) for x, y in centres]
+
+
 def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
     """The one body-cutout pattern, every cutter of it subtracted in a single boolean
     cut -- never a per-cutter loop (ROADMAP SC1, research PITFALLS.md Pitfall 2). Runs
@@ -361,6 +378,8 @@ def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
         cutters: list[cq.Solid] = _spoke_cutters(p, pr.rf)
     elif p.hole_count > 0:
         cutters = _hole_cutters(p)
+    elif p.hex_cell > 0:
+        cutters = _cell_cutters(p, pr.rf)
     else:
         return solid
     return solid.cut(*cutters)

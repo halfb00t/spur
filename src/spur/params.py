@@ -25,7 +25,8 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 class GearParams(BaseModel):
     """Involute spur gear with an optional tooth-tip chamfer, D-flat or hex bore, a
-    keyway, annular face recesses, a spoke pattern and a lightening-hole pattern."""
+    keyway, annular face recesses, a spoke pattern, a lightening-hole pattern and a
+    honeycomb web."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -130,6 +131,19 @@ class GearParams(BaseModel):
     hole_circle_d: float = _f(0.0, 0, 400, title="Hole circle Ø", group="Holes",
                               unit="mm", step=0.05,
                               help="Diameter of the circle the hole centres sit on.")
+
+    # --- Honeycomb -----------------------------------------------------------------
+    hex_cell: float = _f(0.0, 0, 100, title="Honeycomb cell A/F", group="Honeycomb",
+                         unit="mm", step=0.05,
+                         help="Across-flats of each hexagonal through-hole. Only "
+                              "whole cells are cut, filling the web between the bore "
+                              "mouth and the root circle; the cell count is derived "
+                              "and capped, and above the cap the cell size is raised "
+                              "until it fits. 0 = no honeycomb.")
+    hex_wall: float = _f(0.0, 0, 100, title="Honeycomb wall", group="Honeycomb",
+                         unit="mm", step=0.05,
+                         help="Wall between cells, and between the cells and both "
+                              "the bore mouth and the root circle.")
 
     @model_validator(mode="after")
     def _feasible(self) -> GearParams:

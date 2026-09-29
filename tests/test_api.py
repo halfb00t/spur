@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 import spur.model
 from spur.app import STATIC, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
-from spur.calc import DerivedDimensions
+from spur.calc import HEX_CELL_CAP, DerivedDimensions
 from spur.model import Format, Quality, export
 from spur.params import GearParams
 
@@ -81,7 +81,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
         "span", "bore_effective", "hex_across_flats", "hex_across_corners",
         "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
         "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall",
-        "spoke_fillet_effective", "warnings", "mate_teeth", "centre_distance",
+        "spoke_fillet_effective", "hex_cell_effective", "hex_cell_count", "warnings",
+        "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -100,7 +101,9 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
     assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
     assert component["properties"]["spoke_fillet_effective"]["unit"] == "mm"
+    assert component["properties"]["hex_cell_effective"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
+    assert "unit" not in component["properties"]["hex_cell_count"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
     assert health_response["content"]["application/json"]["schema"] == {
@@ -127,7 +130,8 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     dims_keys = re.findall(r"^\s*\['(\w+)',", source, re.MULTILINE)
     assert len(dims_keys) >= 15  # a regex that silently stopped matching must fail, not pass
 
-    for read_form in (".span_teeth", "info.centre_distance", "info.warnings"):
+    for read_form in (".span_teeth", "info.centre_distance", "info.warnings",
+                     ".hex_cell_count"):
         assert read_form in source
 
     model_fields = set(DerivedDimensions.model_fields)
@@ -404,6 +408,58 @@ def test_a_spoke_link_is_served_with_the_fillet_it_cut() -> None:
     r = client.get("/api/model.step", params={"spoke_count": 4, "spoke_width": 2,
                                                "hub_d": 12, "rim_wall": 1,
                                                "spoke_fillet": 1})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_honeycomb_link_is_served_with_its_cells() -> None:
+    """?hex_cell=3&hex_wall=1 end to end (D-07...D-13, D-19, D-20): the schema's
+    Honeycomb group, /api/info's cell count and exact walls, the plain-default null
+    case, a large-gear raise-to-fit with its warning, and both export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["hex_cell"]["group"] == "Honeycomb"
+    assert props["hex_cell"]["unit"] == "mm"
+    assert props["hex_cell"]["maximum"] == 100
+    assert props["hex_cell"]["step"] == 0.05
+    assert props["hex_cell"]["default"] == 0
+    assert props["hex_wall"]["unit"] == "mm"
+    assert props["hex_wall"]["maximum"] == 100
+    names = list(props)
+    assert names.index("hex_cell") == names.index("hole_circle_d") + 1
+    assert names.index("hex_wall") == names.index("hex_cell") + 1
+
+    r = client.get("/api/info", params={"hex_cell": 3, "hex_wall": 1})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_cell_effective"] == pytest.approx(3.0)
+    assert body["hex_cell_count"] == 18
+    assert body["cutout_hub_wall"] == pytest.approx(1.525, abs=1e-3)
+    assert body["cutout_rim_wall"] == pytest.approx(2.149, abs=1e-3)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_cell_effective"] is None
+    assert body["hex_cell_count"] is None
+
+    r = client.get("/api/info", params={"teeth": 200, "hex_cell": 3, "hex_wall": 1})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["hex_cell_effective"] > 3
+    assert (body["hex_cell_effective"] - 3) / 0.05 == pytest.approx(
+        round((body["hex_cell_effective"] - 3) / 0.05))
+    assert 0 < body["hex_cell_count"] <= HEX_CELL_CAP
+    assert any(w.startswith("Honeycomb cells enlarged from 3 mm to ")
+              for w in body["warnings"])
+
+    r = client.get("/api/model.stl", params={"hex_cell": 3, "hex_wall": 1,
+                                             "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"hex_cell": 3, "hex_wall": 1})
     assert r.status_code == 200
     assert r.content.startswith(b"ISO-10303-21;")
 
