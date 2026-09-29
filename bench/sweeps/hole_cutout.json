@@ -1,0 +1,66 @@
+[
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hole_count": 200,
+    "hole_d": 1,
+    "hole_circle_d": 183.4,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hole_count": 200,
+    "hole_d": 1,
+    "hole_circle_d": 183.4,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hole_count": 200,
+    "hole_d": 4.9,
+    "hole_circle_d": 339.9,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hole_count": 200,
+    "hole_d": 4.9,
+    "hole_circle_d": 339.9,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hole_count": 200,
+    "hole_d": 1,
+    "hole_circle_d": 400,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hole_count": 200,
+    "hole_d": 1,
+    "hole_circle_d": 400,
+    "recess_sides": "none"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hole_count": 200,
+    "hole_d": 5.85,
+    "hole_circle_d": 400,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "hole_count": 200,
+    "hole_d": 5.85,
+    "hole_circle_d": 400,
+    "recess_sides": "none"
+  }
+]
