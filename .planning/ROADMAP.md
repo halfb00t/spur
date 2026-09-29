@@ -359,7 +359,45 @@ closing out v0.2.
      export after all of v0.2.
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: TBD
+**Plans**: 9 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 12-01-PLAN.md — D-06 first: amend SC3 (the composed sweep) and SC5 (the fixture's real contract) through the edit-phase tooling, one human confirmation (plus the "seven groups" and "where L19's row lands" questions) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 12-02-PLAN.md — Tracer: fine-STL bytes and triangles per sweep row (D-16); the 18-row composed sweep and its pin; the sweep run one gear at a time on a quiet host and recorded (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 12-03-PLAN.md — D-03's gate on the decisive composed rows (probe, human decision, apply and re-run); the two build-timeout debts resolved and the concurrent question re-homed (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 12-04-PLAN.md — `bench/export_cost.py` and `make bench.export`: L19's gzip table and L24's copy cost re-measured on the largest composed fine STL, L19's rule applied (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 12-05-PLAN.md — Calc matrix: 96 bore x cutout x recess x tip rows, and every locked refusal with each other family on (138 rows) (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 12-06-PLAN.md — Kernel rows: the tip chamfer with each cutout on each bore, and a single-sided recess with each cutout, through the features' own proof helpers (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 12-07-PLAN.md — Parity: the composed README link byte for byte on CLI and API, the model-field walk, the static URL round trip, every refusal on 422 and exit 2 (wave 7)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 12-08-PLAN.md — The CLI's real exit contract in cli.md, pinned by tests, its debt resolved; the UI pass's "not taken" verdict on both form ideas (wave 8)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 12-09-PLAN.md — D-10's measured gate cost against the phase start and its checkpoint, the final fixture pass, L31 (wave 9)
+
 **UI hint**: yes
 
 ## Process Notes (v0.2)
