@@ -1136,3 +1136,149 @@ invalid solid.
 **Reversibility.** Costly: a link that sets `tip_chamfer` above a limit gets a different
 part and a different warning if the rule changes later (L05 protects only links that
 omit the field).
+
+## L30 — Body cutouts are one pattern per part, cut in one boolean, and the honeycomb's cell count is capped at a measured constant
+
+Date: 2026-09-29.
+
+**The fields** (D-01, D-04, D-18, D-19). Ten new `GearParams` fields in three groups —
+Spokes (`spoke_count`, `spoke_width`, `hub_d`, `rim_wall`, `spoke_fillet`), Holes
+(`hole_count`, `hole_d`, `hole_circle_d`), Honeycomb (`hex_cell`, `hex_wall`) —
+declared after the Recess group, the pattern's own selector field first in each group
+(D-19), every default 0/off (L05). `hub_d` is the hub ring's outer diameter; `rim_wall`
+is the rim ring's radial thickness measured inward from the root circle (D-01) — both
+caliper numbers on the part, not derived from the bore or the tip circle. `spoke_fillet`
+(mm, 0 = sharp) was the human's addition over the sharp-corners recommendation (D-04),
+amending REQ-spoke-cutout and ROADMAP Phase 11 SC2 through the edit-phase tooling with
+one human checkpoint (`11-01-SUMMARY.md`, `f0db74a`). `spoke_count`'s and `hole_count`'s
+`le` were lowered from 200 to 40 and 60 after the build-time gate fired for real (D-18,
+"The cost" below) — the final bound this phase ships, not the 200 the fields launched
+with.
+
+**The cut** (D-02, D-03, D-05, D-24). One new `_build` step, `_cut_body`, sits between
+`_cut_keyway` and `_chamfer_tips` — the recess floor fillet and the bore-rim chamfer are
+already baked geometry when it runs, so their selectors never see a cutout edge, and the
+tip step stays last. Each pattern builds its own cutter set and subtracts all of it in
+one `solid.cut(*cutters)` call, the spelling `bench/RESULTS.md`'s "Honeycomb cell-count
+spike (Phase 11, D-24)" measured against `compound` and `fuse` at the cap's cell count:
+all three read within 0.03 s of each other, inside the run's own noise, never clearing
+D-24's 10% bar (`11-02-SUMMARY.md`, `35f0137`/`fb2e34c`). Arm 0 and hole 0 are centred on
++X, one fixed convention for both patterns (D-03). Spoke sectors are parallel-sided bars
+(D-02) with their four corners rounded by analytic tangent arcs baked into the cutter's
+own 2D wire — `_fillet_corner` gained an `inside=` parameter (D-05) so the same
+tangent-line-vs-axis-centred-circle solve covers both the hub corners (outside the hub
+circle, the root-fillet precedent) and the rim corners (inside the rim circle, the new
+mirror), hand-checked against a 3-4-5-style tangent case before trusting it broadly
+(`11-04-SUMMARY.md`, `1650bdf`).
+
+**The honeycomb** (D-07, D-08, D-09, D-13). Whole cells only — a cell is cut only if its
+entire hexagon lies inside the web annulus, never clipped (D-07) — on a lattice centred
+on the gear axis with flats facing ±X, the same convention the hex bore's own polygon
+call already uses (D-08). `hex_wall` is the wall everywhere, including both boundaries:
+`bore_mouth_limit(p) + hex_wall` inside, `rf − hex_wall` outside (D-09). When the derived
+whole-cell count would exceed the cap, `hex_cell` is raised in 0.05 mm steps — the
+field's own step — until the exact count fits; an area-based estimate
+(`cell_count_floor`) bounds the search from below first, so the exact enumeration never
+runs against a count in the millions (D-13). `whole_cells`/`cell_count_floor`/
+`cells_within` moved from `bench/honeycomb_spike.py` into `spur.calc` unchanged in
+11-05, so the spike now imports the shipped lattice back — one definition (L08)
+(`11-05-SUMMARY.md`, `d6bfe0e`).
+
+**The cap** (D-11, D-12, D-24). The honeycomb spike (`bench/honeycomb_spike.py`, a
+measurement-only script with no honeycomb field anywhere in `GearParams`, per D-24) ran
+before `HEX_CELL_CAP` was written: 11 cost rows at 200 teeth, module 10, both recesses
+(D-11's configuration — the largest web, so the cap always binds) found the row that cut
+120 of a requested 125 cells reading 7.15 s of the 7.5 s share D-11 sets (a quarter of
+`SPUR_BUILD_TIMEOUT`, beside the 14.87 s tip-chamfer row L29 recorded); the next row,
+150 cells, read 7.95 s — over. `HEX_CELL_CAP = 120` is written from that row and nowhere
+else (D-12) — `bench/RESULTS.md` "Honeycomb cell-count spike (Phase 11, D-24)"
+(`11-02-SUMMARY.md`, `fb2e34c`). A module-1.75 confirmation at the same 120 cells read
+7.25 s, 0.10 s heavier than the module-10 cap row — the smaller-module gear is the
+heavier one, at a narrower margin than the planning probe found. `derive()`'s measured
+cost at the honeycomb's heaviest input (14.1 µs on a bare `GearParams()`, 115 µs on the
+tracer link, 15.6 ms at `teeth=200, module=10, hex_cell=3, hex_wall=0.4`) is recorded in
+`hex_cells`' own docstring, not cached (`11-05-SUMMARY.md`, `baad230`).
+
+**The refusals** (D-10, D-14 to D-17). Two or three cutout selectors set on one part is a
+422 naming all of them, before any per-pattern rule runs (`REQ-one-cutout-pattern`). A
+half-set pattern — a count set with a dimension still 0 — is a 422 naming the zero
+fields; the reverse (a dimension set with the count at 0) builds nothing and warns,
+naming the ignored fields (D-15). `0 < hex_wall < MIN_WALL` is a 422 (D-10); a honeycomb
+with no whole cell fitting the web annulus is a 422 quoting the annulus's own inner and
+outer radius (D-14). The hub and rim breaches read the recess's own datums —
+`bore_mouth_limit(p) + MIN_WALL` on the hub side, `rf − MIN_WALL` on the rim — and
+neighbours (adjacent holes, the sector opening between adjacent bars) must clear
+`MIN_WALL` too (D-16, D-17). The arm rule is the human's own ruling, not the planner's
+default: `0 < spoke_width < MIN_WALL` is refused naming `spoke_width`, exactly like every
+other wall in the part (`11-01-SUMMARY.md`'s Flagged Assumption A1, `f0db74a`; shipped in
+`11-04-SUMMARY.md`, `6901948`). Every `MIN_WALL` comparison goes through
+`calc._under_min_wall`, `round(wall, 6) < MIN_WALL` rather than a bare `<` — float
+residue at a wall sized to exactly `MIN_WALL` was measured at `0.39999999999999947` at
+the tracer's own hub boundary, which a bare comparison would have wrongly refused
+(`11-03-SUMMARY.md`, `5d8ae53`). Every refusal was pinned one field-step either side on
+the real kernel — the boundary itself builds, one step past it does not, the past-the-
+rule rows reusing `test_calc.py`'s own boundary values rather than a re-derived estimate
+(`11-07-SUMMARY.md`, `eca02a9`) — these are the part's own `MIN_WALL`, not a kernel
+limit.
+
+**The numbers** (D-06, D-20). Five new `DerivedDimensions` fields: `cutout_hub_wall` and
+`cutout_rim_wall` (the thinnest remaining wall on each side, `null` with no cutout — the
+hub datum is `bore_mouth_limit(p)`'s farthest reach, exact for a round or D-flat bore and
+the corner's reach for a hex or keyed one; the rim datum is `rf`), `spoke_fillet_effective`
+(D-06: capped to `0.45 ×` whichever of the sector's hub opening or annulus width binds
+first, reported after the cap, `null` with no spokes or `spoke_fillet` 0), and
+`hex_cell_effective`/`hex_cell_count` (the raised cell size and the whole cells cut,
+`null` with no honeycomb). The honeycomb's walls are read exactly off the cut hexagons —
+the nearest edge and farthest vertex on the polygon itself — not the whole-cell test's
+conservative circumradius: the naive bound under-reported the tracer's own hub wall by
+0.232 mm (Flagged Assumption A3, `11-05-SUMMARY.md`, `d6bfe0e`). The cell count rides in
+the `DIMS` row's own label (`Honeycomb cell A/F (18 cells)`), `span_teeth`'s precedent.
+
+**The cost** (D-18). Each pattern's own sweep (`bench/RESULTS.md` "Body cutout build and
+export time (Phase 11)") measured the heaviest allowed row at `le` 200: a hole row
+crossing the module-1.75 recess groove read 41.85 s of 30 s; three spoke rows crossing a
+recess groove read 65.70–68.70 s; the honeycomb's own cap row read 8.65 s against D-11's
+7.5 s share (inside the 30 s absolute timeout). D-18's over-budget gate fired for real
+and offered a lower `le`; the human accepted it verbatim: `spoke_count` 200 → 40,
+`hole_count` 200 → 60, the honeycomb's own over-share row accepted as measured,
+`HEX_CELL_CAP` unchanged at 120 (`11-06-SUMMARY.md`, `2224697`). The re-run measured
+every row of both sweeps back inside 30 s — heaviest hole row 11.79 s, heaviest spoke row
+18.52 s (`11-06-SUMMARY.md`, `f290860`). Placed arithmetically beside Phase 10's 14.87 s
+tip-chamfer row (L29) — not a real composed build, Phase 12 measures that — the hole
+total (26.66 s) still leaves 3.34 s of margin; the spoke total (33.39 s) reads 3.39 s
+over 30 s under this run's own exceptionally loaded host (load 32.17 against the first
+run's own 5–10), filed as must-severity debt rather than rounded away
+(`docs/tech_debt/active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md`).
+
+**The proof.** A real-pipeline spy (`test_every_selector_takes_only_its_own_edges_with_a_body_cutout`,
+19 rows) proves the bore-rim and groove-floor selectors still take exactly their
+pre-cutout edges with every pattern, bore shape and recess setting present, because both
+selectors run on the solid before their own operator applies, strictly before
+`_cut_body`; three more rows prove the tip selector still takes exactly `2 × teeth` arcs
+with a cutout present (`11-07-SUMMARY.md`, `faf3616`). Eighteen kernel-boundary rows pin
+every `MIN_WALL` rule exactly at its boundary and one field-step past it, on the real
+kernel via `model_copy` (validation bypassed, never re-validated); ten tangent-cutter
+rows — a hole edge on a recess wall, a spoke's hub/rim arcs tangent to each, sharp and
+filleted, a spoke web at exactly `MIN_WALL` with no recess, a honeycomb cell's flat
+tangent to a recess wall — all built one valid solid with the plain `cut(*cutters)`, so
+no fuzzy-boolean tolerance ships, only a comment recording the measurement
+(`11-07-SUMMARY.md`, `eca02a9`). The built-solid proof reads each pattern's cut back
+against `derive()`'s own printed numbers — face-type deltas, edge count, removed volume
+(checked to `1e-9 mm3` against a closed-form formula for holes, sharp spokes and
+honeycomb; pinned for the filleted spoke, which has none) — and the printed
+`cutout_hub_wall`/`cutout_rim_wall` read back at a probe point either side
+(`11-08-SUMMARY.md`, `c50c61a`). The recess floor fillet's survival is counted, not
+assumed: 13 rows across every pattern and bore shape with both recesses find zero sharp
+floor-to-wall corners and a pinned `TORUS` count (`11-08-SUMMARY.md`, `a84c800`). Two
+tripwires demonstrate both proofs fail when their own step is skipped — `_cut_body`
+patched to a no-op leaves `derive()` printing a wall that no longer matches the part (the
+L08 failure); `recess_fillet` patched to `0.0` leaves sharp corners the survival proof's
+own assertion catches.
+
+**Reversibility.** Costly, on every axis this phase touched: the published meaning of
+`hub_d`, `rim_wall`, `spoke_width`, the +X convention and the whole-cell lattice all
+re-cut every link that sets them if changed later (D-01, D-02, D-07, D-08; L05 protects
+only links that omit the fields). `HEX_CELL_CAP` and the counts' `le` are the same shape
+— a lower cap or bound later changes what a published link cuts; a higher one is
+additive, exactly as this phase's own `le` lowering (200 → 40/60) already was for every
+link that had not yet been shared (D-11, D-18).
