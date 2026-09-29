@@ -31,6 +31,8 @@ const DIMS = [
   ['recess_od', 'Recess outer Ø'],
   ['recess_fillet', 'Recess fillet used'],
   ['web', 'Web thickness'],
+  ['cutout_hub_wall', 'Thinnest wall, cutout to bore'],
+  ['cutout_rim_wall', 'Thinnest wall, cutout to root'],
 ];
 
 const fmt = (v) => Number(v).toFixed(3).replace(/\.?0+$/, '');

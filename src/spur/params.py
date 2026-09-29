@@ -25,7 +25,7 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 class GearParams(BaseModel):
     """Involute spur gear with an optional tooth-tip chamfer, D-flat or hex bore, a
-    keyway, and annular face recesses."""
+    keyway, annular face recesses, and a lightening-hole pattern."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -99,6 +99,17 @@ class GearParams(BaseModel):
                                help="0 = centred so the hub wall equals the rim wall.")
     recess_fillet: float = _f(0.5, 0, 5, title="Recess fillet", group="Recess", unit="mm",
                               step=0.05, help="Fillet at the groove floor corners.")
+
+    # --- Holes -------------------------------------------------------------------
+    hole_count: int = _f(0, 0, 200, title="Lightening holes", group="Holes", step=1,
+                         help="Number of equal round holes cut through the full face "
+                              "width, evenly spaced on the hole circle with hole 0 "
+                              "centred on +X. 0 = no holes.")
+    hole_d: float = _f(0.0, 0, 100, title="Hole Ø", group="Holes", unit="mm", step=0.05,
+                       help="Diameter of each lightening hole.")
+    hole_circle_d: float = _f(0.0, 0, 400, title="Hole circle Ø", group="Holes",
+                              unit="mm", step=0.05,
+                              help="Diameter of the circle the hole centres sit on.")
 
     @model_validator(mode="after")
     def _feasible(self) -> GearParams:

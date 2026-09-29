@@ -280,6 +280,24 @@ def tip_chamfer_effective(p: GearParams) -> float:
     return round(min(p.tip_chamfer, tip_chamfer_limit(p)[0]), 3)
 
 
+def cutout_walls(p: GearParams, rf: float) -> tuple[float, float] | None:
+    """(hub wall, rim wall) of the one body-cutout pattern set, unrounded, or None with
+    no pattern set. This plan gives it the holes branch only (D-20); 11-04 and 11-05 add
+    the spoke and honeycomb branches alongside it.
+
+    The hub side is measured from the farthest point of the chamfered bore mouth,
+    bore_mouth_limit(p), the same datum recess_radii() clears (D-17, L27/L28) -- exact
+    for a round or D-flat bore, the corner's reach for a hex or keyed bore, and so a
+    lower bound where a cutout faces a flat (L08). The rim side is measured from the
+    root circle, rf.
+    """
+    if p.hole_count > 0:
+        inner = p.hole_circle_d / 2 - p.hole_d / 2
+        outer = p.hole_circle_d / 2 + p.hole_d / 2
+        return inner - bore_mouth_limit(p), rf - outer
+    return None
+
+
 def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
     """Reasons the parameters can't produce a sound part, each with the fields involved.
 
@@ -500,6 +518,17 @@ class DerivedDimensions(BaseModel):
     web: float | None = Field(
         description="Thickness left between the recesses; null with no recess.",
         json_schema_extra={"unit": "mm"})
+    cutout_hub_wall: float | None = Field(
+        description="Thinnest wall left between the body cutout and the bore, measured "
+                    "from the farthest point of the chamfered bore mouth (a hex bore's "
+                    "corners, a keyway's floor corners): exact for a round or D-flat "
+                    "bore, a lower bound where a cutout faces a flat; null with no "
+                    "cutout.",
+        json_schema_extra={"unit": "mm"})
+    cutout_rim_wall: float | None = Field(
+        description="Thinnest wall left between the body cutout and the root circle; "
+                    "null with no cutout.",
+        json_schema_extra={"unit": "mm"})
     # A tuple, not a list: pydantic's `frozen=True` locks the attributes, not the objects
     # they hold, so a list here could still be edited in place by any reader of a shared
     # result -- the one field that would make "frozen" a lie (04-REVIEW.md WR-01).
@@ -602,6 +631,8 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         warnings.append("No room for a face recess between the bore wall and the tooth "
                         "rim; it was left out.")
 
+    walls = cutout_walls(p, pr.rf)
+
     # The mate is folded into this one document rather than patched on afterward
     # (D-02): a single construction site means a derive() bug that produces the wrong
     # shape fails loudly instead of quietly matching dict[str, Any] (D-09).
@@ -646,6 +677,8 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         recess_od=r3(2 * rr[1]) if rr else None,
         recess_fillet=r3(rec_fil) if rr else None,
         web=r3(p.face_width - sides * p.recess_depth) if rr else None,
+        cutout_hub_wall=r3(walls[0]) if walls else None,
+        cutout_rim_wall=r3(walls[1]) if walls else None,
         warnings=tuple(warnings),
         mate_teeth=mate_teeth,
         centre_distance=None if aw is None else r3(aw),

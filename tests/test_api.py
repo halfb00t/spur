@@ -80,7 +80,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
         "root_thickness", "root_gap", "root_fillet", "tip_chamfer_effective", "span_teeth",
         "span", "bore_effective", "hex_across_flats", "hex_across_corners",
         "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
-        "recess_fillet", "web", "warnings", "mate_teeth", "centre_distance",
+        "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall", "warnings",
+        "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -96,6 +97,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
     assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
     assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
+    assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
+    assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
@@ -275,6 +278,52 @@ def test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut() -> None:
     assert len(r.content) > 84
 
     r = client.get("/api/model.step", params={"tip_chamfer": 0.4})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_hole_link_is_served_with_its_walls() -> None:
+    """?hole_count=6&hole_d=4&hole_circle_d=20 end to end (D-03, D-17, D-19, D-20): the
+    schema, /api/info's two new numbers, the plain-default null case, and both export
+    formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["hole_count"]["group"] == "Holes"
+    assert props["hole_count"]["type"] == "integer"
+    assert props["hole_count"]["minimum"] == 0
+    assert props["hole_count"]["maximum"] == 200
+    assert props["hole_count"]["default"] == 0
+    assert props["hole_count"]["step"] == 1
+    assert props["hole_d"]["unit"] == "mm"
+    assert props["hole_d"]["maximum"] == 100
+    assert props["hole_d"]["step"] == 0.05
+    assert props["hole_d"]["default"] == 0
+    assert props["hole_circle_d"]["maximum"] == 400
+    names = list(props)
+    assert names.index("hole_count") == names.index("recess_fillet") + 1
+    assert names.index("hole_d") == names.index("hole_count") + 1
+    assert names.index("hole_circle_d") == names.index("hole_d") + 1
+
+    r = client.get("/api/info", params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 20})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["cutout_hub_wall"] == pytest.approx(3.025)
+    assert body["cutout_rim_wall"] == pytest.approx(2.438)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["cutout_hub_wall"] is None
+    assert body["cutout_rim_wall"] is None
+
+    r = client.get("/api/model.stl", params={"hole_count": 6, "hole_d": 4,
+                                             "hole_circle_d": 20, "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step",
+                   params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 20})
     assert r.status_code == 200
     assert r.content.startswith(b"ISO-10303-21;")
 

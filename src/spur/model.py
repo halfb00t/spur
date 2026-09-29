@@ -247,6 +247,36 @@ def _cut_keyway(solid: cq.Shape, p: GearParams) -> cq.Shape:
     return solid.cut(cq.Solid.makeBox(w, floor, p.face_width, pnt=cq.Vector(-w / 2, 0, 0)))
 
 
+def _hole_cutters(p: GearParams) -> list[cq.Solid]:
+    """N cylinders of diameter hole_d, centred on the circle hole_circle_d, hole 0
+    centred on +X (D-03: the D-flat's side, and polarArray's own default start).
+    Through the full face width from z = 0. bore_clearance is not added -- a cutout is
+    not a fit feature (Claude's Discretion, 11-CONTEXT.md)."""
+    return [cq.Solid.makeCylinder(
+                p.hole_d / 2, p.face_width,
+                _polar(p.hole_circle_d / 2, 2 * math.pi * k / p.hole_count))
+            for k in range(p.hole_count)]
+
+
+def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:  # noqa: ARG001 -- pr is unused by the holes branch this plan ships; 11-04/11-05's spoke/honeycomb branches read pr.rf
+    """The one body-cutout pattern, every cutter of it subtracted in a single boolean
+    cut -- never a per-cutter loop (ROADMAP SC1, research PITFALLS.md Pitfall 2). Runs
+    after _cut_keyway and before _chamfer_tips: the recess floor fillet and the
+    bore-rim chamfer are already baked geometry, so their selectors never see a cutout
+    edge (research ARCHITECTURE.md Q1), and the tip step stays last (10 D-13). The
+    spelling is measured, not assumed: bench/RESULTS.md "Honeycomb cell-count spike"
+    timed star (cut(*prisms)), compound and fuse within 0.03 s of each other at the
+    cap's cell count -- inside the run's own noise, never clearing D-24's 10% bar, so
+    the default cut(*prisms) spelling stands. pr is taken now because 11-04 and 11-05
+    read pr.rf for the spoke and honeycomb branches.
+    """
+    if p.hole_count > 0:
+        cutters: list[cq.Solid] = _hole_cutters(p)
+    else:
+        return solid
+    return solid.cut(*cutters)
+
+
 def _chamfer_tips(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
     """An end-face edge break on the tooth-tip arcs: bore_chamfer's exact call and
     meaning, symmetric 45 degrees, c off the end face and c off the tip (D-03).
@@ -365,6 +395,7 @@ def _build(p: GearParams) -> cq.Solid:
     solid = _cut_face_recesses(solid, p, pr.rf)
     solid = _cut_bore(solid, p)
     solid = _cut_keyway(solid, p)
+    solid = _cut_body(solid, p, pr)
     solid = _chamfer_tips(solid, p, pr)
 
     solids = solid.Solids()

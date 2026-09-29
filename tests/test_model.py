@@ -56,6 +56,7 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     # would carry the analytic caps' c=3 straight to the kernel and fail (10-01).
     {"tip_chamfer": 3, "profile_shift": 1.0, "pressure_angle": 14.5},
     {"tip_chamfer": 0.4, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+    {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20},
 ])
 def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     p = GearParams.model_validate(kw)
@@ -729,6 +730,40 @@ def test_recess_removes_expected_volume() -> None:
     r_in, r_out = rr
     ring = math.pi * (r_out ** 2 - r_in ** 2) * p.recess_depth * 2
     assert solid - build(p).Volume() == pytest.approx(ring, rel=1e-3)
+
+
+def test_the_hole_link_cuts_six_holes_through_the_recessed_floor() -> None:
+    """?hole_count=6&hole_d=4&hole_circle_d=20 on the default gear (REQ-cutout-composes):
+    six holes cut through the recessed floor in one cut call, hole 0 on +X (D-03), the
+    recess floor fillet's four TORUS faces untouched. _build_checked, not build(): the
+    lru_cache on build() would hand back a solid built by an earlier test's GearParams()
+    call for a "bare" GearParams() here, instead of a freshly built one.
+    """
+    p0 = GearParams()
+    p = GearParams(hole_count=6, hole_d=4, hole_circle_d=20)
+    plain = _build_checked(p0)
+    cut = _build_checked(p)
+
+    d_faces = (collections.Counter(f.geomType() for f in cut.Faces())
+              - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert d_faces == collections.Counter({"CYLINDER": 6})
+    r_faces = (collections.Counter(f.geomType() for f in plain.Faces())
+              - collections.Counter(f.geomType() for f in cut.Faces()))
+    assert not r_faces
+
+    assert len(cut.Edges()) - len(plain.Edges()) == 18
+
+    web = p.face_width - 2 * p.recess_depth  # the 3.5 mm web between the two recesses
+    assert plain.Volume() - cut.Volume() == pytest.approx(
+        6 * math.pi * (p.hole_d / 2) ** 2 * web, rel=1e-6)
+
+    assert sum(1 for f in cut.Faces() if f.geomType() == "TORUS") == 4
+    assert sum(1 for f in plain.Faces() if f.geomType() == "TORUS") == 4
+
+    mid = p.face_width / 2
+    assert cut.isInside(cq.Vector(10, 0, mid)) is False  # hole 0, centred on +X (D-03)
+    assert cut.isInside(cq.Vector(10 * math.cos(math.pi / 6), 10 * math.sin(math.pi / 6),
+                                  mid)) is True  # between holes 0 and 1
 
 
 def test_exports() -> None:
