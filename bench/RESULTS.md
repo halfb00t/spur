@@ -666,3 +666,192 @@ the recess out entirely and builds in about half the time (2.46-2.55 s at module
 lint/typecheck/import-lint/no-fake-done), against Phase 8's recorded **61.74s** / 330
 tests. The phase's keyway tests (66 new, across 09-01 through 09-04) add **+16.47s** to
 the gate, measured rather than assumed.
+
+## Tooth-tip chamfer spike (Phase 10, D-05)
+
+The committed measurement record for the ROADMAP Phase 10 research flag:
+`Mixin3D.chamfer()` on up to 400 edges is the one v0.2 operator in L09's cost family,
+and this phase measures it before the cap is designed (D-05). The probe chamfers the
+`2 x teeth` end-face tip-arc edges (`bench/tip_chamfer_spike.py`'s `tip_arcs`) through
+`spur.model._build_checked` plus one `chamfer()` call, with no `tip_chamfer` field in
+`GearParams` yet -- the field, the cap and the selector are 10-02 through 10-05, planned
+on these numbers. Command: `.venv/bin/python -m bench.tip_chamfer_spike`.
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `56daf85`
+- Load averages at start (script's own `os.getloadavg()`): 7.18, 5.62, 4.11
+- `uptime` moments before the run: load averages 7.72, 5.70, 4.12
+- SPUR_BUILD_TIMEOUT: 30 s
+- Both readings sit well above this project's usual "quiet" bar (>1.5 on this 12-core
+  host, Phase 7's own convention) -- the numbers below carry that caveat rather than
+  being presented as clean (L08).
+
+### Cost
+
+| Set | Arcs | Per face | Bare (s) | Chamfer (s) | STL (s) | STEP (s) | Request (s) | dFaces | dCone | dEdges | dVolume | BBox moved | Why |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| teeth=19 c=0.4 | 38 | 19/19 | 0.38 | 0.32 | 0.07 | 0.04 | 0.77 | 38 | 38 | 114 | -2.88 | 7.11e-15 | ok |
+| teeth=19 c=1.75 | 38 | 19/19 | 0.39 | 0.51 | 0.07 | 0.04 | 0.96 | 38 | 38 | 114 | -86.22 | 7.11e-15 | ok |
+| teeth=40 c=0.4 | 80 | 40/40 | 0.36 | 0.88 | 0.14 | 0.08 | 1.38 | 80 | 80 | 240 | -6.67 | 0.00e+00 | ok |
+| teeth=40 c=1.75 | 80 | 40/40 | 0.37 | 1.07 | 0.14 | 0.09 | 1.58 | 80 | 80 | 240 | -186.12 | 8.88e-16 | ok |
+| teeth=200 c=0.4 | 400 | 200/200 | 2.24 | 12.50 | 0.87 | 0.50 | 15.61 | 400 | 400 | 1200 | -35.84 | 8.88e-16 | ok |
+| teeth=200 c=1.75 | 400 | 200/200 | 2.22 | 12.81 | 0.72 | 0.50 | 15.76 | 400 | 400 | 1200 | -950.48 | 8.88e-16 | ok |
+| teeth=19 module=10 c=0.4 | 38 | 19/19 | 0.19 | 0.34 | 0.20 | 0.04 | 0.73 | 38 | 38 | 114 | -15.56 | 0.00e+00 | ok |
+| teeth=19 module=10 c=3.375 | 38 | 19/19 | 0.19 | 0.42 | 0.19 | 0.04 | 0.80 | 38 | 38 | 114 | -1384.38 | 8.88e-16 | ok |
+| teeth=40 module=10 c=0.4 | 80 | 40/40 | 0.36 | 0.81 | 0.31 | 0.08 | 1.48 | 80 | 80 | 240 | -36.75 | 0.00e+00 | ok |
+| teeth=40 module=10 c=3.375 | 80 | 40/40 | 0.36 | 0.90 | 0.31 | 0.08 | 1.57 | 80 | 80 | 240 | -3121.42 | 8.88e-16 | ok |
+| teeth=200 module=10 c=0.4 | 400 | 200/200 | 2.22 | 11.85 | 1.28 | 0.54 | 15.35 | 400 | 400 | 1200 | -200.53 | 9.06e-14 | ok |
+| teeth=200 module=10 c=3.375 | 400 | 200/200 | 2.22 | 12.38 | 1.24 | 0.52 | 15.84 | 400 | 400 | 1200 | -16465.09 | 8.88e-16 | ok |
+| teeth=19 module=0.2 backlash=0 bore_d=0 c=0.05 | 38 | 19/19 | 0.04 | 0.29 | 0.05 | 0.04 | 0.39 | 38 | 38 | 114 | -0.01 | 8.88e-16 | ok |
+| teeth=19 module=0.2 backlash=0 bore_d=0 c=0.2 | 38 | 19/19 | 0.04 | 0.32 | 0.05 | 0.04 | 0.41 | 38 | 38 | 114 | -0.14 | 8.88e-16 | ok |
+| teeth=40 module=0.2 backlash=0 bore_d=0 c=0.05 | 80 | 40/40 | 0.80 | 0.79 | 0.08 | 0.07 | 1.67 | 80 | 80 | 240 | -0.01 | 0.00e+00 | ok |
+| teeth=40 module=0.2 backlash=0 bore_d=0 c=0.2 | 80 | 40/40 | 0.78 | 0.83 | 0.08 | 0.07 | 1.69 | 80 | 80 | 240 | -0.30 | 8.88e-16 | ok |
+| teeth=200 module=0.2 backlash=0.07 c=0.05 | 400 | 200/200 | 3.08 | 12.27 | 0.55 | 0.52 | 15.90 | 400 | 400 | 1200 | -0.04 | 1.78e-15 | ok |
+| teeth=200 module=0.2 backlash=0.07 c=0.2 | 400 | 200/200 | 3.03 | 12.27 | 0.53 | 0.50 | 15.83 | 400 | 400 | 1200 | -0.95 | 8.88e-16 | ok |
+
+All 18 rows read `ok`: exactly `2 x teeth` tip arcs split evenly across both end faces,
+`+2 x teeth` CONE faces, `+6 x teeth` edges, volume strictly smaller, bounding box
+unchanged within `TOL` (D-12). The chamfer call is the dominant cost at 200 teeth: it is
+77-82% of every 200-tooth row's request time (12.50-12.81s of a 15.35-15.90s request
+across the six 200-tooth rows). Cost scales with edge count, not chamfer size or module:
+38 edges cost 0.29-0.51s to chamfer, 80 edges 0.79-1.07s, 400 edges 11.85-12.81s --
+worse than linear (roughly 30x from 38 to 400 edges, not the ~10.5x edge-count ratio),
+matching L09's family (OCCT's fillet/chamfer machinery scales with simultaneous edge
+count). Whether the time moves with `c`: at 200 teeth, chamfering from the small `c` to
+the analytic-cap `c` changes the chamfer time by only 0.3-0.5s (2-4%) at module 1.75 and
+10, and by 0.00s at module 0.2 -- inside this session's run-to-run noise (host load 7.18
+at start, well above the 1.5 "quiet" bar). At 19/40 teeth the same comparison shows a
+larger *proportional* swing (e.g. teeth=19: 0.32s -> 0.51s), but the absolute difference
+(0.19-0.20s) is the same order as the 200-tooth swing -- consistent with the cost being
+driven by edge count, with `c` and module contributing at most session noise, not a real
+per-mm cost. **A smaller chamfer is not meaningfully cheaper**: D-07's first offer (a
+lower `tip_chamfer` `le`) would not have reduced the 200-tooth chamfer cost, because that
+cost is set by how many edges are chamfered in one call, not by how deep the chamfer is.
+The heaviest 200-tooth request (module=0.2, backlash=0.07, `c`=0.05) reads **15.90s of
+30s** -- about half the budget, comfortably inside it, but roughly 3x Phase 8's heaviest
+row (5.08s, `<=12` edges) and Phase 9's (4.85s, `<=2` edges), and about 2x the 7.39s
+worst single build already on record (10-concurrent, Phase 2) -- the 400-edge chamfer is
+the most expensive single operation this project has measured, even though it stays well
+inside `SPUR_BUILD_TIMEOUT`.
+
+### Kernel boundary
+
+| Set | pred | last_ok | first_fail | last_ok - pred | Why |
+|---|---|---|---|---|---|
+| profile_shift=1.0 pressure_angle=14.5 | 2.9375000 | 2.9374981 | 2.9375010 | -1.91e-06 | invalid |
+| profile_shift=1.0 pressure_angle=14.5 teeth=40 | 2.9375000 | 2.9374981 | 2.9375010 | -1.91e-06 | invalid |
+| profile_shift=0.8 pressure_angle=20 | 2.9375000 | 2.9374981 | 2.9375010 | -1.91e-06 | invalid |
+| profile_shift=1.0 pressure_angle=14.5 root_fillet=1.0 | 2.3835000 | 2.3834982 | 2.3835011 | -1.81e-06 | invalid |
+| root_fillet=1.0 | 2.4895000 | 2.4894991 | 2.4895020 | -9.08e-07 | invalid |
+| profile_shift=1.0 pressure_angle=14.5 module=1 bore_d=5 bore_flat=0 | 1.3240000 | 1.3639641 | 1.3639669 | 4.00e-02 | invalid |
+
+200-tooth pair (`teeth=200 profile_shift=1.0 pressure_angle=14.5`): pred - 0.001 ->
+builds, pred + 0.05 -> invalid.
+
+The kernel stops within about 2 microns of `pred = ra - spline_start` on five of the six
+sets (last_ok reads 0.9-1.9e-6 mm *inside* pred, first_fail 0.9-1.0e-6 mm *past* it,
+20-step bisection resolution) -- teeth-independent where compared (19 and 40 teeth agree
+to the same gap), the way `ROOT_CONTACT` is and the hex corner (L27) is not. The sixth
+set (module 1, x 1.0) builds 0.0400 mm *past* `pred`, confirming the one flagged
+exception (the rule is conservative, never optimistic, where it differs): `pred` under-
+predicts by 0.04 mm there, which only means the rule trims a hair more than the kernel
+strictly needs, never that it lets an unbuildable chamfer through. The 200-tooth pair
+confirms `pred` at the size that actually matters for the budget: it builds 0.001 mm
+inside `pred` and fails 0.05 mm past it. D-01 (`0.45 x face_width` = 3.375 mm at the
+default 7.5 mm face) and D-02 (`ra - r` = 3.5 mm at `profile_shift=1.0`) would both pass
+`c = 3.0` here -- inside both analytic caps -- yet the kernel turns that into an invalid
+solid (confirmed again at `pred + 0.05` = 2.9875 mm, also inside both caps). So the
+analytic caps alone are not sufficient: 10-02's cap needs a third term, `pred` less a
+margin (D-04 -- "the cap becomes the measured boundary").
+
+### Flank rule over the grid
+
+405 sets validated, 163 conservative (pred < the analytic cap), 0 failed, 17 also built
+at the analytic cap.
+
+Every one of the 163 sets where `pred` sits inside the analytic cap built cleanly both at
+`pred` and 0.05 mm inside it (0 failures) -- confirming `pred`'s bisected boundary holds
+across the grid, not just the six hand-picked boundary sets. 17 of those 163 sets *also*
+built when chamfered all the way out to the (larger) analytic cap: the `pred`-based rule
+trims some chamfers the kernel would in fact have accepted on those 17 -- a capped
+dimension, reported in `warnings`, never a refused one (L03); the rule is conservative by
+construction, not a source of a new 422.
+
+### Verdict
+
+**Verdict:** held -- 18 cost rows ok, 6 boundary sets held, grid 163/405 conservative
+with 0 failures, heaviest 200-tooth request teeth=200 module=0.2 backlash=0.07 c=0.05 --
+15.90 s of 30 s.
+
+## Tooth-tip chamfer build and export time (Phase 10)
+
+The committed measurement record for the tooth-tip chamfer at its heaviest allowed
+configuration (ROADMAP Phase 10 SC4; `REQ-measured-build-time`'s per-feature entry,
+re-measured combined in Phase 12). The runner is `make bench.build` over the committed
+sweep `bench/sweeps/tip_chamfer.json`, reused unchanged from Phase 8 (08 D-12). The
+sweep has 9 rows, per D-06: `module` {1.75, 10} (module drives fine-STL export time,
+Phase 8's probe) x `tip_chamfer` {0.4, the largest each module allows -- 1.75 mm at the
+pitch circle for module 1.75, 3 mm at the field's own `le` for module 10} x
+`recess_sides` {both, none} (a recess is the heaviest factor Phase 8 and 9 both found),
+on the default bore -- 8 rows -- plus one row at module 0.2, backlash 0.07 (the finest
+tips this model allows, at the backlash that keeps the tooth tip above `check()`'s
+0.05 mm floor), with its recess. 10-01's spike found the chamfer's cost does not depend
+on `c` (edge count dominates, not chamfer depth or module), so the 0.4 mm rows here are
+a check on that finding, not expected to be the heaviest.
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `e63ae4c`
+- Sweep: `bench/sweeps/tip_chamfer.json`
+- Load averages at start (script's own `os.getloadavg()`): 3.29, 4.08, 4.36
+- `uptime` moments before the run: load averages 3.88, 4.42, 4.51
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+- Both readings sit above this project's usual "quiet" bar (>1.5 on this 12-core host,
+  Phase 7's own convention) -- the numbers below carry that caveat rather than being
+  presented as clean (L08).
+
+### Sweep
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 tip_chamfer=0.4 recess_sides=both | 13.95 | 0.81 | 0.50 | 14.77 | yes |
+| teeth=200 module=1.75 tip_chamfer=0.4 recess_sides=none | 13.21 | 0.76 | 0.48 | 13.97 | yes |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both | 14.17 | 0.70 | 0.48 | 14.87 | yes |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=none | 13.38 | 0.62 | 0.50 | 14.01 | yes |
+| teeth=200 module=10 tip_chamfer=0.4 recess_sides=both | 13.40 | 1.22 | 0.48 | 14.63 | yes |
+| teeth=200 module=10 tip_chamfer=0.4 recess_sides=none | 12.63 | 0.77 | 0.48 | 13.40 | yes |
+| teeth=200 module=10 tip_chamfer=3 recess_sides=both | 13.51 | 1.20 | 0.49 | 14.71 | yes |
+| teeth=200 module=10 tip_chamfer=3 recess_sides=none | 12.75 | 0.76 | 0.48 | 13.51 | yes |
+| teeth=200 module=0.2 backlash=0.07 tip_chamfer=0.2 recess_sides=both | 14.32 | 0.52 | 0.46 | 14.84 | yes |
+
+**Heaviest:** teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both -- 14.87 s of 30 s.
+
+The heaviest row (14.87 s) sits at about half the 30 s timeout -- roughly 3x Phase 8's
+heaviest hex row (5.08 s) and Phase 9's heaviest keyway row (4.85 s), and about 2x the
+7.39 s worst single build already on record ("### `SPUR_BUILD_TIMEOUT`" above, 200 teeth
+under ten concurrent requests). The chamfer operator is the dominant cost, exactly as
+10-01's spike found: at ~13-14 s of bare build against the spike's own 12.50-12.81 s
+chamfer-only measurement on the same 400-edge case, the chamfer step accounts for the
+large majority of every row's build time here too.
+
+### SPUR_BUILD_TIMEOUT margin
+
+`SPUR_BUILD_TIMEOUT`'s 30 s default was set at about 4x the 7.39 s worst build on record
+("### `SPUR_BUILD_TIMEOUT`" above). The heaviest tip-chamfer row (14.87 s) leaves only
+30 / 14.87 ~= **2.0x** of that margin -- half of what the default was sized against. This
+sweep builds one gear at a time, so behaviour under ten concurrent builds is not measured
+here, and nothing is extrapolated from it.
+
+### make verify wall time
+
+`time make verify`: **453 passed in 97.18s** -- **98.17s** wall time (`time`, includes
+lint/typecheck/import-lint/no-fake-done), against Phase 9's recorded **78.21s** / 396
+tests. The phase's tip-chamfer tests (57 new, across 10-01 through 10-04) add **+19.96s**
+to the gate, measured rather than assumed.

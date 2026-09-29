@@ -151,6 +151,21 @@ pytest — L13). Full list with sources and acceptance evidence:
   the existing warnings; `keyway_floor_to_wall`/`keyway_width_effective` added to `DerivedDimensions`
   with the 44-record fixture byte-unchanged; heaviest of 32 sweep rows 4.85 s of 30 s; verified 12/12,
   `make verify` 396 tests (L28) — Phase 9
+- ✓ REQ-tip-chamfer + REQ-tip-chamfer-capped — `tip_chamfer` (mm, 0–3 in 0.05 steps, default
+  off) is a symmetric 45° edge break cut by `solid.chamfer()` on the `CIRCLE` edges at `ra`
+  whose both endpoints lie on an end face, run last in `_build` after the keyway; the applied
+  size is the smallest of three limits — `0.45 × face_width` (a land stays on the tip), the
+  addendum `ra − r` (the footprint stays above the pitch circle) and the measured kernel
+  boundary `ra − spline_start` (D-04: 10-01's spike bisected it to ~2 µm on five of six
+  configurations, the sixth conservative by 0.04 mm, never optimistic) — capped and warned
+  (L03), `tip_chamfer_effective` added to `DerivedDimensions`; proven on the built solid
+  (+38 CONE faces, +114 edges, −22.7557 mm³ on three bore shapes; the proof goes red when the
+  step is skipped; the boundary holds one step either side); the 44-record fixture
+  byte-unchanged; help text names no size — the research-era sizing figure has no source;
+  heaviest of 9 sweep rows 14.87 s of 30 s (must-debt filed: the timeout margin is now ~2×);
+  verified 5/5, `make verify` 455 tests; review WR-01 (silent sub-resolution discard) and the
+  Codex-found CR-01 (a warning naming a limit that was not binding) fixed, 2 info open (L29)
+  — Phase 10
 
 ### Active
 
@@ -160,7 +175,6 @@ Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
 - [ ] Spoke-arm body cutout with an explicit arm count
 - [ ] Circular lightening-hole cutout with an explicit hole count
 - [ ] Hexagonal-pattern cutout, cell count capped to the build timeout
-- [ ] Tooth-tip chamfer
 - [ ] Cutouts compose with face recesses, any bore profile and each other; direct conflicts
       are 422s naming the fields
 - [ ] A measured build time per feature at its heaviest allowed configuration, inside the
@@ -288,6 +302,7 @@ quick reference.
 | L26 | The pre-v0.2 part is pinned by a regression fixture (`tests/regression/pre_v0_2.json`, written only by `make fixture.regen`, 44 records / 85 cases, every later phase re-runs it unmodified), and an edge selector never silently selects nothing: `_bore_rim_edges` and `_groove_floor_edges` raise `BuildError` on an empty selection while their feature is on; the bore-rim bound lives in `calc.bore_rim_limit(p)` with a measured 0.01 mm slack in `model.py` | ✓ Good — fixture cost 16.27 s on `make verify`, accepted over the 15.0 s D-06 line (human decision); tripwire 32 red / 0 derive; `make verify` 289 tests |
 | L27 | A hex bore replaces the whole round profile and its limits are the chamfered corner's, measured: `bore_hex` (0–200 mm, step 0.05, default 0) cuts `polygon(6, A/F + bore_clearance, circumscribed=True)` in place of the round/D-flat hole; `bore_d` and `bore_flat` are ignored with one warning naming each non-zero field (never a 422 — supersedes the original REQ-hex-bore sentence; hex × keyway stays a 422 and is Phase 9's); `check()` refuses a hex whose corners, or whose chamfered mouth (`bore_mouth_limit = rim + 2c/√3`), come within MIN_WALL of the root circle — no side-length rule, because the kernel chamfers a 0.375 mm side at the 3 mm bound; `recess_radii()` clears the chamfered mouth for every bore shape; the replay compares recorded fields exactly and requires later fields null; `make bench.build` runs a committed sweep file so Phases 9–12 reuse it | ✓ Good — 30/30 must-haves; `make verify` 330 tests; heaviest sweep row 5.08 s of 30 s (teeth 200, m 1.75, hex 200, recess both, chamfer 0.4); fixture byte-unchanged; round bore's own chamfer reach filed as `must` debt |
 | L28 | A keyway is a slot cut after the bore's chamfer, its depth measured from the as-cut bore wall: `keyway_width`/`keyway_depth` (0–200 mm, step 0.05, default 0) cut a slot of width `keyway_width + bore_clearance` from the axis to a flat floor at `bore_radius(p) + keyway_depth` centred on +Y (a quarter turn from the D-flat), after `_cut_bore` so the rim selector's counts are the pre-keyway ones and the slot's edges are never chamfered; D-02/D-10/D-11 are the part's rules (arc wall to the D-flat's corner, floor corner vs the root, width < bore) and D-12 the kernel's measured contact; the recess yields to the keyway corner; no standard-table keyway size anywhere in help or docs | ✓ Good — 12/12 must-haves; `make verify` 396 tests; datum read back within 1e-6 mm; heaviest sweep row 4.85 s of 30 s (a 3 × 1.4 keyway that keeps its recess, lighter than the largest keyway); fixture byte-unchanged; Phase 8's round-chamfer debt resolved in `4b6a5b9` |
+| L29 | The tooth-tip chamfer is a 3D edge break on the end-face tip arcs (`solid.chamfer()`, symmetric 45°, the last build step, selector requires both endpoints on an end face), capped at the smallest of the tip land (`0.45 × face_width`), the addendum (`ra − r`) and the measured kernel boundary (`ra − spline_start`, D-04, bisected to ~2 µm); help text names no size because the research-era sizing figure has no source; heaviest allowed configuration 14.87 s of 30 s | ✓ Good — measured; the ~2× timeout margin it leaves is filed as must-debt for Phase 12's combined re-measurement |
 
 ## Success Metric (Milestone v0.1)
 
@@ -340,4 +355,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-27 after Phase 9 (Keyway Bore).*
+*Last updated: 2026-09-28 after Phase 10 (Tooth-Tip Chamfer).*

@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 10
-current_phase_name: Tooth-Tip Chamfer
-status: "Phase 09 shipped — PR #10"
-stopped_at: Phase 09 complete, ready to plan Phase 10
-last_updated: "2026-09-28T06:40:13.701Z"
+current_phase: 11
+current_phase_name: Body Cutouts
+status: "Phase 10 shipped — PR #11"
+stopped_at: Phase 10 complete, ready to plan Phase 11
+last_updated: "2026-09-28T15:20:46.155Z"
 last_activity: 2026-09-28
-state_head: 31269e290ff08ecb37c1553f168fa78ef512c7e7
+state_head: 9d7e1344c64df6db46cec68cd05e0a84d0cfcd40
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 16
+  completed_plans: 16
   percent: 17
 ---
 
@@ -21,24 +21,24 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-27)
+See: .planning/PROJECT.md (updated 2026-09-28)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 10 — Tooth-Tip Chamfer (an edge-break chamfer on the tooth-tip arcs; flanks, root fillets, bore and outside diameter untouched; depends on Phase 7 only, independent of the Phase 8–9 bore work)
+**Current focus:** Phase 11 — Body Cutouts (exactly one of lightening holes, spoke arms or a honeycomb web, composing with any bore profile and with face recesses; the first phase to combine a recess with a heavy cut against the 30 s budget)
 
 ## Current Position
 
-Phase: 10 — Tooth-Tip Chamfer
+Phase: 11 — Body Cutouts
 Plan: Not started
-Status: Phase 09 shipped — PR #10
+Status: Phase 10 shipped — PR #11
 Last activity: 2026-09-28
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed via GSD: 32 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2, Phase 8: 4, Phase 9: 5; v0 was built and verified
+- Total plans completed via GSD: 37 (Phase 2: 5, Phase 3: 3, Phase 4: 3, Phase 5: 6, Phase 6: 4, Phase 7: 2, Phase 8: 4, Phase 9: 5, Phase 10: 5; v0 was built and verified
   directly against `make verify`, before this planning structure existed)
 - Average duration: N/A
 - Total execution time: N/A
@@ -57,6 +57,8 @@ Last activity: 2026-09-28
 | 8. Hex Bore | 4 | ~2h49m | ~42min |
 | 07 | 2 | - | - |
 | 9. Keyway Bore | 5 | ~2h10m | ~26min |
+| 10. Tooth-Tip Chamfer | 5 | ~2h08m | ~26min |
+| 10 | 5 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -82,6 +84,12 @@ kernel proofs) next; 09-01 (14 min, spanning the human-verify checkpoint on the 
 09-04 (~23 min, 32 sweep rows all inside 30 s on the first run) and 09-05 (~21 min) were routine.
 Verification passed 12/12; `make verify` 396 tests; the two Rule-3 deviations were lint/type-only;
 code review pending at transition time.
+Phase 10's five plans took ~2h08m: 10-01 (~52 min — the measured spike: six 20-step bisections
+and a 405-set grid, no code under `src/`) dominated; 10-02 (24 min, the tracer plus the cap
+tests), 10-03 (19 min, proofs only), 10-04 (17 min, nine sweep rows all inside 30 s on the
+first run) and 10-05 (16 min) were routine. Verification passed 5/5; `make verify` 453 tests,
+wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warning (WR-01, open)
+/ 2 info; four executor deviations, all lint- or wording-only.
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -127,6 +135,16 @@ code review pending at transition time.
 | Phase 09 P03 | 45min | 2 tasks | 7 files |
 | Phase 09 P04 | 23min | 2 tasks | 3 files |
 | Phase 09 P05 | ~21min | 2 tasks | 5 files |
+| Phase 10 P01 | ~52min | 2 tasks | 2 files |
+| Phase 10 P02 | ~24min | 2 tasks | 9 files |
+| Phase 10 P03 | ~19min | 2 tasks | 3 files |
+| Phase 10 P04 | ~17min | 2 tasks | 5 files |
+| Phase 10 P05 | ~16min | 3 tasks | 8 files |
+| Phase 10 P01 | 52min | 2 tasks | 2 files |
+| Phase 10 P02 | ~24min | 2 tasks | 9 files |
+| Phase 10 P03 | 19min | 2 tasks | 3 files |
+| Phase 10 P04 | ~17min | 2 tasks | 5 files |
+| Phase 10 P05 | 16min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -161,6 +179,22 @@ pending; the next milestone starts this list fresh.
 - [Phase 09]: D-11's bound (keyway_width >= bore_d) is definitional, not kernel-measured -- re-confirmed the kernel never fails as keyway_width approaches bore_d, so no crash boundary exists to search for.
 - [Phase 09]: 09-04's keyway sweep measured all 32 rows inside SPUR_BUILD_TIMEOUT=30s on the first run (heaviest 4.85s of 30s) -- the 08 D-11 gate never fired. — The heaviest row is a 3 x 1.4 mm keyway that keeps its face recess, not the largest keyway the rules allow, which pushes the recess out and builds in about half the time -- confirming the planning probe that the sweep must measure both keyway sizes to find the heaviest configuration.
 - [Phase 09]: L28 appended after L27 (0 deleted lines): the keyway's fields, datum formula, build order, recess yield, every refusal, D-12's fix, the two derived numbers and the sweep's heaviest row (4.85s of 30s), each cited to its SUMMARY sha or measurement.
+- [Phase 10]: The tip chamfer's cap is the smallest of three limits and the third is measured, not assumed: 10-01's spike found the kernel failing inside the two analytic caps wherever the root fillet's lead-in reaches above the pitch circle, and `ra - spline_start` predicted the boundary within ~2 µm on five of six configurations (the sixth conservative by 0.04 mm, never optimistic); the tests pin one step either side (2.937 mm builds, 2.9875 mm fails).
+- [Phase 10]: `_chamfer_tips` runs last in `_build`, after `_cut_keyway`, and `_tip_edges` requires both endpoints on an end face — a radius-only test would re-select the moved arcs on a re-chamfer (D-03, D-13); the D-12 proof pins +38 CONE faces / +114 edges / −22.7557 mm³ and goes red when the step is skipped.
+- [Phase 10]: 10-04's sweep measured all 9 rows inside `SPUR_BUILD_TIMEOUT=30s` on the first run (heaviest 14.87 s: 200 teeth × 1.75 mm chamfer with both recesses) — the D-07 over-budget checkpoint never fired, but 14.87 s crosses the quarter-of-timeout trigger, so the narrowed margin is filed as must-debt rather than hidden.
+- [Phase 10]: L29 appended after L28 (0 deleted lines) and names no chamfer size: the research-era sizing figure has no source and appears nowhere in help text, README or docs (ROADMAP SC2); 10-05's first draft quoted it to reject it and tripped the plan's own grep — reworded to cite the research source without the number.
+- [Phase 10]: The tip-arc selector tests both endpoints' z against {0, face_width} to distinguish original tip arcs from moved ones after a chamfer -- confirmed at 200 teeth and module 0.2/10, not just 19 teeth.
+- [Phase 10]: pred = ra - spline_start is the measured D-04 kernel boundary, teeth-independent where compared (19/40 teeth agree to ~2 microns); one flagged set (module 1, x 1.0) is conservative by 0.04mm.
+- [Phase 10]: Chamfer cost is dominated by edge count (38/80/400 edges), not c or module -- a lower tip_chamfer le would not reduce the heaviest 200-tooth row's cost; D-07's over-budget checkpoint never fires (heaviest 15.90s of 30s).
+- [Phase 10]: 17 of 163 grid sets where pred sits inside the analytic cap also built at the (larger) analytic cap -- the pred-based rule is conservative, trims some buildable chamfers, never a 422.
+- [Phase 10]: 10-02: tip_chamfer_limit(p) returns a 3-way min() over (limit, reason) tuples rather than three ifs, so an exact tie between two limits breaks on the reason text deterministically with no extra branching. — Continues root_fillet's/recess_fillet's cap-function shape; avoids writing and testing a fourth branch for the tie case.
+- [Phase 10]: 10-02: model._chamfer_tips assigns the chamfer() result to the solid variable before returning it, matching _cut_bore's shape, instead of returning the call directly. — Mixin3D.chamfer's return type is untyped (Any); mypy's no-any-return check fires on a bare return of the chamfer call but not when the same expression is assigned to a cq.Shape-typed variable first.
+- [Phase 10]: 10-03: the built-solid proof and its tripwire share one helper (_assert_only_the_tip_arcs_were_chamfered) so both use the same face/edge/volume/bounding-box/selector checks -- Phase 7's tripwire precedent, a third instance.
+- [Phase 10]: 10-03: the kernel-boundary test patches spur.model.tip_chamfer_effective directly (2.9875) rather than the tip_chamfer field, because the field's own cap would clamp any settable value back inside the boundary before it reached the kernel.
+- [Phase 10]: 10-04: the tooth-tip chamfer's heaviest 200-tooth row (14.87s of 30s) was filed as must-debt, since it crosses the 7.5s quarter-of-timeout trigger the SPUR_BUILD_TIMEOUT default's own 4x rationale set.
+- [Phase 10]: 10-04: D-07's over-budget checkpoint never fired -- all 9 tip-chamfer sweep rows built inside 30s on the first run, heaviest 14.87s, so no human decision was needed on the field's le or a teeth-dependent cap.
+- [Phase 10]: 10-05: The root fillet's straight lead-in issue is filed as must-debt, not fixed -- correcting it means either an outline change with its own Lxx and fixture regeneration, or a README correction, both outside this phase's feature (CLAUDE.md 'note the tangent').
+- [Phase 10]: 10-05: L29 appended after L28 (0 deleted lines): the field, cut, three-limit cap with D-04's measured boundary, derived field/warning, spike/sweep cost, proof and reversibility, each cited to a SUMMARY sha or bench/RESULTS.md, none re-estimated.
 
 ### Pending Todos
 
@@ -168,6 +202,22 @@ None yet.
 
 ### Blockers/Concerns
 
+- ℹ️ [Phase 10] Code review WR-01 (a nonzero `tip_chamfer` under 0.0005 mm was silently
+  discarded) and CR-01 (its first fix attributed print-precision rounding to a geometric
+  limit — found by the Codex lane, confirmed internally) are both fixed: `54fe020`,
+  `60d02f7`. A request that rounds to nothing now warns with its true cause; sub-µm
+  rounding of a nonzero request stays silent like every other 3-dp field (human decision
+  2026-09-28). IN-01/IN-02 stay open (info) in `10-REVIEW-DISPOSITION.md`.
+- ⚠️ [Phase 10] The tip chamfer's heaviest row (14.87 s) leaves ~2× of the 30 s
+  `SPUR_BUILD_TIMEOUT` where the default was sized against ~4×; Phase 12 re-measures every
+  feature combined. `docs/tech_debt/active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md` (must).
+- ⚠️ [Phase 10] The root fillet's straight lead-in can reach above the pitch circle
+  (pre-existing, exposed by 10-01's probe):
+  `docs/tech_debt/active/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md` (must).
+- ⚠️ [Phase 10] `gsd_run query commit`'s 30 s timeout killed the `make verify` hook (~100 s
+  warm at 453 tests) twice more this session — the phase-complete and the review-disposition
+  commits — each recovered by a plain `git commit` with hooks after re-applying pre-commit's
+  stash of `state.json`. The Phase 9 item below stands; a warm-up run no longer helps.
 - ⚠️ [Phase 9] `gsd_run query commit`'s hard-coded 30 s timeout cannot complete this repo's
   `make verify` pre-commit hook, now ~78 s warm (396 tests): 09-04 and 09-05 each hit it and fell
   back to plain `git commit` with hooks running (never `--no-verify`). The filed must-debt
@@ -225,14 +275,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-27T15:40:31.000Z
-Stopped at: Phase 09 complete, ready to plan Phase 10
+Last session: 2026-09-28T14:09:01.000Z
+Stopped at: Phase 10 complete, ready to plan Phase 11
 Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-secure-phase 9` — `workflow.security_enforcement` is on and Phase 9 has no SECURITY.md yet
-- `/gsd-validate-phase 9` — Nyquist validation hook is on (Phase 6 precedent: 11/11)
-- Open a PR for `gsd/phase-09-keyway-bore` and land it with `make pr.land PR=N`
-- Then `/gsd-discuss-phase 10` on a `gsd/phase-10-*` branch cut from the squash commit (Phase 10 has no CONTEXT.md yet)
-- Run `make verify` once at session start before the first SDK commit (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)
+- `/gsd-code-review 10 --codex` — optional: a Codex pass over the CR-01 fix diff (`60d02f7`), the one phase-10 diff no second lane has read yet
+- Open a PR for `gsd/phase-10-tooth-tip-chamfer` and land it with `make pr.land PR=N`
+- `/gsd-map-codebase --paths bench` — the codebase-drift gate warned on every Phase 10 wave: the map predates `bench/`
+- Then `/gsd-discuss-phase 11` on a `gsd/phase-11-*` branch cut from the squash commit (Phase 11 has no CONTEXT.md yet)
+- Expect `gsd_run query commit` to time out on every commit (hook ~100 s > 30 s) and fall back to a plain `git commit` with hooks; check for a pre-commit stash patch after each timeout (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)

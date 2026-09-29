@@ -3,7 +3,9 @@ needed; `_is_capped` is a plain function over two byte counts. Also covers
 `bench.build_time`'s sweep file and budget predicate (08-04): the Phase 8 hex-bore sweep
 is D-11's exact cross product, and `Timing.inside` pins the budget boundary. Also pins
 the Phase 9 keyway sweep (09-04): its own cross product, with the largest keyway each
-rule allows sitting exactly one step from a refusal.
+rule allows sitting exactly one step from a refusal. Also pins the Phase 10 tip-chamfer
+sweep (10-04): its own cross product, with each largest chamfer sitting exactly on its
+limit.
 
 Run as `.venv/bin/python -m pytest tests/test_bench.py -q` **from the repo root** -- the
 `-m` form is what puts the repo root on `sys.path`, which is what makes `import bench`
@@ -23,6 +25,7 @@ from pydantic import ValidationError
 
 from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
+from spur.calc import tip_chamfer_effective
 from spur.params import GearParams
 
 
@@ -125,3 +128,55 @@ def test_the_keyway_bore_sweep_is_every_combination_with_the_largest_keyway_each
                              ("keyway_depth", p.keyway_depth + 0.05)):
             with pytest.raises(ValidationError):
                 GearParams.model_validate({**p.model_dump(), field: value})
+
+
+def test_the_tip_chamfer_sweep_is_every_combination_d_06_names() -> None:
+    """The committed Phase 10 sweep is D-06's 9 rows, at 200 teeth (the 400-edge case
+    10-01's spike found the most expensive single operation this project has measured):
+    module {1.75, 10} because module drives fine-STL export time (Phase 8's probe);
+    tip_chamfer {0.4, the largest each module allows} -- the pitch circle binds at
+    1.75 mm (module 1.75), the field's own `le` binds at 3 mm (module 10); recess_sides
+    {both, none} because a recess changes the bare build, the heaviest factor Phase 8
+    and 9 both found; and one module-0.2 row, the finest tips this model allows, at the
+    backlash (0.07) that keeps its tooth tip above check()'s 0.05 mm floor. 10-01 also
+    found the chamfer's cost does not change with `c` (edge count dominates, not depth
+    or module), so the 0.4 mm rows are here as a check on that finding, not because
+    they are expected to be the heaviest.
+
+    Every row is therefore a buildable gear under 10-02's rules -- load_sweep would
+    have raised otherwise.
+    """
+    sets = load_sweep(DEFAULT_SWEEP.parent / "tip_chamfer.json")
+    assert len(sets) == 9
+
+    module_chamfer_pairs = ((1.75, 0.4), (1.75, 1.75), (10.0, 0.4), (10.0, 3.0))
+    want = {
+        (200, module, 0.1, chamfer, recess)
+        for module, chamfer in module_chamfer_pairs
+        for recess in ("both", "none")
+    }
+    want.add((200, 0.2, 0.07, 0.2, "both"))
+    got = {(p.teeth, p.module, p.backlash, p.tip_chamfer, p.recess_sides)
+           for _, p in sets}
+    assert got == want
+
+    for _, p in sets:
+        assert (p.bore_d, p.bore_flat, p.bore_chamfer, p.face_width) == (9.0, 8.0, 0.4, 7.5)
+
+    for _, p in sets:
+        if p.tip_chamfer == 0.4:
+            continue  # not on any limit -- nothing to pin here
+        assert tip_chamfer_effective(p) == p.tip_chamfer
+        if p.module == 10.0:
+            # 3 mm is the field's own `le`: one step past it is a field-level refusal,
+            # not a capped-and-warned value.
+            with pytest.raises(ValidationError):
+                GearParams.model_validate({**p.model_dump(), "tip_chamfer": p.tip_chamfer + 0.05})
+        else:
+            bumped = GearParams.model_validate(
+                {**p.model_dump(), "tip_chamfer": p.tip_chamfer + 0.05})
+            assert tip_chamfer_effective(bumped) == p.tip_chamfer
+
+    module_02_set = next(p for _, p in sets if p.module == 0.2)
+    with pytest.raises(ValidationError):
+        GearParams.model_validate({**module_02_set.model_dump(), "backlash": 0.08})

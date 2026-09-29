@@ -1,3 +1,4 @@
+import itertools
 import math
 
 import pytest
@@ -5,6 +6,7 @@ from pydantic import ValidationError
 
 from spur.calc import (
     MIN_WALL,
+    TIP_CHAMFER_MARGIN,
     DerivedDimensions,
     bore_mouth_limit,
     bore_radius,
@@ -18,7 +20,10 @@ from spur.calc import (
     keyway_width_effective,
     profile,
     recess_radii,
+    root_fillet,
     span_measurement,
+    spline_start,
+    tip_chamfer_effective,
 )
 from spur.params import GearParams
 
@@ -569,3 +574,154 @@ def test_centre_distance_matches_an_independent_solver() -> None:
                         assert got == pytest.approx(expected, rel=1e-12)
                     checked += 1
     assert checked > 200
+
+
+@pytest.mark.parametrize(("kw", "applied", "warning"), [
+    pytest.param({"tip_chamfer": 0.4}, 0.4, None, id="inside"),
+    pytest.param({"tip_chamfer": 1.7}, 1.7, None, id="pitch-step-inside"),
+    pytest.param({"tip_chamfer": 1.75}, 1.75, None, id="pitch-exactly"),
+    pytest.param({"tip_chamfer": 1.8}, 1.75,
+                 "Tip chamfer reduced to 1.75 mm to keep it above the pitch circle.",
+                 id="pitch-step-past"),
+    pytest.param({"tip_chamfer": 3}, 1.75,
+                 "Tip chamfer reduced to 1.75 mm to keep it above the pitch circle.",
+                 id="pitch-field-max"),
+    pytest.param({"face_width": 1, "recess_sides": "none", "tip_chamfer": 0.4}, 0.4, None,
+                 id="land-step-inside"),
+    pytest.param({"face_width": 1, "recess_sides": "none", "tip_chamfer": 0.45}, 0.45, None,
+                 id="land-exactly"),
+    pytest.param({"face_width": 1, "recess_sides": "none", "tip_chamfer": 0.5}, 0.45,
+                 "Tip chamfer reduced to 0.45 mm to leave a land on the tooth tip "
+                 "between the two faces' chamfers.",
+                 id="land-step-past"),
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "tip_chamfer": 2.9}, 2.9,
+                 None, id="flank-step-inside"),
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "tip_chamfer": 2.95}, 2.937,
+                 "Tip chamfer reduced to 2.937 mm to keep it on the involute flank, "
+                 "above the straight lead-in from the root fillet.",
+                 id="flank-step-past"),
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "tip_chamfer": 3}, 2.937,
+                 "Tip chamfer reduced to 2.937 mm to keep it on the involute flank, "
+                 "above the straight lead-in from the root fillet.",
+                 id="flank-field-max"),
+    pytest.param({"module": 10, "tip_chamfer": 3}, 3, None, id="le-binds"),
+    pytest.param({"teeth": 200, "module": 0.2, "backlash": 0.07, "tip_chamfer": 0.2}, 0.2,
+                 None, id="finest-tips-exactly"),
+    pytest.param({"teeth": 200, "module": 0.2, "backlash": 0.07, "tip_chamfer": 0.25}, 0.2,
+                 "Tip chamfer reduced to 0.2 mm to keep it above the pitch circle.",
+                 id="finest-tips-step-past"),
+    pytest.param({"tip_chamfer": 0.1234}, 0.123, None, id="print-precision-inside"),
+    pytest.param({}, 0.0, None, id="off"),
+])
+def test_a_tip_chamfer_is_capped_to_whichever_limit_binds_first(
+        kw: dict[str, object], applied: float, warning: str | None) -> None:
+    """D-01 (tip land), D-02 (pitch circle) and D-04 (the measured involute-flank
+    boundary): one step either side of each limit, never a ValidationError (L03). The
+    finest-tips rows are the precision edge: the pitch-circle limit at 200 teeth,
+    module 0.2 is 0.1999999999999993, a float residue that must not warn on a request
+    of exactly 0.2 -- derive() compares at the printed 3-dp resolution, not the raw
+    float."""
+    p = GearParams.model_validate(kw)
+    d = derive(p)
+    assert tip_chamfer_effective(p) == pytest.approx(applied)
+    assert d.tip_chamfer_effective == (pytest.approx(applied) if p.tip_chamfer > 0 else None)
+    tip_warnings = [w for w in d.warnings if w.startswith("Tip chamfer")]
+    assert tip_warnings == ([warning] if warning else [])
+
+
+def test_a_sub_print_precision_tip_chamfer_request_still_warns() -> None:
+    """10-REVIEW.md WR-01: a request under 0.0005 mm rounds to 0.0, so no limit ever
+    binds and the request would be silently dropped without this branch -- the part
+    built is the unchamfered default, not what was asked for, so it must still warn.
+
+    10-REVIEW.md CR-01: the WR-01 fix's first attempt reused tip_chamfer_limit(p)[1]
+    as the reason, which is only true when a limit actually bound the value -- here
+    none did (tip_chamfer_limit's pitch-circle bound for the default gear is 1.75 mm,
+    nowhere near 0.0004). The message must state the true cause (print resolution),
+    and asserting only a prefix (startswith) cannot see a wrong suffix -- that is
+    exactly how CR-01 slipped through the first fix's own test. Assert the full
+    string."""
+    p = GearParams(tip_chamfer=0.0004)
+    d = derive(p)
+    assert tip_chamfer_effective(p) == 0.0
+    tip_warnings = [w for w in d.warnings if w.startswith("Tip chamfer")]
+    assert tip_warnings == [
+        "Tip chamfer 0.0004 mm is below the 0.001 mm resolution it is cut at and was "
+        "not cut."
+    ]
+    assert not any(w.startswith("Tip chamfer reduced to") for w in tip_warnings)
+
+
+def test_the_tip_chamfer_field_is_bounded_zero_to_three() -> None:
+    with pytest.raises(ValidationError):
+        GearParams(tip_chamfer=3.05)
+    with pytest.raises(ValidationError):
+        GearParams(tip_chamfer=-0.05)
+    GearParams(tip_chamfer=3)  # does not raise
+
+
+@pytest.mark.parametrize("kw", [
+    {},
+    {"teeth": 200},
+    {"profile_shift": 1.0, "pressure_angle": 14.5},
+    {"bore_hex": 6},
+    {"keyway_width": 3, "keyway_depth": 1.4},
+])
+def test_the_tip_chamfer_changes_no_other_number(kw: dict[str, object]) -> None:
+    """D-15, the empty edge: a tip chamfer changes only tip_chamfer_effective and the
+    one tip-chamfer warning it can add. Every other derived field, and every other
+    warning, is untouched."""
+    p0 = GearParams.model_validate(kw)
+    p1 = GearParams.model_validate({**kw, "tip_chamfer": 1})
+    d0 = derive(p0).model_dump()
+    d1 = derive(p1).model_dump()
+    del d0["tip_chamfer_effective"], d1["tip_chamfer_effective"]
+    d0["warnings"] = tuple(w for w in d0["warnings"] if not w.startswith("Tip chamfer"))
+    d1["warnings"] = tuple(w for w in d1["warnings"] if not w.startswith("Tip chamfer"))
+    assert d0 == d1
+
+
+@pytest.mark.parametrize(("kw", "expected"), [
+    pytest.param({}, 15.4375, id="default"),
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5}, 17.1875, id="flank"),
+    pytest.param({"root_fillet": 0}, None, id="no-fillet"),
+])
+def test_spline_start_is_where_the_outline_starts_the_involute(
+        kw: dict[str, object], expected: float | None) -> None:
+    """Not Profile.r_start: that is the theoretical involute start, this is where
+    model._outline actually starts the spline (calc.spline_start's docstring)."""
+    p = GearParams.model_validate(kw)
+    pr = profile(p)
+    want = pr.rb if expected is None else expected  # root_fillet=0: no straight lead-in
+    assert spline_start(pr, root_fillet(p)) == pytest.approx(want, abs=1e-9)
+
+
+def test_a_rounded_tip_chamfer_cap_stays_inside_the_measured_kernel_boundary() -> None:
+    """The precision edge (D-04): round() can move the cap up by half a printed step
+    (2.9365 mm rounds to 2.937 mm), the margin is two half-steps, and the spike
+    measured the kernel failing within about 2 microns of the contact
+    (bench/RESULTS.md "Tooth-tip chamfer spike"). Pure maths, no kernel -- the same
+    405-set grid the spike used (teeth 19, bore_d 0, no recess), all at tip_chamfer 3,
+    a grid that silently shrank would fail the count assertion below."""
+    checked = 0
+    for module, shift, alpha, fillet, backlash in itertools.product(
+            (0.2, 0.5, 1, 1.25, 1.75, 2.5, 4),
+            (0.25, 0.5, 0.75, 1.0),
+            (14.5, 20, 25),
+            (0.5, 1.0, 3.0),
+            (0, 0.1)):
+        kw: dict[str, object] = {
+            "teeth": 19, "module": module, "profile_shift": shift,
+            "pressure_angle": alpha, "root_fillet": fillet, "backlash": backlash,
+            "bore_d": 0, "recess_sides": "none", "tip_chamfer": 3,
+        }
+        try:
+            p = GearParams.model_validate(kw)
+        except ValidationError:
+            continue
+        checked += 1
+        pr = profile(p)
+        margin = pr.ra - spline_start(pr, root_fillet(p)) - tip_chamfer_effective(p)
+        assert margin >= TIP_CHAMFER_MARGIN / 2 - 1e-12
+        assert tip_chamfer_effective(p) > 0
+    assert checked == 405

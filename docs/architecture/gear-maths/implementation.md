@@ -7,7 +7,7 @@ the frozen `DerivedDimensions` document `derive()` returns.
 
 | Piece | Does |
 |---|---|
-| `MIN_WALL`, `MIN_TIP_FDM`, `MIN_RECESS_WIDTH`, `ROOT_CONTACT` | the physical constants the rules are written against, in mm — `ROOT_CONTACT` is the measured contact threshold for a chamfered round or D-flat bore mouth reaching the root circle |
+| `MIN_WALL`, `MIN_TIP_FDM`, `MIN_RECESS_WIDTH`, `ROOT_CONTACT`, `TIP_CHAMFER_MARGIN` | the physical constants the rules are written against, in mm — `ROOT_CONTACT` is the measured contact threshold for a chamfered round or D-flat bore mouth reaching the root circle; `TIP_CHAMFER_MARGIN` is how far inside the involute spline's start the tip chamfer's footprint stops, 0.001 mm |
 | `inv(a)` | the involute function, `tan(a) - a` |
 | `Profile` + `profile(p)` | radii (`r`, `rb`, `ra`, `rf`), pitch half-angle, `r_start`, `half_angle(rho)` |
 | `bore_radius(p)` | bore radius including print clearance, 0 when there is no bore |
@@ -19,6 +19,9 @@ the frozen `DerivedDimensions` document `derive()` returns.
 | `bore_mouth_limit(p)` | the chamfered mouth's farthest reach, or a keyway's floor corner, whichever is farther — the datum `recess_radii()` clears by `MIN_WALL`, and `check()` keeps `MIN_WALL` inside the root |
 | `recess_radii(p, rf)` | the groove's effective `(inner, outer)` radius, or `None` |
 | `root_fillet(p)`, `recess_fillet(p, rf)` | the fillet radii actually used, after capping |
+| `spline_start(pr, fillet)` | the radius where the outline's involute spline begins, above the root fillet's straight lead-in; `model._outline` builds the flank from it |
+| `tip_chamfer_limit(p)` | the smallest of the tip chamfer's three limits, and the reason the warning names |
+| `tip_chamfer_effective(p)` | the tip chamfer actually cut, 3 dp, 0 when off |
 | `_tooth(pr)` | tip thickness, root thickness and root gap — all measured on the root circle |
 | `check(p)` | the refusals, each with the fields responsible |
 | `span_measurement(p)` | Wildhaber span over *k* teeth |
@@ -33,5 +36,6 @@ the CLI without either being edited. `_feasible()` is the model validator that c
 
 ## Entry points
 
-Nothing here is an entry point. It is called by `model.py` (for the effective fillets and
-radii), `app.py` (`/api/info`, `/api/schema`) and `cli.py` (`spur info`).
+Nothing here is an entry point. It is called by `model.py` (for the effective fillets,
+the tip chamfer, the radii and the involute start), `app.py` (`/api/info`,
+`/api/schema`) and `cli.py` (`spur info`).
