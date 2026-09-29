@@ -1199,3 +1199,14 @@ enough at this reading to record rather than round away (L08) -- filed as
 `docs/tech_debt/active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md`
 (must), not fixed here: Task 3's own scope is the `le`, not a new build-time guarantee on
 an arithmetic sum Phase 12 measures for real.
+
+### make verify wall time
+
+`time make verify` (host: 12 CPUs, arm64, 32.0 GiB RAM, Python 3.12.13, load averages
+3.07/4.04/4.65 at start, HEAD `67e0e3b`): **621 passed in 177.62s** -- **178.55s** wall
+time (`time`, includes lint/typecheck/import-lint/no-fake-done), against Phase 10's
+recorded **453 passed** / **98.17s** wall. The phase's body-cutout tests (168 new, across
+11-01 through 11-08) add **+80.38s** to the gate, measured rather than assumed. The wall
+time is now past 150 s, so every commit's pre-commit hook -- which runs this same `make
+verify` -- takes about that long too (D-23;
+`docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md`).
