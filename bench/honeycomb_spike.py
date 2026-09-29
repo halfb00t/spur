@@ -170,7 +170,15 @@ def cost_row(kw: dict[str, object], target: int, *, wall: float = 1.0,
 def slower(a: CostRow, b: CostRow) -> CostRow:
     """The row with the larger `request_s`: each row is timed twice, the slower kept --
     conservative against one lucky run understating the cost (T-11-03's mitigation:
-    a slow row must never be dropped or re-run away)."""
+    a slow row must never be dropped or re-run away).
+
+    A failed trial (`why` set) always wins over a successful one, regardless of
+    `request_s`: a failed cut/build never pays export time, so its `request_s` is
+    almost always *smaller* than a successful trial's -- comparing `request_s` alone
+    would let a real, reproducible failure lose to a lucky success and vanish before
+    the verdict ever sees it (11-REVIEW.md WR-01, external: codex)."""
+    if bool(a.why) != bool(b.why):
+        return a if a.why else b
     return a if a.request_s >= b.request_s else b
 
 
@@ -302,6 +310,14 @@ def main() -> int:
         reasons.append("the cap is under 50 cells")
     if confirm_row.request_s > BUDGET_S:
         reasons.append("the module-1.75 confirmation row exceeds the budget")
+    # WR-01 (11-REVIEW.md, external: codex): request_s alone never proved the
+    # confirmation or spelling rows actually succeeded -- only `ok()` (why == "")
+    # does, and slower() could hide a failure under a faster successful run, so a
+    # real build/cut failure in either row set could reach "Verdict: held" unseen.
+    if not confirm_row.ok():
+        reasons.append("the module-1.75 confirmation row failed")
+    if not all(row.ok() for row in spelling_rows.values()):
+        reasons.append("a cut-spelling row failed")
 
     print("### Verdict")
     if not reasons:
