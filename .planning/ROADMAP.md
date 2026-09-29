@@ -290,7 +290,44 @@ build-time relationship needs a dedicated benchmark sweep before any cap formula
 (`research/SUMMARY.md` "Research Flags"). Holes and spoke arms are well-documented patterns
 (`polarArray`/`cut(*cutters)`, generalizing `_cut_face_recesses`'s existing two-call
 pattern) — no research flag needed for those sub-parts.
-**Plans**: TBD
+**Plans**: 9 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 11-01-PLAN.md — D-21 first: amend REQ-spoke-cutout and SC2 for `spoke_fillet` through the edit-phase tooling, one human confirmation (plus the spoke-arm wall rule) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 11-02-PLAN.md — D-24 spike, measurement only: whole-cell count vs build/export time at 200 teeth, module 10, both recesses; the cut spelling; the measured `HEX_CELL_CAP` and its module-1.75 confirmation in `bench/RESULTS.md` (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 11-03-PLAN.md — Tracer: `?hole_count=6&hole_d=4&hole_circle_d=20` end to end (Holes group, `_cut_body` in one cut call, the two thinnest-wall numbers), then the hole refusals one step either side (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 11-04-PLAN.md — Spokes: five fields, sector cutters with analytic corner arcs, the fillet cap, the spoke refusals and the one-pattern rule (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 11-05-PLAN.md — Honeycomb: whole-cell lattice and raise-to-fit moved from the spike, the measured cap, count and size in the response, exact walls, the honeycomb refusals, derive()'s cost measured (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 11-06-PLAN.md — The three per-pattern sweeps at 200 teeth through `make bench.build`, recorded; D-18's over-budget gate (predicted to fire) and the chosen limit applied and re-measured (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 11-07-PLAN.md — Proof: every selector in the real pipeline with each cutout on each bore shape; the kernel either side of every wall rule; tangent cutters with no fuzzy boolean; the fillet cap on extreme sectors (wave 7)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 11-08-PLAN.md — Proof: each cutout read back off the built solid against the printed numbers, the recess fillet counted on every pattern and bore, both tripwires (wave 8)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 11-09-PLAN.md — README (bullet, ten rows, examples run as tests, geometry note), L30, architecture docs, three ideas filed, final `make verify` measured (wave 9)
 
 ### Phase 12: Composition Pass
 
@@ -346,5 +383,5 @@ in Phases 7–11; no open technical questions remain by this point.
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
-| 11. Body Cutouts | v0.2 | 0/? | Not started | - |
+| 11. Body Cutouts | v0.2 | 0/9 | Planned | - |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |
