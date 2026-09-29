@@ -1120,5 +1120,82 @@ One row reads over the honeycomb's own D-11 share (7.5 s, a quarter of
   (7.76 s build, 0.89 s STEP export)
 
 Per this plan's must-have and prohibition, none of these five rows is dropped, re-picked
-or re-run to green -- they are recorded above exactly as measured, and Task 2's
-checkpoint decision is pending as of this writing.
+or re-run to green -- they are recorded above exactly as measured. Task 2's checkpoint
+decision: lower `hole_count`'s and `spoke_count`'s `le` from 200 to 60 and 40 (D-18's
+first offer, the orchestrator's recommendation, accepted verbatim); the honeycomb's one
+over-share row is accepted as measured, `HEX_CELL_CAP` unchanged at 120. The re-run below
+proves the new `le`.
+
+### Re-run after the gate (lower-le)
+
+`hole_count`'s and `spoke_count`'s `le` lowered to 60 and 40 (`feat` commit `2224697`);
+`bench/sweeps/hole_cutout.json` and `bench/sweeps/spoke_cutout.json` re-generated at the
+new count on every row, same sizes and moduli as the first run, and re-run through
+`make bench.build`. The honeycomb sweep is unchanged and was not re-run -- its one
+over-share row was accepted, not gated on a new limit.
+
+#### Host state (re-run)
+
+- Machine, Python and kernel versions: unchanged from the first run's host state
+- HEAD: `9d523b5` (the commit the sweep files were re-read from; the `feat` commit that
+  changed `le` and the sweep files landed after this run started)
+- `uptime` moments before each run: hole 3.72; spoke 3.72 (same reading, back-to-back runs)
+- Load averages at start (`os.getloadavg()`): hole 9.27, 5.84, 4.92; spoke 32.17, 14.18,
+  8.21 -- both readings are again well above this project's "quiet" bar (>1.5), the spoke
+  run markedly more loaded than either the first run (5-10) or the hole re-run; the same
+  L08 caveat applies -- a quieter host reads every row faster, never slower.
+
+#### Holes at `le` 60
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both | 8.62 | 3.17 | 0.57 | 11.79 | yes |
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=none | 2.41 | 1.70 | 0.52 | 4.11 | yes |
+| teeth=200 module=1.75 hole_count=60 hole_d=4.9 hole_circle_d=339.9 recess_sides=both | 3.19 | 1.08 | 0.46 | 4.27 | yes |
+| teeth=200 module=1.75 hole_count=60 hole_d=4.9 hole_circle_d=339.9 recess_sides=none | 2.47 | 0.95 | 0.46 | 3.42 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=1 hole_circle_d=400 recess_sides=both | 3.07 | 1.19 | 0.41 | 4.26 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=1 hole_circle_d=400 recess_sides=none | 2.41 | 1.74 | 0.50 | 4.15 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=5.85 hole_circle_d=400 recess_sides=both | 3.24 | 1.19 | 0.41 | 4.43 | yes |
+| teeth=200 module=10 hole_count=60 hole_d=5.85 hole_circle_d=400 recess_sides=none | 2.41 | 1.68 | 0.47 | 4.10 | yes |
+
+**Heaviest:** teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both -- 11.79 s of 30 s.
+
+Every hole row is now inside budget -- the same row that overran at `le` 200 (41.85 s) is
+still the heaviest at `le` 60 (11.79 s, 2.54x margin), confirming the cost scales with
+count on this row (the recess-crossing fillet split, Pitfall 8) rather than being fixed.
+
+#### Spokes at `le` 40
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s |
+|---|---|---|---|---|---|
+| teeth=200 module=1.75 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 16.89 | 0.79 | 0.80 | 17.69 | yes |
+| teeth=200 module=1.75 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=none | 6.73 | 0.86 | 0.63 | 7.59 | yes |
+| teeth=200 module=1.75 spoke_count=40 spoke_width=4.3 hub_d=300 rim_wall=10 spoke_fillet=5 recess_sides=both | 4.16 | 1.02 | 0.69 | 5.18 | yes |
+| teeth=200 module=1.75 spoke_count=40 spoke_width=4.3 hub_d=300 rim_wall=10 spoke_fillet=5 recess_sides=none | 3.41 | 0.91 | 0.65 | 4.33 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 17.55 | 0.97 | 0.83 | 18.52 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=none | 7.58 | 1.04 | 0.63 | 8.63 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=5.85 hub_d=400 rim_wall=100 spoke_fillet=5 recess_sides=both | 13.83 | 1.03 | 0.82 | 14.86 | yes |
+| teeth=200 module=10 spoke_count=40 spoke_width=5.85 hub_d=400 rim_wall=100 spoke_fillet=5 recess_sides=none | 3.49 | 1.12 | 0.64 | 4.61 | yes |
+
+**Heaviest:** teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both -- 18.52 s of 30 s.
+
+Every spoke row is now inside budget -- the row that overran at `le` 200 on this same
+module (68.70 s) is the heaviest at `le` 40 (18.52 s, 1.62x margin). This run's load
+(32.17 at start) is the highest recorded anywhere in this section, well above the first
+run's own 5-10 and above the hole re-run's 9.27 -- the 18.52 s figure is likely
+conservative, not a quiet-host number.
+
+#### Room beside Phase 10's tip-chamfer row
+
+Naive addition only (this sweep builds one gear at a time; Phase 12 re-measures the real
+composition, as the first run's own margin section already noted): heaviest hole re-run
+(11.79 s) plus Phase 10's 14.87 s tip-chamfer row totals 26.66 s, 3.34 s inside 30 s.
+Heaviest spoke re-run (18.52 s) plus the same 14.87 s totals 33.39 s -- 3.39 s **over**
+30 s, not the ~2 s margin the gate's decision anticipated from the planning estimate. This
+arithmetic total was measured under this run's exceptional load (32.17); the accepted
+decision's rationale (~0.3 s/sector, projecting margin at typical load) is not
+contradicted by a single reading taken under 20x the "quiet" load, but the gap is real
+enough at this reading to record rather than round away (L08) -- filed as
+`docs/tech_debt/active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md`
+(must), not fixed here: Task 3's own scope is the `le`, not a new build-time guarantee on
+an arithmetic sum Phase 12 measures for real.
