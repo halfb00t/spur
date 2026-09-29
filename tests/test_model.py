@@ -1299,6 +1299,88 @@ def test_the_same_cutout_link_builds_the_same_solid_twice(kw: dict[str, object])
     assert a.Volume() == pytest.approx(b.Volume(), rel=1e-9)
 
 
+def _assert_the_recess_fillet_survives(cut: cq.Solid, p: GearParams, torus: int) -> None:
+    """REQ-cutout-composes' counted proof (Task 2): with both recesses, the floor
+    fillet survives on every floor edge each cutout pattern leaves -- no sharp
+    floor-to-wall circle remains anywhere on the finished solid -- and the TORUS face
+    count is the one the pinned kernel reads. What a through-cut does to a toroidal
+    fillet face (split into pieces, never removed from a surviving edge) is measured on
+    the pinned kernel and pinned here (research A4), not derived: no closed form gives
+    the fragment count after an arbitrary boolean cut.
+    """
+    assert cut.isValid()
+    assert len(cut.Solids()) == 1
+
+    rr = recess_radii(p, profile(p).rf)
+    assert rr is not None, "the row must carry a recess to prove the fillet survives"
+    heights: list[float] = []
+    if p.recess_sides in ("both", "bottom"):
+        heights.append(p.recess_depth)
+    if p.recess_sides in ("both", "top"):
+        heights.append(p.face_width - p.recess_depth)
+
+    try:
+        sharp = len(_groove_floor_edges(cut, rr, heights))
+    except BuildError:
+        sharp = 0
+    assert sharp == 0
+
+    assert sum(1 for f in cut.Faces() if f.geomType() == "TORUS") == torus
+
+
+@pytest.mark.parametrize(("kw", "torus"), [
+    pytest.param(HOLES, 4, id="d-flat-holes"),
+    pytest.param(HOLES_ACROSS, 14, id="d-flat-holes-across"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1}, 20, id="d-flat-spokes"),
+    pytest.param(CELLS, 14, id="d-flat-cells"),
+    pytest.param({**HOLES, "bore_flat": 0}, 4, id="round-holes"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1, "bore_flat": 0}, 20, id="round-spokes"),
+    pytest.param({**CELLS, "bore_flat": 0}, 14, id="round-cells"),
+    pytest.param({**HOLES, "bore_hex": 6}, 14, id="hex-holes"),
+    pytest.param({**SPOKES12, "spoke_fillet": 1, "bore_hex": 6}, 12, id="hex-spokes"),
+    pytest.param({**CELLS, "bore_hex": 6}, 40, id="hex-cells"),
+    pytest.param({**HOLES, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 4, id="keyed-holes"),
+    # SPOKES13 (hub_d 13.2, clears the keyed round bore's 6.179 mm mouth): not probed in
+    # planning (11-CONTEXT.md <interfaces>) -- measured here on the pinned kernel,
+    # 2026-09-29.
+    pytest.param({**SPOKES13, "spoke_fillet": 1, "keyway_width": 3, "keyway_depth": 1.4,
+                  "bore_flat": 0}, 12, id="keyed-spokes"),
+    pytest.param({**CELLS, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 4, id="keyed-cells"),
+])
+def test_the_recess_floor_fillet_survives_every_cutout_on_every_bore(
+        kw: dict[str, object], torus: int) -> None:
+    """REQ-cutout-composes' counted proof: with both recesses (the field's own
+    default), on every bore shape (D-flat, round, hex, keyed round) and every pattern,
+    the recess floor fillet survives on every floor edge the cutout leaves -- no sharp
+    floor-to-wall circle anywhere on the finished solid. TORUS counts are the pinned
+    kernel's own, measured 2026-09-29; every one matches the planning probe in
+    11-CONTEXT.md <interfaces> except keyed-spokes, which planning did not measure."""
+    p = GearParams.model_validate(kw)
+    cut = _build_checked(p)
+    _assert_the_recess_fillet_survives(cut, p, torus)
+
+
+@pytest.mark.parametrize(("kw", "torus"), [
+    pytest.param({**HOLES_ACROSS}, 14, id="d-flat-holes-across"),
+    pytest.param({**CELLS}, 14, id="d-flat-cells"),
+])
+def test_the_fillet_survival_proof_fails_when_the_recess_fillet_is_skipped(
+        monkeypatch: pytest.MonkeyPatch, kw: dict[str, object], torus: int) -> None:
+    """The survival proof's own tripwire: with recess_fillet patched to 0, the groove
+    floor's sharp corners survive the cutout instead of being rounded away, so
+    _groove_floor_edges matches them rather than raising -- the proof's own
+    assert sharp == 0 is what catches a skipped fillet here, not a raised BuildError
+    (measured 2026-09-29: both rows leave 14 sharp floor circles with the fillet
+    skipped)."""
+    monkeypatch.setattr("spur.model.recess_fillet", lambda _p, _rf: 0.0)
+    p = GearParams.model_validate(kw)
+    cut = _build_checked(p)
+    with pytest.raises(AssertionError):
+        _assert_the_recess_fillet_survives(cut, p, torus)
+
+
 def test_exports() -> None:
     p = GearParams()
     stl = export(p, "stl", "preview")
