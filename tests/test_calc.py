@@ -12,8 +12,10 @@ from spur.calc import (
     bore_radius,
     bore_rim_limit,
     centre_distance,
+    cutout_walls,
     derive,
     hex_across_flats,
+    hole_gap,
     inv,
     keyway_corner_radius,
     keyway_flat_wall,
@@ -725,3 +727,149 @@ def test_a_rounded_tip_chamfer_cap_stays_inside_the_measured_kernel_boundary() -
         assert margin >= TIP_CHAMFER_MARGIN / 2 - 1e-12
         assert tip_chamfer_effective(p) > 0
     assert checked == 405
+
+
+@pytest.mark.parametrize(("kw", "refused", "fields", "msg_start"), [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.75}, False, (), "",
+                 id="hub-accept-exact"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.7}, True,
+                 ("hole_circle_d", "hole_d"),
+                 "Lightening holes come too close to the bore", id="hub-refuse-one-step"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}, False, (), "",
+                 id="hub-accept-margin"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.075}, False, (), "",
+                 id="rim-accept-exact"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.05}, False, (), "",
+                 id="rim-accept-margin"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.1}, True,
+                 ("hole_circle_d", "hole_d"),
+                 "Lightening holes come too close to the root circle", id="rim-refuse-one-step"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.6, "hole_circle_d": 40},
+                 False, (), "", id="neighbour-accept-exact"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.65, "hole_circle_d": 40},
+                 True, ("hole_circle_d", "hole_count", "hole_d"),
+                 "Lightening holes are too close to each other", id="neighbour-refuse-one-step"),
+])
+def test_a_hole_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly(
+        kw: dict[str, object], refused: bool, fields: tuple[str, ...],
+        msg_start: str) -> None:
+    """D-15, D-16, D-17: each rule refuses one step past MIN_WALL and accepts it
+    exactly, comparing round(wall, 6) so the step-aligned float residue (0.4 computing
+    as 0.39999999999999947) does not refuse a wall the user sized to exactly MIN_WALL."""
+    if not refused:
+        GearParams.model_validate(kw)  # does not raise
+        return
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == sorted(fields)
+    assert err["msg"].startswith(msg_start)
+
+
+def test_a_hole_wider_than_the_web_is_refused_at_both_walls() -> None:
+    """A hole wider than the web breaches both the hub and the rim independently --
+    neither rule implies the other, so both sentences appear and both fields are named
+    once each, deduplicated by GearParams._feasible."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"hole_count": 1, "hole_d": 10, "hole_circle_d": 19})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hole_circle_d", "hole_d"]
+    assert "Lightening holes come too close to the bore" in err["msg"]
+    assert "Lightening holes come too close to the root circle" in err["msg"]
+
+
+@pytest.mark.parametrize(("kw", "fields", "msg"), [
+    pytest.param({"hole_count": 6}, ["hole_circle_d", "hole_d"],
+                 "Lightening holes need hole_circle_d and hole_d: set them above 0, "
+                 "or set hole_count to 0.", id="both-zero"),
+    pytest.param({"hole_count": 6, "hole_d": 4}, ["hole_circle_d"],
+                 "Lightening holes need hole_circle_d: set it above 0, or set "
+                 "hole_count to 0.", id="circle-zero"),
+    pytest.param({"hole_count": 6, "hole_circle_d": 20}, ["hole_d"],
+                 "Lightening holes need hole_d: set it above 0, or set hole_count to 0.",
+                 id="d-zero"),
+])
+def test_a_half_set_hole_pattern_names_only_its_zero_fields(
+        kw: dict[str, object], fields: list[str], msg: str) -> None:
+    """D-15: hole_count above 0 with one or both dimensions still 0 is a 422 naming only
+    the fields that are 0, before the wall rules ever run."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == fields
+    assert err["msg"] == msg
+
+
+@pytest.mark.parametrize(("kw", "warning"), [
+    pytest.param({"hole_d": 4, "hole_circle_d": 20},
+                 "No lightening holes with hole_count 0: hole_d (4 mm) and "
+                 "hole_circle_d (20 mm) are ignored.", id="both-set"),
+    pytest.param({"hole_d": 4},
+                 "No lightening holes with hole_count 0: hole_d (4 mm) is ignored.",
+                 id="d-only"),
+    pytest.param({"hole_circle_d": 20},
+                 "No lightening holes with hole_count 0: hole_circle_d (20 mm) is "
+                 "ignored.", id="circle-only"),
+])
+def test_hole_dimensions_without_a_count_are_ignored_and_named(
+        kw: dict[str, object], warning: str) -> None:
+    """D-15: hole_count 0 (the default) builds nothing regardless of hole_d/
+    hole_circle_d, and derive() says so naming only the fields the user set."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.cutout_hub_wall is None
+    assert d.cutout_rim_wall is None
+    assert d.warnings == (warning,)
+
+
+@pytest.mark.parametrize(("kw", "hub", "rim"), [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}, 3.025, 2.438,
+                 id="d-flat-and-round"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20, "bore_hex": 6,
+                 "bore_flat": 0}, 3.987, 2.438, id="hex-bore"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20, "keyway_width": 3,
+                 "keyway_depth": 1.4}, 1.821, 2.438, id="keyed-round"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20, "bore_d": 0,
+                 "bore_flat": 0}, 8.0, 2.438, id="no-bore"),
+])
+def test_a_cutout_reports_its_thinnest_walls_and_null_without_one(
+        kw: dict[str, object], hub: float, rim: float) -> None:
+    """D-17, D-20: the tracer link's two walls per bore shape, rounded once at
+    construction; None/None with no cutout (hole_count 0, the default)."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.cutout_hub_wall == pytest.approx(hub)
+    assert d.cutout_rim_wall == pytest.approx(rim)
+    d0 = derive(GearParams())
+    assert d0.cutout_hub_wall is None
+    assert d0.cutout_rim_wall is None
+
+
+def test_the_hole_count_is_an_integer_from_0_to_200() -> None:
+    """D-18: field-level ValidationErrors (not the "infeasible" custom error) one step
+    either side of the bound, and for the wrong type."""
+    for bad in ({"hole_count": 201, "hole_d": 1, "hole_circle_d": 10},
+               {"hole_count": -1, "hole_d": 1, "hole_circle_d": 10},
+               {"hole_count": 2.5, "hole_d": 1, "hole_circle_d": 10}):
+        with pytest.raises(ValidationError) as exc:
+            GearParams.model_validate(bad)
+        assert exc.value.errors()[0]["type"] != "infeasible"
+    GearParams.model_validate({"hole_count": 1, "hole_d": 4, "hole_circle_d": 20})
+    GearParams.model_validate({"teeth": 200, "hole_count": 200, "hole_d": 1,
+                               "hole_circle_d": 183.4, "bore_flat": 0,
+                               "recess_sides": "none"})
+
+
+def test_the_hole_gap_and_walls_helpers_match_the_planning_probe() -> None:
+    """hole_gap(p) is the wall between neighbouring hole centres (D-16); cutout_walls(p,
+    rf) is unrounded, used directly by check() before derive() rounds it."""
+    p = GearParams.model_validate({"teeth": 40, "hole_count": 6, "hole_d": 19.6,
+                                   "hole_circle_d": 40})
+    assert hole_gap(p) == pytest.approx(0.399999999999995)
+    p2 = GearParams.model_validate({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20})
+    pr2 = profile(p2)
+    walls = cutout_walls(p2, pr2.rf)
+    assert walls is not None
+    assert walls == pytest.approx((3.0249999999999995, 2.4375))
+    assert cutout_walls(GearParams(), profile(GearParams()).rf) is None

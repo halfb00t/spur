@@ -298,6 +298,30 @@ def cutout_walls(p: GearParams, rf: float) -> tuple[float, float] | None:
     return None
 
 
+def _under_min_wall(wall: float) -> bool:
+    """True when a cutout wall is thinner than MIN_WALL, comparing at 1e-6 mm rather
+    than the raw float.
+
+    Step-aligned inputs carry float residue (bore_mouth_limit(p) reads
+    4.9750000000000005 on the default gear, math.sin(math.pi / 6) reads
+    0.49999999999999994), so a wall sized to exactly MIN_WALL can compute as
+    0.39999999999999947 -- comparing the raw float would refuse a wall the user sized
+    exactly to the rule. 1e-6 mm is far below the 0.05 mm field step (so no settable
+    wall lands in the rounding band) and far above the ~1e-15 mm residue (so it never
+    accepts a wall that is genuinely thinner). Every cutout MIN_WALL rule added from
+    here on goes through this; the pre-existing bore/keyway rules are untouched.
+    """
+    return round(wall, 6) < MIN_WALL
+
+
+def hole_gap(p: GearParams) -> float:
+    """Wall left between two neighbouring holes, measured on the line joining their
+    centres (D-16): the chord between adjacent centres, hole_circle_d * sin(pi /
+    hole_count), less one hole diameter. Callers pass hole_count >= 2 -- with one hole
+    there is no neighbour."""
+    return p.hole_circle_d * math.sin(math.pi / p.hole_count) - p.hole_d
+
+
 def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
     """Reasons the parameters can't produce a sound part, each with the fields involved.
 
@@ -435,6 +459,50 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
         if web < MIN_WALL:
             errors.append((f"Recesses leave a {web:.2f} mm web; reduce the depth.",
                            ("recess_depth",)))
+
+    # --- body cutout ---
+    if p.hole_count > 0:
+        # D-15: the half-set rule runs first -- with a dimension still 0 there is no
+        # geometry to measure a wall against, so the three rules below never fire on a
+        # half-set pattern (they would misname the zero field as a wall breach).
+        zero = [f for f in ("hole_circle_d", "hole_d") if getattr(p, f) == 0]
+        if zero:
+            errors.append((
+                f"Lightening holes need {' and '.join(zero)}: set "
+                f"{'it' if len(zero) == 1 else 'them'} above 0, or set hole_count to 0.",
+                tuple(zero)))
+        else:
+            # None of the three implies another: a hole can be too close to the bore, to
+            # the root, or to its neighbour independently, so all three run every time
+            # (not elif) -- a hole wider than the web breaches both the hub and rim at
+            # once and must say so twice (REQ-cutout-conflicts-refused-early).
+            inner = p.hole_circle_d / 2 - p.hole_d / 2
+            outer = p.hole_circle_d / 2 + p.hole_d / 2
+            if _under_min_wall(inner - bore_mouth_limit(p)):
+                errors.append((
+                    "Lightening holes come too close to the bore: their inner edges "
+                    f"are {2 * inner:.2f} mm across and must stay {MIN_WALL:g} mm "
+                    f"outside the bore mouth ({2 * bore_mouth_limit(p):.2f} mm "
+                    "across); increase hole_circle_d or reduce hole_d.",
+                    ("hole_circle_d", "hole_d")))
+            if _under_min_wall(pr.rf - outer):
+                errors.append((
+                    "Lightening holes come too close to the root circle: their outer "
+                    f"edges are {2 * outer:.2f} mm across and must stay {MIN_WALL:g} "
+                    f"mm inside the root circle ({2 * pr.rf:.2f} mm); reduce "
+                    "hole_circle_d or hole_d.",
+                    ("hole_circle_d", "hole_d")))
+            # D-16: the planning probe built holes 0.001 mm apart, and tangent to the
+            # recess walls, and every one was one valid solid -- these rules are the
+            # part's own MIN_WALL, not a kernel limit (11-07 pins it against the kernel).
+            if p.hole_count >= 2 and _under_min_wall(hole_gap(p)):
+                errors.append((
+                    "Lightening holes are too close to each other: "
+                    f"{p.hole_count} holes of {p.hole_d:g} mm on a {p.hole_circle_d:g} "
+                    f"mm circle leave {max(hole_gap(p), 0.0):.3f} mm between "
+                    f"neighbours, which must be at least {MIN_WALL:g} mm; reduce "
+                    "hole_count or hole_d, or increase hole_circle_d.",
+                    ("hole_circle_d", "hole_count", "hole_d")))
     return errors
 
 
@@ -630,6 +698,17 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     elif wanted_recess:
         warnings.append("No room for a face recess between the bore wall and the tooth "
                         "rim; it was left out.")
+
+    if p.hole_count == 0:
+        # D-15: hole_count 0 (the default) builds nothing regardless of hole_d/
+        # hole_circle_d, exactly like the hex bore ignoring bore_d/bore_flat above --
+        # the same sentence shape, naming only the fields the user actually set.
+        ignored = [f"{name} ({value:g} mm)" for name, value in
+                  (("hole_d", p.hole_d), ("hole_circle_d", p.hole_circle_d)) if value > 0]
+        if ignored:
+            warnings.append(
+                f"No lightening holes with hole_count 0: {' and '.join(ignored)} "
+                f"{'are' if len(ignored) > 1 else 'is'} ignored.")
 
     walls = cutout_walls(p, pr.rf)
 

@@ -179,6 +179,32 @@ def test_cli_and_api_print_the_same_tip_chamfer_document(
         "Tip chamfer reduced to 1.75 mm to keep it above the pitch circle."]
 
 
+def test_cli_and_api_print_the_same_hole_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a hole link: same document, same key order, both walls."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--hole-count", "6", "--hole-d", "4", "--hole-circle-d", "20"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info",
+                         params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert cli_out["cutout_hub_wall"] == pytest.approx(3.025)
+    assert cli_out["cutout_rim_wall"] == pytest.approx(2.438)
+
+
+def test_a_hole_too_close_to_the_bore_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-17 on the CLI: the same hub refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--hole-count", "6", "--hole-d", "4", "--hole-circle-d", "14.7"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "Lightening holes come too close to the bore" in err
+    assert "increase hole_circle_d or reduce hole_d" in err
+
+
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])

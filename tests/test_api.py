@@ -328,6 +328,21 @@ def test_a_hole_link_is_served_with_its_walls() -> None:
     assert r.content.startswith(b"ISO-10303-21;")
 
 
+def test_a_hole_conflict_is_422_naming_its_fields() -> None:
+    """D-17, REQ-cutout-conflicts-refused-early: a hole set that breaches the hub wall
+    is refused before any build, on both /api/info and /api/model.stl."""
+    r = client.get("/api/info", params={"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.7})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hole_circle_d", "hole_d"]
+    assert "Lightening holes come too close to the bore" in detail["msg"]
+
+    r = client.get("/api/model.stl", params={"hole_count": 6, "hole_d": 4,
+                                             "hole_circle_d": 14.7, "quality": "preview"})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == ["hole_circle_d", "hole_d"]
+
+
 def test_a_hex_bore_the_root_cannot_hold_is_422_naming_bore_hex() -> None:
     """D-03a over HTTP: a corner beyond the root is a 422 naming only bore_hex."""
     r = client.get("/api/info", params={"bore_hex": 24.2, "bore_chamfer": 0})
