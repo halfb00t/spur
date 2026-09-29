@@ -1216,10 +1216,11 @@ other wall in the part (`11-01-SUMMARY.md`'s Flagged Assumption A1, `f0db74a`; s
 residue at a wall sized to exactly `MIN_WALL` was measured at `0.39999999999999947` at
 the tracer's own hub boundary, which a bare comparison would have wrongly refused
 (`11-03-SUMMARY.md`, `5d8ae53`). Every refusal was pinned one field-step either side on
-the real kernel — the boundary itself builds, one step past it does not, the past-the-
-rule rows reusing `test_calc.py`'s own boundary values rather than a re-derived estimate
-(`11-07-SUMMARY.md`, `eca02a9`) — these are the part's own `MIN_WALL`, not a kernel
-limit.
+the real kernel — the boundary itself builds and `check()` accepts it; one step past it
+`check()` refuses, but the kernel itself still cuts a valid solid there (pinned,
+validation bypassed), the past-the-rule rows reusing `test_calc.py`'s own boundary values
+rather than a re-derived estimate (`11-07-SUMMARY.md`, `eca02a9`) — proof these are the
+part's own `MIN_WALL`, not a kernel limit.
 
 **The numbers** (D-06, D-20). Five new `DerivedDimensions` fields: `cutout_hub_wall` and
 `cutout_rim_wall` (the thinnest remaining wall on each side, `null` with no cutout — the

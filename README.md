@@ -149,8 +149,10 @@ wall, and the recess is narrowed or dropped like any other trim; a keyway on a h
 one as wide as the bore, one that runs into the D-flat, or one whose floor comes too
 close to the root is refused. Body cutouts add their own refusals: two cutout patterns
 set on one part is rejected, naming both; a half-set pattern — a count with a dimension
-still 0, or the reverse — is rejected, naming the zero fields; a cutout wall thinner
-than the design minimum, at the hub, the rim or between neighbours, is rejected; and a
+still 0 — is rejected, naming the zero fields; the reverse (a dimension set with the
+pattern's count at 0) builds nothing and warns instead, naming the ignored fields; a
+cutout wall thinner than the design minimum, at the hub, the rim or between neighbours,
+is rejected; and a
 honeycomb with no whole cell that fits the web is rejected, quoting the web's own radii.
 Two cutout sizes are trimmed instead: the spoke fillet is capped to the sector it
 rounds, and honeycomb cells are enlarged in 0.05 mm steps until the count fits a

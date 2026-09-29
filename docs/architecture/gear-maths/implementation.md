@@ -29,7 +29,7 @@ the frozen `DerivedDimensions` document `derive()` returns.
 | `spoke_opening(p)` | the arc between the feet of adjacent spoke bars on the hub circle (`keyway_flat_wall`'s arc-measure precedent, not a chord) |
 | `spoke_fillet_limit(p)` | the smallest of the sector's hub opening and annulus width, and the reason the warning names |
 | `spoke_fillet_effective(p)` | the spoke fillet actually cut, 3 dp, 0 when off |
-| `whole_cells(cell, wall, inner, outer)`, `cell_count_floor(cap, cell, wall, inner, outer)`, `cells_within(cap, cell, wall, inner, outer)` | the honeycomb's whole-cell lattice, its area-based lower-bound floor, and `cells_within`'s raise-to-fit over `HEX_CELL_CAP` — moved from `bench/honeycomb_spike.py` unchanged, the spike imports them back |
+| `whole_cells(cell, wall, inner, outer)`, `cell_count_floor(cell, wall, inner, outer)`, `cells_within(cap, cell, wall, inner, outer)` | the honeycomb's whole-cell lattice, its area-based lower-bound floor, and `cells_within`'s raise-to-fit over `HEX_CELL_CAP` — moved from `bench/honeycomb_spike.py` unchanged, the spike imports them back |
 | `hex_cells(p, rf)` | the honeycomb's applied across-flats and cell centres, `cells_within`'s raise-to-fit over the web annulus — the one result `check()`, `cutout_walls()`, `derive()` and `model._cell_cutters` all read |
 | `_tooth(pr)` | tip thickness, root thickness and root gap — all measured on the root circle |
 | `check(p)` | the refusals, each with the fields responsible |
