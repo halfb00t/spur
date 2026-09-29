@@ -5,42 +5,42 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Honeycomb spike can hide a failed trial and report `Verdict: held` regardless (external: codex)"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "L30 decision-log entry inverts its own test's conclusion (external: codex)"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`implementation.md` documents `cell_count_floor` with a `cap` argument it does not take (external: codex)"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "README claims the \"reverse half-set\" cutout case is rejected; it is accepted and warned instead"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The filleted-spoke removed-volume proof has no closed-form cross-check (external: codex, extended)"
   - id: IN-01
     severity: info
     disposition: open
     title: "`bench/RESULTS.md` and `test_bench.py` misstate the honeycomb field's default and legal range (external: codex)"
-open: 6
+open: 1
 total: 6
-recorded: 2026-09-29T11:28:55.117Z
+recorded: 2026-09-29T13:19:41.649Z
 ---
 
 # Phase 11: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
+| WR-01 | warning | fixed | 11-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 11-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 11-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 11-REVIEW-FIX.md |
+| WR-05 | warning | fixed | 11-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
