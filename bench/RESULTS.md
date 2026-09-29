@@ -855,3 +855,103 @@ here, and nothing is extrapolated from it.
 lint/typecheck/import-lint/no-fake-done), against Phase 9's recorded **78.21s** / 396
 tests. The phase's tip-chamfer tests (57 new, across 10-01 through 10-04) add **+19.96s**
 to the gate, measured rather than assumed.
+
+## Honeycomb cell-count spike (Phase 11, D-24)
+
+The committed measurement record for the ROADMAP Phase 11 SC3 research flag: a
+build-time-vs-cell-count sweep before any cap formula is written, L17's methodology.
+D-11 sets the honeycomb's share at 7.5 s -- a quarter of `SPUR_BUILD_TIMEOUT` -- beside
+the 14.87 s tip-chamfer row Phase 12 will stack it on. The probe raises `hex_cell` in
+0.05 mm steps until the exact whole-cell count on the axis-centred lattice fits each
+target, then cuts the whole cells as hexagonal prisms through `spur.model._build_checked`
+plus one `solid.cut(*prisms)` call, with no `hex_cell`/`hex_wall` field in `GearParams`
+yet -- the field, the cap and the cutter are 11-05 through 11-09, planned on these
+numbers. Command: `.venv/bin/python -m bench.honeycomb_spike`.
+
+### Host state
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `35f0137`
+- Load averages at start (script's own `os.getloadavg()`): 8.28, 6.26, 5.41
+- `uptime` moments before the run: load averages 9.35, 6.39, 5.44
+- SPUR_BUILD_TIMEOUT: 30 s
+- BUDGET_S: 7.5 s (a quarter of `SPUR_BUILD_TIMEOUT`, D-11)
+- Both readings sit well above this project's usual "quiet" bar (>1.5 on this 12-core
+  host, Phase 7's own convention) -- the numbers below carry that caveat rather than
+  being presented as clean (L08). A cap measured under this load is conservative, never
+  optimistic: a quiet host would read every row faster, if anything raising the cap the
+  sweep would find, never lowering it.
+
+### Cost by cell count
+
+| Set | Cell (mm) | Cells | Bare (s) | Cut (s) | STL (s) | STEP (s) | Request (s) | dFaces | Why | Run 1 / Run 2 request (s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| teeth=200 module=10 target=0 | 3 | 0 | 2.20 | 0.00 | 0.00 | 0.00 | 2.20 | 0 | ok | 2.20 / 2.15 |
+| teeth=200 module=10 target=25 | 305.3 | 18 | 2.26 | 1.45 | 0.66 | 0.52 | 4.37 | 218 | ok | 4.30 / 4.37 |
+| teeth=200 module=10 target=50 | 235 | 42 | 2.25 | 3.13 | 0.78 | 0.69 | 6.16 | 482 | ok | 6.16 / 6.16 |
+| teeth=200 module=10 target=75 | 190.3 | 72 | 2.26 | 3.86 | 0.83 | 0.81 | 6.95 | 602 | ok | 6.95 / 6.75 |
+| teeth=200 module=10 target=100 | 167.2 | 96 | 2.21 | 3.99 | 0.88 | 0.86 | 7.09 | 806 | ok | 7.09 / 7.03 |
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.34 | 3.88 | 0.91 | 0.92 | 7.15 | 950 | ok | 7.15 / 6.96 |
+| teeth=200 module=10 target=150 | 137.35 | 150 | 2.22 | 4.67 | 0.93 | 1.06 | 7.95 | 1130 | ok | 7.56 / 7.95 |
+| teeth=200 module=10 target=175 | 129.3 | 168 | 2.23 | 5.93 | 1.08 | 1.23 | 9.38 | 1286 | ok | 9.29 / 9.38 |
+| teeth=200 module=10 target=200 | 120.5 | 198 | 2.65 | 8.84 | 1.07 | 1.41 | 12.90 | 1598 | ok | 12.90 / 12.80 |
+| teeth=200 module=10 target=250 | 111.65 | 240 | 2.21 | 7.68 | 1.14 | 1.61 | 11.50 | 1730 | ok | 11.31 / 11.50 |
+| teeth=200 module=10 target=300 | 100.35 | 300 | 2.31 | 10.10 | 1.15 | 1.93 | 14.34 | 2270 | ok | 14.34 / 14.13 |
+
+The `target=0` row is the first measurement of this gear (200 teeth, module 10, both
+recesses) on the pinned kernel: a bare build of **2.20-2.65 s**, steady across every row
+regardless of cell count -- the cut and its exports are the variable cost, not the build.
+Cut time grows with cell count but not linearly or monotonically: 18 cells cost 1.45 s to
+cut (0.081 s/cell), 300 cells cost 10.10 s (0.034 s/cell) -- a large fixed part from
+walking the ~1620-face body dominates at low counts (L09's cost family), and the
+198-cell row (8.84 s) reads slower than the 240-cell row (7.68 s) immediately after it,
+which the 8-9 load average at the time of the run is the more likely explanation for than
+any real reversal in cost. Fine-STL and STEP both grow with the cut's own face count
+(`dFaces`, 218 at 18 cells to 2270 at 300): STL 0.66-1.15 s, STEP 0.52-1.93 s, together a
+minority of most rows' request time next to the cut itself. The heaviest rows here (200,
+250 and 300 cells, all above the cap this spike measures below) read 11.50-14.34 s,
+roughly the same order as Phase 10's heaviest tip-chamfer row (14.87 s) -- confirming
+D-11's premise that an uncapped honeycomb on this gear is not a cheap cut.
+
+### Cut spelling
+
+| Set | Cell (mm) | Cells | Bare (s) | Cut (s) | STL (s) | STEP (s) | Request (s) | dFaces | Why | Spelling |
+|---|---|---|---|---|---|---|---|---|---|---|
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.16 | 3.75 | 0.88 | 0.89 | 6.81 | 950 | ok | star |
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.16 | 3.74 | 0.90 | 0.94 | 6.84 | 950 | ok | compound |
+| teeth=200 module=10 target=125 | 149.1 | 120 | 2.17 | 3.75 | 0.87 | 0.91 | 6.83 | 950 | ok | fuse |
+**Spelling:** star
+
+The three spellings read within 0.03 s of each other on 120 cells -- inside this run's
+own noise, not a real margin -- so `cut(*prisms)` stays the default per D-24's >10% rule:
+none of the alternatives cleared it.
+
+### Cap
+
+**Cap:** HEX_CELL_CAP = 120 -- teeth=200 module=10 target=125 reads 7.15 s of 7.5 s; the next row (150 cells) reads 7.95 s.
+
+The constant is the cell count the row actually cut (120), not its target (125): no
+honeycomb link cuts more cells than were measured inside 7.5 s at D-11's configuration.
+
+### Confirmation at module 1.75
+
+| Set | Cell (mm) | Cells | Bare (s) | Cut (s) | STL (s) | STEP (s) | Request (s) | dFaces | Why |
+|---|---|---|---|---|---|---|---|---|---|
+| teeth=200 module=1.75 target=125 | 25.25 | 120 | 2.16 | 4.21 | 0.80 | 0.89 | 7.25 | 930 | ok |
+
+The module-1.75 gear at the cap's 120 cells reads 7.25 s against the cap row's 7.15 s at
+module 10 -- confirming the planning probe's flagged finding (Flagged Assumption A2) that
+the smaller-module gear is the heavier one, though by a much narrower margin here (0.10 s)
+than the planning probe read at 150 cells (8.4 s vs 7.6 s, under load). Both readings sit
+inside the 7.5 s budget, so D-11's module-10 configuration still sets the cap, but the
+confirmation row leaves only 0.25 s of headroom -- tighter than the cap row's own 0.35 s.
+
+### Enumeration cost
+
+`cells_within(120, 3.0, 0.4, inner, outer)` at teeth=200 module=10: 7.371 ms (best of 5).
+
+### Verdict
+
+**Verdict:** held -- HEX_CELL_CAP = 120 cells (7.15 s of 7.5 s), spelling star, confirmation 7.25 s of 7.5 s.
