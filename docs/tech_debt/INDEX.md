@@ -28,6 +28,7 @@ Severity (grep-able `Severity:` field):
 | must | [A 200-tooth tip chamfer narrows SPUR_BUILD_TIMEOUT's margin](active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md) | Phase 12's composed sweep, a BuildTimeout on a tip-chamfered gear, or slower hardware |
 | must | [The root fillet's straight lead-in can reach above the pitch circle](active/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md) | a profile-shifted flank is measured, L10's trochoidal root is taken up, or _outline is next touched |
 | must | [The heaviest spoke row's arithmetic total with Phase 10's tip-chamfer row crosses 30 s under load](active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md) | Phase 12's composed sweep, a BuildTimeout on a gear combining spoke_count near 40 with another heavy feature, or a quiet-host re-measurement of the heaviest spoke row |
+| must | [The filleted-spoke removed-volume proof has no closed-form cross-check](active/2026-09-29-filleted-spoke-volume-proof-pinned-not-derived.md) | `_fillet_corner` is next touched, or the pinned CadQuery/OCP kernel version is bumped |
 
 ## Resolved
 
