@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
 status: executing
-stopped_at: Phase 11 context gathered
-last_updated: "2026-09-29T04:50:32.282Z"
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-09-29T04:54:09.576Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 11 execution started
-state_head: 83e8f5cd7fd03f4032056f6360864b2b0e91aec2
+state_head: f0db74a325653b9534b3ffe62c20fe5834acad27
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 25
-  completed_plans: 16
+  completed_plans: 17
   percent: 17
 ---
 
@@ -31,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 11 (Body Cutouts) — EXECUTING
-Plan: 1 of 9
-Status: Executing Phase 11
+Plan: 2 of 9
+Status: Ready to execute
 Last activity: 2026-09-29 — Phase 11 execution started
 
 ## Performance Metrics
@@ -146,6 +146,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 10 P03 | 19min | 2 tasks | 3 files |
 | Phase 10 P04 | ~17min | 2 tasks | 5 files |
 | Phase 10 P05 | 16min | 3 tasks | 8 files |
+| Phase 11 P01 | ~15min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 10]: 10-04: D-07's over-budget checkpoint never fired -- all 9 tip-chamfer sweep rows built inside 30s on the first run, heaviest 14.87s, so no human decision was needed on the field's le or a teeth-dependent cap.
 - [Phase 10]: 10-05: The root fillet's straight lead-in issue is filed as must-debt, not fixed -- correcting it means either an outline change with its own Lxx and fixture regeneration, or a README correction, both outside this phase's feature (CLAUDE.md 'note the tangent').
 - [Phase 10]: 10-05: L29 appended after L28 (0 deleted lines): the field, cut, three-limit cap with D-04's measured boundary, derived field/warning, spike/sweep cost, proof and reversibility, each cited to a SUMMARY sha or bench/RESULTS.md, none re-estimated.
+- [Phase 11]: Human approved REQ-spoke-cutout's amended wording and the proposed Phase 11 SC2 wording exactly as drafted, no changes.
+- [Phase 11]: Human kept the spoke-arm wall rule (Flagged Assumption A1): 0 < spoke_width < MIN_WALL is refused with a 422 naming spoke_width, like every other wall in the part. 11-04 implements this on the human's word.
 
 ### Pending Todos
 
@@ -277,9 +280,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-29T02:20:47.745Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-body-cutouts/11-CONTEXT.md
+Last session: 2026-09-29T04:54:09.534Z
+Stopped at: Completed 11-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
