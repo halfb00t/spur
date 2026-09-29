@@ -43,7 +43,7 @@ with tooth measurements untouched.
 - [x] **Phase 9: Keyway Bore** - A keyway cut into a round or D-flat bore, with an explicit, (completed 2026-09-27)
       documented depth datum
 - [x] **Phase 10: Tooth-Tip Chamfer** - An edge-break chamfer on the tooth-tip arcs (completed 2026-09-28)
-- [ ] **Phase 11: Body Cutouts** - Lightening holes, spoke arms, or a honeycomb web — one
+- [x] **Phase 11: Body Cutouts** - Lightening holes, spoke arms, or a honeycomb web — one (completed 2026-09-29)
       pattern per part
 - [ ] **Phase 12: Composition Pass** - The full feature matrix, the heaviest-configuration
       build-time sweep, and three-interface parity
@@ -291,7 +291,7 @@ build-time relationship needs a dedicated benchmark sweep before any cap formula
 (`research/SUMMARY.md` "Research Flags"). Holes and spoke arms are well-documented patterns
 (`polarArray`/`cut(*cutters)`, generalizing `_cut_face_recesses`'s existing two-call
 pattern) — no research flag needed for those sub-parts.
-**Plans**: 9/9 plans executed
+**Plans**: 9/9 plans complete
 
 Plans:
 **Wave 1**

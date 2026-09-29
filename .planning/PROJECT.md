@@ -166,17 +166,29 @@ pytest — L13). Full list with sources and acceptance evidence:
   verified 5/5, `make verify` 455 tests; review WR-01 (silent sub-resolution discard) and the
   Codex-found CR-01 (a warning naming a limit that was not binding) fixed, 2 info open (L29)
   — Phase 10
+- ✓ REQ-spoke-cutout + REQ-hole-cutout + REQ-honeycomb-cutout + REQ-one-cutout-pattern +
+  REQ-cutout-conflicts-refused-early + REQ-cutout-composes + REQ-cutout-derived-numbers — ten
+  `GearParams` fields in three groups (Spokes, Holes, Honeycomb; every default 0/off); exactly
+  one pattern per part (a 422 naming every set selector); each pattern's cutters subtracted in
+  one `solid.cut(*cutters)` call in a new `_cut_body` step between the keyway and the tip
+  chamfer, so the recess-floor fillet and bore-rim chamfer are already baked; spoke corners
+  rounded by analytic tangent arcs (`spoke_fillet`, capped); honeycomb cuts whole cells only,
+  count capped at the measured `HEX_CELL_CAP = 120` with `hex_cell` raised in 0.05 mm steps to
+  fit and warned, never silently dropped; every wall rule (hub, rim, neighbour, and the human's
+  own `0 < spoke_width < MIN_WALL` ruling) refused in `calc.check()` through `_under_min_wall`
+  and pinned one field-step either side on the real kernel; `cutout_hub_wall`/`cutout_rim_wall`/
+  `spoke_fillet_effective`/`hex_cell_effective`/`hex_cell_count` added to `DerivedDimensions`
+  with the 44-record fixture byte-unchanged; `spoke_count`/`hole_count` `le` lowered to 40/60
+  after D-18's build-time gate fired; heaviest measured rows 18.52 s (spokes) and 8.65 s
+  (honeycomb, 1.15× its own 7.5 s share) of 30 s, both read under a loaded host and accepted
+  at UAT; verified 7/7, UAT 5/5, `make verify` 621 tests; six review findings (WR-01…WR-05,
+  IN-01) still at disposition `open` (L30) — Phase 11
 
 ### Active
 
 Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- [ ] Spoke-arm body cutout with an explicit arm count
-- [ ] Circular lightening-hole cutout with an explicit hole count
-- [ ] Hexagonal-pattern cutout, cell count capped to the build timeout
-- [ ] Cutouts compose with face recesses, any bore profile and each other; direct conflicts
-      are 422s naming the fields
 - [ ] A measured build time per feature at its heaviest allowed configuration, inside the
       timeout
 
@@ -303,6 +315,7 @@ quick reference.
 | L27 | A hex bore replaces the whole round profile and its limits are the chamfered corner's, measured: `bore_hex` (0–200 mm, step 0.05, default 0) cuts `polygon(6, A/F + bore_clearance, circumscribed=True)` in place of the round/D-flat hole; `bore_d` and `bore_flat` are ignored with one warning naming each non-zero field (never a 422 — supersedes the original REQ-hex-bore sentence; hex × keyway stays a 422 and is Phase 9's); `check()` refuses a hex whose corners, or whose chamfered mouth (`bore_mouth_limit = rim + 2c/√3`), come within MIN_WALL of the root circle — no side-length rule, because the kernel chamfers a 0.375 mm side at the 3 mm bound; `recess_radii()` clears the chamfered mouth for every bore shape; the replay compares recorded fields exactly and requires later fields null; `make bench.build` runs a committed sweep file so Phases 9–12 reuse it | ✓ Good — 30/30 must-haves; `make verify` 330 tests; heaviest sweep row 5.08 s of 30 s (teeth 200, m 1.75, hex 200, recess both, chamfer 0.4); fixture byte-unchanged; round bore's own chamfer reach filed as `must` debt |
 | L28 | A keyway is a slot cut after the bore's chamfer, its depth measured from the as-cut bore wall: `keyway_width`/`keyway_depth` (0–200 mm, step 0.05, default 0) cut a slot of width `keyway_width + bore_clearance` from the axis to a flat floor at `bore_radius(p) + keyway_depth` centred on +Y (a quarter turn from the D-flat), after `_cut_bore` so the rim selector's counts are the pre-keyway ones and the slot's edges are never chamfered; D-02/D-10/D-11 are the part's rules (arc wall to the D-flat's corner, floor corner vs the root, width < bore) and D-12 the kernel's measured contact; the recess yields to the keyway corner; no standard-table keyway size anywhere in help or docs | ✓ Good — 12/12 must-haves; `make verify` 396 tests; datum read back within 1e-6 mm; heaviest sweep row 4.85 s of 30 s (a 3 × 1.4 keyway that keeps its recess, lighter than the largest keyway); fixture byte-unchanged; Phase 8's round-chamfer debt resolved in `4b6a5b9` |
 | L29 | The tooth-tip chamfer is a 3D edge break on the end-face tip arcs (`solid.chamfer()`, symmetric 45°, the last build step, selector requires both endpoints on an end face), capped at the smallest of the tip land (`0.45 × face_width`), the addendum (`ra − r`) and the measured kernel boundary (`ra − spline_start`, D-04, bisected to ~2 µm); help text names no size because the research-era sizing figure has no source; heaviest allowed configuration 14.87 s of 30 s | ✓ Good — measured; the ~2× timeout margin it leaves is filed as must-debt for Phase 12's combined re-measurement |
+| L30 | Body cutouts are one pattern per part, cut in one boolean, and the honeycomb's cell count is capped at a measured constant: ten fields in three groups, `_cut_body` after the keyway and before the tip chamfer; spoke corners are analytic tangent arcs (`_fillet_corner(inside=)`); honeycomb whole cells only, `HEX_CELL_CAP = 120` written from the pre-implementation spike's row (7.15 s of D-11's 7.5 s share at 200 teeth, module 10; 150 cells read 7.95 s), raise-to-fit in the field's own 0.05 mm step; every `MIN_WALL` comparison goes through `_under_min_wall` (`round(wall, 6) < MIN_WALL` — float residue measured at 0.39999999999999947 at the tracer's hub boundary); `spoke_count`/`hole_count` `le` lowered from 200 to 40/60 after the build-time gate fired | ✓ Good — verified 7/7, UAT 5/5, `make verify` 621 tests; the cap and its 8.65 s row accepted as measured under a loaded host (UAT 2–3); the spokes' 33.39 s arithmetic total with the tip chamfer filed as must-debt for Phase 12's composed sweep (UAT 4); six review findings still `open` (UAT 5) |
 
 ## Success Metric (Milestone v0.1)
 
@@ -355,4 +368,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-28 after Phase 10 (Tooth-Tip Chamfer).*
+*Last updated: 2026-09-29 after Phase 11 (Body Cutouts).*

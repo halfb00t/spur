@@ -31,7 +31,7 @@
     {
       "number": "11",
       "name": "Body Cutouts",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "12",
@@ -40,9 +40,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 12)",
+    "reason": "Phase 12 of 6 — needs a plan"
   },
-  "updated_at": "2026-09-29T04:19:11.585Z"
+  "updated_at": "2026-09-29T12:26:21.105Z"
 }
