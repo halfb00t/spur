@@ -968,10 +968,11 @@ is 200 teeth (D-18's `le` on `hole_count`/`spoke_count`, one instance per tooth)
 size for holes and spokes (09-04's lesson: the heaviest row is not the largest feature,
 so both are measured) x `recess_sides` {both, none} (a recess is the heaviest factor
 every prior phase's sweep has found) -- 8 rows each, 24 rows total. The honeycomb sweep
-holds `hex_cell` at its field default (3 mm, the smallest legal request) and varies
-`hex_wall` {0.4, 5} instead, so every one of its four gears (module x recess) is raised
-past 3 mm to `HEX_CELL_CAP` (11-05's raise-to-fit) rather than measuring a cell size that
-was never going to be requested. The planning probe (11-06-PLAN.md's `<interfaces>`)
+holds `hex_cell` at 3 mm (the sweep's own chosen input, the value 11-02's spike
+measured; the field's default is 0 = off) and varies `hex_wall` {0.4, 5} instead, so
+every one of its four gears (module x recess) is raised past 3 mm to `HEX_CELL_CAP`
+(11-05's raise-to-fit) rather than measuring a cell size that was never going to be
+requested. The planning probe (11-06-PLAN.md's `<interfaces>`)
 predicted the module-1.75 small-hole-with-recess row at 41.06 s and the recess-bearing
 spoke rows at 68-70 s; both predictions are confirmed measured, not estimated, below.
 

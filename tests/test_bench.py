@@ -270,13 +270,13 @@ def test_the_honeycomb_sweep_runs_at_the_cap() -> None:
     """The committed Phase 11 honeycomb sweep is 11-06-PLAN.md's `<interfaces>` cross
     product: 200 teeth (D-11's cap-measuring configuration); module {1.75, 10} (Phase 8's
     export-time probe, and 11-02's own confirmation that the smaller module is the
-    heavier one); `hex_cell` 3 (the field's own default, exactly what 11-02's spike used);
-    `hex_wall` {0.4, 5} (the widest span the field allows without narrowing the web so
-    far no cell fits) x `recess_sides` {both, none}. Every one of the four gears (module x
-    recess) is raised past `hex_cell` 3 to the largest whole-cell size that still fits
-    `HEX_CELL_CAP` cells (D-13's raise-to-fit) -- 11-02's spike measured this exact
-    configuration at 7.15 s of the 7.5 s share, so every row here is expected to run at
-    the cap, not below it.
+    heavier one); `hex_cell` 3 (the sweep's own chosen input, exactly what 11-02's spike
+    used; the field's default is 0 = off); `hex_wall` {0.4, 5} (the widest span the field
+    allows without narrowing the web so far no cell fits) x `recess_sides` {both, none}.
+    Every one of the four gears (module x recess) is raised past `hex_cell` 3 to the
+    largest whole-cell size that still fits `HEX_CELL_CAP` cells (D-13's raise-to-fit) --
+    11-02's spike measured this exact configuration at 7.15 s of the 7.5 s share, so every
+    row here is expected to run at the cap, not below it.
 
     Every row is therefore a buildable gear under 11-05's rules -- `load_sweep` would
     have raised otherwise.
