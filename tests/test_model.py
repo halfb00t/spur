@@ -16,6 +16,7 @@ from spur.calc import (
     keyway_width_effective,
     profile,
     recess_radii,
+    spoke_fillet_effective,
     tip_chamfer_effective,
 )
 from spur.model import (
@@ -973,6 +974,126 @@ def test_the_honeycomb_link_cuts_eighteen_whole_cells() -> None:
     mid = p.face_width / 2
     assert cut.isInside(cq.Vector(6.49, 0, mid)) is True    # a cell facing the axis
     assert cut.isInside(cq.Vector(6.51, 0, mid)) is False   # inside the cut cell
+
+
+# tests/test_calc.py's own SPOKE base dict (the boundary rows below reuse its exact
+# refusal-boundary values, measured for 11-03/11-04's own tests).
+SPOKES_MIN = {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1}
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.75}, id="hole-hub"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.075}, id="hole-rim"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.6, "hole_circle_d": 40},
+                 id="hole-neighbour"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 0.4}, id="spoke-rim"),
+    pytest.param({**SPOKES_MIN, "hub_d": 10.75}, id="spoke-hub"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 8.0375}, id="spoke-annulus"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.67, "hub_d": 12, "rim_wall": 0.4},
+                 id="spoke-opening"),
+    pytest.param({**SPOKES_MIN, "spoke_width": 0.4}, id="spoke-arm"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.4}, id="honeycomb-wall"),
+])
+def test_the_largest_cutout_each_wall_rule_allows_builds(kw: dict[str, object]) -> None:
+    """D-16/D-17: one step inside each cutout wall rule's boundary builds a valid
+    solid; the step past it is test_calc.py's own refusal
+    (test_a_hole_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly,
+    test_a_spoke_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly,
+    test_a_honeycomb_rule_refuses_one_step_past_it_and_names_its_fields), whose own
+    boundary values these rows reuse exactly -- the rules are the part's MIN_WALL, not
+    a kernel boundary (08 D-03's precedent, applied here to every cutout rule at once).
+    The arm rule (11-01's human ruling, kept by 11-04) is included.
+    """
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 14.7}, id="hole-hub"),
+    pytest.param({"hole_count": 6, "hole_d": 4, "hole_circle_d": 24.1}, id="hole-rim"),
+    pytest.param({"teeth": 40, "hole_count": 6, "hole_d": 19.65, "hole_circle_d": 40},
+                 id="hole-neighbour"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 0.35}, id="spoke-rim"),
+    pytest.param({**SPOKES_MIN, "hub_d": 10.7}, id="spoke-hub"),
+    pytest.param({**SPOKES_MIN, "rim_wall": 8.05}, id="spoke-annulus"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.72, "hub_d": 12, "rim_wall": 0.4},
+                 id="spoke-opening"),
+    pytest.param({**SPOKES_MIN, "spoke_width": 0.35}, id="spoke-arm"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.35}, id="honeycomb-wall"),
+])
+def test_the_kernel_cuts_one_valid_solid_past_each_cutout_rule(kw: dict[str, object]) -> None:
+    """The rules are the part's MIN_WALL, not the kernel's (09's keyway test's own
+    words): validation bypassed (model_copy(), which never re-runs _feasible), the
+    kernel still cuts one valid solid one 0.05 mm field-step past every cutout wall
+    rule -- the same rows test_calc.py's refusal tests pin as ValidationErrors, here
+    built for real on the pinned kernel (planning probe 2026-09-29). A kernel bump that
+    changes this goes red here, the way 08-03/09-03 already do for the bore and keyway
+    rules.
+    """
+    s = _build_checked(GearParams().model_copy(update=kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 16.0125}, id="hole-on-r-in"),
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 22.0125}, id="hole-on-r-out"),
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 21.0125},
+                 id="hole-inside-r-out"),
+    pytest.param({"hole_count": 6, "hole_d": 3, "hole_circle_d": 17.0125},
+                 id="hole-outside-r-in"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 13.0125, "rim_wall": 1},
+                 id="spoke-hub-arc-on-r-in-sharp"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 13.0125, "rim_wall": 1,
+                  "spoke_fillet": 1}, id="spoke-hub-arc-on-r-in-filleted"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1.93125},
+                 id="spoke-rim-arc-on-r-out-sharp"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1.93125,
+                  "spoke_fillet": 1}, id="spoke-rim-arc-on-r-out-filleted"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 10.75, "rim_wall": 0.4,
+                  "recess_sides": "none"}, id="spoke-both-min-wall-no-recess"),
+    pytest.param({"hex_cell": 3, "hex_wall": 1, "recess_inner_d": 13}, id="cell-flat-on-r-in"),
+])
+def test_a_cutter_tangent_to_a_recess_wall_or_fillet_builds_without_a_fuzzy_boolean(
+        kw: dict[str, object]) -> None:
+    """CONTEXT Claude's Discretion tol= (research PITFALLS.md Pitfall 1): a hole or a
+    cell can legitimately sit tangent to a recess wall -- unlike Phases 8-10, tangency
+    is reachable here, and a user cannot be told their hole is placed "too exactly". On
+    the default gear's recess (r_in 6.50625, r_out 12.50625, measured 2026-09-29): a
+    3 mm hole with an edge exactly on r_in, on r_out, and 0.5 mm either side of each; a
+    spoke's hub arc tangent to r_in and its rim arc tangent to r_out, each sharp and
+    with a 1 mm fillet (D-05's analytic arcs, not the 3D operator, so tangency to the
+    recess wall is a 2D sketch condition, not a kernel fillet case); a spoke web with
+    both the hub and the rim at exactly MIN_WALL on a recess-less gear (tangent to
+    nothing at all); a honeycomb cell's -X flat tangent to r_in (recess_inner_d 13 puts
+    r_in at 6.5 mm, matching the cell centred at (8, 0)'s flat-to-axis distance). Every
+    row here built one valid solid with the plain cut(*cutters) -- no row needed a
+    fuzzy boolean tolerance, so none is shipped (see the comment above _cut_body's cut).
+    """
+    s = _build_checked(GearParams.model_validate(kw))
+    assert s.isValid()
+
+
+@pytest.mark.parametrize("kw", [
+    pytest.param({"spoke_count": 1, "spoke_width": 2, "hub_d": 12, "rim_wall": 1,
+                  "spoke_fillet": 5}, id="one-arm"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.67, "hub_d": 12, "rim_wall": 1,
+                  "spoke_fillet": 5}, id="twelve-arms-at-the-opening-boundary"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 8.0375,
+                  "spoke_fillet": 5}, id="annulus-at-min-wall"),
+    pytest.param({"spoke_count": 2, "spoke_width": 11, "hub_d": 12, "rim_wall": 1,
+                  "spoke_fillet": 5}, id="eleven-mm-bars-on-a-twelve-mm-hub"),
+])
+def test_a_spoke_fillet_at_its_cap_builds_on_extreme_sectors(kw: dict[str, object]) -> None:
+    """D-06: spoke_fillet 5 (always capped, the field's own le) on the most awkward
+    sectors the rules allow -- one arm (a "C"-shaped sector spanning almost the whole
+    ring), twelve arms right at the opening boundary D-16 permits, an annulus exactly
+    MIN_WALL wide, and 11 mm bars on a 12 mm hub. Each builds one valid solid with the
+    fillet actually capped below the request (measured 2026-09-29: 3.347, 0.202, 0.18,
+    2.22 mm respectively, all < 5)."""
+    p = GearParams.model_validate(kw)
+    s = _build_checked(p)
+    assert s.isValid()
+    assert spoke_fillet_effective(p) < 5
 
 
 def test_exports() -> None:

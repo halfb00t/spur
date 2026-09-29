@@ -382,6 +382,14 @@ def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
         cutters = _cell_cutters(p, pr.rf)
     else:
         return solid
+    # No fuzzy-boolean tolerance is passed to cut(): a hole, a spoke sector or a
+    # honeycomb cell can legitimately sit tangent to a recess wall (research
+    # PITFALLS.md Pitfall 1), and every tangent case probed on the pinned kernel built
+    # with this plain call -- a hole edge exactly on the recess's inner and outer
+    # radius, a spoke's analytic hub/rim arcs tangent to each, both sharp and filleted,
+    # a spoke web at exactly MIN_WALL on both sides with no recess at all, and a
+    # honeycomb cell's own flat tangent to the recess wall (2026-09-29, see
+    # test_a_cutter_tangent_to_a_recess_wall_or_fillet_builds_without_a_fuzzy_boolean).
     return solid.cut(*cutters)
 
 
