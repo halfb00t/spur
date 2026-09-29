@@ -291,7 +291,7 @@ build-time relationship needs a dedicated benchmark sweep before any cap formula
 (`research/SUMMARY.md` "Research Flags"). Holes and spoke arms are well-documented patterns
 (`polarArray`/`cut(*cutters)`, generalizing `_cut_face_recesses`'s existing two-call
 pattern) — no research flag needed for those sub-parts.
-**Plans**: 1/9 plans executed
+**Plans**: 2/9 plans executed
 
 Plans:
 **Wave 1**
@@ -300,7 +300,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 11-02-PLAN.md — D-24 spike, measurement only: whole-cell count vs build/export time at 200 teeth, module 10, both recesses; the cut spelling; the measured `HEX_CELL_CAP` and its module-1.75 confirmation in `bench/RESULTS.md` (wave 2)
+- [x] 11-02-PLAN.md — D-24 spike, measurement only: whole-cell count vs build/export time at 200 teeth, module 10, both recesses; the cut spelling; the measured `HEX_CELL_CAP` and its module-1.75 confirmation in `bench/RESULTS.md` (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -384,5 +384,5 @@ in Phases 7–11; no open technical questions remain by this point.
 | 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
-| 11. Body Cutouts | v0.2 | 1/9 | In Progress|  |
+| 11. Body Cutouts | v0.2 | 2/9 | In Progress|  |
 | 12. Composition Pass | v0.2 | 0/? | Not started | - |
