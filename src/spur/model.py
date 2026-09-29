@@ -418,9 +418,10 @@ def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],
 
     Runs only when the recess fillet is above zero, so an empty result here is a
     modelling defect, never an answer (D-15) -- a fillet that silently selects nothing
-    must never ship an unfilleted floor. Phase 11's cutouts put new circles on the
-    recessed floor and must re-prove this separating invariant (research PITFALLS.md
-    Pitfall 4).
+    must never ship an unfilleted floor. The body cutouts (Phase 11) are cut after this
+    selector runs -- _cut_body follows _cut_face_recesses in _build -- so it never sees
+    a cutout edge, proven for every pattern and bore shape by
+    test_every_selector_takes_only_its_own_edges_with_a_body_cutout.
     """
     edges = [e for e in solid.Edges()
              if e.geomType() == "CIRCLE"

@@ -241,11 +241,146 @@ def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bo
     assert "try smaller" not in str(exc_info.value)
 
 
+# Row sets used below (11-CONTEXT.md <interfaces>): the same links 11-03/11-04/11-05's
+# own tracer tests cut. SPOKES' hub_d 13.2 (not 12) is wide enough to clear the keyed
+# round bore's mouth (the keyway floor corner, 6.179 mm) as well as the plain, D-flat
+# and hex mouths, so one dict works on every bore shape (planning probe 2026-09-29).
+HOLES = {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}
+SPOKES = {"spoke_count": 4, "spoke_width": 2, "hub_d": 13.2, "rim_wall": 1, "spoke_fillet": 1}
+CELLS = {"hex_cell": 3, "hex_wall": 1}
+
+
+@pytest.mark.parametrize(("kw", "rim", "floor", "tip"), [
+    # Each pattern on each bore shape, both recesses (12 rows): rim and floor keep the
+    # no-cutout matrix's own counts (test_each_edge_selector_picks_exactly_its_own_edges)
+    # because both selectors run inside _cut_bore/_cut_face_recesses, before _cut_body
+    # in _build -- these rows prove it on the real pipeline with a cutout present,
+    # rather than assume it from the no-cutout matrix.
+    pytest.param({**HOLES}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="d-flat-holes"),
+    pytest.param({**SPOKES}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="d-flat-spokes"),
+    pytest.param({**CELLS}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="d-flat-cells"),
+    pytest.param({**HOLES, "bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, 38,
+                 id="round-holes"),
+    pytest.param({**SPOKES, "bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, 38,
+                 id="round-spokes"),
+    pytest.param({**CELLS, "bore_flat": 0}, collections.Counter({"CIRCLE": 2}), 4, 38,
+                 id="round-cells"),
+    pytest.param({**HOLES, "bore_hex": 6}, collections.Counter({"LINE": 12}), 4, 38,
+                 id="hex-holes"),
+    pytest.param({**SPOKES, "bore_hex": 6}, collections.Counter({"LINE": 12}), 4, 38,
+                 id="hex-spokes"),
+    pytest.param({**CELLS, "bore_hex": 6}, collections.Counter({"LINE": 12}), 4, 38,
+                 id="hex-cells"),
+    pytest.param({**HOLES, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), 4, 38, id="keyway-holes"),
+    pytest.param({**SPOKES, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), 4, 38, id="keyway-spokes"),
+    pytest.param({**CELLS, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
+                 collections.Counter({"CIRCLE": 2}), 4, 38, id="keyway-cells"),
+    # No recess (3 rows): the floor selector is never called at all.
+    pytest.param({**HOLES, "recess_sides": "none"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
+                 id="no-recess-holes"),
+    pytest.param({**SPOKES, "recess_sides": "none"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
+                 id="no-recess-spokes"),
+    pytest.param({**CELLS, "recess_sides": "none"},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
+                 id="no-recess-cells"),
+    # Each pattern at its closest approach to the root circle (3 rows, D-17): the
+    # cutter's outer wall sits exactly MIN_WALL inside rf -- the rim/floor/tip counts
+    # are unaffected because neither selector reads the cutout geometry.
+    pytest.param({**HOLES, "hole_circle_d": 24.075},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="holes-at-rim-limit"),
+    pytest.param({**SPOKES, "rim_wall": 0.4},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="spokes-at-rim-limit"),
+    pytest.param({**CELLS, "hex_wall": 0.4},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="cells-at-rim-limit"),
+    # 200 teeth (1 row, D-13's own extreme): the tip count scales with teeth; the
+    # rim/floor counts do not, because neither depends on tooth count.
+    pytest.param({**HOLES, "teeth": 200},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 400,
+                 id="teeth-200-holes"),
+])
+def test_every_selector_takes_only_its_own_edges_with_a_body_cutout(
+        monkeypatch: pytest.MonkeyPatch,
+        kw: dict[str, object],
+        rim: collections.Counter[str],
+        floor: int | None,
+        tip: int) -> None:
+    """REQ-edge-selection-proven extended to cutouts (research PITFALLS.md Pitfall 1,
+    Pitfall 5). The rim and floor selectors (_bore_rim_edges, _groove_floor_edges) run
+    inside _cut_bore/_cut_face_recesses, both before _cut_body in _build, so a cutout
+    present or not never changes what they see -- these rows prove it on the real
+    pipeline (_build_checked, never build(): its lru_cache could skip the cutout step)
+    rather than assume it from the no-cutout matrix
+    (test_each_edge_selector_picks_exactly_its_own_edges).
+
+    The tip selector (_tip_edges) runs after _cut_body (10 D-13), so it is called
+    directly here on the finished solid -- exactly what _chamfer_tips would receive,
+    the last step -- and no cutout edge reaches it: a hole's own circles have radius
+    hole_d/2, a spoke's arcs are the fillet radius or the hub/rim radii (never ra), and
+    a honeycomb cell has no CIRCLE edge at all, while every pattern's own D-17 wall
+    rule keeps its cutter inside rf - MIN_WALL, strictly below ra.
+    """
+    real_rim = _bore_rim_edges
+    real_floor = _groove_floor_edges
+    rim_calls: list[collections.Counter[str]] = []
+    floor_calls: list[int] = []
+
+    def rim_spy(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
+        edges = real_rim(solid, p)
+        rim_calls.append(collections.Counter(e.geomType() for e in edges))
+        return edges
+
+    def floor_spy(solid: cq.Shape, radii: tuple[float, ...],
+                  floor_z: list[float]) -> list[cq.Edge]:
+        edges = real_floor(solid, radii, floor_z)
+        floor_calls.append(len(edges))
+        return edges
+
+    monkeypatch.setattr("spur.model._bore_rim_edges", rim_spy)
+    monkeypatch.setattr("spur.model._groove_floor_edges", floor_spy)
+    p = GearParams.model_validate(kw)
+    s = _build_checked(p)  # never build(): its cache could skip the cutout step
+
+    assert len(rim_calls) == 1  # called exactly once, cutout or not
+    assert len(floor_calls) == (1 if floor is not None else 0)  # not at all with no recess
+
+    tips = _tip_edges(s, profile(p).ra, p.face_width)
+    for e in tips:
+        assert e.geomType() == "CIRCLE"
+        assert e.radius() == pytest.approx(profile(p).ra, abs=TOL)
+    assert (collections.Counter(round(e.startPoint().z / p.face_width) for e in tips)
+            == {0: p.teeth, 1: p.teeth})
+
+    # One tuple assertion: a wrong floor or tip count never hides behind a wrong rim
+    # count (test_each_edge_selector_picks_exactly_its_own_edges' own pattern).
+    assert (rim_calls[0], floor_calls[0] if floor_calls else None, len(tips)) == (rim, floor, tip)
+
+
 @pytest.mark.parametrize(("kw", "faces"), [
     pytest.param({"tip_chamfer": 0.4}, 210, id="d-flat"),
     pytest.param({"tip_chamfer": 0.4, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
                  213, id="keyway-round"),
     pytest.param({"tip_chamfer": 0.4, "bore_hex": 6}, 222, id="hex"),
+    # 11-07: a cutout composes with the tip chamfer -- _cut_body runs before
+    # _chamfer_tips (D-13), so the selector still sees only the 2 x 19 tip arcs, none
+    # of a cutout's own circles (a hole's radius hole_d/2, a spoke fillet's radius, a
+    # honeycomb cell has no CIRCLE at all). 216/338 measured on the pinned kernel
+    # 2026-09-29: 172 plain faces + the cutout's own faces + 38 tip cones each.
+    pytest.param({"tip_chamfer": 0.4, "hole_count": 6, "hole_d": 4, "hole_circle_d": 20},
+                 216, id="hole-cutout"),
+    pytest.param({"tip_chamfer": 0.4, "spoke_count": 4, "spoke_width": 2, "hub_d": 13.2,
+                  "rim_wall": 1, "spoke_fillet": 1}, 264, id="spoke-cutout"),
+    pytest.param({"tip_chamfer": 0.4, "hex_cell": 3, "hex_wall": 1}, 338,
+                 id="honeycomb-cutout"),
 ])
 def test_the_tip_chamfer_takes_exactly_the_tip_arcs_in_the_real_pipeline(
         monkeypatch: pytest.MonkeyPatch, kw: dict[str, object], faces: int) -> None:
