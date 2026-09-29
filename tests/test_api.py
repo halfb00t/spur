@@ -80,8 +80,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
         "root_thickness", "root_gap", "root_fillet", "tip_chamfer_effective", "span_teeth",
         "span", "bore_effective", "hex_across_flats", "hex_across_corners",
         "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
-        "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall", "warnings",
-        "mate_teeth", "centre_distance",
+        "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall",
+        "spoke_fillet_effective", "warnings", "mate_teeth", "centre_distance",
     }
     component = schema["components"]["schemas"]["DerivedDimensions"]
     assert set(component["properties"]) == fields
@@ -99,6 +99,7 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
     assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
     assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
+    assert component["properties"]["spoke_fillet_effective"]["unit"] == "mm"
     assert "unit" not in component["properties"]["span_teeth"]
 
     health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
@@ -299,7 +300,7 @@ def test_a_hole_link_is_served_with_its_walls() -> None:
     assert props["hole_d"]["default"] == 0
     assert props["hole_circle_d"]["maximum"] == 400
     names = list(props)
-    assert names.index("hole_count") == names.index("recess_fillet") + 1
+    assert names.index("hole_count") == names.index("spoke_fillet") + 1
     assert names.index("hole_d") == names.index("hole_count") + 1
     assert names.index("hole_circle_d") == names.index("hole_d") + 1
 
@@ -341,6 +342,70 @@ def test_a_hole_conflict_is_422_naming_its_fields() -> None:
                                              "hole_circle_d": 14.7, "quality": "preview"})
     assert r.status_code == 422
     assert r.json()["detail"][0]["ctx"]["fields"] == ["hole_circle_d", "hole_d"]
+
+
+def test_a_spoke_link_is_served_with_the_fillet_it_cut() -> None:
+    """?spoke_count=4&spoke_width=2&hub_d=12&rim_wall=1&spoke_fillet=1 end to end
+    (D-01, D-04, D-18, D-19, D-20): the schema's Spokes group, /api/info's cap and
+    walls, the plain-default null case, and both export formats."""
+    props = client.get("/api/schema").json()["properties"]
+    assert props["spoke_count"]["group"] == "Spokes"
+    assert props["spoke_count"]["type"] == "integer"
+    assert props["spoke_count"]["minimum"] == 0
+    assert props["spoke_count"]["maximum"] == 200
+    assert props["spoke_count"]["default"] == 0
+    assert props["spoke_count"]["step"] == 1
+    assert props["spoke_width"]["unit"] == "mm"
+    assert props["spoke_width"]["maximum"] == 100
+    assert props["spoke_width"]["step"] == 0.05
+    assert props["spoke_width"]["default"] == 0
+    assert props["hub_d"]["maximum"] == 400
+    assert props["rim_wall"]["maximum"] == 100
+    assert props["spoke_fillet"]["maximum"] == 5
+    names = list(props)
+    assert names.index("spoke_count") == names.index("recess_fillet") + 1
+    assert names.index("spoke_width") == names.index("spoke_count") + 1
+    assert names.index("hub_d") == names.index("spoke_width") + 1
+    assert names.index("rim_wall") == names.index("hub_d") + 1
+    assert names.index("spoke_fillet") == names.index("rim_wall") + 1
+
+    r = client.get("/api/info", params={"spoke_count": 4, "spoke_width": 2, "hub_d": 12,
+                                        "rim_wall": 1, "spoke_fillet": 1})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["spoke_fillet_effective"] == pytest.approx(1.0)
+    assert body["cutout_hub_wall"] == pytest.approx(1.025)
+    assert body["cutout_rim_wall"] == pytest.approx(1.0)
+    assert body["warnings"] == []
+
+    r = client.get("/api/info", params={"spoke_count": 4, "spoke_width": 2, "hub_d": 12,
+                                        "rim_wall": 1, "spoke_fillet": 5})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["spoke_fillet_effective"] == pytest.approx(3.337)
+    assert body["warnings"] == [
+        "Spoke fillet reduced to 3.337 mm to fit the opening between the arms at "
+        "the hub."]
+
+    r = client.get("/api/info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["spoke_fillet_effective"] is None
+    assert body["cutout_hub_wall"] is None
+    assert body["cutout_rim_wall"] is None
+
+    r = client.get("/api/model.stl", params={"spoke_count": 4, "spoke_width": 2,
+                                             "hub_d": 12, "rim_wall": 1,
+                                             "spoke_fillet": 1, "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+
+    r = client.get("/api/model.step", params={"spoke_count": 4, "spoke_width": 2,
+                                               "hub_d": 12, "rim_wall": 1,
+                                               "spoke_fillet": 1})
+    assert r.status_code == 200
+    assert r.content.startswith(b"ISO-10303-21;")
 
 
 def test_a_hex_bore_the_root_cannot_hold_is_422_naming_bore_hex() -> None:

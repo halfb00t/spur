@@ -282,20 +282,63 @@ def tip_chamfer_effective(p: GearParams) -> float:
 
 def cutout_walls(p: GearParams, rf: float) -> tuple[float, float] | None:
     """(hub wall, rim wall) of the one body-cutout pattern set, unrounded, or None with
-    no pattern set. This plan gives it the holes branch only (D-20); 11-04 and 11-05 add
-    the spoke and honeycomb branches alongside it.
+    no pattern set. This plan adds the spoke branch alongside 11-03's holes branch
+    (D-20); 11-05 adds the honeycomb branch.
 
     The hub side is measured from the farthest point of the chamfered bore mouth,
     bore_mouth_limit(p), the same datum recess_radii() clears (D-17, L27/L28) -- exact
     for a round or D-flat bore, the corner's reach for a hex or keyed bore, and so a
     lower bound where a cutout faces a flat (L08). The rim side is measured from the
-    root circle, rf.
+    root circle, rf. Spokes read hub_d and rim_wall directly (D-01): the rim corner
+    arcs stay inside rf - rim_wall, so the rim wall is exactly rim_wall.
     """
+    if p.spoke_count > 0:
+        return p.hub_d / 2 - bore_mouth_limit(p), p.rim_wall
     if p.hole_count > 0:
         inner = p.hole_circle_d / 2 - p.hole_d / 2
         outer = p.hole_circle_d / 2 + p.hole_d / 2
         return inner - bore_mouth_limit(p), rf - outer
     return None
+
+
+def spoke_opening(p: GearParams) -> float:
+    """The arc between the feet of adjacent bar sides on the hub circle (D-06):
+    keyway_flat_wall's arc measure (research Pitfall 4, Open Q1), applied to two bar
+    feet instead of a flat's corner and a keyway's side. This is the narrowest gap a
+    sector has -- beyond the hub the bars diverge -- so both D-06's fillet cap and
+    D-16's neighbour rule read this one number. 0.0 when spoke_width >= hub_d (the
+    bars would meet or cross at the hub before reaching it). Callers pass
+    spoke_count >= 1 and hub_d > 0 -- check()'s half-set rule (D-15) guarantees both
+    before this is ever called.
+    """
+    if p.spoke_width >= p.hub_d:
+        return 0.0
+    r = p.hub_d / 2
+    return r * (2 * math.pi / p.spoke_count - 2 * math.asin(p.spoke_width / p.hub_d))
+
+
+def spoke_fillet_limit(p: GearParams) -> tuple[float, str]:
+    """(limit, reason): the smaller of the two dimensions a sector's corner fillets
+    share -- root_fillet's 0.45-of-the-shared-dimension family (two corner arcs share
+    each dimension, so 10% of it always stays). Compared as a tuple, tip_chamfer_limit's
+    shape, so a tie is broken by the reason text, deterministically.
+    """
+    pr = profile(p)
+    return min(
+        (0.45 * spoke_opening(p), "to fit the opening between the arms at the hub"),
+        (0.45 * (pr.rf - p.rim_wall - p.hub_d / 2),
+         "to fit between the hub and the rim wall"),
+    )
+
+
+def spoke_fillet_effective(p: GearParams) -> float:
+    """Spoke fillet actually cut at the corners of each cut-out sector: the requested
+    radius, capped to what fits the sector, and never refused (L03) -- always a cap,
+    never a 422. model.py cuts exactly this value, so the part and the printed number
+    cannot disagree (L08). 0.0 with no spokes or spoke_fillet 0 (sharp corners)."""
+    if p.spoke_count == 0 or p.spoke_fillet <= 0:
+        return 0.0
+    return round(min(p.spoke_fillet, spoke_fillet_limit(p)[0]), 3)
 
 
 def _under_min_wall(wall: float) -> bool:
@@ -597,6 +640,10 @@ class DerivedDimensions(BaseModel):
         description="Thinnest wall left between the body cutout and the root circle; "
                     "null with no cutout.",
         json_schema_extra={"unit": "mm"})
+    spoke_fillet_effective: float | None = Field(
+        description="Spoke fillet actually cut at the corners of each cut-out sector, "
+                    "after the cap; null with no spokes or no spoke fillet.",
+        json_schema_extra={"unit": "mm"})
     # A tuple, not a list: pydantic's `frozen=True` locks the attributes, not the objects
     # they hold, so a list here could still be edited in place by any reader of a shared
     # result -- the one field that would make "frozen" a lie (04-REVIEW.md WR-01).
@@ -699,6 +746,18 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         warnings.append("No room for a face recess between the bore wall and the tooth "
                         "rim; it was left out.")
 
+    # D-06: only actually binds with spokes on and a fillet requested -- the same
+    # shape as the tip-chamfer warning above, including the sub-print-precision branch
+    # (10-REVIEW.md WR-01/CR-01's rule, applied here to the spoke fillet's own 0.001 mm
+    # cut resolution).
+    sfe = spoke_fillet_effective(p) if p.spoke_count > 0 and p.spoke_fillet > 0 else None
+    if sfe is not None:
+        if sfe < round(p.spoke_fillet, 3):
+            warnings.append(f"Spoke fillet reduced to {sfe:g} mm {spoke_fillet_limit(p)[1]}.")
+        elif sfe == 0.0:
+            warnings.append(f"Spoke fillet {p.spoke_fillet:g} mm is below the 0.001 mm "
+                            "resolution it is cut at and was not cut.")
+
     if p.hole_count == 0:
         # D-15: hole_count 0 (the default) builds nothing regardless of hole_d/
         # hole_circle_d, exactly like the hex bore ignoring bore_d/bore_flat above --
@@ -758,6 +817,7 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         web=r3(p.face_width - sides * p.recess_depth) if rr else None,
         cutout_hub_wall=r3(walls[0]) if walls else None,
         cutout_rim_wall=r3(walls[1]) if walls else None,
+        spoke_fillet_effective=r3(sfe) if sfe is not None else None,
         warnings=tuple(warnings),
         mate_teeth=mate_teeth,
         centre_distance=None if aw is None else r3(aw),

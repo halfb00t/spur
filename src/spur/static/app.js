@@ -33,6 +33,7 @@ const DIMS = [
   ['web', 'Web thickness'],
   ['cutout_hub_wall', 'Thinnest wall, cutout to bore'],
   ['cutout_rim_wall', 'Thinnest wall, cutout to root'],
+  ['spoke_fillet_effective', 'Spoke fillet used'],
 ];
 
 const fmt = (v) => Number(v).toFixed(3).replace(/\.?0+$/, '');

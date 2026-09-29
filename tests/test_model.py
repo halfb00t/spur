@@ -24,6 +24,7 @@ from spur.model import (
     Quality,
     _bore_rim_edges,
     _build_checked,
+    _fillet_corner,
     _groove_floor_edges,
     _tip_edges,
     build,
@@ -57,6 +58,10 @@ Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
     {"tip_chamfer": 3, "profile_shift": 1.0, "pressure_angle": 14.5},
     {"tip_chamfer": 0.4, "keyway_width": 3, "keyway_depth": 1.4, "bore_flat": 0},
     {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20},
+    {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1, "spoke_fillet": 1},
+    # Sharp corners (spoke_fillet 0) and the N=1 "C-shaped sector" case (D-02, D-03).
+    {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1},
+    {"spoke_count": 1, "spoke_width": 2, "hub_d": 12, "rim_wall": 1, "spoke_fillet": 1},
 ])
 def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     p = GearParams.model_validate(kw)
@@ -764,6 +769,53 @@ def test_the_hole_link_cuts_six_holes_through_the_recessed_floor() -> None:
     assert cut.isInside(cq.Vector(10, 0, mid)) is False  # hole 0, centred on +X (D-03)
     assert cut.isInside(cq.Vector(10 * math.cos(math.pi / 6), 10 * math.sin(math.pi / 6),
                                   mid)) is True  # between holes 0 and 1
+
+
+def test_the_spoke_link_cuts_four_filleted_sectors() -> None:
+    """?spoke_count=4&spoke_width=2&hub_d=12&rim_wall=1&spoke_fillet=1 on the default
+    gear (D-01...D-05): four filleted sectors cut through the full face width in one
+    cut call, arm 0 centred on +X (D-03), the recess floor fillet's four TORUS faces
+    split into 16 under the arms (research Pattern 2, planning probe 2026-09-29).
+    _build_checked, not build(): the lru_cache on build() would hand back a solid built
+    by an earlier test's GearParams() call for a "bare" GearParams() here.
+    """
+    p0 = GearParams()
+    p = GearParams(spoke_count=4, spoke_width=2, hub_d=12, rim_wall=1, spoke_fillet=1)
+    plain = _build_checked(p0)
+    cut = _build_checked(p)
+
+    d_faces = (collections.Counter(f.geomType() for f in cut.Faces())
+              - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert d_faces == collections.Counter({"PLANE": 14, "CYLINDER": 40, "TORUS": 16})
+    assert len(cut.Edges()) - len(plain.Edges()) == 240
+
+    mid = p.face_width / 2
+    assert cut.isInside(cq.Vector(10, 0, mid)) is True     # arm 0, centred on +X (D-03)
+    assert cut.isInside(cq.Vector(10 * math.cos(math.radians(45)),
+                                  10 * math.sin(math.radians(45)), mid)) is False
+
+
+def test_a_rim_corner_fillet_is_tangent_to_the_rim_circle_and_the_bar_side() -> None:
+    """The hand-computed sanity case D-05's mirrored _fillet_corner needed before
+    trusting it at every sector corner (research Pattern 2, Assumption A1): R 10, the
+    bar side is the line y = 1 running inward, rho 1. The tangent point on the circle
+    is R from the axis, the tangent point on the line lies exactly on y = 1, and both
+    sit rho from the arc's own centre -- the general tangency properties, not just this
+    one set of coordinates.
+    """
+    p0 = cq.Vector(math.sqrt(99), 1, 0)
+    p1 = cq.Vector(0, 1, 0)
+    on_root, mid, on_line = _fillet_corner(p0, p1, 10, 1, -1, inside=True)
+
+    assert (on_root.x, on_root.y) == pytest.approx((9.749960, 2.222222), abs=1e-6)
+    assert (on_line.x, on_line.y) == pytest.approx((8.774964, 1.0), abs=1e-6)
+
+    centre = cq.Vector(math.sqrt(77), 2, 0)
+    assert math.hypot(on_root.x, on_root.y) == pytest.approx(10.0, abs=1e-9)
+    assert on_line.y == pytest.approx(1.0, abs=1e-9)
+    assert math.hypot(on_root.x - centre.x, on_root.y - centre.y) == pytest.approx(1.0, abs=1e-9)
+    assert math.hypot(on_line.x - centre.x, on_line.y - centre.y) == pytest.approx(1.0, abs=1e-9)
+    assert math.hypot(mid.x - centre.x, mid.y - centre.y) == pytest.approx(1.0, abs=1e-9)
 
 
 def test_exports() -> None:

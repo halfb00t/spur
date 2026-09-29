@@ -25,7 +25,7 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 class GearParams(BaseModel):
     """Involute spur gear with an optional tooth-tip chamfer, D-flat or hex bore, a
-    keyway, annular face recesses, and a lightening-hole pattern."""
+    keyway, annular face recesses, a spoke pattern and a lightening-hole pattern."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -99,6 +99,26 @@ class GearParams(BaseModel):
                                help="0 = centred so the hub wall equals the rim wall.")
     recess_fillet: float = _f(0.5, 0, 5, title="Recess fillet", group="Recess", unit="mm",
                               step=0.05, help="Fillet at the groove floor corners.")
+
+    # --- Spokes ------------------------------------------------------------------
+    spoke_count: int = _f(0, 0, 200, title="Spoke arms", group="Spokes", step=1,
+                          help="Number of straight arms joining a hub ring to a rim "
+                               "ring; the sectors between them are cut through the "
+                               "full face width. Arm 0 is centred on +X. 0 = no "
+                               "spokes.")
+    spoke_width: float = _f(0.0, 0, 100, title="Arm width", group="Spokes", unit="mm",
+                            step=0.05,
+                            help="Width of each arm, the same along its whole length.")
+    hub_d: float = _f(0.0, 0, 400, title="Hub Ø", group="Spokes", unit="mm", step=0.05,
+                      help="Outer diameter of the hub ring the arms start from.")
+    rim_wall: float = _f(0.0, 0, 100, title="Rim wall", group="Spokes", unit="mm",
+                         step=0.05,
+                         help="Radial thickness of the rim ring, measured inward from "
+                              "the root circle.")
+    spoke_fillet: float = _f(0.0, 0, 5, title="Spoke fillet", group="Spokes", unit="mm",
+                             step=0.05,
+                             help="Radius rounding the corners of each cut-out "
+                                  "sector, capped to fit. 0 = sharp.")
 
     # --- Holes -------------------------------------------------------------------
     hole_count: int = _f(0, 0, 200, title="Lightening holes", group="Holes", step=1,

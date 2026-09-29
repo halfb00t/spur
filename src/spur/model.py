@@ -40,6 +40,7 @@ from .calc import (
     recess_radii,
     root_fillet,
     spline_start,
+    spoke_fillet_effective,
     tip_chamfer_effective,
 )
 from .params import GearParams
@@ -94,21 +95,36 @@ def _polar(r: float, t: float) -> cq.Vector:
 
 
 def _fillet_corner(p0: cq.Vector, p1: cq.Vector, rf: float, rho: float,
-                   gap_side: int) -> tuple[cq.Vector, cq.Vector, cq.Vector]:
-    """Fillet of radius rho between the root circle (radius rf, centred on the axis)
-    and the flank line p0 -> p1, where p0 lies on the root circle.
+                   gap_side: int, inside: bool = False) -> tuple[cq.Vector, cq.Vector, cq.Vector]:
+    """Fillet of radius rho between an axis-centred circle of radius rf and the flank
+    line p0 -> p1, where p0 lies on that circle.
 
-    gap_side is -1 if the tooth gap is clockwise of the line, +1 if anticlockwise.
-    Returns (tangent point on root circle, arc midpoint, tangent point on line).
+    gap_side is -1 if the region being rounded lies clockwise of the line, +1 if
+    anticlockwise. `inside=False` (the default, unchanged since Phase 7): the region
+    lies outside the circle -- the tooth root fillet's case -- so the arc centre sits
+    outside it, at |centre| = rf + rho. `inside=True` (D-05, added Phase 11 for a
+    spoke sector's rim corners): the region lies inside the circle, so the centre sits
+    inside it instead, at |centre| = rf - rho, and the near root of the quadratic is
+    taken rather than the far one -- the mirror image of the outside case, both
+    algebraically (a sign flip in the quadratic's constant term) and geometrically
+    (hand-checked, 2026-09-29: R 10, line y = 1 inward, rho 1 gives centre
+    (sqrt(77), 2), circle point (9.749960, 2.222222), line point (8.774964, 1.0)).
+    The default path is float-for-float identical to before this parameter existed
+    (rc = rf + rho is the same expression the old code built): the pre-v0.2 fixture
+    replays byte-unchanged.
+
+    Returns (tangent point on the circle, arc midpoint, tangent point on line).
     """
     u = (p1 - p0).normalized()
     n = cq.Vector(-u.y, u.x, 0) * gap_side
-    q = p0 + n * rho                  # centre = q + t*u with |centre| = rf + rho
+    q = p0 + n * rho                  # centre = q + t*u with |centre| = rc
     b = q.dot(u)
-    t = -b + math.sqrt(max(0.0, b * b - (q.dot(q) - (rf + rho) ** 2)))
+    rc = rf - rho if inside else rf + rho
+    root = math.sqrt(max(0.0, b * b - (q.dot(q) - rc ** 2)))
+    t = -b - root if inside else -b + root
     centre = q + u * t
     on_line = p0 + u * t
-    on_root = centre * (rf / (rf + rho))
+    on_root = centre * (rf / rc)
     mid = centre + ((on_line + on_root) * 0.5 - centre).normalized() * rho
     return on_root, mid, on_line
 
@@ -258,7 +274,77 @@ def _hole_cutters(p: GearParams) -> list[cq.Solid]:
             for k in range(p.hole_count)]
 
 
-def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:  # noqa: ARG001 -- pr is unused by the holes branch this plan ships; 11-04/11-05's spoke/honeycomb branches read pr.rf
+def _spoke_sector(p: GearParams, rf: float, k: int, rho: float) -> cq.Face:
+    """One sector of the spoke cutout, the gap between arm k and arm k + 1 (D-01,
+    D-02): the annulus between the hub ring (radius rh) and the rim wall (radius rr),
+    minus the two parallel-sided bars bounding it, each corner rounded by an analytic
+    tangent arc baked into this 2D wire -- never OCCT's 3D fillet operator on the 4N
+    vertical corner edges (D-05, L09's ~50x on a many-featured outline).
+
+    Arm k sits at the nominal angle 2*pi*k/N (arm 0 on +X, D-03); k and k + 1 are
+    never taken modulo N, so the last sector's angles run past 2*pi rather than
+    wrapping back through 0 -- this is what keeps the hub arc anticlockwise and the
+    rim arc clockwise for every sector, including the N = 1 case (one sector spanning
+    the whole ring but for the single arm, a "C" shape).
+
+    With rho > 0 the wire is: hub arc, hub corner arc, bar side, rim corner arc, rim
+    arc, rim corner arc, bar side, hub corner arc -- eight edges, closing back to the
+    start. With rho == 0 (sharp corners, no fillet field or one that rounds to 0) the
+    four corner arcs collapse and the wire is just hub arc, bar side, rim arc, bar
+    side -- the plain sector research's Pattern 2 describes before D-05's fillet.
+    """
+    n = p.spoke_count
+    rh = p.hub_d / 2
+    rr = rf - p.rim_wall
+    o = p.spoke_width / 2
+    th0 = 2 * math.pi * k / n
+    th1 = 2 * math.pi * (k + 1) / n
+    mid = (th0 + th1) / 2
+
+    def foot(r: float, th: float, off: float) -> cq.Vector:
+        # The point at radius r, offset `off` perpendicular to the radial direction
+        # th: rotate (s, off) by th, s = sqrt(r^2 - off^2) so the point still lies on
+        # the circle of radius r. off = +-spoke_width/2 places the two bar sides.
+        s = math.sqrt(max(0.0, r * r - off * off))
+        return cq.Vector(s * math.cos(th) - off * math.sin(th),
+                         s * math.sin(th) + off * math.cos(th), 0)
+
+    h0, r0 = foot(rh, th0, o), foot(rr, th0, o)     # arm k's +w/2 side
+    h1, r1 = foot(rh, th1, -o), foot(rr, th1, -o)   # arm k+1's -w/2 side
+
+    edges: list[cq.Edge] = []
+    if rho > 0:
+        hub_k = _fillet_corner(h0, r0, rh, rho, 1)
+        hub_k1 = _fillet_corner(h1, r1, rh, rho, -1)
+        rim_k1 = _fillet_corner(r1, h1, rr, rho, 1, inside=True)
+        rim_k = _fillet_corner(r0, h0, rr, rho, -1, inside=True)
+        edges.append(cq.Edge.makeThreePointArc(hub_k[0], _polar(rh, mid), hub_k1[0]))
+        edges.append(cq.Edge.makeThreePointArc(hub_k1[0], hub_k1[1], hub_k1[2]))
+        edges.append(cq.Edge.makeLine(hub_k1[2], rim_k1[2]))
+        edges.append(cq.Edge.makeThreePointArc(rim_k1[2], rim_k1[1], rim_k1[0]))
+        edges.append(cq.Edge.makeThreePointArc(rim_k1[0], _polar(rr, mid), rim_k[0]))
+        edges.append(cq.Edge.makeThreePointArc(rim_k[0], rim_k[1], rim_k[2]))
+        edges.append(cq.Edge.makeLine(rim_k[2], hub_k[2]))
+        edges.append(cq.Edge.makeThreePointArc(hub_k[2], hub_k[1], hub_k[0]))
+    else:
+        edges.append(cq.Edge.makeThreePointArc(h0, _polar(rh, mid), h1))
+        edges.append(cq.Edge.makeLine(h1, r1))
+        edges.append(cq.Edge.makeThreePointArc(r1, _polar(rr, mid), r0))
+        edges.append(cq.Edge.makeLine(r0, h0))
+    return cq.Face.makeFromWires(cq.Wire.assembleEdges(edges))
+
+
+def _spoke_cutters(p: GearParams, rf: float) -> list[cq.Solid]:
+    """N sector prisms cut from the annular web between the hub ring and the rim wall
+    (D-01), through the full face width. rho is spoke_fillet_effective(p), the value
+    derive() prints -- model.py never recomputes the cap, so the part and the number
+    cannot disagree (L08)."""
+    rho = spoke_fillet_effective(p)
+    return [cq.Solid.extrudeLinear(_spoke_sector(p, rf, k, rho), cq.Vector(0, 0, p.face_width))
+            for k in range(p.spoke_count)]
+
+
+def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
     """The one body-cutout pattern, every cutter of it subtracted in a single boolean
     cut -- never a per-cutter loop (ROADMAP SC1, research PITFALLS.md Pitfall 2). Runs
     after _cut_keyway and before _chamfer_tips: the recess floor fillet and the
@@ -267,11 +353,14 @@ def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:  # noqa:
     spelling is measured, not assumed: bench/RESULTS.md "Honeycomb cell-count spike"
     timed star (cut(*prisms)), compound and fuse within 0.03 s of each other at the
     cap's cell count -- inside the run's own noise, never clearing D-24's 10% bar, so
-    the default cut(*prisms) spelling stands. pr is taken now because 11-04 and 11-05
-    read pr.rf for the spoke and honeycomb branches.
+    the default cut(*prisms) spelling stands. Only one branch ever runs
+    (REQ-one-cutout-pattern, calc.check()'s one-pattern rule), so the cutter lists
+    never mix.
     """
-    if p.hole_count > 0:
-        cutters: list[cq.Solid] = _hole_cutters(p)
+    if p.spoke_count > 0:
+        cutters: list[cq.Solid] = _spoke_cutters(p, pr.rf)
+    elif p.hole_count > 0:
+        cutters = _hole_cutters(p)
     else:
         return solid
     return solid.cut(*cutters)
