@@ -4,17 +4,17 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 11
 current_phase_name: Body Cutouts
-status: executing
-stopped_at: Completed 11-08-PLAN.md
-last_updated: "2026-09-29T10:00:02.062Z"
+status: verifying
+stopped_at: Completed 11-09-PLAN.md
+last_updated: "2026-09-29T10:41:15.514Z"
 last_activity: 2026-09-29
 last_activity_desc: Phase 11 execution started
-state_head: a84c800da34ee774d5d9dc8ebca010040566fda9
+state_head: 847af3f0a06caa6934f703c9b4f55783148f3f54
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 25
-  completed_plans: 24
+  completed_plans: 25
   percent: 17
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 11 (Body Cutouts) — EXECUTING
 Plan: 9 of 9
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-29 — Phase 11 execution started
 
 ## Performance Metrics
@@ -154,6 +154,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 11 P06 | 45min (Task 3; Task 1 prior executor) | 3 tasks | 10 files |
 | Phase 11 P07 | ~28min | 2 tasks | 2 files |
 | Phase 11 P08 | ~35min | 2 tasks | 1 files |
+| Phase 11 P09 | ~31min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -224,6 +225,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 11]: 11-07: no tol= was needed -- all ten tangent-cutter rows (holes, spoke hub/rim arcs sharp and filleted, a recess-less double-MIN_WALL spoke web, a honeycomb flat tangent to the recess wall) built one valid solid with the plain cut(*cutters) on the pinned kernel, so _cut_body ships none, only a comment recording the measurement.
 - [Phase 11]: 11-08: sharp-spoke and honeycomb removed-volume checked against a closed-form analytic formula (matches the kernel to 1e-9 mm3), not a pinned literal; the filleted-spoke row has no closed form and stays pinned.
 - [Phase 11]: 11-08: the keyed-round SPOKES13 fillet-1 recess-survival row (not probed in planning) measured TORUS 12 on the pinned kernel; every other row of the 13-row survival matrix matched the planning probe exactly, no sharp floor-to-wall circle survived any row.
+- [Phase 11]: 11-09: L30 appended after L29 (0 deleted lines) in L29's paragraph shape -- fields, cut, honeycomb, cap, refusals, numbers, cost, proof and reversibility -- every number cited to a SUMMARY sha or bench/RESULTS.md section, none re-estimated (D-25).
+- [Phase 11]: 11-09: make verify's wall time at the phase's end measured 621 passed in 177.62s -- 178.55s wall (host load 3.07-4.65), against Phase 10's 453 passed / 98.17s; the phase's 168 new tests add +80.38s to the gate.
+- [Phase 11]: 11-09: three deferred ideas filed under docs/ideas/ with INDEX rows -- a spoke/hole rotation field, a teeth/module-dependent honeycomb cap, and conditional form fields -- verbatim from 11-CONTEXT.md's Deferred Ideas section.
 
 ### Pending Todos
 
@@ -305,8 +309,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-29T10:00:02.016Z
-Stopped at: Completed 11-08-PLAN.md
+Last session: 2026-09-29T10:41:15.464Z
+Stopped at: Completed 11-09-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

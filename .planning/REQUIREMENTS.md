@@ -55,15 +55,15 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
 
 ### Body cutouts
 
-- [ ] **REQ-spoke-cutout**: User can cut spoke arms by setting `spoke_count` (0 = off),
+- [x] **REQ-spoke-cutout**: User can cut spoke arms by setting `spoke_count` (0 = off),
   `spoke_width`, `hub_d`, `rim_wall` and `spoke_fillet`: N straight arms between a hub
   ring and a rim ring, the sectors between the arms cut through the full face width,
   their corners rounded by `spoke_fillet` (0 = sharp), capped to fit
   (Phase 11 D-04/D-21).
-- [ ] **REQ-hole-cutout**: User can cut lightening holes by setting `hole_count` (0 =
+- [x] **REQ-hole-cutout**: User can cut lightening holes by setting `hole_count` (0 =
   off), `hole_d` and `hole_circle_d`: N equal round holes evenly spaced on a bolt circle,
   through the full face width.
-- [ ] **REQ-honeycomb-cutout**: User can cut a honeycomb web by setting `hex_cell`
+- [x] **REQ-honeycomb-cutout**: User can cut a honeycomb web by setting `hex_cell`
   (cell across-flats, mm, 0 = off) and `hex_wall`: hexagonal through-holes fill the web
   between the hub wall and the rim wall. The cell count is derived and reported. When the
   derived count exceeds the measured build-time cap, the cell size is raised to the
@@ -81,7 +81,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   recessed floor, and the floor fillet remains on the floor edges that survive — proven
   by a test that counts the filleted edges) and with any bore profile (round, D-flat,
   keyway, hex).
-- [ ] **REQ-cutout-derived-numbers**: `DerivedDimensions` reports the thinnest remaining
+- [x] **REQ-cutout-derived-numbers**: `DerivedDimensions` reports the thinnest remaining
   wall on the hub side and on the rim side, and the honeycomb cell count actually cut —
   `null` when no cutout is set.
 
@@ -184,13 +184,13 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-hex-bore | Phase 8 | Complete |
 | REQ-hex-rim-chamfer | Phase 9 | Complete |
 | REQ-bore-derived-numbers | Phase 9 | Complete |
-| REQ-spoke-cutout | Phase 11 | Pending |
-| REQ-hole-cutout | Phase 11 | Pending |
-| REQ-honeycomb-cutout | Phase 11 | Pending |
+| REQ-spoke-cutout | Phase 11 | Complete |
+| REQ-hole-cutout | Phase 11 | Complete |
+| REQ-honeycomb-cutout | Phase 11 | Complete |
 | REQ-one-cutout-pattern | Phase 11 | Complete |
 | REQ-cutout-conflicts-refused-early | Phase 11 | Complete |
 | REQ-cutout-composes | Phase 11 | Complete |
-| REQ-cutout-derived-numbers | Phase 11 | Pending |
+| REQ-cutout-derived-numbers | Phase 11 | Complete |
 | REQ-tip-chamfer | Phase 10 | Complete |
 | REQ-tip-chamfer-capped | Phase 10 | Complete |
 | REQ-defaults-off-regression | Phase 7 | Complete |
