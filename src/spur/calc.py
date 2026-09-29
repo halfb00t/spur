@@ -489,6 +489,17 @@ def hex_cells(p: GearParams, rf: float) -> tuple[float, tuple[tuple[float, float
     raise-to-fit over the web annulus (D-09): `hex_wall` outside the chamfered bore
     mouth (`bore_mouth_limit(p)`, the recess's own datum) and `hex_wall` inside the
     root circle (`rf`).
+
+    Measured (`.venv/bin/python -m timeit`, best of 5, arm64, Python 3.12.13,
+    2026-09-29, the same 12-CPU host the honeycomb spike ran on): `derive()` alone
+    costs 14.1 usec on `GearParams()` (no honeycomb, beside 09-05's 11.5 usec
+    baseline), 115 usec on the tracer link (`hex_cell=3, hex_wall=1`, 18 cells), and
+    15.6 msec at the heaviest input (`teeth=200, module=10, hex_cell=3, hex_wall=0.4`
+    -- the smallest allowed wall, the most candidate cells to search). One full
+    request makes three `hex_cells` calls: `check()` at construction, then
+    `cutout_walls()` and `derive()` itself each call it once more -- `derive()`'s own
+    two calls are what these numbers measure; `check()`'s third call costs the same
+    again. No cache is added: this is what it costs.
     """
     if p.hex_cell <= 0:
         return 0.0, ()
@@ -669,9 +680,9 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
     # With two or more patterns set, neither pattern's own rules below run: the part
     # cannot exist as drawn (REQ-one-cutout-pattern), and one sentence says why instead
     # of every per-pattern rule firing on fields that make no sense set together.
-    # 11-05 Task 2 appends ("hex_cell", p.hex_cell) to this tuple.
     chosen = [(name, value) for name, value in
-              (("spoke_count", p.spoke_count), ("hole_count", p.hole_count))
+              (("spoke_count", p.spoke_count), ("hole_count", p.hole_count),
+               ("hex_cell", p.hex_cell))
               if value > 0]
     if len(chosen) >= 2:
         errors.append((
@@ -777,7 +788,43 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
                     f"neighbours, which must be at least {MIN_WALL:g} mm; reduce "
                     "hole_count or hole_d, or increase hole_circle_d.",
                     ("hole_circle_d", "hole_count", "hole_d")))
-    # 11-05 Task 2 appends an elif p.hex_cell > 0 branch here (D-10, D-14, D-15).
+    elif p.hex_cell > 0:
+        # D-15: the half-set rule runs first -- with hex_wall still 0 there is no wall
+        # to size a lattice against, so the rules below never fire on a half-set
+        # honeycomb; each presupposes the one before it, so this is an if/elif chain
+        # rather than three independent rules (08's shape).
+        if p.hex_wall == 0:
+            errors.append((
+                "A honeycomb needs hex_wall: set it to at least 0.4 mm, or set "
+                "hex_cell to 0.",
+                ("hex_wall",)))
+        elif _under_min_wall(p.hex_wall):
+            errors.append((
+                f"The honeycomb wall ({p.hex_wall:g} mm) is thinner than "
+                f"{MIN_WALL:g} mm; increase hex_wall.",
+                ("hex_wall",)))
+        elif round(p.hex_cell, 3) == 0:
+            errors.append((
+                f"Honeycomb cell {p.hex_cell:g} mm "
+                "is below the 0.001 mm resolution cells are cut at: set hex_cell to "
+                "0 for no honeycomb, or larger.",
+                ("hex_cell",)))
+        else:
+            size, cells = hex_cells(p, pr.rf)
+            if not cells:
+                inner = bore_mouth_limit(p) + p.hex_wall
+                outer = pr.rf - p.hex_wall
+                errors.append((
+                    f"No whole honeycomb cell fits between {inner:.2f} and "
+                    f"{outer:.2f} mm from the axis (hex_wall outside the bore mouth "
+                    f"and inside the root circle): a {size:g} mm cell reaches "
+                    f"{size / math.sqrt(3):.2f} mm from its centre; reduce hex_cell "
+                    "or hex_wall.",
+                    ("hex_cell", "hex_wall")))
+        # No hub or rim breach rule exists here: D-09's boundaries (hex_wall outside
+        # the bore mouth, inside the root circle) and D-07's whole-cell test keep
+        # every cell inside by construction -- a cell that would breach either is
+        # simply never cut (D-17).
     return errors
 
 
@@ -1031,8 +1078,13 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         hce, hcc = size, len(cells)
     else:
         hce, hcc = None, None
-        # 11-05 Task 2 warns here when hex_wall > 0 (D-15's reverse, the ignored-
-        # dimensions sentence).
+        if p.hex_wall > 0:
+            # D-15: hex_wall set with hex_cell 0 (the default) builds no honeycomb --
+            # the same sentence shape as the spoke/hole ignored-dimensions warnings
+            # above, naming the one field the user set away from 0.
+            warnings.append(
+                f"No honeycomb with hex_cell 0: hex_wall ({p.hex_wall:g} mm) is "
+                "ignored.")
 
     walls = cutout_walls(p, pr.rf)
 

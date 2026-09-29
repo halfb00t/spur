@@ -5,16 +5,20 @@ import pytest
 from pydantic import ValidationError
 
 from spur.calc import (
+    HEX_CELL_CAP,
     MIN_WALL,
     TIP_CHAMFER_MARGIN,
     DerivedDimensions,
     bore_mouth_limit,
     bore_radius,
     bore_rim_limit,
+    cell_count_floor,
+    cells_within,
     centre_distance,
     cutout_walls,
     derive,
     hex_across_flats,
+    hex_cells,
     hole_gap,
     inv,
     keyway_corner_radius,
@@ -26,6 +30,7 @@ from spur.calc import (
     span_measurement,
     spline_start,
     tip_chamfer_effective,
+    whole_cells,
 )
 from spur.params import GearParams
 
@@ -1075,3 +1080,216 @@ def test_multiple_refusals_come_in_check_order_and_name_each_field_once() -> Non
     hub_at = err["msg"].index("The spoke hub is too small")
     assert arm_at < rim_at < hub_at
     assert cutout_walls(GearParams(), profile(GearParams()).rf) is None
+
+
+def test_a_honeycomb_cuts_whole_cells_only_on_an_axis_centred_lattice() -> None:
+    """D-07, D-08: every cell centre is a lattice point pitch*(a + b/2, b*sqrt(3)/2)
+    for integers a, b, none at the origin; rows run b ascending then a ascending, so
+    the same arguments return the same tuple on a second call; the count read off the
+    web annulus differs by bore shape, the lattice formula does not."""
+    p = GearParams(hex_cell=3, hex_wall=1)
+    pr = profile(p)
+    size, cells = hex_cells(p, pr.rf)
+    assert size == pytest.approx(3.0)
+    assert len(cells) == 18
+
+    pitch = size + p.hex_wall
+    row_h = pitch * math.sqrt(3) / 2
+
+    def key(c: tuple[float, float]) -> tuple[int, int]:
+        b = round(c[1] / row_h)
+        a = round(c[0] / pitch - b / 2)
+        return b, a
+
+    for x, y in cells:
+        b, a = key((x, y))
+        assert (x, y) == pytest.approx((pitch * (a + b / 2), pitch * b * math.sqrt(3) / 2))
+        assert (x, y) != (0.0, 0.0)
+    assert [key(c) for c in cells] == sorted(key(c) for c in cells)
+    assert hex_cells(p, pr.rf)[1] == cells  # repeat-call identity
+
+    for kw, count in (
+        ({}, 18), ({"bore_flat": 0}, 18),
+        ({"bore_hex": 6, "bore_d": 0, "bore_flat": 0}, 24),
+        ({"keyway_width": 3, "keyway_depth": 1.4}, 12),
+        ({"bore_d": 0, "bore_flat": 0}, 30),
+    ):
+        p_bore = GearParams.model_validate({**kw, "hex_cell": 3, "hex_wall": 1})
+        assert len(hex_cells(p_bore, profile(p_bore).rf)[1]) == count
+
+
+def test_a_honeycomb_over_the_cap_is_raised_in_field_steps_to_the_first_size_that_fits() -> None:
+    """D-13: a 200-tooth request is raised by 0.05 mm steps from the request until the
+    exact whole-cell count is <= HEX_CELL_CAP; the size one step below still has a
+    bigger count, and the warning names the request, the applied size and the cap."""
+    p = GearParams(teeth=200, hex_cell=3, hex_wall=1)
+    pr = profile(p)
+    size, cells = hex_cells(p, pr.rf)
+    assert size > 3.0
+    assert (size - 3.0) / 0.05 == pytest.approx(round((size - 3.0) / 0.05))
+    assert len(cells) <= HEX_CELL_CAP
+
+    inner = bore_mouth_limit(p) + p.hex_wall
+    outer = pr.rf - p.hex_wall
+    one_step_down = round(size - 0.05, 3)
+    assert len(whole_cells(one_step_down, p.hex_wall, inner, outer)) > HEX_CELL_CAP
+
+    d = derive(p)
+    assert d.hex_cell_effective == pytest.approx(size)
+    assert d.hex_cell_count == len(cells)
+    # Root fillet also caps at 200 teeth (pre-existing, unrelated to the honeycomb) --
+    # the honeycomb's own warning is checked by substring, not exact tuple equality.
+    assert any(w == f"Honeycomb cells enlarged from 3 mm to {size:g} mm across flats "
+                    f"to keep the count within the {HEX_CELL_CAP}-cell limit."
+              for w in d.warnings)
+
+
+def test_a_count_exactly_at_the_cap_is_not_raised() -> None:
+    """D-13: cells_within's raise-to-fit is exact at the boundary -- a cap equal to
+    the request's own count returns the request unraised, one lower forces a raise."""
+    size, cells = cells_within(18, 3.0, 1.0, 5.975, 13.4375)
+    assert size == pytest.approx(3.0)
+    assert len(cells) == 18
+
+    size17, cells17 = cells_within(17, 3.0, 1.0, 5.975, 13.4375)
+    assert size17 > 3.0
+    assert len(cells17) <= 17
+    one_step_down = round(size17 - 0.05, 3)
+    assert len(whole_cells(one_step_down, 1.0, 5.975, 13.4375)) > 17
+
+
+def test_the_count_floor_never_exceeds_the_exact_count() -> None:
+    """D-13: cell_count_floor is a guaranteed lower bound on len(whole_cells(...)) --
+    skipping a size by it never skips one that actually fits."""
+    cells_grid = [0.5, 1, 2, 3, 5, 8, 12, 20, 30, 40]
+    walls = (0.4, 1, 3)
+    bands = ((5, 15), (5.975, 13.4375), (2, 100), (50, 60))
+    checked = 0
+    for cell in cells_grid:
+        for wall in walls:
+            for inner, outer in bands:
+                floor = cell_count_floor(cell, wall, inner, outer)
+                exact = len(whole_cells(cell, wall, inner, outer))
+                assert floor <= exact + 1e-9
+                checked += 1
+    assert checked == len(cells_grid) * len(walls) * len(bands)  # a shrunken grid fails
+
+
+@pytest.mark.parametrize(("kw", "refused", "fields", "msg_start"), [
+    pytest.param({"hex_cell": 3}, True, ("hex_wall",),
+                 "A honeycomb needs hex_wall", id="honeycomb-no-wall"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.4}, False, (), "",
+                 id="honeycomb-wall-accept-exact"),
+    pytest.param({"hex_cell": 3, "hex_wall": 0.35}, True, ("hex_wall",),
+                 "The honeycomb wall (0.35 mm) is thinner than 0.4 mm",
+                 id="honeycomb-wall-refuse-one-step"),
+    pytest.param({"hex_cell": 0.0004, "hex_wall": 1}, True, ("hex_cell",),
+                 "Honeycomb cell 0.0004 mm is below the 0.001 mm resolution",
+                 id="honeycomb-cell-below-resolution"),
+    pytest.param({"hex_cell": 5.05, "hex_wall": 1}, False, (), "",
+                 id="honeycomb-no-fit-accept-exact"),
+    pytest.param({"hex_cell": 5.1, "hex_wall": 1}, True, ("hex_cell", "hex_wall"),
+                 "No whole honeycomb cell fits between 5.98 and 13.44 mm from the axis",
+                 id="honeycomb-no-fit-refuse-one-step"),
+])
+def test_a_honeycomb_rule_refuses_one_step_past_it_and_names_its_fields(
+        kw: dict[str, object], refused: bool, fields: tuple[str, ...],
+        msg_start: str) -> None:
+    """D-10, D-14, D-15: the half-set, min-wall, precision and no-whole-cell rules
+    each refuse one step past their boundary and accept it exactly."""
+    if not refused:
+        GearParams.model_validate(kw)  # does not raise
+        return
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == sorted(fields)
+    assert err["msg"].startswith(msg_start)
+
+
+def test_three_cutout_patterns_are_refused_naming_all_three() -> None:
+    """REQ-one-cutout-pattern's third selector: all three set is one sentence naming
+    all three, before any per-pattern rule runs; any two of the three still name just
+    those two (11-04's own two-pattern test, extended)."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hole_count": 6, "hole_d": 4,
+                                   "hole_circle_d": 20, "hex_cell": 3, "hex_wall": 1})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hex_cell", "hole_count", "spoke_count"]
+    assert err["msg"] == (
+        "Only one body cutout pattern per part: spoke_count (4), hole_count (6) and "
+        "hex_cell (3) are all set; keep one and set the others to 0.")
+
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"hole_count": 6, "hole_d": 4, "hole_circle_d": 20,
+                                   "hex_cell": 3, "hex_wall": 1})
+    err = exc.value.errors()[0]
+    assert err["ctx"]["fields"] == ["hex_cell", "hole_count"]
+    assert "hole_count (6) and hex_cell (3) are both set" in err["msg"]
+
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hex_cell": 3, "hex_wall": 1})
+    err = exc.value.errors()[0]
+    assert err["ctx"]["fields"] == ["hex_cell", "spoke_count"]
+    assert "spoke_count (4) and hex_cell (3) are both set" in err["msg"]
+
+
+def test_a_honeycomb_wall_without_a_cell_is_ignored_and_named() -> None:
+    """D-15's reverse: hex_wall set with hex_cell 0 (the default) builds no honeycomb,
+    and derive() names the ignored field with its value."""
+    d = derive(GearParams(hex_wall=1))
+    assert d.hex_cell_effective is None
+    assert d.hex_cell_count is None
+    assert d.cutout_hub_wall is None
+    assert d.cutout_rim_wall is None
+    assert d.warnings == ("No honeycomb with hex_cell 0: hex_wall (1 mm) is ignored.",)
+
+    d0 = derive(GearParams())
+    assert d0.warnings == ()
+
+
+@pytest.mark.parametrize(("kw", "hub", "rim"), [
+    pytest.param({}, 1.525, 2.149, id="d-flat"),
+    pytest.param({"bore_hex": 6, "bore_d": 0, "bore_flat": 0}, 1.184, 2.149, id="hex"),
+    pytest.param({"keyway_width": 3, "keyway_depth": 1.4}, 2.709, 2.149, id="keyway"),
+    pytest.param({"bore_d": 0, "bore_flat": 0}, 2.5, 2.149, id="no-bore"),
+])
+def test_the_honeycomb_walls_are_measured_on_the_cut_cells(
+        kw: dict[str, object], hub: float, rim: float) -> None:
+    """D-20, A3: the exact nearest edge and farthest vertex of the cut cells, not the
+    whole-cell test's conservative circumradius -- each wall reads at least hex_wall."""
+    p = GearParams.model_validate({**kw, "hex_cell": 3, "hex_wall": 1})
+    d = derive(p)
+    # Both pinned walls read >= hex_wall (1 mm), so pinning them exact is the
+    # ">= hex_wall" property too -- a wall thinner than hex_wall would fail these.
+    assert d.cutout_hub_wall == pytest.approx(hub, abs=1e-3)
+    assert d.cutout_rim_wall == pytest.approx(rim, abs=1e-3)
+
+
+def test_the_cutout_numbers_follow_the_recess_numbers_in_order() -> None:
+    """D-20: web, cutout_hub_wall, cutout_rim_wall, spoke_fillet_effective,
+    hex_cell_effective, hex_cell_count, then warnings, mate_teeth, centre_distance --
+    the same order /api/info and spur info print."""
+    names = list(DerivedDimensions.model_fields)
+    order = ["web", "cutout_hub_wall", "cutout_rim_wall", "spoke_fillet_effective",
+             "hex_cell_effective", "hex_cell_count", "warnings", "mate_teeth",
+             "centre_distance"]
+    assert [n for n in names if n in order] == order
+
+
+def test_the_honeycomb_fields_are_bounded_zero_to_a_hundred() -> None:
+    """recess_width's family bound (0-100): field-level ValidationErrors one step
+    either side of the bound, and for the wrong type -- not the "infeasible" custom
+    error."""
+    for bad in ({"hex_cell": 100.05, "hex_wall": 1},
+               {"hex_cell": -0.05, "hex_wall": 1},
+               {"hex_cell": 3, "hex_wall": 100.05},
+               {"hex_cell": 3, "hex_wall": -0.05}):
+        with pytest.raises(ValidationError) as exc:
+            GearParams.model_validate(bad)
+        assert exc.value.errors()[0]["type"] != "infeasible"
+    # 100 mm passes the field bound; a big enough gear has room for a cell that size.
+    GearParams.model_validate({"teeth": 200, "module": 10, "hex_cell": 100,
+                               "hex_wall": 1})

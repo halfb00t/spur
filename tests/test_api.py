@@ -480,6 +480,24 @@ def test_two_cutout_patterns_are_422_naming_both() -> None:
     assert r.json()["detail"][0]["ctx"]["fields"] == ["hole_count", "spoke_count"]
 
 
+def test_a_honeycomb_that_cannot_exist_is_422_naming_its_fields() -> None:
+    """D-10, D-14, REQ-cutout-conflicts-refused-early: a honeycomb wall under MIN_WALL,
+    and a cell too large for any whole cell to fit, are both 422s naming their fields
+    before any build, on /api/info and /api/model.stl."""
+    r = client.get("/api/info", params={"hex_cell": 3, "hex_wall": 0.35})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hex_wall"]
+    assert "thinner than 0.4 mm" in detail["msg"]
+
+    r = client.get("/api/model.stl", params={"hex_cell": 5.1, "hex_wall": 1,
+                                             "quality": "preview"})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hex_cell", "hex_wall"]
+    assert "No whole honeycomb cell fits" in detail["msg"]
+
+
 def test_a_hex_bore_the_root_cannot_hold_is_422_naming_bore_hex() -> None:
     """D-03a over HTTP: a corner beyond the root is a 422 naming only bore_hex."""
     r = client.get("/api/info", params={"bore_hex": 24.2, "bore_chamfer": 0})

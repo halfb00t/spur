@@ -237,6 +237,37 @@ def test_a_rim_wall_under_min_wall_exits_2_and_names_it(
     assert "increase rim_wall" in err
 
 
+def test_cli_and_api_print_the_same_honeycomb_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a honeycomb link: same document, same key order, and the
+    raise-to-fit warning on a large gear."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--teeth", "200", "--hex-cell", "3", "--hex-wall", "1"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info",
+                         params={"teeth": 200, "hex_cell": 3, "hex_wall": 1}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert cli_out["hex_cell_effective"] > 3
+    # Root fillet also caps at 200 teeth (pre-existing, unrelated to the honeycomb) --
+    # the honeycomb's own warning is checked by substring, not an exact single-length
+    # tuple.
+    assert any(w.startswith("Honeycomb cells enlarged from 3 mm to ")
+              for w in cli_out["warnings"])
+
+
+def test_a_honeycomb_wall_under_min_wall_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-10 on the CLI: the same wall refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--hex-cell", "3", "--hex-wall", "0.35"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "The honeycomb wall (0.35 mm) is thinner than 0.4 mm" in err
+    assert "increase hex_wall" in err
+
+
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])
