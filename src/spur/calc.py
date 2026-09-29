@@ -357,6 +357,15 @@ def _under_min_wall(wall: float) -> bool:
     return round(wall, 6) < MIN_WALL
 
 
+def _listed(items: list[str]) -> str:
+    """"a", "a and b", "a, b and c" -- the joining every cutout sentence with more than
+    one named field uses, so a two-field list still reads exactly as the existing hole
+    sentences did (D-15's half-set rule, D-17's hub/rim/annulus rules)."""
+    if len(items) <= 1:
+        return "".join(items)
+    return ", ".join(items[:-1]) + f" and {items[-1]}"
+
+
 def hole_gap(p: GearParams) -> float:
     """Wall left between two neighbouring holes, measured on the line joining their
     centres (D-16): the chord between adjacent centres, hole_circle_d * sin(pi /
@@ -504,7 +513,76 @@ def check(p: GearParams) -> list[tuple[str, tuple[str, ...]]]:
                            ("recess_depth",)))
 
     # --- body cutout ---
-    if p.hole_count > 0:
+    # With two or more patterns set, neither pattern's own rules below run: the part
+    # cannot exist as drawn (REQ-one-cutout-pattern), and one sentence says why instead
+    # of every per-pattern rule firing on fields that make no sense set together.
+    # 11-05 appends ("hex_cell", p.hex_cell) to this tuple.
+    chosen = [(name, value) for name, value in
+              (("spoke_count", p.spoke_count), ("hole_count", p.hole_count))
+              if value > 0]
+    if len(chosen) >= 2:
+        errors.append((
+            "Only one body cutout pattern per part: "
+            f"{_listed([f'{n} ({v:g})' for n, v in chosen])} are "
+            f"{'both' if len(chosen) == 2 else 'all'} set; keep one and set the "
+            "others to 0.",
+            tuple(n for n, _ in chosen)))
+    elif p.spoke_count > 0:
+        # D-15: the half-set rule runs first -- with a dimension still 0 there is no
+        # geometry to measure a wall against, so the rules below never fire on a
+        # half-set pattern (they would misname the zero field as a wall breach).
+        zero = [f for f in ("hub_d", "rim_wall", "spoke_width") if getattr(p, f) == 0]
+        if zero:
+            errors.append((
+                f"Spoke arms need {_listed(zero)}: set "
+                f"{'it' if len(zero) == 1 else 'them'} above 0, or set spoke_count "
+                "to 0.",
+                tuple(zero)))
+        else:
+            # 11-01-SUMMARY.md: the human kept the spoke-arm wall rule (Flagged
+            # Assumption A1) -- 0 < spoke_width < MIN_WALL is refused like every other
+            # wall in the part, not silently accepted as thin-but-printable.
+            if _under_min_wall(p.spoke_width):
+                errors.append((
+                    f"Spoke arms {p.spoke_width:g} mm wide are thinner than the "
+                    f"{MIN_WALL:g} mm every wall in the part keeps; increase "
+                    "spoke_width.",
+                    ("spoke_width",)))
+            if _under_min_wall(p.rim_wall):
+                errors.append((
+                    f"The rim wall ({p.rim_wall:g} mm) is thinner than {MIN_WALL:g} "
+                    "mm; increase rim_wall.",
+                    ("rim_wall",)))
+            # D-17: naming only the cutout's own field -- the bore is the fit to the
+            # shaft, and the sentence quotes the mouth so the cause stays visible.
+            mouth = bore_mouth_limit(p)
+            if _under_min_wall(p.hub_d / 2 - mouth):
+                errors.append((
+                    f"The spoke hub is too small for the bore: hub_d ({p.hub_d:g} mm) "
+                    f"must be at least {2 * (mouth + MIN_WALL):.2f} mm, {MIN_WALL:g} "
+                    f"mm outside the bore mouth ({2 * mouth:.2f} mm across); increase "
+                    "hub_d.",
+                    ("hub_d",)))
+            ann = pr.rf - p.rim_wall - p.hub_d / 2
+            if _under_min_wall(ann):
+                errors.append((
+                    f"Spokes leave no room to cut: between the hub ({p.hub_d:g} mm) "
+                    f"and the rim wall ({2 * (pr.rf - p.rim_wall):.2f} mm across) "
+                    f"there is {max(ann, 0.0):.3f} mm, which must be at least "
+                    f"{MIN_WALL:g} mm; reduce hub_d or rim_wall.",
+                    ("hub_d", "rim_wall")))
+            # D-16: the opening exists only where the annulus does; the planning probe
+            # built openings down to 0.01 mm, so this is the part's own MIN_WALL rule,
+            # not a kernel limit.
+            elif _under_min_wall(spoke_opening(p)):
+                errors.append((
+                    "Spoke arms leave too little room between them at the hub: "
+                    f"{p.spoke_count} arms of {p.spoke_width:g} mm on a "
+                    f"{p.hub_d:g} mm hub leave {max(spoke_opening(p), 0.0):.3f} mm, "
+                    f"which must be at least {MIN_WALL:g} mm; reduce spoke_count or "
+                    "spoke_width, or increase hub_d.",
+                    ("hub_d", "spoke_count", "spoke_width")))
+    elif p.hole_count > 0:
         # D-15: the half-set rule runs first -- with a dimension still 0 there is no
         # geometry to measure a wall against, so the three rules below never fire on a
         # half-set pattern (they would misname the zero field as a wall breach).
@@ -757,6 +835,19 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         elif sfe == 0.0:
             warnings.append(f"Spoke fillet {p.spoke_fillet:g} mm is below the 0.001 mm "
                             "resolution it is cut at and was not cut.")
+
+    if p.spoke_count == 0:
+        # D-15: spoke_count 0 (the default) builds nothing regardless of the other
+        # four spoke fields, exactly like the hex bore ignoring bore_d/bore_flat above
+        # -- the same sentence shape, naming only the fields the user actually set.
+        ignored = [f"{name} ({value:g} mm)" for name, value in
+                  (("spoke_width", p.spoke_width), ("hub_d", p.hub_d),
+                   ("rim_wall", p.rim_wall), ("spoke_fillet", p.spoke_fillet))
+                  if value > 0]
+        if ignored:
+            warnings.append(
+                f"No spoke arms with spoke_count 0: {_listed(ignored)} "
+                f"{'are' if len(ignored) > 1 else 'is'} ignored.")
 
     if p.hole_count == 0:
         # D-15: hole_count 0 (the default) builds nothing regardless of hole_d/

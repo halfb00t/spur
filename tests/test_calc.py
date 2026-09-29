@@ -872,4 +872,206 @@ def test_the_hole_gap_and_walls_helpers_match_the_planning_probe() -> None:
     walls = cutout_walls(p2, pr2.rf)
     assert walls is not None
     assert walls == pytest.approx((3.0249999999999995, 2.4375))
+
+
+SPOKE = {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1}
+
+
+def test_two_cutout_patterns_on_one_part_are_refused_naming_both() -> None:
+    """REQ-one-cutout-pattern: two or more non-zero pattern selectors is one 422
+    naming every chosen selector, before any per-pattern rule runs -- a half-set hole
+    pattern beside a complete spoke pattern still gives only this one sentence, never
+    the half-set hole sentence too."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hole_count": 6, "hole_d": 4,
+                                   "hole_circle_d": 20})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hole_count", "spoke_count"]
+    assert err["msg"] == ("Only one body cutout pattern per part: spoke_count (4) and "
+                          "hole_count (6) are both set; keep one and set the others "
+                          "to 0.")
+
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hole_count": 6})  # half-set hole
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hole_count", "spoke_count"]
+    assert "Only one body cutout pattern per part" in err["msg"]
+    assert "Lightening holes need" not in err["msg"]
+
+
+@pytest.mark.parametrize(("kw", "fields", "msg"), [
+    pytest.param({"spoke_count": 4}, ["hub_d", "rim_wall", "spoke_width"],
+                 "Spoke arms need hub_d, rim_wall and spoke_width: set them above 0, "
+                 "or set spoke_count to 0.", id="all-zero"),
+    pytest.param({"spoke_count": 4, "spoke_width": 2}, ["hub_d", "rim_wall"],
+                 "Spoke arms need hub_d and rim_wall: set them above 0, or set "
+                 "spoke_count to 0.", id="two-zero"),
+    pytest.param({"spoke_count": 4, "hub_d": 12, "rim_wall": 1}, ["spoke_width"],
+                 "Spoke arms need spoke_width: set it above 0, or set spoke_count "
+                 "to 0.", id="one-zero"),
+])
+def test_a_half_set_spoke_pattern_names_only_its_zero_fields(
+        kw: dict[str, object], fields: list[str], msg: str) -> None:
+    """D-15: spoke_count above 0 with one or more of hub_d/rim_wall/spoke_width still
+    0 is a 422 naming only the fields that are 0, before the wall rules ever run."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == fields
+    assert err["msg"] == msg
+
+
+@pytest.mark.parametrize(("kw", "refused", "fields", "msg_start"), [
+    pytest.param({**SPOKE, "spoke_width": 0.4}, False, (), "", id="arm-accept-exact"),
+    pytest.param({**SPOKE, "spoke_width": 0.35}, True, ("spoke_width",),
+                 "Spoke arms 0.35 mm wide are thinner", id="arm-refuse-one-step"),
+    pytest.param({**SPOKE, "rim_wall": 0.4}, False, (), "", id="rim-accept-exact"),
+    pytest.param({**SPOKE, "rim_wall": 0.35}, True, ("rim_wall",),
+                 "The rim wall (0.35 mm) is thinner", id="rim-refuse-one-step"),
+    pytest.param({**SPOKE, "hub_d": 10.75}, False, (), "", id="hub-accept-exact"),
+    pytest.param({**SPOKE, "hub_d": 10.7}, True, ("hub_d",),
+                 "The spoke hub is too small for the bore", id="hub-refuse-one-step"),
+    pytest.param({**SPOKE, "rim_wall": 8.0375}, False, (), "",
+                 id="annulus-accept-exact"),
+    pytest.param({**SPOKE, "rim_wall": 8.05}, True, ("hub_d", "rim_wall"),
+                 "Spokes leave no room to cut", id="annulus-refuse-one-step"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.67, "hub_d": 12, "rim_wall": 0.4},
+                 False, (), "", id="opening-accept-exact"),
+    pytest.param({"spoke_count": 12, "spoke_width": 2.72, "hub_d": 12, "rim_wall": 0.4},
+                 True, ("hub_d", "spoke_count", "spoke_width"),
+                 "Spoke arms leave too little room between them at the hub",
+                 id="opening-refuse-one-step"),
+])
+def test_a_spoke_rule_refuses_one_step_past_its_wall_and_accepts_it_exactly(
+        kw: dict[str, object], refused: bool, fields: tuple[str, ...],
+        msg_start: str) -> None:
+    """D-16, D-17: each spoke rule refuses one step past MIN_WALL and accepts it
+    exactly, comparing round(wall, 6) so the step-aligned float residue does not
+    refuse a wall the user sized to exactly MIN_WALL. The arm rule (11-01 A1: the
+    human kept it) is included."""
+    if not refused:
+        GearParams.model_validate(kw)  # does not raise
+        return
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == sorted(fields)
+    assert err["msg"].startswith(msg_start)
+
+
+def test_a_spoke_hub_inside_a_keyway_corner_is_refused() -> None:
+    """D-17: the spoke hub reads bore_mouth_limit(p), which for a keyed round bore is
+    the keyway's own floor corner (D-10, L27/L28) -- a 3 x 1.4 mm keyway on the
+    default bore puts the mouth at 6.179098, so hub_d 12 leaves -0.179 mm and is
+    refused naming only hub_d; hub_d 13.2 builds."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({**SPOKE, "hub_d": 12, "keyway_width": 3,
+                                   "keyway_depth": 1.4})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hub_d"]
+    assert "13.16 mm" in err["msg"]
+
+    GearParams.model_validate({**SPOKE, "hub_d": 13.2, "keyway_width": 3,
+                               "keyway_depth": 1.4})  # does not raise
+
+
+@pytest.mark.parametrize(("sf", "effective", "warning"), [
+    pytest.param(3.3, 3.3, None, id="kept-no-warning"),
+    pytest.param(3.35, 3.337,
+                 "Spoke fillet reduced to 3.337 mm to fit the opening between the "
+                 "arms at the hub.", id="capped-at-opening"),
+    pytest.param(5, 3.337,
+                 "Spoke fillet reduced to 3.337 mm to fit the opening between the "
+                 "arms at the hub.", id="capped-at-field-max"),
+])
+def test_a_spoke_fillet_is_capped_to_whichever_limit_binds_first(
+        sf: float, effective: float, warning: str | None) -> None:
+    """D-06: spoke_fillet_effective is 0.45 x the smaller of the hub opening and the
+    annulus width, capped and warned (L03), never refused."""
+    d = derive(GearParams.model_validate({**SPOKE, "spoke_fillet": sf}))
+    assert d.spoke_fillet_effective == pytest.approx(effective)
+    assert d.warnings == ((warning,) if warning else ())
+
+    # hub_d 12, rim_wall 6 narrows the annulus below the hub opening -- the other
+    # limit binds, and the reason sentence names it.
+    d2 = derive(GearParams.model_validate({"spoke_count": 4, "spoke_width": 2,
+                                           "hub_d": 12, "rim_wall": 6,
+                                           "spoke_fillet": 2}))
+    assert d2.spoke_fillet_effective == pytest.approx(1.097)
+    assert d2.warnings == (
+        "Spoke fillet reduced to 1.097 mm to fit between the hub and the rim wall.",)
+
+
+def test_a_sub_print_precision_spoke_fillet_request_still_warns() -> None:
+    """10-REVIEW.md WR-01/CR-01's rule, applied to the spoke fillet's own 0.001 mm cut
+    resolution: a nonzero request that rounds to 0 cuts no fillet and says so, naming
+    the true cause (print resolution), not a limit nowhere close to binding."""
+    d = derive(GearParams.model_validate({**SPOKE, "spoke_fillet": 0.0004}))
+    assert d.spoke_fillet_effective == pytest.approx(0.0)
+    assert d.warnings == (
+        "Spoke fillet 0.0004 mm is below the 0.001 mm resolution it is cut at and "
+        "was not cut.",)
+
+    d0 = derive(GearParams.model_validate({**SPOKE, "spoke_fillet": 0}))
+    assert d0.spoke_fillet_effective is None
+    assert d0.warnings == ()
+
+
+@pytest.mark.parametrize(("kw", "warning"), [
+    pytest.param({"spoke_width": 2, "hub_d": 12, "rim_wall": 1, "spoke_fillet": 1},
+                 "No spoke arms with spoke_count 0: spoke_width (2 mm), hub_d (12 mm), "
+                 "rim_wall (1 mm) and spoke_fillet (1 mm) are ignored.", id="all-set"),
+    pytest.param({"spoke_width": 2},
+                 "No spoke arms with spoke_count 0: spoke_width (2 mm) is ignored.",
+                 id="width-only"),
+    pytest.param({"hub_d": 12},
+                 "No spoke arms with spoke_count 0: hub_d (12 mm) is ignored.",
+                 id="hub-only"),
+])
+def test_spoke_dimensions_without_a_count_are_ignored_and_named(
+        kw: dict[str, object], warning: str) -> None:
+    """D-15: spoke_count 0 (the default) builds nothing regardless of the other four
+    spoke fields, and derive() says so naming only the fields the user set."""
+    d = derive(GearParams.model_validate(kw))
+    assert d.cutout_hub_wall is None
+    assert d.cutout_rim_wall is None
+    assert d.spoke_fillet_effective is None
+    assert d.warnings == (warning,)
+
+
+def test_the_spoke_count_is_an_integer_from_0_to_200() -> None:
+    """D-18: field-level ValidationErrors (not the "infeasible" custom error) one step
+    either side of the bound, and for the wrong type."""
+    for bad in ({"spoke_count": 201, "spoke_width": 1, "hub_d": 10, "rim_wall": 1},
+               {"spoke_count": -1, "spoke_width": 1, "hub_d": 10, "rim_wall": 1},
+               {"spoke_count": 2.5, "spoke_width": 1, "hub_d": 10, "rim_wall": 1}):
+        with pytest.raises(ValidationError) as exc:
+            GearParams.model_validate(bad)
+        assert exc.value.errors()[0]["type"] != "infeasible"
+    GearParams.model_validate({"spoke_count": 1, "spoke_width": 1, "hub_d": 12,
+                               "rim_wall": 1})
+    GearParams.model_validate({"teeth": 200, "spoke_count": 200, "spoke_width": 0.4,
+                               "hub_d": 52, "rim_wall": 0.4, "bore_flat": 0,
+                               "recess_sides": "none"})
+
+
+def test_multiple_refusals_come_in_check_order_and_name_each_field_once() -> None:
+    """REQ-cutout-conflicts-refused-early: several breaches arrive as one message, the
+    sentences in check()'s fixed order (arm, rim, hub), and ctx.fields lists each
+    named field once, sorted."""
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate({"spoke_count": 4, "spoke_width": 0.3, "hub_d": 10,
+                                   "rim_wall": 0.3})
+    err = exc.value.errors()[0]
+    assert err["type"] == "infeasible"
+    assert err["ctx"]["fields"] == ["hub_d", "rim_wall", "spoke_width"]
+    arm_at = err["msg"].index("Spoke arms 0.3 mm wide")
+    rim_at = err["msg"].index("The rim wall (0.3 mm)")
+    hub_at = err["msg"].index("The spoke hub is too small")
+    assert arm_at < rim_at < hub_at
     assert cutout_walls(GearParams(), profile(GearParams()).rf) is None

@@ -205,6 +205,38 @@ def test_a_hole_too_close_to_the_bore_exits_2_and_names_it(
     assert "increase hole_circle_d or reduce hole_d" in err
 
 
+def test_cli_and_api_print_the_same_spoke_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-cli-parity for a spoke link: same document, same key order, and the
+    fillet cap's warning when spoke_fillet is set past its limit."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["info", "--spoke-count", "4", "--spoke-width", "2", "--hub-d", "12",
+              "--rim-wall", "1", "--spoke-fillet", "5"])
+    cli_out = json.loads(capsys.readouterr().out)
+    api_out = client.get("/api/info", params={"spoke_count": 4, "spoke_width": 2,
+                                              "hub_d": 12, "rim_wall": 1,
+                                              "spoke_fillet": 5}).json()
+    assert cli_out == api_out
+    assert list(cli_out) == list(DerivedDimensions.model_fields)
+    assert cli_out["spoke_fillet_effective"] == pytest.approx(3.337)
+    assert cli_out["warnings"] == [
+        "Spoke fillet reduced to 3.337 mm to fit the opening between the arms at "
+        "the hub."]
+
+
+def test_a_rim_wall_under_min_wall_exits_2_and_names_it(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-17 on the CLI: the same rim-wall refusal the API gives, on stderr, exit 2."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--spoke-count", "4", "--spoke-width", "2", "--hub-d", "12",
+                  "--rim-wall", "0.35"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "The rim wall (0.35 mm) is thinner than 0.4 mm" in err
+    assert "increase rim_wall" in err
+
+
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])

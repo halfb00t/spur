@@ -408,6 +408,22 @@ def test_a_spoke_link_is_served_with_the_fillet_it_cut() -> None:
     assert r.content.startswith(b"ISO-10303-21;")
 
 
+def test_two_cutout_patterns_are_422_naming_both() -> None:
+    """REQ-one-cutout-pattern over HTTP: spokes and holes both set is refused before
+    any build, on both /api/info and /api/model.step."""
+    params = {"spoke_count": 4, "spoke_width": 2, "hub_d": 12, "rim_wall": 1,
+             "hole_count": 6, "hole_d": 4, "hole_circle_d": 20}
+    r = client.get("/api/info", params=params)
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["ctx"]["fields"] == ["hole_count", "spoke_count"]
+    assert "Only one body cutout pattern per part" in detail["msg"]
+
+    r = client.get("/api/model.step", params=params)
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["ctx"]["fields"] == ["hole_count", "spoke_count"]
+
+
 def test_a_hex_bore_the_root_cannot_hold_is_422_naming_bore_hex() -> None:
     """D-03a over HTTP: a corner beyond the root is a 422 naming only bore_hex."""
     r = client.get("/api/info", params={"bore_hex": 24.2, "bore_chamfer": 0})
