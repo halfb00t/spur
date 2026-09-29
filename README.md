@@ -12,6 +12,9 @@ Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI
   and a keyway in a round or D-flat bore
 - An edge-break chamfer on the tooth tips at both faces
 - Annular face recesses (one or both sides) with filleted floors
+- Body cutouts, one pattern per part: lightening holes on a bolt circle, spoke arms
+  between a hub and a rim ring with rounded sector corners, or a honeycomb web of whole
+  hexagonal cells
 - Measurement aids: calipers across tips (corrected for odd tooth counts), span over
   *k* teeth (Wildhaber), centre distance to a mating gear
 - Shareable links: every parameter lives in the URL
@@ -110,6 +113,9 @@ spur export -o gear.stl --teeth 24 --module 1 --pressure-angle 20 --bore-flat 0
 spur export -o hexgear.stl --bore-hex 6                   # 6 mm hex bore
 spur export -o keyedgear.step --keyway-width 3 --keyway-depth 1.4  # keyway in the default D-flat bore
 spur export -o chamfered.stl --tip-chamfer 0.4             # tooth-tip edge break
+spur export -o holes.stl --hole-count 6 --hole-d 4 --hole-circle-d 20      # six lightening holes
+spur export -o spokes.stl --spoke-count 4 --spoke-width 2 --hub-d 12 --rim-wall 1 --spoke-fillet 1  # four spoke arms
+spur export -o honeycomb.stl --hex-cell 3 --hex-wall 1     # honeycomb web
 spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
 spur export --help                                        # every parameter
 ```
@@ -141,7 +147,15 @@ the round bore and D-flat, and `warnings` names
 any round-bore field it ignored. A keyway pushes the face recess outward to keep its
 wall, and the recess is narrowed or dropped like any other trim; a keyway on a hex bore,
 one as wide as the bore, one that runs into the D-flat, or one whose floor comes too
-close to the root is refused. `503` with `Retry-After` means the build queue is full.
+close to the root is refused. Body cutouts add their own refusals: two cutout patterns
+set on one part is rejected, naming both; a half-set pattern — a count with a dimension
+still 0, or the reverse — is rejected, naming the zero fields; a cutout wall thinner
+than the design minimum, at the hub, the rim or between neighbours, is rejected; and a
+honeycomb with no whole cell that fits the web is rejected, quoting the web's own radii.
+Two cutout sizes are trimmed instead: the spoke fillet is capped to the sector it
+rounds, and honeycomb cells are enlarged in 0.05 mm steps until the count fits a
+measured cap — both reported in `warnings`. `503` with `Retry-After` means the build
+queue is full.
 
 ## Parameters
 
@@ -169,6 +183,16 @@ Lengths in mm, angles in degrees.
 | `recess_width` | 6 | Radial width of the groove. Narrowed automatically if it won't fit |
 | `recess_inner_d` | 0 | Inner diameter of the groove. 0 = centred so hub wall equals rim wall |
 | `recess_fillet` | 0.5 | Fillet at the groove floor corners |
+| `spoke_count` | 0 | Number of straight arms joining a hub ring to a rim ring; the sectors between them are cut through the full face width. Arm 0 is centred on +X. 0 = no spokes |
+| `spoke_width` | 0 | Width of each arm, the same along its whole length |
+| `hub_d` | 0 | Outer diameter of the hub ring the arms start from |
+| `rim_wall` | 0 | Radial thickness of the rim ring, measured inward from the root circle |
+| `spoke_fillet` | 0 | Radius rounding the corners of each cut-out sector, capped to fit. 0 = sharp |
+| `hole_count` | 0 | Number of equal round holes cut through the full face width, evenly spaced on the hole circle with hole 0 centred on +X. 0 = no holes |
+| `hole_d` | 0 | Diameter of each lightening hole |
+| `hole_circle_d` | 0 | Diameter of the circle the hole centres sit on |
+| `hex_cell` | 0 | Across-flats of each hexagonal through-hole. Only whole cells are cut, filling the web between the bore mouth and the root circle; the cell count is derived and capped, and above the cap the cell size is raised until it fits. 0 = no honeycomb |
+| `hex_wall` | 0 | Wall between cells, and between the cells and both the bore mouth and the root circle |
 
 The defaults describe a 19-tooth printer gear this project started from. They are
 absolute millimetres, so on a much smaller gear the bore and the recess stop fitting;
@@ -216,6 +240,22 @@ while a bore too wide for the root is still refused.
   pressure angle. A total profile shift negative enough makes the right-hand side
   negative, and then no such angle exists — the pair cannot mesh at any distance. That
   is reported as a warning rather than a number.
+- A body cutout — spoke arms, lightening holes or a honeycomb, one pattern per part —
+  cuts through the full face width in a single boolean, so it cuts through the
+  recessed floor wherever a recess sits, and the floor fillet stays intact on every
+  edge the cutout leaves. Arm 0 and hole 0 are centred on +X; spoke arms are
+  parallel-sided, their sector corners rounded by an analytic arc drawn in the 2D
+  cutter sketch, never the kernel's fillet operator. A honeycomb cuts only whole
+  hexagonal cells on a lattice centred on the axis with flats facing ±X, `hex_wall`
+  between cells and at both the bore-mouth and root-circle boundaries; the cell count
+  is capped at a measured constant (`HEX_CELL_CAP` = 120, `bench/RESULTS.md`'s
+  honeycomb cell-count spike), and above the cap the cell size is raised in 0.05 mm
+  steps until the count fits. `/api/info` prints `cutout_hub_wall`, measured from the
+  farthest point of the chamfered bore mouth (a hex bore's corner, a keyway's floor
+  corner) — exact for a round or D-flat bore, a lower bound elsewhere; `cutout_rim_wall`,
+  measured from the root circle; `spoke_fillet_effective`, the spoke fillet actually
+  cut; `hex_cell_effective`, the honeycomb cell size actually cut; and `hex_cell_count`,
+  the whole cells cut. `bore_clearance` is not added to any cutout dimension.
 - The keyway is a rectangular slot on the bore's side a quarter turn from the D-flat,
   through the full face width. Its depth runs from the as-cut bore wall,
   `(bore_d + bore_clearance)/2` with the clearance included, to a flat floor: the DIN

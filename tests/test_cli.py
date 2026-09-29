@@ -105,6 +105,23 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     assert chamfered.stat().st_size > 1000
     assert "warning:" not in capsys.readouterr().err
 
+    holes = tmp_path / "holes.stl"
+    cli.main(["export", "-o", str(holes), "--hole-count", "6", "--hole-d", "4",
+              "--hole-circle-d", "20"])
+    assert holes.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
+    spokes = tmp_path / "spokes.stl"
+    cli.main(["export", "-o", str(spokes), "--spoke-count", "4", "--spoke-width", "2",
+              "--hub-d", "12", "--rim-wall", "1", "--spoke-fillet", "1"])
+    assert spokes.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
+    honeycomb = tmp_path / "honeycomb.stl"
+    cli.main(["export", "-o", str(honeycomb), "--hex-cell", "3", "--hex-wall", "1"])
+    assert honeycomb.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:
