@@ -25,11 +25,11 @@ findings:
     title: "The filleted-spoke removed-volume proof has no closed-form cross-check (external: codex, extended)"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`bench/RESULTS.md` and `test_bench.py` misstate the honeycomb field's default and legal range (external: codex)"
-open: 1
+open: 0
 total: 6
-recorded: 2026-09-29T13:19:41.649Z
+recorded: 2026-09-29T13:44:31.873Z
 ---
 
 # Phase 11: Code Review Disposition
@@ -41,7 +41,7 @@ recorded: 2026-09-29T13:19:41.649Z
 | WR-03 | warning | fixed | 11-REVIEW-FIX.md |
 | WR-04 | warning | fixed | 11-REVIEW-FIX.md |
 | WR-05 | warning | fixed | 11-REVIEW-FIX.md |
-| IN-01 | info | open | - |
+| IN-01 | info | fixed | 11-REVIEW-FIX.md |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.

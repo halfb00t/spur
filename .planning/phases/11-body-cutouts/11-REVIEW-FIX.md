@@ -3,8 +3,8 @@ phase: 11-body-cutouts
 fixed_at: 2026-09-29T19:20:00Z
 review_path: .planning/phases/11-body-cutouts/11-REVIEW.md
 iteration: 1
-findings_in_scope: 5
-fixed: 5
+findings_in_scope: 6
+fixed: 6
 skipped: 0
 status: all_fixed
 ---
@@ -16,9 +16,9 @@ status: all_fixed
 **Iteration:** 1
 
 **Summary:**
-- Findings in scope: 5 (WR-01 through WR-05; IN-01 excluded, `fix_scope` is
-  `critical_warning`)
-- Fixed: 5
+- Findings in scope: 6 (WR-01 through WR-05 at `critical_warning`; IN-01 added by a
+  second pass with `--all`)
+- Fixed: 6
 - Skipped: 0
 
 ## Fixed Issues
@@ -83,6 +83,17 @@ touched, or the pinned CadQuery/OCP kernel bumped), and added the corresponding 
 `docs/tech_debt/INDEX.md`, in the same commit as the finding's own instruction requires.
 Listed here under Fixed Issues (not Skipped) because the finding's own Fix text names
 "file this as tech debt" as an acceptable resolution, and that is what was done.
+
+### IN-01: `bench/RESULTS.md` and `test_bench.py` misstate the honeycomb field's default and legal range (external: codex)
+
+**Files modified:** `bench/RESULTS.md`, `tests/test_bench.py`
+**Commit:** `2616d7e`
+**Applied fix:** Both places now say the sweep holds `hex_cell` at 3 mm as its own chosen
+input (the value 11-02's spike measured) and that the field's default is 0 = off. Neither
+claims 3 mm is a default or a schema minimum: `hex_cell` defaults to `0.0`
+(`src/spur/params.py:147`) and `check()`'s only floor is `round(hex_cell, 3) == 0`.
+Prose/docstring only; no measured value changed. Applied directly by the orchestrator
+(two-line reword), not by a fixer agent.
 
 ## Skipped Issues
 
