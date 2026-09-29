@@ -5,9 +5,11 @@ is D-11's exact cross product, and `Timing.inside` pins the budget boundary. Als
 the Phase 9 keyway sweep (09-04): its own cross product, with the largest keyway each
 rule allows sitting exactly one step from a refusal. Also pins the Phase 10 tip-chamfer
 sweep (10-04): its own cross product, with each largest chamfer sitting exactly on its
-limit. Also pins the Phase 11 body-cutout sweeps (11-06): the hole and spoke cross
-products, with each pattern's larger size sitting exactly one step from a refusal; the
-honeycomb cross product, raised to `HEX_CELL_CAP` on every row.
+limit. Also pins the Phase 11 body-cutout sweeps (11-06), re-run at Task 2's gate
+decision (D-18's `le` lowered to 60 holes / 40 spokes): the hole and spoke cross
+products, with only the module-1.75 large-hole row still on a refusal boundary (its
+rim-wall bound is count-independent); the honeycomb cross product, raised to
+`HEX_CELL_CAP` on every row.
 
 Run as `.venv/bin/python -m pytest tests/test_bench.py -q` **from the repo root** -- the
 `-m` form is what puts the repo root on `sys.path`, which is what makes `import bench`
@@ -185,84 +187,83 @@ def test_the_tip_chamfer_sweep_is_every_combination_d_06_names() -> None:
 
 
 def test_the_hole_cutout_sweep_is_every_combination_the_plan_names() -> None:
-    """The committed Phase 11 hole sweep is 11-06-PLAN.md's `<interfaces>` cross product:
-    200 teeth (D-18's `le`, one hole per tooth), `hole_count` 200 (the same `le`); module
-    {1.75, 10} because module drives fine-STL export time (Phase 8's probe); a small hole
-    (`hole_d` 1) and the largest hole 200 holes fit (`hole_d` 4.9 at module 1.75, 4.9 mm
-    inside the field's `le`; 5.85 at module 10, on the field's own `hole_circle_d` `le` of
-    400 mm rather than the root circle, which sits far beyond it) -- 09-04's lesson that the
-    heaviest row is not always the largest feature, so both sizes are measured; and
-    `recess_sides` {both, none} because a recess is the heaviest factor every prior phase's
-    sweep has found.
+    """The committed Phase 11 hole sweep is 11-06-PLAN.md's `<interfaces>` cross product,
+    re-run at Task 2's gate decision: 200 teeth, `hole_count` 60 (D-18's `le` lowered from
+    200 -- the 200-hole row crossing the module-1.75 recess groove read 41.85 s of
+    SPUR_BUILD_TIMEOUT=30 s, bench/RESULTS.md "Body cutout build and export time
+    (Phase 11)"); module {1.75, 10} because module drives fine-STL export time (Phase 8's
+    probe); the same small hole (`hole_d` 1) and large hole (`hole_d` 4.9 at module 1.75,
+    5.85 at module 10) the first run measured -- 09-04's lesson that the heaviest row is
+    not always the largest feature, so both sizes are kept; and `recess_sides` {both,
+    none} because a recess is the heaviest factor every prior phase's sweep has found.
 
     Every row is therefore a buildable gear under 11-03's rules -- `load_sweep` would have
-    raised otherwise. Each large-hole row also sits exactly one step (0.05 mm) from a
-    refusal: `hole_d` + 0.05 breaches the rim wall or the neighbour gap that the row's own
-    `hole_circle_d` was picked to sit against.
+    raised otherwise. The module-1.75 large-hole row still sits exactly one step (0.05 mm)
+    from a refusal at the lower `hole_count`: its rim-wall bound (0.4125 mm) does not
+    depend on the count, only on `hole_d` and `hole_circle_d`. The module-10 large-hole row
+    does not: its bound at `le` 200 was the neighbour gap (count-dependent), which loosens
+    at 60 holes -- measured accepted at `hole_d` 5.9, no longer refused -- so only the
+    module-1.75 row is pinned here.
     """
     sets = load_sweep(DEFAULT_SWEEP.parent / "hole_cutout.json")
     assert len(sets) == 8
 
     want = {
-        (200, 1.75, 200, 1.0, 183.4, "both"),
-        (200, 1.75, 200, 1.0, 183.4, "none"),
-        (200, 1.75, 200, 4.9, 339.9, "both"),
-        (200, 1.75, 200, 4.9, 339.9, "none"),
-        (200, 10.0, 200, 1.0, 400.0, "both"),
-        (200, 10.0, 200, 1.0, 400.0, "none"),
-        (200, 10.0, 200, 5.85, 400.0, "both"),
-        (200, 10.0, 200, 5.85, 400.0, "none"),
+        (200, 1.75, 60, 1.0, 183.4, "both"),
+        (200, 1.75, 60, 1.0, 183.4, "none"),
+        (200, 1.75, 60, 4.9, 339.9, "both"),
+        (200, 1.75, 60, 4.9, 339.9, "none"),
+        (200, 10.0, 60, 1.0, 400.0, "both"),
+        (200, 10.0, 60, 1.0, 400.0, "none"),
+        (200, 10.0, 60, 5.85, 400.0, "both"),
+        (200, 10.0, 60, 5.85, 400.0, "none"),
     }
     got = {(p.teeth, p.module, p.hole_count, p.hole_d, p.hole_circle_d, p.recess_sides)
            for _, p in sets}
     assert got == want
 
     for _, p in sets:
-        if p.hole_d not in (4.9, 5.85):
-            continue  # not on any limit -- nothing to pin here
+        if p.hole_d != 4.9 or p.module != 1.75:
+            continue  # only the module-1.75 large-hole row's rim-wall bound is still
+            # count-independent at hole_count=60 -- see the docstring's measured note
         with pytest.raises(ValidationError):
             GearParams.model_validate({**p.model_dump(), "hole_d": p.hole_d + 0.05})
 
 
 def test_the_spoke_cutout_sweep_is_every_combination_the_plan_names() -> None:
-    """The committed Phase 11 spoke sweep is 11-06-PLAN.md's `<interfaces>` cross product:
-    200 teeth, `spoke_count` 200 (D-18's `le`, one arm per tooth); module {1.75, 10}
-    (Phase 8's export-time probe); large sectors (`spoke_width` 0.4, `hub_d` 52,
-    `rim_wall` 0.4 -- the hub opening between adjacent arm feet is the binding wall) and
-    small sectors (`spoke_width` 4.3 at module 1.75, 5.85 at module 10, with a much larger
-    `hub_d`/`rim_wall` so the hub opening is again the binding wall) at both modules --
-    the planning probe found spoke sectors the heaviest cutout by far, so both sector
-    shapes are measured rather than assuming one is worse; and `recess_sides`
-    {both, none}.
+    """The committed Phase 11 spoke sweep is 11-06-PLAN.md's `<interfaces>` cross product,
+    re-run at Task 2's gate decision: 200 teeth, `spoke_count` 40 (D-18's `le` lowered
+    from 200 -- three of the four 200-sector recess-crossing rows read 65.70-68.70 s of
+    SPUR_BUILD_TIMEOUT=30 s, bench/RESULTS.md "Body cutout build and export time
+    (Phase 11)"); module {1.75, 10} (Phase 8's export-time probe); the same large sectors
+    (`spoke_width` 0.4, `hub_d` 52, `rim_wall` 0.4) and small sectors (`spoke_width` 4.3 at
+    module 1.75, 5.85 at module 10) the first run measured, at both modules -- the
+    planning probe found spoke sectors the heaviest cutout by far, so both sector shapes
+    are kept; and `recess_sides` {both, none}.
 
     Every row is therefore a buildable gear under 11-04's rules -- `load_sweep` would have
-    raised otherwise. Each row's `spoke_width` sits exactly one step (0.05 mm) from a
-    refusal: +0.05 narrows the hub opening between adjacent arm feet below `MIN_WALL`.
+    raised otherwise. Neither large-sector row still sits at a refusal boundary at the
+    lower `spoke_count`: the hub-opening wall each `spoke_width` was picked against at
+    `le` 200 widens with fewer arms (fewer feet sharing the hub ring) -- measured accepted
+    at `spoke_width` + 0.05 for both the module-1.75 and module-10 rows -- so no
+    refusal-boundary pin survives the gate's decision.
     """
     sets = load_sweep(DEFAULT_SWEEP.parent / "spoke_cutout.json")
     assert len(sets) == 8
 
     want = {
-        (200, 1.75, 200, 0.4, 52.0, 0.4, 5.0, "both"),
-        (200, 1.75, 200, 0.4, 52.0, 0.4, 5.0, "none"),
-        (200, 1.75, 200, 4.3, 300.0, 10.0, 5.0, "both"),
-        (200, 1.75, 200, 4.3, 300.0, 10.0, 5.0, "none"),
-        (200, 10.0, 200, 0.4, 52.0, 0.4, 5.0, "both"),
-        (200, 10.0, 200, 0.4, 52.0, 0.4, 5.0, "none"),
-        (200, 10.0, 200, 5.85, 400.0, 100.0, 5.0, "both"),
-        (200, 10.0, 200, 5.85, 400.0, 100.0, 5.0, "none"),
+        (200, 1.75, 40, 0.4, 52.0, 0.4, 5.0, "both"),
+        (200, 1.75, 40, 0.4, 52.0, 0.4, 5.0, "none"),
+        (200, 1.75, 40, 4.3, 300.0, 10.0, 5.0, "both"),
+        (200, 1.75, 40, 4.3, 300.0, 10.0, 5.0, "none"),
+        (200, 10.0, 40, 0.4, 52.0, 0.4, 5.0, "both"),
+        (200, 10.0, 40, 0.4, 52.0, 0.4, 5.0, "none"),
+        (200, 10.0, 40, 5.85, 400.0, 100.0, 5.0, "both"),
+        (200, 10.0, 40, 5.85, 400.0, 100.0, 5.0, "none"),
     }
     got = {(p.teeth, p.module, p.spoke_count, p.spoke_width, p.hub_d, p.rim_wall,
             p.spoke_fillet, p.recess_sides) for _, p in sets}
     assert got == want
-
-    for _, p in sets:
-        if p.spoke_width not in (4.3, 5.85):
-            continue  # the large-sectors rows (spoke_width 0.4) are not the row this
-            # plan measured the refusal boundary on -- 11-06-PLAN.md's <interfaces>
-            # gives "4.35 is refused" / "5.9 is refused" only for the small-sectors rows.
-        with pytest.raises(ValidationError):
-            GearParams.model_validate({**p.model_dump(), "spoke_width": p.spoke_width + 0.05})
 
 
 def test_the_honeycomb_sweep_runs_at_the_cap() -> None:

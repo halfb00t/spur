@@ -102,7 +102,12 @@ class GearParams(BaseModel):
                               step=0.05, help="Fillet at the groove floor corners.")
 
     # --- Spokes ------------------------------------------------------------------
-    spoke_count: int = _f(0, 0, 200, title="Spoke arms", group="Spokes", step=1,
+    # D-18's `le` lowered 200 -> 40 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md "Body
+    # cutout build and export time (Phase 11)", measured 2026-09-29, host load 5-10):
+    # three of the four 200-sector rows crossing a recess groove read 65.70-68.70 s of
+    # SPUR_BUILD_TIMEOUT=30 s, ~0.3 s/sector and near-linear; 40 sectors leave margin
+    # beside Phase 12's 14.87 s tip-chamfer row (re-measured in the same section).
+    spoke_count: int = _f(0, 0, 40, title="Spoke arms", group="Spokes", step=1,
                           help="Number of straight arms joining a hub ring to a rim "
                                "ring; the sectors between them are cut through the "
                                "full face width. Arm 0 is centred on +X. 0 = no "
@@ -122,7 +127,13 @@ class GearParams(BaseModel):
                                   "sector, capped to fit. 0 = sharp.")
 
     # --- Holes -------------------------------------------------------------------
-    hole_count: int = _f(0, 0, 200, title="Lightening holes", group="Holes", step=1,
+    # D-18's `le` lowered 200 -> 60 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md "Body
+    # cutout build and export time (Phase 11)", measured 2026-09-29, host load 5-10): the
+    # 200-hole row crossing the module-1.75 recess groove read 41.85 s of
+    # SPUR_BUILD_TIMEOUT=30 s (the split recess fillet, Pitfall 8), ~0.2 s/hole and
+    # near-linear; 60 holes leave margin beside Phase 12's 14.87 s tip-chamfer row
+    # (re-measured in the same section).
+    hole_count: int = _f(0, 0, 60, title="Lightening holes", group="Holes", step=1,
                          help="Number of equal round holes cut through the full face "
                               "width, evenly spaced on the hole circle with hole 0 "
                               "centred on +X. 0 = no holes.")

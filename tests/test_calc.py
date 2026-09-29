@@ -851,17 +851,20 @@ def test_a_cutout_reports_its_thinnest_walls_and_null_without_one(
     assert d0.cutout_rim_wall is None
 
 
-def test_the_hole_count_is_an_integer_from_0_to_200() -> None:
-    """D-18: field-level ValidationErrors (not the "infeasible" custom error) one step
-    either side of the bound, and for the wrong type."""
-    for bad in ({"hole_count": 201, "hole_d": 1, "hole_circle_d": 10},
+def test_the_hole_count_is_an_integer_from_0_to_60() -> None:
+    """D-18's `le` lowered from 200 to 60 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md
+    "Body cutout build and export time (Phase 11)", measured 2026-09-29): the 200-hole
+    row crossing the module-1.75 recess groove read 41.85 s of SPUR_BUILD_TIMEOUT=30 s.
+    Field-level ValidationErrors (not the "infeasible" custom error) one step either
+    side of the new bound, and for the wrong type."""
+    for bad in ({"hole_count": 61, "hole_d": 1, "hole_circle_d": 10},
                {"hole_count": -1, "hole_d": 1, "hole_circle_d": 10},
                {"hole_count": 2.5, "hole_d": 1, "hole_circle_d": 10}):
         with pytest.raises(ValidationError) as exc:
             GearParams.model_validate(bad)
         assert exc.value.errors()[0]["type"] != "infeasible"
     GearParams.model_validate({"hole_count": 1, "hole_d": 4, "hole_circle_d": 20})
-    GearParams.model_validate({"teeth": 200, "hole_count": 200, "hole_d": 1,
+    GearParams.model_validate({"teeth": 200, "hole_count": 60, "hole_d": 1,
                                "hole_circle_d": 183.4, "bore_flat": 0,
                                "recess_sides": "none"})
 
@@ -1049,10 +1052,13 @@ def test_spoke_dimensions_without_a_count_are_ignored_and_named(
     assert d.warnings == (warning,)
 
 
-def test_the_spoke_count_is_an_integer_from_0_to_200() -> None:
-    """D-18: field-level ValidationErrors (not the "infeasible" custom error) one step
-    either side of the bound, and for the wrong type."""
-    for bad in ({"spoke_count": 201, "spoke_width": 1, "hub_d": 10, "rim_wall": 1},
+def test_the_spoke_count_is_an_integer_from_0_to_40() -> None:
+    """D-18's `le` lowered from 200 to 40 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md
+    "Body cutout build and export time (Phase 11)", measured 2026-09-29): three of the
+    four 200-sector recess-crossing rows read 65.70-68.70 s of SPUR_BUILD_TIMEOUT=30 s.
+    Field-level ValidationErrors (not the "infeasible" custom error) one step either
+    side of the new bound, and for the wrong type."""
+    for bad in ({"spoke_count": 41, "spoke_width": 1, "hub_d": 10, "rim_wall": 1},
                {"spoke_count": -1, "spoke_width": 1, "hub_d": 10, "rim_wall": 1},
                {"spoke_count": 2.5, "spoke_width": 1, "hub_d": 10, "rim_wall": 1}):
         with pytest.raises(ValidationError) as exc:
@@ -1060,7 +1066,7 @@ def test_the_spoke_count_is_an_integer_from_0_to_200() -> None:
         assert exc.value.errors()[0]["type"] != "infeasible"
     GearParams.model_validate({"spoke_count": 1, "spoke_width": 1, "hub_d": 12,
                                "rim_wall": 1})
-    GearParams.model_validate({"teeth": 200, "spoke_count": 200, "spoke_width": 0.4,
+    GearParams.model_validate({"teeth": 200, "spoke_count": 40, "spoke_width": 0.4,
                                "hub_d": 52, "rim_wall": 0.4, "bore_flat": 0,
                                "recess_sides": "none"})
 

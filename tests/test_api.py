@@ -295,7 +295,7 @@ def test_a_hole_link_is_served_with_its_walls() -> None:
     assert props["hole_count"]["group"] == "Holes"
     assert props["hole_count"]["type"] == "integer"
     assert props["hole_count"]["minimum"] == 0
-    assert props["hole_count"]["maximum"] == 200
+    assert props["hole_count"]["maximum"] == 60
     assert props["hole_count"]["default"] == 0
     assert props["hole_count"]["step"] == 1
     assert props["hole_d"]["unit"] == "mm"
@@ -356,7 +356,7 @@ def test_a_spoke_link_is_served_with_the_fillet_it_cut() -> None:
     assert props["spoke_count"]["group"] == "Spokes"
     assert props["spoke_count"]["type"] == "integer"
     assert props["spoke_count"]["minimum"] == 0
-    assert props["spoke_count"]["maximum"] == 200
+    assert props["spoke_count"]["maximum"] == 40
     assert props["spoke_count"]["default"] == 0
     assert props["spoke_count"]["step"] == 1
     assert props["spoke_width"]["unit"] == "mm"
