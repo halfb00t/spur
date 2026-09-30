@@ -36,7 +36,13 @@ from pydantic import ValidationError
 
 from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep, report, stl_size
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
-from spur.calc import HEX_CELL_CAP, hex_cells, profile, tip_chamfer_effective
+from spur.calc import (
+    HEX_CELL_CAP,
+    hex_cells,
+    profile,
+    tip_chamfer_effective,
+    tip_chamfer_limit,
+)
 from spur.params import GearParams
 
 
@@ -350,3 +356,111 @@ def test_the_honeycomb_sweep_runs_at_the_cap() -> None:
         size, cells = hex_cells(p, profile(p).rf)
         assert size > 3
         assert 0 < len(cells) <= HEX_CELL_CAP
+
+
+def test_the_composed_sweep_stacks_each_cutout_on_its_heaviest_bore_beside_six_baselines() -> None:
+    """The Phase 12 composed sweep (12-CONTEXT.md D-01): what Phases 10 and 11 could
+    only add up as an arithmetic total, actually built as one part. Each of the three
+    cutout patterns' own recorded heaviest row (bench/RESULTS.md, D-01's numbers) is
+    stacked with the tip chamfer at that gear's own cap and both recesses, on the
+    heaviest bore its own hub rule allows -- separately a hex bore and a keyed round
+    bore -- at module 1.75 and module 10 (12 rows), plus the six single-feature heaviest
+    rows re-run unchanged as same-host baselines (6 rows). 09-04's lesson stands: the
+    heaviest row was not always the largest feature, so both modules are measured for
+    every pattern rather than assumed from one.
+
+    Every row is therefore a buildable gear under the live composition rules -- load_sweep
+    would have raised otherwise (bench.build_time.load_sweep's own contract). The hex
+    bore's size (`bore_hex` 43.35 for the spokes' `hub_d` 52, 156.3 for the module-1.75
+    holes, 200 -- the field's own `le` -- everywhere else) is the largest each hub rule
+    allows, computed from `bore_mouth_limit` against the cutout's hub datum
+    (bore_hex 200 mm reaches 115.47 mm at the corners and conflicts with the spoke row's
+    26 mm hub and the module-1.75 hole row's 91.2 mm inner edge -- 12-CONTEXT.md
+    `<specifics>`); one step (0.05 mm) past it is refused naming the cutout's own hub
+    fields, never the bore's. The keyed round bore (`bore_d` 9, `bore_flat` 0,
+    `keyway_width` 3, `keyway_depth` 1.4 -- the default bore's own keyway) composes with
+    every cutout row unchanged: its floor corner sits at ~6.18 mm, well inside every
+    cutout's hub datum. `tip_chamfer` is each gear's own cap: 1.75 mm at module 1.75 (the
+    pitch circle binds, `tip_chamfer_limit`'s "to keep it above the pitch circle"
+    reason), 3 mm at module 10 (the field's own `le`; the analytic caps sit at 3.375 mm,
+    uncapped).
+    """
+    sets = load_sweep(DEFAULT_SWEEP.parent / "composed.json")
+    assert len(sets) == 18
+
+    want = [
+        {"teeth": 200, "tip_chamfer": 1.75, "bore_hex": 43.35, "spoke_count": 40,
+         "spoke_width": 0.4, "hub_d": 52.0, "rim_wall": 0.4, "spoke_fillet": 5.0},
+        {"teeth": 200, "tip_chamfer": 1.75, "bore_flat": 0.0, "keyway_width": 3.0,
+         "keyway_depth": 1.4, "spoke_count": 40, "spoke_width": 0.4, "hub_d": 52.0,
+         "rim_wall": 0.4, "spoke_fillet": 5.0},
+        {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_hex": 43.35,
+         "spoke_count": 40, "spoke_width": 0.4, "hub_d": 52.0, "rim_wall": 0.4,
+         "spoke_fillet": 5.0},
+        {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_flat": 0.0,
+         "keyway_width": 3.0, "keyway_depth": 1.4, "spoke_count": 40, "spoke_width": 0.4,
+         "hub_d": 52.0, "rim_wall": 0.4, "spoke_fillet": 5.0},
+        {"teeth": 200, "tip_chamfer": 1.75, "bore_hex": 156.3, "hole_count": 60,
+         "hole_d": 1.0, "hole_circle_d": 183.4},
+        {"teeth": 200, "tip_chamfer": 1.75, "bore_flat": 0.0, "keyway_width": 3.0,
+         "keyway_depth": 1.4, "hole_count": 60, "hole_d": 1.0, "hole_circle_d": 183.4},
+        {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_hex": 200.0,
+         "hole_count": 60, "hole_d": 5.85, "hole_circle_d": 400.0},
+        {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_flat": 0.0,
+         "keyway_width": 3.0, "keyway_depth": 1.4, "hole_count": 60, "hole_d": 5.85,
+         "hole_circle_d": 400.0},
+        {"teeth": 200, "tip_chamfer": 1.75, "bore_hex": 200.0, "hex_cell": 3.0,
+         "hex_wall": 0.4},
+        {"teeth": 200, "tip_chamfer": 1.75, "bore_flat": 0.0, "keyway_width": 3.0,
+         "keyway_depth": 1.4, "hex_cell": 3.0, "hex_wall": 0.4},
+        {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_hex": 200.0,
+         "hex_cell": 3.0, "hex_wall": 5.0},
+        {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_flat": 0.0,
+         "keyway_width": 3.0, "keyway_depth": 1.4, "hex_cell": 3.0, "hex_wall": 5.0},
+        {"teeth": 200, "bore_hex": 200.0},
+        {"teeth": 200, "bore_d": 200.0, "bore_flat": 150.0, "keyway_width": 3.0,
+         "keyway_depth": 1.4},
+        {"teeth": 200, "tip_chamfer": 1.75},
+        {"teeth": 200, "hole_count": 60, "hole_d": 1.0, "hole_circle_d": 183.4},
+        {"teeth": 200, "module": 10.0, "spoke_count": 40, "spoke_width": 0.4,
+         "hub_d": 52.0, "rim_wall": 0.4, "spoke_fillet": 5.0},
+        {"teeth": 200, "hex_cell": 3.0, "hex_wall": 0.4},
+    ]
+    got = [p.model_dump(exclude_defaults=True) for _, p in sets]
+    assert got == want
+
+    # Each hex row below 200 sits exactly one 0.05 mm step from the largest bore_hex
+    # its cutout's own hub rule allows -- the refusal names the cutout's hub fields,
+    # never bore_hex itself (D-01's "the heaviest bore its hub rule allows"). A row at
+    # 200 sits on the field's own `le` instead: one step past it is a plain field-level
+    # refusal with no hub sentence, so it is excluded here.
+    for _, p in sets:
+        if p.bore_hex <= 0 or p.bore_hex >= 200:
+            continue
+        hub_fields = {"hub_d"} if p.spoke_count > 0 else {"hole_circle_d", "hole_d"}
+        with pytest.raises(ValidationError) as exc_info:
+            GearParams.model_validate({**p.model_dump(), "bore_hex": p.bore_hex + 0.05})
+        assert set(exc_info.value.errors()[0]["ctx"]["fields"]) == hub_fields
+
+    # Each composed row's tip_chamfer is that gear's own cap, not an assumed constant --
+    # tip_chamfer_limit depends only on the tooth profile (teeth, module, pressure_angle,
+    # profile_shift, backlash, root_fillet), never on the bore, so the hex and keyed rows
+    # at the same module share the same limit.
+    for _, p in sets[:12]:
+        if p.module == 1.75:
+            assert p.tip_chamfer == round(tip_chamfer_limit(p)[0], 3)
+        else:
+            assert p.module == 10.0
+            assert tip_chamfer_effective(p) == 3.0
+            assert tip_chamfer_limit(p)[0] > 3
+
+    # The six baselines (rows 13-18) are re-run unchanged: each label is one load_sweep
+    # would read from the row's own original sweep file (D-01 -- a same-host baseline,
+    # not a re-derived one).
+    baseline_sources = ("hex_bore", "keyway_bore", "tip_chamfer", "hole_cutout",
+                        "spoke_cutout", "honeycomb")
+    baseline_labels = [label for label, _ in sets[12:]]
+    assert len(baseline_labels) == 6
+    for label, source in zip(baseline_labels, baseline_sources, strict=True):
+        original_labels = {lbl for lbl, _ in load_sweep(DEFAULT_SWEEP.parent / f"{source}.json")}
+        assert label in original_labels
