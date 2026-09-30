@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 12
 current_phase_name: Composition Pass
 status: executing
-stopped_at: Completed 12-07-PLAN.md
-last_updated: "2026-09-30T12:35:46.407Z"
+stopped_at: Completed 12-08-PLAN.md
+last_updated: "2026-09-30T13:09:25.542Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 12 execution started
-state_head: 3fb99017823168f0a2092381af26a18dd1572723
+state_head: 22e530d9ffaeffc061822cdb92cc84398792b8c4
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 34
-  completed_plans: 32
+  completed_plans: 33
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 12 (Composition Pass) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 12 execution started
 
@@ -162,6 +162,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 12 P05 | ~45min | 2 tasks | 2 files |
 | Phase 12 P06 | ~23min | 2 tasks | 1 files |
 | Phase 12 P07 | ~55min | 3 tasks | 3 files |
+| Phase 12 P08 | ~35min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -245,6 +246,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 12]: [Phase 12] 12-06: 15 new kernel-level rows (12 tip-chamfer+cutout+bore, 3 single-sided-recess+cutout) prove D-07 tier 2/D-09 on the pairs no earlier phase built; every measured delta matches the planning probe exactly; a new probe-location helper _honeycomb_nearest_point_angle finds the hub probe on whichever honeycomb cell is actually nearest the axis. The 15 rows measured 30.66-30.73s of pytest time, over the plan's own ~25s advisory share and close to D-10's phase-wide 30s ceiling before 12-07/12-08's own tests land -- recorded honestly for 12-09's gate.
 - [Phase 12]: D-11's group count pinned as seven (Teeth, Body, Bore, Recess, Spokes, Holes, Honeycomb), re-verified live against /api/schema in 12-07
 - [Phase 12]: 12-07: the byte-for-byte CLI/API document claim reads as the API's JSON re-indented (json.dumps(indent=2, ensure_ascii=False)) equalling the CLI's own model_dump_json(indent=2) -- verified equal, not assumed
+- [Phase 12]: 12-08: docs/architecture/cli.md's Errors section rewritten to the real 2/1/1 exit contract (parameter errors exit 2, unknown extension and every BuildError exit 1); src/spur/cli.py byte-unchanged (the doc moved to the code, 10 D-14 stands); pinned by a test that runs the real process, closing must-debt 2026-09-28-cli-md-claims-exit-2-where-cmd-export-exits-1.md
+- [Phase 12]: 12-08: both deferred UI ideas (conditional form fields, bore-shape selector) judged 'not taken' per D-12 -- 08 D-09's schema-driven form stands; new trigger is a browser test existing or a user reporting the ignored-field warnings insufficient; the browser-test idea records 12-07's cheaper-first-step taken
 
 ### Pending Todos
 
@@ -346,8 +349,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T12:35:46.356Z
-Stopped at: Completed 12-07-PLAN.md
+Last session: 2026-09-30T13:09:25.491Z
+Stopped at: Completed 12-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
