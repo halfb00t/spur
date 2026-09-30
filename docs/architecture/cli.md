@@ -32,8 +32,26 @@ capped recess is visible to someone scripting exports.
 
 ## Errors
 
-Exit 2 with `error: …` on stderr for bad parameters and for an unknown output extension;
-`BuildError` becomes `error: <kernel message>`. Nothing is written when the build fails.
+Three cases, three exit statuses — the CLI's real contract, not a guess from the API's:
+
+- A parameter error (argparse's own flag parsing, or `GearParams`/`check()` validation)
+  prints `error: <field>: <message>` per error on stderr and raises `SystemExit(2)` —
+  exit 2, the same fields the API names in `detail[].ctx.fields`.
+- An unknown output extension raises `SystemExit("error: output must end in .stl or
+  .step (or pass --format)")` — a string argument, which Python prints to stderr and
+  turns into exit 1, not exit 2.
+- Every `BuildError` raises `SystemExit(f"error: {exc}")` the same way — exit 1, same
+  as the extension case.
+
+Nothing is written when the build fails.
+
+Pinned by `tests/test_cli.py::test_unknown_output_extension_is_refused` (asserts
+`exc.value.code` equals the exact string),
+`::test_a_tip_chamfer_that_selects_no_tip_arcs_stops_the_export_and_writes_nothing`
+(asserts `exc.value.code` is a string, not `2`), and
+`::test_an_unknown_output_extension_exits_1_from_the_real_process` (the real
+`python -m spur.cli export` process's own exit status, not just `SystemExit`'s `code`
+attribute).
 
 ## Logging
 

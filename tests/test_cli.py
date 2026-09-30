@@ -2,6 +2,8 @@
 
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 from typing import get_args
 
@@ -440,6 +442,24 @@ def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])
     assert "must end in .stl or .step" in str(exc.value)
+    # A SystemExit raised with a string argument prints it and exits 1, not argparse's 2
+    # (D-13) -- cli.md's "Errors" section states this exactly.
+    assert exc.value.code == "error: output must end in .stl or .step (or pass --format)"
+
+
+def test_an_unknown_output_extension_exits_1_from_the_real_process(tmp_path: Path) -> None:
+    """The doc's claim (cli.md "Errors") executed once against the real process, not just
+    SystemExit's own `code` attribute -- the debt this closes (D-13) was exactly that the
+    doc's claim had never been executed. `cmd_export` imports the kernel before checking
+    the extension, so this subprocess costs ~2 s (measured at planning); every other test
+    in this file calls `cli.main()` in-process instead."""
+    out = tmp_path / "gear.obj"
+    result = subprocess.run(
+        [sys.executable, "-m", "spur.cli", "export", "-o", str(out)],
+        capture_output=True, text=True, check=False)
+    assert result.returncode == 1
+    assert "error: output must end in .stl or .step (or pass --format)" in result.stderr
+    assert not out.exists()
 
 
 def test_a_tip_chamfer_that_selects_no_tip_arcs_stops_the_export_and_writes_nothing(
@@ -461,4 +481,5 @@ def test_a_tip_chamfer_that_selects_no_tip_arcs_stops_the_export_and_writes_noth
         cli.main(["export", "-o", str(out), "--teeth", "67", "--tip-chamfer", "0.4",
                   "--quality", "preview"])
     assert str(exc.value.code).startswith("error: Tip chamfer selected no tip-arc edges")
+    assert isinstance(exc.value.code, str)  # a BuildError exits 1, not argparse's 2 (D-13)
     assert not out.exists()
