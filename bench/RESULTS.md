@@ -1211,3 +1211,180 @@ recorded **453 passed** / **98.17s** wall. The phase's body-cutout tests (168 ne
 time is now past 150 s, so every commit's pre-commit hook -- which runs this same `make
 verify` -- takes about that long too (D-23;
 `docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md`).
+
+## Composed build and export time (Phase 12)
+
+ROADMAP SC3 as amended (12-01-SUMMARY.md, per 12-CONTEXT.md D-06): this section measures
+"the heaviest combined configuration the composed sweep measures -- each cutout pattern
+stacked with the tip chamfer and a recess on the heaviest bore its rules allow -- and each
+individual feature", replacing the literal "recess + hex pattern" the original roadmap
+text named before this number existed. The runner is `bench/build_time.py`, unchanged
+except for D-16's two new columns (Fine STL bytes, Triangles) and the `**Largest fine
+STL:**` line -- the same script every sweep since Phase 8 has used (08-CONTEXT.md D-12).
+
+`bench/sweeps/composed.json`'s 18-row design (D-01, this plan's Task 2): each of the three
+cutout patterns' own recorded heaviest row (spokes at `le` 40, holes at `le` 60, honeycomb
+at the cap) is stacked with the tip chamfer at that gear's own cap and both recesses, on
+the largest `bore_hex` its hub rule allows (computed from `bore_mouth_limit` against the
+cutout's hub datum -- 43.35 mm for the spokes' `hub_d` 52, 156.3 mm for the module-1.75
+holes' `hole_circle_d` 183.4, 200 mm -- the field's own `le` -- everywhere else, since
+`bore_hex` 200 reaches 115.47 mm at the corners and would conflict with the spoke row's
+26 mm hub and the module-1.75 hole row's 91.2 mm inner edge) and separately on a keyed
+round bore (`bore_d` 9, `bore_flat` 0, `keyway_width` 3, `keyway_depth` 1.4 -- the default
+bore's own keyway, whose floor corner at ~6.18 mm never approaches any cutout's hub
+datum), at module 1.75 and module 10 (12 rows) -- plus the six single-feature heaviest
+rows re-run unchanged as same-host baselines (6 rows), all pinned exactly by
+`tests/test_bench.py`'s `test_the_composed_sweep_stacks_each_cutout_on_its_heaviest_bore_beside_six_baselines`.
+09-04's lesson stands: the heaviest row was not always the largest feature, so both
+moduli are measured for every pattern rather than assumed from one.
+
+One planning-only computation worth recording, not a prediction of time (no kernel probe
+backs it): the module-1.75 hex-bore holes row moves the face recess to 257.1-269.1 mm
+diameter, clear of the holes on the 183.4 mm bolt circle, while the keyed row at the same
+holes keeps the recess at 171.4-183.4 mm, where the holes straddle its outer wall -- the
+same crossing that made the single-feature hole row the heaviest reading in Phase 11
+("Body cutout build and export time (Phase 11)", "Holes").
+
+This sweep builds one gear at a time through `make bench.build` (D-04); no
+`bench.latency` run and no concurrent-load scenario is attempted for any row here -- the
+ten-concurrent scenario for a composed worst row stays out of this phase (12-CONTEXT.md
+`<deferred>`; the trigger re-homes into
+`docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md` when the tip-chamfer
+debt file below is resolved).
+
+Two runs were taken. Both started with the host quiet (`uptime`/`sysctl -n vm.loadavg`
+read below 1.5 immediately before `make bench.build` was launched each time -- Run 1 at
+1.13, Run 2 at 1.33), but `bench/build_time.py`'s own `report()` reads
+`os.getloadavg()` only once, after every row in the sweep has already built -- so the
+"Load averages at start" figure it prints is actually a reading taken at the end of a
+~6-7 minute run, not literally at its start. Both runs read well above D-02's 1.5 bar at
+that point (12.66 and 7.04) despite the genuinely quiet host each run began on; this
+matches every earlier sweep in this file ("Re-run after the gate (lower-le)", "Host state
+(re-run)": "both readings are again well above this project's 'quiet' bar"). Per D-02
+neither run is decisive, and per this plan's prohibitions no run is dropped, re-picked or
+re-run to green -- both are recorded below exactly as measured, and the `le`/timeout
+decision this raises is left to 12-03's checkpoint. Every `uptime`/`sysctl` reading taken
+while waiting for the host to quiet down before each run is in the session record; the
+notable ones are reproduced under each run below.
+
+### Run 1 (load 12.66 at start; not decisive)
+
+Readings taken while waiting for the host to quiet before this run (`sysctl -n
+vm.loadavg`, polled about every 30-60 s from 02:48:52Z, D-02's 30-minute budget): load1
+fell from 5.48 to 1.13 over eighteen minutes, crossing below the 1.5 bar three times
+(1.49 at 03:05:53Z, 1.38 at 03:06:30Z) before the final pre-run check read **1.13** at
+03:07:00Z UTC, when `make bench.build SWEEP=bench/sweeps/composed.json` was launched.
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `682dca6`
+- Sweep: `bench/sweeps/composed.json`
+- Load averages at start: 12.66, 7.79, 6.25
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|
+| teeth=200 module=1.75 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 30.38 | 0.76 | 0.92 | 31.30 | **NO** | 7830684 | 156612 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 30.69 | 0.78 | 0.87 | 31.56 | **NO** | 7921984 | 158438 |
+| teeth=200 module=10 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 30.41 | 0.95 | 0.88 | 31.36 | **NO** | 8517584 | 170350 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 31.01 | 0.97 | 0.87 | 31.98 | **NO** | 8573384 | 171466 |
+| teeth=200 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 16.06 | 0.67 | 0.48 | 16.73 | yes | 11279684 | 225592 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 21.97 | 3.17 | 0.63 | 25.15 | yes | 14207884 | 284156 |
+| teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.44 | 1.20 | 0.48 | 15.64 | yes | 17306084 | 346120 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.93 | 1.25 | 0.49 | 16.18 | yes | 16015284 | 320304 |
+| teeth=200 module=1.75 bore_hex=200 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 26.54 | 0.69 | 0.93 | 27.47 | yes | 10723884 | 214476 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 23.18 | 0.73 | 0.97 | 24.15 | yes | 6966084 | 139320 |
+| teeth=200 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 20.94 | 0.89 | 0.95 | 21.89 | yes | 7859984 | 157198 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.34 | 0.95 | 0.97 | 22.31 | yes | 8210984 | 164218 |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 | 4.39 | 0.61 | 0.40 | 5.00 | yes | 10224284 | 204484 |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 4.15 | 0.66 | 0.40 | 4.81 | yes | 10144684 | 202892 |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both | 14.09 | 0.71 | 0.47 | 14.80 | yes | 8866484 | 177328 |
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both | 8.54 | 3.14 | 0.55 | 11.67 | yes | 14447884 | 288956 |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 17.92 | 0.95 | 0.80 | 18.86 | yes | 8478184 | 169562 |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both | 7.76 | 0.78 | 0.90 | 8.66 | yes | 7206084 | 144120 |
+
+**Heaviest:** teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both -- 31.98 s of 30 s.
+**Largest fine STL:** teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both -- 17306084 bytes, 346120 triangles.
+
+Run exit code: 1 (`make`'s own wrapper exit: 2) -- an over-budget row, not a build failure;
+`bench/build_time.py main()` returns 1 whenever any row reads over the timeout, exactly as
+documented, and `make` reports its sub-command's nonzero status as its own `Error 1`.
+
+### Run 2 (load 7.04 at start; not decisive)
+
+Readings taken while re-quieting the host before this run: load1 fell from 8.50 (checked
+immediately after Run 1's report printed) to 1.33 over about seven minutes (7.35 at
+03:13:55Z falling to 1.36 at 03:19:55Z), with the final pre-run check reading **1.33** at
+03:20:09Z UTC, when this run was launched immediately after.
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `682dca6`
+- Sweep: `bench/sweeps/composed.json`
+- Load averages at start: 7.04, 5.47, 5.19
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|
+| teeth=200 module=1.75 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 30.31 | 0.76 | 0.85 | 31.16 | **NO** | 7830684 | 156612 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 30.75 | 0.77 | 0.86 | 31.61 | **NO** | 7921984 | 158438 |
+| teeth=200 module=10 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 30.66 | 0.94 | 0.87 | 31.59 | **NO** | 8517584 | 170350 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 30.95 | 0.95 | 0.87 | 31.90 | **NO** | 8573384 | 171466 |
+| teeth=200 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 16.07 | 0.66 | 0.48 | 16.73 | yes | 11279684 | 225592 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 21.87 | 3.18 | 0.63 | 25.05 | yes | 14207884 | 284156 |
+| teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.36 | 1.23 | 0.49 | 15.59 | yes | 17306084 | 346120 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.81 | 1.23 | 0.48 | 16.04 | yes | 16015284 | 320304 |
+| teeth=200 module=1.75 bore_hex=200 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 26.54 | 0.71 | 0.94 | 27.48 | yes | 10723884 | 214476 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 23.12 | 0.72 | 0.97 | 24.09 | yes | 6966084 | 139320 |
+| teeth=200 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 20.95 | 0.89 | 0.95 | 21.90 | yes | 7859984 | 157198 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.17 | 0.94 | 0.96 | 22.13 | yes | 8210984 | 164218 |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 | 4.36 | 0.61 | 0.40 | 4.97 | yes | 10224284 | 204484 |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 4.15 | 0.65 | 0.40 | 4.80 | yes | 10144684 | 202892 |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both | 14.16 | 0.70 | 0.47 | 14.85 | yes | 8866484 | 177328 |
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both | 8.59 | 3.15 | 0.57 | 11.74 | yes | 14447884 | 288956 |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 17.80 | 0.94 | 0.80 | 18.74 | yes | 8478184 | 169562 |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both | 7.74 | 0.78 | 0.89 | 8.64 | yes | 7206084 | 144120 |
+
+**Heaviest:** teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both -- 31.90 s of 30 s.
+**Largest fine STL:** teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both -- 17306084 bytes, 346120 triangles.
+
+Run exit code: 1 (`make`'s own wrapper exit: 2), same reading as Run 1.
+
+Every fine-STL byte count and triangle count is identical between the two runs on every
+row (the geometry is deterministic on the pinned kernel), and every build/export time is
+within 0.6 s of its Run 1 counterpart -- the four over-budget spoke rows read 31.16-31.90 s
+here against 31.30-31.98 s in Run 1. Neither the 12.66-vs-7.04 gap in the script's own
+load reading nor the roughly two-fold difference in load1 between the runs' pre-launch
+checks (1.13 vs 1.33) shows up as a corresponding difference in build cost -- consistent
+with the report's load figure reflecting load at the end of a long run rather than the
+quiet host each run actually started on, per the note above. This is recorded as a fact
+about these two readings, not a basis for any `le` or timeout decision (D-02).
+
+### Against the single-feature baselines
+
+No decisive run: no comparison against the single-feature baselines or the Phase 10/11
+arithmetic totals is drawn from these readings (D-02). For the record, the six baseline
+rows (Run 2, columns 13-18 above) read within the same 0.6 s band as their own recorded
+same-host figures cited in `<interfaces>` (hex 4.97 s vs. 5.08 s on record, keyway 4.80 s
+vs. 4.85 s, tip chamfer 14.85 s vs. 14.87 s, holes 11.74 s vs. 11.79 s, spokes 18.74 s vs.
+18.52 s, honeycomb 8.64 s vs. 8.65 s) -- offered only as a same-host sanity check on the
+runner, not as a decisive composed-vs-baseline comparison.
+
+### SPUR_BUILD_TIMEOUT margin
+
+No decisive run: no margin figure against `SPUR_BUILD_TIMEOUT`'s 30 s default, and no
+factor against the ~4x the default was sized for, is computed from these readings (D-02).
+
+### Gate
+
+No decisive row is recorded as over `SPUR_BUILD_TIMEOUT`: none. No decisive run: no `le`
+or timeout decision may rest on these readings (D-02). For the record -- not a gate
+verdict -- the same four rows (both module-1.75 and module-10 spokes, hex and keyed bore
+alike, each stacked with the tip chamfer at its cap and both recesses) read over 30 s in
+both non-decisive runs, within 0.7 s of each other run to run: `bore_hex=43.35
+spoke_count=40 ... tip_chamfer=1.75` (31.30/31.16 s), the same row keyed (31.56/31.61 s),
+`module=10` with the same spokes and `tip_chamfer=3` (31.36/31.59 s), and the same row
+keyed (31.98/31.90 s). Whether that consistency, or a genuinely quiet run, changes the
+verdict is 12-03's checkpoint to decide.
