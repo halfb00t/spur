@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-28
-Resolved in: docs(12-03): record the composed sweep's gate and resolve its two build-time debts (D-03, D-05)
+Resolved in: 89304e2
 Source: 10-04's sweep
 Related files:
 - src/spur/app.py (the `SPUR_BUILD_TIMEOUT` line)

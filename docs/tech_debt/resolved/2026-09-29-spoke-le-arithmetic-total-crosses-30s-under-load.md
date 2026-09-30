@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-29
-Resolved in: docs(12-03): record the composed sweep's gate and resolve its two build-time debts (D-03, D-05)
+Resolved in: 89304e2
 Source: 11-06's Task 3 re-run (D-18's gate)
 Related files:
 - src/spur/params.py (`spoke_count`)
