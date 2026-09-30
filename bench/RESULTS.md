@@ -1362,6 +1362,65 @@ with the report's load figure reflecting load at the end of a long run rather th
 quiet host each run actually started on, per the note above. This is recorded as a fact
 about these two readings, not a basis for any `le` or timeout decision (D-02).
 
+### Run 3 (load 2.74 at start; not decisive)
+
+12-03's Task 2 checkpoint asked for a quiet re-run (D-02, option `quiet-rerun`) before any
+gate decision. Readings taken while waiting for the host to quiet before this run
+(`sysctl -n vm.loadavg`, polled about every 45 s from 07:03:04Z, D-02's 30-minute budget):
+load1 fluctuated between **1.98** (the single dip below 2, at 07:30:06Z) and 9.82 (a brief
+spike at 07:13:35Z) and never once read below the 1.5 bar across the full 30-minute
+window; the last reading before the budget expired was 2.65 at 07:33:06Z. Per D-02's own
+cap on the wait ("for at most 30 minutes") the sweep was launched once that budget
+expired rather than waited on further, with a final pre-launch check reading 2.72 at
+07:34:07Z UTC -- decisiveness is judged from the runner's own at-start figure below, the
+same rule 12-02 Task 3 applied (the wait is capped, not a precondition for launching).
+`bench/build_time.py`'s `report()` now reads `os.getloadavg()` before the first row
+builds (`9b9af43`, this plan's pre-Task-1 deviation), so the load figure below is a
+genuine at-start reading, not the end-of-run figure Runs 1 and 2 carried.
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `238b6cc`
+- Sweep: `bench/sweeps/composed.json`
+- Load averages at start: 2.74, 2.73, 3.11
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|
+| teeth=200 module=1.75 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 31.74 | 0.80 | 0.94 | 32.68 | **NO** | 7830684 | 156612 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 31.21 | 0.81 | 0.94 | 32.14 | **NO** | 7921984 | 158438 |
+| teeth=200 module=10 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 32.32 | 1.00 | 0.89 | 33.32 | **NO** | 8517584 | 170350 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 31.63 | 0.99 | 0.88 | 32.62 | **NO** | 8573384 | 171466 |
+| teeth=200 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 16.22 | 0.68 | 0.49 | 16.89 | yes | 11279684 | 225592 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 22.08 | 3.20 | 0.63 | 25.28 | yes | 14207884 | 284156 |
+| teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.55 | 1.27 | 0.49 | 15.82 | yes | 17306084 | 346120 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.91 | 1.27 | 0.49 | 16.18 | yes | 16015284 | 320304 |
+| teeth=200 module=1.75 bore_hex=200 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 26.67 | 0.71 | 0.94 | 27.61 | yes | 10723884 | 214476 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 23.20 | 0.75 | 0.98 | 24.18 | yes | 6966084 | 139320 |
+| teeth=200 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.09 | 0.92 | 0.97 | 22.06 | yes | 7859984 | 157198 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.31 | 0.96 | 0.97 | 22.28 | yes | 8210984 | 164218 |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 | 4.40 | 0.65 | 0.41 | 5.05 | yes | 10224284 | 204484 |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 4.16 | 0.64 | 0.39 | 4.80 | yes | 10144684 | 202892 |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both | 14.21 | 0.75 | 0.51 | 14.95 | yes | 8866484 | 177328 |
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both | 8.63 | 3.15 | 0.57 | 11.79 | yes | 14447884 | 288956 |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 17.95 | 0.95 | 0.85 | 18.90 | yes | 8478184 | 169562 |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both | 7.82 | 0.83 | 0.91 | 8.73 | yes | 7206084 | 144120 |
+
+**Heaviest:** teeth=200 module=10 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both -- 33.32 s of 30 s.
+**Largest fine STL:** teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both -- 17306084 bytes, 346120 triangles.
+
+Run exit code: 1 (`make`'s own wrapper exit: 2), same reading as Runs 1 and 2.
+
+Not decisive: the script's own 1-minute figure at start (2.74) sits well above D-02's 1.5
+bar -- higher, in fact, than either Run 1's or Run 2's pre-launch check (1.13, 1.33), even
+though this run's figure is now a genuine at-start reading and theirs were end-of-run
+readings under the pre-fix `report()`. No `le`, `HEX_CELL_CAP` or `SPUR_BUILD_TIMEOUT`
+decision may rest on this run either (D-02). The same four spoke rows read over budget
+again, each 0.5-1.3 s worse than its Run 1/Run 2 counterpart (32.14-33.32 s here against
+31.16-31.98 s in Runs 1-2) -- consistent with, not contradicted by, the heavier host load
+this run measured at its genuine start.
+
 ### Against the single-feature baselines
 
 No decisive run: no comparison against the single-feature baselines or the Phase 10/11
