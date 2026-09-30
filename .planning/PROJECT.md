@@ -181,16 +181,33 @@ pytest — L13). Full list with sources and acceptance evidence:
   with the 44-record fixture byte-unchanged; `spoke_count`/`hole_count` `le` lowered to 40/60
   after D-18's build-time gate fired; heaviest measured rows 18.52 s (spokes) and 8.65 s
   (honeycomb, 1.15× its own 7.5 s share) of 30 s, both read under a loaded host and accepted
-  at UAT; verified 7/7, UAT 5/5, `make verify` 621 tests; six review findings (WR-01…WR-05,
-  IN-01) still at disposition `open` (L30) — Phase 11
+  at UAT; verified 7/7, UAT 5/5, `make verify` 621 tests; the six review findings (WR-01…WR-05,
+  IN-01) were all fixed in `11-REVIEW-FIX.md` before the branch landed (L30) — Phase 11
+- ✓ REQ-measured-build-time + REQ-three-interfaces-extended — the composed sweep
+  (`bench/sweeps/composed.json`, 18 rows: each cutout pattern's heaviest row stacked with the
+  tip chamfer at its cap and both recesses, on the largest hex bore and on a keyed round bore,
+  at module 1.75 and 10) measured on four runs; the four `spoke_count=40` rows read over 30 s
+  in every one regardless of load, so D-02 was superseded for that gate on the human's word,
+  a probe found 32 the largest count inside budget and `spoke_count` `le` went 40 → 32; the
+  re-run has every row inside `SPUR_BUILD_TIMEOUT` (heaviest 29.42 s), the two build-timeout
+  debts resolved with that number; L19's gzip rule re-applied on the heaviest 17.3 MB fine STL
+  keeps `_GZIP_LEVEL = 1`, L24's copy cost recorded (+52.9 ms, −56 MiB); 96 calc rows + 138
+  refusal rows + 15 kernel rows prove every feature composes and every refusal reads the same
+  with each other family on; one model-driven walk proves every field reaches the schema, the
+  form and the CLI in one order, the composed document is byte-identical on `spur info` and
+  `/api/info`, and all 23 refusals route identically to a 422 and to exit 2; `cli.md`'s exit
+  contract corrected to the real 2/1/1 and pinned by a real-process test; the pre-v0.2 fixture
+  byte-unchanged and green; the phase's +28.28 s `make verify` cost accepted against D-10's
+  30 s line; verified 5/5, UAT 4/4, Nyquist and security audits clean, `make verify` 907 tests;
+  ten review findings (WR-01…WR-05, IN-01…IN-05) at disposition `open` (L31) — Phase 12
 
 ### Active
 
 Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- [ ] A measured build time per feature at its heaviest allowed configuration, inside the
-      timeout
+- *(none — every v0.2 requirement is validated; the milestone closes via
+  `/gsd-complete-milestone v0.2`)*
 
 ### Out of Scope
 
@@ -316,6 +333,7 @@ quick reference.
 | L28 | A keyway is a slot cut after the bore's chamfer, its depth measured from the as-cut bore wall: `keyway_width`/`keyway_depth` (0–200 mm, step 0.05, default 0) cut a slot of width `keyway_width + bore_clearance` from the axis to a flat floor at `bore_radius(p) + keyway_depth` centred on +Y (a quarter turn from the D-flat), after `_cut_bore` so the rim selector's counts are the pre-keyway ones and the slot's edges are never chamfered; D-02/D-10/D-11 are the part's rules (arc wall to the D-flat's corner, floor corner vs the root, width < bore) and D-12 the kernel's measured contact; the recess yields to the keyway corner; no standard-table keyway size anywhere in help or docs | ✓ Good — 12/12 must-haves; `make verify` 396 tests; datum read back within 1e-6 mm; heaviest sweep row 4.85 s of 30 s (a 3 × 1.4 keyway that keeps its recess, lighter than the largest keyway); fixture byte-unchanged; Phase 8's round-chamfer debt resolved in `4b6a5b9` |
 | L29 | The tooth-tip chamfer is a 3D edge break on the end-face tip arcs (`solid.chamfer()`, symmetric 45°, the last build step, selector requires both endpoints on an end face), capped at the smallest of the tip land (`0.45 × face_width`), the addendum (`ra − r`) and the measured kernel boundary (`ra − spline_start`, D-04, bisected to ~2 µm); help text names no size because the research-era sizing figure has no source; heaviest allowed configuration 14.87 s of 30 s | ✓ Good — measured; the ~2× timeout margin it leaves is filed as must-debt for Phase 12's combined re-measurement |
 | L30 | Body cutouts are one pattern per part, cut in one boolean, and the honeycomb's cell count is capped at a measured constant: ten fields in three groups, `_cut_body` after the keyway and before the tip chamfer; spoke corners are analytic tangent arcs (`_fillet_corner(inside=)`); honeycomb whole cells only, `HEX_CELL_CAP = 120` written from the pre-implementation spike's row (7.15 s of D-11's 7.5 s share at 200 teeth, module 10; 150 cells read 7.95 s), raise-to-fit in the field's own 0.05 mm step; every `MIN_WALL` comparison goes through `_under_min_wall` (`round(wall, 6) < MIN_WALL` — float residue measured at 0.39999999999999947 at the tracer's hub boundary); `spoke_count`/`hole_count` `le` lowered from 200 to 40/60 after the build-time gate fired | ✓ Good — verified 7/7, UAT 5/5, `make verify` 621 tests; the cap and its 8.65 s row accepted as measured under a loaded host (UAT 2–3); the spokes' 33.39 s arithmetic total with the tip chamfer filed as must-debt for Phase 12's composed sweep (UAT 4); six review findings still `open` (UAT 5) |
+| L31 | v0.2 composes: the 18-row composed sweep measured across four runs (the four over-budget `spoke_count=40` rows load-independent, so D-02 superseded for that one gate by the human); `spoke_count` `le` 40 → 32 from a probe (32 inside at 29.41 s, 33 over at 30.11 s); every composed row inside 30 s on the re-run (heaviest 29.42 s); L19's rule re-applied on the 17.3 MB heaviest fine STL keeps `_GZIP_LEVEL = 1`, L24's copy cost recorded only; 96 + 138 calc rows and 15 kernel rows prove the matrix; one field walk, a byte-identical composed document and 23 identically routed refusals prove three-interface parity; the CLI's real 2/1/1 exit contract moved into `cli.md`; export bytes are explicitly not compared by the fixture replay (L26); the phase's +28.28 s gate cost accepted against D-10's 30 s line | ✓ Good — verified 5/5, UAT 4/4, `make verify` 907 tests; ten review findings (5 warning, 5 info) at disposition `open` |
 
 ## Success Metric (Milestone v0.1)
 
@@ -368,4 +386,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-29 after Phase 11 (Body Cutouts).*
+*Last updated: 2026-09-30 after Phase 12 (Composition Pass).*

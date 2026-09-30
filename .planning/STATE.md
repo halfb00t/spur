@@ -3,13 +3,12 @@ gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 12
-current_phase_name: Composition Pass
-status: verifying
-stopped_at: Completed 12-09-PLAN.md (Phase 12 complete)
-last_updated: "2026-09-30T14:02:34.646Z"
+status: completed
+stopped_at: Phase 12 complete — all phases complete
+last_updated: "2026-09-30T16:47:41.821Z"
 last_activity: 2026-09-30
-last_activity_desc: Phase 12 execution started
-state_head: 5fab3b785841d2afe11cc7b544283f893c73d63b
+last_activity_desc: Phase 12 complete
+state_head: b7d5754957f89247f6aa8c7116a1fe1d22665ae3
 progress:
   total_phases: 6
   completed_phases: 1
@@ -22,18 +21,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-29)
+See: .planning/PROJECT.md (updated 2026-09-30)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 12 — Composition Pass
+**Current focus:** v0.2 close-out — every phase complete; next is `/gsd-complete-milestone v0.2`
 
 ## Current Position
 
-Phase: 12 (Composition Pass) — EXECUTING
-Plan: 9 of 9
-Status: Phase complete — ready for verification
-Last activity: 2026-09-30 — Phase 12 execution started
+Phase: 12
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-09-30 — Phase 12 complete
 
 ## Performance Metrics
 
@@ -61,6 +60,7 @@ Last activity: 2026-09-30 — Phase 12 execution started
 | 10. Tooth-Tip Chamfer | 5 | ~2h08m | ~26min |
 | 10 | 5 | - | - |
 | 11 | 9 | - | - |
+| 12 | 9 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -175,7 +175,7 @@ fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar acc
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
 verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
-L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11.
+L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11. L31 (v0.2 composes: the composed sweep measured, `spoke_count` `le` 32, the matrix and the three-interface parity proven, export bytes explicitly not compared) was appended in Phase 12.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -258,20 +258,22 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 11] The spokes' heaviest re-run row (18.52 s, `spoke_count` le 40) plus Phase 10's
-  14.87 s tip-chamfer row is an arithmetic 33.39 s over the 30 s `SPUR_BUILD_TIMEOUT` — two
-  single-feature readings under a load of 32.17, not a composed build. Accepted at UAT (test 4)
-  as deferred to Phase 12's real composed sweep, its named trigger:
-  `docs/tech_debt/active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md` (must).
-- ⚠️ [Phase 11] All six code-review findings (WR-01…WR-05, IN-01) still sit at disposition
-  `open` in `11-REVIEW-DISPOSITION.md` — none fixed, skipped or deferred. WR-02 (L30's
-  "the boundary itself builds, one step past it does not" sentence, the reverse of what
-  `test_the_kernel_cuts_one_valid_solid_past_each_cutout_rule` proves) and WR-04 (README says
-  the reverse half-set case is "rejected"; it builds nothing and warns) were reproduced during
-  verification and are one-sentence doc fixes. WR-01 (the honeycomb spike's `slower()`/verdict
-  can discard a failed trial) is unfixed; `HEX_CELL_CAP = 120` and its 8.65 s row were accepted
-  as measured under a loaded host (UAT tests 2–3), not re-measured. UAT test 5 accepted the
-  triage expectation; the dispositions themselves are still to be set.
+- ⚠️ [Phase 12] All ten code-review findings (WR-01…WR-05, IN-01…IN-05) sit at disposition
+  `open` in `12-REVIEW-DISPOSITION.md` — none fixed, skipped or deferred. WR-01 (`cli.md`
+  "Errors" over-claims the `error: <field>: <message>` shape), WR-02 (`hole_count`'s comment
+  still cites the 14.87 s row as Phase 12's), WR-05 (L31 credits the field-walk proof to the
+  wrong test) are one-sentence doc fixes; WR-03/WR-04 (`bench.export_cost` and its child
+  process discard the failure's cause) are code. Triage before the PR lands so the record is
+  closed; nothing here blocks the milestone.
+- ℹ️ [Phase 12] The two build-timeout debts (Phase 10's tip-chamfer margin, Phase 11's spoke
+  arithmetic total) are resolved by the composed sweep's measured numbers (`89304e2`); the
+  tip-chamfer debt's concurrent-load question was re-homed into the Phase 2 latency debt's
+  trigger set (12-03). Phase 11's six review findings were all fixed in `11-REVIEW-FIX.md`
+  before that branch landed.
+- ⚠️ [Phase 12] The pre-commit `make verify` hook now runs ~3.5 min at 907 tests (D-10's
+  measured +28.28 s on top of Phase 11's 178 s); `gsd_run query commit`'s 30 s timeout cannot
+  complete it (the Phase 9–11 items below stand) — every Phase 12 close-out commit was a plain
+  `git commit` with the hook running, never `--no-verify`.
 - ⚠️ [Phase 11] `gsd_run query commit`'s 30 s timeout killed the `make verify` hook on the UAT
   commit this session (~3 min cold at 621 tests, pytest at ~9 cores) — and the orphaned
   pre-commit process kept running with `state.json` stashed; waited for it to exit and restore
@@ -283,9 +285,6 @@ None yet.
   `60d02f7`. A request that rounds to nothing now warns with its true cause; sub-µm
   rounding of a nonzero request stays silent like every other 3-dp field (human decision
   2026-09-28). IN-01/IN-02 stay open (info) in `10-REVIEW-DISPOSITION.md`.
-- ⚠️ [Phase 10] The tip chamfer's heaviest row (14.87 s) leaves ~2× of the 30 s
-  `SPUR_BUILD_TIMEOUT` where the default was sized against ~4×; Phase 12 re-measures every
-  feature combined. `docs/tech_debt/active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md` (must).
 - ⚠️ [Phase 10] The root fillet's straight lead-in can reach above the pitch circle
   (pre-existing, exposed by 10-01's probe):
   `docs/tech_debt/active/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md` (must).
@@ -352,23 +351,20 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T14:02:34.569Z
-Stopped at: Completed 12-09-PLAN.md (Phase 12 complete)
+Last session: 2026-09-30T16:48:43Z
+Stopped at: Phase 12 complete — all phases complete
 Resume file: None
 
 ## Operator Next Steps
 
-- Set a disposition on each of the six `11-REVIEW.md` findings in `11-REVIEW-DISPOSITION.md`
-  (WR-02 and WR-04 are one-sentence doc fixes in `docs/architecture/decision_log.md` L30 and
-  `README.md`; WR-01 is the spike's verdict logic) — ideally before the PR, so the branch lands
-  with the record closed
-- Open a PR for `gsd/phase-11-body-cutouts` and land it with `make pr.land PR=N`
-- `/gsd-map-codebase --paths bench` — carried over from Phase 10 (not verified done): the
-  codebase map predates `bench/`
-- Then `/gsd-discuss-phase 12` on a `gsd/phase-12-*` branch cut from the squash commit
-  (Phase 12 has no CONTEXT.md yet)
-- Expect `gsd_run query commit` to time out on every commit (hook ~3 min cold, > 30 s) and
-  fall back to a plain `git commit` with hooks; if the wrapper reports a timeout, wait for the
-  orphaned `pre_commit hook-impl` process to exit before touching tracked files — it holds
-  `state.json` in a stash and restores it on exit
+- Set a disposition on each of the ten `12-REVIEW.md` findings in `12-REVIEW-DISPOSITION.md`
+  (WR-01, WR-02 and WR-05 are one-sentence doc fixes; WR-03/WR-04 are `bench/export_cost.py`
+  error-reporting fixes) — ideally before the PR, so the branch lands with the record closed
+- Open a PR for `gsd/phase-12-composition-pass` and land it with `make pr.land PR=N`
+- Then `/gsd-complete-milestone v0.2` — Phase 12 was the milestone's last phase; the audit,
+  `MILESTONES.md` and the archive are its job (L31 leaves them to it, D-19)
+- `/gsd-map-codebase --paths bench` — still carried over from Phase 10 (not verified done)
+- Expect `gsd_run query commit` to time out on every commit (hook ~3.5 min at 907 tests, > 30 s)
+  and fall back to a plain `git commit` with hooks; wait for any orphaned pre-commit process to
+  restore its stash of `state.json` before writing to the tree
   (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)

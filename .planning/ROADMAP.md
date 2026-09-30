@@ -45,7 +45,7 @@ with tooth measurements untouched.
 - [x] **Phase 10: Tooth-Tip Chamfer** - An edge-break chamfer on the tooth-tip arcs (completed 2026-09-28)
 - [x] **Phase 11: Body Cutouts** - Lightening holes, spoke arms, or a honeycomb web — one (completed 2026-09-29)
       pattern per part
-- [ ] **Phase 12: Composition Pass** - The full feature matrix, the heaviest-configuration
+- [x] **Phase 12: Composition Pass** - The full feature matrix, the heaviest-configuration (completed 2026-09-30)
       build-time sweep, and three-interface parity
 
 ## Phase Details
@@ -361,7 +361,7 @@ closing out v0.2.
      are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: 9/9 plans executed
+**Plans**: 9/9 plans complete
 
 Plans:
 **Wave 1**
@@ -420,9 +420,9 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
-| 7. Foundation | v0.2 | 2/2 | In Progress|  |
-| 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
-| 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
-| 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
-| 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 9/9 | In Progress|  |
+| 7. Foundation | v0.2 | 2/2 | Complete | 2026-09-26 |
+| 8. Hex Bore | v0.2 | 4/4 | Complete | 2026-09-26 |
+| 9. Keyway Bore | v0.2 | 5/5 | Complete | 2026-09-27 |
+| 10. Tooth-Tip Chamfer | v0.2 | 5/5 | Complete | 2026-09-28 |
+| 11. Body Cutouts | v0.2 | 9/9 | Complete | 2026-09-29 |
+| 12. Composition Pass | v0.2 | 9/9 | Complete | 2026-09-30 |
