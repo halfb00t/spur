@@ -1795,3 +1795,67 @@ negative). Recorded exactly as measured (L08), not adjusted toward L24's range. 
 L24's cost is recorded only -- the copy in `model._write_export` is a correctness decision
 (a cached solid never carries a mesh, L24), not a cost trade, and stays regardless of this
 reading.
+
+## Composition pass test cost (Phase 12, D-10)
+
+D-10: the phase's added `make verify` cost measured as 07 D-06 measured it -- the
+phase-start code (`c9a169d`, the commit the branch was cut from) and the phase-end code,
+same host, same session, alternating A1 B1 A2 B2 full `make verify` runs with the load
+read before each; the delta is `mean(B) - mean(A)` wall seconds, against the pre-agreed
+30.0 s line.
+
+### Host state
+
+- CPU: Apple M2 Max, 12 cores
+- RAM: 32.0 GiB
+- Python: 3.12.13 (`.venv`)
+- Date: 2026-09-30
+- Phase-start HEAD (worktree A, detached): `c9a169d`
+- Phase-end HEAD (main checkout, B): `480da30`
+- The A runs borrow the main `.venv` via `PYTHONPATH="$WT/src"` and `make -o
+  "$MAIN/.venv/.installed"`, proven before timing: `PYTHONPATH="$WT/src"
+  "$MAIN/.venv/bin/python" -c "import spur, pathlib; print(pathlib.Path(spur.__file__).resolve())"`
+  printed a path under the worktree; `_editable_impl_spur.pth`'s content
+  (`/Users/halfb00t/git/halfb00t/spur/src`) was identical before and after all four runs --
+  the main venv's editable install was never repointed at the worktree.
+- Load averages (1-minute, `sysctl -n vm.loadavg`), read immediately before each run
+  started building: A1 2.87, B1 8.07, A2 8.51, B2 9.07 -- the host carried background load
+  from this same session's earlier `make verify` runs throughout; no quiet bar is required
+  for this measurement (the alternation is what makes the delta fair, not an absolute
+  quiet reading, per D-10's own instruction).
+
+### Same-session, alternating runs
+
+| Run | Code | Load | pytest | Wall (s) |
+|---|---|---|---|---|
+| A1 | `c9a169d` | 2.87 | 621 passed in 183.67s | 193.30 |
+| B1 | `480da30` | 8.07 | 907 passed in 216.90s | 217.90 |
+| A2 | `c9a169d` | 8.51 | 621 passed in 184.89s | 185.88 |
+| B2 | `480da30` | 9.07 | 907 passed in 216.73s | 217.83 |
+
+mean(A) = 189.59s, mean(B) = 217.87s -> **delta = 28.28s**, against D-10's 30.0s line (1.72s
+of margin).
+
+For context, not the gate's own number: 12-06-SUMMARY.md's 15 new tier-2 kernel rows
+(the tip chamfer with each cutout on each bore, and the single-sided-recess pairing) were
+measured on their own at **30.66-30.73s** of pytest time across two runs, before 12-07/12-08's
+own new tests were added on top -- close to D-10's phase-wide 30 s advisory share by
+themselves, and the largest single contributor to the phase's +28.28s wall delta above.
+
+### make verify wall time
+
+B2 (this session, load 9.07/8.82/7.30 at start, HEAD `480da30`): **907 passed in 216.73s**
+-- **217.83s** wall time (`/usr/bin/time -p`, includes lint/typecheck/import-lint/
+no-fake-done), against Phase 11's recorded **621 passed** / **178.55s** wall
+(`bench/RESULTS.md`'s "Body cutout" section, load 3.07/4.04/4.65 at start). The phase's own
+composition tests (286 new items across 12-02 through 12-08) add the measured **28.28s**
+delta above to the gate.
+
+### Regression fixture share
+
+Final pass (D-20), this session, before either A/B run: `git diff --exit-code c9a169d --
+tests/regression/pre_v0_2.json` -- clean (byte-unchanged since `c9a169d`, unmodified
+through the whole phase). `make test PYTEST_ARGS="tests/regression -q"`: **86 passed in
+19.24s** -- the fixture's own share of the phase-end gate, essentially unchanged from
+07-01's original 85-case / 16.27s reading (one case added since Phase 7's own count; the
+fixture itself was never regenerated).
