@@ -1283,3 +1283,137 @@ only links that omit the fields). `HEX_CELL_CAP` and the counts' `le` are the sa
 — a lower cap or bound later changes what a published link cuts; a higher one is
 additive, exactly as this phase's own `le` lowering (200 → 40/60) already was for every
 link that had not yet been shared (D-11, D-18).
+
+## L31 — v0.2 composes: every feature proven on one gear, the composed build time measured, and the three interfaces in parity
+
+Date: 2026-09-30.
+
+**The composed sweep** (D-01 to D-05). `bench/sweeps/composed.json`'s 18-row design
+stacks each of the three cutout patterns' own recorded heaviest row (spokes, holes,
+honeycomb) with the tip chamfer at that gear's own cap and both recesses, on the
+largest `bore_hex` its hub rule allows and separately on a keyed round bore, at module
+1.75 and module 10, plus six single-feature baselines re-run same-host — citing
+`bench/RESULTS.md` "Composed build and export time (Phase 12)" and `12-02-SUMMARY.md`
+(`278d982`). Two runs (loads 12.66 and 7.04 at the runner's own reading) were not
+decisive by D-02's <1.5 bar; the runner itself was found to be reading load at the end
+of a 6–7 minute sweep, not its start, and was fixed to read before the first row builds
+(`9b9af43`, `12-03-SUMMARY.md`). Two further quiet re-runs (loads 2.74 and 1.54 at a
+genuine at-start reading) still missed the 1.5 bar. **The D-02 supersession, taken this
+phase:** the human reviewed all four runs — at-start loads 12.66, 7.04, 2.74 and 1.54,
+an eightfold spread — and found the same four `spoke_count=40` composed rows over
+`SPUR_BUILD_TIMEOUT` (30 s) in every one, at 31.16–33.32 s, a band that did not track
+the load figure (Run 3, load 2.74, read higher than Run 1, load 12.66, on three of the
+four rows). The human's answer was "Supersede D-02: treat Run 4 as decisive"
+(`12-03-SUMMARY.md`) — D-02's <1.5 bar is superseded for this one gate on the measured
+load-independence of four runs; D-02's own bar otherwise stands for any future sweep
+unless superseded again by a new entry. Run 4's heaviest row, module=10 keyed-bore
+spokes with `tip_chamfer=3`, read 32.03 s of 30 s; a probe (step 5 down, then up by 1)
+found `spoke_count=32` the largest count still inside budget (29.41 s, 33 read 30.11 s
+over); the human's answer was "lower-le: spoke_count 32", applied in `src/spur/params.py`
+(`547214e`). The whole composed sweep re-run at the new `le` reads every row inside
+30 s, heaviest 29.42 s (0.58 s margin) — `bench/RESULTS.md` "### Re-run after the gate".
+Each pattern's worst composed row read below the Phase 10/11 arithmetic total it
+replaced by measurement, not assumption: spokes 32.03 s against a 33.39 s total
+(-1.36 s), holes 25.05 s against 26.66 s (-1.61 s), honeycomb 27.49 s against 23.52 s
+(+3.97 s, the one pattern where stacking cost more than the naive sum). Two
+build-timeout debts this sweep triggered were resolved with the measured number and the
+decision (`docs/tech_debt/resolved/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md`,
+`docs/tech_debt/resolved/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md`,
+sha recorded `359f8db`, `12-03-SUMMARY.md`); the tip-chamfer debt's unanswered
+concurrent-load question was re-homed into
+`docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`'s own trigger set.
+
+**The composition matrix** (D-07 to D-10). Tier 1: 96 rows (the full bore × cutout ×
+recess × tip-chamfer cross product on the default 19-tooth gear) each derive exactly the
+non-null `DerivedDimensions` fields and warnings their families imply, computed from
+`tests/composition.py`'s own pinned tables, never from `derive()` itself — the
+keyed-round + spokes row derives a 0.421 mm hub wall instead of refusing
+(`12-05-SUMMARY.md`, `9e2960d`). Refusals: all 23 locked refusals composed with each of
+the 6 other families (138 rows) keep the refusal-alone `check()` field sequence and
+sentence, except 18 rows where the switched-on family adds a second refusal and 6 rows
+where the switched-on bore moves the quoted hub datum — the 114/6/18 split was
+re-derived from `check()` this session, not trusted from the planning probe, and
+matched it exactly (`12-05-SUMMARY.md`). Tier 2, on the real kernel: 12 rows (the tip
+chamfer applied with each cutout on each bore — d-flat, round, hex, keyed round), each
+re-running the tip-arc and cutout proofs unchanged on one composed solid, plus 3 rows
+proving the single-sided-recess × cutout pairing no earlier matrix built — 15 kernel
+rows total, every face-type delta, edge delta, removed volume and `TORUS` count matching
+the planning probe exactly (`12-06-SUMMARY.md`, `ae53fea`). D-10's gate: the phase's own
+added `make verify` cost, measured same-host, alternating, against the phase-start code
+(`c9a169d`) — four runs (A1 183.67 s / B1 216.90 s / A2 184.89 s / B2 216.73 s pytest;
+193.30 / 217.90 / 185.88 / 217.83 s wall), mean(A) 189.59 s, mean(B) 217.87 s, **delta
++28.28 s** against the 30.0 s line (1.72 s of margin) — `bench/RESULTS.md` "Composition pass test cost (Phase 12, D-10)".
+The human's verbatim answer was "accept": the measured
+cost stands, no tier-2 row is trimmed, `tests/test_model.py` untouched
+(`12-09-SUMMARY.md`, `b7271ba`).
+
+**The parity proof** (D-11, D-13, D-14). The pinned group order — Teeth, Body, Bore,
+Recess, Spokes, Holes, Honeycomb — was verified this session directly against the live
+`/api/schema` (30 properties, group first-appearance order exactly this list, no group
+reappearing after another starts), settling D-11's evidence conflict as "seven" groups
+per the human's binding 12-01 answer (`12-07-SUMMARY.md`, `3fb9901`). One generic field
+walk (`tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code`)
+proves every v0.2 field reaches the schema, the form's source and the CLI parser in that
+one order, without a per-field test. README's composed link (every family on one
+19-tooth gear) prints the identical document on `spur info` and `/api/info`, byte for
+byte once the API's compact JSON is re-indented to the CLI's own `indent=2` — proving
+value and key-order identity, not just value equality. All 23 refusals read identically
+on the API's 422 and the CLI's exit 2 (`tests/test_cli.py::test_every_refusal_reads_the_same_on_the_api_and_the_cli`).
+The CLI's real exit contract — parameter errors exit 2, an unknown output extension and
+every `BuildError` exit 1 — was moved to `docs/architecture/cli.md` (the doc moved to
+the code, `src/spur/cli.py` byte-unchanged from `c9a169d`), pinned by three tests
+including one that runs the real process, and the debt this closed
+(`docs/tech_debt/resolved/2026-09-28-cli-md-claims-exit-2-where-cmd-export-exits-1.md`)
+was resolved in two commits per the project's own placeholder-then-sha precedent
+(`0deb25a` fixing, `eceafff` recording the sha) (`12-08-SUMMARY.md`, `22e530d`).
+
+**The UI pass** (D-12). Both deferred form ideas —
+`docs/ideas/2026-09-29-conditional-form-fields.md` and
+`docs/ideas/2026-09-27-bore-shape-selector-in-the-web-form.md` — are judged "not taken"
+at Phase 12: 08 D-09 stands, the form stays generated from `/api/schema` and nothing
+else, because a proof-and-measurement phase must not ship the first bore-specific or
+field-relation logic in `app.js` with no UI test; the ignored-field warnings stay the
+honest signal until a browser test exists or a user reports them insufficient. Each
+idea file gained a new trigger to that effect; `docs/ideas/2026-09-21-browser-test-for-the-viewer.md`
+records that 12-07 took its own cheaper first step (the generic field-walk test above),
+leaving the headless-browser cost question open with the trigger "either UI idea is
+taken" (`12-08-SUMMARY.md`, `22e530d`).
+
+**The re-measurement** (D-16 to D-18). The composed sweep's largest fine STL — named by
+its own byte count, not by inspection — is
+`teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400
+tip_chamfer=3 recess_sides=both`, 17,306,084 bytes, 346,120 triangles, on every recorded
+run of the sweep (`bench/RESULTS.md` "Export cost on the heaviest v0.2 topology (Phase
+12)"). L19's gzip-level rule, re-applied exactly as written: level 6 shrinks output by
+7.46% (bar 10%), level 9 by 7.44% (bar 10%) — both miss the bar, `_GZIP_LEVEL` stays at
+1, and D-18's rule selects level 1 again; the table lands as a dated comment addition
+above `_GZIP_LEVEL` in `src/spur/app.py`, L19's own text unedited, per 12-01's binding
+answer "comment + L31" (this entry is the "L31" half). L24's mesh-copy cost is recorded
+only, not adopted as a decision: +52.9 ms mean export, −56.0 MiB mean peak RSS over
+in-place, on this run's own 346,120-triangle heaviest topology — the copy in
+`model._write_export` stays regardless, because it is a correctness decision (a cached
+solid never carries a mesh, L24), not a cost trade (`12-04-SUMMARY.md`, `4782322`).
+
+**The fixture and the amendments** (D-06, D-15, D-20). ROADMAP Phase 12 SC3 was amended
+to name the composed sweep D-01 designed rather than a pre-measured winner, and SC5 was
+amended to state the regression replay's real contract — identical `DerivedDimensions`
+and an identical solid (volume, bounding box, face and edge counts) — both through
+edit-phase's own write step, approved verbatim by the human ("approved")
+(`12-01-SUMMARY.md`, `4a4c679`). `PROJECT.md` Success Metric 3's "identical export" is
+read, explicitly, as identical `DerivedDimensions` and an identical solid: **export bytes are not compared**
+(L26 — OCCT export is not byte-reproducible across independently built solids). The
+pre-v0.2 fixture (`tests/regression/pre_v0_2.json`) is byte-unchanged from `c9a169d`
+through the whole phase
+(`git diff --exit-code c9a169d -- tests/regression/pre_v0_2.json`, clean) and its final
+replay this session is green and unmodified: **86 passed in 19.24 s**, its own share of
+the phase-end gate (`bench/RESULTS.md` "Composition pass test cost (Phase 12, D-10)", "### Regression fixture share").
+
+**Reversibility.** `spoke_count`'s `le` (40 → 32, `547214e`) is the same shape as L30's
+own `le` lowerings — a lower bound later re-cuts what a published link can request;
+raising it again is additive. `_GZIP_LEVEL` is unchanged, so nothing here moves that
+axis. The 286 new composition tests added across 12-02 through 12-08 are reversible by
+deletion alone, but their +28.28 s gate cost is not free to future contributors unless a
+later entry trims it — accepted, not undone, by this phase's own gate decision above.
+The parity tests and the CLI doc fix are pure additions with no published contract
+change. Milestone bookkeeping (`MILESTONES.md`, the audit) is left to
+`gsd-complete-milestone`, per D-19.
