@@ -1388,3 +1388,7 @@ spoke_count=40 ... tip_chamfer=1.75` (31.30/31.16 s), the same row keyed (31.56/
 `module=10` with the same spokes and `tip_chamfer=3` (31.36/31.59 s), and the same row
 keyed (31.98/31.90 s). Whether that consistency, or a genuinely quiet run, changes the
 verdict is 12-03's checkpoint to decide.
+
+### Gate probe
+
+No decisive run: no probe (D-02).
