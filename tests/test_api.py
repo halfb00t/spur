@@ -356,7 +356,7 @@ def test_a_spoke_link_is_served_with_the_fillet_it_cut() -> None:
     assert props["spoke_count"]["group"] == "Spokes"
     assert props["spoke_count"]["type"] == "integer"
     assert props["spoke_count"]["minimum"] == 0
-    assert props["spoke_count"]["maximum"] == 40
+    assert props["spoke_count"]["maximum"] == 32
     assert props["spoke_count"]["default"] == 0
     assert props["spoke_count"]["step"] == 1
     assert props["spoke_width"]["unit"] == "mm"

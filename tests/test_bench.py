@@ -303,34 +303,37 @@ def test_the_hole_cutout_sweep_is_every_combination_the_plan_names() -> None:
 
 def test_the_spoke_cutout_sweep_is_every_combination_the_plan_names() -> None:
     """The committed Phase 11 spoke sweep is 11-06-PLAN.md's `<interfaces>` cross product,
-    re-run at Task 2's gate decision: 200 teeth, `spoke_count` 40 (D-18's `le` lowered
-    from 200 -- three of the four 200-sector recess-crossing rows read 65.70-68.70 s of
-    SPUR_BUILD_TIMEOUT=30 s, bench/RESULTS.md "Body cutout build and export time
-    (Phase 11)"); module {1.75, 10} (Phase 8's export-time probe); the same large sectors
-    (`spoke_width` 0.4, `hub_d` 52, `rim_wall` 0.4) and small sectors (`spoke_width` 4.3 at
-    module 1.75, 5.85 at module 10) the first run measured, at both modules -- the
-    planning probe found spoke sectors the heaviest cutout by far, so both sector shapes
-    are kept; and `recess_sides` {both, none}.
+    re-run at Task 2's gate decision, then re-run again at Task 3's own gate: 200 teeth,
+    `spoke_count` 32 (D-03's gate lowered `le` again, 40 -> 32 -- 12-03-PLAN.md Task 2's
+    human decision, "lower-le: spoke_count 32"; bench/RESULTS.md "Composed build and
+    export time (Phase 12)", "### Gate probe": the module=10 keyed-bore composed row
+    measured 32.03 s of SPUR_BUILD_TIMEOUT=30 s at 40 arms, 32 the largest count still
+    inside budget at 29.41 s); module {1.75, 10} (Phase 8's export-time probe); the same
+    large sectors (`spoke_width` 0.4, `hub_d` 52, `rim_wall` 0.4) and small sectors
+    (`spoke_width` 4.3 at module 1.75, 5.85 at module 10) the first run measured, at both
+    modules -- the planning probe found spoke sectors the heaviest cutout by far, so both
+    sector shapes are kept; and `recess_sides` {both, none}.
 
     Every row is therefore a buildable gear under 11-04's rules -- `load_sweep` would have
     raised otherwise. Neither large-sector row still sits at a refusal boundary at the
     lower `spoke_count`: the hub-opening wall each `spoke_width` was picked against at
     `le` 200 widens with fewer arms (fewer feet sharing the hub ring) -- measured accepted
-    at `spoke_width` + 0.05 for both the module-1.75 and module-10 rows -- so no
-    refusal-boundary pin survives the gate's decision.
+    at `spoke_width` + 0.05 for both the module-1.75 and module-10 rows at `le` 40 -- so no
+    refusal-boundary pin survives either gate's decision, and 32 arms only widens the
+    opening further.
     """
     sets = load_sweep(DEFAULT_SWEEP.parent / "spoke_cutout.json")
     assert len(sets) == 8
 
     want = {
-        (200, 1.75, 40, 0.4, 52.0, 0.4, 5.0, "both"),
-        (200, 1.75, 40, 0.4, 52.0, 0.4, 5.0, "none"),
-        (200, 1.75, 40, 4.3, 300.0, 10.0, 5.0, "both"),
-        (200, 1.75, 40, 4.3, 300.0, 10.0, 5.0, "none"),
-        (200, 10.0, 40, 0.4, 52.0, 0.4, 5.0, "both"),
-        (200, 10.0, 40, 0.4, 52.0, 0.4, 5.0, "none"),
-        (200, 10.0, 40, 5.85, 400.0, 100.0, 5.0, "both"),
-        (200, 10.0, 40, 5.85, 400.0, 100.0, 5.0, "none"),
+        (200, 1.75, 32, 0.4, 52.0, 0.4, 5.0, "both"),
+        (200, 1.75, 32, 0.4, 52.0, 0.4, 5.0, "none"),
+        (200, 1.75, 32, 4.3, 300.0, 10.0, 5.0, "both"),
+        (200, 1.75, 32, 4.3, 300.0, 10.0, 5.0, "none"),
+        (200, 10.0, 32, 0.4, 52.0, 0.4, 5.0, "both"),
+        (200, 10.0, 32, 0.4, 52.0, 0.4, 5.0, "none"),
+        (200, 10.0, 32, 5.85, 400.0, 100.0, 5.0, "both"),
+        (200, 10.0, 32, 5.85, 400.0, 100.0, 5.0, "none"),
     }
     got = {(p.teeth, p.module, p.spoke_count, p.spoke_width, p.hub_d, p.rim_wall,
             p.spoke_fillet, p.recess_sides) for _, p in sets}
@@ -405,16 +408,16 @@ def test_the_composed_sweep_stacks_each_cutout_on_its_heaviest_bore_beside_six_b
     assert len(sets) == 18
 
     want = [
-        {"teeth": 200, "tip_chamfer": 1.75, "bore_hex": 43.35, "spoke_count": 40,
+        {"teeth": 200, "tip_chamfer": 1.75, "bore_hex": 43.35, "spoke_count": 32,
          "spoke_width": 0.4, "hub_d": 52.0, "rim_wall": 0.4, "spoke_fillet": 5.0},
         {"teeth": 200, "tip_chamfer": 1.75, "bore_flat": 0.0, "keyway_width": 3.0,
-         "keyway_depth": 1.4, "spoke_count": 40, "spoke_width": 0.4, "hub_d": 52.0,
+         "keyway_depth": 1.4, "spoke_count": 32, "spoke_width": 0.4, "hub_d": 52.0,
          "rim_wall": 0.4, "spoke_fillet": 5.0},
         {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_hex": 43.35,
-         "spoke_count": 40, "spoke_width": 0.4, "hub_d": 52.0, "rim_wall": 0.4,
+         "spoke_count": 32, "spoke_width": 0.4, "hub_d": 52.0, "rim_wall": 0.4,
          "spoke_fillet": 5.0},
         {"teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_flat": 0.0,
-         "keyway_width": 3.0, "keyway_depth": 1.4, "spoke_count": 40, "spoke_width": 0.4,
+         "keyway_width": 3.0, "keyway_depth": 1.4, "spoke_count": 32, "spoke_width": 0.4,
          "hub_d": 52.0, "rim_wall": 0.4, "spoke_fillet": 5.0},
         {"teeth": 200, "tip_chamfer": 1.75, "bore_hex": 156.3, "hole_count": 60,
          "hole_d": 1.0, "hole_circle_d": 183.4},
@@ -438,7 +441,7 @@ def test_the_composed_sweep_stacks_each_cutout_on_its_heaviest_bore_beside_six_b
          "keyway_depth": 1.4},
         {"teeth": 200, "tip_chamfer": 1.75},
         {"teeth": 200, "hole_count": 60, "hole_d": 1.0, "hole_circle_d": 183.4},
-        {"teeth": 200, "module": 10.0, "spoke_count": 40, "spoke_width": 0.4,
+        {"teeth": 200, "module": 10.0, "spoke_count": 32, "spoke_width": 0.4,
          "hub_d": 52.0, "rim_wall": 0.4, "spoke_fillet": 5.0},
         {"teeth": 200, "hex_cell": 3.0, "hex_wall": 0.4},
     ]

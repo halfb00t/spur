@@ -106,8 +106,16 @@ class GearParams(BaseModel):
     # cutout build and export time (Phase 11)", measured 2026-09-29, host load 5-10):
     # three of the four 200-sector rows crossing a recess groove read 65.70-68.70 s of
     # SPUR_BUILD_TIMEOUT=30 s, ~0.3 s/sector and near-linear; 40 sectors leave margin
-    # beside Phase 12's 14.87 s tip-chamfer row (re-measured in the same section).
-    spoke_count: int = _f(0, 0, 40, title="Spoke arms", group="Spokes", step=1,
+    # beside Phase 10's 14.87 s tip-chamfer row (an arithmetic total only, not yet a
+    # real composed build).
+    # D-03's gate lowered it again, 40 -> 32 (12-03-PLAN.md Task 2's human decision,
+    # "lower-le: spoke_count 32"; bench/RESULTS.md "Composed build and export time
+    # (Phase 12)", "### Gate", "### Gate probe"): the actual composed build (spokes +
+    # tip chamfer + both recesses, module 10, keyed bore) measured 32.03 s of
+    # SPUR_BUILD_TIMEOUT=30 s at 40 arms on Run 4, the reference run; the probe found 32
+    # the largest count that still builds inside budget (29.41 s), 33 over again
+    # (30.11 s).
+    spoke_count: int = _f(0, 0, 32, title="Spoke arms", group="Spokes", step=1,
                           help="Number of straight arms joining a hub ring to a rim "
                                "ring; the sectors between them are cut through the "
                                "full face width. Arm 0 is centred on +X. 0 = no "
