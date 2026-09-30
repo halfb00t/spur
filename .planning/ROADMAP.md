@@ -361,7 +361,7 @@ closing out v0.2.
      are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: 6/9 plans executed
+**Plans**: 7/9 plans executed
 
 Plans:
 **Wave 1**
@@ -390,7 +390,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 12-07-PLAN.md — Parity: the composed README link byte for byte on CLI and API, the model-field walk, the static URL round trip, every refusal on 422 and exit 2 (wave 7)
+- [x] 12-07-PLAN.md — Parity: the composed README link byte for byte on CLI and API, the model-field walk, the static URL round trip, every refusal on 422 and exit 2 (wave 7)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -425,4 +425,4 @@ Plans:
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 6/9 | In Progress|  |
+| 12. Composition Pass | v0.2 | 7/9 | In Progress|  |
