@@ -1,7 +1,9 @@
 """The CLI had no tests, and the README's own example did not run."""
 
 import json
+import re
 from pathlib import Path
+from typing import get_args
 
 import cadquery as cq
 import pytest
@@ -12,6 +14,7 @@ import spur.model
 from spur import cli
 from spur.app import InfoQuery
 from spur.calc import DerivedDimensions
+from spur.params import GearParams
 
 # The README's composed link (D-14): every v0.2 family on one 19-tooth gear -- a keyed
 # round bore, spoke arms, both recesses (the default) and a tooth-tip chamfer. Order
@@ -176,6 +179,57 @@ def test_cli_and_api_print_the_same_composed_document(
                "keyway_width_effective", "recess_id", "recess_od", "recess_fillet",
                "web", "cutout_hub_wall", "cutout_rim_wall", "spoke_fillet_effective"):
         assert composed_doc[key] is not None, key
+
+
+def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-11: walks `GearParams.model_fields` -- never the consumer under test's own
+    field list -- across `/api/schema` (the form's source) and the CLI parser. A field
+    missing a group/title/unit/step, a moved field, or a flag that drifted from its
+    field name now fails here generically, instead of only on the handful of fields the
+    per-feature parity tests happen to cover.
+
+    Order and group names are pinned, not discretionary (12-01-SUMMARY.md, the human's
+    binding "seven" answer): the schema carries seven groups, in this order --
+    Teeth, Body, Bore, Recess, Spokes, Holes, Honeycomb -- and `recess_sides` lives in
+    Recess, checked as `enum`, not `step`.
+    """
+    names = list(GearParams.model_fields)
+    props = TestClient(spur.app.app).get("/api/schema").json()["properties"]
+    assert list(props) == names  # buildForm() renders schema.properties in this order
+
+    for name in names:
+        prop = props[name]
+        assert "group" in prop, name
+        assert "title" in prop, name
+        assert "unit" in prop, name
+        if name == "recess_sides":
+            assert "step" not in prop
+        else:
+            assert "step" in prop, name
+
+    assert props["recess_sides"]["enum"] == list(
+        get_args(GearParams.model_fields["recess_sides"].annotation))
+
+    # Each fieldset holds a contiguous run: a group may not start, end and then start
+    # again further down the field list.
+    seen_groups: list[str] = []
+    for name in names:
+        group = props[name]["group"]
+        if not seen_groups or seen_groups[-1] != group:
+            assert group not in seen_groups, f"group {group!r} reappeared out of order"
+            seen_groups.append(group)
+    assert seen_groups == ["Teeth", "Body", "Bore", "Recess", "Spokes", "Holes",
+                          "Honeycomb"]
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    _, _, after = out.partition("gear parameters (defaults in brackets):\n")
+    assert after  # the section header must have been found
+    flags = re.findall(r"^\s+(--[a-z][a-z-]*)", after, re.MULTILINE)
+    assert flags == ["--" + n.replace("_", "-") for n in names]
 
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
