@@ -361,7 +361,7 @@ closing out v0.2.
      are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: 2/9 plans executed
+**Plans**: 3/9 plans executed
 
 Plans:
 **Wave 1**
@@ -374,7 +374,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 12-03-PLAN.md — D-03's gate on the decisive composed rows (probe, human decision, apply and re-run); the two build-timeout debts resolved and the concurrent question re-homed (wave 3)
+- [x] 12-03-PLAN.md — D-03's gate on the decisive composed rows (probe, human decision, apply and re-run); the two build-timeout debts resolved and the concurrent question re-homed (wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -425,4 +425,4 @@ Plans:
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 2/9 | In Progress|  |
+| 12. Composition Pass | v0.2 | 3/9 | In Progress|  |
