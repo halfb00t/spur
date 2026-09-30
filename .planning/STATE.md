@@ -4,17 +4,17 @@ milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 12
 current_phase_name: Composition Pass
-status: executing
-stopped_at: Completed 12-08-PLAN.md
-last_updated: "2026-09-30T13:09:25.542Z"
+status: verifying
+stopped_at: Completed 12-09-PLAN.md (Phase 12 complete)
+last_updated: "2026-09-30T14:02:34.646Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 12 execution started
-state_head: 22e530d9ffaeffc061822cdb92cc84398792b8c4
+state_head: 5fab3b785841d2afe11cc7b544283f893c73d63b
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 34
-  completed_plans: 33
+  completed_plans: 34
   percent: 17
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 12 (Composition Pass) — EXECUTING
 Plan: 9 of 9
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-30 — Phase 12 execution started
 
 ## Performance Metrics
@@ -163,6 +163,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 12 P06 | ~23min | 2 tasks | 1 files |
 | Phase 12 P07 | ~55min | 3 tasks | 3 files |
 | Phase 12 P08 | ~35min | 2 tasks | 9 files |
+| Phase 12-composition-pass P09 | ~20min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -248,6 +249,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 12]: 12-07: the byte-for-byte CLI/API document claim reads as the API's JSON re-indented (json.dumps(indent=2, ensure_ascii=False)) equalling the CLI's own model_dump_json(indent=2) -- verified equal, not assumed
 - [Phase 12]: 12-08: docs/architecture/cli.md's Errors section rewritten to the real 2/1/1 exit contract (parameter errors exit 2, unknown extension and every BuildError exit 1); src/spur/cli.py byte-unchanged (the doc moved to the code, 10 D-14 stands); pinned by a test that runs the real process, closing must-debt 2026-09-28-cli-md-claims-exit-2-where-cmd-export-exits-1.md
 - [Phase 12]: 12-08: both deferred UI ideas (conditional form fields, bore-shape selector) judged 'not taken' per D-12 -- 08 D-09's schema-driven form stands; new trigger is a browser test existing or a user reporting the ignored-field warnings insufficient; the browser-test idea records 12-07's cheaper-first-step taken
+- [Phase 12-composition-pass]: D-10's gate: human accepted the measured +28.28s make-verify cost delta against the 30.0s line; no tier-2 test row trimmed
+- [Phase 12-composition-pass]: L31 appended to docs/architecture/decision_log.md closing out Phase 12, citing every number to a SUMMARY sha or bench/RESULTS.md section (D-19)
 
 ### Pending Todos
 
@@ -349,8 +352,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T13:09:25.491Z
-Stopped at: Completed 12-08-PLAN.md
+Last session: 2026-09-30T14:02:34.569Z
+Stopped at: Completed 12-09-PLAN.md (Phase 12 complete)
 Resume file: None
 
 ## Operator Next Steps

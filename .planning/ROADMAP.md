@@ -361,7 +361,7 @@ closing out v0.2.
      are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: 8/9 plans executed
+**Plans**: 9/9 plans executed
 
 Plans:
 **Wave 1**
@@ -398,7 +398,7 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 12-09-PLAN.md — D-10's measured gate cost against the phase start and its checkpoint, the final fixture pass, L31 (wave 9)
+- [x] 12-09-PLAN.md — D-10's measured gate cost against the phase start and its checkpoint, the final fixture pass, L31 (wave 9)
 
 **UI hint**: yes
 
@@ -425,4 +425,4 @@ Plans:
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 8/9 | In Progress|  |
+| 12. Composition Pass | v0.2 | 9/9 | In Progress|  |
