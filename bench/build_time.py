@@ -120,7 +120,8 @@ def time_set(p: GearParams) -> tuple[float, float, float, int, int]:
     return build_s, stl_s, step_s, stl_bytes, stl_triangles
 
 
-def report(path: Path, timings: list[Timing], timeout: int) -> str:
+def report(path: Path, timings: list[Timing], timeout: int,
+           load: tuple[float, float, float]) -> str:
     if not timings:
         raise ValueError(
             f"{path} produced no timings -- an empty sweep must be refused loudly, "
@@ -131,7 +132,11 @@ def report(path: Path, timings: list[Timing], timeout: int) -> str:
         ["git", "rev-parse", "--short", "HEAD"],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
-    load1, load5, load15 = os.getloadavg()
+    # `load` is read by the caller before the first row builds (12-03 fix): a sweep at
+    # 200 teeth runs 6-7 minutes, and a reading taken here -- after every row already
+    # built -- made the "at start" label false (bench/RESULTS.md "Composed build and
+    # export time (Phase 12)" intro; 12-02-SUMMARY.md documented the mismeasurement).
+    load1, load5, load15 = load
     lines = [
         f"- Machine: {machine_facts()}",
         f"- Python: {platform.python_version()}",
@@ -177,11 +182,16 @@ def main(argv: list[str] | None = None) -> int:
 
     sets = load_sweep(args.sweep)  # fails before any build if a set is not buildable
 
+    # Read before the first row builds, not after the sweep finishes (12-03 fix): a
+    # sweep at 200 teeth runs 6-7 minutes, so a reading taken after the loop was really
+    # an end-of-run figure printed under an "at start" label.
+    load = os.getloadavg()
+
     # Time every set before deciding the exit code -- a short-circuiting generator
     # would silently skip the rest (bench/latency.py's own rule).
     timings = [Timing(label, *time_set(p)) for label, p in sets]
 
-    print(report(args.sweep, timings, args.timeout))
+    print(report(args.sweep, timings, args.timeout, load))
 
     over_budget = [t for t in timings if not t.inside(args.timeout)]
     for t in over_budget:

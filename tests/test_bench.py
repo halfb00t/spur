@@ -124,7 +124,7 @@ def test_the_report_names_the_largest_fine_stl_and_breaks_a_tie_by_file_order() 
         Timing("b", 1.0, 1.0, 1.0, 1000, 10),  # ties "a" on both worst_request and stl_bytes
         Timing("c", 0.5, 0.5, 0.5, 500, 5),
     ]
-    text = report(Path("x.json"), timings, 30)
+    text = report(Path("x.json"), timings, 30, (1.23, 4.56, 7.89))
     assert "| Fine STL (bytes) | Triangles |" in text
     assert "| a | 1.00 | 1.00 | 1.00 | 2.00 | yes | 1000 | 10 |" in text
     assert "**Heaviest:** a -- 2.00 s of 30 s." in text
@@ -135,7 +135,23 @@ def test_an_empty_sweep_is_refused_rather_than_reported() -> None:
     """An empty sweep is refused loudly, not printed as an empty table that reads as a
     pass."""
     with pytest.raises(ValueError, match="empty"):
-        report(Path("empty.json"), [], 30)
+        report(Path("empty.json"), [], 30, (0.0, 0.0, 0.0))
+
+
+def test_the_report_prints_the_load_it_was_given_rather_than_reading_one_itself() -> None:
+    """12-03 fix: `report()` used to call `os.getloadavg()` itself, after every row in
+    the sweep had already built -- for a multi-minute sweep that made its own "Load
+    averages at start" line an end-of-run reading, not a start-of-run one
+    (bench/RESULTS.md "Composed build and export time (Phase 12)" intro;
+    12-02-SUMMARY.md). A distinctive, made-up load tuple passed in here proves the
+    printed figures are the ones the caller supplied -- this is the only way to pin
+    "reads no load itself" as a behaviour: `os.getloadavg()`'s real return value is
+    whatever the test host happens to read at the moment the test runs, so a live call
+    inside `report()` could coincidentally print the same numbers and this test would
+    not catch it. A value no real host would ever report (99.99) rules that out."""
+    timings = [Timing("a", 1.0, 1.0, 1.0, 100, 1)]
+    text = report(Path("x.json"), timings, 30, (99.99, 88.88, 77.77))
+    assert "- Load averages at start: 99.99, 88.88, 77.77" in text
 
 
 def test_the_keyway_bore_sweep_is_every_combination_with_the_largest_keyway_each_rule_allows() -> None:  # noqa: E501
