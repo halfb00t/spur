@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-28
-Resolved in: docs(12-08): state the CLI's real exit contract in cli.md and pin it (D-13)
+Resolved in: 0deb25a
 Source: Phase 10 planning — the D-14 exit-code conflict (10-CONTEXT.md D-14, amended 2026-09-28)
 Related files:
 - src/spur/cli.py:107 (unknown output extension: `raise SystemExit("error: …")`)
