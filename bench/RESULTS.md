@@ -1622,3 +1622,78 @@ either (28.06-30.60 s across a load spread from 2.40 to 29.51, over 12x).
 Offer (D-03 first offer): the largest `spoke_count` measured inside 30 s is **32**
 (29.41 s of 30 s) -- the row at 33 reads over budget again (30.11 s). `lower-le:
 spoke_count 32`.
+
+### Re-run after the gate (lower-le: spoke_count 32)
+
+12-03's Task 2 checkpoint (4th ask) recorded the human's decision on the probe's offer:
+"lower-le: spoke_count 32 (Recommended)". `spoke_count`'s `le` was lowered 40 -> 32 in
+`src/spur/params.py` (commit `547214e`), every `spoke_count=40` row in
+`bench/sweeps/composed.json` and `bench/sweeps/spoke_cutout.json` moved to 32 (40 is no
+longer a valid value), and the whole composed sweep was re-run on this host per Task 3's
+own instruction ("re-run the whole composed sweep on a quiet host ... append `### Re-run
+after the gate (lower-le)`").
+
+Per the human's D-02 supersession for this gate (`### Gate` above) this re-run does not
+chase the 1.5 bar for 30 minutes: the 1-minute figure was polled every 30 s for a 5-minute
+cap starting at 09:44:20Z, falling from 4.41 to 1.53 across the window without settling
+under 1.5 -- the closest reading, 1.53, came at the cap's own expiry (09:49:27Z) -- and the
+sweep was launched immediately once the cap expired, with no further wait. `sysctl -n
+vm.loadavg` read 1.65 nine seconds before launch (09:49:31Z); `bench/build_time.py`'s own
+`report()` (post-`9b9af43`, a genuine at-start reading) read 1.68 a few seconds further
+into Python/CadQuery startup.
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `547214e`
+- Sweep: `bench/sweeps/composed.json`
+- Load averages at start: 1.68, 4.07, 4.95
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|
+| teeth=200 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 27.80 | 0.71 | 0.81 | 28.61 | yes | 7125584 | 142510 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 28.13 | 0.73 | 0.78 | 28.92 | yes | 7219484 | 144388 |
+| teeth=200 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 27.96 | 0.91 | 0.79 | 28.87 | yes | 7831184 | 156622 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 28.51 | 0.91 | 0.80 | 29.42 | yes | 7886984 | 157738 |
+| teeth=200 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 16.12 | 0.68 | 0.49 | 16.80 | yes | 11279684 | 225592 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 21.72 | 3.20 | 0.64 | 24.91 | yes | 14207884 | 284156 |
+| teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.48 | 1.25 | 0.52 | 15.72 | yes | 17306084 | 346120 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.90 | 1.25 | 0.49 | 16.15 | yes | 16015284 | 320304 |
+| teeth=200 module=1.75 bore_hex=200 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 26.31 | 0.69 | 0.96 | 27.27 | yes | 10723884 | 214476 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 23.09 | 0.75 | 0.98 | 24.06 | yes | 6966084 | 139320 |
+| teeth=200 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.13 | 0.92 | 0.96 | 22.09 | yes | 7859984 | 157198 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.30 | 0.94 | 0.96 | 22.26 | yes | 8210984 | 164218 |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 | 4.37 | 0.61 | 0.40 | 4.98 | yes | 10224284 | 204484 |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 4.13 | 0.63 | 0.40 | 4.75 | yes | 10144684 | 202892 |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both | 14.14 | 0.72 | 0.47 | 14.86 | yes | 8866484 | 177328 |
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both | 8.50 | 3.15 | 0.56 | 11.65 | yes | 14447884 | 288956 |
+| teeth=200 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 15.46 | 0.86 | 0.71 | 16.32 | yes | 7791784 | 155834 |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both | 7.72 | 0.81 | 0.90 | 8.62 | yes | 7206084 | 144120 |
+
+**Heaviest:** teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both -- 29.42 s of 30 s.
+**Largest fine STL:** teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both -- 17306084 bytes, 346120 triangles.
+
+Every row of this re-run reads inside `SPUR_BUILD_TIMEOUT` (30 s). The heaviest row is the
+same pattern (module=10, keyed bore, `tip_chamfer=3`) that was over budget at
+`spoke_count=40`: 29.42 s of 30 s, 0.58 s of margin -- consistent with the probe's own
+reading for `spoke_count=32` on the same row (29.41 s), one build/export apart. No row is
+over budget; per Task 3's own instruction this re-run does not trigger a further
+checkpoint.
+
+### Gate decision
+
+The human's verbatim answer to Task 2's checkpoint (4th ask, D-03's first offer): "lower-le:
+spoke_count 32 (Recommended)".
+
+Applied: `src/spur/params.py`'s `spoke_count` field lowered from `le` 40 to `le` 32,
+committed as `feat(12-03): lower spoke_count le from 40 to 32 (D-03)` (`547214e`), together
+with the RED tests (bound test, schema maximum, both sweeps' pinned `want` values -- see
+that commit's own message for why RED and GREEN land together: `workflow.tdd_mode` is not
+enabled) and the two sweep files' `spoke_count` rows moved from 40 to 32.
+
+Rests on: Run 4 (`### Gate` above, the reference run under D-02's supersession for this
+gate) measured the module=10 keyed-bore spokes row at 32.03 s of 30 s at `spoke_count=40`;
+this task's probe (`### Gate probe` above) found 32 the largest count still inside budget
+(29.41 s), 33 over again (30.11 s); the re-run above confirms the whole composed sweep,
+including this same row, now reads inside 30 s at `spoke_count=32` (heaviest 29.42 s).

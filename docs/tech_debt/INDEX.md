@@ -16,7 +16,7 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
-| must | [The concurrent latency bar was waived, not demonstrated](active/2026-09-23-concurrent-latency-bar-waived.md) | 02-05 writes L17/L18, the harness or the machine changes, or any run reads above 2.45x |
+| must | [The concurrent latency bar was waived, not demonstrated](active/2026-09-23-concurrent-latency-bar-waived.md) | 02-05 writes L17/L18, the harness or the machine changes, any run reads above 2.45x, or the composed worst row of bench/RESULTS.md "Composed build and export time (Phase 12)" is measured under ten concurrent builds — the question the tip-chamfer margin debt left open, re-homed here when it was resolved (12-CONTEXT.md D-04) |
 | nice | [CadQuery's `Shape` typing forces five `type: ignore`s](active/2026-09-21-cadquery-shape-typing.md) | CadQuery narrows its own return types, or the pipeline is touched anyway |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
 | nice | [No coverage floor in the gate](active/2026-09-21-no-coverage-floor.md) | after one measured baseline run |
@@ -25,9 +25,7 @@ Severity (grep-able `Severity:` field):
 | nice | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook on a cold cache](active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | gsd exposes a commit-timeout setting, or an executor's warm retry also times out |
 | must | [CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly](active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md) | a fresh `pip install -e '.[dev]'` resolves a `cadquery`/`cadquery-ocp` pair different from the fixture's provenance |
 | must | [`cli.md` claims exit 2 where `cmd_export` exits 1](active/2026-09-28-cli-md-claims-exit-2-where-cmd-export-exits-1.md) | `cmd_export` error handling or cli.md "Errors" is next touched, or an `Lxx` moves build failures to exit 2 |
-| must | [A 200-tooth tip chamfer narrows SPUR_BUILD_TIMEOUT's margin](active/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md) | Phase 12's composed sweep, a BuildTimeout on a tip-chamfered gear, or slower hardware |
 | must | [The root fillet's straight lead-in can reach above the pitch circle](active/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md) | a profile-shifted flank is measured, L10's trochoidal root is taken up, or _outline is next touched |
-| must | [The heaviest spoke row's arithmetic total with Phase 10's tip-chamfer row crosses 30 s under load](active/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md) | Phase 12's composed sweep, a BuildTimeout on a gear combining spoke_count near 40 with another heavy feature, or a quiet-host re-measurement of the heaviest spoke row |
 | must | [The filleted-spoke removed-volume proof has no closed-form cross-check](active/2026-09-29-filleted-spoke-volume-proof-pinned-not-derived.md) | `_fillet_corner` is next touched, or the pinned CadQuery/OCP kernel version is bumped |
 
 ## Resolved
@@ -45,3 +43,5 @@ Severity (grep-able `Severity:` field):
 | [The required-jobs drift test reads job ids, so a `name:` override slips past it](resolved/2026-09-25-required-jobs-drift-test-ignores-job-name-overrides.md) | `0573319` — see the file's own `Resolved in:` field |
 | [`make pr.land` reports "a skip token reached main" for any run it failed to observe](resolved/2026-09-25-pr-land-blames-a-skip-token-for-any-missed-post-merge-run.md) | `e4345a4` — see the file's own `Resolved in:` field |
 | [A round bore's chamfer reach is not checked against the root circle](resolved/2026-09-26-round-bore-chamfer-reach-is-not-checked.md) | `4b6a5b9` — see the file's own `Resolved in:` field |
+| [A 200-tooth tip chamfer narrows SPUR_BUILD_TIMEOUT's margin](resolved/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md) | docs(12-03): record the composed sweep's gate and resolve its two build-time debts (D-03, D-05) — see the file's own `Resolved in:` field |
+| [The heaviest spoke row's arithmetic total with Phase 10's tip-chamfer row crosses 30 s under load](resolved/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md) | docs(12-03): record the composed sweep's gate and resolve its two build-time debts (D-03, D-05) — see the file's own `Resolved in:` field |
