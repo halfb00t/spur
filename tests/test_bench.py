@@ -15,7 +15,11 @@ that disagrees with the header's triangle count is refused (never a plausible wr
 count, L08); an empty sweep is refused rather than printed as a passing table; and the
 composed sweep itself (12-02, D-01), stacking each cutout's heaviest row with the tip
 chamfer at its cap and both recesses on the heaviest bore its hub rule allows, at both
-modules, beside the six single-feature baselines re-run unchanged.
+modules, beside the six single-feature baselines re-run unchanged. Also pins
+`bench.export_cost`'s D-18 rule (12-04): `select_gzip_level` reproduces L19's own reading
+on L19's own recorded table, is adopted or held exactly on both of L19's bars (>=10%
+shrink, <=1.5x wall), and compares level 9 against whichever level is currently adopted,
+not always against level 1. Also pins `maxrss_bytes`'s Darwin/Linux unit split (L24).
 
 Run as `.venv/bin/python -m pytest tests/test_bench.py -q` **from the repo root** -- the
 `-m` form is what puts the repo root on `sys.path`, which is what makes `import bench`
@@ -35,6 +39,7 @@ import pytest
 from pydantic import ValidationError
 
 from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep, report, stl_size
+from bench.export_cost import GzipRow, maxrss_bytes, select_gzip_level
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
 from spur.calc import (
     HEX_CELL_CAP,
@@ -483,3 +488,65 @@ def test_the_composed_sweep_stacks_each_cutout_on_its_heaviest_bore_beside_six_b
     for label, source in zip(baseline_labels, baseline_sources, strict=True):
         original_labels = {lbl for lbl, _ in load_sweep(DEFAULT_SWEEP.parent / f"{source}.json")}
         assert label in original_labels
+
+
+def test_l19s_rule_applied_to_its_own_table_keeps_level_1() -> None:
+    """L19's own recorded table (`src/spur/app.py`'s `_GZIP_LEVEL` comment): neither
+    level 6 nor level 9 reaches the 10% shrink bar over level 1 (8.7% and 8.66%), so the
+    rule keeps level 1 -- the same reading L19 itself recorded by hand (D-18)."""
+    rows = [
+        GzipRow(level=1, single_ms=51.5, out_bytes=2_632_467, concurrent_ms=74.4),
+        GzipRow(level=6, single_ms=147.9, out_bytes=2_403_312, concurrent_ms=198.9),
+        GzipRow(level=9, single_ms=788.0, out_bytes=2_404_371, concurrent_ms=925.5),
+    ]
+    assert select_gzip_level(rows) == 1
+
+
+def test_a_higher_gzip_level_is_adopted_exactly_on_both_of_l19s_bars() -> None:
+    """A level 6 row exactly 10% smaller than level 1, with a 10-concurrent wall exactly
+    1.5x level 1's, is adopted; 1 byte less shrink, or a wall 1.5x plus a millisecond,
+    holds level 1 instead (D-18's two bars, tested at both edges). Level 9 is held equal
+    to level 1 in every row here so it can never itself be adopted, isolating level 6's
+    own boundary."""
+    level1 = GzipRow(level=1, single_ms=50.0, out_bytes=1_000_000, concurrent_ms=100.0)
+    inert_level9 = GzipRow(level=9, single_ms=500.0, out_bytes=1_000_000, concurrent_ms=100.0)
+
+    at_both_bars = GzipRow(level=6, single_ms=100.0, out_bytes=900_000, concurrent_ms=150.0)
+    assert select_gzip_level([level1, at_both_bars, inert_level9]) == 6
+
+    one_byte_short_of_the_shrink_bar = GzipRow(
+        level=6, single_ms=100.0, out_bytes=900_001, concurrent_ms=150.0)
+    assert select_gzip_level([level1, one_byte_short_of_the_shrink_bar, inert_level9]) == 1
+
+    one_millisecond_past_the_wall_bar = GzipRow(
+        level=6, single_ms=100.0, out_bytes=900_000, concurrent_ms=150.001)
+    assert select_gzip_level([level1, one_millisecond_past_the_wall_bar, inert_level9]) == 1
+
+
+def test_level_9_is_compared_against_the_level_currently_adopted() -> None:
+    """With 6 not adopted, 9 is compared against 1 (L19's own reading, A1); with 6
+    adopted, 9 is compared against 6, not always against 1 -- the second row below
+    would wrongly adopt level 9 if the comparison stayed pinned to level 1 (D-18)."""
+    level1 = GzipRow(level=1, single_ms=50.0, out_bytes=1_000_000, concurrent_ms=100.0)
+
+    # Level 6 held (only 5% smaller than 1): level 9 shrinks 20% off level 1 and its
+    # wall is 1.4x level 1's -- adopted, compared against level 1.
+    level6_held = GzipRow(level=6, single_ms=100.0, out_bytes=950_000, concurrent_ms=110.0)
+    level9_beats_1 = GzipRow(level=9, single_ms=200.0, out_bytes=800_000, concurrent_ms=140.0)
+    assert select_gzip_level([level1, level6_held, level9_beats_1]) == 9
+
+    # Level 6 adopted (exactly at both bars, out_bytes 900_000): level 9's out_bytes
+    # (850_000) is 15% smaller than level 1's -- past the 10% bar if compared there --
+    # but only 5.6% smaller than level 6's, under the bar against the level actually
+    # adopted. Held at 6, proving the comparison used level 6, not level 1.
+    level6_adopted = GzipRow(level=6, single_ms=100.0, out_bytes=900_000, concurrent_ms=150.0)
+    level9_beats_1_not_6 = GzipRow(level=9, single_ms=200.0, out_bytes=850_000, concurrent_ms=300.0)
+    assert select_gzip_level([level1, level6_adopted, level9_beats_1_not_6]) == 6
+
+
+def test_peak_rss_reads_bytes_on_macos_and_kibibytes_on_linux() -> None:
+    """`ru_maxrss` is bytes on Darwin (macOS) and kibibytes on every other platform this
+    project runs on (Linux, in the image) -- the same split L24's own reading needs
+    a per-platform unit to be believed at all."""
+    assert maxrss_bytes(1000, "Darwin") == 1000
+    assert maxrss_bytes(1000, "Linux") == 1024000
