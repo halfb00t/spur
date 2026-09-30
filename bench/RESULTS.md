@@ -1490,10 +1490,59 @@ vs. 4.85 s, tip chamfer 14.85 s vs. 14.87 s, holes 11.74 s vs. 11.79 s, spokes 1
 18.52 s, honeycomb 8.64 s vs. 8.65 s) -- offered only as a same-host sanity check on the
 runner, not as a decisive composed-vs-baseline comparison.
 
+Decisive as of Run 4 (D-02 superseded for this gate; see `### Gate` below). Each
+pattern's worst composed row (module 10, the heaviest bore its rules allow) beside
+the arithmetic total it replaces -- 12-02-PLAN Task 3's own same-host figures, spokes
+18.52 s + tip chamfer 14.87 s = 33.39 s, holes 11.79 s + 14.87 s = 26.66 s, honeycomb
+8.65 s + 14.87 s = 23.52 s; measured numbers only, the difference stated, not
+explained away:
+
+| Pattern | Run 4's worst composed row | Measured (s) | Arithmetic total replaced (s) | Difference |
+|---|---|---|---|---|
+| Spokes | module=10, keyed bore, tip_chamfer=3, recess_sides=both | 32.03 | 33.39 | -1.36 |
+| Holes | module=1.75, keyed bore, tip_chamfer=1.75, recess_sides=both | 25.05 | 26.66 | -1.61 |
+| Honeycomb | module=1.75, hex bore, tip_chamfer=1.75, recess_sides=both | 27.49 | 23.52 | +3.97 |
+
+Every composed row of Run 4 beside the same-host baselines it stacks (Run 4's own
+columns 13-18: hex bore chamfer only 5.09 s, keyway bore chamfer only 4.80 s, tip
+chamfer module=1.75/tip_chamfer=1.75 14.92 s, holes module=1.75 11.73 s, spokes
+module=10 18.36 s, honeycomb module=1.75/hex_wall=0.4 8.66 s -- no same-host baseline
+was measured for `tip_chamfer=3` or `hex_wall=5` alone, so a module=10 composed row is
+compared against the nearest available baseline rather than a matched one, noted per
+row; sums are naive arithmetic, not a prediction -- stacking features is not linearly
+additive, and every composed row measures well under its naive sum):
+
+| Composed row (Run 4) | Measured (s) | Baselines summed (s) | Difference (s) |
+|---|---|---|---|
+| module=1.75 hex spokes tip=1.75 | 31.46 | 5.09 + 14.92 + 18.36 (spokes baseline is module=10) = 38.37 | -6.91 |
+| module=1.75 keyed spokes tip=1.75 | 31.53 | 4.80 + 14.92 + 18.36 (spokes baseline is module=10) = 38.08 | -6.55 |
+| module=10 hex spokes tip=3 | 31.52 | 5.09 + 14.92 (chamfer baseline is tip_chamfer=1.75) + 18.36 = 38.37 | -6.85 |
+| module=10 keyed spokes tip=3 | 32.03 | 4.80 + 14.92 (chamfer baseline is tip_chamfer=1.75) + 18.36 = 38.08 | -6.05 |
+| module=1.75 hex holes tip=1.75 | 16.80 | 5.09 + 14.92 + 11.73 = 31.74 | -14.94 |
+| module=1.75 keyed holes tip=1.75 | 25.05 | 4.80 + 14.92 + 11.73 = 31.45 | -6.40 |
+| module=10 hex holes tip=3 | 15.65 | 5.09 + 14.92 (chamfer baseline is tip_chamfer=1.75) + 11.73 = 31.74 | -16.09 |
+| module=10 keyed holes tip=3 | 16.16 | 4.80 + 14.92 (chamfer baseline is tip_chamfer=1.75) + 11.73 = 31.45 | -15.29 |
+| module=1.75 hex honeycomb tip=1.75 | 27.49 | 5.09 + 14.92 + 8.66 = 28.67 | -1.18 |
+| module=1.75 keyed honeycomb tip=1.75 | 24.09 | 4.80 + 14.92 + 8.66 = 28.38 | -4.29 |
+| module=10 hex honeycomb tip=3 | 21.97 | 5.09 + 14.92 (chamfer baseline is tip_chamfer=1.75) + 8.66 (honeycomb baseline is hex_wall=0.4) = 28.67 | -6.70 |
+| module=10 keyed honeycomb tip=3 | 22.23 | 4.80 + 14.92 (chamfer baseline is tip_chamfer=1.75) + 8.66 (honeycomb baseline is hex_wall=0.4) = 28.38 | -6.15 |
+
 ### SPUR_BUILD_TIMEOUT margin
 
 No decisive run: no margin figure against `SPUR_BUILD_TIMEOUT`'s 30 s default, and no
 factor against the ~4x the default was sized for, is computed from these readings (D-02).
+
+Decisive as of Run 4 (D-02 superseded for this gate; see `### Gate` below).
+`SPUR_BUILD_TIMEOUT`'s 30 s default was set at about 4x the 7.39 s worst build on
+record (the "### `SPUR_BUILD_TIMEOUT`" section above). Four rows read over that 30 s
+timeout on their own in Run 4 -- the same four spoke rows named in `### Gate` below,
+31.46-32.03 s, 1.05-1.07x the timeout, leaving no margin. Among the rows that build
+inside 30 s, the heaviest is the module=1.75 hex-bore honeycomb row at 27.49 s, leaving
+1.09x -- the lightest margin of any in-budget row. This sweep builds one gear at a
+time, so behaviour under concurrent builds is not measured here either (D-04; the
+ten-concurrent question for a composed worst row re-homes to
+docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md when the tip-chamfer
+debt is resolved).
 
 ### Gate
 
@@ -1507,6 +1556,69 @@ spoke_count=40 ... tip_chamfer=1.75` (31.30/31.16 s), the same row keyed (31.56/
 keyed (31.98/31.90 s). Whether that consistency, or a genuinely quiet run, changes the
 verdict is 12-03's checkpoint to decide.
 
+Superseded (D-02, this gate only): the human reviewed all four runs on record --
+at-start loads 12.66, 7.04, 2.74 and 1.54, an eightfold spread -- and found the same
+four spoke rows over budget in every one, at times within a roughly 2 s band across all
+four (31.16-33.32 s) that did not track the load figure (Run 3, load 2.74, read
+*higher* than Run 1, load 12.66, on three of the four rows; Run 4, load 1.54 -- the
+closest of the four to the 1.5 bar -- read 31.46-32.03 s, inside that same band).
+D-02's purpose -- that no bound moves on a load-inflated reading -- is met by that
+four-run agreement on this sweep, so the human recorded (12-03-SUMMARY.md, Task 2) that
+this gate rests on Run 4 as its reference run rather than waiting for a fifth.
+
+Decisive (Run 4): four rows read over `SPUR_BUILD_TIMEOUT` (30 s), all
+`spoke_count=40` composed rows, both moduli, hex and keyed bore alike, each stacked
+with the tip chamfer at its cap and both recesses:
+
+- `teeth=200 module=1.75 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both` -- 31.46 s (build 30.59 s, fine STL 0.77 s, STEP 0.87 s)
+- `teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both` -- 31.53 s (build 30.66 s, fine STL 0.78 s, STEP 0.88 s)
+- `teeth=200 module=10 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both` -- 31.52 s (build 30.58 s, fine STL 0.94 s, STEP 0.88 s)
+- `teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both` -- 32.03 s (build 31.06 s, fine STL 0.96 s, STEP 0.88 s) -- the heaviest, D-03's probe target
+
 ### Gate probe
 
 No decisive run: no probe (D-02).
+
+Superseding D-02 for this gate (see `### Gate` above), Run 4 is the reference run and
+its heaviest row -- `module=10` keyed-bore spokes, `tip_chamfer=3`, 32.03 s -- is
+probed for D-03's first offer. A count that fits the heaviest row fits the pattern's
+other three over-budget rows (all lighter in Run 4: 31.46-31.53 s at module=1.75,
+31.52 s at module=10 hex, against the keyed module=10 row's 32.03 s), so only that one
+row is probed, per Task 1's text ("that pattern's worst over-budget composed row").
+Holes and honeycomb rows are inside 30 s in every run and are not probed.
+
+Probed per Task 1's step sizes (down by 5, then up by 1) in a one-row scratch sweep
+(session scratchpad, not committed), one gear at a time, on the same host. The
+1-minute figure was polled every 30 s for the plan's five-minute cap starting at
+08:46:12Z, ranged 2.84-6.31 without settling under 2.5, and the probe was launched
+once the cap expired, at a 1-minute reading of 2.48 (08:51:15Z) -- the closest the
+wait got. Each row's own load reading (`sysctl -n vm.loadavg` immediately before
+launch, then the runner's own "Load averages at start" line, taken a few seconds
+later) is recorded below; the host's load climbed steadily across the probe (2.40 to
+29.51) for reasons outside this session -- other local processes were already running
+concurrently on this shared machine (`ps aux` during the probe showed two other AI
+agent sessions and a system indexing process at high CPU) -- consistent with this
+gate's own load-independence finding: build time did not track the load figure here
+either (28.06-30.60 s across a load spread from 2.40 to 29.51, over 12x).
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `083b312`
+- Sweep: one-row scratch sweep (session scratchpad), the composed.json module=10 keyed-bore
+  spokes row (`teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4
+  spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both`)
+  with `spoke_count` varied
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| spoke_count | sysctl reading before launch | Load averages at start (runner) | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|---|---|
+| 35 | 2.40, 3.73, 4.25 (08:51:24Z) | 2.40, 3.73, 4.25 | 29.66 | 0.95 | 0.87 | 30.60 | **NO** | 8135384 | 162706 |
+| 30 | 14.74, 6.83, 5.37 (08:52:02Z) | 14.28, 6.86, 5.39 | 28.06 | 0.88 | 0.81 | 28.95 | yes | 7719384 | 154386 |
+| 31 | 29.24, 12.09, 7.40 (08:52:42Z) | 27.22, 11.96, 7.38 | 28.44 | 0.87 | 0.81 | 29.32 | yes | 7803384 | 156066 |
+| 32 | 32.00, 16.01, 9.13 (08:53:27Z) | 29.51, 15.76, 9.08 | 28.51 | 0.90 | 0.82 | 29.41 | yes | 7886984 | 157738 |
+| 33 | 21.15, 15.14, 9.09 (08:54:04Z) | 19.62, 14.92, 9.05 | 29.21 | 0.90 | 0.83 | 30.11 | **NO** | 7970184 | 159402 |
+
+Offer (D-03 first offer): the largest `spoke_count` measured inside 30 s is **32**
+(29.41 s of 30 s) -- the row at 33 reads over budget again (30.11 s). `lower-le:
+spoke_count 32`.
