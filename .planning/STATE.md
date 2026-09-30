@@ -3,12 +3,11 @@ gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
 current_phase: 12
-status: completed
+status: "Phase 12 shipped — PR #13"
 stopped_at: Phase 12 complete — all phases complete
-last_updated: "2026-09-30T16:47:41.821Z"
+last_updated: "2026-09-30T16:55:48.073Z"
 last_activity: 2026-09-30
-last_activity_desc: Phase 12 complete
-state_head: b7d5754957f89247f6aa8c7116a1fe1d22665ae3
+state_head: b8e7825bda203f13919c1fdf1185fbc98f398642
 progress:
   total_phases: 6
   completed_phases: 1
@@ -31,8 +30,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 12
 Plan: Not started
-Status: All phases complete
-Last activity: 2026-09-30 — Phase 12 complete
+Status: Phase 12 shipped — PR #13
+Last activity: 2026-09-30
 
 ## Performance Metrics
 
