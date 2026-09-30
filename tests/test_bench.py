@@ -9,7 +9,13 @@ limit. Also pins the Phase 11 body-cutout sweeps (11-06), re-run at Task 2's gat
 decision (D-18's `le` lowered to 60 holes / 40 spokes): the hole and spoke cross
 products, with only the module-1.75 large-hole row still on a refusal boundary (its
 rim-wall bound is count-independent); the honeycomb cross product, raised to
-`HEX_CELL_CAP` on every row.
+`HEX_CELL_CAP` on every row. Also pins Phase 12's `stl_size()` helper and `report()`'s
+two new fine-STL columns and `**Largest fine STL:**` line (12-02, D-16): a length
+that disagrees with the header's triangle count is refused (never a plausible wrong
+count, L08); an empty sweep is refused rather than printed as a passing table; and the
+composed sweep itself (12-02, D-01), stacking each cutout's heaviest row with the tip
+chamfer at its cap and both recesses on the heaviest bore its hub rule allows, at both
+modules, beside the six single-feature baselines re-run unchanged.
 
 Run as `.venv/bin/python -m pytest tests/test_bench.py -q` **from the repo root** -- the
 `-m` form is what puts the repo root on `sys.path`, which is what makes `import bench`
@@ -23,11 +29,12 @@ from __future__ import annotations
 
 import itertools
 import math
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
-from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep
+from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep, report, stl_size
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
 from spur.calc import HEX_CELL_CAP, hex_cells, profile, tip_chamfer_effective
 from spur.params import GearParams
@@ -77,10 +84,52 @@ def test_the_hex_bore_sweep_is_every_combination_d_11_names() -> None:
 
 def test_a_set_is_inside_the_timeout_until_its_build_plus_slower_export_passes_it() -> None:
     """`SPUR_BUILD_TIMEOUT` wraps one build plus one export -- the slower of the two
-    exports, not both summed. Exactly the timeout is still inside it."""
-    assert Timing("x", 20.0, 10.0, 1.0).inside(30)
-    assert not Timing("x", 20.0, 10.01, 1.0).inside(30)
-    assert not Timing("x", 20.0, 1.0, 10.01).inside(30)
+    exports, not both summed. Exactly the timeout is still inside it. The two trailing
+    integers are the fine-STL byte and triangle counts (D-16) -- 0 here because this
+    test is about the timeout boundary, not the STL size."""
+    assert Timing("x", 20.0, 10.0, 1.0, 0, 0).inside(30)
+    assert not Timing("x", 20.0, 10.01, 1.0, 0, 0).inside(30)
+    assert not Timing("x", 20.0, 1.0, 10.01, 0, 0).inside(30)
+
+
+def test_a_binary_stl_is_sized_by_its_length_and_the_triangle_count_its_header_names() -> None:
+    """`stl_size()` reads the header's own 4-byte triangle count (bytes 80-84,
+    little-endian) rather than walking the facets (RESEARCH.md "Don't Hand-Roll") -- a
+    synthetic 84 + 50 * 2 byte STL with a header that says 2 triangles."""
+    data = bytes(80) + (2).to_bytes(4, "little") + bytes(50 * 2)
+    assert stl_size(data) == (184, 2)
+
+
+def test_an_stl_whose_length_disagrees_with_its_header_is_refused() -> None:
+    """A truncated file -- or an ASCII STL that happens to carry 80 header-like bytes --
+    must never yield a plausible-but-wrong triangle count (L08): the header says 2
+    triangles but the file is one triangle short."""
+    data = bytes(80) + (2).to_bytes(4, "little") + bytes(50)
+    with pytest.raises(ValueError, match="184"):
+        stl_size(data)
+
+
+def test_the_report_names_the_largest_fine_stl_and_breaks_a_tie_by_file_order() -> None:
+    """Two rows tied for the largest fine STL, and tied for the heaviest worst_request:
+    both lines name the first in the list -- `max()`'s documented behaviour (the edge
+    a pinned test, not an assumption). Also pins the two new report columns."""
+    timings = [
+        Timing("a", 1.0, 1.0, 1.0, 1000, 10),
+        Timing("b", 1.0, 1.0, 1.0, 1000, 10),  # ties "a" on both worst_request and stl_bytes
+        Timing("c", 0.5, 0.5, 0.5, 500, 5),
+    ]
+    text = report(Path("x.json"), timings, 30)
+    assert "| Fine STL (bytes) | Triangles |" in text
+    assert "| a | 1.00 | 1.00 | 1.00 | 2.00 | yes | 1000 | 10 |" in text
+    assert "**Heaviest:** a -- 2.00 s of 30 s." in text
+    assert "**Largest fine STL:** a -- 1000 bytes, 10 triangles." in text
+
+
+def test_an_empty_sweep_is_refused_rather_than_reported() -> None:
+    """An empty sweep is refused loudly, not printed as an empty table that reads as a
+    pass."""
+    with pytest.raises(ValueError, match="empty"):
+        report(Path("empty.json"), [], 30)
 
 
 def test_the_keyway_bore_sweep_is_every_combination_with_the_largest_keyway_each_rule_allows() -> None:  # noqa: E501
