@@ -349,14 +349,16 @@ closing out v0.2.
      appears in `/api/schema`; `spur info`/`spur export` print the same numbers and errors
      as the API for every new feature.
   3. `bench/RESULTS.md` records build time, plus fine-quality STL and STEP export time
-     inside the admission slot, for the heaviest combined configuration (recess + hex
-     pattern, per the milestone's Success Metric 2) and for each individual feature, all
-     inside `SPUR_BUILD_TIMEOUT=30s`.
+     inside the admission slot, for the heaviest combined configuration the composed
+     sweep measures — each cutout pattern stacked with the tip chamfer and a recess on
+     the heaviest bore its rules allow, at module 1.75 and 10 — and for each individual
+     feature, all inside `SPUR_BUILD_TIMEOUT` (12-CONTEXT.md D-01/D-03/D-06).
   4. L19's gzip-level table and L24's mesh-copy timing are re-measured against the heaviest
      v0.2 face topology, not assumed to still hold from v0.1's topology (Pitfall 8).
   5. Phase 7's regression fixture passes one final time across the whole matrix — every
      pre-v0.2 parameter set still yields identical `DerivedDimensions` and an identical
-     export after all of v0.2.
+     solid (volume, bounding box, face and edge counts) after all of v0.2; export bytes
+     are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
 **Plans**: 9 plans
