@@ -7,13 +7,14 @@ from typing import get_args
 
 import cadquery as cq
 import pytest
+from composition import BORE_REFUSALS, CUTOUT_REFUSALS
 from fastapi.testclient import TestClient
 
 import spur.app
 import spur.model
 from spur import cli
 from spur.app import InfoQuery
-from spur.calc import DerivedDimensions
+from spur.calc import DerivedDimensions, check
 from spur.params import GearParams
 
 # The README's composed link (D-14): every v0.2 family on one 19-tooth gear -- a keyed
@@ -392,6 +393,47 @@ def test_a_honeycomb_wall_under_min_wall_exits_2_and_names_it(
     err = capsys.readouterr().err
     assert "The honeycomb wall (0.35 mm) is thinner than 0.4 mm" in err
     assert "increase hex_wall" in err
+
+
+_ALL_REFUSALS: dict[str, dict[str, object]] = {**BORE_REFUSALS, **CUTOUT_REFUSALS}
+
+
+@pytest.mark.parametrize(("refusal_id", "refusal"), list(_ALL_REFUSALS.items()),
+                         ids=list(_ALL_REFUSALS))
+def test_every_refusal_reads_the_same_on_the_api_and_the_cli(
+        refusal_id: str, refusal: dict[str, object],
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-08 (one API row and one CLI row per refusal) and D-11: each of the 23 locked
+    refusals (`tests/composition.py`'s `BORE_REFUSALS`/`CUTOUT_REFUSALS`), composed with
+    the tip chamfer and a single-sided recess, gives the identical sentence on the
+    API's 422 and the CLI's exit 2.
+
+    `tests/composition.py`'s `BORE_REFUSAL_FAMILIES`/`CUTOUT_REFUSAL_FAMILIES` list
+    "tip"/`TIPS["on"]` and "recess-top"/`RECESSES["top"]` (never together) among the
+    families 12-05's own calc-level test already proves leave a refusal's sentence and
+    fields unchanged; neither appears in that test's `TWO_REFUSALS` or `DATUM_ROWS`
+    tables, so composing both together, as this test does, carries no extra risk of a
+    second refusal or a moved datum. `sentence`/`fields` are calc's own, read from
+    `check()` on the refusal alone -- a differential test of an invariant (12-05's
+    shape), not an oracle derived from the code under test (L08).
+    """
+    params: dict[str, object] = {"tip_chamfer": 1.75, "recess_sides": "top", **refusal}
+    alone = check(GearParams.model_construct(**refusal))  # type: ignore[arg-type]
+    sentence = " ".join(s for s, _ in alone)
+    fields = sorted({f for _, fs in alone for f in fs})
+
+    client = TestClient(spur.app.app)
+    r = client.get("/api/info", params=params)
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["msg"] == sentence
+    assert detail["ctx"]["fields"] == fields
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", *_flags(params)])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err.strip()
+    assert err == f"error: {sentence}"
 
 
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
