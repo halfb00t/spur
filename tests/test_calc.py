@@ -1,12 +1,17 @@
 import itertools
 import math
+import re
 
 import pytest
 from composition import (
     ALWAYS,
     BORE_FIELDS,
+    BORE_REFUSAL_FAMILIES,
+    BORE_REFUSALS,
     BORES,
     CUTOUT_FIELDS,
+    CUTOUT_REFUSAL_FAMILIES,
+    CUTOUT_REFUSALS,
     CUTOUTS,
     HEX_IGNORES_ROUND,
     RECESS_FIELDS,
@@ -27,6 +32,7 @@ from spur.calc import (
     cell_count_floor,
     cells_within,
     centre_distance,
+    check,
     cutout_walls,
     derive,
     hex_across_flats,
@@ -1358,3 +1364,101 @@ def test_every_bore_cutout_recess_and_tip_combination_derives_its_own_numbers(
 
     if bore == "keyed" and cutout == "spokes":
         assert d.cutout_hub_wall == pytest.approx(0.421)
+
+
+def _masked(sentence: str) -> str:
+    """Every number replaced with `#`, so two sentences that differ only in a quoted
+    datum compare equal (D-08's six datum rows)."""
+    return re.sub(r"\d+(?:\.\d+)?", "#", sentence)
+
+
+def _unvalidated(kw: dict[str, object]) -> GearParams:
+    """`model_construct` fills every omitted field with its default and skips
+    `_feasible` (12-05-PLAN.md `<interfaces>`) -- the only way to read `check()` on a
+    parameter set the model itself would refuse to validate. Unpacking a plain
+    `dict[str, object]` into pydantic's per-field-typed generated signature cannot be
+    checked statically without `Any` (L21), hence the one ignore, kept to this single
+    call site."""
+    return GearParams.model_construct(**kw)  # type: ignore[arg-type]
+
+
+# D-08's 18 two-refusal rows: the switched-on family's own rule adds a second entry to
+# check()'s list, in its own append order (root/tip/gap, then keyway, then bore, then
+# cutout -- src/spur/calc.py's `check()`). Measured against check() this session; reads
+# identically to the planning probe in `12-05-PLAN.md <interfaces>`.
+TWO_REFUSALS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "keyway-too-deep-spokes": (("keyway_depth", "keyway_width"), ("hub_d",)),
+    "keyway-too-deep-holes": (("keyway_depth", "keyway_width"), ("hole_circle_d", "hole_d")),
+    "keyway-too-deep-cells": (("keyway_depth", "keyway_width"), ("hex_cell", "hex_wall")),
+    "keyway-into-flat-spokes": (("bore_flat", "keyway_width"), ("hub_d",)),
+    "keyway-too-wide-spokes": (("bore_d", "keyway_width"), ("hub_d",)),
+    "hex-corner-spokes": (("bore_hex",), ("hub_d",)),
+    "hex-corner-holes": (("bore_hex",), ("hole_circle_d", "hole_d")),
+    "hex-corner-cells": (("bore_hex",), ("hex_cell", "hex_wall")),
+    "hex-mouth-spokes": (("bore_chamfer", "bore_hex"), ("hub_d",)),
+    "hex-mouth-holes": (("bore_chamfer", "bore_hex"), ("hole_circle_d", "hole_d")),
+    "hex-mouth-cells": (("bore_chamfer", "bore_hex"), ("hex_cell", "hex_wall")),
+    "round-chamfer-reach-spokes": (("bore_chamfer", "bore_d"), ("hub_d",)),
+    "round-chamfer-reach-holes": (("bore_chamfer", "bore_d"), ("hole_circle_d", "hole_d")),
+    "round-chamfer-reach-cells": (("bore_chamfer", "bore_d"), ("hex_cell", "hex_wall")),
+    "spoke-arm-keyed": (("spoke_width",), ("hub_d",)),
+    "spoke-rim-keyed": (("rim_wall",), ("hub_d",)),
+    "spoke-annulus-keyed": (("hub_d",), ("hub_d", "rim_wall")),
+    "spoke-opening-keyed": (("hub_d",), ("hub_d", "spoke_count", "spoke_width")),
+}
+
+# D-08's six datum rows: the switched-on bore moves the hub datum the cutout refusal's
+# sentence quotes (a keyed or hex bore's mouth sits farther out than the default round
+# bore's), so the fields stay the same but the quoted mm figures differ.
+DATUM_ROWS: frozenset[str] = frozenset({
+    "hole-hub-keyed", "hole-hub-hex", "spoke-hub-keyed", "spoke-hub-hex",
+    "cell-no-fit-keyed", "cell-no-fit-hex",
+})
+
+_REFUSAL_COMPOSITION_ROWS = [
+    (refusal, refusal_kw, family, family_kw)
+    for refusal, refusal_kw in BORE_REFUSALS.items()
+    for family, family_kw in BORE_REFUSAL_FAMILIES.items()
+] + [
+    (refusal, refusal_kw, family, family_kw)
+    for refusal, refusal_kw in CUTOUT_REFUSALS.items()
+    for family, family_kw in CUTOUT_REFUSAL_FAMILIES.items()
+]
+
+
+@pytest.mark.parametrize(
+    ("refusal", "refusal_kw", "family", "family_kw"), _REFUSAL_COMPOSITION_ROWS,
+    ids=[f"{refusal}-{family}" for refusal, _, family, _ in _REFUSAL_COMPOSITION_ROWS])
+def test_every_refusal_reads_the_same_with_each_other_family_switched_on(
+        refusal: str, refusal_kw: dict[str, object], family: str,
+        family_kw: dict[str, object]) -> None:
+    """D-08: every one of the 23 locked refusals x each of the 6 other families
+    switched on -- 138 rows (`tests/composition.py`'s `BORE_REFUSALS`/`CUTOUT_REFUSALS`
+    x `BORE_REFUSAL_FAMILIES`/`CUTOUT_REFUSAL_FAMILIES`), merged `{**family,
+    **refusal}` so the refusal's own values always win. `check()` is called both alone
+    and composed -- this is a differential test of an invariant (the refusal reads the
+    same composed as alone), not an oracle derived from the code under test (L08): the
+    "alone" values are `tests/test_calc.py`'s own already-pinned refusal boundaries.
+
+    By default the composed row's field-tuple sequence equals the refusal alone's
+    (114 rows). `TWO_REFUSALS` pins the 18 rows where the switched-on family's own rule
+    fires a second refusal, in `check()`'s own append order (D-08). For every
+    `(sentence, fields)` the refusal alone reads, the composed entry with the same
+    `fields` reads the identical sentence -- except `DATUM_ROWS`' six rows, where the
+    switched-on bore moves the hub datum the sentence quotes and only the digits
+    (masked by `_masked`) may differ.
+    """
+    row_id = f"{refusal}-{family}"
+    alone = check(_unvalidated(refusal_kw))
+    composed = check(_unvalidated({**family_kw, **refusal_kw}))
+
+    want_fields = TWO_REFUSALS.get(row_id, tuple(fields for _, fields in alone))
+    assert tuple(fields for _, fields in composed) == want_fields
+
+    composed_by_fields = {fields: sentence for sentence, fields in composed}
+    for sentence, fields in alone:
+        composed_sentence = composed_by_fields[fields]
+        if row_id in DATUM_ROWS:
+            assert _masked(composed_sentence) == _masked(sentence)
+        else:
+            assert composed_sentence == sentence
