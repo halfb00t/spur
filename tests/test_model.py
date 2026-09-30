@@ -1141,6 +1141,37 @@ def _honeycomb_farthest_vertex_angle(p: GearParams, rf: float) -> float:
     return math.atan2(farthest[1], farthest[0])
 
 
+def _honeycomb_nearest_point_angle(p: GearParams, rf: float) -> float:
+    """The angle (radians) of the point nearest the axis on any honeycomb-cell edge --
+    a probe location, not a proof. calc._hex_reach measures the same nearest distance
+    per cell (the foot of the perpendicular from the axis, clamped to the edge, via
+    calc._point_segment_distance) but only returns the distance; this walks the same
+    six edges (the vertex layout _honeycomb_farthest_vertex_angle above uses: flats
+    face +-X) and keeps the point itself, so the probe always lands on the cell whose
+    flat or corner is actually nearest -- which is not on +X for the hex or keyed bore
+    (planning: hub angle 0 failed there, since neither bore centres a cell on +X).
+    """
+    size, cells = hex_cells(p, rf)
+    r = size / math.sqrt(3)
+    best_dist = math.inf
+    best_point = (0.0, 0.0)
+    for cx, cy in cells:
+        verts = [(cx + r * math.cos(math.radians(30 + 60 * i)),
+                 cy + r * math.sin(math.radians(30 + 60 * i))) for i in range(6)]
+        for i in range(6):
+            ax, ay = verts[i]
+            bx, by = verts[(i + 1) % 6]
+            dx, dy = bx - ax, by - ay
+            length_sq = dx * dx + dy * dy
+            t = (0.0 if length_sq == 0
+                else max(0.0, min(1.0, -(ax * dx + ay * dy) / length_sq)))
+            px, py = ax + t * dx, ay + t * dy
+            dist = math.hypot(px, py)
+            if dist < best_dist:
+                best_dist, best_point = dist, (px, py)
+    return math.atan2(best_point[1], best_point[0])
+
+
 def _assert_the_cutout_is_what_derive_prints(
         cut: cq.Solid, plain: cq.Solid, p: GearParams, p0: GearParams, *,
         d_faces: collections.Counter[str], d_edges: int, d_volume: float,
@@ -1410,8 +1441,35 @@ _build_reference = functools.cache(_build_checked)
 
 
 @pytest.mark.parametrize(("bore", "cutout", "d_faces", "d_edges", "d_volume"), [
+    # Every delta below is measured on the pinned kernel this session and matches the
+    # planning probe in 12-06-PLAN.md <interfaces> exactly -- no difference to record.
+    # A cutout's own delta is bore-agnostic (d-flat and round read identical deltas):
+    # it is a difference against the SAME bore's own no-cutout reference, so whatever
+    # the bore itself contributes to face/edge/volume cancels out of the subtraction.
+    pytest.param("d-flat", "holes", collections.Counter({"CYLINDER": 6}),
+                 18, 263.893783, id="d-flat-holes"),
+    pytest.param("d-flat", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
+                 144, 1567.635231, id="d-flat-spokes"),
+    pytest.param("d-flat", "cells", collections.Counter({"PLANE": 108, "CYLINDER": 10}),
+                 390, 491.093432, id="d-flat-cells"),
+    pytest.param("round", "holes", collections.Counter({"CYLINDER": 6}),
+                 18, 263.893783, id="round-holes"),
+    pytest.param("round", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
+                 144, 1567.635231, id="round-spokes"),
+    pytest.param("round", "cells", collections.Counter({"PLANE": 108, "CYLINDER": 10}),
+                 390, 491.093432, id="round-cells"),
+    pytest.param("hex", "holes", collections.Counter({"CYLINDER": 16}),
+                 84, 263.92552, id="hex-holes"),
+    pytest.param("hex", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
+                 144, 1708.871909, id="hex-spokes"),
+    pytest.param("hex", "cells", collections.Counter({"PLANE": 144, "CYLINDER": 36}),
+                 648, 686.855148, id="hex-cells"),
+    pytest.param("keyed", "holes", collections.Counter({"CYLINDER": 6}),
+                 18, 263.893783, id="keyed-holes"),
     pytest.param("keyed", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
                  144, 1547.065402, id="keyed-spokes"),
+    pytest.param("keyed", "cells", collections.Counter({"PLANE": 72}),
+                 216, 327.357603, id="keyed-cells"),
 ])
 def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore(
         bore: str, cutout: str, d_faces: collections.Counter[str],
@@ -1425,10 +1483,10 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
     is measured on the pinned kernel and pinned as a literal -- no closed form is
     claimed after an arbitrary boolean.
 
-    This row (keyed round bore + spokes) sits at the phase's own tightest adjacency:
-    SPOKES' 13.2 mm hub wall clears the keyed bore's floor-corner mouth (6.179 mm) by
-    only 0.021 mm above MIN_WALL, so a single valid solid here is the composition pass's
-    own edge case, not the easy middle of the range.
+    The keyed-spokes row sits at the phase's own tightest adjacency: SPOKES' 13.2 mm
+    hub wall clears the keyed bore's floor-corner mouth (6.179 mm) by only 0.021 mm
+    above MIN_WALL, so a single valid solid there is the composition pass's own edge
+    case, not the easy middle of the range.
     """
     kw = {**TIPPED, **COMPOSED_BORES[bore], **COMPOSED_CUTOUTS[cutout]}
     p = GearParams.model_validate(kw)
@@ -1440,11 +1498,64 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
 
     if cutout == "holes":
         hub_angle = rim_angle = 0.0
-    else:  # spokes -- the middle of sector 0 (arm 0 itself sits on +X, 11-08's own row)
+    elif cutout == "spokes":
+        # The middle of sector 0 (arm 0 itself sits on +X, 11-08's own row).
         hub_angle = rim_angle = math.pi / 4
+    else:  # cells -- the nearest cell is not on +X for the hex or keyed bore, so the
+        # hub probe reads the nearest point of the nearest cell, never a fixed angle.
+        pr = profile(p)
+        hub_angle = _honeycomb_nearest_point_angle(p, pr.rf)
+        rim_angle = _honeycomb_farthest_vertex_angle(p, pr.rf)
 
     _assert_the_cutout_is_what_derive_prints(
         cut, _build_reference(p_no_cut), p, p_no_cut,
+        d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
+        hub_angle=hub_angle, rim_angle=rim_angle)
+
+
+@pytest.mark.parametrize(("cutout", "d_faces", "d_edges", "d_volume", "torus"), [
+    # Measured on the pinned kernel this session, matching 12-06-PLAN.md <interfaces>
+    # exactly -- no difference to record. d_faces/d_edges/d_volume are the cutout's own
+    # delta against the same-recess no-cutout reference; torus is the finished solid's
+    # own TORUS face count (_assert_the_recess_fillet_survives's own proof, 11-08).
+    pytest.param("holes", collections.Counter({"CYLINDER": 6}), 18, 414.69023, 2,
+                 id="holes"),
+    pytest.param("spokes", collections.Counter({"PLANE": 11, "CYLINDER": 28, "TORUS": 4}),
+                 144, 2184.523725, 6, id="spokes"),
+    pytest.param("cells", collections.Counter({"PLANE": 108, "CYLINDER": 5, "TORUS": 5}),
+                 409, 772.209087, 7, id="cells"),
+])
+def test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess(
+        cutout: str, d_faces: collections.Counter[str], d_edges: int,
+        d_volume: float, torus: int) -> None:
+    """D-09: the single-sided pairs no existing matrix builds (11-08's own matrix at
+    test_the_recess_floor_fillet_survives_every_cutout_on_every_bore is both recesses
+    only). Each cutout composed with a top-only recess, on the default bore, default
+    bore chamfer (0.4 mm) and default recess fillet (0.5 mm), no tip chamfer.
+    _assert_the_recess_fillet_survives (11-08) proves the floor fillet still rounds
+    away every sharp corner the cutout leaves and reads the pinned kernel's own TORUS
+    count on the finished solid; _assert_the_cutout_is_what_derive_prints (10-03/11-08)
+    proves the cutout's own delta against the same-recess no-cutout reference. Every
+    count below is measured on the pinned kernel and pinned as a literal -- no closed
+    form after an arbitrary boolean.
+    """
+    p0 = GearParams(recess_sides="top")
+    p = GearParams.model_validate({**COMPOSED_CUTOUTS[cutout], "recess_sides": "top"})
+    cut = _build_checked(p)
+
+    _assert_the_recess_fillet_survives(cut, p, torus)
+
+    if cutout == "holes":
+        hub_angle = rim_angle = 0.0
+    elif cutout == "spokes":
+        hub_angle = rim_angle = math.pi / 4
+    else:  # cells
+        pr = profile(p)
+        hub_angle = _honeycomb_nearest_point_angle(p, pr.rf)
+        rim_angle = _honeycomb_farthest_vertex_angle(p, pr.rf)
+
+    _assert_the_cutout_is_what_derive_prints(
+        cut, _build_reference(p0), p, p0,
         d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
         hub_angle=hub_angle, rim_angle=rim_angle)
 
