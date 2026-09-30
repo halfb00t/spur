@@ -361,7 +361,7 @@ closing out v0.2.
      are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: 9 plans
+**Plans**: 0/9 plans executed
 
 Plans:
 **Wave 1**
@@ -425,4 +425,4 @@ Plans:
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 0/? | Not started | - |
+| 12. Composition Pass | v0.2 | 0/9 | Planned    |  |
