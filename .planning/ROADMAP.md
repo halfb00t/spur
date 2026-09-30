@@ -361,7 +361,7 @@ closing out v0.2.
      are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: 5/9 plans executed
+**Plans**: 6/9 plans executed
 
 Plans:
 **Wave 1**
@@ -386,7 +386,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 12-06-PLAN.md — Kernel rows: the tip chamfer with each cutout on each bore, and a single-sided recess with each cutout, through the features' own proof helpers (wave 6)
+- [x] 12-06-PLAN.md — Kernel rows: the tip chamfer with each cutout on each bore, and a single-sided recess with each cutout, through the features' own proof helpers (wave 6)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -425,4 +425,4 @@ Plans:
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 5/9 | In Progress|  |
+| 12. Composition Pass | v0.2 | 6/9 | In Progress|  |

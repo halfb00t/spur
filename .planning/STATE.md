@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 12
 current_phase_name: Composition Pass
 status: executing
-stopped_at: Completed 12-05-PLAN.md
-last_updated: "2026-09-30T11:17:18.117Z"
+stopped_at: Completed 12-06-PLAN.md
+last_updated: "2026-09-30T11:51:25.715Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 12 execution started
-state_head: 9e2960d6f513dd67b758814d65dd9d7c37127cf0
+state_head: ae53fead4efb66d365380f6651961e67913611e5
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 34
-  completed_plans: 30
+  completed_plans: 31
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 12 (Composition Pass) — EXECUTING
-Plan: 6 of 9
+Plan: 7 of 9
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 12 execution started
 
@@ -160,6 +160,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 12 P03 | ~40 min (continuation session, Task 3 only) | 3 tasks | 12 files |
 | Phase 12 P04 | ~30min | 2 tasks | 5 files |
 | Phase 12 P05 | ~45min | 2 tasks | 2 files |
+| Phase 12 P06 | ~23min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -240,6 +241,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 12]: [Phase 12] 12-03: Both build-timeout debts this sweep triggered (tip-chamfer margin, spoke-le arithmetic total) resolved with the composed row's measured number and the decision, moved to docs/tech_debt/resolved/ (89304e2); the tip-chamfer debt's own concurrent-load question re-homed, not dropped, into docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md's trigger (D-04).
 - [Phase 12]: D-16's row confirmed by the number across five recorded composed-sweep runs; D-18's rule re-applied on the re-measured table selects level 1 again, _GZIP_LEVEL unchanged; the re-measured table landed as a dated comment addition per 12-01's binding answer (comment + L31), decision_log.md untouched by this plan
 - [Phase 12]: 12-05: D-08's 114/6/18 refusal-composition split re-derived from check() and matched the planning probe exactly, no difference recorded; alone/composed entries matched by fields tuple, not list position (needed for spoke-annulus-keyed/spoke-opening-keyed where the keyed bore's own rule fires first); REFUSAL_HEX uses bore_hex 8, not tier-1's 6, so hub/rim refusals keep firing when composed with a hex bore.
+- [Phase 12]: [Phase 12] 12-06: 15 new kernel-level rows (12 tip-chamfer+cutout+bore, 3 single-sided-recess+cutout) prove D-07 tier 2/D-09 on the pairs no earlier phase built; every measured delta matches the planning probe exactly; a new probe-location helper _honeycomb_nearest_point_angle finds the hub probe on whichever honeycomb cell is actually nearest the axis. The 15 rows measured 30.66-30.73s of pytest time, over the plan's own ~25s advisory share and close to D-10's phase-wide 30s ceiling before 12-07/12-08's own tests land -- recorded honestly for 12-09's gate.
 
 ### Pending Todos
 
@@ -341,8 +343,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T11:17:18.067Z
-Stopped at: Completed 12-05-PLAN.md
+Last session: 2026-09-30T11:51:25.665Z
+Stopped at: Completed 12-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
