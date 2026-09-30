@@ -1421,6 +1421,65 @@ again, each 0.5-1.3 s worse than its Run 1/Run 2 counterpart (32.14-33.32 s here
 31.16-31.98 s in Runs 1-2) -- consistent with, not contradicted by, the heavier host load
 this run measured at its genuine start.
 
+### Run 4 (load 1.54 at start; not decisive)
+
+12-03's Task 2 checkpoint asked for a second quiet re-run (D-02, option `quiet-rerun`
+again) after Run 3 also came in non-decisive; the human stepped away from the machine so
+the host could actually go quiet. Readings taken while waiting for the host to quiet
+before this run (`sysctl -n vm.loadavg`, polled about every 45 s from 07:48:41Z, D-02's
+30-minute budget): load1 fell from 4.31 to **1.46** over about eighteen minutes, dipping
+as low as 1.64 at 08:05:57Z before crossing the 1.5 bar for good at 08:06:42Z UTC, when
+the wait script reported QUIET and the sweep was launched immediately, no second
+pre-check added. By the time the launch pre-check ran nine seconds later (08:06:51Z),
+load1 had already climbed back to 1.50, and by the time `bench/build_time.py`'s own
+`report()` took its genuine at-start reading a few seconds further into Python/CadQuery
+startup, it read **1.54** -- just above D-02's 1.5 bar, illustrating how quickly this
+host's load can drift in the seconds between a shell-level quiet check and the runner's
+own measurement.
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `ea31799`
+- Sweep: `bench/sweeps/composed.json`
+- Load averages at start: 1.54, 2.54, 3.44
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|
+| teeth=200 module=1.75 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 30.59 | 0.77 | 0.87 | 31.46 | **NO** | 7830684 | 156612 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both | 30.66 | 0.78 | 0.88 | 31.53 | **NO** | 7921984 | 158438 |
+| teeth=200 module=10 bore_hex=43.35 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 30.58 | 0.94 | 0.88 | 31.52 | **NO** | 8517584 | 170350 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 31.06 | 0.96 | 0.88 | 32.03 | **NO** | 8573384 | 171466 |
+| teeth=200 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 16.10 | 0.71 | 0.48 | 16.80 | yes | 11279684 | 225592 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both | 21.87 | 3.18 | 0.63 | 25.05 | yes | 14207884 | 284156 |
+| teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.44 | 1.21 | 0.49 | 15.65 | yes | 17306084 | 346120 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both | 14.86 | 1.30 | 0.52 | 16.16 | yes | 16015284 | 320304 |
+| teeth=200 module=1.75 bore_hex=200 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 26.53 | 0.69 | 0.95 | 27.49 | yes | 10723884 | 214476 |
+| teeth=200 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both | 23.11 | 0.74 | 0.98 | 24.09 | yes | 6966084 | 139320 |
+| teeth=200 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.01 | 0.91 | 0.96 | 21.97 | yes | 7859984 | 157198 |
+| teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both | 21.27 | 0.94 | 0.97 | 22.23 | yes | 8210984 | 164218 |
+| teeth=200 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 | 4.46 | 0.63 | 0.42 | 5.09 | yes | 10224284 | 204484 |
+| teeth=200 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 | 4.16 | 0.64 | 0.40 | 4.80 | yes | 10144684 | 202892 |
+| teeth=200 module=1.75 tip_chamfer=1.75 recess_sides=both | 14.20 | 0.72 | 0.48 | 14.92 | yes | 8866484 | 177328 |
+| teeth=200 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both | 8.57 | 3.17 | 0.57 | 11.73 | yes | 14447884 | 288956 |
+| teeth=200 module=10 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both | 17.43 | 0.94 | 0.81 | 18.36 | yes | 8478184 | 169562 |
+| teeth=200 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both | 7.77 | 0.81 | 0.89 | 8.66 | yes | 7206084 | 144120 |
+
+**Heaviest:** teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=40 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both -- 32.03 s of 30 s.
+**Largest fine STL:** teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both -- 17306084 bytes, 346120 triangles.
+
+Run exit code: 1 (`make`'s own wrapper exit: 2), same reading as Runs 1-3.
+
+Not decisive: the script's own 1-minute figure at start (1.54) sits just above D-02's 1.5
+bar -- the closest of the four runs to date, and the only one where a shell-level check
+bracketed the bar on either side of the runner's own reading (1.46 at the QUIET verdict,
+1.50 nine seconds later at the launch pre-check). No `le`, `HEX_CELL_CAP` or
+`SPUR_BUILD_TIMEOUT` decision may rest on this run either (D-02). The same four spoke rows
+read over budget again, this time 31.46-32.03 s -- inside the band of all three earlier
+runs (31.16-33.32 s across Runs 1-3) -- consistent with a genuinely quieter host than
+Run 3's 2.74 but still not a decisive reading.
+
 ### Against the single-feature baselines
 
 No decisive run: no comparison against the single-feature baselines or the Phase 10/11
