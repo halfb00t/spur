@@ -1697,3 +1697,101 @@ gate) measured the module=10 keyed-bore spokes row at 32.03 s of 30 s at `spoke_
 this task's probe (`### Gate probe` above) found 32 the largest count still inside budget
 (29.41 s), 33 over again (30.11 s); the re-run above confirms the whole composed sweep,
 including this same row, now reads inside 30 s at `spoke_count=32` (heaviest 29.42 s).
+
+## Export cost on the heaviest v0.2 topology (Phase 12)
+
+ROADMAP SC4: L19's gzip-level table and L24's mesh-copy cost, re-measured on "the heaviest
+v0.2 face topology" -- the composed-sweep row with the largest measured fine STL (D-16),
+chosen by that number, not by inspection. Every recorded run of the composed sweep
+above (Runs 1-4 and the re-run after the gate) names the same row as its
+`**Largest fine STL:**` line: `teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85
+hole_circle_d=400 tip_chamfer=3 recess_sides=both` -- 17,306,084 bytes, 346,120 triangles,
+about 1.9x the byte size of L19's own v0.1 measurement STL (`teeth=199&quality=fine`,
+9,062,784 bytes). The re-measurement runs through `bench/export_cost.py`, committed
+behind `make bench.export SWEEP=<json> SET="<label>"` (D-17), and applies L19's selection
+rule exactly as written (D-18).
+
+### Quiet-host wait
+
+Per D-02's protocol (12-02/12-03's own gate discipline): `sysctl -n vm.loadavg` polled
+about once a minute, waiting for the 1-minute figure to fall below 1.5, for at most 30
+minutes. Every reading:
+
+| Time (UTC) | Elapsed | load1 | load5 | load15 |
+|---|---|---|---|---|
+| 10:30:18Z | 0s | 4.40 | 4.34 | 4.52 |
+| 10:31:18Z | 60s | 2.93 | 3.95 | 4.36 |
+| 10:32:18Z | 120s | 2.06 | 3.49 | 4.16 |
+| 10:33:18Z | 180s | 2.37 | 3.27 | 4.03 |
+| 10:34:18Z | 240s | 1.57 | 2.89 | 3.83 |
+| 10:35:18Z | 300s | 1.66 | 2.66 | 3.68 |
+| 10:36:18Z | 360s | 1.30 | 2.39 | 3.51 |
+
+Quiet reached at 10:36:18Z UTC (load1 1.30, well within the 30-minute budget). The run was
+launched immediately after, with one final pre-launch check reading 1.35 at 10:36:24Z UTC
+and `make bench.export` itself starting at 10:36:31Z UTC (pre-launch `sysctl` read 1.33 at
+that instant). `bench/export_cost.py`'s own `main()` reads `os.getloadavg()` before any
+building starts, the same discipline `bench/build_time.py`'s `report()` adopted after
+12-03 -- its reading below (1.38) is the genuine at-start figure and the one D-02's <1.5
+bar is judged against: **decisive**.
+
+### `make bench.export` output, verbatim
+
+```
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `64528fb`
+- Set: teeth=200 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both
+- Load averages at start: 1.38, 2.35, 3.47
+
+- Fine STL: 17306084 bytes, 346120 triangles
+
+### gzip level (L19)
+| Level | Single-threaded median (ms) | Output bytes (% of input) | 10-concurrent wall, median of 3 (ms) |
+|---|---|---|---|
+| 1 | 95.3 | 5170722 (29.9%) | 118.2 |
+| 6 | 274.2 | 4785216 (27.7%) | 324.3 |
+| 9 | 1352.1 | 4786073 (27.7%) | 1587.3 |
+
+**L19 selects:** level 1 -- level 6: 7.46% smaller (bar 10%), 2.74x wall (bar 1.5x) -- not adopted; level 9: 7.44% smaller (bar 10%), 13.43x wall (bar 1.5x) -- not adopted
+
+### Mesh copy (L24)
+3 child processes per mode, alternating copy and in-place, one fresh process per run so peak RSS is that run's own reading, never a cumulative maximum carried over from an earlier one.
+| Run | Mode | Export (ms) | Peak RSS (MiB) | Triangles |
+|---|---|---|---|---|
+| 1 | copy | 1244.3 | 1856.5 | 346120 |
+| 1 | in-place | 1181.0 | 1890.8 | 346120 |
+| 2 | copy | 1239.0 | 1770.2 | 346120 |
+| 2 | in-place | 1160.8 | 1896.7 | 346120 |
+| 3 | copy | 1178.2 | 1897.8 | 346120 |
+| 3 | in-place | 1161.0 | 1905.2 | 346120 |
+
+**Copy cost:** +52.9 ms mean export, -56.0 MiB mean peak RSS over in place (mean of 3 each).
+```
+
+Exit code: 0 (every run's triangle count agrees -- copy and in-place produced the same
+mesh content, L24's invariant held).
+
+### Against the v0.1 numbers
+
+**Gzip (L19):** the rule reads the same verdict on this 1.9x-larger input as it did on
+L19's own STL -- level 1 wins both comparisons. Level 6 over level 1 is 7.46% smaller here
+against 8.7% on L19's STL; level 9 over level 1 is 7.44% smaller here against 8.66% there
+-- both still short of the 10% bar, and both wall ratios (2.74x and 13.43x here, against
+2.67x and 12.4x there) stay in the same range. `_GZIP_LEVEL` is unchanged; `src/spur/app.py`
+carries the new table as a dated addition above the existing one (D-18: "if not, L19 is
+annotated with the new row"; 12-01-SUMMARY.md's binding answer: "comment + L31" -- the
+comment is this addition, L31 is 12-09's).
+
+**Mesh copy (L24):** L24's own reading, a 200-tooth fine export (9,086,484-byte STL, a
+busy host, mean of 3): +1.4 to +17.6 ms per export, +3.2 to +7.7 MiB peak RSS. This
+run's reading, on the 346,120-triangle heaviest-topology STL, a quiet host: +52.9 ms mean
+export (outside L24's range -- consistent with a larger mesh costing proportionally more
+to copy) and -56.0 MiB mean peak RSS (outside L24's range on the other side -- each
+process here peaks around 1.8-1.9 GiB, so a few-MiB copy/in-place difference is well
+inside ordinary allocator noise at that scale, and this run's noise happened to land
+negative). Recorded exactly as measured (L08), not adjusted toward L24's range. Per D-18,
+L24's cost is recorded only -- the copy in `model._write_export` is a correctness decision
+(a cached solid never carries a mesh, L24), not a cost trade, and stays regardless of this
+reading.
