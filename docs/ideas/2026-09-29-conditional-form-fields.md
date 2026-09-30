@@ -28,3 +28,19 @@ concern; the API and CLI already say so in `warnings`.
 Weigh at Phase 12's UI pass, against the whole v0.2 field set (including the bore-shape
 selector idea, `docs/ideas/2026-09-27-bore-shape-selector-in-the-web-form.md`, which
 raises the same "several fields' relevance depends on another field" question).
+
+## Judged at Phase 12 (2026-09-30)
+
+Verdict: not taken; 08 D-09 stands (the form is generated from `/api/schema` and nothing
+else).
+
+Reason: a proof-and-measurement phase must not ship the first bore-specific (or
+field-relation) logic in `app.js` with no UI test; the ignored-field warnings are the
+current, honest signal.
+
+New trigger: revisit when a browser test exists, or a user reports the ignored-field
+warnings as insufficient.
+
+If taken, the schema-driven route is a `json_schema_extra` key on the model (on the order
+of `enabled_when`), not relations hard-coded in `app.js`, superseding 08 D-09 with a new
+`Lxx`.

@@ -27,3 +27,13 @@ single `app.js`. The first decision is not which framework but whether a headles
 belongs in `make verify` at all — it would make the gate slower and need Node at test
 time, which the runtime deliberately does not (L11). A cheaper first step: assert the
 schema→form contract more strictly from Python.
+
+## Phase 12 (2026-09-30)
+
+12-07 took this file's own "cheaper first step" — asserting the schema→form contract more
+strictly from Python — in
+`tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code`
+(D-11, D-14). The cost question (whether a headless browser belongs in `make verify` at
+all) stays open.
+
+New trigger: revisit when either UI idea above is taken.

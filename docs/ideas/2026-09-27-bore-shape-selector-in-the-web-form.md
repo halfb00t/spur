@@ -44,3 +44,18 @@ load and still sends the flat fields (the API, CLI and URL contract unchanged), 
 08 D-09 with a new `Lxx` and accepting the first bore-specific logic in `app.js`. A
 model-level `bore_type` field is the schema-driven way to get a select but needs an L05
 story for every existing link (aliases or a breaking change) and would be its own phase.
+
+## Judged at Phase 12 (2026-09-30)
+
+Verdict: not taken; 08 D-09 stands (the form is generated from `/api/schema` and nothing
+else).
+
+Reason: a proof-and-measurement phase must not ship the first bore-specific field-relation
+logic in `app.js` with no UI test; the ignored-field warnings are the current, honest
+signal.
+
+New trigger: revisit when a browser test exists, or a user reports the ignored-field
+warnings as insufficient.
+
+The keyway is a modifier of round and D-flat, not a fifth shape, so a selector is
+four-plus-one shapes — why it is the largest of the deferred UI changes.
