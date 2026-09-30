@@ -1,8 +1,10 @@
 import collections
+import functools
 import math
 import struct
 from collections.abc import Iterator, Sequence
 from pathlib import Path
+from typing import cast
 
 import cadquery as cq
 import pytest
@@ -1379,6 +1381,72 @@ def test_the_fillet_survival_proof_fails_when_the_recess_fillet_is_skipped(
     cut = _build_checked(p)
     with pytest.raises(AssertionError):
         _assert_the_recess_fillet_survives(cut, p, torus)
+
+
+# --- Composition pass (12-06-PLAN.md): the tier-2 pairs no earlier test builds ---------
+
+TIPPED = {"bore_chamfer": 0, "recess_fillet": 0, "tip_chamfer": 1.75}
+# 10-03's proof preconditions (sharp bore-rim and groove-floor edges, so both selectors
+# have something to count) plus the default gear's own pitch-circle cap (10 D-02).
+
+COMPOSED_BORES: dict[str, dict[str, float]] = {
+    "d-flat": {},
+    "round": {"bore_flat": 0},
+    "hex": {"bore_hex": 6},
+    "keyed": {"bore_flat": 0, "keyway_width": 3, "keyway_depth": 1.4},
+}
+COMPOSED_CUTOUTS: dict[str, dict[str, float]] = {
+    "holes": cast(dict[str, float], HOLES),
+    "spokes": SPOKES,  # already dict[str, float] -- hub_d 13.2
+    "cells": cast(dict[str, float], CELLS),
+}
+# SPOKES' 13.2 mm hub clears the keyed bore's 6.179 mm floor-corner mouth (11-08's own
+# adjacency), so one cutout dict works on every bore shape here.
+
+_build_reference = functools.cache(_build_checked)
+# The no-cutout reference for each bore is built once per session (measured saving,
+# planning: 8 builds of ~0.8 s each); only these tests use it and none of them
+# monkeypatches the kernel, so a cached solid never goes stale under a patched build.
+
+
+@pytest.mark.parametrize(("bore", "cutout", "d_faces", "d_edges", "d_volume"), [
+    pytest.param("keyed", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
+                 144, 1547.065402, id="keyed-spokes"),
+])
+def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore(
+        bore: str, cutout: str, d_faces: collections.Counter[str],
+        d_edges: int, d_volume: float) -> None:
+    """D-07 tier 2, D-09, ROADMAP SC1 on the built solid: the tip chamfer (1.75 mm, the
+    default gear's own cap) applied together with each cutout on each bore, on one
+    composed solid -- the features' own built-solid proofs (10-03's
+    _assert_only_the_tip_arcs_were_chamfered, 11-08's
+    _assert_the_cutout_is_what_derive_prints) run unchanged on that one solid, never a
+    new proof shape (D-09). Every face-type delta, edge delta and removed volume below
+    is measured on the pinned kernel and pinned as a literal -- no closed form is
+    claimed after an arbitrary boolean.
+
+    This row (keyed round bore + spokes) sits at the phase's own tightest adjacency:
+    SPOKES' 13.2 mm hub wall clears the keyed bore's floor-corner mouth (6.179 mm) by
+    only 0.021 mm above MIN_WALL, so a single valid solid here is the composition pass's
+    own edge case, not the easy middle of the range.
+    """
+    kw = {**TIPPED, **COMPOSED_BORES[bore], **COMPOSED_CUTOUTS[cutout]}
+    p = GearParams.model_validate(kw)
+    p_no_tip = GearParams.model_validate({k: v for k, v in kw.items() if k != "tip_chamfer"})
+    p_no_cut = GearParams.model_validate({**TIPPED, **COMPOSED_BORES[bore]})
+    cut = _build_checked(p)
+
+    _assert_only_the_tip_arcs_were_chamfered(cut, _build_checked(p_no_tip), p, p_no_tip)
+
+    if cutout == "holes":
+        hub_angle = rim_angle = 0.0
+    else:  # spokes -- the middle of sector 0 (arm 0 itself sits on +X, 11-08's own row)
+        hub_angle = rim_angle = math.pi / 4
+
+    _assert_the_cutout_is_what_derive_prints(
+        cut, _build_reference(p_no_cut), p, p_no_cut,
+        d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
+        hub_angle=hub_angle, rim_angle=rim_angle)
 
 
 def test_exports() -> None:
