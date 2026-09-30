@@ -5,16 +5,16 @@ milestone_name: Fit to Shaft
 current_phase: 12
 current_phase_name: Composition Pass
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-09-30T02:17:36.317Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-09-30T03:38:47.759Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 12 execution started
-state_head: 4a4c679d15620ac340c3f66512428d96c63f250d
+state_head: 278d982c5d5672cffb29c546fe505150d89ec638
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 34
-  completed_plans: 25
+  completed_plans: 27
   percent: 17
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 12 (Composition Pass) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 12 execution started
 
@@ -156,6 +156,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 11 P07 | ~28min | 2 tasks | 2 files |
 | Phase 11 P08 | ~35min | 2 tasks | 1 files |
 | Phase 11 P09 | ~31min | 3 tasks | 10 files |
+| Phase 12 P02 | 52min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -230,6 +231,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 11]: 11-09: make verify's wall time at the phase's end measured 621 passed in 177.62s -- 178.55s wall (host load 3.07-4.65), against Phase 10's 453 passed / 98.17s; the phase's 168 new tests add +80.38s to the gate.
 - [Phase 11]: 11-09: three deferred ideas filed under docs/ideas/ with INDEX rows -- a spoke/hole rotation field, a teeth/module-dependent honeycomb cap, and conditional form fields -- verbatim from 11-CONTEXT.md's Deferred Ideas section.
 - [Phase 12]: Human approved Phase 12 SC3/SC5 wording as proposed; resolved D-11 evidence conflict as 'seven' groups (schema-matching); resolved D-18 evidence conflict as 'comment + L31' (append row to _GZIP_LEVEL comment table, record in L31, L19 text untouched)
+- [Phase 12]: [Phase 12] 12-02: bench/build_time.py's own report() reads os.getloadavg() only after every sweep row has already built, so its printed 'Load averages at start' is really an end-of-run reading -- both composed-sweep runs read well above D-02's 1.5 bar there despite launching on an independently-confirmed-quiet host, so neither run is decisive; recorded exactly as measured, le/timeout decision deferred to 12-03. — The composed sweep's four spoke rows (both bore shapes, both moduli) read 31.16-31.98s of SPUR_BUILD_TIMEOUT=30s in both non-decisive runs, within 0.7s of each other -- consistent enough to flag for 12-03's checkpoint without deciding anything here (D-02's prohibition on resting a decision on a non-quiet reading).
 
 ### Pending Todos
 
@@ -331,8 +333,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T02:17:36.269Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-09-30T03:38:47.711Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
