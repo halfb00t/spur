@@ -23,6 +23,22 @@ findings:
     severity: warning
     disposition: open
     title: "L31 attributes the \"schema, form source and CLI parser in one order\" proof to the wrong test"
+  - id: WR-06
+    severity: warning
+    disposition: open
+    title: "the \"level 9 compared against the currently-adopted level\" regression test can't actually distinguish that from the bug it names"
+  - id: WR-07
+    severity: warning
+    disposition: open
+    title: "decision-log and RESULTS.md prose calls two end-of-run load readings \"at-start loads\""
+  - id: WR-08
+    severity: warning
+    disposition: open
+    title: "L31 says every composed pattern measured below its arithmetic total; the honeycomb row it cites in the same sentence measured above it"
+  - id: WR-09
+    severity: warning
+    disposition: open
+    title: "\"L24's invariant held\" / \"identical mesh content\" overstates what the triangle-count comparison actually checks"
   - id: IN-01
     severity: info
     disposition: open
@@ -43,9 +59,9 @@ findings:
     severity: info
     disposition: open
     title: "`cast(dict[str, float], HOLES)` asserts a type the value does not have"
-open: 10
-total: 10
-recorded: 2026-09-30T14:28:45.212Z
+open: 14
+total: 14
+recorded: 2026-09-30T17:12:15.251Z
 ---
 
 # Phase 12: Code Review Disposition
@@ -57,6 +73,10 @@ recorded: 2026-09-30T14:28:45.212Z
 | WR-03 | warning | open | - |
 | WR-04 | warning | open | - |
 | WR-05 | warning | open | - |
+| WR-06 | warning | open | - |
+| WR-07 | warning | open | - |
+| WR-08 | warning | open | - |
+| WR-09 | warning | open | - |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
