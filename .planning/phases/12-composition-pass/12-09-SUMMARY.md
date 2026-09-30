@@ -151,3 +151,11 @@ Phase 12 (composition-pass) is complete — this was its last plan. `REQ-measure
 ---
 *Phase: 12-composition-pass*
 *Completed: 2026-09-30*
+
+## Self-Check: PASSED
+
+- FOUND: `.planning/phases/12-composition-pass/12-09-SUMMARY.md`
+- FOUND: commits `b8eaf60`, `b7271ba`, `5fab3b7`, `9ae811a` in `git log --oneline --all`
+- `grep -c '^## L31 — ' docs/architecture/decision_log.md` = 1
+- `git diff --numstat c9a169d -- docs/architecture/decision_log.md` deleted-lines column = 0
+- Re-ran the plan's Task 3 `<verify>`: `make test PYTEST_ARGS="tests/test_model.py tests/regression -q"` — 286 passed in 173.63s; `git diff --exit-code c9a169d -- tests/regression/pre_v0_2.json` — clean
