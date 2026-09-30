@@ -1859,3 +1859,9 @@ through the whole phase). `make test PYTEST_ARGS="tests/regression -q"`: **86 pa
 19.24s** -- the fixture's own share of the phase-end gate, essentially unchanged from
 07-01's original 85-case / 16.27s reading (one case added since Phase 7's own count; the
 fixture itself was never regenerated).
+
+### Gate decision
+
+The human's verbatim answer to Task 2's checkpoint: "accept (Recommended)". The measured
+**28.28s** delta against D-10's 30.0s line stands as recorded above; no tier-2 row is
+trimmed; `tests/test_model.py` is untouched.
