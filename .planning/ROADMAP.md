@@ -361,7 +361,7 @@ closing out v0.2.
      are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: 3/9 plans executed
+**Plans**: 4/9 plans executed
 
 Plans:
 **Wave 1**
@@ -378,7 +378,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 12-04-PLAN.md — `bench/export_cost.py` and `make bench.export`: L19's gzip table and L24's copy cost re-measured on the largest composed fine STL, L19's rule applied (wave 4)
+- [x] 12-04-PLAN.md — `bench/export_cost.py` and `make bench.export`: L19's gzip table and L24's copy cost re-measured on the largest composed fine STL, L19's rule applied (wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -425,4 +425,4 @@ Plans:
 | 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
 | 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
 | 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 3/9 | In Progress|  |
+| 12. Composition Pass | v0.2 | 4/9 | In Progress|  |
