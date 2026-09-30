@@ -116,6 +116,7 @@ spur export -o chamfered.stl --tip-chamfer 0.4             # tooth-tip edge brea
 spur export -o holes.stl --hole-count 6 --hole-d 4 --hole-circle-d 20      # six lightening holes
 spur export -o spokes.stl --spoke-count 4 --spoke-width 2 --hub-d 12 --rim-wall 1 --spoke-fillet 1  # four spoke arms
 spur export -o honeycomb.stl --hex-cell 3 --hex-wall 1     # honeycomb web
+spur export -o everything.stl --bore-flat 0 --keyway-width 3 --keyway-depth 1.4 --spoke-count 4 --spoke-width 2 --hub-d 13.2 --rim-wall 1 --spoke-fillet 1 --tip-chamfer 0.4  # every v0.2 family on one gear
 spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
 spur export --help                                        # every parameter
 ```

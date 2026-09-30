@@ -13,6 +13,19 @@ from spur import cli
 from spur.app import InfoQuery
 from spur.calc import DerivedDimensions
 
+# The README's composed link (D-14): every v0.2 family on one 19-tooth gear -- a keyed
+# round bore, spoke arms, both recesses (the default) and a tooth-tip chamfer. Order
+# matches the README line so `_flags` reproduces it verbatim.
+COMPOSED: dict[str, object] = {
+    "bore_flat": 0, "keyway_width": 3, "keyway_depth": 1.4, "spoke_count": 4,
+    "spoke_width": 2, "hub_d": 13.2, "rim_wall": 1, "spoke_fillet": 1, "tip_chamfer": 0.4,
+}
+
+
+def _flags(params: dict[str, object]) -> list[str]:
+    """A parameter dict as `--name-with-dashes=value` CLI arguments."""
+    return [f"--{k.replace('_', '-')}={v}" for k, v in params.items()]
+
 
 def test_info_reports_the_mate_it_was_asked_about(capsys: pytest.CaptureFixture[str]) -> None:
     cli.main(["info", "--teeth", "19", "--mate-teeth", "40"])
@@ -121,6 +134,48 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     cli.main(["export", "-o", str(honeycomb), "--hex-cell", "3", "--hex-wall", "1"])
     assert honeycomb.stat().st_size > 1000
     assert "warning:" not in capsys.readouterr().err
+
+    # D-14: the composed link -- every v0.2 family on one gear -- is documented, and the
+    # documented command is asserted present before it is run (a doc/test drift would
+    # fail here, not silently pass on a hand-typed copy).
+    readme = (Path(__file__).parents[1] / "README.md").read_text()
+    # The README spells flags space-separated (`--flag value`), _flags spells them
+    # `--flag=value`; compare on the documented form.
+    composed_cmd_readme_form = ("spur export -o everything.stl "
+                                + " ".join(f"--{k.replace('_', '-')} {v}"
+                                          for k, v in COMPOSED.items()))
+    assert composed_cmd_readme_form in readme
+
+    everything = tmp_path / "everything.stl"
+    cli.main(["export", "-o", str(everything), *_flags(COMPOSED)])
+    assert everything.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
+
+def test_cli_and_api_print_the_same_composed_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-11: the composed link (every v0.2 family on) and the empty link (edge: empty)
+    print the identical document on both interfaces, byte for byte once the API's
+    compact JSON is re-indented the way the CLI already indents it (A1 -- the raw bytes
+    can never match, since the API serves compact JSON and the CLI prints
+    `indent=2`)."""
+    client = TestClient(spur.app.app)
+
+    for params in (COMPOSED, {}):
+        cli.main(["info", *_flags(params)])
+        cli_out = capsys.readouterr().out.rstrip("\n")
+        api_out = client.get("/api/info", params=params)
+        want = json.dumps(api_out.json(), indent=2, ensure_ascii=False)
+        assert cli_out == want
+        assert list(json.loads(cli_out)) == list(DerivedDimensions.model_fields)
+
+    cli.main(["info", *_flags(COMPOSED)])
+    composed_doc = json.loads(capsys.readouterr().out)
+    assert composed_doc["warnings"] == []
+    for key in ("tip_chamfer_effective", "bore_effective", "keyway_floor_to_wall",
+               "keyway_width_effective", "recess_id", "recess_od", "recess_fillet",
+               "web", "cutout_hub_wall", "cutout_rim_wall", "spoke_fillet_effective"):
+        assert composed_doc[key] is not None, key
 
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
