@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
 status: planning
-last_updated: "2026-10-01T12:00:10.617Z"
+last_updated: "2026-10-01T13:30:00.000Z"
 last_activity: 2026-10-01
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,14 +21,15 @@ See: .planning/PROJECT.md (updated 2026-10-01)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.3 Clean Ledger — defining requirements (debt-only; no new geometry)
+**Current focus:** Milestone v0.3 Clean Ledger — roadmap created (Phases 13–16, 11/11 requirements mapped); ready to plan Phase 13
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 13 of 16 (Latency Bar) — not yet planned
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-01 — Milestone v0.3 started
+Status: Ready to plan (roadmap created)
+Last activity: 2026-10-01 — Roadmap created: Phases 13–16 (Latency Bar, Honest Record,
+  The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
 
 ## Performance Metrics
 
@@ -335,6 +336,7 @@ None yet.
 - Phase 9 edited: edited fields: requirements, success_criteria (per 09-CONTEXT.md D-20)
 - Phase 11 edited: edited fields: success_criteria (per 11-CONTEXT.md D-21)
 - Phase 12 edited: edited fields: success_criteria SC3, SC5 (per 12-CONTEXT.md D-06/D-15)
+- v0.3 roadmap created: Phases 13–16 (Latency Bar; Honest Record; The Gate, Measured and Pinned; Typing & Validation Debt) — 11/11 v0.3 requirements mapped, 0 orphans, numbering continues from Phase 12
 
 ## Deferred Items
 
@@ -350,12 +352,13 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Land the close: PR for `gsd/milestone-v0.2-close` via `make pr.land PR=N`, then
-  `git tag -a v0.2` on the squash commit and `git push origin v0.2` (v0.1 precedent: the tag
-  points at `main`'s squash, never a branch commit)
-- Then `/gsd-new-milestone` — candidates in PROJECT.md "Next Milestone Goals"
-- `/gsd-validate-phase 7` and `8` would retroactively give the two pre-Nyquist phases a
-  VALIDATION.md (audit: discovery only, nothing blocks)
+- Next: `/gsd-discuss-phase 13` then `/gsd-plan-phase 13` — Latency Bar (measurement-heavy;
+  keep it its own PR per ROADMAP.md's Process Notes)
+- Phase 15's discuss-phase carries two human decisions ROADMAP.md already names: the
+  CI-kernel-pin mechanism (requirements.txt-first vs. a pyproject.toml upper bound) and the
+  make-verify bar (set from the profile, not before)
+- Phase 16's REQ-nyquist-phases-7-8 carries a flagged ASSUMPTION (`/gsd-validate-phase` may
+  not resolve `phase_dir` for an archived phase) — resolve at that phase's discuss-phase
 - Expect `gsd_run query commit` to time out on every commit (hook ~3.5 min at 907 tests);
   commit with plain `git commit` and wait for any orphaned `pre_commit hook-impl` to restore
   its stash before writing to the tree

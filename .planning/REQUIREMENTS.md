@@ -202,22 +202,22 @@ Filled by the roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-latency-observations-explained | — | Pending |
-| REQ-latency-bar-demonstrated-or-superseded | — | Pending |
-| REQ-ci-installs-the-pinned-kernel | — | Pending |
-| REQ-root-lead-in-warned | — | Pending |
-| REQ-readme-root-zone-states-the-limit | — | Pending |
-| REQ-filleted-spoke-closed-form | — | Pending |
-| REQ-verify-profiled | — | Pending |
-| REQ-verify-at-the-bar | — | Pending |
-| REQ-coverage-floor | — | Pending |
-| REQ-model-py-no-type-ignore | — | Pending |
-| REQ-nyquist-phases-7-8 | — | Pending |
+| REQ-latency-observations-explained | Phase 13 | Pending |
+| REQ-latency-bar-demonstrated-or-superseded | Phase 13 | Pending |
+| REQ-root-lead-in-warned | Phase 14 | Pending |
+| REQ-readme-root-zone-states-the-limit | Phase 14 | Pending |
+| REQ-filleted-spoke-closed-form | Phase 14 | Pending |
+| REQ-verify-profiled | Phase 15 | Pending |
+| REQ-verify-at-the-bar | Phase 15 | Pending |
+| REQ-coverage-floor | Phase 15 | Pending |
+| REQ-ci-installs-the-pinned-kernel | Phase 15 | Pending |
+| REQ-model-py-no-type-ignore | Phase 16 | Pending |
+| REQ-nyquist-phases-7-8 | Phase 16 | Pending |
 
 **Coverage:**
 - v0.3 requirements: 11 total
-- Mapped to phases: 0
-- Unmapped: 11 ⚠️ (roadmap pending)
+- Mapped to phases: 11
+- Unmapped: 0 ✓ (ROADMAP.md: Phases 13–16)
 
 ---
 *Requirements defined: 2026-10-01*
