@@ -268,8 +268,13 @@ def main(argv: list[str] | None = None) -> int:
             child = subprocess.run(
                 [sys.executable, "-m", "bench.export_cost", str(args.sweep),
                  "--set", args.label, "--child", mode],
-                capture_output=True, text=True, check=True,
+                capture_output=True, text=True, check=False,
             )
+            if child.returncode != 0 or not child.stdout.strip():
+                sys.stderr.write(child.stderr)
+                raise SystemExit(
+                    f"error: --child {mode} run {run} exited {child.returncode} "
+                    "without a payload (its stderr is above)")
             child_payload: _ChildPayload = json.loads(child.stdout.strip().splitlines()[-1])
             bucket.append(child_payload)
             peak_mib = child_payload["peak_rss_bytes"] / (1024 * 1024)
@@ -295,6 +300,9 @@ def main(argv: list[str] | None = None) -> int:
 
     all_triangles = {r["triangles"] for r in copy_runs} | {r["triangles"] for r in inplace_runs}
     if len(all_triangles) != 1:
+        print(f"error: copy and in-place exports disagree on triangle count "
+              f"({sorted(all_triangles)}) -- L24's invariant (a copy meshes identically) "
+              "did not hold on this set", file=sys.stderr)
         return 1
     return 0
 
