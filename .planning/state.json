@@ -11,32 +11,32 @@
     {
       "number": "7",
       "name": "Foundation",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "8",
       "name": "Hex Bore",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "9",
       "name": "Keyway Bore",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "10",
       "name": "Tooth-Tip Chamfer",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "11",
       "name": "Body Cutouts",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "12",
       "name": "Composition Pass",
-      "status": "in_progress"
+      "status": "complete"
     }
   ],
   "next": {
@@ -44,5 +44,5 @@
     "label": "Show progress",
     "reason": "Unsure of state — showing progress"
   },
-  "updated_at": "2026-09-30T16:47:41.841Z"
+  "updated_at": "2026-10-01T11:26:45.768Z"
 }

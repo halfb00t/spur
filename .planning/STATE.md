@@ -2,36 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v0.2
 milestone_name: Fit to Shaft
-current_phase: 12
-status: "Phase 12 shipped — PR #13"
+status: Awaiting next milestone
 stopped_at: Phase 12 complete — all phases complete
-last_updated: "2026-09-30T16:55:48.073Z"
-last_activity: 2026-09-30
-state_head: b8e7825bda203f13919c1fdf1185fbc98f398642
+last_updated: "2026-10-01T11:26:45.746Z"
+last_activity: 2026-10-01
+last_activity_desc: Milestone v0.2 completed and archived
+state_head: 6bbce0fe9862729294f9c994ad2c6e375512bb7d
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 34
   completed_plans: 34
   percent: 17
+current_phase: 12
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-30)
+See: .planning/PROJECT.md (updated 2026-10-01)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.2 close-out — every phase complete; next is `/gsd-complete-milestone v0.2`
+**Current focus:** Planning the next milestone — v0.2 shipped 2026-10-01; `/gsd-new-milestone`
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
-Status: Phase 12 shipped — PR #13
-Last activity: 2026-09-30
+Phase: Milestone v0.2 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-01 — Milestone v0.2 completed and archived
 
 ## Performance Metrics
 
@@ -356,14 +357,13 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Set a disposition on each of the ten `12-REVIEW.md` findings in `12-REVIEW-DISPOSITION.md`
-  (WR-01, WR-02 and WR-05 are one-sentence doc fixes; WR-03/WR-04 are `bench/export_cost.py`
-  error-reporting fixes) — ideally before the PR, so the branch lands with the record closed
-- Open a PR for `gsd/phase-12-composition-pass` and land it with `make pr.land PR=N`
-- Then `/gsd-complete-milestone v0.2` — Phase 12 was the milestone's last phase; the audit,
-  `MILESTONES.md` and the archive are its job (L31 leaves them to it, D-19)
-- `/gsd-map-codebase --paths bench` — still carried over from Phase 10 (not verified done)
-- Expect `gsd_run query commit` to time out on every commit (hook ~3.5 min at 907 tests, > 30 s)
-  and fall back to a plain `git commit` with hooks; wait for any orphaned pre-commit process to
-  restore its stash of `state.json` before writing to the tree
+- Land the close: PR for `gsd/milestone-v0.2-close` via `make pr.land PR=N`, then
+  `git tag -a v0.2` on the squash commit and `git push origin v0.2` (v0.1 precedent: the tag
+  points at `main`'s squash, never a branch commit)
+- Then `/gsd-new-milestone` — candidates in PROJECT.md "Next Milestone Goals"
+- `/gsd-validate-phase 7` and `8` would retroactively give the two pre-Nyquist phases a
+  VALIDATION.md (audit: discovery only, nothing blocks)
+- Expect `gsd_run query commit` to time out on every commit (hook ~3.5 min at 907 tests);
+  commit with plain `git commit` and wait for any orphaned `pre_commit hook-impl` to restore
+  its stash before writing to the tree
   (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)
