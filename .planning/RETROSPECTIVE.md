@@ -86,6 +86,89 @@
 
 ---
 
+## Milestone: v0.2 — Fit to Shaft
+
+**Shipped:** 2026-10-01
+**Phases:** 6 (7–12) | **Plans:** 34 | **Sessions:** not tracked
+
+### What Was Built
+- Selectors that raise on an empty selection and a 44-record pre-v0.2 fixture replayed by
+  every later phase, byte-unchanged at the close (L26).
+- A hex bore that replaces the round profile and a keyway slot with an explicit as-cut-wall
+  datum, both with measured root-circle refusals; the round bore's chamfer reach closed at
+  the kernel's measured contact (L27, L28).
+- A tooth-tip chamfer capped at a kernel boundary bisected to ~2 µm (L29).
+- One cutout pattern per part — spokes, holes, honeycomb — with a measured cell cap and
+  every wall rule pinned one step either side on the kernel (L30).
+- The composed sweep, `spoke_count` `le` 32, the 249-row composition matrix, three-interface
+  parity proven model-driven, the CLI's real exit contract in its doc (L31).
+
+### What Worked
+- Gates fired and were decided, not argued away: D-06 (fixture cost 16.27 s over a 15 s
+  line), D-18 (200-count rows at 42–69 s → `le` 60/40), D-03 (four composed rows over 30 s →
+  a probe → `le` 32), D-10 (+28.28 s gate cost accepted). Each is one verbatim human answer
+  in a SUMMARY and a numbered section in RESULTS.md.
+- The fixture as the standing L05 proof: six phases of geometry changes, zero fixture edits,
+  and the one time a selector silently vanished a chamfer the tripwire caught it.
+- Spike before field: HEX_CELL_CAP, the tip-chamfer kernel boundary and ROOT_CONTACT were all
+  measured by a throwaway probe before any schema field existed, then written as constants
+  with the measurement cited.
+- Cross-CLI review earned its keep on the last phase: the Codex lane found a regression test
+  that could not fail (WR-06) and three over-claims in the records that the internal pass had
+  read past.
+
+### What Was Inefficient
+- The composed sweep took four runs to get a decisive reading because `bench/build_time.py`
+  read load at the end of a 6–7 min sweep while labelling it "at start" — a tool bug found
+  only by comparing a quiet-host launch with the runner's own figure. Fixed in 12-03; the
+  rationale sentence then needed a second correction (WR-07).
+- `gsd_run query commit`'s 30 s timeout versus a 3.5 min `make verify` hook: every close-out
+  commit had to be a plain `git commit`, and the disposition ledger's own auto-commit killed a
+  hook mid-run with the review report stashed. Recovered by waiting for the orphan; the debt
+  item is `nice` and now names this path.
+- Phase 12 was re-verified twice over: once after UAT (canonicalized by the UAT predicate),
+  once after the review fixes changed eight covered files — and the second report was pushed
+  seven minutes after the user had already landed the PR by hand, so it reached `main` via a
+  cherry-pick on the close branch. Land-then-verify and verify-then-land need one owner.
+- Stale-by-fingerprint again, from the other side: v0.1's reports went stale because they
+  fingerprinted STATE.md; v0.2's went stale because a later phase legitimately changed shared
+  files. Both closes were overrides with the cause proven; neither reflects unverified code.
+
+### Patterns Established
+- Append-only decision log with in-place rewording allowed only for text added in the same
+  PR (0 deleted lines against the branch base) — how both WR-02 (L30) and WR-05/07/08 (L31)
+  were corrected.
+- Measurements are records: prose claims in RESULTS.md may be corrected, numbers and run
+  headings never; a decision's evidence sentence can be wrong while the decision stands.
+- A gate's offer is a number from a probe (`spoke_count` 32: 29.41 s inside, 33: 30.11 s
+  over), never a round figure.
+- Human-judgment items are listed in VALIDATION.md's manual-only table so UAT presents them
+  once instead of treating them as untested.
+- `--files` plus the phase-start base when the incremental review scope is empty but a
+  second reviewer lane is wanted.
+
+### Key Lessons
+1. Label a reading by when it was taken; a load figure read at the wrong end of a run is
+   worse than none (12-02/12-03, WR-07).
+2. A regression test is only a test if the bug it names makes it fail — check the fixture
+   arithmetic against the regressed branch, not just the correct one (WR-06).
+3. Hooks that take minutes need commits that wait minutes; a tool with a 30 s commit timeout
+   must not be allowed to commit in this repo at all.
+4. When the PR is landed by hand, say so in the session before anything else is pushed —
+   a verification report that misses the squash costs a cherry-pick and a second PR.
+5. Shared files make earlier phases' digests stale by construction; record the cause once
+   per close rather than re-running five verifiers to re-stamp identical trees (same lesson
+   as v0.1 #5, second occurrence).
+
+### Cost Observations
+- Model mix: not recorded — this repo keeps no per-session model accounting.
+- Sessions: not tracked.
+- Notable: ~11 h 45 min of executor time where measured (Phases 7–10); Phase 12's close-out
+  (UAT, three audits, two review passes, re-verification, the milestone close) ran through
+  nine `make verify` hook runs of ~3.5 min each.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -93,13 +176,16 @@
 | Milestone | Sessions | Phases | Key Change |
 |-----------|----------|--------|------------|
 | v0.1 | n/a | 5 | Phase branches + PR + `make pr.land` replaced direct pushes to `main`; ruleset on `main` |
+| v0.2 | n/a | 6 | Build-time gates as human checkpoints with probe-derived offers; cross-CLI (Codex) review lane on the last phase; Nyquist + security audits at verify:post |
 
 ### Cumulative Quality
 
 | Milestone | Tests | Coverage | Zero-Dep Additions |
 |-----------|-------|----------|-------------------|
 | v0.1 | 191 | not measured (no coverage floor — `nice` debt) | 0 — `pyproject.toml` deps unchanged, `requirements.txt` 31 → 31 pins |
+| v0.2 | 907 | not measured | 0 — 31 → 31 pins; `bench/export_cost.py` stdlib only |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. (one milestone so far — nothing cross-validated yet)
+1. Verifier digests go stale for reasons that are not unverified code (v0.1: STATE.md fingerprinted; v0.2: shared files changed by a later phase) — prove the cause from the artefact and record the override, do not re-stamp.
+2. Measurement before knobs held across both milestones: every runtime bound (`mem_limit`, timeout, gzip level, `le`s, `HEX_CELL_CAP`) cites the run that set it, and the two bounds that moved in v0.2 moved on a probe's number.

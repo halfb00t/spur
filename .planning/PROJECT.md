@@ -18,6 +18,20 @@ either computed honestly or reported as a warning, never guessed (L08). Everythi
 
 ## Current State
 
+**Shipped: v0.2 Fit to Shaft (2026-10-01).** A generated gear mounts on a real shaft and
+prints light: hex and keyway bores, a tooth-tip chamfer, and one body-cutout pattern per part
+(spokes, holes, honeycomb), all additive on the shipped pipeline (L26–L31). The pre-v0.2
+part is byte-unchanged through the whole milestone (44-record fixture); every cut has a
+measured build time inside `SPUR_BUILD_TIMEOUT` (`spoke_count` `le` 32 from the composed
+sweep); the three interfaces are proven in parity from the one `GearParams` model. Record:
+`.planning/MILESTONES.md`, `milestones/v0.2-ROADMAP.md`, `milestones/v0.2-MILESTONE-AUDIT.md`
+(status `tech_debt`: 20/20 requirements, 9/9 integration, 5/5 flows, 10 active debt items
+with triggers, 4 `must`).
+
+Codebase at `fd29c2c`: 3,131 lines of package Python, 7,889 of tests, 1,881 of bench, 370
+lines of hand-written UI JS, 907 tests, 31 pinned runtime packages (unchanged since v0),
+`make verify` green (~3.5 min).
+
 **Shipped: v0.1 Hardening (2026-09-25).** The generator is operable under real load and
 its contracts are honest: CAD builds run in worker processes off the event loop with a
 measured memory ceiling (L17–L19); structured logging at the composition boundary (L20);
@@ -30,7 +44,24 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Current Milestone: v0.2 Fit to Shaft
+## Next Milestone Goals
+
+Not yet chosen — `/gsd-new-milestone` runs the questioning. Candidates carried forward from
+the v0.1 kickoff list (`milestones/v0.1-REQUIREMENTS.md`, "Future Requirements") and the
+v0.2 scoping decision:
+
+- **Gear family** — helical first (re-derives module, span and centre distance, the riskiest
+  surface in the product), then internal/ring, then rack (needs a second parameter model);
+  one type per phase. Bevel needs a product-scope decision before it is even a candidate.
+- **Precision** — the trochoidal root fillet below the base circle (L10 is the accepted
+  approximation; the root lead-in `must` debt from Phase 10 is adjacent) and the waived
+  ten-concurrent latency bar (L18, `must` debt since Phase 2).
+- **Debt** — four `must` items are active with named triggers (see Out of Scope); a v0.3
+  phase could retire them the way Phase 6 did for v0.1.
+
+<details>
+<summary>v0.2 Fit to Shaft — scope as set at kickoff (shipped 2026-10-01)</summary>
+
 
 **Goal:** A generated gear mounts on a real shaft and prints light — new bore profiles,
 body cutouts and a tooth-tip chamfer, all additive on the shipped spur pipeline, with
@@ -64,6 +95,8 @@ Picked 2026-09-25 from the candidates gathered at v0.1 kickoff
 internal / rack — re-derives module, span and centre distance, the riskiest surface in
 the product, and rack needs a second parameter model) and "precision" (trochoidal fillet
 plus the waived latency bar — no trigger has fired). Both stay candidates for v0.3.
+
+</details>
 
 ## Requirements
 
@@ -206,8 +239,8 @@ pytest — L13). Full list with sources and acceptance evidence:
 Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- *(none — every v0.2 requirement is validated; the milestone closes via
-  `/gsd-complete-milestone v0.2`)*
+- *(none — every v0.2 requirement is validated and the milestone is closed; the next
+  milestone's requirements come from `/gsd-new-milestone`)*
 
 ### Out of Scope
 
@@ -217,10 +250,14 @@ Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
   the documented, accepted approximation for now.
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- The six items still in `docs/tech_debt/active/` after Phase 6 — five `nice` (coverage
+- The ten items in `docs/tech_debt/active/` at the v0.2 close — six `nice` (coverage
   floor, CadQuery `Shape` typing, server-side request cancellation, Enji Guard / CVE
-  alerting, no built-in authentication) and one `must` (the ten-concurrent latency bar
-  waived under L18, Phase 2) — deferred, each with its own trigger.
+  alerting, no built-in authentication, the gsd commit-timeout vs the 3.5 min hook) and
+  four `must` (the ten-concurrent latency bar waived under L18; CI resolving an unpinned
+  kernel the fixture pins; the root fillet's lead-in reaching above the pitch circle; the
+  filleted-spoke volume proof pinned, not derived) — deferred, each with its own trigger.
+  Resolved during v0.2: the round-bore chamfer reach, the tip-chamfer timeout margin, the
+  spoke arithmetic total, the cli.md exit-contract claim.
 - Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
   not a cut; keyway and hex cover the shafts a hobbyist actually has.
 - Helical, internal/ring and rack gears (v0.2 decision) — candidates for v0.3, one type
@@ -231,7 +268,7 @@ Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
 
 - **This product already ships.** `spur` is a working generator with a web UI, HTTP API,
   and CLI; `make verify` passes at the current commit. This PROJECT.md documents the
-  shipped baseline (v0, v0.1) and the current milestone's scope.
+  shipped baseline (v0, v0.1, v0.2) and the next milestone's candidates.
 - The 2026-09-21 audit (`docs/review-2026-09-21.md`, findings F1–F8) is history: every
   finding — the unguarded Newton `centre_distance` solver, unbounded-by-bytes caches,
   infeasible absolute-mm defaults, no admission control, an under-pinned dependency
@@ -358,7 +395,12 @@ close (2026-09-25); outcomes in italics:
 
 ## Success Metric (Milestone v0.2)
 
-Set by the human at milestone start (2026-09-25):
+Set by the human at milestone start (2026-09-25); outcome at close (2026-10-01): all three
+met — (1) every feature shipped on UI/API/CLI from `GearParams` with its tests in the same
+PR, proven by one model-driven field walk; (2) `bench/RESULTS.md` records build and export
+time per feature and for the composed sweep, every row inside 30 s after `spoke_count` `le`
+32; (3) the 44-record fixture is byte-unchanged and green — read as identical
+`DerivedDimensions` and solid, export bytes not compared (L26, 12-01 SC5).
 
 1. **Three interfaces, one change.** Each new feature ships on UI, API and CLI from the one
    `GearParams` model, with its tests, in the same change.
@@ -386,4 +428,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-30 after Phase 12 (Composition Pass).*
+*Last updated: 2026-10-01 after the v0.2 milestone (Fit to Shaft).*
