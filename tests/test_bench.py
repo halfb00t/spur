@@ -538,9 +538,17 @@ def test_level_9_is_compared_against_the_level_currently_adopted() -> None:
     # Level 6 adopted (exactly at both bars, out_bytes 900_000): level 9's out_bytes
     # (850_000) is 15% smaller than level 1's -- past the 10% bar if compared there --
     # but only 5.6% smaller than level 6's, under the bar against the level actually
-    # adopted. Held at 6, proving the comparison used level 6, not level 1.
+    # adopted. `concurrent_ms` is held at 100 -- inside *both* bases' wall bars (<=150
+    # against level 1, <=225 against level 6) -- so the wall clause cannot decide this
+    # row either way; only the shrink clause can, and it decides oppositely depending on
+    # which level the comparison lands on. The real implementation compares against the
+    # level actually adopted (6), so this row's shrink is under the bar and level 9 stays
+    # unadopted: held at 6. A regression that re-pinned the comparison to level 1 would
+    # read the 15% shrink past the bar, wall still clear, and wrongly adopt 9 -- flipping
+    # this assertion's result to 9 and failing it (verified by hand against both the real
+    # and a hand-rolled pinned-to-1 `_decisions`, see commit message).
     level6_adopted = GzipRow(level=6, single_ms=100.0, out_bytes=900_000, concurrent_ms=150.0)
-    level9_beats_1_not_6 = GzipRow(level=9, single_ms=200.0, out_bytes=850_000, concurrent_ms=300.0)
+    level9_beats_1_not_6 = GzipRow(level=9, single_ms=200.0, out_bytes=850_000, concurrent_ms=100.0)
     assert select_gzip_level([level1, level6_adopted, level9_beats_1_not_6]) == 6
 
 
