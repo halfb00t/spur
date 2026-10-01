@@ -139,8 +139,8 @@ class GearParams(BaseModel):
     # cutout build and export time (Phase 11)", measured 2026-09-29, host load 5-10): the
     # 200-hole row crossing the module-1.75 recess groove read 41.85 s of
     # SPUR_BUILD_TIMEOUT=30 s (the split recess fillet, Pitfall 8), ~0.2 s/hole and
-    # near-linear; 60 holes leave margin beside Phase 12's 14.87 s tip-chamfer row
-    # (re-measured in the same section).
+    # near-linear; 60 holes leave margin beside Phase 10's 14.87 s tip-chamfer row (an
+    # arithmetic total only -- Phase 12's composed sweep measured the real stack).
     hole_count: int = _f(0, 0, 60, title="Lightening holes", group="Holes", step=1,
                          help="Number of equal round holes cut through the full face "
                               "width, evenly spaced on the hole circle with hole 0 "
