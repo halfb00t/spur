@@ -1,0 +1,55 @@
+{
+  "label": "tracer-C",
+  "mode": "pair",
+  "pair": "C",
+  "order": "concurrent,single",
+  "state": "done",
+  "reason": null,
+  "decisive": false,
+  "started_utc": "2026-10-01T17:06:17.136421+00:00",
+  "finished_utc": "2026-10-01T17:07:03.380481+00:00",
+  "quiet": {
+    "bar": 1.5,
+    "cap_s": 0.0,
+    "samples": [
+      {
+        "utc": "2026-10-01T17:06:17.333211+00:00",
+        "load1": 2.62
+      }
+    ],
+    "released": false
+  },
+  "host": {
+    "head": "ea4c039",
+    "machine": "12 CPUs, arm64, 32.0 GiB RAM",
+    "docker_info_exit": 0,
+    "docker_ps": [
+      "spur-spur-1 Up 26 hours (healthy)",
+      "fleet-user Exited (2) 4 hours ago"
+    ],
+    "top_cpu": [
+      " %CPU COMM",
+      " 40.0 /Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper",
+      " 16.9 /opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python",
+      "  6.9 claude",
+      "  4.1 /System/Applications/Utilities/Activity Monitor.app/Contents/MacOS/Activity Monitor",
+      "  3.4 /Applications/iTerm.app/Contents/MacOS/iTerm2"
+    ],
+    "server_env": {
+      "SPUR_PORT": "8001"
+    }
+  },
+  "runs": [
+    {
+      "label": "tracer-C-run1",
+      "exit_code": 0,
+      "load_before": 2.62
+    },
+    {
+      "label": "tracer-C-run2",
+      "exit_code": 0,
+      "load_before": 2.65
+    }
+  ],
+  "load_after": 3.23
+}
