@@ -1299,8 +1299,10 @@ decisive by D-02's <1.5 bar; the runner itself was found to be reading load at t
 of a 6–7 minute sweep, not its start, and was fixed to read before the first row builds
 (`9b9af43`, `12-03-SUMMARY.md`). Two further quiet re-runs (loads 2.74 and 1.54 at a
 genuine at-start reading) still missed the 1.5 bar. **The D-02 supersession, taken this
-phase:** the human reviewed all four runs — at-start loads 12.66, 7.04, 2.74 and 1.54,
-an eightfold spread — and found the same four `spoke_count=40` composed rows over
+phase:** the human reviewed all four runs — loads 12.66 and 7.04 (both read at the end
+of the run, the tool-bug reading; see above) and 2.74 and 1.54 (read at a genuine start,
+after the fix) — an eightfold spread across the two measurement methods — and found the
+same four `spoke_count=40` composed rows over
 `SPUR_BUILD_TIMEOUT` (30 s) in every one, at 31.16–33.32 s, a band that did not track
 the load figure (Run 3, load 2.74, read higher than Run 1, load 12.66, on three of the
 four rows). The human's answer was "Supersede D-02: treat Run 4 as decisive"
@@ -1312,10 +1314,11 @@ found `spoke_count=32` the largest count still inside budget (29.41 s, 33 read 3
 over); the human's answer was "lower-le: spoke_count 32", applied in `src/spur/params.py`
 (`547214e`). The whole composed sweep re-run at the new `le` reads every row inside
 30 s, heaviest 29.42 s (0.58 s margin) — `bench/RESULTS.md` "### Re-run after the gate".
-Each pattern's worst composed row read below the Phase 10/11 arithmetic total it
-replaced by measurement, not assumption: spokes 32.03 s against a 33.39 s total
-(-1.36 s), holes 25.05 s against 26.66 s (-1.61 s), honeycomb 27.49 s against 23.52 s
-(+3.97 s, the one pattern where stacking cost more than the naive sum). Two
+Two of the three patterns' worst composed rows read below the Phase 10/11 arithmetic
+total they replaced by measurement, not assumption: spokes 32.03 s against a 33.39 s
+total (-1.36 s), holes 25.05 s against 26.66 s (-1.61 s). The third, honeycomb, measured
+above its total: 27.49 s against 23.52 s (+3.97 s) — the one pattern where stacking cost
+more than the naive sum. Two
 build-timeout debts this sweep triggered were resolved with the measured number and the
 decision (`docs/tech_debt/resolved/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md`,
 `docs/tech_debt/resolved/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md`,
@@ -1352,9 +1355,12 @@ Recess, Spokes, Holes, Honeycomb — was verified this session directly against 
 `/api/schema` (30 properties, group first-appearance order exactly this list, no group
 reappearing after another starts), settling D-11's evidence conflict as "seven" groups
 per the human's binding 12-01 answer (`12-07-SUMMARY.md`, `3fb9901`). One generic field
-walk (`tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code`)
-proves every v0.2 field reaches the schema, the form's source and the CLI parser in that
-one order, without a per-field test. README's composed link (every family on one
+walk (`tests/test_cli.py::test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order`)
+proves every v0.2 field reaches the schema and the CLI parser in that one order, without a
+per-field test; a second
+(`tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code`)
+proves `app.js` carries the hash -> form -> query path generically, naming no field.
+README's composed link (every family on one
 19-tooth gear) prints the identical document on `spur info` and `/api/info`, byte for
 byte once the API's compact JSON is re-indented to the CLI's own `indent=2` — proving
 value and key-order identity, not just value equality. All 23 refusals read identically

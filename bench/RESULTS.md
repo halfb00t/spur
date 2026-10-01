@@ -1557,8 +1557,10 @@ keyed (31.98/31.90 s). Whether that consistency, or a genuinely quiet run, chang
 verdict is 12-03's checkpoint to decide.
 
 Superseded (D-02, this gate only): the human reviewed all four runs on record --
-at-start loads 12.66, 7.04, 2.74 and 1.54, an eightfold spread -- and found the same
-four spoke rows over budget in every one, at times within a roughly 2 s band across all
+loads 12.66 and 7.04 (both read at the end of the run, the tool-bug reading; see above)
+and 2.74 and 1.54 (read at a genuine start, after the fix) -- an eightfold spread across
+the two measurement methods -- and found the same four spoke rows over budget in every
+one, at times within a roughly 2 s band across all
 four (31.16-33.32 s) that did not track the load figure (Run 3, load 2.74, read
 *higher* than Run 1, load 12.66, on three of the four rows; Run 4, load 1.54 -- the
 closest of the four to the 1.5 bar -- read 31.46-32.03 s, inside that same band).
@@ -1771,7 +1773,8 @@ bar is judged against: **decisive**.
 ```
 
 Exit code: 0 (every run's triangle count agrees -- copy and in-place produced the same
-mesh content, L24's invariant held).
+triangle *count*; this does not by itself prove identical mesh content down to vertex
+positions or winding, which this script does not check).
 
 ### Against the v0.1 numbers
 
