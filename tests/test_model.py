@@ -4,7 +4,6 @@ import math
 import struct
 from collections.abc import Iterator, Sequence
 from pathlib import Path
-from typing import cast
 
 import cadquery as cq
 import pytest
@@ -250,9 +249,9 @@ def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bo
 # own tracer tests cut. SPOKES' hub_d 13.2 (not 12) is wide enough to clear the keyed
 # round bore's mouth (the keyway floor corner, 6.179 mm) as well as the plain, D-flat
 # and hex mouths, so one dict works on every bore shape (planning probe 2026-09-29).
-HOLES = {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}
+HOLES: dict[str, float] = {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20}
 SPOKES = {"spoke_count": 4, "spoke_width": 2, "hub_d": 13.2, "rim_wall": 1, "spoke_fillet": 1}
-CELLS = {"hex_cell": 3, "hex_wall": 1}
+CELLS: dict[str, float] = {"hex_cell": 3, "hex_wall": 1}
 
 
 @pytest.mark.parametrize(("kw", "rim", "floor", "tip"), [
@@ -1427,9 +1426,9 @@ COMPOSED_BORES: dict[str, dict[str, float]] = {
     "keyed": {"bore_flat": 0, "keyway_width": 3, "keyway_depth": 1.4},
 }
 COMPOSED_CUTOUTS: dict[str, dict[str, float]] = {
-    "holes": cast(dict[str, float], HOLES),
+    "holes": HOLES,
     "spokes": SPOKES,  # already dict[str, float] -- hub_d 13.2
-    "cells": cast(dict[str, float], CELLS),
+    "cells": CELLS,
 }
 # SPOKES' 13.2 mm hub clears the keyed bore's 6.179 mm floor-corner mouth (11-08's own
 # adjacency), so one cutout dict works on every bore shape here.
