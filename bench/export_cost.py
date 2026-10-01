@@ -122,9 +122,10 @@ def _by_level(rows: list[GzipRow]) -> dict[int, GzipRow]:
 def _decisions(rows: list[GzipRow]) -> list[tuple[int, bool, float, float]]:
     """Walk 6 then 9 against the level currently adopted (D-18, A1 -- not always level
     1): one `(level, adopted, shrink_pct, wall_ratio)` tuple per candidate. Integer
-    arithmetic decides `adopted`; `shrink_pct`/`wall_ratio` are floats for the printed
-    verdict line only, never for the decision itself (a `1 - a / b` form reads
-    0.0999... at exactly 10%, D-18's own note)."""
+    arithmetic decides the shrink clause (a `1 - a / b` form reads 0.0999... at exactly
+    10%, D-18); the wall clause compares the measured floats directly, `candidate <=
+    1.5 * current`. `shrink_pct`/`wall_ratio` are recomputed as floats for the printed
+    verdict line only, never for either decision clause."""
     by_level = _by_level(rows)
     current = by_level[1]
     decisions: list[tuple[int, bool, float, float]] = []

@@ -70,9 +70,9 @@ own stream choice (D-04) was built to match, not the other way around.
 
 ## Tests
 
-`tests/test_cli.py`, 4 tests — added because the CLI had none and the README's own
-example did not run (F3/F8). They run the README's commands verbatim, check that the
-mate is reported, that the narrowed-recess warning reaches stderr, and that an infeasible
+`tests/test_cli.py` — added because the CLI had none and the README's own example did
+not run (F3/F8). They run the README's commands verbatim, check that the mate is
+reported, that the narrowed-recess warning reaches stderr, and that an infeasible
 parameter exits 2 naming the field.
 
 Run: `.venv/bin/python -m pytest tests/test_cli.py -q`.

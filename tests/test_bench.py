@@ -24,9 +24,10 @@ not always against level 1. Also pins `maxrss_bytes`'s Darwin/Linux unit split (
 Run as `.venv/bin/python -m pytest tests/test_bench.py -q` **from the repo root** -- the
 `-m` form is what puts the repo root on `sys.path`, which is what makes `import bench`
 resolve at all: `bench` is not installed into the venv (it isn't listed in
-`pyproject.toml`'s `[tool.hatch.build.targets.wheel] packages`), and there is no
-`tests/__init__.py` or `conftest.py` anywhere in this repo to do it another way. A bare
-`.venv/bin/pytest` would not find `bench` (hard_fact_4, 260924-bv5-PLAN.md).
+`pyproject.toml`'s `[tool.hatch.build.targets.wheel] packages`), there is no
+`tests/__init__.py` to do it another way, and `tests/conftest.py` (which exists for the
+logger reset) puts `tests/` on `sys.path`, not the repo root, so it does not help either.
+A bare `.venv/bin/pytest` would not find `bench` (hard_fact_4, 260924-bv5-PLAN.md).
 """
 
 from __future__ import annotations
