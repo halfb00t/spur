@@ -102,11 +102,11 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the debt file
 already states the bounded investigation's shape.
-**Plans:** 7 plans (strictly serial: one host, sessions never overlap)
+**Plans:** 1/7 plans executed (strictly serial: one host, sessions never overlap)
 
 Plans:
 **Wave 1**
-- [ ] 13-01-PLAN.md — the investigation harness, tracer first: split poller, per-run harness, quiet-gated session driver, tabulator
+- [x] 13-01-PLAN.md — the investigation harness, tracer first: split poller, per-run harness, quiet-gated session driver, tabulator
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 13-02-PLAN.md — D-08 order checkpoint, pre-registered method and predictions, the human stops fleet-user
@@ -264,7 +264,7 @@ internal and one is process-only.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
-| 13. Latency Bar | v0.3 | 0/7 | Planned | - |
+| 13. Latency Bar | v0.3 | 1/7 | In Progress|  |
 | 14. Honest Record | v0.3 | 0/TBD | Not started | - |
 | 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |

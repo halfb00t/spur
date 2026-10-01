@@ -3,19 +3,19 @@ gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 13
-current_phase_name: latency-bar
-status: planning
-stopped_at: Phase 13 context gathered
-last_updated: "2026-10-01T15:31:45.894Z"
+current_phase_name: Latency Bar
+status: executing
+stopped_at: Completed 13-01-PLAN.md
+last_updated: "2026-10-01T17:16:03.206Z"
 last_activity: 2026-10-01
-last_activity_desc: "Roadmap created: Phases 13–16 (Latency Bar, Honest Record,"
-state_head: 7e8a1616b107eebd5c0aae962ad40886cbbc9ea0
+last_activity_desc: Phase 13 execution started
+state_head: b55d3edf7463b2c65a3da291b1b24e2922c45d88
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 14
 ---
 
 # Project State
@@ -26,14 +26,14 @@ See: .planning/PROJECT.md (updated 2026-10-01)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.3 Clean Ledger — roadmap created (Phases 13–16, 11/11 requirements mapped); ready to plan Phase 13
+**Current focus:** Phase 13 — Latency Bar
 
 ## Current Position
 
-Phase: 13 (latency-bar) — READY TO EXECUTE
-Plan: —
-Status: Ready to plan (roadmap created)
-Last activity: 2026-10-01 — Roadmap created: Phases 13–16 (Latency Bar, Honest Record,
+Phase: 13 (Latency Bar) — EXECUTING
+Plan: 2 of 7
+Status: Ready to execute
+Last activity: 2026-10-01 — Phase 13 execution started
   The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
 
 ## Performance Metrics
@@ -166,6 +166,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 12 P07 | ~55min | 3 tasks | 3 files |
 | Phase 12 P08 | ~35min | 2 tasks | 9 files |
 | Phase 12-composition-pass P09 | ~20min | 3 tasks | 2 files |
+| Phase 13-latency-bar P01 | ~22min | 2 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -253,6 +254,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 12]: 12-08: both deferred UI ideas (conditional form fields, bore-shape selector) judged 'not taken' per D-12 -- 08 D-09's schema-driven form stands; new trigger is a browser test existing or a user reporting the ignored-field warnings insufficient; the browser-test idea records 12-07's cheaper-first-step taken
 - [Phase 12-composition-pass]: D-10's gate: human accepted the measured +28.28s make-verify cost delta against the 30.0s line; no tier-2 test row trimmed
 - [Phase 12-composition-pass]: L31 appended to docs/architecture/decision_log.md closing out Phase 12, citing every number to a SUMMARY sha or bench/RESULTS.md section (D-19)
+- [Phase 13]: 13-01: Order default kept concurrent,single (bench.latency.main()'s own sorted() order), not D-08's literal 'single then concurrent' -- both scripts take --order so 13-02's checkpoint settles A1 without a code change either way.
+- [Phase 13]: 13-01: Fixed a Rule-1 bug found during Task 2's own proof -- session.py's existing-files preflight overwrote its own prior status.json via abort(); fixed to print-and-exit without touching any file for the label, matching run_experiment.py/poller.py's refuse-not-overwrite behavior (E7).
 
 ### Pending Todos
 
@@ -351,9 +354,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-01T14:03:33.274Z
-Stopped at: Phase 13 context gathered
-Resume file: .planning/phases/13-latency-bar/13-CONTEXT.md
+Last session: 2026-10-01T17:16:03.186Z
+Stopped at: Completed 13-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
