@@ -44,20 +44,53 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Next Milestone Goals
+## Current Milestone: v0.3 Clean Ledger
 
-Not yet chosen — `/gsd-new-milestone` runs the questioning. Candidates carried forward from
-the v0.1 kickoff list (`milestones/v0.1-REQUIREMENTS.md`, "Future Requirements") and the
-v0.2 scoping decision:
+**Goal:** Every `must` debt item retired by measurement or a logged decision, every false
+claim in the record made true or warned, and the gate itself measured — no new user-facing
+geometry, no new `GearParams` field, the 44-record pre-v0.2 fixture byte-unchanged
+throughout.
 
-- **Gear family** — helical first (re-derives module, span and centre distance, the riskiest
-  surface in the product), then internal/ring, then rack (needs a second parameter model);
-  one type per phase. Bevel needs a product-scope decision before it is even a candidate.
-- **Precision** — the trochoidal root fillet below the base circle (L10 is the accepted
-  approximation; the root lead-in `must` debt from Phase 10 is adjacent) and the waived
-  ten-concurrent latency bar (L18, `must` debt since Phase 2).
-- **Debt** — four `must` items are active with named triggers (see Out of Scope); a v0.3
-  phase could retire them the way Phase 6 did for v0.1.
+**Target features:**
+- Latency bar (L18) — both unexplained observations in
+  `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md` (the second run of a
+  pair is always worse; the verdict sits at the harness's 0.1 ms floor) get a cause ruled in
+  or out; then the bar reads ≤2.00× on both runs of one session, or the harness or the bar
+  is changed by a logged `Lxx` and re-measured on the new harness. Never tuned toward a pass.
+- CI kernel pin — CI installs the `cadquery`/`cadquery-ocp` pair the fixture's provenance
+  header names; pin-to-`requirements.txt` vs. an upper bound in `pyproject.toml` decided and
+  logged as `Lxx` against L12's rationale.
+- Root lead-in — a warning when `spline_start` rises above the pitch radius, and README's
+  "non-working root zone" sentence states the real limit. No outline change (the human's
+  choice over an outline fix with fixture regeneration; L10's trochoidal root stays an idea).
+- Filleted-spoke proof — a closed-form removed volume (sector minus four circular-segment
+  corrections) asserted at the 1e-9 mm³ bar the other three patterns meet; L30's "pinned,
+  not derived" clause amended.
+- `make verify` profiled — per-file/per-marker timing recorded in `bench/RESULTS.md`, the
+  heaviest contributors named, cuts proposed with their proof-value cost; the target number
+  is set at discuss-phase from the profile, not before. First finding: pytest runs serially
+  (no xdist; `addopts` is `--strict-markers --strict-config`).
+- Coverage floor — one baseline `pytest --cov` run, `fail_under` set just under it, gated in
+  `make verify`.
+- Shape typing — the five `type: ignore`s in `model.py` retired by narrowing at the
+  `.val()` boundary, as its own tested change.
+- Nyquist for Phases 7 and 8 — `VALIDATION.md` via `/gsd-validate-phase`.
+
+**Rules this milestone lives by:**
+- No new `GearParams` field; the pre-v0.2 fixture stays byte-unchanged (L26) — every item
+  is a proof, a pin, a warning or a record, never a different part.
+- A debt item is retired only in the commit that fixes it: `Status: resolved`, the sha,
+  `git mv` into `resolved/`, the INDEX row moved (CLAUDE.md).
+- A bar is demonstrated or superseded by a logged decision with the measurement — never
+  tuned toward a pass (L08).
+
+Picked 2026-10-01 as "debt first" over the two feature candidates carried from the v0.1
+kickoff list and the v0.2 scoping decision, which remain candidates for v0.4: the gear
+family (helical first — re-derives module, span and centre distance, the riskiest surface
+in the product; then internal/ring, then rack with a second parameter model; bevel needs a
+product-scope decision first) and precision (the trochoidal root fillet, L10). Three of
+the four `must` items are retired pre-emptively — their triggers have not fired — on the
+human's call.
 
 <details>
 <summary>v0.2 Fit to Shaft — scope as set at kickoff (shipped 2026-10-01)</summary>
@@ -236,33 +269,43 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-Milestone v0.2 — hypotheses until shipped; REQ-IDs and acceptance live in
+Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- *(none — every v0.2 requirement is validated and the milestone is closed; the next
-  milestone's requirements come from `/gsd-new-milestone`)*
+- [ ] The ten-concurrent latency bar is demonstrated on both runs of one session, or
+  superseded by a logged `Lxx` with the measurement — the two unexplained observations
+  explained either way
+- [ ] CI installs the kernel pair the fixture pins; the choice logged against L12
+- [ ] A gear whose root lead-in rises above the pitch circle says so in `warnings`; README
+  states the real limit
+- [ ] The filleted-spoke removed volume is checked against a closed form at 1e-9 mm³
+- [ ] `make verify`'s wall time is profiled and recorded; its bar set from the profile
+- [ ] A measured coverage floor gates `make verify`
+- [ ] `model.py` carries no `type: ignore`
+- [ ] Phases 7 and 8 have a `VALIDATION.md`
 
 ### Out of Scope
 
 <!-- Not excluded as bad ideas — deferred, and already tracked under their own lifecycle per CLAUDE.md, not repeated here. -->
 
 - Trochoidal (vs. radial) root fillet below the base circle — `docs/ideas/` idea; L10 is
-  the documented, accepted approximation for now.
+  the documented, accepted approximation for now (v0.3 decision: the root lead-in is
+  warned, not re-cut — an outline change would regenerate the fixture under its own `Lxx`).
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- The ten items in `docs/tech_debt/active/` at the v0.2 close — six `nice` (coverage
-  floor, CadQuery `Shape` typing, server-side request cancellation, Enji Guard / CVE
-  alerting, no built-in authentication, the gsd commit-timeout vs the 3.5 min hook) and
-  four `must` (the ten-concurrent latency bar waived under L18; CI resolving an unpinned
-  kernel the fixture pins; the root fillet's lead-in reaching above the pitch circle; the
-  filleted-spoke volume proof pinned, not derived) — deferred, each with its own trigger.
-  Resolved during v0.2: the round-bore chamfer reach, the tip-chamfer timeout margin, the
-  spoke arithmetic total, the cli.md exit-contract claim.
+- Four of the ten `docs/tech_debt/active/` items at the v0.2 close stay deferred, each
+  with an external trigger that has not fired: server-side request cancellation (the queue
+  saturating), no built-in authentication (binding to anything but localhost), Enji Guard /
+  CVE alerting (the owner's call), the gsd commit-timeout vs the ~3.5 min hook (upstream
+  exposes a setting). The other six — four `must`, the coverage floor and the `Shape`
+  typing — are v0.3's scope (see Current Milestone). Resolved during v0.2: the round-bore
+  chamfer reach, the tip-chamfer timeout margin, the spoke arithmetic total, the cli.md
+  exit-contract claim.
 - Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
   not a cut; keyway and hex cover the shafts a hobbyist actually has.
-- Helical, internal/ring and rack gears (v0.2 decision) — candidates for v0.3, one type
-  per phase, helical first; bevel needs a product-scope decision before it is even a
-  candidate (it contradicts "involute spur gear generator").
+- Helical, internal/ring and rack gears (v0.2 decision, deferred again at v0.3) —
+  candidates for v0.4, one type per phase, helical first; bevel needs a product-scope
+  decision before it is even a candidate (it contradicts "involute spur gear generator").
 
 ## Context
 
@@ -410,6 +453,19 @@ time per feature and for the composed sweep, every row inside 30 s after `spoke_
 3. **Old links unchanged.** A test proves every parameter set valid before v0.2 yields
    identical derived dimensions and an identical export after v0.2.
 
+## Success Metric (Milestone v0.3)
+
+Derived from the kickoff summary the human confirmed 2026-10-01 — amend if it reads wrong:
+
+1. **No `must` row left.** `docs/tech_debt/INDEX.md` "Active" has zero `must` rows, each
+   retired file carrying the sha of the commit that fixed it.
+2. **Every claim measured or warned.** The latency bar reads ≤2.00× on both runs of one
+   session or is superseded by an `Lxx` with the measurement; the lead-in limit is a
+   warning the user sees; the filleted-spoke volume matches a closed form; `make verify`'s
+   wall time and the coverage baseline are numbers in `bench/RESULTS.md`, not estimates.
+3. **Same part.** `tests/regression/pre_v0_2.json` byte-unchanged and green at the close;
+   `GearParams` has no new field.
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -428,4 +484,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-01 after the v0.2 milestone (Fit to Shaft).*
+*Last updated: 2026-10-01 after the v0.3 milestone start (Clean Ledger).*

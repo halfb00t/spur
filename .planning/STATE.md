@@ -1,20 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.2
-milestone_name: Fit to Shaft
-status: Awaiting next milestone
-stopped_at: Phase 12 complete — all phases complete
-last_updated: "2026-10-01T11:26:45.746Z"
+milestone: v0.3
+milestone_name: Clean Ledger
+status: planning
+last_updated: "2026-10-01T12:00:10.617Z"
 last_activity: 2026-10-01
-last_activity_desc: Milestone v0.2 completed and archived
-state_head: 6bbce0fe9862729294f9c994ad2c6e375512bb7d
 progress:
-  total_phases: 6
-  completed_phases: 1
-  total_plans: 34
-  completed_plans: 34
-  percent: 17
-current_phase: 12
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,14 +21,14 @@ See: .planning/PROJECT.md (updated 2026-10-01)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Planning the next milestone — v0.2 shipped 2026-10-01; `/gsd-new-milestone`
+**Current focus:** Milestone v0.3 Clean Ledger — defining requirements (debt-only; no new geometry)
 
 ## Current Position
 
-Phase: Milestone v0.2 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-01 — Milestone v0.2 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-01 — Milestone v0.3 started
 
 ## Performance Metrics
 
@@ -258,13 +254,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 12] All ten code-review findings (WR-01…WR-05, IN-01…IN-05) sit at disposition
-  `open` in `12-REVIEW-DISPOSITION.md` — none fixed, skipped or deferred. WR-01 (`cli.md`
-  "Errors" over-claims the `error: <field>: <message>` shape), WR-02 (`hole_count`'s comment
-  still cites the 14.87 s row as Phase 12's), WR-05 (L31 credits the field-walk proof to the
-  wrong test) are one-sentence doc fixes; WR-03/WR-04 (`bench.export_cost` and its child
-  process discard the failure's cause) are code. Triage before the PR lands so the record is
-  closed; nothing here blocks the milestone.
+- ℹ️ [Phase 12] All 14 code-review findings (WR-01…WR-09, IN-01…IN-05) are `fixed` per
+  `milestones/v0.2-phases/12-composition-pass/12-REVIEW-DISPOSITION.md` (`open: 0`, recorded
+  2026-10-01). An earlier version of this entry said ten were still `open` — stale, corrected
+  at the v0.3 start.
 - ℹ️ [Phase 12] The two build-timeout debts (Phase 10's tip-chamfer margin, Phase 11's spoke
   arithmetic total) are resolved by the composed sweep's measured numbers (`89304e2`); the
   tip-chamfer debt's concurrent-load question was re-homed into the Phase 2 latency debt's

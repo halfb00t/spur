@@ -1,48 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.2 — Fit to Shaft",
-  "phases": [
-    {
-      "number": "1",
-      "name": "6",
-      "status": "complete"
-    },
-    {
-      "number": "7",
-      "name": "Foundation",
-      "status": "complete"
-    },
-    {
-      "number": "8",
-      "name": "Hex Bore",
-      "status": "complete"
-    },
-    {
-      "number": "9",
-      "name": "Keyway Bore",
-      "status": "complete"
-    },
-    {
-      "number": "10",
-      "name": "Tooth-Tip Chamfer",
-      "status": "complete"
-    },
-    {
-      "number": "11",
-      "name": "Body Cutouts",
-      "status": "complete"
-    },
-    {
-      "number": "12",
-      "name": "Composition Pass",
-      "status": "complete"
-    }
-  ],
+  "milestone": "v0.3",
+  "phases": [],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
   },
-  "updated_at": "2026-10-01T11:26:45.768Z"
+  "updated_at": "2026-10-01T12:00:10.626Z"
 }
