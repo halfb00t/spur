@@ -1,27 +1,27 @@
 ---
 phase: 12-composition-pass
-fixed_at: 2026-10-01T08:13:34Z
+fixed_at: 2026-10-01T02:59:27Z
 review_path: .planning/phases/12-composition-pass/12-REVIEW.md
-iteration: 1
-findings_in_scope: 9
-fixed: 9
+iteration: 2
+findings_in_scope: 14
+fixed: 14
 skipped: 0
 status: all_fixed
 ---
 
 # Phase 12: Code Review Fix Report
 
-**Fixed at:** 2026-10-01
+**Fixed at:** 2026-10-01T02:59:27Z
 **Source review:** `.planning/phases/12-composition-pass/12-REVIEW.md`
-**Iteration:** 1
+**Iteration:** 2
 
 **Summary:**
-- Findings in scope: 9 (WR-01 through WR-09 at `critical_warning`; the five Info findings
-  are out of scope for this run)
-- Fixed: 9
+- Findings in scope: 14 (nine Warnings WR-01..WR-09, carried unchanged from iteration 1's
+  all-fixed run, plus the five Info findings IN-01..IN-05 fixed this iteration)
+- Fixed: 14
 - Skipped: 0
 
-All edits were made and committed directly in the main checkout on
+All edits for this iteration were made and committed directly in the main checkout on
 `gsd/phase-12-composition-pass` (`workflow.use_worktrees` is `false` in
 `.planning/config.json` — no worktree, branch, or sentinel was created). Every commit ran
 this project's real pre-commit gate (`make verify`: ruff, mypy `--strict`, import-boundary
@@ -152,12 +152,99 @@ the fix text offered as an alternative — out of scope for a doc-claim correcti
 requested by the orchestrator's task grouping. Verified by re-reading the edited sentence
 against `bench/export_cost.py:296-301`'s actual check (a set of triangle counts).
 
+### IN-01: `_decisions` docstring says integer arithmetic decides `adopted`; the wall clause is float
+
+**Files modified:** `bench/export_cost.py`
+**Commit:** `c26751a`
+**Applied fix:** Re-read the current docstring (lines 122-134, unchanged by the four
+iteration-1 fix commits, which only touched lines at and after 268) before editing.
+Replaced "Integer arithmetic decides `adopted`; `shrink_pct`/`wall_ratio` are floats for
+the printed verdict line only, never for the decision itself" with "Integer arithmetic
+decides the shrink clause (a `1 - a / b` form reads 0.0999... at exactly 10%, D-18); the
+wall clause compares the measured floats directly, `candidate <= 1.5 * current`.
+`shrink_pct`/`wall_ratio` are recomputed as floats for the printed verdict line only,
+never for either decision clause." This matches the actual code: `shrunk` is the only
+integer comparison, `wall_ok = candidate.concurrent_ms <= 1.5 * current.concurrent_ms` is
+a float comparison and is equally part of `adopted = shrunk and wall_ok`. Docstring-only
+change. Verified by re-reading `bench/export_cost.py:122-134` against `_decisions`'s body,
+`ast.parse`, `ruff check`, `mypy --strict` (all clean), and the commit-time `make verify`
+gate.
+
+### IN-02: `test_bench.py` docstring claims no `conftest.py` exists anywhere in the repo; `tests/conftest.py` does
+
+**Files modified:** `tests/test_bench.py`
+**Commit:** `c26751a`
+**Applied fix:** Read `tests/conftest.py` first to confirm it is exactly the autouse
+root-logger reset the finding described. Replaced "there is no `tests/__init__.py` or
+`conftest.py` anywhere in this repo to do it another way" with "there is no
+`tests/__init__.py` to do it another way, and `tests/conftest.py` (which exists for the
+logger reset) puts `tests/` on `sys.path`, not the repo root, so it does not help either."
+Kept the substantive point (the fixer's own observation: `conftest.py` puts `tests/` on
+`sys.path`, not the repo root, so it still would not resolve `bench`) rather than only
+deleting the false premise. Docstring-only change. Verified by re-reading
+`tests/test_bench.py:24-30`, `ast.parse`, `ruff check`, `mypy --strict` (all clean), and
+the commit-time `make verify` gate.
+
+### IN-03: `cli.md` "Tests" still says "4 tests" beside a new section that names three others
+
+**Files modified:** `docs/architecture/cli.md`
+**Commit:** `c26751a`
+**Applied fix:** Counted the actual test functions first (`grep -c "^def test_"
+tests/test_cli.py` → 22, not 4). Rather than replace one stale number with another number
+that will go stale the next time a test is added, dropped the count: "`tests/test_cli.py`,
+4 tests — added because..." became "`tests/test_cli.py` — added because...", keeping the
+file's own em-dash convention (checked against the rest of `cli.md`, which uses "—"
+throughout, not "--"). Verified by re-reading `docs/architecture/cli.md:71-78`, and the
+commit-time `make verify` gate.
+
+### IN-04: The shareable-link proof pins eight verbatim `app.js` source lines, so a whitespace-only edit fails a test named as a round-trip proof
+
+**Files modified:** `tests/test_api.py`
+**Commit:** `fb63a0f`
+**Applied fix:** Read 12-07-SUMMARY.md's D4 entry first, per the task's instruction: the
+test's deliberate design is a token-level proof (the hash → form → query path is generic
+and names no `GearParams` field), not a line-level one, so whitespace was never
+load-bearing for what it proves. Rather than note the brittleness in the docstring (the
+fix text's first alternative, which would leave the test still failing on a harmless
+reformat), applied the second alternative: collapsed runs of whitespace to one space on
+both `source` and each of the eight pinned snippets before the substring check
+(`re.sub(r"\s+", " ", ...)`), keeping the proof's content intact while dropping its
+sensitivity to indent width or line-wrapping. Did not touch the second half of the test
+(the loop asserting no `GearParams` field name appears as a quoted literal or `.field`
+access outside the `DIMS` block) — IN-04 named only the eight-snippet loop, and that
+second check already works against structural tokens (quotes, dots), not line shape.
+Verified by hand with a throwaway script: a simulated whitespace-only reformat (re-indent
+with tabs, re-wrap the long `for` line) still passes; a simulated semantic rename
+(`schema.properties` → `schema.props`) still fails — confirming the fix keeps what the
+proof was for and loses only what wasn't load-bearing. Also verified with `ast.parse`,
+`ruff check`, `mypy --strict` (all clean), the targeted test alone
+(`pytest tests/test_api.py -k shareable_link`: 1 passed), the full
+`tests/test_api.py` (54 passed), and the commit-time `make verify` gate.
+
+### IN-05: `cast(dict[str, float], HOLES)` asserts a type the value does not have
+
+**Files modified:** `tests/test_model.py`
+**Commit:** `4960978`
+**Applied fix:** The finding's own file reference in `12-REVIEW.md` (`tests/test_model.py`)
+was used as the source of truth over the orchestrator task's commit-group label (which
+named `tests/test_bench.py`, a file with no `HOLES`/`cast` usage at all — confirmed by
+grep before editing). Applied the fix text's intent, adapted to the real layout: annotated
+`HOLES` and `CELLS` as `dict[str, float]` at their own definitions (next to `SPOKES`,
+which already carries that annotation implicitly via its one float value, 13.2), dropped
+both `cast(dict[str, float], ...)` call sites inside `COMPOSED_CUTOUTS`, and removed the
+now-unused `from typing import cast` import (confirmed no other `cast(` call remained in
+the file before removing it). Verified by re-reading `tests/test_model.py:1-9`,
+`:252-255`, and `:1428-1432`; `ast.parse`, `ruff check`, `mypy --strict` (all clean);
+a targeted `pytest tests/test_model.py -k "composed or COMPOSED or holes or cells"`
+(42 passed); and the commit-time `make verify` gate.
+
 ## Skipped Issues
 
-None — all nine in-scope findings were fixed.
+None — all fourteen in-scope findings (nine Warnings carried from iteration 1, five Info
+findings fixed this iteration) were fixed.
 
 ---
 
-_Fixed: 2026-10-01_
+_Fixed: 2026-10-01T02:59:27Z_
 _Fixer: Claude (gsd-code-fixer)_
-_Iteration: 1_
+_Iteration: 2_

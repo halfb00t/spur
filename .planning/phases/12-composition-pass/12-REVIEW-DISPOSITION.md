@@ -3,6 +3,26 @@ phase: 12
 review: 12-REVIEW.md
 titles: json
 findings:
+  - id: IN-01
+    severity: info
+    disposition: fixed
+    title: "`_decisions` docstring says integer arithmetic decides `adopted`; the wall clause is float"
+  - id: IN-02
+    severity: info
+    disposition: fixed
+    title: "`test_bench.py` docstring claims no `conftest.py` exists anywhere in the repo; `tests/conftest.py` does"
+  - id: IN-03
+    severity: info
+    disposition: fixed
+    title: "`cli.md` \"Tests\" still says \"4 tests\" beside a new section that names three others"
+  - id: IN-04
+    severity: info
+    disposition: fixed
+    title: "The shareable-link proof pins eight verbatim `app.js` source lines, so a whitespace-only edit fails a test named as a round-trip proof"
+  - id: IN-05
+    severity: info
+    disposition: fixed
+    title: "`cast(dict[str, float], HOLES)` asserts a type the value does not have"
   - id: WR-01
     severity: warning
     disposition: fixed
@@ -39,49 +59,29 @@ findings:
     severity: warning
     disposition: fixed
     title: "\"L24's invariant held\" / \"identical mesh content\" overstates what the triangle-count comparison actually checks"
-  - id: IN-01
-    severity: info
-    disposition: open
-    title: "`_decisions` docstring says integer arithmetic decides `adopted`; the wall clause is float"
-  - id: IN-02
-    severity: info
-    disposition: open
-    title: "`test_bench.py` docstring claims no `conftest.py` exists anywhere in the repo; `tests/conftest.py` does"
-  - id: IN-03
-    severity: info
-    disposition: open
-    title: "`cli.md` \"Tests\" still says \"4 tests\" beside a new section that names three others"
-  - id: IN-04
-    severity: info
-    disposition: open
-    title: "The shareable-link proof pins eight verbatim `app.js` source lines, so a whitespace-only edit fails a test named as a round-trip proof"
-  - id: IN-05
-    severity: info
-    disposition: open
-    title: "`cast(dict[str, float], HOLES)` asserts a type the value does not have"
-open: 5
+open: 0
 total: 14
-recorded: 2026-10-01T02:19:17.851Z
+recorded: 2026-10-01T03:04:38.474Z
 ---
 
 # Phase 12: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-04 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-05 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-06 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-07 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-08 | warning | fixed | 12-REVIEW-FIX.md |
-| WR-09 | warning | fixed | 12-REVIEW-FIX.md |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
+| IN-01 | info | fixed | 12-REVIEW-FIX.md |
+| IN-02 | info | fixed | 12-REVIEW-FIX.md |
+| IN-03 | info | fixed | 12-REVIEW-FIX.md |
+| IN-04 | info | fixed | 12-REVIEW-FIX.md |
+| IN-05 | info | fixed | 12-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-04 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-05 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-06 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-07 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-08 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
+| WR-09 | warning | fixed | 12-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
