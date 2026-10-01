@@ -45,7 +45,7 @@ with tooth measurements untouched.
 - [x] **Phase 10: Tooth-Tip Chamfer** - An edge-break chamfer on the tooth-tip arcs (completed 2026-09-28)
 - [x] **Phase 11: Body Cutouts** - Lightening holes, spoke arms, or a honeycomb web — one (completed 2026-09-29)
       pattern per part
-- [ ] **Phase 12: Composition Pass** - The full feature matrix, the heaviest-configuration
+- [x] **Phase 12: Composition Pass** - The full feature matrix, the heaviest-configuration (completed 2026-09-30)
       build-time sweep, and three-interface parity
 
 ## Phase Details
@@ -349,17 +349,57 @@ closing out v0.2.
      appears in `/api/schema`; `spur info`/`spur export` print the same numbers and errors
      as the API for every new feature.
   3. `bench/RESULTS.md` records build time, plus fine-quality STL and STEP export time
-     inside the admission slot, for the heaviest combined configuration (recess + hex
-     pattern, per the milestone's Success Metric 2) and for each individual feature, all
-     inside `SPUR_BUILD_TIMEOUT=30s`.
+     inside the admission slot, for the heaviest combined configuration the composed
+     sweep measures — each cutout pattern stacked with the tip chamfer and a recess on
+     the heaviest bore its rules allow, at module 1.75 and 10 — and for each individual
+     feature, all inside `SPUR_BUILD_TIMEOUT` (12-CONTEXT.md D-01/D-03/D-06).
   4. L19's gzip-level table and L24's mesh-copy timing are re-measured against the heaviest
      v0.2 face topology, not assumed to still hold from v0.1's topology (Pitfall 8).
   5. Phase 7's regression fixture passes one final time across the whole matrix — every
      pre-v0.2 parameter set still yields identical `DerivedDimensions` and an identical
-     export after all of v0.2.
+     solid (volume, bounding box, face and edge counts) after all of v0.2; export bytes
+     are not compared (L26; 12-CONTEXT.md D-15).
 **Research flag**: No — this phase measures and integrates against decisions already locked
 in Phases 7–11; no open technical questions remain by this point.
-**Plans**: TBD
+**Plans**: 9/9 plans complete
+
+Plans:
+**Wave 1**
+
+- [x] 12-01-PLAN.md — D-06 first: amend SC3 (the composed sweep) and SC5 (the fixture's real contract) through the edit-phase tooling, one human confirmation (plus the "seven groups" and "where L19's row lands" questions) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 12-02-PLAN.md — Tracer: fine-STL bytes and triangles per sweep row (D-16); the 18-row composed sweep and its pin; the sweep run one gear at a time on a quiet host and recorded (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 12-03-PLAN.md — D-03's gate on the decisive composed rows (probe, human decision, apply and re-run); the two build-timeout debts resolved and the concurrent question re-homed (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 12-04-PLAN.md — `bench/export_cost.py` and `make bench.export`: L19's gzip table and L24's copy cost re-measured on the largest composed fine STL, L19's rule applied (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 12-05-PLAN.md — Calc matrix: 96 bore x cutout x recess x tip rows, and every locked refusal with each other family on (138 rows) (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [x] 12-06-PLAN.md — Kernel rows: the tip chamfer with each cutout on each bore, and a single-sided recess with each cutout, through the features' own proof helpers (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [x] 12-07-PLAN.md — Parity: the composed README link byte for byte on CLI and API, the model-field walk, the static URL round trip, every refusal on 422 and exit 2 (wave 7)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [x] 12-08-PLAN.md — The CLI's real exit contract in cli.md, pinned by tests, its debt resolved; the UI pass's "not taken" verdict on both form ideas (wave 8)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [x] 12-09-PLAN.md — D-10's measured gate cost against the phase start and its checkpoint, the final fixture pass, L31 (wave 9)
+
 **UI hint**: yes
 
 ## Process Notes (v0.2)
@@ -380,9 +420,9 @@ in Phases 7–11; no open technical questions remain by this point.
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
-| 7. Foundation | v0.2 | 2/2 | In Progress|  |
-| 8. Hex Bore | v0.2 | 4/4 | In Progress|  |
-| 9. Keyway Bore | v0.2 | 5/5 | In Progress|  |
-| 10. Tooth-Tip Chamfer | v0.2 | 5/5 | In Progress|  |
-| 11. Body Cutouts | v0.2 | 9/9 | In Progress|  |
-| 12. Composition Pass | v0.2 | 0/? | Not started | - |
+| 7. Foundation | v0.2 | 2/2 | Complete | 2026-09-26 |
+| 8. Hex Bore | v0.2 | 4/4 | Complete | 2026-09-26 |
+| 9. Keyway Bore | v0.2 | 5/5 | Complete | 2026-09-27 |
+| 10. Tooth-Tip Chamfer | v0.2 | 5/5 | Complete | 2026-09-28 |
+| 11. Body Cutouts | v0.2 | 9/9 | Complete | 2026-09-29 |
+| 12. Composition Pass | v0.2 | 9/9 | Complete | 2026-09-30 |

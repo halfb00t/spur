@@ -6,7 +6,10 @@ of `make verify`: a sweep at 200 teeth takes about a minute and a half, and a ti
 assertion on shared hardware would flap (the bench package's D-16 stance,
 `bench/latency.py`'s docstring). Run it with `make bench.build`, or `make bench.build
 SWEEP=bench/sweeps/<name>.json`. Phases 9-12 add their own sweep file and run this script
-unchanged (08-CONTEXT.md D-12).
+unchanged (08-CONTEXT.md D-12). Phase 12 (D-16) adds two columns: every row's fine-STL
+byte count and triangle count, so "the heaviest v0.2 face topology" 12-04 re-measures L19
+and L24 on is chosen by a number, not by inspection. The columns print for every sweep
+file from here on; earlier `bench/RESULTS.md` sections are not back-filled.
 """
 
 from __future__ import annotations
@@ -37,6 +40,10 @@ class Timing:
     build: float
     stl: float
     step: float
+    stl_bytes: int
+    stl_triangles: int
+    # No defaults on the two fields above: a default 0 would be a plausible-looking
+    # fake STL size for a row nobody actually measured (L08).
 
     @property
     def worst_request(self) -> float:
@@ -73,29 +80,63 @@ def load_sweep(path: Path) -> list[tuple[str, GearParams]]:
     return sets
 
 
-def time_set(p: GearParams) -> tuple[float, float, float]:
-    """Build wall time (cold solid cache), fine-STL export time, STEP export time."""
+def stl_size(data: bytes) -> tuple[int, int]:
+    """(byte count, triangle count) of a binary STL -- the triangle count read straight
+    from the header's own 4-byte little-endian uint32 at bytes 80-84 (O(1); RESEARCH.md
+    "Don't Hand-Roll": the count is already in the header, walking every facet with
+    `test_model.py`'s `_stl_triangles` is for content proofs, not counting).
+
+    Raises when the length disagrees with `84 + 50 * n`: a truncated file, or an ASCII
+    STL that happens to carry 80 header-like bytes, would otherwise hand back a
+    plausible-looking but wrong count (L08) -- exactly the failure a slicer needs a
+    watertight, correctly-sized mesh to avoid.
+    """
+    n = int.from_bytes(data[80:84], "little")
+    expected = 84 + 50 * n
+    if len(data) != expected:
+        raise ValueError(
+            f"STL is {len(data)} bytes but its header's triangle count ({n}) implies "
+            f"{expected} bytes -- truncated file or not a binary STL, refusing to "
+            "report a triangle count that would be a plausible wrong number")
+    return len(data), n
+
+
+def time_set(p: GearParams) -> tuple[float, float, float, int, int]:
+    """Build wall time (cold solid cache), fine-STL export time, STEP export time, and
+    the fine STL's byte count and triangle count (D-16). The size is read from the
+    already-exported bytes after `stl_s` is taken, so it does not inflate the timed
+    export region."""
     model._build_cached.cache_clear()
     t0 = time.perf_counter()
     model.build(p)
     build_s = time.perf_counter() - t0
     t0 = time.perf_counter()
-    model.export(p, "stl", "fine")
+    data = model.export(p, "stl", "fine")
     stl_s = time.perf_counter() - t0
     t0 = time.perf_counter()
     model.export(p, "step")
     step_s = time.perf_counter() - t0
-    return build_s, stl_s, step_s
+    stl_bytes, stl_triangles = stl_size(data)
+    return build_s, stl_s, step_s, stl_bytes, stl_triangles
 
 
-def report(path: Path, timings: list[Timing], timeout: int) -> str:
+def report(path: Path, timings: list[Timing], timeout: int,
+           load: tuple[float, float, float]) -> str:
+    if not timings:
+        raise ValueError(
+            f"{path} produced no timings -- an empty sweep must be refused loudly, "
+            "never printed as an empty table that reads as a pass")
     versions = ", ".join(f"{dist} {metadata.version(dist)}"
                           for dist in ("cadquery", "cadquery-ocp"))
     head = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"],
         capture_output=True, text=True, check=True,
     ).stdout.strip()
-    load1, load5, load15 = os.getloadavg()
+    # `load` is read by the caller before the first row builds (12-03 fix): a sweep at
+    # 200 teeth runs 6-7 minutes, and a reading taken here -- after every row already
+    # built -- made the "at start" label false (bench/RESULTS.md "Composed build and
+    # export time (Phase 12)" intro; 12-02-SUMMARY.md documented the mismeasurement).
+    load1, load5, load15 = load
     lines = [
         f"- Machine: {machine_facts()}",
         f"- Python: {platform.python_version()}",
@@ -106,17 +147,21 @@ def report(path: Path, timings: list[Timing], timeout: int) -> str:
         f"- SPUR_BUILD_TIMEOUT: {timeout} s, a cold request is one build plus one export",
         "",
         "| Parameter set | Build (s) | Fine STL (s) | STEP (s) | "
-        f"Build + slower export (s) | Inside {timeout} s |",
-        "|---|---|---|---|---|---|",
+        f"Build + slower export (s) | Inside {timeout} s | Fine STL (bytes) | Triangles |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for t in timings:
         verdict = "yes" if t.inside(timeout) else "**NO**"
         lines.append(f"| {t.label} | {t.build:.2f} | {t.stl:.2f} | {t.step:.2f} | "
-                      f"{t.worst_request:.2f} | {verdict} |")
+                      f"{t.worst_request:.2f} | {verdict} | {t.stl_bytes} | "
+                      f"{t.stl_triangles} |")
     heaviest = max(timings, key=lambda t: t.worst_request)
     lines.append("")
     lines.append(f"**Heaviest:** {heaviest.label} -- {heaviest.worst_request:.2f} s "
                  f"of {timeout} s.")
+    largest = max(timings, key=lambda t: t.stl_bytes)
+    lines.append(f"**Largest fine STL:** {largest.label} -- {largest.stl_bytes} bytes, "
+                 f"{largest.stl_triangles} triangles.")
     return "\n".join(lines)
 
 
@@ -137,11 +182,16 @@ def main(argv: list[str] | None = None) -> int:
 
     sets = load_sweep(args.sweep)  # fails before any build if a set is not buildable
 
+    # Read before the first row builds, not after the sweep finishes (12-03 fix): a
+    # sweep at 200 teeth runs 6-7 minutes, so a reading taken after the loop was really
+    # an end-of-run figure printed under an "at start" label.
+    load = os.getloadavg()
+
     # Time every set before deciding the exit code -- a short-circuiting generator
     # would silently skip the rest (bench/latency.py's own rule).
     timings = [Timing(label, *time_set(p)) for label, p in sets]
 
-    print(report(args.sweep, timings, args.timeout))
+    print(report(args.sweep, timings, args.timeout, load))
 
     over_budget = [t for t in timings if not t.inside(args.timeout)]
     for t in over_budget:

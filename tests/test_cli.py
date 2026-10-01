@@ -1,17 +1,36 @@
 """The CLI had no tests, and the README's own example did not run."""
 
 import json
+import re
+import subprocess
+import sys
 from pathlib import Path
+from typing import get_args
 
 import cadquery as cq
 import pytest
+from composition import BORE_REFUSALS, CUTOUT_REFUSALS
 from fastapi.testclient import TestClient
 
 import spur.app
 import spur.model
 from spur import cli
 from spur.app import InfoQuery
-from spur.calc import DerivedDimensions
+from spur.calc import DerivedDimensions, check
+from spur.params import GearParams
+
+# The README's composed link (D-14): every v0.2 family on one 19-tooth gear -- a keyed
+# round bore, spoke arms, both recesses (the default) and a tooth-tip chamfer. Order
+# matches the README line so `_flags` reproduces it verbatim.
+COMPOSED: dict[str, object] = {
+    "bore_flat": 0, "keyway_width": 3, "keyway_depth": 1.4, "spoke_count": 4,
+    "spoke_width": 2, "hub_d": 13.2, "rim_wall": 1, "spoke_fillet": 1, "tip_chamfer": 0.4,
+}
+
+
+def _flags(params: dict[str, object]) -> list[str]:
+    """A parameter dict as `--name-with-dashes=value` CLI arguments."""
+    return [f"--{k.replace('_', '-')}={v}" for k, v in params.items()]
 
 
 def test_info_reports_the_mate_it_was_asked_about(capsys: pytest.CaptureFixture[str]) -> None:
@@ -121,6 +140,99 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     cli.main(["export", "-o", str(honeycomb), "--hex-cell", "3", "--hex-wall", "1"])
     assert honeycomb.stat().st_size > 1000
     assert "warning:" not in capsys.readouterr().err
+
+    # D-14: the composed link -- every v0.2 family on one gear -- is documented, and the
+    # documented command is asserted present before it is run (a doc/test drift would
+    # fail here, not silently pass on a hand-typed copy).
+    readme = (Path(__file__).parents[1] / "README.md").read_text()
+    # The README spells flags space-separated (`--flag value`), _flags spells them
+    # `--flag=value`; compare on the documented form.
+    composed_cmd_readme_form = ("spur export -o everything.stl "
+                                + " ".join(f"--{k.replace('_', '-')} {v}"
+                                          for k, v in COMPOSED.items()))
+    assert composed_cmd_readme_form in readme
+
+    everything = tmp_path / "everything.stl"
+    cli.main(["export", "-o", str(everything), *_flags(COMPOSED)])
+    assert everything.stat().st_size > 1000
+    assert "warning:" not in capsys.readouterr().err
+
+
+def test_cli_and_api_print_the_same_composed_document(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-11: the composed link (every v0.2 family on) and the empty link (edge: empty)
+    print the identical document on both interfaces, byte for byte once the API's
+    compact JSON is re-indented the way the CLI already indents it (A1 -- the raw bytes
+    can never match, since the API serves compact JSON and the CLI prints
+    `indent=2`)."""
+    client = TestClient(spur.app.app)
+
+    for params in (COMPOSED, {}):
+        cli.main(["info", *_flags(params)])
+        cli_out = capsys.readouterr().out.rstrip("\n")
+        api_out = client.get("/api/info", params=params)
+        want = json.dumps(api_out.json(), indent=2, ensure_ascii=False)
+        assert cli_out == want
+        assert list(json.loads(cli_out)) == list(DerivedDimensions.model_fields)
+
+    cli.main(["info", *_flags(COMPOSED)])
+    composed_doc = json.loads(capsys.readouterr().out)
+    assert composed_doc["warnings"] == []
+    for key in ("tip_chamfer_effective", "bore_effective", "keyway_floor_to_wall",
+               "keyway_width_effective", "recess_id", "recess_od", "recess_fillet",
+               "web", "cutout_hub_wall", "cutout_rim_wall", "spoke_fillet_effective"):
+        assert composed_doc[key] is not None, key
+
+
+def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-11: walks `GearParams.model_fields` -- never the consumer under test's own
+    field list -- across `/api/schema` (the form's source) and the CLI parser. A field
+    missing a group/title/unit/step, a moved field, or a flag that drifted from its
+    field name now fails here generically, instead of only on the handful of fields the
+    per-feature parity tests happen to cover.
+
+    Order and group names are pinned, not discretionary (12-01-SUMMARY.md, the human's
+    binding "seven" answer): the schema carries seven groups, in this order --
+    Teeth, Body, Bore, Recess, Spokes, Holes, Honeycomb -- and `recess_sides` lives in
+    Recess, checked as `enum`, not `step`.
+    """
+    names = list(GearParams.model_fields)
+    props = TestClient(spur.app.app).get("/api/schema").json()["properties"]
+    assert list(props) == names  # buildForm() renders schema.properties in this order
+
+    for name in names:
+        prop = props[name]
+        assert "group" in prop, name
+        assert "title" in prop, name
+        assert "unit" in prop, name
+        if name == "recess_sides":
+            assert "step" not in prop
+        else:
+            assert "step" in prop, name
+
+    assert props["recess_sides"]["enum"] == list(
+        get_args(GearParams.model_fields["recess_sides"].annotation))
+
+    # Each fieldset holds a contiguous run: a group may not start, end and then start
+    # again further down the field list.
+    seen_groups: list[str] = []
+    for name in names:
+        group = props[name]["group"]
+        if not seen_groups or seen_groups[-1] != group:
+            assert group not in seen_groups, f"group {group!r} reappeared out of order"
+            seen_groups.append(group)
+    assert seen_groups == ["Teeth", "Body", "Bore", "Recess", "Spokes", "Holes",
+                          "Honeycomb"]
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", "--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    _, _, after = out.partition("gear parameters (defaults in brackets):\n")
+    assert after  # the section header must have been found
+    flags = re.findall(r"^\s+(--[a-z][a-z-]*)", after, re.MULTILINE)
+    assert flags == ["--" + n.replace("_", "-") for n in names]
 
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
@@ -285,10 +397,69 @@ def test_a_honeycomb_wall_under_min_wall_exits_2_and_names_it(
     assert "increase hex_wall" in err
 
 
+_ALL_REFUSALS: dict[str, dict[str, object]] = {**BORE_REFUSALS, **CUTOUT_REFUSALS}
+
+
+@pytest.mark.parametrize(("refusal_id", "refusal"), list(_ALL_REFUSALS.items()),
+                         ids=list(_ALL_REFUSALS))
+def test_every_refusal_reads_the_same_on_the_api_and_the_cli(
+        refusal_id: str, refusal: dict[str, object],
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-08 (one API row and one CLI row per refusal) and D-11: each of the 23 locked
+    refusals (`tests/composition.py`'s `BORE_REFUSALS`/`CUTOUT_REFUSALS`), composed with
+    the tip chamfer and a single-sided recess, gives the identical sentence on the
+    API's 422 and the CLI's exit 2.
+
+    `tests/composition.py`'s `BORE_REFUSAL_FAMILIES`/`CUTOUT_REFUSAL_FAMILIES` list
+    "tip"/`TIPS["on"]` and "recess-top"/`RECESSES["top"]` (never together) among the
+    families 12-05's own calc-level test already proves leave a refusal's sentence and
+    fields unchanged; neither appears in that test's `TWO_REFUSALS` or `DATUM_ROWS`
+    tables, so composing both together, as this test does, carries no extra risk of a
+    second refusal or a moved datum. `sentence`/`fields` are calc's own, read from
+    `check()` on the refusal alone -- a differential test of an invariant (12-05's
+    shape), not an oracle derived from the code under test (L08).
+    """
+    params: dict[str, object] = {"tip_chamfer": 1.75, "recess_sides": "top", **refusal}
+    alone = check(GearParams.model_construct(**refusal))  # type: ignore[arg-type]
+    sentence = " ".join(s for s, _ in alone)
+    fields = sorted({f for _, fs in alone for f in fs})
+
+    client = TestClient(spur.app.app)
+    r = client.get("/api/info", params=params)
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["msg"] == sentence
+    assert detail["ctx"]["fields"] == fields
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", *_flags(params)])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err.strip()
+    assert err == f"error: {sentence}"
+
+
 def test_unknown_output_extension_is_refused(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         cli.main(["export", "-o", str(tmp_path / "gear.obj")])
     assert "must end in .stl or .step" in str(exc.value)
+    # A SystemExit raised with a string argument prints it and exits 1, not argparse's 2
+    # (D-13) -- cli.md's "Errors" section states this exactly.
+    assert exc.value.code == "error: output must end in .stl or .step (or pass --format)"
+
+
+def test_an_unknown_output_extension_exits_1_from_the_real_process(tmp_path: Path) -> None:
+    """The doc's claim (cli.md "Errors") executed once against the real process, not just
+    SystemExit's own `code` attribute -- the debt this closes (D-13) was exactly that the
+    doc's claim had never been executed. `cmd_export` imports the kernel before checking
+    the extension, so this subprocess costs ~2 s (measured at planning); every other test
+    in this file calls `cli.main()` in-process instead."""
+    out = tmp_path / "gear.obj"
+    result = subprocess.run(
+        [sys.executable, "-m", "spur.cli", "export", "-o", str(out)],
+        capture_output=True, text=True, check=False)
+    assert result.returncode == 1
+    assert "error: output must end in .stl or .step (or pass --format)" in result.stderr
+    assert not out.exists()
 
 
 def test_a_tip_chamfer_that_selects_no_tip_arcs_stops_the_export_and_writes_nothing(
@@ -310,4 +481,5 @@ def test_a_tip_chamfer_that_selects_no_tip_arcs_stops_the_export_and_writes_noth
         cli.main(["export", "-o", str(out), "--teeth", "67", "--tip-chamfer", "0.4",
                   "--quality", "preview"])
     assert str(exc.value.code).startswith("error: Tip chamfer selected no tip-arc edges")
+    assert isinstance(exc.value.code, str)  # a BuildError exits 1, not argparse's 2 (D-13)
     assert not out.exists()

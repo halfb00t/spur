@@ -51,7 +51,10 @@ something other than the event loop, change what the harness measures (restart b
 runs, or a higher sample floor) as a logged decision, not a tune toward a pass.
 
 Revisit when: 02-05 writes L17/L18 (carry this caveat verbatim), the harness or the
-machine changes, or any run reads above 2.45x (the pre-fix worst).
+machine changes, or any run reads above 2.45x (the pre-fix worst), or the composed worst
+row of bench/RESULTS.md "Composed build and export time (Phase 12)" is measured under ten
+concurrent builds -- the question the tip-chamfer margin debt left open, re-homed here
+when it was resolved (12-CONTEXT.md D-04).
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

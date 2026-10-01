@@ -1,0 +1,192 @@
+[
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 43.35,
+    "spoke_count": 32,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 9,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "spoke_count": 32,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 43.35,
+    "spoke_count": 32,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "tip_chamfer": 3,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 9,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "spoke_count": 32,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "tip_chamfer": 3,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 156.3,
+    "hole_count": 60,
+    "hole_d": 1,
+    "hole_circle_d": 183.4,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 9,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "hole_count": 60,
+    "hole_d": 1,
+    "hole_circle_d": 183.4,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 200,
+    "hole_count": 60,
+    "hole_d": 5.85,
+    "hole_circle_d": 400,
+    "tip_chamfer": 3,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 9,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "hole_count": 60,
+    "hole_d": 5.85,
+    "hole_circle_d": 400,
+    "tip_chamfer": 3,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 200,
+    "hex_cell": 3,
+    "hex_wall": 0.4,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 9,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "hex_cell": 3,
+    "hex_wall": 0.4,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_hex": 200,
+    "hex_cell": 3,
+    "hex_wall": 5,
+    "tip_chamfer": 3,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "bore_d": 9,
+    "bore_flat": 0,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "hex_cell": 3,
+    "hex_wall": 5,
+    "tip_chamfer": 3,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_hex": 200,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "bore_d": 200,
+    "bore_flat": 150,
+    "keyway_width": 3,
+    "keyway_depth": 1.4,
+    "recess_sides": "both",
+    "bore_chamfer": 0.4
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "tip_chamfer": 1.75,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hole_count": 60,
+    "hole_d": 1,
+    "hole_circle_d": 183.4,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 10,
+    "spoke_count": 32,
+    "spoke_width": 0.4,
+    "hub_d": 52,
+    "rim_wall": 0.4,
+    "spoke_fillet": 5,
+    "recess_sides": "both"
+  },
+  {
+    "teeth": 200,
+    "module": 1.75,
+    "hex_cell": 3,
+    "hex_wall": 0.4,
+    "recess_sides": "both"
+  }
+]

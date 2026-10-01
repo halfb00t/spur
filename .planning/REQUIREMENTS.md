@@ -105,11 +105,11 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.1-REQUIREME
   parameters, and the README's example links — yields identical `DerivedDimensions` (all
   19 fields) and an identical solid volume and bounding box after **each** phase. Export
   bytes are not compared: OCCT export is not byte-reproducible (L24).
-- [ ] **REQ-three-interfaces-extended**: Every new parameter is on the web form (in its
+- [x] **REQ-three-interfaces-extended**: Every new parameter is on the web form (in its
   own group), the API query and the CLI flags from the one `GearParams` model,
   round-trips through the shareable URL, appears in `/api/schema`, and `spur info` /
   `spur export` print the same numbers and errors as the API.
-- [ ] **REQ-measured-build-time**: A recorded build time, plus fine-quality STL and STEP
+- [x] **REQ-measured-build-time**: A recorded build time, plus fine-quality STL and STEP
   export time inside the admission slot, per feature at its heaviest allowed
   configuration — including a recess combined with each cutout pattern, and the honeycomb
   at its cap — in `bench/RESULTS.md`, inside `SPUR_BUILD_TIMEOUT`. The honeycomb cap and
@@ -194,8 +194,8 @@ research flags): `ROADMAP.md` "Phase Details".
 | REQ-tip-chamfer | Phase 10 | Complete |
 | REQ-tip-chamfer-capped | Phase 10 | Complete |
 | REQ-defaults-off-regression | Phase 7 | Complete |
-| REQ-three-interfaces-extended | Phase 12 | Pending |
-| REQ-measured-build-time | Phase 12 | Pending |
+| REQ-three-interfaces-extended | Phase 12 | Complete |
+| REQ-measured-build-time | Phase 12 | Complete |
 | REQ-derived-dimensions-additive | Phase 8 | Complete |
 | REQ-edge-selection-proven | Phase 7 | Complete |
 

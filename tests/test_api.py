@@ -139,6 +139,65 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     assert {"span_teeth", "centre_distance", "warnings"} <= model_fields
 
 
+def test_the_shareable_link_round_trips_every_field_through_generic_code() -> None:
+    """D-11's static proof, the browser-test idea's own "cheaper first step": the
+    hash -> form -> query path in app.js handles every `GearParams` field generically,
+    with no per-field code (D-12; 08 D-09 stands). A renamed or added field cannot
+    silently break the shareable-link round trip without this catching it. The browser
+    itself is checked by hand at gsd-verify-work, against the checklist in
+    12-07-PLAN.md's `<verification>`.
+    """
+    source = (STATIC / "app.js").read_text()
+
+    # IN-04 (12-REVIEW.md): this proof is pinned to these exact tokens (D-4,
+    # 12-07-SUMMARY.md) -- a renamed variable or restructured loop must fail it -- but a
+    # whitespace-only reformat of app.js (indent width, a long line re-wrapped) proves
+    # nothing about field-genericity and must not fail it. Collapsing all whitespace runs
+    # to one space on both sides keeps the token-level proof and drops only the part that
+    # was never load-bearing.
+    collapsed_source = re.sub(r"\s+", " ", source)
+
+    # The generic loops the round trip rests on: buildForm() reads every schema
+    # property and records it under its own name; readHash() writes the hash back into
+    # every recorded field; gearQuery() reads every field back into the query; update()
+    # builds the shareable hash from that query and writes it with history.
+    # replaceState(); the copy-link handler copies the resulting location.href; and
+    # hashchange re-reads the hash on navigation (e.g. the copied link opened fresh).
+    for snippet in (
+        "for (const [name, prop] of Object.entries(schema.properties)) {",
+        "fields.set(name, { input, wrap, title });",
+        "for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];",
+        "q.set(name, input.value)",
+        "const infoQ = new URLSearchParams(q);",
+        "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
+        "navigator.clipboard.writeText(location.href)",
+        "window.addEventListener('hashchange', () => { readHash(); update(); });",
+    ):
+        assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
+
+    # Cut the `const DIMS = [` ... `];` block out: two of its keys (root_fillet,
+    # recess_fillet) are also GearParams names, and the sibling test above already
+    # covers DIMS's own generic-enough shape for the UI's dimension list. What remains
+    # must name no GearParams field, outside that block, as a per-field special case.
+    dims_block = re.search(r"const DIMS = \[.*?\];", source, re.DOTALL)
+    assert dims_block  # a regex that silently stopped matching must fail, not pass
+    rest = source[:dims_block.start()] + source[dims_block.end():]
+
+    # The pattern's own known false-positive case: a bare-word search for "teeth"
+    # matches inside the '#mate-teeth' DOM id (line 9), which must not be read as the
+    # field "teeth". Quote-adjacency (a quote immediately before AND after the name) is
+    # what tells them apart -- '#mate-teeth' has no quote immediately before "teeth".
+    assert not re.search(r"""['"]teeth['"]""", "'#mate-teeth'")
+
+    for name in GearParams.model_fields:
+        # A field name written as a complete quoted string literal ('name' or "name"),
+        # not merely as a substring of a longer quoted string (the case above).
+        assert not re.search(r"""['"]""" + re.escape(name) + r"""['"]""", rest), name
+        # A field name read off an object as `something.<field>` -- per-field property
+        # access, the shape a conditional-field or bore-selector patch would add.
+        assert not re.search(r"\." + re.escape(name) + r"\b", rest), name
+
+
 def test_info_reports_the_mate() -> None:
     r = client.get("/api/info", params={"teeth": 21, "mate_teeth": 40})
     assert r.status_code == 200
@@ -356,7 +415,7 @@ def test_a_spoke_link_is_served_with_the_fillet_it_cut() -> None:
     assert props["spoke_count"]["group"] == "Spokes"
     assert props["spoke_count"]["type"] == "integer"
     assert props["spoke_count"]["minimum"] == 0
-    assert props["spoke_count"]["maximum"] == 40
+    assert props["spoke_count"]["maximum"] == 32
     assert props["spoke_count"]["default"] == 0
     assert props["spoke_count"]["step"] == 1
     assert props["spoke_width"]["unit"] == "mm"

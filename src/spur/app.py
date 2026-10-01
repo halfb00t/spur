@@ -186,6 +186,22 @@ app = FastAPI(
 # mostly non-repeating 32-bit floats -- there is little redundancy left for a slower zlib
 # search to find, so the extra CPU cost buys almost nothing here. Level 1 wins on both
 # rule clauses.
+#
+# Re-measured 2026-09-30 on the heaviest v0.2 topology (D-16: the composed-sweep row with
+# the largest measured fine STL), `teeth=200 module=10 bore_hex=200 hole_count=60
+# hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both`, 17,306,084 bytes, host
+# loadavg 1.38/2.35/3.47 at start (quiet, per D-02's <1.5 bar), via `make bench.export`
+# (D-17; bench/RESULTS.md "Export cost on the heaviest v0.2 topology (Phase 12)"):
+#
+#   level | single-threaded median | output bytes (% of input) | 10-concurrent wall (median of 3)
+#   ----- | ----------------------- | -------------------------- | ---------------------------------
+#     1   |  95.3 ms                | 5,170,722 (29.9%)          |  118.2 ms
+#     6   | 274.2 ms                | 4,785,216 (27.7%)          |  324.3 ms
+#     9   | 1352.1 ms               | 4,786,073 (27.7%)          | 1587.3 ms
+#
+# Level 6 over level 1: 7.46% smaller -- misses the 10% bar; level 9 over level 1: 7.44%
+# smaller, also misses it (and its wall is 13.43x level 1's). The rule still selects level
+# 1 on this much heavier mesh (D-18).
 _GZIP_LEVEL = 1
 
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=_GZIP_LEVEL)
