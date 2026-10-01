@@ -5,39 +5,39 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`cli.md` \"Errors\" claims every parameter error prints `error: <field>: <message>` -- two of the three shapes it groups do not"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`hole_count`'s comment still attributes the 14.87 s row to \"Phase 12 ... (re-measured in the same section)\" after this phase corrected the identical sentence on `spoke_count`"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`bench.export_cost` exits 1 on its only failure path without saying why"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A failing child process reports only \"returned non-zero exit status 1\" -- its `BuildError` text and traceback are captured and discarded"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "L31 attributes the \"schema, form source and CLI parser in one order\" proof to the wrong test"
   - id: WR-06
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "the \"level 9 compared against the currently-adopted level\" regression test can't actually distinguish that from the bug it names"
   - id: WR-07
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "decision-log and RESULTS.md prose calls two end-of-run load readings \"at-start loads\""
   - id: WR-08
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "L31 says every composed pattern measured below its arithmetic total; the honeycomb row it cites in the same sentence measured above it"
   - id: WR-09
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "\"L24's invariant held\" / \"identical mesh content\" overstates what the triangle-count comparison actually checks"
   - id: IN-01
     severity: info
@@ -59,24 +59,24 @@ findings:
     severity: info
     disposition: open
     title: "`cast(dict[str, float], HOLES)` asserts a type the value does not have"
-open: 14
+open: 5
 total: 14
-recorded: 2026-09-30T17:12:15.251Z
+recorded: 2026-10-01T02:19:17.851Z
 ---
 
 # Phase 12: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
-| WR-06 | warning | open | - |
-| WR-07 | warning | open | - |
-| WR-08 | warning | open | - |
-| WR-09 | warning | open | - |
+| WR-01 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-05 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-06 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-07 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-08 | warning | fixed | 12-REVIEW-FIX.md |
+| WR-09 | warning | fixed | 12-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
