@@ -149,6 +149,14 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     """
     source = (STATIC / "app.js").read_text()
 
+    # IN-04 (12-REVIEW.md): this proof is pinned to these exact tokens (D-4,
+    # 12-07-SUMMARY.md) -- a renamed variable or restructured loop must fail it -- but a
+    # whitespace-only reformat of app.js (indent width, a long line re-wrapped) proves
+    # nothing about field-genericity and must not fail it. Collapsing all whitespace runs
+    # to one space on both sides keeps the token-level proof and drops only the part that
+    # was never load-bearing.
+    collapsed_source = re.sub(r"\s+", " ", source)
+
     # The generic loops the round trip rests on: buildForm() reads every schema
     # property and records it under its own name; readHash() writes the hash back into
     # every recorded field; gearQuery() reads every field back into the query; update()
@@ -165,7 +173,7 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "navigator.clipboard.writeText(location.href)",
         "window.addEventListener('hashchange', () => { readHash(); update(); });",
     ):
-        assert snippet in source, snippet
+        assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 
     # Cut the `const DIMS = [` ... `];` block out: two of its keys (root_fillet,
     # recess_fillet) are also GearParams names, and the sibling test above already
