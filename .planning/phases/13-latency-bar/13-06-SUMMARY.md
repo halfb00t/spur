@@ -18,7 +18,7 @@ actuals:
   tasks: 3
   commits: 5
   plan_head_before: 420f200
-  plan_head_after: PENDING
+  plan_head_after: 3a1e35e
 
 tech-stack:
   added: []
@@ -112,7 +112,7 @@ status: complete
 2. **Task 2 (prior session): the harness taught the composed scenario** - `bfa54b7` (chore)
 3. **Task 2 (this continuation): the six raw SC3 captures, committed unmodified** - `960866f` (docs)
 4. **Task 3 (this continuation): bench/RESULTS.md's SC3 section + the debt file + INDEX.md** - `a04a7e8` (docs)
-5. **Plan metadata (this continuation): SUMMARY, STATE, ROADMAP** - `PENDING` (docs: complete plan; sha fixed in a follow-up commit per the chicken-and-egg precedent, `420f200`)
+5. **Plan metadata (this continuation): SUMMARY, STATE, ROADMAP** - `3a1e35e` (docs: complete plan, SC3 recorded, debt filed; this own SUMMARY's `plan_head_after`/commit reference fixed in the follow-up commit below, per the chicken-and-egg precedent, `420f200`)
 
 ## Files Created/Modified
 
