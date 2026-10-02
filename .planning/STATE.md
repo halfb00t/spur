@@ -4,17 +4,17 @@ milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 13
 current_phase_name: Latency Bar
-status: executing
-stopped_at: Completed 13-06-PLAN.md -- SC3 recorded (composed row cannot complete under ten concurrent builds), debt filed
-last_updated: "2026-10-02T08:47:39.000Z"
+status: verifying
+stopped_at: "Completed 13-07-PLAN.md -- Phase 13 complete: L32 logged, debt retired, fleet-user confirmed restored, make verify green"
+last_updated: "2026-10-02T09:39:39.467Z"
 last_activity: 2026-10-02
 last_activity_desc: Phase 13 execution continued -- SC3 measured and recorded
-state_head: a04a7e8
+state_head: 05668efb17ccc311dd3254821f911acc422cc570
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
   percent: 50
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 13 (Latency Bar) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-02 — SC3 measured and recorded (13-06)
   The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
 
@@ -172,6 +172,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 13 P04 | 8min | 1 tasks | 6 files |
 | Phase 13 P05 | 2min | 0 tasks | 0 files |
 | Phase 13 P06 | ~69min total (continuation: Task 2 close-out + Task 3, ~45min) | 3 tasks | 13 files |
+| Phase 13 P07 | ~25min (continuation; Task 1 prior session) | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -274,6 +275,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 13]: 13-06: SC3 (the composed worst row under ten concurrent builds) ran once on a fresh server behind the D-05 gate (900s cap, non-decisive) and aborted after every request was sent: 0 of 10 served, 6 of 10 refused (503 busy), 4 of 10 admitted and all four exceeded SPUR_BUILD_TIMEOUT -- two via the documented BuildTimeout path, two via an undocumented 500. Human's checkpoint decision: record it as-is, file the behaviour as debt, no retry, no src/ change (D-16, D-17).
 - [Phase 13]: 13-06: filed must-severity debt (docs/tech_debt/active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md): two same-slot timed-out requests race _run_with_timeout's cleanup -- the second caller's `executor` local still points at the object the first caller's recreate_for already shut down, so `executor._processes` reads None and raises AttributeError, surfacing as an undocumented 500. The worst row's own 0.58s margin (Phase 12's re-run) also disappeared under this contention, folded into the same debt file as a related finding.
 - [Phase 13]: 13-06: bench/RESULTS.md's SC3 section is built entirely from the committed server records (sc3.server1.records.jsonl), not a client-side latency table -- the harness's own requests tuple was never built (it crashed mid-comprehension) and no client wall-time exists for any of the ten rows; in-process/split-poller idle/under-load ratios are reported as absent with reason, never estimated from a substitute boundary (L08).
+- [Phase 13]: L32 appended (amends L18, append-only): the bar demonstrated outright on bar-3 (outcome a, Run 13 1.31x / Run 14 1.42x) -- 13-05's outcome-(b) path and D-09/D-11 were never reached
+- [Phase 13]: The 2026-09-23 waived-latency debt retired in 6709953 (sha recorded in follow-up 05668ef, since a file cannot carry its own commit's sha); Dockerfile's measured-p95 comment updated (eight -> fifteen runs), no ratio bar cited
+- [Phase 13]: fleet-user's pre-phase state was already Exited -- the phase never started it, so 13-07's host-restore step confirmed it unchanged (Exited) rather than running docker start; spur-spur-1 stayed Up throughout; make verify green (910 passed) at phase close
 
 ### Pending Todos
 
@@ -372,8 +376,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T08:47:39.000Z
-Stopped at: Completed 13-06-PLAN.md -- SC3 recorded, debt filed
+Last session: 2026-10-02T09:39:39.442Z
+Stopped at: Completed 13-07-PLAN.md -- Phase 13 complete: L32 logged, debt retired, fleet-user confirmed restored, make verify green
 Resume file: None
 
 ## Operator Next Steps
