@@ -469,6 +469,133 @@ restarted in search of a passing number. This closes SC2's first half: the bar i
 demonstrated on both runs of one decisive session on the harness as it stands (D-07).
 13-04 Task 2's D-09 checkpoint is not reached.
 
+### Composed worst row under ten concurrent builds (Phase 13)
+
+**The question.** `docs/tech_debt/resolved/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md`
+measured the heaviest 200-tooth tip-chamfer configuration one gear at a time (14.87 s of
+30 s), then Phase 12's composed sweep re-measured it alongside every other stacked feature,
+still one gear at a time (29.42 s of 30 s after the `spoke_count` gate, 0.58 s of margin).
+Neither run ever measured it under concurrent load; that question was re-homed into
+`docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`'s "Revisit when" trigger
+(12-CONTEXT.md D-04) as SC3 of this phase.
+
+**The ten rows** (D-13, `bench/sweeps/composed.json` 1-based rows 4, 2, 3, 1, 9, 6, 10, 12,
+11, 5 — each a distinct key, so admission control takes four and hash affinity spreads them
+over both workers): the worst row first (29.42 s alone — `teeth=200 module=10 bore_d=9
+bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52
+rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both`), then the next nine heaviest
+from "### Re-run after the gate (lower-le: spoke_count 32)": row 2 (28.92 s), row 3
+(28.87 s), row 1 (28.61 s), row 9 (27.27 s), row 6 (24.91 s), row 10 (24.06 s), row 12
+(22.26 s), row 11 (22.09 s), row 5 (16.80 s). Firing rule: the worst row's request leaves
+the client alone first; the other nine fire only once `/api/health` shows the worst row
+holding a build slot.
+
+**How it was run.** `.planning/phases/13-latency-bar/investigation/session.py --mode
+composed --label sc3`, one fresh server, one run (`sc3-run1`), calling
+`bench.latency.run_composed` unmodified with the split-process poller riding beside it
+(D-15, D-16). Re-run without the poller: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001 composed`. Commit under test: `bfa54b7`. Fresh server, shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}` — `SPUR_BUILD_WORKERS`, `MAX_QUEUED_BUILDS`
+and `SPUR_BUILD_TIMEOUT` all unset: 2 workers, 4 queued builds, 30 s per-build timeout).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`sc3.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T08:08:01Z through 2026-10-02T08:23:01Z UTC):
+
+5.64, 4.0, 2.94, 2.33, 2.12, 1.62, 2.43, 3.85, 3.01, 2.71, 2.39, 3.79, 3.16, 9.92, 6.97,
+5.44, 4.17, 3.41, 2.75, 3.01, 2.86, 2.62, 3.03, 3.31, 8.64, 6.23, 4.34, 3.51, 2.86, 2.2,
+1.53 (31 samples, never three consecutive under 1.5 — the two lowest points, 1.62 and 1.53,
+have no adjacent sample under 1.5 to build a streak around either one).
+
+- `docker info`: exit 0.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 41 hours (healthy)`,
+  `fleet-user Exited (2) 19 hours ago`.
+- Load after: 4.74.
+
+Decisive (D-05): no — the 900 s cap expired; recorded regardless, per D-16 ("whatever it
+reads").
+
+**The run aborted (exit 1) after every request had been sent** — `sc3.status.json` records
+`state: aborted`, `reason: "sc3-run1 exited 1"`. `run_composed`'s own `ThreadPoolExecutor`
+`with` block waits for all ten requests to finish before `bench/latency.py` tries to read
+`future.result()` for each in firing order; the second future it reads (the worst row's own
+future resolved cleanly first) raised `httpx.HTTPStatusError: 500 Internal Server Error`,
+which propagated out of `run_composed`, out of `scenario_composed`, and out of
+`run_experiment.py`'s `main()` before any markdown, summary or per-request table was ever
+printed or written (`sc3-run1.stdout.txt` is 0 bytes; no `sc3-run1.summary.json` exists).
+**No client-side per-request latency table exists for this run** — the harness never
+produced one. Everything below is read from the server's own records
+(`sc3.server1.records.jsonl`), not from the client.
+
+**Per-request outcomes, as the server recorded them** (firing order = `COMPOSED_ROWS`;
+"Alone" is the single-build time from the re-run table, for reference only — SC3 is not
+that measurement):
+
+| Composed row | Alone (s) | Request | Server outcome | Duration |
+|---|---|---|---|---|
+| 4 (worst) | 29.42 | `51e80f35` | admitted, slot 0 — `BuildTimeout` | 30.004 s |
+| 2 | 28.92 | `912cd2d4` | admitted, slot 0 — crashed, undocumented `500` (see Finding) | 30.000 s |
+| 3 | 28.87 | `33260796` | `queue.refused` (503 busy) | instant |
+| 1 | 28.61 | `0fc30d53` | admitted, slot 1 — crashed, undocumented `500` (see Finding) | 30.000 s |
+| 9 | 27.27 | `4b777b09` | admitted, slot 1 — `BuildTimeout` | 30.002 s |
+| 6 | 24.91 | `e4f8e9a6` | `queue.refused` (503 busy) | instant |
+| 10 | 24.06 | `a76fb01b` | `queue.refused` (503 busy) | instant |
+| 12 | 22.26 | `5d0b7449` | `queue.refused` (503 busy) | instant |
+| 11 | 22.09 | `22767e72` | `queue.refused` (503 busy) | instant |
+| 5 | 16.80 | `ef3c2387` | `queue.refused` (503 busy) | instant |
+
+Outcome counts: 0 of 10 served (`200`); 6 of 10 refused by admission control (`503 busy`,
+`queue.refused`, all within 08:23:05.3549–08:23:05.3959 UTC, `in_flight: 4, max_queued: 4`
+on every one); 4 of 10 admitted, and **all four** exceeded `SPUR_BUILD_TIMEOUT` and were
+recorded `build.failed` — two (`51e80f35`, `4b777b09`) with the documented `BuildTimeout`
+exception the client would have read as `503 timeout`; two (`912cd2d4`, `0fc30d53`) with an
+`AttributeError` inside the server that produced an undocumented raw `500` instead (the
+client's `_fetch` raises on that, which is what aborted the run).
+
+**The worst row's own outcome:** `51e80f35` (row 4, 29.42 s alone) did **not** complete
+inside `SPUR_BUILD_TIMEOUT`'s 30 s shipping default under this composition — it was
+terminated at 30.004 s, 0.58 s past where it finishes alone and squarely past the margin
+Phase 12's re-run measured ("0.58 s of margin (~1.02x)") assuming no concurrent contention.
+
+**`/api/health` `workers_replaced`:** 0 → 2 (a fresh server starts with
+`BuildPool.replaced == 0`, `src/spur/pool.py` line 77; both hash slots recorded exactly one
+`worker.replaced` event each, `cause: "timeout"` — slot 0 after `51e80f35`'s timeout, slot 1
+after `4b777b09`'s).
+
+**In-process and split-poller idle/under-load p95: do not exist for this run.** Both are
+computed from `run.requests[].sent`/`.done` (`run_experiment.py`'s `composed_run`) or from
+`ComposedRun` itself — neither was ever built, because `run_composed` raised before
+returning. `sc3-run1.poller.jsonl` (32,037 raw `/api/health` latency samples) is committed
+in full, but the idle/under-load boundary the harness computes from the crashed run's own
+timestamps does not exist; reporting a ratio from a differently-chosen boundary would be a
+plausible-looking number this project does not print (L08). No ratio is reported here.
+
+**Server record counts** (`sc3.server1.records.jsonl`, excluding uvicorn lifecycle lines):
+
+| Event | Count |
+|---|---|
+| `build.started` | 4 |
+| `queue.refused` | 6 |
+| `build.failed` | 4 |
+| `worker.replaced` | 2 (slot 0, cause `timeout`; slot 1, cause `timeout`) |
+| `export.served` | 0 |
+
+**Finding.** The composed worst row did not complete under ten concurrent builds in the
+shipped configuration. Six of ten requests were refused by admission control exactly as
+designed (`503 busy`, 4 in flight already). Of the four admitted, both pairs shared a hash
+slot (D-07's affinity, uncontrollable from the client) and both pairs hit
+`SPUR_BUILD_TIMEOUT` together: the first request on each slot (`51e80f35`, `4b777b09`)
+timed out cleanly and had its worker replaced; the second request on the *same* slot
+(`912cd2d4`, `0fc30d53`) — timing out moments later on the same incident — ran
+`_run_with_timeout`'s own `except TimeoutError` branch against an executor its slot-mate's
+`recreate_for` call had already shut down, and crashed with an `AttributeError` that reached
+the client as an undocumented `500` instead of one of the three contracted `503` types. The
+worst row itself, which has only 0.58 s of margin alone, also failed to finish inside 30 s
+once paired with contention from the other requests. Measured once, not repeated (D-16);
+not re-run in search of a cleaner reading.
+
 ### `SPUR_BUILD_TIMEOUT`
 
 Worst single build observed across both runs and both scenarios: **7.39 s** (`concurrent`

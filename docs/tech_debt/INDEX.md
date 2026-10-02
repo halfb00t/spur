@@ -26,6 +26,7 @@ Severity (grep-able `Severity:` field):
 | must | [CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly](active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md) | a fresh `pip install -e '.[dev]'` resolves a `cadquery`/`cadquery-ocp` pair different from the fixture's provenance |
 | must | [The root fillet's straight lead-in can reach above the pitch circle](active/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md) | a profile-shifted flank is measured, L10's trochoidal root is taken up, or _outline is next touched |
 | must | [The filleted-spoke removed-volume proof has no closed-form cross-check](active/2026-09-29-filleted-spoke-volume-proof-pinned-not-derived.md) | `_fillet_corner` is next touched, or the pinned CadQuery/OCP kernel version is bumped |
+| must | [A same-slot timeout cleanup race produces an undocumented 500 instead of a 503](active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md) | the ten-identical-worst-row scenario is run, a 500 is observed in production, `_run_with_timeout`/`recreate_for` is next touched, or `SPUR_BUILD_TIMEOUT`'s default is reconsidered |
 
 ## Resolved
 
