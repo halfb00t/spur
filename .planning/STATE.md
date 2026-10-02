@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 13
 current_phase_name: Latency Bar
 status: executing
-stopped_at: Completed 13-03-PLAN.md
-last_updated: "2026-10-02T03:30:19.937Z"
+stopped_at: Completed 13-04-PLAN.md -- outcome (a), bar demonstrated
+last_updated: "2026-10-02T07:23:04.928Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: 48415926d10281a6d1a4400e19061be133b8ac42
+state_head: e15437edd1b624979157d732b43d4a7a7e2b1fe8
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 3
-  percent: 43
+  completed_plans: 4
+  percent: 50
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 13 (Latency Bar) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-10-01 — Phase 13 execution started
   The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
@@ -169,6 +169,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 13-latency-bar P01 | ~22min | 2 tasks | 24 files |
 | Phase 13 P02 | ~5min (continuation, Task 3 only) | 3 tasks | 2 files |
 | Phase 13 P03 | ~50min | 2 tasks | 81 files |
+| Phase 13 P04 | 8min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -264,6 +265,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 13]: Observation 2 ruled to candidate (ii) 'the floor is real' (four of twenty-four verdict cells flip inside one percentile); candidate (iii)'s exact claim checked and found false
 - [Phase 13]: The measured smallest sample gap (2.328e-10 s) is reported as a float64-precision artifact below the declared clock resolution, not used to set D-10's M; the one-percentile spreads (0.090-0.296 ms) are 100-700x the clock resolution, flagged for the human before M is fixed in L32
 - [Phase 13]: No debt file filed: observation 1 not reproduced and observation 2's cause is harness/measurement-floor, not a server defect -- D-17 reserves filing for a server-side cause ruled in
+- [Phase 13]: bar-3's D-05 gate released after 320 s; both concurrent runs passed (1.31x, 1.42x) -- outcome (a): the bar is demonstrated on the unmodified harness
+- [Phase 13]: Task 2 (D-09 checkpoint) not reached -- outcome (a) means 13-05 (outcome (b) only) is not executed
 
 ### Pending Todos
 
@@ -362,8 +365,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T03:30:19.916Z
-Stopped at: Completed 13-03-PLAN.md
+Last session: 2026-10-02T07:23:04.907Z
+Stopped at: Completed 13-04-PLAN.md -- outcome (a), bar demonstrated
 Resume file: None
 
 ## Operator Next Steps
