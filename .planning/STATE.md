@@ -5,16 +5,16 @@ milestone_name: Clean Ledger
 current_phase: 13
 current_phase_name: Latency Bar
 status: executing
-stopped_at: Completed 13-05-PLAN.md -- not executed, outcome (a)
-last_updated: "2026-10-02T07:33:39.679Z"
-last_activity: 2026-10-01
-last_activity_desc: Phase 13 execution started
-state_head: 52ca7b7fdb65aeef41a8b093ada3551064c88c26
+stopped_at: Completed 13-06-PLAN.md -- SC3 recorded (composed row cannot complete under ten concurrent builds), debt filed
+last_updated: "2026-10-02T08:47:39.000Z"
+last_activity: 2026-10-02
+last_activity_desc: Phase 13 execution continued -- SC3 measured and recorded
+state_head: a04a7e8
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 50
 ---
 
@@ -31,9 +31,9 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 13 (Latency Bar) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
-Last activity: 2026-10-01 — Phase 13 execution started
+Last activity: 2026-10-02 — SC3 measured and recorded (13-06)
   The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
 
 ## Performance Metrics
@@ -171,6 +171,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 13 P03 | ~50min | 2 tasks | 81 files |
 | Phase 13 P04 | 8min | 1 tasks | 6 files |
 | Phase 13 P05 | 2min | 0 tasks | 0 files |
+| Phase 13 P06 | ~69min total (continuation: Task 2 close-out + Task 3, ~45min) | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -269,6 +270,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 13]: bar-3's D-05 gate released after 320 s; both concurrent runs passed (1.31x, 1.42x) -- outcome (a): the bar is demonstrated on the unmodified harness
 - [Phase 13]: Task 2 (D-09 checkpoint) not reached -- outcome (a) means 13-05 (outcome (b) only) is not executed
 - [Phase 13]: 13-05: not executed -- outcome (a) (13-04's bar-3 decisive session, both concurrent runs <=1.99x). The plan's own Task 1/2/3 outcome-(a) clauses fired before any harness, test or doc change; D-11 not reached.
+- [Phase 13]: 13-06: scenario_composed added to bench/latency.py as a third, tested scenario registered in _SCENARIOS; DEFAULT_SCENARIOS keeps the no-argument run at (concurrent, single) so the bar's own run is unchanged; scenario_single/scenario_concurrent verified byte-identical to 9f26052.
+- [Phase 13]: 13-06: SC3 (the composed worst row under ten concurrent builds) ran once on a fresh server behind the D-05 gate (900s cap, non-decisive) and aborted after every request was sent: 0 of 10 served, 6 of 10 refused (503 busy), 4 of 10 admitted and all four exceeded SPUR_BUILD_TIMEOUT -- two via the documented BuildTimeout path, two via an undocumented 500. Human's checkpoint decision: record it as-is, file the behaviour as debt, no retry, no src/ change (D-16, D-17).
+- [Phase 13]: 13-06: filed must-severity debt (docs/tech_debt/active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md): two same-slot timed-out requests race _run_with_timeout's cleanup -- the second caller's `executor` local still points at the object the first caller's recreate_for already shut down, so `executor._processes` reads None and raises AttributeError, surfacing as an undocumented 500. The worst row's own 0.58s margin (Phase 12's re-run) also disappeared under this contention, folded into the same debt file as a related finding.
+- [Phase 13]: 13-06: bench/RESULTS.md's SC3 section is built entirely from the committed server records (sc3.server1.records.jsonl), not a client-side latency table -- the harness's own requests tuple was never built (it crashed mid-comprehension) and no client wall-time exists for any of the ten rows; in-process/split-poller idle/under-load ratios are reported as absent with reason, never estimated from a substitute boundary (L08).
 
 ### Pending Todos
 
@@ -367,14 +372,15 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T07:33:39.656Z
-Stopped at: Completed 13-05-PLAN.md -- not executed, outcome (a)
+Last session: 2026-10-02T08:47:39.000Z
+Stopped at: Completed 13-06-PLAN.md -- SC3 recorded, debt filed
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-discuss-phase 13` then `/gsd-plan-phase 13` — Latency Bar (measurement-heavy;
-  keep it its own PR per ROADMAP.md's Process Notes)
+- Next: `/gsd-execute-phase 13` (13-07-PLAN.md) — L32, the Dockerfile `HEALTHCHECK` comment,
+  the 2026-09-23 debt file's retirement (or re-trigger, given SC3's finding), `fleet-user`
+  restored. Last plan of Phase 13.
 - Phase 15's discuss-phase carries two human decisions ROADMAP.md already names: the
   CI-kernel-pin mechanism (requirements.txt-first vs. a pyproject.toml upper bound) and the
   make-verify bar (set from the profile, not before)

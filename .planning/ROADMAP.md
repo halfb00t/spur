@@ -102,7 +102,7 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the debt file
 already states the bounded investigation's shape.
-**Plans:** 5/7 plans executed (strictly serial: one host, sessions never overlap)
+**Plans:** 6/7 plans executed (strictly serial: one host, sessions never overlap)
 
 Plans:
 **Wave 1**
@@ -121,7 +121,7 @@ Plans:
 - [x] 13-05-PLAN.md — outcome (b) only: the chosen change, the re-measure, D-11 halt on a miss
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 13-06-PLAN.md — SC3: the composed scenario (own commit) measured once on its own fresh server
+- [x] 13-06-PLAN.md — SC3: the composed scenario (own commit) measured once on its own fresh server
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 13-07-PLAN.md — L32, the Dockerfile sentence, the debt retired (or re-triggered), fleet-user restored
