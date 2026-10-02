@@ -349,6 +349,13 @@ def _report_markdown(name: str, idle_p95: float, idle_n: int, load_p95: float,
                       load_n: int, slowest_build: float, attempted: int,
                       refused: int) -> str:
     ratio = load_p95 / idle_p95 if idle_p95 > 0 else float("inf")
+    # RECORDED_BASELINE is the debt file's single/concurrent numbers (D-17) -- printing
+    # it under a "composed" heading would invite a reader to compare the composed
+    # ratio against numbers measured for a different scenario entirely. Omit it there.
+    baseline_line = (
+        f"- Recorded baseline (different machine, ratio-only comparison per D-17): "
+        f"{RECORDED_BASELINE}\n" if name != "composed" else ""
+    )
     return (
         f"## Latency: {name}\n\n"
         f"- Machine: {machine_facts()}\n"
@@ -359,8 +366,7 @@ def _report_markdown(name: str, idle_p95: float, idle_n: int, load_p95: float,
         f"- Build requests: {attempted} attempted, {refused} refused by admission "
         f"control (`503`, D-09 -- expected once concurrency exceeds MAX_QUEUED_BUILDS, "
         f"not a harness failure)\n"
-        f"- Recorded baseline (different machine, ratio-only comparison per D-17): "
-        f"{RECORDED_BASELINE}\n"
+        f"{baseline_line}"
     )
 
 

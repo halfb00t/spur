@@ -42,7 +42,14 @@ from pydantic import ValidationError
 
 from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep, report, stl_size
 from bench.export_cost import GzipRow, maxrss_bytes, select_gzip_level
-from bench.latency import _SCENARIOS, DEFAULT_SCENARIOS, _composed_rows, _fetch
+from bench.latency import (
+    _SCENARIOS,
+    DEFAULT_SCENARIOS,
+    RECORDED_BASELINE,
+    _composed_rows,
+    _fetch,
+    _report_markdown,
+)
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
 from spur.calc import (
     HEX_CELL_CAP,
@@ -626,3 +633,21 @@ def test_a_503_is_recorded_by_the_reason_the_server_gave() -> None:
 
         with pytest.raises(httpx.HTTPStatusError):
             _fetch("http://test", client, {"case": "500"})
+
+
+def test_the_composed_report_omits_the_single_concurrent_baseline_line() -> None:
+    """WR-01: `_report_markdown` is reused for all three scenarios via `_run_scenario`.
+    `RECORDED_BASELINE` is the debt file's `single`/`concurrent` numbers (D-17) -- printed
+    unconditionally, it would appear under a `"composed"` heading too, where it has
+    nothing to do with the composed sweep's own numbers and would invite a reader to
+    compare the composed ratio against a baseline measured for a different scenario
+    entirely. Omitted only for `name="composed"`; still printed for the two scenarios
+    it actually describes."""
+    composed_report = _report_markdown("composed", 0.001, 100, 0.002, 100, 1.0, 10, 0)
+    assert RECORDED_BASELINE not in composed_report
+    assert "Recorded baseline" not in composed_report
+
+    for name in ("single", "concurrent"):
+        report = _report_markdown(name, 0.001, 100, 0.002, 100, 1.0, 10, 0)
+        assert RECORDED_BASELINE in report
+        assert "Recorded baseline" in report
