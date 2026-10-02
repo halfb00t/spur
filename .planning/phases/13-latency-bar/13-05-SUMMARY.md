@@ -14,9 +14,9 @@ affects: [13-06, 13-07]
 actuals:
   tokens: 0
   tasks: 0
-  commits: 1
+  commits: 0
   plan_head_before: 52ca7b7
-  plan_head_after: PENDING
+  plan_head_after: 52ca7b7
 
 tech-stack:
   added: []
@@ -73,7 +73,7 @@ status: complete
 
 No task-level commits -- all three tasks resolved to their own "not executed" / "skip" / "not reached" clauses with no file changes outside this SUMMARY and the plan-metadata bookkeeping.
 
-**Plan metadata:** `PENDING` (docs: complete plan, not executed -- outcome (a))
+**Plan metadata:** `be8cf8c` (docs: complete plan, not executed -- outcome (a); the single commit this plan produced, covering this SUMMARY, STATE.md and ROADMAP.md)
 
 ## Files Created/Modified
 - `.planning/phases/13-latency-bar/13-05-SUMMARY.md` - this record
