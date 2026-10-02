@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 13
 current_phase_name: Latency Bar
 status: executing
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-10-01T17:16:03.206Z"
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-10-02T02:22:37.146Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: b55d3edf7463b2c65a3da291b1b24e2922c45d88
+state_head: 3bb28d3352be43bdbfeb1350d11840c0c6b241ad
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 1
-  percent: 14
+  completed_plans: 2
+  percent: 29
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 13 (Latency Bar) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-10-01 — Phase 13 execution started
   The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
@@ -167,6 +167,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 12 P08 | ~35min | 2 tasks | 9 files |
 | Phase 12-composition-pass P09 | ~20min | 3 tasks | 2 files |
 | Phase 13-latency-bar P01 | ~22min | 2 tasks | 24 files |
+| Phase 13 P02 | ~5min (continuation, Task 3 only) | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -256,6 +257,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 12-composition-pass]: L31 appended to docs/architecture/decision_log.md closing out Phase 12, citing every number to a SUMMARY sha or bench/RESULTS.md section (D-19)
 - [Phase 13]: 13-01: Order default kept concurrent,single (bench.latency.main()'s own sorted() order), not D-08's literal 'single then concurrent' -- both scripts take --order so 13-02's checkpoint settles A1 without a code change either way.
 - [Phase 13]: 13-01: Fixed a Rule-1 bug found during Task 2's own proof -- session.py's existing-files preflight overwrote its own prior status.json via abort(); fixed to print-and-exit without touching any file for the label, matching run_experiment.py/poller.py's refuse-not-overwrite behavior (E7).
+- [Phase 13]: D-08's run order settled by the human: harness order (concurrent, then single), not D-08's literal single-then-concurrent text -- matches Runs 1-8 and the decisive D-07 session; --order concurrent,single, the scripts' existing default.
+- [Phase 13]: Host prepared per D-06 for the campaign: fleet-user already read Exited (2) before the checkpoint (no docker stop needed); the human confirmed the host quiet for the campaign window ('approved'); spur-spur-1 stayed Up throughout, untouched.
 
 ### Pending Todos
 
@@ -354,8 +357,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-01T17:16:03.186Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-10-02T02:22:37.126Z
+Stopped at: Completed 13-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
