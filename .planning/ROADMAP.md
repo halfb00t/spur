@@ -102,7 +102,7 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the debt file
 already states the bounded investigation's shape.
-**Plans:** 4/7 plans executed (strictly serial: one host, sessions never overlap)
+**Plans:** 5/7 plans executed (strictly serial: one host, sessions never overlap)
 
 Plans:
 **Wave 1**
@@ -118,7 +118,7 @@ Plans:
 - [x] 13-04-PLAN.md — the decisive bar session on the unmodified harness; D-09 checkpoint on outcome (b)
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 13-05-PLAN.md — outcome (b) only: the chosen change, the re-measure, D-11 halt on a miss
+- [x] 13-05-PLAN.md — outcome (b) only: the chosen change, the re-measure, D-11 halt on a miss
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 13-06-PLAN.md — SC3: the composed scenario (own commit) measured once on its own fresh server
@@ -264,7 +264,7 @@ internal and one is process-only.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
-| 13. Latency Bar | v0.3 | 4/7 | In Progress|  |
+| 13. Latency Bar | v0.3 | 5/7 | In Progress|  |
 | 14. Honest Record | v0.3 | 0/TBD | Not started | - |
 | 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
