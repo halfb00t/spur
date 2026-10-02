@@ -1,0 +1,83 @@
+{
+  "label": "A2",
+  "mode": "pair",
+  "pair": "A",
+  "order": "concurrent,single",
+  "state": "done",
+  "reason": null,
+  "decisive": true,
+  "started_utc": "2026-10-02T02:49:39.788560+00:00",
+  "finished_utc": "2026-10-02T02:53:41.269168+00:00",
+  "quiet": {
+    "bar": 1.5,
+    "cap_s": 900.0,
+    "samples": [
+      {
+        "utc": "2026-10-02T02:49:40.006993+00:00",
+        "load1": 2.21
+      },
+      {
+        "utc": "2026-10-02T02:50:10.025158+00:00",
+        "load1": 2.37
+      },
+      {
+        "utc": "2026-10-02T02:50:40.040237+00:00",
+        "load1": 1.98
+      },
+      {
+        "utc": "2026-10-02T02:51:10.058695+00:00",
+        "load1": 1.78
+      },
+      {
+        "utc": "2026-10-02T02:51:40.079171+00:00",
+        "load1": 1.68
+      },
+      {
+        "utc": "2026-10-02T02:52:10.101400+00:00",
+        "load1": 1.46
+      },
+      {
+        "utc": "2026-10-02T02:52:40.116133+00:00",
+        "load1": 1.35
+      },
+      {
+        "utc": "2026-10-02T02:53:10.129213+00:00",
+        "load1": 1.29
+      }
+    ],
+    "released": true
+  },
+  "host": {
+    "head": "aff8f68",
+    "machine": "12 CPUs, arm64, 32.0 GiB RAM",
+    "docker_info_exit": 0,
+    "docker_ps": [
+      "spur-spur-1 Up 36 hours (healthy)",
+      "fleet-user Exited (2) 13 hours ago"
+    ],
+    "top_cpu": [
+      " %CPU COMM",
+      " 11.6 /Users/halfb00t/Library/Application Support/iStat Menus 7/iStat Menus Menubar.app/Contents/MacOS/iStat Menus Menubar",
+      "  7.7 (docker-tools)",
+      "  3.8 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "  3.5 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)",
+      "  2.8 /Applications/Telegram.app/Contents/MacOS/Telegram"
+    ],
+    "server_env": {
+      "SPUR_PORT": "8001"
+    }
+  },
+  "runs": [
+    {
+      "label": "A2-run1",
+      "exit_code": 0,
+      "load_before": 1.29
+    },
+    {
+      "label": "A2-run2",
+      "exit_code": 0,
+      "load_before": 1.73
+    }
+  ],
+  "load_after": 3.06
+}

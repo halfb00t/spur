@@ -1,0 +1,7 @@
+2026-10-02T02:36:53.878011+00:00 preflight passed
+2026-10-02T02:36:53.881549+00:00 quiet sample load1=1.49
+2026-10-02T02:37:23.890851+00:00 quiet sample load1=1.34
+2026-10-02T02:37:53.916944+00:00 quiet sample load1=1.15
+2026-10-02T02:37:53.975411+00:00 quiet wait ended, decisive=True
+2026-10-02T02:38:30.123767+00:00 server1 stopped, 88192 access lines dropped
+2026-10-02T02:38:30.128400+00:00 done

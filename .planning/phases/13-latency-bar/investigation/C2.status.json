@@ -1,0 +1,87 @@
+{
+  "label": "C2",
+  "mode": "pair",
+  "pair": "C",
+  "order": "concurrent,single",
+  "state": "done",
+  "reason": null,
+  "decisive": true,
+  "started_utc": "2026-10-02T03:07:05.573006+00:00",
+  "finished_utc": "2026-10-02T03:11:43.337945+00:00",
+  "quiet": {
+    "bar": 1.5,
+    "cap_s": 900.0,
+    "samples": [
+      {
+        "utc": "2026-10-02T03:07:05.756845+00:00",
+        "load1": 2.3
+      },
+      {
+        "utc": "2026-10-02T03:07:35.774738+00:00",
+        "load1": 2.17
+      },
+      {
+        "utc": "2026-10-02T03:08:05.796023+00:00",
+        "load1": 2.94
+      },
+      {
+        "utc": "2026-10-02T03:08:35.820913+00:00",
+        "load1": 2.36
+      },
+      {
+        "utc": "2026-10-02T03:09:05.832550+00:00",
+        "load1": 1.76
+      },
+      {
+        "utc": "2026-10-02T03:09:35.852450+00:00",
+        "load1": 1.6
+      },
+      {
+        "utc": "2026-10-02T03:10:05.866842+00:00",
+        "load1": 1.4
+      },
+      {
+        "utc": "2026-10-02T03:10:35.890795+00:00",
+        "load1": 1.39
+      },
+      {
+        "utc": "2026-10-02T03:11:05.905870+00:00",
+        "load1": 1.23
+      }
+    ],
+    "released": true
+  },
+  "host": {
+    "head": "aff8f68",
+    "machine": "12 CPUs, arm64, 32.0 GiB RAM",
+    "docker_info_exit": 0,
+    "docker_ps": [
+      "spur-spur-1 Up 36 hours (healthy)",
+      "fleet-user Exited (2) 14 hours ago"
+    ],
+    "top_cpu": [
+      " %CPU COMM",
+      " 10.8 /Applications/OrbStack.app/Contents/Frameworks/OrbStack Helper.app/Contents/MacOS/OrbStack Helper",
+      "  6.7 /Applications/Telegram.app/Contents/MacOS/Telegram",
+      "  3.6 /Applications/iTerm.app/Contents/MacOS/iTerm2",
+      "  2.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "  2.1 /usr/bin/powermetrics"
+    ],
+    "server_env": {
+      "SPUR_PORT": "8001"
+    }
+  },
+  "runs": [
+    {
+      "label": "C2-run1",
+      "exit_code": 0,
+      "load_before": 1.23
+    },
+    {
+      "label": "C2-run2",
+      "exit_code": 0,
+      "load_before": 1.97
+    }
+  ],
+  "load_after": 4.83
+}
