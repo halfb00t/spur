@@ -1,0 +1,175 @@
+{
+  "label": "bar-1",
+  "mode": "bar",
+  "pair": null,
+  "order": "concurrent,single",
+  "state": "done",
+  "reason": null,
+  "decisive": false,
+  "started_utc": "2026-10-02T03:41:00.098159+00:00",
+  "finished_utc": "2026-10-02T03:56:34.159945+00:00",
+  "quiet": {
+    "bar": 1.5,
+    "cap_s": 900.0,
+    "samples": [
+      {
+        "utc": "2026-10-02T03:41:00.256176+00:00",
+        "load1": 1.61
+      },
+      {
+        "utc": "2026-10-02T03:41:30.276159+00:00",
+        "load1": 1.31
+      },
+      {
+        "utc": "2026-10-02T03:42:00.298453+00:00",
+        "load1": 1.63
+      },
+      {
+        "utc": "2026-10-02T03:42:30.315708+00:00",
+        "load1": 1.67
+      },
+      {
+        "utc": "2026-10-02T03:43:00.331846+00:00",
+        "load1": 2.4
+      },
+      {
+        "utc": "2026-10-02T03:43:30.352524+00:00",
+        "load1": 1.77
+      },
+      {
+        "utc": "2026-10-02T03:44:00.364462+00:00",
+        "load1": 1.75
+      },
+      {
+        "utc": "2026-10-02T03:44:30.376725+00:00",
+        "load1": 1.65
+      },
+      {
+        "utc": "2026-10-02T03:45:00.391745+00:00",
+        "load1": 1.39
+      },
+      {
+        "utc": "2026-10-02T03:45:30.406120+00:00",
+        "load1": 1.57
+      },
+      {
+        "utc": "2026-10-02T03:46:00.413356+00:00",
+        "load1": 1.87
+      },
+      {
+        "utc": "2026-10-02T03:46:30.427800+00:00",
+        "load1": 1.54
+      },
+      {
+        "utc": "2026-10-02T03:47:00.445684+00:00",
+        "load1": 2.59
+      },
+      {
+        "utc": "2026-10-02T03:47:30.461833+00:00",
+        "load1": 2.23
+      },
+      {
+        "utc": "2026-10-02T03:48:00.478546+00:00",
+        "load1": 2.03
+      },
+      {
+        "utc": "2026-10-02T03:48:30.498526+00:00",
+        "load1": 1.76
+      },
+      {
+        "utc": "2026-10-02T03:49:00.511162+00:00",
+        "load1": 1.77
+      },
+      {
+        "utc": "2026-10-02T03:49:30.520168+00:00",
+        "load1": 1.81
+      },
+      {
+        "utc": "2026-10-02T03:50:00.530451+00:00",
+        "load1": 1.81
+      },
+      {
+        "utc": "2026-10-02T03:50:30.553557+00:00",
+        "load1": 1.48
+      },
+      {
+        "utc": "2026-10-02T03:51:00.570061+00:00",
+        "load1": 1.89
+      },
+      {
+        "utc": "2026-10-02T03:51:30.582130+00:00",
+        "load1": 1.65
+      },
+      {
+        "utc": "2026-10-02T03:52:00.594666+00:00",
+        "load1": 1.89
+      },
+      {
+        "utc": "2026-10-02T03:52:30.609394+00:00",
+        "load1": 1.6
+      },
+      {
+        "utc": "2026-10-02T03:53:00.630615+00:00",
+        "load1": 8.02
+      },
+      {
+        "utc": "2026-10-02T03:53:30.652913+00:00",
+        "load1": 5.46
+      },
+      {
+        "utc": "2026-10-02T03:54:00.671732+00:00",
+        "load1": 3.55
+      },
+      {
+        "utc": "2026-10-02T03:54:30.688009+00:00",
+        "load1": 2.66
+      },
+      {
+        "utc": "2026-10-02T03:55:00.706301+00:00",
+        "load1": 2.08
+      },
+      {
+        "utc": "2026-10-02T03:55:30.728538+00:00",
+        "load1": 1.96
+      },
+      {
+        "utc": "2026-10-02T03:56:00.744757+00:00",
+        "load1": 1.88
+      }
+    ],
+    "released": false
+  },
+  "host": {
+    "head": "34d9ef4",
+    "machine": "12 CPUs, arm64, 32.0 GiB RAM",
+    "docker_info_exit": 0,
+    "docker_ps": [
+      "spur-spur-1 Up 36 hours (healthy)",
+      "fleet-user Exited (2) 14 hours ago"
+    ],
+    "top_cpu": [
+      " %CPU COMM",
+      " 12.4 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow",
+      "  6.2 /Applications/Notion Calendar.app/Contents/Frameworks/Notion Calendar Helper (Renderer).app/Contents/MacOS/Notion Calendar Helper (Renderer)",
+      "  5.9 /Applications/iTerm.app/Contents/MacOS/iTerm2",
+      "  4.9 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "  3.0 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)"
+    ],
+    "server_env": {
+      "SPUR_PORT": "8001"
+    }
+  },
+  "runs": [
+    {
+      "label": "bar-1-run1",
+      "exit_code": 0,
+      "load_before": 1.88
+    },
+    {
+      "label": "bar-1-run2",
+      "exit_code": 1,
+      "load_before": 2.14
+    }
+  ],
+  "load_after": 3.67
+}

@@ -268,6 +268,92 @@ causes, because neither was investigated:
 Both bear on how the bar should be read; neither changes what it says. Not met on both
 runs.
 
+### Phase 13 investigation sessions
+
+`.planning/phases/13-latency-bar/13-LATENCY-INVESTIGATION.md` ran six pair sessions
+(twelve runs) to explain the two observations above. Every run carried a split-process
+poller beside the harness's own in-process sampling and, for Pairs B and C, a mirrored
+teeth range or a server restart the unmodified harness never does — so none of these
+twelve runs is "the harness as it stands" and none counts for the bar (D-07); they are
+recorded here as the investigation's own record.
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+| Session | Released (UTC) | 1-min load at release | Decisive | Run 1 ratio | Run 2 ratio | Run 2 vs run 1 |
+|---|---|---|---|---|---|---|
+| A1 | 2026-10-02T02:37:53.913Z | 1.49, 1.34, 1.15 | yes | 1.327x | 1.940x | worse |
+| B1 | 2026-10-02T02:41:40.765Z | 1.31, 1.14, 1.02 | yes | 1.476x | 2.309x | worse |
+| C1 | 2026-10-02T02:48:51.582Z | 1.38, 1.34, 1.41 | yes | 1.792x | 1.396x | not worse |
+| A2 | 2026-10-02T02:53:10.129Z | 1.46, 1.35, 1.29 | yes | 1.896x | 1.517x | not worse |
+| B2 | 2026-10-02T03:06:22.211Z | 1.19, 1.18, 1.34 | yes | 1.426x | 1.528x | worse |
+| C2 | 2026-10-02T03:11:05.906Z | 1.40, 1.39, 1.23 | yes | 1.369x | 1.534x | worse |
+
+Observation 1 verdict (13-LATENCY-INVESTIGATION.md ## Verdict): not reproduced in this
+environment — Pair A does not point worse (it is split: A1 worse, A2 not worse), and the
+pre-registered rule states that when Pair A does not point worse, observation 1 is not
+reproduced and Pairs B and C cannot rule anything in or out.
+
+Observation 2 verdict (13-LATENCY-INVESTIGATION.md ## Verdict): candidate (ii) — the
+floor is real — is ruled in. At least one concurrent run's in-process verdict flips
+inside one percentile — three do, plus one on the split poller — which directly refutes
+(i); (iii)'s exact claim does not hold (three below-median-n runs do not flip). (ii) is
+therefore the surviving candidate.
+
+### Bar session bar-1 (Runs 9-10)
+
+Commit under test: `34d9ef4`. Command: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001` (not the bare `make bench.latency` target, which targets port
+8000 — RESEARCH.md Pitfall 1), two runs in immediate succession against one fresh
+server (Run 10 inherits Run 9's `_EXPORTS`, as every even-numbered run did), shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}`).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`bar-1.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T03:41:00Z through 2026-10-02T03:56:00Z UTC):
+
+1.61, 1.31, 1.63, 1.67, 2.40, 1.77, 1.75, 1.65, 1.39, 1.57, 1.87, 1.54, 2.59, 2.23, 2.03,
+1.76, 1.77, 1.81, 1.81, 1.48, 1.89, 1.65, 1.89, 1.60, **8.02**, 5.46, 3.55, 2.66, 2.08,
+1.96, 1.88 (30 samples, never three consecutive under 1.5 — a spike to 8.02 at
+2026-10-02T03:53:00Z broke the streak closest to release, at sample 24/25/26).
+
+- `docker info`: exit 0.
+- Top CPU (`ps -Ao %cpu,comm -r`, latest sample): loginwindow 12.4%, Notion Calendar
+  Helper (Renderer) 6.2%, iTerm2 5.9%, WindowServer 4.9%, Code Helper (Plugin) 3.0%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 36 hours (healthy)`,
+  `fleet-user Exited (2) 14 hours ago`.
+- Load after: 3.67.
+
+Decisive (D-05): no — the 900 s cap expired; recorded, not counted for the bar.
+
+#### `single` scenario (Runs 9-10)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 9 | 0.6 ms (n=3605) | 0.7 ms (n=5062) | 1.18x | 3.12 s | 0 of 1 |
+| 10 | insufficient (n<20) | insufficient (n=18) | -- | -- | -- |
+
+Run 10 printed `warning: single/under-load has only 18 /api/health samples (need >= 20);
+refusing to report a p95` — the 200-tooth gear was cached from Run 9, so there was no load
+window to sample; no ratio, per L08, exactly as in Runs 6 and 8.
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 9 (1.18x). Run 10: no ratio
+printed (insufficient samples).
+
+#### `concurrent` scenario (Runs 9-10)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 9 | 0.6 ms (n=3636) | 0.9 ms (n=15236) | 1.42x | 11.09 s | 6 of 10 |
+| 10 | 0.7 ms (n=3528) | 0.9 ms (n=12426) | 1.37x | 9.37 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 9 (1.42x) and Run 10 (1.37x).
+Neither run was repeated or restarted in search of a passing number. This session is
+**non-decisive** (D-05): the quiet gate never released, so neither reading counts for
+outcome (a) or (b) — the decisive session (D-07) is a separate attempt.
+
 ### `SPUR_BUILD_TIMEOUT`
 
 Worst single build observed across both runs and both scenarios: **7.39 s** (`concurrent`
