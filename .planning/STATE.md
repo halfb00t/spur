@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 13
 current_phase_name: Latency Bar
 status: executing
-stopped_at: Completed 13-02-PLAN.md
-last_updated: "2026-10-02T02:22:37.146Z"
+stopped_at: Completed 13-03-PLAN.md
+last_updated: "2026-10-02T03:30:19.937Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 13 execution started
-state_head: 3bb28d3352be43bdbfeb1350d11840c0c6b241ad
+state_head: 48415926d10281a6d1a4400e19061be133b8ac42
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 2
-  percent: 29
+  completed_plans: 3
+  percent: 43
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 13 (Latency Bar) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-10-01 — Phase 13 execution started
   The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
@@ -168,6 +168,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 12-composition-pass P09 | ~20min | 3 tasks | 2 files |
 | Phase 13-latency-bar P01 | ~22min | 2 tasks | 24 files |
 | Phase 13 P02 | ~5min (continuation, Task 3 only) | 3 tasks | 2 files |
+| Phase 13 P03 | ~50min | 2 tasks | 81 files |
 
 ## Accumulated Context
 
@@ -259,6 +260,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 13]: 13-01: Fixed a Rule-1 bug found during Task 2's own proof -- session.py's existing-files preflight overwrote its own prior status.json via abort(); fixed to print-and-exit without touching any file for the label, matching run_experiment.py/poller.py's refuse-not-overwrite behavior (E7).
 - [Phase 13]: D-08's run order settled by the human: harness order (concurrent, then single), not D-08's literal single-then-concurrent text -- matches Runs 1-8 and the decisive D-07 session; --order concurrent,single, the scripts' existing default.
 - [Phase 13]: Host prepared per D-06 for the campaign: fleet-user already read Exited (2) before the checkpoint (no docker stop needed); the human confirmed the host quiet for the campaign window ('approved'); spur-spur-1 stayed Up throughout, untouched.
+- [Phase 13]: Pair A split (A1 worse, A2 not worse) triggers the pre-registered escape clause: observation 1 is 'not reproduced in this environment', not forced onto Pair B/C's own directions
+- [Phase 13]: Observation 2 ruled to candidate (ii) 'the floor is real' (four of twenty-four verdict cells flip inside one percentile); candidate (iii)'s exact claim checked and found false
+- [Phase 13]: The measured smallest sample gap (2.328e-10 s) is reported as a float64-precision artifact below the declared clock resolution, not used to set D-10's M; the one-percentile spreads (0.090-0.296 ms) are 100-700x the clock resolution, flagged for the human before M is fixed in L32
+- [Phase 13]: No debt file filed: observation 1 not reproduced and observation 2's cause is harness/measurement-floor, not a server defect -- D-17 reserves filing for a server-side cause ruled in
 
 ### Pending Todos
 
@@ -357,8 +362,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T02:22:37.126Z
-Stopped at: Completed 13-02-PLAN.md
+Last session: 2026-10-02T03:30:19.916Z
+Stopped at: Completed 13-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
