@@ -261,6 +261,38 @@ Noted for the phase transition (not this plan, per the plan's own `<output>` not
 `PROJECT.md`'s L18 row needs its Outcome column updated (D-12), and the phase lands through
 `make pr.land PR=N` (L22/L25/D-18) — both outside this plan's file list.
 
+## Self-Check: PASSED
+
+- `.planning/phases/13-latency-bar/13-07-SUMMARY.md` exists on disk: confirmed.
+- Commits `6709953`, `05668ef` (Task 1, prior session), `8a8e927` (this plan's close-out), and
+  `ad11728` (sha follow-up) all found in `git log --oneline --all`: confirmed.
+- Task 1 acceptance criteria (re-confirmed this session): `grep -c "^## L32 "
+  docs/architecture/decision_log.md` prints 1, header ends `(amends L18)`, sits after L31;
+  `git diff --numstat 9f26052 -- docs/architecture/decision_log.md` deleted column is 0;
+  every ratio L32 states appears in `bench/RESULTS.md` or `13-LATENCY-INVESTIGATION.md`;
+  Dockerfile's measured sentence names the new run count ("fifteen") and the unchanged worst
+  reading, only `#` lines differ from `9f26052`; the debt file exists only in `resolved/` with
+  `Status: resolved` and `Resolved in: 6709953` matching the INDEX cell and the L32 commit — all
+  confirmed by direct read this session.
+- Task 2 `<verify>` (automated): `git diff --quiet 9f26052 -- src tests/regression/pre_v0_2.json
+  && test -z "$(lsof -nP -iTCP:8001 -sTCP:LISTEN -t)" && docker ps --filter
+  'name=^spur-spur-1$' --format '{{.Status}}' | grep -q '^Up'` — exit 0, PASS.
+- Task 2 `<verify>` (automated): `make verify` — 910 passed in 212.76s, PASS.
+- Plan-level `<verification>`: L32 appended, L18 untouched, every L32 ratio in the record
+  (confirmed); Dockerfile only the measured comment sentence changed (confirmed); the debt
+  retired with its sha, INDEX consistent (confirmed); `make verify` green, src/ and the fixture
+  unchanged since `9f26052`, fleet-user restored by the human (confirmed, "approved") — all
+  PASS.
+- `requirements.ready-ids` confirmed both Phase 13 requirements ready before
+  `requirements.mark-complete` flipped them: confirmed (tool output recorded above).
+- All `<acceptance_criteria>` across Tasks 1–2 confirmed met (L32 header/position/citations;
+  Dockerfile sentence and unchanged directive; debt file location and `Resolved in:` match;
+  13-07-SUMMARY.md records fleet-user's before/after state, the human's verbatim resume text,
+  the final `make verify` line, and SC4 met with both shas).
+
+Phase 13 complete. Ready for the phase's own verification/review step and, per the plan's own
+`<output>` note, the PROJECT.md L18 Outcome update and `make pr.land` at the phase transition.
+
 ---
 *Phase: 13-latency-bar*
 *Completed: 2026-10-02*
