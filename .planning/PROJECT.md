@@ -57,6 +57,7 @@ throughout.
   pair is always worse; the verdict sits at the harness's 0.1 ms floor) get a cause ruled in
   or out; then the bar reads ≤2.00× on both runs of one session, or the harness or the bar
   is changed by a logged `Lxx` and re-measured on the new harness. Never tuned toward a pass.
+  **Done — Phase 13 (L32):** demonstrated outright on the unmodified harness; both observations ruled.
 - CI kernel pin — CI installs the `cadquery`/`cadquery-ocp` pair the fixture's provenance
   header names; pin-to-`requirements.txt` vs. an upper bound in `pyproject.toml` decided and
   logged as `Lxx` against L12's rationale.
@@ -266,15 +267,30 @@ pytest — L13). Full list with sources and acceptance evidence:
   byte-unchanged and green; the phase's +28.28 s `make verify` cost accepted against D-10's
   30 s line; verified 5/5, UAT 4/4, Nyquist and security audits clean, `make verify` 907 tests;
   ten review findings (WR-01…WR-05, IN-01…IN-05) at disposition `open` (L31) — Phase 12
+- ✓ REQ-latency-observations-explained + REQ-latency-bar-demonstrated-or-superseded — a
+  pre-registered twelve-run campaign through a split-process poller and a quiet-gated session
+  driver (`.planning/phases/13-latency-bar/investigation/`, `13-LATENCY-INVESTIGATION.md`,
+  predictions committed in `67eeefb` before any run) rules the two observations L18 left open:
+  the second run of a pair reading worse is not reproduced in this environment (Pair A split
+  between repetitions; `fleet-user` stopped where Runs 1–8 had it restart-looping), and the
+  verdict floor is real (4 of 24 run×source verdict cells flip inside one percentile). The bar
+  is demonstrated outright on the unmodified harness — `bar-3` Runs 13–14 at 1.31× and 1.42×
+  idle p95 on both concurrent runs of one decisive session — after `bar-1`/`bar-2` capped out
+  the D-05 quiet gate and were recorded non-decisive, never counted; outcome (b), D-09 and
+  D-11 not reached, 13-05 not executed. SC3: the composed worst row (29.42 s alone) does not
+  complete under ten concurrent builds in the shipped config — 0/10 served, 6 refused busy,
+  4 admitted all past the 30 s timeout, 2 of them crashed to an undocumented 500 via a
+  same-slot timeout-cleanup race at `pool.py:204`, filed as `must` debt with no `src/` change
+  (D-17). L32 amends L18, the Dockerfile `HEALTHCHECK` comment says what was measured, and
+  `2026-09-23-concurrent-latency-bar-waived.md` retired in `6709953`; verified 4/4, Nyquist
+  and security audits clean, `make verify` 910 tests; two review findings (CR-01, WR-01) at
+  disposition `open` (L32) — Phase 13
 
 ### Active
 
 Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- [ ] The ten-concurrent latency bar is demonstrated on both runs of one session, or
-  superseded by a logged `Lxx` with the measurement — the two unexplained observations
-  explained either way
 - [ ] CI installs the kernel pair the fixture pins; the choice logged against L12
 - [ ] A gear whose root lead-in rises above the pitch circle says so in `warnings`; README
   states the real limit
@@ -400,7 +416,7 @@ quick reference.
 | L15 | `TRY003` disabled; the rest of `TRY` on — error messages name the field and say what to change | ✓ Good |
 | L16 | No automatic formatter — would flatten 648 lines of hand-set comment alignment | ✓ Good |
 | L17 | Memory ceiling = parent byte budget + N × per-worker solid cache, swept on the real topology: `mem_limit: 4g` from N=2's 2878.5 MiB peak × 1.3 (supersedes L07) | ✓ Good — measured, zero failures at the limit |
-| L18 | The `RLock` is per worker, not global; "concurrency buys latency, not throughput" retired. Single build within 2× idle p95 on every run; ten-concurrent accepted with caveat, not demonstrated (Runs 1–8: 1.31x–2.45x) (supersedes L06) | ⚠️ Caveat — must debt `2026-09-23-concurrent-latency-bar-waived.md` |
+| L18 | The `RLock` is per worker, not global; "concurrency buys latency, not throughput" retired. Single build within 2× idle p95 on every run; ten-concurrent accepted with caveat, not demonstrated (Runs 1–8: 1.31x–2.45x) (supersedes L06) | ✓ Caveat closed by L32 (Phase 13): demonstrated on `bar-3` (1.31×/1.42×), the debt retired in `6709953` |
 | L19 | Model bodies gzip-encoded at measured `compresslevel=1` (51.5 ms vs 788 ms at level 9 on a 9 MB STL), inside the admission slot, cached once per encoding | ✓ Good |
 | L20 | Structured JSON logging: stdlib `logging` + project-owned formatter, one object per line on stderr, `configure()` at both `cli.cmd_serve` and `app.lifespan()` (idempotent — uvicorn's spawn-based workers need the second site), parent process only, INFO default via `SPUR_LOG_LEVEL` | ✓ Good — post-review fix: records carrying `exc_info` render a `traceback` field (CR-01), `model()` catch-all logs `build.failed` (WR-01) |
 | L21 | `disallow_any_explicit` on globally, no per-module override; the published responses are typed models (`DerivedDimensions`, `HealthReport`/`PoolState`); the pydantic mypy plugin's `init_typed`/`init_forbid_extra` retire the six class-line errors instead of six per-class suppressions; `Any` is never written — `object` narrowed at use, a library's own alias keeps the library's `Any` (supersedes L14) | ✓ Good — `make verify` green under the rule (104 tests); `--mate-teeth 0` now exits 2 like the API's 422 |
@@ -414,6 +430,7 @@ quick reference.
 | L29 | The tooth-tip chamfer is a 3D edge break on the end-face tip arcs (`solid.chamfer()`, symmetric 45°, the last build step, selector requires both endpoints on an end face), capped at the smallest of the tip land (`0.45 × face_width`), the addendum (`ra − r`) and the measured kernel boundary (`ra − spline_start`, D-04, bisected to ~2 µm); help text names no size because the research-era sizing figure has no source; heaviest allowed configuration 14.87 s of 30 s | ✓ Good — measured; the ~2× timeout margin it leaves is filed as must-debt for Phase 12's combined re-measurement |
 | L30 | Body cutouts are one pattern per part, cut in one boolean, and the honeycomb's cell count is capped at a measured constant: ten fields in three groups, `_cut_body` after the keyway and before the tip chamfer; spoke corners are analytic tangent arcs (`_fillet_corner(inside=)`); honeycomb whole cells only, `HEX_CELL_CAP = 120` written from the pre-implementation spike's row (7.15 s of D-11's 7.5 s share at 200 teeth, module 10; 150 cells read 7.95 s), raise-to-fit in the field's own 0.05 mm step; every `MIN_WALL` comparison goes through `_under_min_wall` (`round(wall, 6) < MIN_WALL` — float residue measured at 0.39999999999999947 at the tracer's hub boundary); `spoke_count`/`hole_count` `le` lowered from 200 to 40/60 after the build-time gate fired | ✓ Good — verified 7/7, UAT 5/5, `make verify` 621 tests; the cap and its 8.65 s row accepted as measured under a loaded host (UAT 2–3); the spokes' 33.39 s arithmetic total with the tip chamfer filed as must-debt for Phase 12's composed sweep (UAT 4); six review findings still `open` (UAT 5) |
 | L31 | v0.2 composes: the 18-row composed sweep measured across four runs (the four over-budget `spoke_count=40` rows load-independent, so D-02 superseded for that one gate by the human); `spoke_count` `le` 40 → 32 from a probe (32 inside at 29.41 s, 33 over at 30.11 s); every composed row inside 30 s on the re-run (heaviest 29.42 s); L19's rule re-applied on the 17.3 MB heaviest fine STL keeps `_GZIP_LEVEL = 1`, L24's copy cost recorded only; 96 + 138 calc rows and 15 kernel rows prove the matrix; one field walk, a byte-identical composed document and 23 identically routed refusals prove three-interface parity; the CLI's real 2/1/1 exit contract moved into `cli.md`; export bytes are explicitly not compared by the fixture replay (L26); the phase's +28.28 s gate cost accepted against D-10's 30 s line | ✓ Good — verified 5/5, UAT 4/4, `make verify` 907 tests; ten review findings (5 warning, 5 info) at disposition `open` |
+| L32 | The concurrent latency bar is demonstrated on the harness as it stands, not waived (amends L18): `bar-3` Runs 13–14 read 1.31× and 1.42× idle p95 on both concurrent runs of one decisive session behind the D-05 quiet gate, after two capped-out attempts recorded non-decisive; the two observations L18 left unexplained are ruled by a pre-registered twelve-run campaign — the second-run-worse effect not reproduced in this environment, the floor real; SC3 measured once: the composed worst row does not complete under ten concurrent builds (0/10 served; a same-slot timeout-cleanup race returns an undocumented 500, filed as debt, `src/` untouched); the Dockerfile `HEALTHCHECK` comment and the retired debt say what was measured | ✓ Good — verified 4/4; `make verify` 910 tests; `2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md` (must) open with a named trigger; review CR-01/WR-01 open |
 
 ## Success Metric (Milestone v0.1)
 
@@ -484,4 +501,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-01 after the v0.3 milestone start (Clean Ledger).*
+*Last updated: 2026-10-02 after Phase 13 (Latency Bar).*

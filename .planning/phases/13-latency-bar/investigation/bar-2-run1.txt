@@ -1,0 +1,20 @@
+## Latency: concurrent
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Idle p95: 0.6 ms (n=3640)
+- Under-load p95: 0.8 ms (n=15653)
+- Ratio (under-load / idle): 1.38x -- pass bar is <= 2.00x
+- Slowest single build observed: 11.24 s
+- Build requests: 10 attempted, 6 refused by admission control (`503`, D-09 -- expected once concurrency exceeds MAX_QUEUED_BUILDS, not a harness failure)
+- Recorded baseline (different machine, ratio-only comparison per D-17): single: 0.22s -> 0.76s -> 2.00s under one 200-tooth fine build; concurrent: repeatedly over 5s under ten concurrent builds (12-core machine, docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md)
+
+## Latency: single
+
+- Machine: 12 CPUs, arm64, 32.0 GiB RAM
+- Idle p95: 0.6 ms (n=3682)
+- Under-load p95: 0.7 ms (n=5098)
+- Ratio (under-load / idle): 1.11x -- pass bar is <= 2.00x
+- Slowest single build observed: 3.08 s
+- Build requests: 1 attempted, 0 refused by admission control (`503`, D-09 -- expected once concurrency exceeds MAX_QUEUED_BUILDS, not a harness failure)
+- Recorded baseline (different machine, ratio-only comparison per D-17): single: 0.22s -> 0.76s -> 2.00s under one 200-tooth fine build; concurrent: repeatedly over 5s under ten concurrent builds (12-core machine, docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md)
+

@@ -18,3 +18,6 @@ web/node_modules/
 
 # GSD per-run dispatch sentinel (isolation decision + timestamp of the last run), not config
 .gsd/
+
+# research-tool response cache (hashed JSON), regenerated on demand
+/.planning/research/.cache/

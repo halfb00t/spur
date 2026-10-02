@@ -32,7 +32,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 
 ### Latency bar
 
-- [ ] **REQ-latency-observations-explained**: The two observations the waiver left
+- [x] **REQ-latency-observations-explained**: The two observations the waiver left
   unexplained each get a cause ruled in or out, by the bounded investigation the debt file
   prescribes — the pair re-run with a server restart between runs, and with the poller in
   its own process — written up in the shape of
@@ -44,7 +44,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   measurement that ruled the others out (four instant ~2.6 MB sends at t=0; worker-side
   state after the first batch; a shorter load window read at the floor). No `src/` or
   `bench/` change under this requirement — it is a measurement, not a fix.
-- [ ] **REQ-latency-bar-demonstrated-or-superseded**: After the above, one of two outcomes,
+- [x] **REQ-latency-bar-demonstrated-or-superseded**: After the above, one of two outcomes,
   never a third: (a) `bench.latency`'s `scenario_concurrent` reads ≤2.00× idle p95 on
   **both** runs of one session on the harness as it stands; or (b) the harness or the bar
   is changed — restart between runs, a higher `MIN_SAMPLES`, or an absolute threshold the
@@ -202,8 +202,8 @@ Filled by the roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-latency-observations-explained | Phase 13 | Pending |
-| REQ-latency-bar-demonstrated-or-superseded | Phase 13 | Pending |
+| REQ-latency-observations-explained | Phase 13 | Complete |
+| REQ-latency-bar-demonstrated-or-superseded | Phase 13 | Complete |
 | REQ-root-lead-in-warned | Phase 14 | Pending |
 | REQ-readme-root-zone-states-the-limit | Phase 14 | Pending |
 | REQ-filleted-spoke-closed-form | Phase 14 | Pending |

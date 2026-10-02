@@ -36,11 +36,20 @@ import itertools
 import math
 from pathlib import Path
 
+import httpx
 import pytest
 from pydantic import ValidationError
 
 from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep, report, stl_size
 from bench.export_cost import GzipRow, maxrss_bytes, select_gzip_level
+from bench.latency import (
+    _SCENARIOS,
+    DEFAULT_SCENARIOS,
+    RECORDED_BASELINE,
+    _composed_rows,
+    _fetch,
+    _report_markdown,
+)
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
 from spur.calc import (
     HEX_CELL_CAP,
@@ -559,3 +568,86 @@ def test_peak_rss_reads_bytes_on_macos_and_kibibytes_on_linux() -> None:
     a per-platform unit to be believed at all."""
     assert maxrss_bytes(1000, "Darwin") == 1000
     assert maxrss_bytes(1000, "Linux") == 1024000
+
+
+def test_the_composed_latency_scenario_fires_the_worst_composed_row_first_then_the_next_nine_heaviest() -> None:  # noqa: E501
+    """D-13: the ten rows SC3 fires are `bench/sweeps/composed.json`'s 0-based indices
+    3, 1, 2, 0, 8, 5, 9, 11, 10, 4 (1-based 4, 2, 3, 1, 9, 6, 10, 12, 11, 5) -- the worst
+    row (29.42 s alone, `bench/RESULTS.md` "### Re-run after the gate (lower-le:
+    spoke_count 32)") first, then the re-run table's next nine heaviest by "Build +
+    slower export" (28.92, 28.87, 28.61, 27.27, 24.91, 24.06, 22.26, 22.09, 16.80 s).
+    Ten distinct keys so admission control (`MAX_QUEUED_BUILDS` 4) takes four of them and
+    `hash(p) % workers` spreads the four admitted builds over both workers, stacking
+    kernel work on the host rather than queuing every admitted build behind one worker.
+    `_composed_rows()` reads the sweep file directly (not through `load_sweep`, which
+    pulls `spur.model` -- and so cadquery -- into this harness's own measuring client);
+    this test is the one place the two readings are checked to agree."""
+    got = [GearParams.model_validate(r) for r in _composed_rows()]
+    want = [load_sweep(DEFAULT_SWEEP.parent / "composed.json")[i][1]
+            for i in (3, 1, 2, 0, 8, 5, 9, 11, 10, 4)]
+    assert got == want
+    assert len(got) == 10
+    assert len({p.model_dump_json() for p in got}) == 10  # all ten distinct
+    assert got[0].model_dump(exclude_defaults=True) == {
+        "teeth": 200, "module": 10.0, "tip_chamfer": 3.0, "bore_flat": 0.0,
+        "keyway_width": 3.0, "keyway_depth": 1.4, "spoke_count": 32,
+        "spoke_width": 0.4, "hub_d": 52.0, "rim_wall": 0.4, "spoke_fillet": 5.0,
+    }
+
+
+def test_the_no_argument_latency_run_is_still_concurrent_then_single() -> None:
+    """D-07/D-15/D-16: registering `composed` in `_SCENARIOS` must not put it into the
+    no-argument run (`sorted(_SCENARIOS)` would put it first), where a timed-out worker
+    it replaces could pollute the bar's own reading -- `DEFAULT_SCENARIOS` pins the
+    order the no-argument run has always had."""
+    assert DEFAULT_SCENARIOS == ("concurrent", "single")
+    assert set(_SCENARIOS) == {"concurrent", "single", "composed"}
+
+
+def test_a_503_is_recorded_by_the_reason_the_server_gave() -> None:
+    """`_fetch` turns a 200 into `"200"`, and a 503 into `"503 " + detail[0]["type"]`
+    read from the body -- `busy`, `timeout` and `pool_broken` are `src/spur/app.py`'s
+    own three 503 `type` values (`_build_slot`'s admission refusal, `BuildTimeout`,
+    `BrokenProcessPool`). Any other status still raises (`_build`'s own rule). No
+    network: `httpx.MockTransport` stands in for the server."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        case = request.url.params["case"]
+        if case == "200":
+            return httpx.Response(200, content=b"stl-bytes")
+        if case in ("busy", "timeout", "pool_broken"):
+            return httpx.Response(
+                503, json={"detail": [{"loc": ["query"], "type": case, "msg": case}]})
+        return httpx.Response(500, content=b"boom")
+
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport) as client:
+        outcome = _fetch("http://test", client, {"case": "200"})
+        assert outcome.status == "200"
+        assert outcome.params == "case=200"
+        assert outcome.done >= outcome.sent
+
+        for case in ("busy", "timeout", "pool_broken"):
+            outcome = _fetch("http://test", client, {"case": case})
+            assert outcome.status == f"503 {case}"
+
+        with pytest.raises(httpx.HTTPStatusError):
+            _fetch("http://test", client, {"case": "500"})
+
+
+def test_the_composed_report_omits_the_single_concurrent_baseline_line() -> None:
+    """WR-01: `_report_markdown` is reused for all three scenarios via `_run_scenario`.
+    `RECORDED_BASELINE` is the debt file's `single`/`concurrent` numbers (D-17) -- printed
+    unconditionally, it would appear under a `"composed"` heading too, where it has
+    nothing to do with the composed sweep's own numbers and would invite a reader to
+    compare the composed ratio against a baseline measured for a different scenario
+    entirely. Omitted only for `name="composed"`; still printed for the two scenarios
+    it actually describes."""
+    composed_report = _report_markdown("composed", 0.001, 100, 0.002, 100, 1.0, 10, 0)
+    assert RECORDED_BASELINE not in composed_report
+    assert "Recorded baseline" not in composed_report
+
+    for name in ("single", "concurrent"):
+        report = _report_markdown(name, 0.001, 100, 0.002, 100, 1.0, 10, 0)
+        assert RECORDED_BASELINE in report
+        assert "Recorded baseline" in report

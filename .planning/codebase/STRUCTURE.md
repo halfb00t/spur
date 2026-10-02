@@ -1,344 +1,307 @@
 ---
-last_mapped_commit: 5252bdcd6a11f893246f614da8e5f0d431d1ed2a
-last_mapped_at: 2026-09-21
+last_mapped_commit: 41d23c70643108293120e36d6abd823739892ca8
+last_mapped_at: 2026-10-02
 ---
 # Codebase Structure
 
-**Analysis Date:** 2026-09-21
+**Analysis Date:** 2026-10-02
 
 ## Directory Layout
 
 ```
 spur/
-├── src/spur/                          # Main Python package
-│   ├── __init__.py                    # Version, int_env() helper
-│   ├── __main__.py                    # Stub for `python -m spur`
-│   ├── py.typed                       # PEP 561 marker (mypy sees real types)
-│   │
-│   ├── params.py                      # GearParams model (Pydantic, frozen)
-│   ├── calc.py                        # Pure math: geometry, measurements, checks
-│   ├── model.py                       # CAD kernel: build, export, caching
-│   ├── app.py                         # FastAPI: HTTP routes, admission control
-│   ├── cli.py                         # argparse: `spur` commands
-│   │
-│   └── static/                        # Served web UI (build artifact)
-│       ├── index.html                 # HTML entry point
-│       ├── app.js                     # Vanilla JS: form, preview, downloads
-│       ├── style.css                  # Styles
-│       └── vendor/                    # Build artifacts (never edit by hand)
-│           └── three.bundle.min.js    # three.js tree-shaken by esbuild (L11)
+├── src/spur/                      # Main Python package
+│   ├── __init__.py                # Version, int_env() helper
+│   ├── __main__.py                # CLI entry point
+│   ├── params.py                  # GearParams model + field metadata (181 lines)
+│   ├── calc.py                    # Pure gear math, DerivedDimensions (1179 lines)
+│   ├── model.py                   # CadQuery kernel, solid building, export (570 lines)
+│   ├── pool.py                    # Worker process pool, build routing (226 lines)
+│   ├── app.py                     # FastAPI app, endpoints, caching (499 lines)
+│   ├── cli.py                     # Command-line interface (153 lines)
+│   ├── build_errors.py            # BuildError, BuildTimeout exception types (25 lines)
+│   ├── records.py                 # JSON logging, event record vocabulary (282 lines)
+│   ├── static/                    # Served web UI files
+│   │   ├── index.html             # HTML page shell
+│   │   ├── app.js                 # Form, preview, event handling (12 KB)
+│   │   ├── style.css              # Gear form styling
+│   │   └── vendor/                # Vendored esbuild bundle
+│   │       └── three.bundle.min.js # Tree-shaken three.js (~570 KB)
+│   └── py.typed                   # PEP 561 marker for type stubs
 │
-├── web/                               # Source for three.js bundle
-│   ├── package.json                   # esbuild, three.js
+├── web/                           # Web UI source (esbuild input)
+│   ├── entry.js                   # Esbuild entry point
+│   ├── package.json               # three.js only dependency
 │   ├── package-lock.json
-│   ├── node_modules/                  # Dev dependency (npm ci)
-│   └── entry.js                       # Webpack entry; built to src/spur/static/vendor/
+│   └── node_modules/
 │
-├── tests/                             # Test suite
-│   ├── test_calc.py                   # Pure math: 7 KB, parametrized tests
-│   ├── test_model.py                  # Solid building, exports, volume checks
-│   ├── test_api.py                    # HTTP contract: FastAPI TestClient
-│   └── test_cli.py                    # CLI: commands parse and run
+├── tests/                         # pytest test suite
+│   ├── conftest.py                # pytest fixtures, autouse cache reset
+│   ├── composition.py             # Test helpers (backend injection, etc.)
+│   ├── test_calc.py               # calc.py unit tests
+│   ├── test_model.py              # model.py solid building tests
+│   ├── test_pool.py               # pool.py worker lifecycle tests
+│   ├── test_api.py                # app.py endpoint tests
+│   ├── test_cli.py                # cli.py command tests
+│   ├── test_records.py            # records.py JSON logging tests
+│   ├── test_bench.py              # bench/ module tests
+│   ├── test_skip_tokens.py        # CI skip token validation tests
+│   ├── test_pr_land.py            # PR merge validation tests
+│   └── regression/                # Regression test suite
+│       ├── test_pre_v0_2.py       # Pre-v0.2 parameter fixture replay
+│       ├── test_corpus.py         # Corpus build sweep validation
+│       ├── pre_v0_2.json          # Pinned 44 parameter sets with measurements
+│       ├── capture.py             # JSON capture utility
+│       └── corpus.py              # 40-gear corpus generation
 │
-├── docs/                              # Design documentation
-│   ├── AGENTS.md                      # Standing brief (this repo's "CLAUDE.md")
-│   ├── CODING_VALUES.md               # Full coding standard
-│   ├── HOW_TO_DEVELOP.md              # Developer guide
-│   ├── README.md                      # (in project root, symlinked?)
-│   │
-│   ├── architecture/                  # System design
-│   │   ├── overview.md                # One-page system map
-│   │   ├── decision_log.md            # Locked decisions (L01–L16)
-│   │   ├── gear-maths/                # Involute geometry deep-dive
-│   │   └── solid-model/               # CadQuery steps, fillet strategy
-│   │
-│   ├── requirements/                  # Functional & non-functional
-│   │   ├── INDEX.md
-│   │   └── YYYY-MM-DD-*.md            # Dated requirement docs
-│   │
-│   ├── tech_debt/                     # Known issues, deferred fixes
-│   │   ├── INDEX.md
-│   │   ├── active/                    # Open items
-│   │   │   ├── 2026-09-21-no-structured-logging.md
-│   │   │   ├── 2026-09-21-no-coverage-floor.md
-│   │   │   └── 2026-09-21-untyped-info-contract.md
-│   │   └── resolved/                  # Fixed with commit shas
-│   │
-│   ├── ideas/                         # Good ideas, not-for-now
-│   │   ├── INDEX.md
-│   │   └── YYYY-MM-DD-*.md
-│   │
-│   ├── guides/                        # How-to docs
-│   │   └── INDEX.md
-│   │
-│   ├── review-2026-09-21.md           # Performance/memory review, measurements
-│   ├── plan-2026-09-21.md             # Development plan
-│   └── [other docs]
+├── bench/                         # Microbenchmarks and performance analysis
+│   ├── __init__.py
+│   ├── latency.py                 # Latency sweep (single/concurrent scenarios)
+│   ├── memory.py                  # Memory usage sweep (N workers)
+│   ├── build_time.py              # Per-gear build time analysis
+│   ├── export_cost.py             # Export (STL/STEP/gzip) cost breakdown
+│   ├── tip_chamfer_spike.py       # Tip chamfer kernel spike test
+│   ├── honeycomb_spike.py         # Honeycomb cell-count kernel spike test
+│   ├── corpus.py                  # 40-gear test corpus (160–199 teeth)
+│   ├── README.md                  # How to run benchmarks
+│   ├── RESULTS.md                 # Measured results from all phases
+│   └── sweeps/                    # Generated sweep data files
+│       ├── memory_N_1/            # Memory sweep output, N=1
+│       ├── memory_N_2/            # Memory sweep output, N=2
+│       ├── memory_N_4/            # Memory sweep output, N=4
+│       ├── latency_single/        # Latency single-request sweep
+│       └── latency_concurrent/    # Latency concurrent-requests sweep
 │
-├── docker/                            # Container build
-│   └── refresh-requirements.sh         # Regenerate requirements.txt (pinned closure, L12)
+├── docker/                        # Container build and runtime
+│   ├── Dockerfile                 # Multi-stage build, Python 3.12
+│   ├── compose.yaml               # Docker Compose orchestration
+│   ├── refresh-requirements.sh    # Generate pinned requirements.txt
+│   ├── smoke.py                   # Smoke test run inside image
+│   └── healthcheck.sh             # HEALTHCHECK curl test
 │
-├── .github/                           # GitHub Actions CI
+├── scripts/                       # Utility scripts
+│   ├── pr_land.py                 # PR merge validation and landing tool
+│   ├── skip_tokens.py             # CI skip token parsing
+│   └── gzip_bench.py              # Gzip compression level microbench
+│
+├── docs/                          # Project documentation
+│   ├── architecture/              # Architecture documentation
+│   │   ├── overview.md            # One-page system map
+│   │   ├── decision_log.md        # Locked decisions (L01–L26+)
+│   │   ├── http-api.md            # API endpoint contract
+│   │   ├── cli.md                 # CLI command reference
+│   │   ├── web-ui.md              # Web form and viewer
+│   │   ├── packaging.md           # Container build and release
+│   │   ├── gear-maths/            # Pure math layer design
+│   │   │   ├── strategy.md        # Involute geometry strategy
+│   │   │   ├── implementation.md  # Math implementation notes
+│   │   │   ├── errors_and_logging.md
+│   │   │   ├── tests.md
+│   │   │   └── tactics.md
+│   │   └── solid-model/           # CAD kernel design
+│   │       ├── strategy.md        # CAD approach and trade-offs
+│   │       ├── implementation.md  # CadQuery usage notes
+│   │       ├── errors_and_logging.md
+│   │       ├── tests.md
+│   │       └── tactics.md
+│   │
+│   ├── requirements/              # Requirements by subsystem
+│   │   ├── REQ-measured-memory-ceiling.md
+│   │   └── REQ-cad-off-event-loop.md
+│   │
+│   ├── guides/                    # User/developer guides
+│   │   └── HOW_TO_DEVELOP.md     # Development setup, verification, merge gate
+│   │
+│   ├── ideas/                     # Future work, not for now
+│   │   └── [dated proposal files]
+│   │
+│   └── tech_debt/                 # Known-bad code, deferred fixes
+│       ├── active/                # Items blocking future work
+│       │   └── [dated files, Severity: blocker/must/nice]
+│       └── resolved/              # Fixed items, with commit SHAs
+│           └── [dated files with resolution]
+│
+├── .github/                       # GitHub Actions CI
 │   └── workflows/
-│       └── ci.yaml                    # Lint, type-check, test, image smoke test
+│       ├── ci.yml                 # Test matrix (3.12 only), docker image build, bundle check
+│       └── required-jobs.txt      # List of jobs that must pass to merge to main
 │
-├── Dockerfile                         # Multi-platform (linux/amd64, linux/arm64)
-├── compose.yaml                       # Local dev: uvicorn + optional postgres-for-testing
-├── pyproject.toml                     # Build, deps, linting, types, testing, import contracts
-├── requirements.txt                   # Pinned closure (generated, installed with --no-deps, L12)
-├── Makefile                           # Commands: venv, verify, check, test, serve, lock, vendor
-│
-├── AGENTS.md                          # Standing brief (symlinked from CLAUDE.md)
-└── CLAUDE.md                          # Symlink to AGENTS.md (for any agent)
+├── .pre-commit-config.yaml        # Pre-commit hooks (verify, commit-msg token check)
+├── pyproject.toml                 # Project metadata, build config, tool settings (ruff, mypy, pytest, import-linter)
+├── requirements.txt               # Pinned full dependency closure (31 packages, L12)
+├── Makefile                       # make verify, make serve, make bench, etc.
+├── Dockerfile                     # Production image build
+├── compose.yaml                   # docker-compose for local serving
+├── README.md                      # User-facing project overview
+├── AGENTS.md                      # Standing brief for AI agents in this repo
+├── CLAUDE.md                      # Symlink to AGENTS.md
+└── .planning/                     # GSD project orchestration (generated)
+    └── codebase/                  # This maps (ARCHITECTURE.md, STRUCTURE.md, etc.)
 ```
 
 ## Directory Purposes
 
-**`src/spur/`:**
+**`src/spur/` — Main Package:**
+All production code lives here. The package structure mirrors the architectural layers:
+- **Parameters** (`params.py`): One validated model, shared by all three interfaces
+- **Pure math** (`calc.py`): Keystroke-fast, kernel-free geometry and derived dimensions
+- **CAD kernel** (`model.py`): Only module that touches CadQuery/OpenCascade
+- **Worker pool** (`pool.py`): Process lifecycle and affinity-based routing
+- **HTTP API** (`app.py`): FastAPI application and request handling
+- **CLI** (`cli.py`): Command-line interface
+- **Cross-cutting** (`build_errors.py`, `records.py`): Shared exception types and logging
 
-- **Purpose:** Main Python package (installed as `spur` entry point)
-- **Contains:** Models, logic layers, HTTP API, CLI, web UI static
-- **Key files:** `params.py` (the model), `calc.py` (pure math), `model.py` (CAD kernel), `app.py` (HTTP), `cli.py` (CLI)
+**`tests/` — Test Suite:**
+Mirrors the production package structure with `test_` prefix. Contains:
+- **Unit tests** — Most tests are unit tests for individual modules (`test_calc.py`, `test_model.py`, etc.)
+- **Integration tests** — `test_api.py` tests HTTP endpoints end-to-end
+- **Regression tests** — `regression/test_pre_v0_2.py` pins 44 hand-crafted parameter sets and replays them to detect geometry regressions
 
-**`web/`:**
+**`bench/` — Performance Characterization:**
+Benchmarks are part of the repository and run manually to measure:
+- **Latency** (`latency.py`): Single and concurrent build scenarios; measures p95 under-load/idle ratio
+- **Memory** (`memory.py`): Peak RSS for N=1, 2, 4 workers; feeds L17 decision
+- **Build time** (`build_time.py`): Per-gear construction time
+- **Export cost** (`export_cost.py`): STL vs STEP vs gzip encoding costs
+- **Spikes** (`tip_chamfer_spike.py`, `honeycomb_spike.py`): Kernel performance edges that constrain defaults
+- **Results** (`RESULTS.md`): Every measured number, machine, date, and method
 
-- **Purpose:** Source code for three.js bundle
-- **Contains:** esbuild config, entry.js, Node dependencies
-- **Build output:** `src/spur/static/vendor/three.bundle.min.js` (committed, byte-checked by CI, L11)
+**`docker/` — Container Build:**
+Production image definition and utilities:
+- **Dockerfile:** Multi-stage build, Python 3.12, pinned closure, health check
+- **compose.yaml:** Local development via Docker Compose
+- **refresh-requirements.sh:** Script to regenerate pinned `requirements.txt` inside a container
+- **smoke.py:** Quick smoke test to verify image is working
 
-**`tests/`:**
+**`scripts/` — Utilities:**
+CLI utilities that live outside the main package:
+- **pr_land.py:** Merge gate for PRs to `main`; checks CI passes, no skip tokens, head is recent
+- **skip_tokens.py:** Parsing for GitHub Actions skip tokens
+- **gzip_bench.py:** Microbenchmark for gzip compression levels
 
-- **Purpose:** Pytest test suite
-- **Contains:** Unit (calc), integration (model + OCCT), contract (API + CLI), behavior tests
-- **Test types:** Pure math, solid geometry (volume, topology), HTTP responses, CLI commands
+**`docs/` — Project Documentation:**
+- **architecture/:** System design, decisions (decision_log.md is the locked-decision source of truth)
+- **requirements/:** REQ-prefixed measurable constraints
+- **guides/:** HOW_TO_DEVELOP.md explains setup, verification, and merge procedure
+- **ideas/:** Future improvements, not for this milestone
+- **tech_debt/:** Known-bad code; active items are blocker/must/nice severity; resolved items record the fix commit
 
-**`docs/`:**
-
-- **Purpose:** Durable design decisions, requirements, known issues, how-tos
-- **Structure:** 
-  - `architecture/` — locked decisions (L01–L16), design details (gear math, solid building)
-  - `requirements/` — functional and non-functional specs
-  - `tech_debt/active/` — known issues with triggers and fixes; blocker items get fixed immediately
-  - `tech_debt/resolved/` — fixed issues with commit sha
-  - `ideas/` — good ideas deferred
-  - `guides/` — how-to docs for developers
-- **Key pattern:** One file per item, `YYYY-MM-DD-short-slug.md`, with INDEX.md in each dir
-
-**`docker/`:**
-
-- **Purpose:** Container build tooling
-- **Contains:** `refresh-requirements.sh` (regenerates `requirements.txt` via pip-compile, L12)
-
-**`.github/`:**
-
-- **Purpose:** CI/CD pipelines
-- **Contains:** GitHub Actions workflows (lint, type-check, import-lint, test, image build smoke test)
-
-**`.planning/codebase/`:**
-
-- **Purpose:** Live codebase maps (written by gsd-map-codebase)
-- **Contains:** ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md (as applicable)
-- **Updated:** After major code changes or architectural shifts
+**`.github/workflows/` — CI:**
+- **ci.yml:** Test matrix (3.12 only, after L23), `vendor-bundle` byte-check, Docker image build
+- **required-jobs.txt:** The exact set of jobs that must pass to merge to main; kept in sync with ci.yml by a test
 
 ## Key File Locations
 
 **Entry Points:**
-
-- **Web UI:** `src/spur/static/index.html` (GET /)
-  - Vanilla HTML; loaded by FastAPI's StaticFiles mount
-  - Form built by app.js from /api/schema
-  - 3D preview via three.js canvas
-
-- **HTTP API:** `src/spur/app.py` (FastAPI instance `app`)
-  - Run: `make serve` or `spur serve`
-  - Endpoints: GET /, /api/health, /api/schema, /api/info, /api/model.{stl|step}
-  - Mounted at / (no prefix by default; SPUR_ROOT_PATH for reverse proxy)
-
-- **CLI:** `src/spur/cli.py` (main() function)
-  - Entry point: `spur` (installed by pyproject.toml:30)
-  - Commands: `spur serve`, `spur info`, `spur export`
+- `src/spur/__main__.py`: CLI entry point
+- `src/spur/app.py`: FastAPI app instance
+- `src/spur/cli.py`: CLI command functions
 
 **Configuration:**
-
-- **Build & packaging:** `pyproject.toml`
-  - Project metadata, dependencies, entry points, hatch build config
-  - Ruff (linter), mypy (type-checker), pytest (test runner), import-linter (contracts)
-  - Three import-linter contracts enforcing layer boundaries (lines 117–146)
-
-- **Pinned dependencies:** `requirements.txt` (generated, never hand-edit)
-  - Run `make lock` to regenerate (calls docker/refresh-requirements.sh)
-  - Installed in Dockerfile with `--no-deps` (L12)
-
-- **Environment vars:** Read at `src/spur/__init__.py` (int_env helper)
-  - SPUR_SOLID_CACHE (default 4) — build cache entry count
-  - SPUR_EXPORT_CACHE_MB (default 64) — export cache size limit
-  - SPUR_MAX_QUEUED_BUILDS (default 4) — HTTP admission control
-  - SPUR_HOST, SPUR_PORT, SPUR_WORKERS, SPUR_ROOT_PATH — serve command
-
-- **Makefile:** Development commands
-  - `make` lists all targets
-  - `make verify` is the gate (lint, types, import contracts, no-fake-done scan, pytest)
-  - `make check` adds container tests (requires Docker)
+- `pyproject.toml`: Package metadata, ruff/mypy/pytest/import-linter config, tool.hatch build settings
+- `requirements.txt`: Pinned dependency closure for Docker image (generated, do not edit by hand)
+- `.pre-commit-config.yaml`: Hooks run before commit (verify gate, commit-msg token check)
 
 **Core Logic:**
-
-- **Parameters:** `src/spur/params.py` (GearParams model, ~90 lines)
-  - Pydantic BaseModel (frozen, hashable)
-  - Field metadata drives UI form (group, unit, step, help)
-  - Model validator calls calc.check() for cross-field validation
-
-- **Calculation:** `src/spur/calc.py` (~270 lines)
-  - Pure functions: profile(), derive(), check(), centre_distance(), with_mate(), root_fillet(), recess_radii(), span_measurement()
-  - No imports of cadquery/OCP (enforced)
-  - Invokes bisection solver for involute angle (L08, safer than Newton)
-
-- **Solid Building:** `src/spur/model.py` (~318 lines)
-  - Gateway to CadQuery/OpenCascade (only place direct imports allowed)
-  - Functions: _outline() (analytic fillets), _gear_blank(), _cut_face_recesses(), _cut_bore()
-  - build() (cached, under lock), export() (cached by size, arena-trimmed on miss)
-  - Thread-safe: _LOCK (RLock) around all OCCT calls
-
-- **HTTP API:** `src/spur/app.py` (~125 lines)
-  - FastAPI routes for schema, info, model export
-  - Admission control: BUILD_QUEUE (BoundedSemaphore, max SPUR_MAX_QUEUED_BUILDS)
-  - Error formatting: 422 for infeasible params (names the fields), 503 for queue full
-
-- **CLI:** `src/spur/cli.py` (~115 lines)
-  - argparse-based command parser
-  - Generates flags from GearParams fields (one flag per field, alphabetically)
-  - Commands: serve (uvicorn wrapper), info (JSON to stdout), export (file write)
-  - No queue (L04 enforcement); direct model.export()
+- `src/spur/params.py`: Parameter validation and JSON schema source
+- `src/spur/calc.py`: Involute geometry, derived dimensions, feasibility
+- `src/spur/model.py`: CadQuery solid building, STL/STEP export
+- `src/spur/pool.py`: Worker process pool and build routing
+- `src/spur/app.py`: HTTP endpoints, caching, admission control
 
 **Testing:**
+- `tests/conftest.py`: pytest fixtures
+- `tests/regression/pre_v0_2.json`: Pinned 44 parameter sets for regression testing
+- `tests/regression/test_pre_v0_2.py`: Replay fixture, check geometry invariants
 
-- **Unit (pure math):** `tests/test_calc.py` (~110 lines, parameterized)
-  - Fixtures: GearParams(teeth=..., module=..., etc.) for different configurations
-  - Assertions: dimensions match expected values (e.g., pitch_d ≈ 33.25 for stock gear)
-  - Pattern: one scenario per test; test names read as requirements
-
-- **Integration (solid building):** `tests/test_model.py` (~60 lines)
-  - Fixtures: GearParams for edge cases (minimal tooth count, maximum bore, etc.)
-  - Assertions: isValid(), BoundingBox matches expected size, volume calculations
-  - Pattern: no snapshots; assert geometry properties, not snapshots
-
-- **Contract (HTTP API):** `tests/test_api.py` (~60 lines)
-  - Fixture: FastAPI TestClient(app)
-  - Assertions: status codes, content-type, error detail shape (fields list, message)
-  - Pattern: test the contract the UI and scripts depend on
-
-- **Behavior (CLI):** `tests/test_cli.py` (~50 lines)
-  - Fixture: parse args and call command functions
-  - Assertions: exit code, output format, file writes
-  - Pattern: README examples are tests (L157 in CODING_VALUES)
-
-**Static Files & Web Bundle:**
-
-- **Entry point:** `src/spur/static/index.html` (hand-written HTML, never generated)
-- **Styles:** `src/spur/static/style.css` (hand-written CSS, ~150 lines)
-- **JavaScript:** `src/spur/static/app.js` (generated from web/entry.js by esbuild, ~12 KB minified)
-  - Form building from /api/schema
-  - Preview rendering with three.js
-  - Download button handlers
-
-- **three.js bundle:** `src/spur/static/vendor/three.bundle.min.js` (build artifact, ~500 KB)
-  - Built from `web/entry.js` by esbuild (tree-shaken)
-  - Committed to repo; CI byte-checks it matches rebuild (L11)
-  - Never edit by hand; run `make vendor` to rebuild
+**Performance:**
+- `bench/RESULTS.md`: Measured numbers (latency, memory, build time)
+- `bench/latency.py`: Latency measurement under single and concurrent load
+- `bench/memory.py`: Peak RSS measurement for different worker counts
 
 ## Naming Conventions
 
 **Files:**
-
-- **Module files:** `snake_case.py` (e.g., `calc.py`, `model.py`)
-- **Test files:** `test_*.py` (e.g., `test_calc.py`, `test_api.py`)
-- **Data/config files:** `lowercase.txt`, `lowercase.yaml` (e.g., `requirements.txt`, `compose.yaml`)
-- **Docs:** `UPPERCASE.md` or `YYYY-MM-DD-slug.md` (e.g., `ARCHITECTURE.md`, `2026-09-21-no-structured-logging.md`)
+- Python modules: `snake_case.py` (e.g., `build_errors.py`, `test_api.py`)
+- Test files: `test_*.py` (e.g., `test_calc.py`)
+- Regression tests: `tests/regression/test_*.py`
+- Documentation: `SCREAMING_SNAKE_CASE.md` or prose (e.g., `RESULTS.md`, `overview.md`)
+- JSON fixtures: `snake_case.json` (e.g., `pre_v0_2.json`)
+- Dated items: `YYYY-MM-DD-short-slug.md` (e.g., `2026-09-21-no-structured-logging.md`)
 
 **Directories:**
+- Production code: `src/` (PEP 517 wheel layout)
+- Tests: `tests/` (pytest convention)
+- Benchmarks: `bench/` (manually run)
+- Documentation: `docs/` with subdirs by type (architecture/, guides/, etc.)
+- Infrastructure: `docker/`, `scripts/`, `.github/`
 
-- **Package:** `lowercase` (e.g., `spur/`, `tests/`)
-- **Categories:** `lowercase` (e.g., `docs/`, `docker/`, `ideas/`, `tech_debt/`)
-- **Dates:** None in directory names; dates go in file names within INDEX.md
-
-**Functions & Variables:**
-
-- **Functions:** `snake_case` for public, `_snake_case` for private (e.g., `derive()`, `_build()`)
-- **Classes:** `PascalCase` (e.g., `GearParams`, `Profile`, `BuildError`)
-- **Constants:** `UPPER_CASE` (e.g., `MIN_WALL`, `FLANK_POINTS`, `TOL`, `TESSELLATION`)
-- **Math symbols:** Single letters acceptable only in short routines (e.g., `z`, `m`, `alpha`, `r`, `rb`, `ra`, `rf` in Profile; defined once per file)
+**Python Identifiers:**
+- Functions: `snake_case` (e.g., `derive()`, `build_export()`, `_release_arenas()`)
+- Classes: `PascalCase` (e.g., `GearParams`, `BuildPool`, `DerivedDimensions`)
+- Constants: `SCREAMING_SNAKE_CASE` (e.g., `MIN_WALL`, `SPUR_SOLID_CACHE`)
+- Private: `_leading_underscore` for module-level, `__double` is rare (only `__init__`, `__main__`)
+- Type variables: `P`, `T` as single uppercase letters (e.g., `P = ParamSpec("P")`)
 
 ## Where to Add New Code
 
-**New Feature (e.g., new bore type, new measurement):**
+**New Feature (e.g., a new bore shape):**
+- **Parameter definition:** Add field to `GearParams` in `src/spur/params.py`
+- **Geometry calculation:** Add helper to `src/spur/calc.py` (pure math)
+- **CAD building:** Add solid-building code to `src/spur/model.py` inside `build()` function
+- **Tests:** 
+  - Unit test for geometry helper in `tests/test_calc.py`
+  - Integration test for CAD output in `tests/test_model.py`
+  - Regression test: add parameter set(s) to `tests/regression/pre_v0_2.json` and re-run fixture
+- **Documentation:** Add strategy notes to `docs/architecture/solid-model/strategy.md` if the approach is novel
 
-- **Math:** Add function to `src/spur/calc.py`, add field to GearParams if parametric
-- **Solid:** Add geometry step to `src/spur/model.py` (e.g., `_cut_feature()`)
-- **API:** Endpoint or response field in `src/spur/app.py`
-- **CLI:** Flag (auto-generated from GearParams) or new command in `src/spur/cli.py`
-- **UI:** Form group in HTML (auto-built from schema) and display in app.js
-- **Tests:** Unit test in `tests/test_calc.py`, integration test in `tests/test_model.py`, contract test in `tests/test_api.py`, behavior test in `tests/test_cli.py`
+**New API Endpoint (e.g., `/api/analysis`):**
+- **Endpoint definition:** Add route handler to `src/spur/app.py` using `@app.get()` or `@app.post()`
+- **Request/response models:** Define Pydantic model(s) in `src/spur/app.py` (close to the endpoint)
+- **Logic:** If computation is heavy, route through pool via `backend()`; if lightweight, call `calc` directly
+- **Tests:** Add test case to `tests/test_api.py`
+- **Logging:** Call a helper from `records.py` (or add a new one if the event is novel)
 
-**New Utility / Helper (e.g., math function shared by calc and model):**
+**New CLI Command (e.g., `spur validate`):**
+- **Command handler:** Add `cmd_validate()` function to `src/spur/cli.py`
+- **Argument parsing:** Use `_add_gear_args()` and `argparse` like existing commands
+- **Entry point:** Add subparser branch in `main()` (if not already present)
+- **Tests:** Add test case to `tests/test_cli.py`
+- **Note:** CLI must never import `app.py` (L04) — use `calc.derive()` or `model.export()` directly
 
-- **If pure math:** `src/spur/calc.py` (no OCCT imports)
-- **If using OCCT:** `src/spur/model.py` (only place OCCT imports are allowed)
-- **If supporting tests:** `tests/conftest.py` if fixtures are needed (currently just test files)
+**New Utility or Helper:**
+- **Shared across modules:** `src/spur/` as a new module or add to an existing one
+- **Test-only helpers:** `tests/composition.py` (already holds test fixtures and backend injection)
+- **Build/script utilities:** `scripts/` directory (e.g., `scripts/new_tool.py`)
 
-**New Module (rare — only if a boundary broke):**
-
-1. Add to `src/spur/` directory
-2. Add import-linter contract in `pyproject.toml` to enforce its place in the layer stack
-3. Update `CODING_VALUES.md` if adding a new layer
-
-**New Doc:**
-
-- **Decision:** `docs/architecture/decision_log.md` (edit existing, add new `Lxx` entry)
-- **Idea:** `docs/ideas/YYYY-MM-DD-slug.md` + row in `docs/ideas/INDEX.md`
-- **Tech debt:** `docs/tech_debt/active/YYYY-MM-DD-slug.md` + row in INDEX; move to resolved/ when fixed
-- **Requirement:** `docs/requirements/YYYY-MM-DD-slug.md` + row in INDEX
-- **How-to:** `docs/guides/YYYY-MM-DD-slug.md` + row in INDEX
+**New Documentation:**
+- **Architecture decision:** Add entry to `docs/architecture/decision_log.md` (L-prefixed, append-only)
+- **Known issue:** Create dated file in `docs/tech_debt/active/` with Severity tag; add row to `docs/tech_debt/active/INDEX.md`
+- **Resolved issue:** Move from `active/` to `resolved/` in the same commit that fixes it; record commit SHA
+- **Future idea:** Create dated file in `docs/ideas/`; no need to add to index unless it's blocking something
 
 ## Special Directories
 
-**`.venv/`:**
-
-- **Purpose:** Virtual environment (created by `make venv`)
-- **Generated:** Yes (pip install -e '.[dev]' from pyproject.toml)
-- **Committed:** No (in .gitignore)
-- **Gitignored:** Yes; do not commit
-
-**`.mypy_cache/`, `.ruff_cache/`, `.pytest_cache/`, `.import_linter_cache/`:**
-
-- **Purpose:** Tool caches
-- **Generated:** Yes (by ruff, mypy, pytest, import-linter)
-- **Committed:** No (in .gitignore)
-
-**`src/spur/__pycache__/`, `tests/__pycache__/`:**
-
-- **Purpose:** Python bytecode cache
-- **Generated:** Yes (by Python)
-- **Committed:** No (in .gitignore)
-
-**`src/spur/static/vendor/`:**
-
-- **Purpose:** Build artifact (three.js bundle from web/ build)
-- **Generated:** Yes (by esbuild via `make vendor`)
-- **Committed:** Yes (byte-checked by CI to prevent drift, L11)
-- **Edit:** Never by hand; edit `web/entry.js`, run `make vendor`, commit the result
+**`.planning/`:**
+- Purpose: GSD (Generalist System Designer) project orchestration state
+- Generated: Automatically by GSD CLI commands
+- Committed: No, added to `.gitignore`
 
 **`web/node_modules/`:**
+- Purpose: esbuild and three.js source for building the vendored bundle
+- Generated: `npm install` (or not needed if not modifying web UI)
+- Committed: No, listed in `.gitignore`
 
-- **Purpose:** npm dependencies for esbuild
-- **Generated:** Yes (by npm ci)
-- **Committed:** No (in .gitignore)
+**`bench/sweeps/`:**
+- Purpose: Intermediate and final data files from benchmark runs
+- Generated: Created by `bench/latency.py`, `bench/memory.py`, etc. when run
+- Committed: No, only human-readable `RESULTS.md` is committed
 
-**`.planning/codebase/`:**
-
-- **Purpose:** Live architecture maps
-- **Generated:** Yes (by gsd-map-codebase skill)
-- **Committed:** Yes (for reference and continuity)
-- **Contents:** ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md (as applicable)
+**`tests/regression/`:**
+- Purpose: Regression testing — replays hand-crafted parameter sets to detect unintended geometry changes
+- Committed: Yes
+- Important: `pre_v0_2.json` is pinned; every commit that builds successfully must keep it unchanged (verified by `git diff --exit-code` after test runs)
 
 ---
 
-*Structure analysis: 2026-09-21*
+*Structure analysis: 2026-10-02*

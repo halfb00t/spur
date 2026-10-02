@@ -58,7 +58,7 @@ every false claim in the record made true or warned, and the gate itself measure
 user-facing geometry, no new `GearParams` field, the 44-record pre-v0.2 fixture
 byte-unchanged throughout.
 
-- [ ] **Phase 13: Latency Bar** - The two unexplained concurrent-latency observations get
+- [x] **Phase 13: Latency Bar** - The two unexplained concurrent-latency observations get (completed 2026-10-02)
       a ruled cause, and the ten-concurrent bar is demonstrated on both runs of one session
       or superseded by a logged decision
 - [ ] **Phase 14: Honest Record** - The root lead-in warns when it rises above the pitch
@@ -102,7 +102,29 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the debt file
 already states the bounded investigation's shape.
-**Plans**: TBD
+**Plans:** 7/7 plans complete (strictly serial: one host, sessions never overlap)
+
+Plans:
+**Wave 1**
+- [x] 13-01-PLAN.md — the investigation harness, tracer first: split poller, per-run harness, quiet-gated session driver, tabulator
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 13-02-PLAN.md — D-08 order checkpoint, pre-registered method and predictions, the human stops fleet-user
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 13-03-PLAN.md — the six pair sessions (A/B/C twice) and the write-up's verdict per observation
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 13-04-PLAN.md — the decisive bar session on the unmodified harness; D-09 checkpoint on outcome (b)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 13-05-PLAN.md — outcome (b) only: the chosen change, the re-measure, D-11 halt on a miss
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 13-06-PLAN.md — SC3: the composed scenario (own commit) measured once on its own fresh server
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [x] 13-07-PLAN.md — L32, the Dockerfile sentence, the debt retired (or re-triggered), fleet-user restored
 
 ### Phase 14: Honest Record
 
@@ -242,7 +264,7 @@ internal and one is process-only.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
-| 13. Latency Bar | v0.3 | 0/TBD | Not started | - |
+| 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 0/TBD | Not started | - |
 | 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |

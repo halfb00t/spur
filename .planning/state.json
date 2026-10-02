@@ -1,12 +1,43 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.3",
-  "phases": [],
+  "milestone": "v0.3 — Clean Ledger",
+  "phases": [
+    {
+      "number": "1",
+      "name": "6",
+      "status": "complete"
+    },
+    {
+      "number": "7",
+      "name": "12",
+      "status": "complete"
+    },
+    {
+      "number": "13",
+      "name": "Latency Bar",
+      "status": "complete"
+    },
+    {
+      "number": "14",
+      "name": "Honest Record",
+      "status": "pending"
+    },
+    {
+      "number": "15",
+      "name": "The Gate, Measured and Pinned",
+      "status": "pending"
+    },
+    {
+      "number": "16",
+      "name": "Typing & Validation Debt",
+      "status": "pending"
+    }
+  ],
   "next": {
-    "command": "/gsd:discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 14)",
+    "reason": "Phase 14 of 4 — needs a plan"
   },
-  "updated_at": "2026-10-01T12:00:10.626Z"
+  "updated_at": "2026-10-02T10:29:17.252Z"
 }

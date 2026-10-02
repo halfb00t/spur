@@ -1,0 +1,158 @@
+{
+  "label": "B1-run2",
+  "started_utc": "2026-10-02T02:42:00.913408+00:00",
+  "finished_utc": "2026-10-02T02:42:11.042500+00:00",
+  "head": "aff8f688aba95319cf073341f2a290590380106e",
+  "machine": "12 CPUs, arm64, 32.0 GiB RAM",
+  "base_url": "http://127.0.0.1:8001",
+  "order": [
+    "concurrent",
+    "single"
+  ],
+  "teeth_start": 180,
+  "clock_resolution_s": 4.166666666666667e-08,
+  "poller": {
+    "n": 12702,
+    "returncode": 0,
+    "unassigned": 235
+  },
+  "scenarios": {
+    "concurrent": {
+      "t_start": 1083154.901303791,
+      "t_builds_start": 1083156.901491541,
+      "t_builds_done": 1083162.710705333,
+      "slowest_build_s": 5.808136833133176,
+      "attempted": 10,
+      "refused": 6,
+      "teeth": [
+        180,
+        189
+      ],
+      "inproc": {
+        "idle": {
+          "n": 2864,
+          "p95_s": 0.0007903959485702217,
+          "refused_reason": null,
+          "p94_s": 0.0007829705020412803,
+          "p96_s": 0.000799616938456893,
+          "min_gap_s": 2.3283064365386963e-10,
+          "ties": 404
+        },
+        "under_load": {
+          "n": 5389,
+          "p95_s": 0.0018248955020681024,
+          "refused_reason": null,
+          "p94_s": 0.0016504582483321429,
+          "p96_s": 0.0019791088532656433,
+          "min_gap_s": 2.3283064365386963e-10,
+          "ties": 664
+        },
+        "ratio": 2.3088371155864698,
+        "verdict": "miss",
+        "alternatives": {
+          "u94_i95": 2.0881410783009726,
+          "u96_i95": 2.5039461004901797,
+          "u95_i94": 2.330733402229614,
+          "u95_i96": 2.282212162225828
+        },
+        "flips": false
+      },
+      "poller": {
+        "idle": {
+          "n": 2857,
+          "p95_s": 0.0007893581176176667,
+          "refused_reason": null,
+          "p94_s": 0.0007808749843388796,
+          "p96_s": 0.0008044764585793019,
+          "min_gap_s": 2.3283064365386963e-10,
+          "ties": 362
+        },
+        "under_load": {
+          "n": 6661,
+          "p95_s": 0.0014724837383255363,
+          "refused_reason": null,
+          "p94_s": 0.0013306797109544277,
+          "p96_s": 0.001587011758238077,
+          "min_gap_s": 2.3283064365386963e-10,
+          "ties": 1133
+        },
+        "ratio": 1.8654191367152673,
+        "verdict": "pass",
+        "alternatives": {
+          "u94_i95": 1.6857744048677223,
+          "u96_i95": 2.010509200852688,
+          "u95_i94": 1.8856843513462025,
+          "u95_i96": 1.8303627441453405
+        },
+        "flips": true
+      }
+    },
+    "single": {
+      "t_start": 1083162.717748083,
+      "t_builds_start": 1083164.717778416,
+      "t_builds_done": 1083164.733688708,
+      "slowest_build_s": 0.015092208050191402,
+      "attempted": 1,
+      "refused": 0,
+      "teeth": null,
+      "inproc": {
+        "idle": {
+          "n": 2934,
+          "p95_s": 0.0007818022859282792,
+          "refused_reason": null,
+          "p94_s": 0.0007710496429353952,
+          "p96_s": 0.0007971832063049078,
+          "min_gap_s": 2.3283064365386963e-10,
+          "ties": 435
+        },
+        "under_load": {
+          "n": 19,
+          "p95_s": null,
+          "refused_reason": "only 19 /api/health samples (need >= 20); refusing to report a p95",
+          "p94_s": null,
+          "p96_s": null,
+          "min_gap_s": 5.417969077825546e-07,
+          "ties": 0
+        },
+        "ratio": null,
+        "verdict": null,
+        "alternatives": {
+          "u94_i95": null,
+          "u96_i95": null,
+          "u95_i94": null,
+          "u95_i96": null
+        },
+        "flips": null
+      },
+      "poller": {
+        "idle": {
+          "n": 2928,
+          "p95_s": 0.0007717186119407416,
+          "refused_reason": null,
+          "p94_s": 0.0007660339539870619,
+          "p96_s": 0.0007861955650150776,
+          "min_gap_s": 2.3283064365386963e-10,
+          "ties": 416
+        },
+        "under_load": {
+          "n": 21,
+          "p95_s": 0.0013960840413346886,
+          "refused_reason": null,
+          "p94_s": null,
+          "p96_s": null,
+          "min_gap_s": 2.50060111284256e-07,
+          "ties": 0
+        },
+        "ratio": 1.8090584051404095,
+        "verdict": "pass",
+        "alternatives": {
+          "u94_i95": null,
+          "u96_i95": null,
+          "u95_i94": 1.8224832385931917,
+          "u95_i96": 1.7757465234593566
+        },
+        "flips": false
+      }
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "label": "bar-3",
+  "mode": "bar",
+  "pair": null,
+  "order": "concurrent,single",
+  "state": "done",
+  "reason": null,
+  "decisive": true,
+  "started_utc": "2026-10-02T07:10:04.779697+00:00",
+  "finished_utc": "2026-10-02T07:15:38.851466+00:00",
+  "quiet": {
+    "bar": 1.5,
+    "cap_s": 900.0,
+    "samples": [
+      {
+        "utc": "2026-10-02T07:10:04.947900+00:00",
+        "load1": 2.95
+      },
+      {
+        "utc": "2026-10-02T07:10:34.959562+00:00",
+        "load1": 2.58
+      },
+      {
+        "utc": "2026-10-02T07:11:04.974475+00:00",
+        "load1": 2.83
+      },
+      {
+        "utc": "2026-10-02T07:11:34.990191+00:00",
+        "load1": 2.56
+      },
+      {
+        "utc": "2026-10-02T07:12:05.005075+00:00",
+        "load1": 2.21
+      },
+      {
+        "utc": "2026-10-02T07:12:35.021457+00:00",
+        "load1": 1.87
+      },
+      {
+        "utc": "2026-10-02T07:13:05.038988+00:00",
+        "load1": 1.97
+      },
+      {
+        "utc": "2026-10-02T07:13:35.054357+00:00",
+        "load1": 1.98
+      },
+      {
+        "utc": "2026-10-02T07:14:05.067204+00:00",
+        "load1": 1.39
+      },
+      {
+        "utc": "2026-10-02T07:14:35.086260+00:00",
+        "load1": 1.12
+      },
+      {
+        "utc": "2026-10-02T07:15:05.098668+00:00",
+        "load1": 0.96
+      }
+    ],
+    "released": true
+  },
+  "host": {
+    "head": "fe17199",
+    "machine": "12 CPUs, arm64, 32.0 GiB RAM",
+    "docker_info_exit": 0,
+    "docker_ps": [
+      "spur-spur-1 Up 40 hours (healthy)",
+      "fleet-user Exited (2) 18 hours ago"
+    ],
+    "top_cpu": [
+      " %CPU COMM",
+      " 21.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer",
+      "  6.5 /Applications/AlDente.app/Contents/MacOS/AlDente",
+      "  5.8 /Applications/iTerm.app/Contents/MacOS/iTerm2",
+      "  4.3 claude",
+      "  3.9 /Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/Code Helper (Plugin)"
+    ],
+    "server_env": {
+      "SPUR_PORT": "8001"
+    }
+  },
+  "runs": [
+    {
+      "label": "bar-3-run1",
+      "exit_code": 0,
+      "load_before": 0.96
+    },
+    {
+      "label": "bar-3-run2",
+      "exit_code": 1,
+      "load_before": 3.24
+    }
+  ],
+  "load_after": 5.34
+}

@@ -268,6 +268,334 @@ causes, because neither was investigated:
 Both bear on how the bar should be read; neither changes what it says. Not met on both
 runs.
 
+### Phase 13 investigation sessions
+
+`.planning/phases/13-latency-bar/13-LATENCY-INVESTIGATION.md` ran six pair sessions
+(twelve runs) to explain the two observations above. Every run carried a split-process
+poller beside the harness's own in-process sampling and, for Pairs B and C, a mirrored
+teeth range or a server restart the unmodified harness never does — so none of these
+twelve runs is "the harness as it stands" and none counts for the bar (D-07); they are
+recorded here as the investigation's own record.
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+| Session | Released (UTC) | 1-min load at release | Decisive | Run 1 ratio | Run 2 ratio | Run 2 vs run 1 |
+|---|---|---|---|---|---|---|
+| A1 | 2026-10-02T02:37:53.913Z | 1.49, 1.34, 1.15 | yes | 1.327x | 1.940x | worse |
+| B1 | 2026-10-02T02:41:40.765Z | 1.31, 1.14, 1.02 | yes | 1.476x | 2.309x | worse |
+| C1 | 2026-10-02T02:48:51.582Z | 1.38, 1.34, 1.41 | yes | 1.792x | 1.396x | not worse |
+| A2 | 2026-10-02T02:53:10.129Z | 1.46, 1.35, 1.29 | yes | 1.896x | 1.517x | not worse |
+| B2 | 2026-10-02T03:06:22.211Z | 1.19, 1.18, 1.34 | yes | 1.426x | 1.528x | worse |
+| C2 | 2026-10-02T03:11:05.906Z | 1.40, 1.39, 1.23 | yes | 1.369x | 1.534x | worse |
+
+Observation 1 verdict (13-LATENCY-INVESTIGATION.md ## Verdict): not reproduced in this
+environment — Pair A does not point worse (it is split: A1 worse, A2 not worse), and the
+pre-registered rule states that when Pair A does not point worse, observation 1 is not
+reproduced and Pairs B and C cannot rule anything in or out.
+
+Observation 2 verdict (13-LATENCY-INVESTIGATION.md ## Verdict): candidate (ii) — the
+floor is real — is ruled in. At least one concurrent run's in-process verdict flips
+inside one percentile — three do, plus one on the split poller — which directly refutes
+(i); (iii)'s exact claim does not hold (three below-median-n runs do not flip). (ii) is
+therefore the surviving candidate.
+
+### Bar session bar-1 (Runs 9-10)
+
+Commit under test: `34d9ef4`. Command: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001` (not the bare `make bench.latency` target, which targets port
+8000 — RESEARCH.md Pitfall 1), two runs in immediate succession against one fresh
+server (Run 10 inherits Run 9's `_EXPORTS`, as every even-numbered run did), shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}`).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`bar-1.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T03:41:00Z through 2026-10-02T03:56:00Z UTC):
+
+1.61, 1.31, 1.63, 1.67, 2.40, 1.77, 1.75, 1.65, 1.39, 1.57, 1.87, 1.54, 2.59, 2.23, 2.03,
+1.76, 1.77, 1.81, 1.81, 1.48, 1.89, 1.65, 1.89, 1.60, **8.02**, 5.46, 3.55, 2.66, 2.08,
+1.96, 1.88 (30 samples, never three consecutive under 1.5 — a spike to 8.02 at
+2026-10-02T03:53:00Z broke the streak closest to release, at sample 24/25/26).
+
+- `docker info`: exit 0.
+- Top CPU (`ps -Ao %cpu,comm -r`, latest sample): loginwindow 12.4%, Notion Calendar
+  Helper (Renderer) 6.2%, iTerm2 5.9%, WindowServer 4.9%, Code Helper (Plugin) 3.0%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 36 hours (healthy)`,
+  `fleet-user Exited (2) 14 hours ago`.
+- Load after: 3.67.
+
+Decisive (D-05): no — the 900 s cap expired; recorded, not counted for the bar.
+
+#### `single` scenario (Runs 9-10)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 9 | 0.6 ms (n=3605) | 0.7 ms (n=5062) | 1.18x | 3.12 s | 0 of 1 |
+| 10 | insufficient (n<20) | insufficient (n=18) | -- | -- | -- |
+
+Run 10 printed `warning: single/under-load has only 18 /api/health samples (need >= 20);
+refusing to report a p95` — the 200-tooth gear was cached from Run 9, so there was no load
+window to sample; no ratio, per L08, exactly as in Runs 6 and 8.
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 9 (1.18x). Run 10: no ratio
+printed (insufficient samples).
+
+#### `concurrent` scenario (Runs 9-10)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 9 | 0.6 ms (n=3636) | 0.9 ms (n=15236) | 1.42x | 11.09 s | 6 of 10 |
+| 10 | 0.7 ms (n=3528) | 0.9 ms (n=12426) | 1.37x | 9.37 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 9 (1.42x) and Run 10 (1.37x).
+Neither run was repeated or restarted in search of a passing number. This session is
+**non-decisive** (D-05): the quiet gate never released, so neither reading counts for
+outcome (a) or (b) — the decisive session (D-07) is a separate attempt.
+
+### Bar session bar-2 (Runs 11-12)
+
+Commit under test: `83bb448`. Command: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001` (not the bare `make bench.latency` target, which targets port
+8000 — RESEARCH.md Pitfall 1), two runs in immediate succession against one fresh
+server (Run 12 inherits Run 11's `_EXPORTS`, as every even-numbered run did), shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}`).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`bar-2.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T06:33:35Z through 2026-10-02T06:48:36Z UTC):
+
+5.51, 4.29, 3.69, 3.54, 2.59, 2.64, 2.51, 2.13, 2.30, 1.63, 1.84, 1.62, **1.31**, 1.97,
+1.47, 1.99, 2.37, 2.10, 1.97, 1.65, 2.13, 2.00, 2.13, 2.05, 2.08, 2.01, 1.55, 2.03, 2.15,
+1.88, 1.63 (31 samples; the load never fell far enough to approach the three-consecutive-
+under-1.5 streak the gate needs — sample 13 at 1.31 is the single lowest point, with no
+adjacent sample under 1.5 to build a streak around it).
+
+- `docker info`: exit 0.
+- Top CPU (`ps -Ao %cpu,comm -r`, latest sample): WindowServer 26.5%, Telegram 12.0%,
+  iTerm2 9.5%, claude 6.0%, go 5.9%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 39 hours (healthy)`,
+  `fleet-user Exited (2) 17 hours ago`.
+- Load after: 2.11.
+
+Decisive (D-05): no — the 900 s cap expired; recorded, not counted for the bar.
+
+#### `single` scenario (Runs 11-12)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 11 | 0.6 ms (n=3682) | 0.7 ms (n=5098) | 1.11x | 3.08 s | 0 of 1 |
+| 12 | insufficient (n<20) | insufficient (n=18) | -- | -- | -- |
+
+Run 12 printed `warning: single/under-load has only 18 /api/health samples (need >= 20);
+refusing to report a p95` — the 200-tooth gear was cached from Run 11, so there was no
+load window to sample; no ratio, per L08, exactly as in Runs 6, 8 and 10.
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 11 (1.11x). Run 12: no ratio
+printed (insufficient samples).
+
+#### `concurrent` scenario (Runs 11-12)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 11 | 0.6 ms (n=3640) | 0.8 ms (n=15653) | 1.38x | 11.24 s | 6 of 10 |
+| 12 | 0.6 ms (n=3578) | 0.9 ms (n=12634) | 1.42x | 9.44 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 11 (1.38x) and Run 12 (1.42x).
+Neither run was repeated or restarted in search of a passing number. This session is
+**non-decisive** (D-05): the quiet gate never released, so neither reading counts for
+outcome (a) or (b) — the decisive session (D-07) is a separate attempt.
+
+### Bar session bar-3 (Runs 13-14)
+
+Commit under test: `fe17199`. Command: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001` (not the bare `make bench.latency` target, which targets port
+8000 — RESEARCH.md Pitfall 1), two runs in immediate succession against one fresh
+server (Run 14 inherits Run 13's `_EXPORTS`, as every even-numbered run did), shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}`).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`bar-3.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T07:10:04Z through 2026-10-02T07:15:05Z UTC):
+
+2.95, 2.58, 2.83, 2.56, 2.21, 1.87, 1.97, 1.98, **1.39, 1.12, 0.96** (11 samples; released
+by the first three-consecutive-under-1.5 streak, samples 9-11 at 2026-10-02T07:14:05Z,
+07:14:35Z and 07:15:05Z UTC).
+
+- `docker info`: exit 0.
+- Top CPU (`ps -Ao %cpu,comm -r`, latest sample): WindowServer 21.0%, AlDente 6.5%,
+  iTerm2 5.8%, claude 4.3%, Code Helper (Plugin) 3.9%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 40 hours (healthy)`,
+  `fleet-user Exited (2) 18 hours ago`.
+- Load after: 5.34.
+
+Decisive (D-05): yes — released by three consecutive samples under 1.5.
+
+#### `single` scenario (Runs 13-14)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 13 | 0.6 ms (n=3614) | 0.7 ms (n=5220) | 1.12x | 3.14 s | 0 of 1 |
+| 14 | insufficient (n<20) | insufficient (n=18) | -- | -- | -- |
+
+Run 14 printed `warning: single/under-load has only 18 /api/health samples (need >= 20);
+refusing to report a p95` — the 200-tooth gear was cached from Run 13, so there was no
+load window to sample; no ratio, per L08, exactly as in Runs 6, 8, 10 and 12.
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 13 (1.12x). Run 14: no ratio
+printed (insufficient samples).
+
+#### `concurrent` scenario (Runs 13-14)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 13 | 0.6 ms (n=3586) | 0.8 ms (n=15813) | 1.31x | 11.38 s | 6 of 10 |
+| 14 | 0.6 ms (n=3640) | 0.9 ms (n=12781) | 1.42x | 9.40 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 13 (1.31x) and Run 14 (1.42x).
+Neither run was repeated or restarted in search of a passing number.
+
+**Outcome (a): demonstrated.** Both runs of the decisive session read under the bar on
+the `concurrent` scenario — Run 13 printed `Ratio (under-load / idle): 1.31x` and Run 14
+printed `1.42x`, both <= 1.99x (E8). The `single` scenario's Run 13 also passes (1.12x);
+Run 14's single/under-load series was refused (n=18 < 20) and is not read against the
+bar per E9 — the `concurrent` scenario decides it (D-08). Neither run was repeated or
+restarted in search of a passing number. This closes SC2's first half: the bar is
+demonstrated on both runs of one decisive session on the harness as it stands (D-07).
+13-04 Task 2's D-09 checkpoint is not reached.
+
+### Composed worst row under ten concurrent builds (Phase 13)
+
+**The question.** `docs/tech_debt/resolved/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md`
+measured the heaviest 200-tooth tip-chamfer configuration one gear at a time (14.87 s of
+30 s), then Phase 12's composed sweep re-measured it alongside every other stacked feature,
+still one gear at a time (29.42 s of 30 s after the `spoke_count` gate, 0.58 s of margin).
+Neither run ever measured it under concurrent load; that question was re-homed into
+`docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`'s "Revisit when" trigger
+(12-CONTEXT.md D-04) as SC3 of this phase.
+
+**The ten rows** (D-13, `bench/sweeps/composed.json` 1-based rows 4, 2, 3, 1, 9, 6, 10, 12,
+11, 5 — each a distinct key, so admission control takes four and hash affinity spreads them
+over both workers): the worst row first (29.42 s alone — `teeth=200 module=10 bore_d=9
+bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52
+rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both`), then the next nine heaviest
+from "### Re-run after the gate (lower-le: spoke_count 32)": row 2 (28.92 s), row 3
+(28.87 s), row 1 (28.61 s), row 9 (27.27 s), row 6 (24.91 s), row 10 (24.06 s), row 12
+(22.26 s), row 11 (22.09 s), row 5 (16.80 s). Firing rule: the worst row's request leaves
+the client alone first; the other nine fire only once `/api/health` shows the worst row
+holding a build slot.
+
+**How it was run.** `.planning/phases/13-latency-bar/investigation/session.py --mode
+composed --label sc3`, one fresh server, one run (`sc3-run1`), calling
+`bench.latency.run_composed` unmodified with the split-process poller riding beside it
+(D-15, D-16). Re-run without the poller: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001 composed`. Commit under test: `bfa54b7`. Fresh server, shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}` — `SPUR_BUILD_WORKERS`, `MAX_QUEUED_BUILDS`
+and `SPUR_BUILD_TIMEOUT` all unset: 2 workers, 4 queued builds, 30 s per-build timeout).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`sc3.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T08:08:01Z through 2026-10-02T08:23:01Z UTC):
+
+5.64, 4.0, 2.94, 2.33, 2.12, 1.62, 2.43, 3.85, 3.01, 2.71, 2.39, 3.79, 3.16, 9.92, 6.97,
+5.44, 4.17, 3.41, 2.75, 3.01, 2.86, 2.62, 3.03, 3.31, 8.64, 6.23, 4.34, 3.51, 2.86, 2.2,
+1.53 (31 samples, never three consecutive under 1.5 — the two lowest points, 1.62 and 1.53,
+have no adjacent sample under 1.5 to build a streak around either one).
+
+- `docker info`: exit 0.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 41 hours (healthy)`,
+  `fleet-user Exited (2) 19 hours ago`.
+- Load after: 4.74.
+
+Decisive (D-05): no — the 900 s cap expired; recorded regardless, per D-16 ("whatever it
+reads").
+
+**The run aborted (exit 1) after every request had been sent** — `sc3.status.json` records
+`state: aborted`, `reason: "sc3-run1 exited 1"`. `run_composed`'s own `ThreadPoolExecutor`
+`with` block waits for all ten requests to finish before `bench/latency.py` tries to read
+`future.result()` for each in firing order; the second future it reads (the worst row's own
+future resolved cleanly first) raised `httpx.HTTPStatusError: 500 Internal Server Error`,
+which propagated out of `run_composed`, out of `scenario_composed`, and out of
+`run_experiment.py`'s `main()` before any markdown, summary or per-request table was ever
+printed or written (`sc3-run1.stdout.txt` is 0 bytes; no `sc3-run1.summary.json` exists).
+**No client-side per-request latency table exists for this run** — the harness never
+produced one. Everything below is read from the server's own records
+(`sc3.server1.records.jsonl`), not from the client.
+
+**Per-request outcomes, as the server recorded them** (firing order = `COMPOSED_ROWS`;
+"Alone" is the single-build time from the re-run table, for reference only — SC3 is not
+that measurement):
+
+| Composed row | Alone (s) | Request | Server outcome | Duration |
+|---|---|---|---|---|
+| 4 (worst) | 29.42 | `51e80f35` | admitted, slot 0 — `BuildTimeout` | 30.004 s |
+| 2 | 28.92 | `912cd2d4` | admitted, slot 0 — crashed, undocumented `500` (see Finding) | 30.000 s |
+| 3 | 28.87 | `33260796` | `queue.refused` (503 busy) | instant |
+| 1 | 28.61 | `0fc30d53` | admitted, slot 1 — crashed, undocumented `500` (see Finding) | 30.000 s |
+| 9 | 27.27 | `4b777b09` | admitted, slot 1 — `BuildTimeout` | 30.002 s |
+| 6 | 24.91 | `e4f8e9a6` | `queue.refused` (503 busy) | instant |
+| 10 | 24.06 | `a76fb01b` | `queue.refused` (503 busy) | instant |
+| 12 | 22.26 | `5d0b7449` | `queue.refused` (503 busy) | instant |
+| 11 | 22.09 | `22767e72` | `queue.refused` (503 busy) | instant |
+| 5 | 16.80 | `ef3c2387` | `queue.refused` (503 busy) | instant |
+
+Outcome counts: 0 of 10 served (`200`); 6 of 10 refused by admission control (`503 busy`,
+`queue.refused`, all within 08:23:05.3549–08:23:05.3959 UTC, `in_flight: 4, max_queued: 4`
+on every one); 4 of 10 admitted, and **all four** exceeded `SPUR_BUILD_TIMEOUT` and were
+recorded `build.failed` — two (`51e80f35`, `4b777b09`) with the documented `BuildTimeout`
+exception the client would have read as `503 timeout`; two (`912cd2d4`, `0fc30d53`) with an
+`AttributeError` inside the server that produced an undocumented raw `500` instead (the
+client's `_fetch` raises on that, which is what aborted the run).
+
+**The worst row's own outcome:** `51e80f35` (row 4, 29.42 s alone) did **not** complete
+inside `SPUR_BUILD_TIMEOUT`'s 30 s shipping default under this composition — it was
+terminated at 30.004 s, 0.58 s past where it finishes alone and squarely past the margin
+Phase 12's re-run measured ("0.58 s of margin (~1.02x)") assuming no concurrent contention.
+
+**`/api/health` `workers_replaced`:** 0 → 2 (a fresh server starts with
+`BuildPool.replaced == 0`, `src/spur/pool.py` line 77; both hash slots recorded exactly one
+`worker.replaced` event each, `cause: "timeout"` — slot 0 after `51e80f35`'s timeout, slot 1
+after `4b777b09`'s).
+
+**In-process and split-poller idle/under-load p95: do not exist for this run.** Both are
+computed from `run.requests[].sent`/`.done` (`run_experiment.py`'s `composed_run`) or from
+`ComposedRun` itself — neither was ever built, because `run_composed` raised before
+returning. `sc3-run1.poller.jsonl` (32,037 raw `/api/health` latency samples) is committed
+in full, but the idle/under-load boundary the harness computes from the crashed run's own
+timestamps does not exist; reporting a ratio from a differently-chosen boundary would be a
+plausible-looking number this project does not print (L08). No ratio is reported here.
+
+**Server record counts** (`sc3.server1.records.jsonl`, excluding uvicorn lifecycle lines):
+
+| Event | Count |
+|---|---|
+| `build.started` | 4 |
+| `queue.refused` | 6 |
+| `build.failed` | 4 |
+| `worker.replaced` | 2 (slot 0, cause `timeout`; slot 1, cause `timeout`) |
+| `export.served` | 0 |
+
+**Finding.** The composed worst row did not complete under ten concurrent builds in the
+shipped configuration. Six of ten requests were refused by admission control exactly as
+designed (`503 busy`, 4 in flight already). Of the four admitted, both pairs shared a hash
+slot (D-07's affinity, uncontrollable from the client) and both pairs hit
+`SPUR_BUILD_TIMEOUT` together: the first request on each slot (`51e80f35`, `4b777b09`)
+timed out cleanly and had its worker replaced; the second request on the *same* slot
+(`912cd2d4`, `0fc30d53`) — timing out moments later on the same incident — ran
+`_run_with_timeout`'s own `except TimeoutError` branch against an executor its slot-mate's
+`recreate_for` call had already shut down, and crashed with an `AttributeError` that reached
+the client as an undocumented `500` instead of one of the three contracted `503` types. The
+worst row itself, which has only 0.58 s of margin alone, also failed to finish inside 30 s
+once paired with contention from the other requests. Measured once, not repeated (D-16);
+not re-run in search of a cleaner reading.
+
 ### `SPUR_BUILD_TIMEOUT`
 
 Worst single build observed across both runs and both scenarios: **7.39 s** (`concurrent`
