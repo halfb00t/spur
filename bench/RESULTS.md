@@ -409,6 +409,66 @@ Neither run was repeated or restarted in search of a passing number. This sessio
 **non-decisive** (D-05): the quiet gate never released, so neither reading counts for
 outcome (a) or (b) — the decisive session (D-07) is a separate attempt.
 
+### Bar session bar-3 (Runs 13-14)
+
+Commit under test: `fe17199`. Command: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001` (not the bare `make bench.latency` target, which targets port
+8000 — RESEARCH.md Pitfall 1), two runs in immediate succession against one fresh
+server (Run 14 inherits Run 13's `_EXPORTS`, as every even-numbered run did), shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}`).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`bar-3.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T07:10:04Z through 2026-10-02T07:15:05Z UTC):
+
+2.95, 2.58, 2.83, 2.56, 2.21, 1.87, 1.97, 1.98, **1.39, 1.12, 0.96** (11 samples; released
+by the first three-consecutive-under-1.5 streak, samples 9-11 at 2026-10-02T07:14:05Z,
+07:14:35Z and 07:15:05Z UTC).
+
+- `docker info`: exit 0.
+- Top CPU (`ps -Ao %cpu,comm -r`, latest sample): WindowServer 21.0%, AlDente 6.5%,
+  iTerm2 5.8%, claude 4.3%, Code Helper (Plugin) 3.9%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 40 hours (healthy)`,
+  `fleet-user Exited (2) 18 hours ago`.
+- Load after: 5.34.
+
+Decisive (D-05): yes — released by three consecutive samples under 1.5.
+
+#### `single` scenario (Runs 13-14)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 13 | 0.6 ms (n=3614) | 0.7 ms (n=5220) | 1.12x | 3.14 s | 0 of 1 |
+| 14 | insufficient (n<20) | insufficient (n=18) | -- | -- | -- |
+
+Run 14 printed `warning: single/under-load has only 18 /api/health samples (need >= 20);
+refusing to report a p95` — the 200-tooth gear was cached from Run 13, so there was no
+load window to sample; no ratio, per L08, exactly as in Runs 6, 8, 10 and 12.
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 13 (1.12x). Run 14: no ratio
+printed (insufficient samples).
+
+#### `concurrent` scenario (Runs 13-14)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 13 | 0.6 ms (n=3586) | 0.8 ms (n=15813) | 1.31x | 11.38 s | 6 of 10 |
+| 14 | 0.6 ms (n=3640) | 0.9 ms (n=12781) | 1.42x | 9.40 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 13 (1.31x) and Run 14 (1.42x).
+Neither run was repeated or restarted in search of a passing number.
+
+**Outcome (a): demonstrated.** Both runs of the decisive session read under the bar on
+the `concurrent` scenario — Run 13 printed `Ratio (under-load / idle): 1.31x` and Run 14
+printed `1.42x`, both <= 1.99x (E8). The `single` scenario's Run 13 also passes (1.12x);
+Run 14's single/under-load series was refused (n=18 < 20) and is not read against the
+bar per E9 — the `concurrent` scenario decides it (D-08). Neither run was repeated or
+restarted in search of a passing number. This closes SC2's first half: the bar is
+demonstrated on both runs of one decisive session on the harness as it stands (D-07).
+13-04 Task 2's D-09 checkpoint is not reached.
+
 ### `SPUR_BUILD_TIMEOUT`
 
 Worst single build observed across both runs and both scenarios: **7.39 s** (`concurrent`
