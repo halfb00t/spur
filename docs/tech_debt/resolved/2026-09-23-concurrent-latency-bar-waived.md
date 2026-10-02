@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-23
-Resolved in: docs(13-07): log L32 and retire the concurrent latency-bar debt
+Resolved in: 6709953
 Source: quick task 260923-qwr and its two re-runs (bench/RESULTS.md Runs 5-8); the human's
 waiver of broken-windows ledger item 1 (.planning/WINDOWS.md)
 Related files:
