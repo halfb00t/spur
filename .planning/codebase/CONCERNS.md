@@ -1,254 +1,378 @@
 ---
-last_mapped_commit: 5252bdcd6a11f893246f614da8e5f0d431d1ed2a
-last_mapped_at: 2026-09-21
+last_mapped_commit: 41d23c70643108293120e36d6abd823739892ca8
+last_mapped_at: 2026-10-02
 ---
 # Codebase Concerns
 
-**Analysis Date:** 2026-09-21
+**Analysis Date:** 2026-10-02
 
-## Overview
+## Tech Debt — Must-Fix
 
-This codebase maintains active tech debt in `docs/tech_debt/active/`. All findings from the 2026-09-21 review (F1–F8) have been implemented per `docs/plan-2026-09-21.md`, including fixes to the centre distance solver, cache bounding, recess capping, admission control, dependency pinning, and geometry measurement.
+**Blocker severity tracked in `docs/tech_debt/INDEX.md`:** none active. Four `must` items block certain work paths.
 
-Active concerns are categorized by severity and tracked in dedicated files. Critical issues (`blocker`) must be fixed before proceeding; `must` issues are correctness or maintainability concerns to address; `nice` items are enhancements for later.
+### Same-slot timeout cleanup race produces undocumented 500
 
----
+**Issue:** When two requests to `_run_with_timeout` on the same worker slot both timeout within the same incident, a race condition causes the second timeout handler to read `executor._processes` against an executor already shut down by the first handler's `recreate_for` call, raising `AttributeError: 'NoneType' object has no attribute 'values'`. This surfaces as an undocumented raw HTTP `500` to the client instead of one of the three contracted `503` types (`busy` | `timeout` | `pool_broken`).
 
-## Critical Issues (Blocker)
+**Files:** `src/spur/pool.py` lines 183-210 (specifically line 204: `for proc in executor._processes.values():`), lines 99-155 (`recreate_for` method)
 
-### None currently recorded
+**Observed in:** Phase 13 measurement SC3 (`.planning/phases/13-latency-bar/investigation/sc3.server1.records.jsonl`), the composed worst row (29.42 s alone) under ten concurrent builds, where requests `912cd2d4` and `0fc30d53` crashed with this exception.
 
-All blocking-severity debt has been resolved. The project passed the gate at commit 2026-09-21.
+**Impact:** Clients written against the `/api/model.stl` contract have no branch for a raw `500` and will surface a raw server error. The underlying mechanism shows the timeout clock starts at submission, not execution, so queue wait on a shared slot counts toward the 30s timeout. Any two heavy same-hash-slot requests landing close together can reproduce this.
 
----
+**Related finding:** The worst row's 0.58 s margin (measured alone in Phase 12 re-run) vanishes under concurrent load; the composed row exceeded the 30 s `SPUR_BUILD_TIMEOUT` entirely, not just timed out at margins.
 
-## Must-Fix Issues
+**Fix approach:** `_run_with_timeout`'s `except TimeoutError` branch should detect that its `executor` local has already been replaced (compare identity against `self._executors[i]`, mirroring `recreate_for`'s own check) and skip re-terminating an executor no longer live.
 
-### No Structured Logging
-
-**File:** `docs/tech_debt/active/2026-09-21-no-structured-logging.md`
-**Status:** active
-**Impact:** Production observability is absent — no logs for build failures, cache evictions, queue decisions, or performance anomalies.
-
-**Where it matters:**
-
-- `src/spur/app.py` — serving layer produces no structured output beyond HTTP status codes
-- `src/spur/model.py` — CAD build outcomes (success, failure, duration) are invisible
-- `docker/smoke.py` — test harness has no logging
-
-**Next step:** Configure a structured logger at the composition boundary (`cli.py:cmd_serve` and `app.py` startup), logging: build started with parameter slug, build failed with exception class, export served from cache vs. built, queue refused with `503`. See the tech debt file for details.
-
-**Revisit when:** first production incident, or deploy beyond one person's machine.
+**Revisit when:** The deferred ten-identical-worst-row scenario is run, a `500` is observed in production, `_run_with_timeout`/`recreate_for` is next touched, or `SPUR_BUILD_TIMEOUT`'s default is reconsidered.
 
 ---
 
-### API Response Contract Lacks Type Safety
+### Root fillet lead-in can reach above the pitch circle
 
-**File:** `docs/tech_debt/active/2026-09-21-untyped-info-contract.md`
-**Status:** active
-**Impact:** The `/api/info` response is `dict[str, Any]`, so renamed or dropped keys are runtime surprises.
+**Issue:** `spline_start` lifts the involute spline start to `rf + 2 × root_fillet` when the fillet needs room, and `_outline` runs a straight chord from the root up to it. The README claims this chord sits "in the non-working root zone," but for large profile shifts (e.g., `profile_shift: 1.0, pressure_angle: 14.5`), the spline's start sits **above** the pitch circle by 0.5625 mm — part of the working flank — contradicting README's statement.
 
-**Where it matters:**
+**Measured deviations (pinned code, 2026-09-28):**
+- Default gear: chord deviates from true involute by 35.29 µm; spline start 1.1875 mm **below** pitch circle ✓
+- `profile_shift: 1.0, pressure_angle: 14.5`: chord 32.28 µm off; spline start 0.5625 mm **above** pitch circle ✗
+- `profile_shift: 0.75, pressure_angle: 20`: chord 31.73 µm off; spline start 0.125 mm **above** pitch circle ✗
 
-- `src/spur/calc.py:177-230` (`derive()`) — returns a JSON document whose keys vary with parameters
-- `src/spur/app.py:39-45` (`info`) — serializes the response
-- `src/spur/static/app.js:130` — client reads `detail[].ctx.fields` and `warnings` by name
+**Files:** `src/spur/calc.py` (`spline_start`), `src/spur/model.py` (`_outline`), `README.md` (Geometry notes)
 
-**Current workaround:** `disallow_any_explicit` is disabled in `pyproject.toml` so the gate passes.
+**Impact:** A claim the tool makes about the part is false for a subset of configurations. Per L08 (wrong number worse than no number), either the lead-in must stay below the active profile's start (fixture regeneration, needs `Lxx` decision) or README must state the limit accurately.
 
-**Next step:** Model the response as a `DerivedDimensions` Pydantic model with explicit optional fields. This also improves the OpenAPI schema. Then enable `disallow_any_explicit` and delete the tech debt file.
+**Fix approach:** Decide between: (a) keep lead-in below active profile start and regenerate fixture (architectural change), or (b) correct README to state the limit accurately per measured data.
 
-**Revisit when:** a third consumer of `/api/info` appears, or the shape needs versioning.
-
----
-
-### Event Loop Stalls Under CAD Work
-
-**File:** `docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md`
-**Status:** active
-**Impact:** OpenCascade holds the GIL; one 200-tooth fine build stalls `/api/health` for 2+ seconds. Large gears can trigger container restart loops on slower hardware.
-
-**Where it matters:**
-
-- `src/spur/model.py:36` (`_LOCK`) — serializes all builds
-- `src/spur/app.py` (`_build_slot`) — admission control queues requests
-
-**Mitigation in place:**
-
-- Admission control (`_build_slot`) returns `503 + Retry-After` when queue saturates
-- Docker `HEALTHCHECK` timeout raised to 10 s to accommodate legitimate stalls
-- Both are temporal workarounds, not fixes
-
-**Next step:** Move CAD work to a process pool so the kernel runs outside the event loop's process. This changes caching (per-process today) and memory ceiling calculations, so it is a phase of its own.
-
-**Revisit when:** more than one concurrent user is real, or the health probe fails in an environment that matters.
+**Revisit when:** A profile-shifted flank is measured, L10's trochoidal-root idea is taken up, or `_outline` is next touched.
 
 ---
 
-## Nice-to-Fix Issues
+### Filleted-spoke removed-volume proof is pinned, not derived
 
-### CadQuery's `Shape` Type Bypasses Mypy
+**Issue:** Every other cutout pattern's removed-volume assertion is checked against an independent closed-form formula to 1e-9 mm³ precision (holes: `π·r²·face_width`, sharp spokes: bar-area formula, honeycomb: hexagon-area formula). The filleted-spoke case — added by Phase 11, exercising new `_fillet_corner(inside=True)` mirrored-quadratic tangent-circle geometry — is checked only against a pinned literal (`d_volume=2934.725405`) measured once on the current kernel.
 
-**File:** `docs/tech_debt/active/2026-09-21-cadquery-shape-typing.md`
-**Status:** active
-**Severity:** low — type safety is partial
-**Impact:** Four `type: ignore` comments in `src/spur/model.py` suppress mypy errors on correct code.
+**Files:** `tests/test_model.py` (lines ~1224-1240, ~1186-1263), `src/spur/model.py` (`_fillet_corner`, `inside=True` branch), `docs/architecture/decision_log.md` (L30)
 
-**Where it matters:**
+**Impact:** A silent regression in `_fillet_corner`'s `inside=True` branch, or a future OCP/CadQuery kernel bump that changes tangent-circle root selection, would move the pinned literal without any independent formula flagging drift as wrong. This is exactly the failure mode L08 prevents for every other cutout pattern; the filleted-spoke row is the gap.
 
-- `src/spur/model.py:169, 183, 185, 192` — boolean operations return `Shape`, which lacks `fillet()` / `chamfer()` methods
-- CadQuery declares `py.typed` but over-types results as `Shape` instead of the more specific `Solid` or `Compound`
+**Fix approach:** Derive an independent closed-form for filleted-sector volume (sharp-sector area minus four circular-segment corrections of radius `spoke_fillet_effective(p)`, using the same bar-area formula already deployed) and assert against it to 1e-9 mm³.
 
-**Workaround:** Each ignore is narrow and coded: `attr-defined`, `arg-type`, `return-value` with justification.
-
-**Next step:** Narrow the type through the geometry pipeline (`_gear_blank` → `_cut_face_recesses` → `_cut_bore`), casting once at `.val()` rather than ignoring at four call sites.
-
-**Revisit when:** CadQuery narrows its own return types, or that pipeline is being refactored.
+**Revisit when:** `_fillet_corner` is next touched (bugfix, sign-convention change, mirrored-branch edit) or the pinned CadQuery/OCP kernel version is bumped.
 
 ---
 
-### No Coverage Floor in the Gate
+### CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly
 
-**File:** `docs/tech_debt/active/2026-09-21-no-coverage-floor.md`
-**Status:** active
-**Severity:** low — current coverage is reasonable
-**Impact:** Test regression risk — new code could land untested and not trigger the gate.
+**Issue:** `tests/regression/pre_v0_2.json` pins exact topology and dimensions captured on one resolved kernel: cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1. CI's `make verify PYTHON=python` builds a fresh venv from `pyproject.toml`'s `cadquery>=2.5` range at run time — no pinned version. Today CI and the fixture agree only because cadquery 2.8.0 caps `cadquery-ocp<8.0,>=7.9.3.1`, but cadquery-ocp 8.0.1.0.0 is already published. When a future cadquery release changes that cap, CI's resolve can land on a different kernel.
 
-**Where it matters:**
+**Files:** `tests/regression/pre_v0_2.json` (provenance header), `tests/regression/test_pre_v0_2.py::test_the_fixture_was_captured_on_the_kernel_this_run_uses`, `pyproject.toml` (`cadquery>=2.5`), `.github/workflows/ci.yml` (`make verify PYTHON=python` on fresh venv)
 
-- `pyproject.toml` — `[tool.coverage.run]` has no `fail_under`
-- `Makefile:test` target — does not run `pytest --cov`
+**Impact:** A kernel-driven OCCT topology change (face count, bounding-box corner, volume) would turn CI red with no code change in this repository to explain it. The dedicated test `test_the_fixture_was_captured_on_the_kernel_this_run_uses` will name both kernel pairs when this happens, but it does not prevent CI from going red.
 
-**Current state:** 50 tests cover geometry, API, CLI, and STL topology; the suite was written against the review measurements.
+**Fix approach:** Either pin CI to install from `requirements.txt`'s locked versions before `make verify` (consistent with L12), or add an explicit upper bound in `pyproject.toml`'s `cadquery` range. Either is a decision against L12's "why floors and ranges are chosen" and requires human approval.
 
-**Next step:** Run `pytest --cov`, read the real coverage number, set `fail_under` just under it, then add `--cov --cov-fail-under` to the `test` target. This is a ten-minute item.
-
-**Revisit when:** immediately after one measured baseline run.
+**Revisit when:** A fresh `pip install -e '.[dev]'` resolves a `cadquery`/`cadquery-ocp` pair different from the fixture's provenance header.
 
 ---
 
-### No Server-Side Cancellation on Client Abort
+## Tech Debt — Nice-to-Fix
 
-**File:** `docs/tech_debt/active/2026-09-21-no-server-side-cancellation.md`
-**Status:** active
-**Severity:** low — current impact is minimal
-**Impact:** When a browser aborts a request, the server finishes the build anyway, wasting the serialised kernel.
+**Nice severity:** Five open items, none blocking shipping.
 
-**Where it matters:**
+### CadQuery's `Shape` typing forces five `type: ignore`s
 
-- `src/spur/static/app.js:174` — aborts fetches on parameter change
-- `src/spur/app.py` (`model` route) — does not check `request.is_disconnected()`
+**Issue:** CadQuery types boolean results as the wide `Shape`, which declares neither `fillet` nor `chamfer` (those live on `Mixin3D`, carried by `Solid` and `Compound` but not `Shape` itself). The pipeline is correct at runtime (a boolean on a solid yields a `Solid` or `Compound`), but the annotations say `Shape`, forcing five narrow `type: ignore` comments.
 
-**Current workaround:** UI debounce and sequence counter prevent out-of-order responses.
+**Files:** `src/spur/model.py` lines 195, 219, 221, 264, 273 (Phase 10's tip chamfer added the fifth)
 
-**Next step:** Check `await request.is_disconnected()` before taking a build slot and again before export. This catches the cheap case.
+**Impact:** Low. Ignores are specific (`attr-defined`, `arg-type`, `return-value`) with justifications. `RUF100` will fail the build if one becomes unnecessary. The cost is five lines outside the type checker in the project's most delicate file.
 
-**Revisit when:** slider-dragging actually saturates the queue in practice.
+**Fix approach:** Narrow the annotations through `_gear_blank` → `_cut_face_recesses` → `_cut_bore` to the type the values actually have, casting once at the `.val()` boundary rather than ignoring at each call site.
+
+**Revisit when:** CadQuery narrows its own return types, or that pipeline is touched anyway.
 
 ---
 
-### Authentication is Intentionally Absent
+### No server-side cancellation on client abort
 
-**File:** `docs/tech_debt/active/2026-09-21-no-authentication.md`
-**Status:** active
-**Severity:** low — deployment decision, not a bug
-**Context:** The service has no authentication, authorization, or rate limiting beyond the build queue. This is documented and intentional.
+**Issue:** The UI aborts its in-flight fetch on parameter change and drops out-of-order responses with a sequence counter (correct browser behavior), but the server does not find out. The build proceeds to completion and bytes are produced for nobody. Dragging a slider queues work already irrelevant.
 
-**Where it matters:**
+**Files:** `src/spur/static/app.js` (update loop's `AbortController`), `src/spur/app.py` (`model` endpoint)
 
-- `compose.yaml` — binds to `127.0.0.1:8000` on purpose
-- `src/spur/app.py` — no auth checks
-- Container runs non-root with read-only filesystem, no capabilities, no-new-privileges
+**Impact:** Wastes the one scarce resource (the serialised kernel), fills the bounded queue with requests nobody waits for, so real requests get `503 busy` behind abandoned ones. The debounce keeps this small today.
 
-**Risk surface:**
+**Fix approach:** Check `await request.is_disconnected()` before taking a build slot and again before starting export. Catches the cheap case without needing cancellation inside the kernel call (which is not interruptible anyway).
 
-- Changing port mapping to `0.0.0.0:8000` or deploying without compose exposes a DOS primitive (each 200-tooth build costs seconds of CPU and hundreds of MB).
-
-**Next step:** If ever exposed, use a reverse proxy with auth (Caddy, Traefik, Cloudflare Access, Tailscale) and add client rate-limiting to the model endpoints. Do nothing now.
-
-**Revisit when:** port mapping changes, or service is deployed beyond one person's machine.
+**Revisit when:** Slider-dragging saturates the queue in practice, or after the process pool lands (would make real cancellation possible).
 
 ---
 
-### Enji Guard Integration Not Connected
+### No coverage floor in the gate
 
-**File:** `docs/tech_debt/active/2026-09-21-enji-guard-not-connected.md`
-**Status:** active
-**Severity:** low — coverage is partial
-**Impact:** No continuous AI-driven security or dependency audit.
+**Issue:** `[tool.coverage.run]` is configured with `branch = true` and `source = ["src/spur"]`, but nothing measures coverage in `make verify` and there is no `fail_under`. The reason: a floor picked before measuring is a number, not a guarantee, and a floor set too low is worse than none.
 
-**Where it matters:** Repository integration, not code-level concern.
+**Files:** `pyproject.toml` (`[tool.coverage.run]`), `Makefile` (`verify` target)
 
-**Current coverage:**
+**Impact:** Low today: 50 tests cover geometry, API, CLI, and STL topology, written against a measured review. Risk is drift — new code landing with no test and nothing noticing until someone looks.
 
-- Full gate runs on Python 3.12 via CI (`.github/workflows/ci.yml`)
-- Dependency closure is fully pinned (31 of 31 packages) in `requirements.txt`
-- Documented review history in `docs/`
+**Fix approach:** Run `pytest --cov` once on the current suite, read the real number, set `fail_under` just under it, and add `--cov --cov-fail-under` to the `test` target so it gates.
 
-**Gap:** No ongoing CVE alerting for the 31 pinned packages.
-
-**Next step:** Either connect Enji Guard (GitHub App at `https://guard.enji.ai/app`), or enable Dependabot alerts and security updates on the repository (free, no third party).
-
-**Revisit when:** owner decides on continuous AI audit, or at next dependency bump.
+**Revisit when:** Immediately after one measured baseline run (ten-minute item held only until the number exists).
 
 ---
 
-## Resolved Issues (From 2026-09-21 Review)
+### The service has no authentication
 
-All eight findings from `docs/review-2026-09-21.md` (F1–F8) have been implemented per `docs/plan-2026-09-21.md`:
+**Issue:** There is no authentication, authorisation, or rate limiting beyond the build queue. This is a known, documented position: `compose.yaml` binds to `127.0.0.1` on purpose, the container runs non-root with security hardening, and the README documents putting a reverse proxy with auth in front to expose it.
 
-| Finding | Fix | Verification |
-|---------|-----|--------------|
-| **F1** — centre_distance returns confidently wrong numbers | Replaced Newton iteration with bisection on `(0, 89°)` | 138 bad cases → 0; grid sweep matches reference to 1e-6 |
-| **F2** — Caches unbounded by bytes | Bounded solid cache to 4 entries, export cache to 64 MB, added `malloc_trim()` | anon RSS reduced 3.0 GiB → 358 MiB for large sweeps |
-| **F3** — Bore/recess defaults are absolute mm | Cap recess width to fit, warn instead of refuse | README example now runs; 83% → 94% of grid feasible |
-| **F4** — No admission control; build stalls event loop | Admission queue returns `503 + Retry-After`; `HEALTHCHECK` timeout raised to 10 s | Health probes no longer timeout under 10 concurrent builds |
-| **F5** — Only 6 of 56 packages pinned | Regenerated as full freeze of resolved set | 6 → 31 pinned; `docker/refresh-requirements.sh` documented |
-| **F6** — root_thickness measured at wrong radius | Measure at `rf` like root gap already is | z=19: 4.9125 → 4.7744 (pitch match) |
-| **F7** — 440 MB of image never imported | Uninstall verified-unused transitives; upgrade smoke test | 2.15 GB / 2.07 GB → 1.70 GB / 1.61 GB |
-| **F8** — Structure and docs/CI gaps | Split `_build()` into named steps; add comments; full CI workflow | 34 → 50 tests; CI runs pytest, builds image, checks bundle |
+**Files:** `src/spur/app.py`, `compose.yaml`
+
+**Impact:** Sound while binding is localhost. An unauthenticated endpoint that builds a 200-tooth gear is a DoS primitive (seconds of CPU, hundreds of MB per request) if exposed.
+
+**Fix approach:** If ever exposed: reverse proxy carries auth (Caddy/Traefik/Cloudflare Access/Tailscale), and the app should rate-limit by client on model endpoints, since `SPUR_MAX_QUEUED_BUILDS` bounds concurrency but not cost per client.
+
+**Revisit when:** The port mapping changes, or the service is deployed anywhere but one person's machine.
 
 ---
 
-## Dependency & Environment Notes
+### gsd's 30s commit timeout kills the pre-commit `make verify` hook on cold cache
 
-**Python:** pinned to 3.12 only (`>=3.12,<3.13`, L23) in `pyproject.toml` — cadquery-ocp
-publishes wheels for nothing newer. `Dockerfile` uses 3.12-slim-bookworm.
+**Issue:** gsd's SDK commit runs `git commit` under a hard-coded 30s timeout with no config knob. This repo's pre-commit hook runs `make verify`, which is ~11s warm and takes minutes on first run after OpenCascade pages evict. Observed: first SDK commit of the session returned `{committed: false, reason: 'commit_timeout'}`, killed mid-hook.
 
-**Vendored Bundle:** `src/spur/static/vendor/three.bundle.min.js` (555 KB) is byte-checked by CI (`npm run build` must match the committed version). SHA256: `1abe0e82acd7a9949063acb09693e5b938ec8b0eea365d649adf423d8bb5f2eb`.
+**Files:** `.pre-commit-config.yaml` (verify hook: ~11s warm, minutes cold), `~/.claude/gsd-core/bin/lib/commands.cjs:3655` (hard-coded `COMMIT_TIMEOUT_MS = 30_000`, outside this repo)
 
-**Docker:** `compose.yaml` sets memory limit to 2 GiB (measured from sweep workloads); HEALTHCHECK timeout is 10 s; container runs non-root with read-only root and capabilities dropped.
+**Impact:** Every gsd workflow that commits (`execute-phase`, `complete-milestone`, `new-milestone`) hits this on first cold commit of a session. The executor's recovery (retry once warm) works but costs one wasted `make verify` per session and opens a window for stale `index.lock` if the kill lands mid-write.
 
-**CI:** `.github/workflows/ci.yml` runs `make verify` (lint, types, import boundaries, tests) on Python 3.12, builds the image, smoke-tests it, and verifies the vendored bundle matches. Runs are observed green: main push run 35963114939 (`59f02c3`, all four jobs green) and PR #3 head run 36088409707 (`2c4b544`, tree-identical to `bfc9110`). The ruleset on `main` requires `test (3.12)`, `vendor-bundle` and `image` green on an up-to-date head (D-12), and every merge through `make pr.land` ends with a run URL for the new `main` commit (L22).
+**Fix approach:** Warm the cache before the first commit (`make verify` once, e.g., at start of `/gsd-execute-phase`), and raise upstream that `COMMIT_TIMEOUT_MS` should be configurable.
+
+**Revisit when:** gsd exposes a commit-timeout setting, or when an executor's warm retry also times out.
+
+---
+
+### Enji Guard not connected
+
+**Issue:** GitHub App `https://guard.enji.ai/app` offering continuous AI audit (security, dependencies, test coverage, AI-readiness) was offered during setup and the owner declined. Connecting it requires OAuth click by someone with admin; cannot be scripted from here.
+
+**Files:** (none — repository integration, not code)
+
+**Impact:** Low, partially covered: CI runs the full gate on two Python versions, builds the image, smoke-tests the container, dependency closure is fully pinned (L12). What is not covered: ongoing CVE alerting — nothing watches for a vulnerability in the 31 pinned packages.
+
+**Fix approach:** Either connect Enji Guard, or enable GitHub's free Dependabot alerts and security updates — addresses the one real gap without third-party dependency.
+
+**Revisit when:** The owner decides they want continuous AI audit, or at next dependency bump.
+
+---
+
+## Performance Bottlenecks
+
+### Composed worst row exceeds timeout margin under concurrent load
+
+**Finding from Phase 13 SC3 measurement (`bench/RESULTS.md` lines 472-598):**
+
+The composed worst row (29.42 s alone: `teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both`) was timeout-terminated at 30.004s when run alongside nine other concurrent requests — it did not finish inside the 30s `SPUR_BUILD_TIMEOUT` default despite being the one request actually executing on its slot. Phase 12's re-run measured this row alone at 29.42 s with 0.58 s margin ("~1.02x" of budget).
+
+**Files:** `bench/RESULTS.md` (### Composed worst row, lines 472-598), `bench/sweeps/composed.json` (row 4, the worst), `src/spur/app.py` (`int_env("SPUR_BUILD_TIMEOUT", 30)`)
+
+**Impact:** The single-build margin does not survive concurrent load on the test machine (M2 Max, 12 cores). On slower hardware or under higher contention, the worst row becomes unservable within the default timeout.
+
+**Interpretation:** The underlying mechanism (timeout clock starts at submission, not execution; queue wait counts toward the 30s per `_run_with_timeout`'s `asyncio.wait_for(future, timeout=self.timeout)` at line 183 of `pool.py`) means queue depth + build duration must stay under 30s total. With 4 queued builds and 2 workers, the worst case sees a request wait 30s in queue, then timeout immediately on its turn. The "0.58 s margin alone" claim is therefore an artifact of single-build measurement; under load the system has no margin at all.
+
+**Future work:** The deferred ten-identical-worst-row scenario (13-CONTEXT.md) would cleanly isolate queue wait from kernel contention for a single hash slot. Once run, it can inform whether the timeout value itself should change or whether the queue depth (`MAX_QUEUED_BUILDS`) should tighten.
+
+---
+
+### Latency bar not demonstrated on both runs of concurrent scenario
+
+**Finding from Phase 13 bar sessions (`bench/RESULTS.md` lines 303-470):**
+
+The `concurrent` scenario (ten concurrent 200-tooth fine builds) acceptance clause "under-load p95 <= 2.00x idle p95" was:
+- Runs 1-2 (host not fully idle): not met (2.02x, 2.45x)
+- Runs 3-4 (re-run on quieter host): not met (2.32x, 2.35x)
+- Runs 5-6 (post-fix with gzip caching): mixed (1.31x pass, 2.10x fail)
+- Runs 7-8 (quieter host, post-fix): mixed (1.86x pass, 2.02x fail)
+- **Bar-1 (Runs 9-10):** non-decisive (quiet gate expired)
+- **Bar-2 (Runs 11-12):** non-decisive (quiet gate expired)
+- **Bar-3 (Runs 13-14, DECISIVE):** met (1.31x, 1.42x)
+
+**Files:** `bench/RESULTS.md` (## Latency, lines 34-469), `bench/latency.py` (harness), `.planning/phases/13-latency-bar/investigation/` (investigation sessions A-C)
+
+**Interpretation:** The decisive session (bar-3, 2026-10-02T07:14:05Z) cleared the bar on both runs of the `concurrent` scenario. The pattern across eight runs (pre- and post-fix) shows the second run of a pair consistently worse than the first (before and after fix), and the bar sits at the harness's floor (idle p95 0.6 ms, under-load p95 1.2-1.3 ms) where small changes flip the verdict.
+
+**Fragility:** The bar is now demonstrated, but not robustly — one more 0.1 ms of under-load p95 flips either Run 13 or Run 14. The floor is real per Phase 13's investigation (13-LATENCY-INVESTIGATION.md Verdict on Observation 2).
+
+---
+
+### Admitted builds share a worker slot; both timeout in tandem
+
+**Finding from Phase 13 SC3 (`bench/RESULTS.md` lines 472-598):**
+
+Requests `51e80f35` (worst row) and `912cd2d4` were hash-routed to the same worker slot (`executor_for` hash affinity, `hash(p) % self.workers`). Both exceeded the 30s timeout within the same incident (`duration_ms 30002-30004`). The first request's cleanup (`recreate_for`) shut down the executor; the second request's cleanup then crashed trying to read the already-shut-down `executor._processes`. (See: **Same-slot timeout cleanup race** above.)
+
+**Files:** `src/spur/pool.py` (hash affinity at `executor_for`, lines 99-155), `bench/RESULTS.md` lines 536-560 (per-request outcomes table), `bench/sweeps/composed.json` (ten distinct keys chosen to spread over both workers)
+
+**Impact:** A deterministic failure mode when two heavy requests hash to the same slot and both timeout. The compose test hit it by hash-affinity chance, not by design; a stress test of ten identical worst rows would hit it reliably.
+
+**Design note:** The hash affinity (D-07) is intentional (request locality, cache efficiency). The parallel timeout is a consequence of `MAX_QUEUED_BUILDS` filling the queue faster than builds drain, creating a queue-wait condition where multiple requests waiting on the same slot's executor all timeout together when that executor exceeds the 30s.
 
 ---
 
 ## Test Coverage Gaps
 
-**No baseline floor:** `pytest --cov` has not been run to establish a number. Coverage is configured (`pyproject.toml`) but `fail_under` is not set in the gate. The 50 tests cover the main paths (geometry, API contract, CLI, STL topology), but drift is possible.
+### No independent cross-check for filleted-spoke cutout proof
 
-**CLI smoke tests added:** `tests/test_cli.py` now exercises the README's own examples, catching F3's "export" breakage.
-
-**Topology verification:** STL/STEP geometry is validated for watertight surfaces and correct orientation, but the check runs outside the build pipeline (manual validation during review, not automated).
+**See:** **Filleted-spoke removed-volume proof is pinned, not derived** (above).
 
 ---
 
-## Architectural Constraints & Trade-Offs
+## Fragile Areas
 
-**Serialised kernel:** All CAD work holds a single `_LOCK` (`src/spur/model.py:36`). This is the root cause of F4 (event loop stalls) and makes concurrency a process-pool problem, not a threading one.
+### `pool.py` — ProcessPoolExecutor lifecycle race condition
 
-**Per-process caches:** Solid and export caches are per-process (Python `lru_cache`), so each of the 2 workers in compose has its own 4-entry solid cache and 64 MB export cache.
+**Fragility:** The identity check in `_run_with_timeout`'s timeout handler (line 204: `for proc in executor._processes.values()`) assumes only the current request will call `recreate_for` for its slot. When two requests timeout within the same incident, the second request reads a reference that the first request's `recreate_for` already invalidated, causing an `AttributeError`.
 
-**No cancellation in CAD kernel:** OpenCascade work is not interruptible. Admission control (`_build_slot`) queues requests, but a saturated worker will still block other requests for the duration of one build.
+**Mechanism:** Each request holds its own `executor` local captured at line 169. Both requests on the same slot hold the same `ProcessPoolExecutor` object. `recreate_for` shuts down this executor and installs a new one in `self._executors[i]`. The second request's timeout handler still refers to the old, shut-down executor.
 
-**Defaults scale with user, not with gear:** Bore diameter (`bore_d = 9`) and recess width (`recess_width = 6`) are absolute mm, tuned for a 19-tooth m=1.75 reference gear. Smaller gears hit feasibility walls (F3 was the headline UX bug here; it is capped now, not rescaled, to preserve shareable links).
+**Why fragile:** Concurrent access to the same slot's executor with no re-entrant guard. The `recreate_for` identity check (line 103: `if self._executors[i] is not executor:`) only protects `recreate_for` itself from re-installing; it does not protect the *caller's* reference after `recreate_for` has moved the slot.
 
----
+**Safe modification:** Detect slot replacement before touching `executor._processes` (same identity check `recreate_for` uses), or hold `self._executors[i]` as the live reference instead of caching it locally.
 
-## Measurement & Verification Standard
-
-Per `CLAUDE.md`: "A number the tool prints is a number someone will cut metal to." Claims about performance and memory are measured, not estimated. Before F2 and F4 fixes, container RSS was measured under sweep workloads; after, the same workloads were re-run to verify the improvement. The CI workflow and the measurements in `docs/review-2026-09-21.md` and `docs/plan-2026-09-21.md` establish this standard.
+**Test coverage:** `tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced` covers single-timeout recovery; no test covers parallel timeout on the same slot (would need `MAX_QUEUED_BUILDS >= 2 * SPUR_BUILD_WORKERS` or the deferred ten-identical-worst-row scenario).
 
 ---
 
-*Concerns audit: 2026-09-21*
+### `model.py` — CadQuery Shape return types outside mypy
+
+**Fragility:** Five `type: ignore` comments in `model.py` (lines 195, 219, 221, 264, 273) suppress type errors on calls to `fillet` and `chamfer`, which are not declared on `Shape` even though the pipeline always produces a `Solid` or `Compound` at those points.
+
+**Why fragile:** The ignores are specific and have inline justifications (`# type: ignore[attr-defined]`), but they remain unmaintained and cannot be simplified by the type checker. A future narrowing of the annotations would need to revert all five ignores; a narrowing missed would leave a dead ignore that `RUF100` would flag.
+
+**Safe modification:** Cast the result at the boundary (`_gear_blank` → `_cut_face_recesses` → `_cut_bore`), so the pipeline's intermediate types narrow at once rather than being suppressed piecemeal.
+
+**Test coverage:** Integration tests verify geometry (volume, topology, watertightness); type-checking is enforced at gate. No test specifically checks that the cast is correct.
+
+---
+
+### `calc.py` — Pure math with one-off measurements
+
+**Fragility:** `spline_start` and `profile_outline` encode measured geometry (fillet reach, involute approximation deviation) as literal constants. A misunderstanding of the measurement method could bake a wrong constant into production without any independent cross-check.
+
+**Why fragile:** The measurements are point-in-time against one kernel version (the M2 Max measurement set dates to early phases). A kernel update could change absolute values without this code knowing it changed.
+
+**Safe modification:** Document the measurement method and corpus (module/teeth/profile ranges) for every constant, so a future reviewer can re-measure and compare. Periodically (e.g., after a kernel bump) re-run the measurement and confirm numbers have not drifted.
+
+**Test coverage:** `tests/test_calc.py` checks the functions with known inputs; it does not re-verify the measurements themselves.
+
+---
+
+### `app.py` — Hash affinity couples request latency to hash distribution
+
+**Fragility:** Every request's worker slot is determined by `hash(params) % self.workers` (D-07). If the parameter distribution is skewed (e.g., many users requesting the same tooth count and module), all their requests hash to the same slot, serialising their builds on one worker and starving the other.
+
+**Why fragile:** The hash function is built into the `executor_for` method and the only alternative is to round-robin, which would lose cache locality. No monitoring alerts on slot load imbalance today.
+
+**Safe modification:** Monitor the distribution of requests across slots at runtime; if the distribution is skewed, either log a warning or gather histogram data for a future scheduler decision.
+
+**Test coverage:** `tests/test_pool.py` exercises the pool's lifecycle; it does not exercise hash distribution under realistic parameter patterns.
+
+---
+
+## Security Considerations
+
+### Unauthenticated API can be used for resource exhaustion
+
+**Issue:** The service has no authentication and no rate limiting beyond the bounded queue (L04). An unauthenticated client can craft requests to build expensive gears (e.g., 200-tooth fine) and DoS the service by filling the queue with builds for nobody.
+
+**Current mitigation:**
+- Runs on `127.0.0.1:8000` by default (localhost only)
+- Container runs non-root with `read_only`, `cap_drop: ALL`, `no-new-privileges`, tmpfs `/tmp` (process isolation)
+- README documents using a reverse proxy with auth for exposure
+
+**Risk:** If the port mapping changes (e.g., `8000:8000` for convenience) or the service is deployed without the proxy, the DoS vector is live.
+
+**Recommendation:** If exposed, add per-client rate limiting on the model endpoints (`/api/model.stl`, `/api/model.step`) in addition to the reverse proxy auth. `SPUR_MAX_QUEUED_BUILDS` limits concurrency but not cost per client.
+
+---
+
+### No CVE monitoring on pinned dependencies
+
+**Issue:** The dependency closure is fully pinned in `requirements.txt` (L12), but nothing watches for a CVE published after the pin. The 31 packages will age; a vulnerability in a transitive dependency could go unnoticed.
+
+**Current mitigation:**
+- CI runs `make verify` on two Python versions; `lint` includes ruff's security rules
+- GitHub Actions runs the full gate on every PR and push
+
+**Recommendation:** Enable GitHub's free Dependabot alerts and security updates, or connect Enji Guard for continuous audit. Either catches CVEs without third-party services.
+
+---
+
+## Scaling Limits
+
+### Queue depth cannot be too deep without timeout contention
+
+**Current capacity:**
+- Default: `MAX_QUEUED_BUILDS = 2 × SPUR_BUILD_WORKERS = 4` (2 workers + 4 queued = 6 total in flight)
+- Worst row alone: 29.42 s
+- Worst row + queue wait under 30 s timeout: 0.58 s max queue wait
+
+**Limit:** If `MAX_QUEUED_BUILDS` is raised or the number of concurrent requests grows, queue wait can exceed the timeout window. The Phase 13 SC3 measurement shows two concurrent requests hitting timeout together when routed to the same slot.
+
+**Scaling path:**
+- Measure the realistic queue-depth distribution under expected load
+- If queue grows, either raise `SPUR_BUILD_TIMEOUT` (coarse, affects all builds) or implement a tighter timeout for queued requests separately from builds (fine-grained, but more complex)
+- Monitor slot load distribution; if skewed, consider a smarter scheduler
+
+---
+
+### Memory plateau at 358 MiB (bounded cache, with `malloc_trim`)
+
+**Measured capacity (L07, `bench/RESULTS.md` ## Memory):**
+- One worker, 40-gear corpus: 358 MiB steady-state
+- `SPUR_SOLID_CACHE=4` (4 solids at ~280 MiB each would overflow; cache bounds it)
+- `SPUR_EXPORT_CACHE_MB=64` (total export bytes bounded)
+- `malloc_trim(0)` after every cache-missing export (glibc arena release)
+
+**Limit:** The 358 MiB is on a single Docker worker with `mem_limit: 1g` (the backstop in `compose.yaml`). With more concurrent workers or a smaller limit, memory pressure could trigger early cache eviction or OOM kills.
+
+**Scaling path:**
+- Measure memory on the actual deployment target (not M2 Max)
+- If heap grows, check whether `malloc_trim` is running (monitor RSS in production)
+- If OOM is hit, prioritize `SPUR_SOLID_CACHE` reduction over `SPUR_EXPORT_CACHE_MB` (solids are the larger cost)
+
+---
+
+## Dependencies at Risk
+
+### CadQuery/OpenCascade kernel version must stay in sync across CI and development
+
+**Issue:** CI resolves `cadquery>=2.5` at run time (unpinned); the fixture pins one kernel exactly. If an upstream cadquery release changes its `cadquery-ocp` cap, CI can resolve a different kernel, and the regression fixture's exact-value assertions will fail even if the code is correct.
+
+**Current status:** cadquery 2.8.0 pins `cadquery-ocp<8.0,>=7.9.3.1`. cadquery-ocp 8.0.1.0.0 is already published on PyPI.
+
+**Migration path:** Either (a) pin CI to install from `requirements.txt` before `make verify`, consistent with L12's locked deployment, or (b) add an explicit cap to `pyproject.toml`'s `cadquery` range. Either needs the human to decide against L12's documented reasoning.
+
+---
+
+### No automatic security updates on pinned closure
+
+**Issue:** `requirements.txt` is fully pinned and committed, but no automation re-pins when a CVE is found in a transitive dependency. The 31 packages will age.
+
+**Recommendation:** Enable GitHub's Dependabot security updates (free, no third party) or connect Enji Guard. Set up an automated weekly-or-monthly rescan.
+
+---
+
+## Deferred Ideas (Not Now)
+
+**Open items in `docs/ideas/` (8 items):**
+
+1. **Trochoidal root fillets for undercut gears** (2026-09-21) — Current radial root is a documented approximation that only matters for undercut; revisit when profile-shifted flank is measured or L10 is taken up
+2. **Browser test for the viewer** (2026-09-21) — Deferred for cheaper first step (Python schema→form assertions); revisit when either deferred UI idea below is taken
+3. **Measure or soften the Raspberry Pi 5 claim** (2026-09-22) — Needs hardware nobody here has; all Phase 2 numbers from 12-core dev machine
+4. **Bore-shape selector in web form** (2026-09-27) — Judged "not taken" at Phase 12 (08 D-09 stands); revisit when browser test exists or users report ignored-field warnings as insufficient
+5. **Recipe for re-verifying a phase after post-verification fixes** (2026-09-28) — Process, not product; one HOW_TO_DEVELOP paragraph or project skill once it repeats a third time
+6. **Rotation field for spoke arms and lightening holes** (2026-09-29) — D-03 fixes +X and nobody has asked for another angle; additive field is the safe undo when someone does
+7. **Teeth- or module-dependent honeycomb cell-count cap** (2026-09-29) — D-12 rejected it for one constant; revisit only if small gear needs more cells and sweep shows cost falling with gear size
+8. **Conditional form fields ("disabled when")** (2026-09-29) — Judged "not taken" at Phase 12 (08 D-09 stands); revisit when browser test exists or users report insufficient
+
+---
+
+*Concerns audit: 2026-10-02*

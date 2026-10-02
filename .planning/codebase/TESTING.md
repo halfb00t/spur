@@ -1,380 +1,390 @@
 ---
-last_mapped_commit: 5252bdcd6a11f893246f614da8e5f0d431d1ed2a
-last_mapped_at: 2026-09-21
+last_mapped_commit: 41d23c70643108293120e36d6abd823739892ca8
+last_mapped_at: 2026-10-02
 ---
 # Testing Patterns
 
-**Analysis Date:** 2026-09-21
+**Analysis Date:** 2026-10-02
 
 ## Test Framework
 
 **Runner:**
+- pytest 8+ (`tests/test_*.py` collected automatically)
+- Config: `pyproject.toml` `[tool.pytest.ini_options]`
 
-- pytest 8+ (`pytest>=8` in `pyproject.toml`)
-- Config: `pyproject.toml`, `[tool.pytest.ini_options]`
+**Test Discovery:**
+- `testpaths = ["tests"]` — pytest searches `tests/` directory only
+- `addopts = "--strict-markers --strict-config"` — all markers and config must be declared
+- `xfail_strict = true` — expected failures that pass are treated as failures
 
 **Assertion Library:**
-
-- pytest built-in (`assert` statements)
-- pytest.approx for floating-point: `assert d["pitch_d"] == pytest.approx(33.25)`
+- pytest native assertions (no explicit import needed): `assert`, `assert x == y`, `pytest.approx()` for float comparison
+- Custom markers: none currently; tests use standard parametrize and fixture patterns
 
 **Run Commands:**
 
 ```bash
-make test              # Run the full test suite (requires venv)
-pytest                 # Direct invocation with python -m pytest
-pytest -k test_name    # Run specific test by name pattern
-pytest -v             # Verbose output
-pytest --tb=short     # Short traceback format
-```
-
-**Coverage:**
-
-```bash
-coverage run -m pytest    # Run with coverage measurement
-coverage report           # Show coverage report
-coverage html            # Generate HTML report to htmlcov/index.html
-```
-
-Configuration (in `pyproject.toml`):
-
-```toml
-[tool.coverage.run]
-branch = true
-source = ["src/spur"]
-
-# No fail_under yet: a floor picked without measuring is a number, not a guarantee.
-
-# See docs/tech_debt/active/2026-09-21-no-coverage-floor.md.
-
+make test                    # Run full test suite (pytest)
+make verify                  # Gate: ruff, mypy, lint-imports, no-fake-done, pytest
+make check                   # Everything CI runs locally (needs Docker)
+.venv/bin/pytest             # Direct pytest invocation
+.venv/bin/pytest tests/test_calc.py -v           # Single file with verbose output
+.venv/bin/pytest -k test_name                    # Filter by test name
 ```
 
 ## Test File Organization
 
-**Location:**
+**Location:** `tests/` directory at repo root
+- `tests/test_*.py` — collected test modules (11 files as of 2026-10-02)
+- `tests/composition.py` — shared data module, NOT collected (no `test_` prefix)
+- `tests/conftest.py` — pytest fixtures (autouse logger reset)
+- `tests/regression/` — regression test suite with pre-recorded data
 
-- `tests/` directory, co-located with source tree
-- Test files parallel source structure: `src/spur/*.py` → `tests/test_*.py`
-
-**Naming:**
-
-- Test files: `test_*.py` (pytest convention)
-- Test functions: `test_<what_it_verifies>` reading as a requirement
-  - Good: `test_tooth_thickness_and_gap_are_measured_on_the_same_circle()`
-  - Bad: `test_tooth_1()`, `test_fix_123()`
-- Regression tests: name after property, not bug number
-  - Good: `test_oversized_recess_is_narrowed_to_fit_and_says_so()`
-  - Bad: `test_issue_456()`
-
-**Directory Structure:**
-
-```
-tests/
-├── test_calc.py         # Pure math, ~176 lines, 100+ assertions
-├── test_model.py        # CAD kernel integration, ~92 lines
-├── test_api.py          # HTTP contract, ~99 lines
-└── test_cli.py          # Command-line interface, ~41 lines
-```
+**Naming Convention:**
+- Test files: `test_calc.py`, `test_model.py`, `test_api.py`, `test_cli.py`, `test_pool.py`, `test_records.py`, `test_bench.py`, `test_skip_tokens.py`, `test_pr_land.py`
+- Data modules (non-collected): `composition.py`, `tests/regression/capture.py`, `tests/regression/corpus.py`
+- Test functions: `test_<requirement_as_phrase>`: `test_default_dimensions()`, `test_a_derived_dimensions_result_cannot_be_changed()`, `test_caliper_reading_is_short_for_odd_tooth_counts()`
 
 ## Test Structure
 
-**Suite Organization - Unit Tests (Pure Math):**
-
-File: `tests/test_calc.py`
+**Autouse Fixture (conftest.py):**
 
 ```python
-def test_default_dimensions() -> None:
-    d = derive(GearParams())
-    assert d["pitch_d"] == pytest.approx(33.25)
-    assert d["tip_d"] == pytest.approx(36.75)
-    # ...
+@pytest.fixture(autouse=True)
+def _reset_root_logger() -> Iterator[None]:
+    """Snapshot root logger handlers and level before test; restore after.
+    
+    Prevents test-to-test pollution when records.configure() is called.
+    Each test sees a clean logger state regardless of execution order.
+    """
+    root = logging.getLogger()
+    handlers_before = list(root.handlers)
+    level_before = root.level
+    yield
+    # restore after test
 ```
 
-**Characteristics:**
-
-- No setup/teardown needed (pure functions)
-- No mocking; test against real math directly
-- Parametrized with `@pytest.mark.parametrize` for coverage:
-  ```python
-  @pytest.mark.parametrize(("m", "pa", "k", "w"), [
-      (1.75, 20, 3, 13.381),
-      (1.75, 25, 3, 13.360),
-  ])
-  def test_span_measurement(m: float, pa: float, k: int, w: float) -> None:
-      p = GearParams(module=m, pressure_angle=pa, ...)
-      kk, ww = span_measurement(p)
-      assert kk == k
-  ```
-
-**Suite Organization - Integration Tests (CAD Kernel):**
-
-File: `tests/test_model.py`
+**Test Families (composition.py):**
+Shared, hand-written cross-product tables — NOT computed from code under test (avoids tautology, L08):
 
 ```python
-def test_builds_one_valid_solid(kw: dict[str, Any]) -> None:
-    p = GearParams(**kw)
+BORES = {
+    "round": {"bore_flat": 0},
+    "d-flat": {},  # defaults: bore_d 9, bore_flat 8
+    "keyed": {"bore_flat": 0, "keyway_width": 3, "keyway_depth": 1.4},
+    "hex": {"bore_hex": 6},
+}
+
+CUTOUTS = {
+    "none": {},
+    "spokes": {"spoke_count": 4, "spoke_width": 2, "hub_d": 13.2, ...},
+    "holes": {"hole_count": 6, "hole_d": 4, "hole_circle_d": 20},
+    "cells": {"hex_cell": 3, "hex_wall": 1},
+}
+
+RECESSES = {"both": {}, "top": {"recess_sides": "top"}, "none": {"recess_sides": "none"}}
+TIPS = {"off": {}, "on": {"tip_chamfer": 1.75}}
+
+ALWAYS = frozenset({  # fields always present
+    "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", ...
+})
+
+BORE_FIELDS = {  # fields added per bore type
+    "round": frozenset({"bore_effective"}),
+    "keyed": frozenset({"bore_effective", "keyway_floor_to_wall", ...}),
+    ...
+}
+```
+
+**Parametrize Pattern:**
+
+```python
+@pytest.mark.parametrize("kw", [
+    {},
+    {"pressure_angle": 20},
+    {"bore_flat": 0},
+    ...
+])
+def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
+    p = GearParams.model_validate(kw)
     s = build(p)
     assert s.isValid()
-    bb = s.BoundingBox()
-    assert bb.zlen == pytest.approx(p.face_width)
 ```
 
-**Characteristics:**
+## Test Types
 
-- **Do NOT mock OpenCascade**; a mock would test the mock
-- Assert geometry properties, not snapshots: volume, topology (isValid), bounding box, mesh watertightness
-- Example watertightness check in `test_exported_stl_is_a_closed_consistently_oriented_shell()`:
-  ```python
-  def vertex(p: Sequence[float]) -> tuple[int, ...]:
-      return tuple(round(c * 1e5) for c in p)
-  
-  directed: collections.Counter[...] = collections.Counter()
-  for a, b, c in _stl_triangles(export(GearParams(), "stl", "preview")):
-      directed.update([(ka, kb), (kb, kc), (kc, ka)])
-  
-  assert all(n == 1 for n in directed.values()), "an edge is used twice"
-  assert all((v, u) in directed for u, v in directed), "edge has no opposite"
-  ```
+**Unit Tests** (`tests/test_calc.py`)
+- **Scope:** Pure arithmetic in `calc.py` (no CAD kernel)
+- **Approach:** Exhaustive on mathematical rules; parametrized
+- **Fixtures:** composition families from `composition.py`, hand-checked values (e.g., Wildhaber span measurements)
+- **Assertions:** `pytest.approx()` for floats, exact equality for integers
+- **Size:** 73,421 bytes (largest test file as of 2026-10-02)
+- **Examples:**
+  - `test_default_dimensions()` — verify all derived fields against hand-calculated values
+  - `test_span_measurement()` — parametrized against known span values (`m=1.75, pa=20, k=3, w=13.381`)
+  - `test_root_fillet_is_capped_with_a_warning()` — assert cap + warning tuple
 
-**Suite Organization - Contract Tests (HTTP API):**
+**Integration Tests** (`tests/test_model.py`)
+- **Scope:** `model.py` against the real CadQuery/OpenCascade kernel
+- **Approach:** Assert geometry properties (volume, topology, watertightness), NOT snapshots
+- **Fixtures:** `composition.py` families, parametrized cross products
+- **Assertions:** `solid.isValid()`, bounding box checks, facet/edge/vertex topology
+- **Mocking:** None — test the real kernel, not a mock (mocking would test the mock, not the code)
+- **Size:** 87,732 bytes
+- **Examples:**
+  - `test_builds_one_valid_solid()` — parametrized over 96 combinations (4 bores × 6 cutouts × 2 recesses × 2 tip states)
+  - `test_every_rim_point_stays_in_bound()` — geometry constraint: BoundingBox.xlen/ylen match parameter-derived limits
+  - `test_topology_counts_for_hex_bore()` — edge/vertex counts match expected topology
 
-File: `tests/test_api.py`
+**Contract Tests** (`tests/test_api.py`)
+- **Scope:** `app.py` API through FastAPI TestClient (no lifespan, no pool)
+- **Approach:** Request/response contracts, error shapes the UI parses, schema correctness
+- **Fixtures:** Dependency override: `app.dependency_overrides[build_backend] = lambda: _inline_backend`
+  - Runs builds in-process (same code path as CLI, per D-15)
+  - Avoids pool-state dependencies
+  - Allows testing exact error responses
+- **Assertions:** Status codes, response schema, field presence/absence, unit metadata in OpenAPI schema
+- **Size:** 49,877 bytes
+- **Examples:**
+  - `test_health()` — `/api/health` returns `{"status": "ok", "pool": null/obj}`
+  - `test_schema_drives_the_form()` — `/api/schema` has `group`, `unit`, `step` metadata for UI
+  - `test_openapi_documents_the_typed_contracts()` — DerivedDimensions fields exactly match OpenAPI schema
+
+**CLI Contract Tests** (`tests/test_cli.py`)
+- **Scope:** Command-line interface (`cli.py`)
+- **Approach:** CLI parity with API (same document serialized), README examples must work
+- **Fixtures:** Composition families, `capsys` pytest fixture to capture stdout/stderr
+- **Assertions:** `json.loads()` roundtrip, error codes, flag parsing
+- **Size:** 22,875 bytes
+- **Examples:**
+  - `test_cli_and_api_print_the_same_document()` — `cli info --teeth 21` == `GET /api/info?teeth=21`
+  - `test_readme_export_examples_run()` — README's documented export commands actually work
+  - `test_info_rejects_a_mate_the_api_would_reject()` — CLI bounds match `InfoQuery` schema
+
+**Logging Tests** (`tests/test_records.py`)
+- **Scope:** Structured logger (`records.py`): formatter, configuration, per-request vocabulary
+- **Approach:** End-to-end: configure → call → capture stderr → `json.loads()`
+- **Fixtures:** Dependency override same as `test_api.py`; `caplog`/`capsys` pytest fixtures
+- **Assertions:** JSON payload round-trips through `json.loads()`, exact field names
+- **Size:** 12,312 bytes
+- **Examples:**
+  - `test_a_model_request_emits_one_export_served_line_that_json_loads_round_trips()` — real stderr output parses as JSON
+  - `test_configure_called_twice_installs_exactly_one_handler()` — idempotent configuration
+  - `test_the_formatter_round_trips_every_application_field_through_json_loads()` — `extra=` dict preserved
+
+**Pool Tests** (`tests/test_pool.py`)
+- **Scope:** Worker process pool (`pool.py`)
+- **Approach:** Subprocess lifecycle, build queueing, timeout handling
+- **Fixtures:** None mock the pool; tests drive it live
+- **Size:** 27,111 bytes
+
+**Benchmark Tests** (`tests/test_bench.py`)
+- **Scope:** Measurement assertions from `bench/` scripts
+- **Approach:** Verify recorded data (Phase 8 hex-bore sweep, Phase 10 tip-chamfer, Phase 11 body-cutouts, etc.)
+- **Assertions:** Sweep contents match expected cross products, budget predicates work, STL file format
+- **Size:** 37,037 bytes
+- **Examples:**
+  - `test_the_hex_bore_sweep_is_every_combination_d_11_names()` — 16 rows = 200 teeth × {1.75, 10} module × {200, 12.7} hex × {both, none} recess × {0.4, 3} chamfer
+  - `test_the_report_names_the_largest_fine_stl_and_breaks_a_tie_by_file_order()` — report formatting
+
+**Regression Tests** (`tests/regression/`)
+- **Scope:** Pre-recorded v0.2 parameter sets
+- **Fixtures:** `tests/regression/pre_v0_2.json` (L05 fixture: absolute defaults stay frozen)
+- **Approach:** Replay corpus against current code; detect silent changes
+- **Size:** Separate directory with `test_pre_v0_2.py`, `test_corpus.py`, `capture.py`
+
+## Patterns
+
+**Setup:**
 
 ```python
-from fastapi.testclient import TestClient
-from spur.app import app
-
-client = TestClient(app)
-
-def test_schema_drives_the_form() -> None:
-    props = client.get("/api/schema").json()["properties"]
-    assert props["teeth"]["group"] == "Teeth"
-    assert props["module"]["unit"] == "mm"
+def test_something() -> None:
+    p = GearParams()  # or with overrides: GearParams(teeth=25, ...)
+    d = derive(p)     # -> DerivedDimensions
+    s = build(p)      # -> cq.Workplane (solid)
 ```
 
-**Characteristics:**
-
-- Use `TestClient` from fastapi; no server spawning
-- Test error shapes that the UI parses:
-  ```python
-  def test_infeasible_is_422_with_fields() -> None:
-      r = client.get("/api/info", params={"bore_flat": 3})
-      assert r.status_code == 422
-      detail = r.json()["detail"][0]
-      assert "D-flat" in detail["msg"]
-      assert detail["ctx"]["fields"] == ["bore_flat"]
-  ```
-- Test admission control (queue saturation):
-  ```python
-  def test_a_saturated_service_refuses_instead_of_queueing() -> None:
-      held = [app_module.BUILD_QUEUE.acquire(blocking=False)
-              for _ in range(app_module.MAX_QUEUED_BUILDS)]
-      try:
-          r = client.get("/api/model.stl", params={"quality": "preview"})
-          assert r.status_code == 503
-          assert r.headers["retry-after"] == "5"
-  ```
-
-**Suite Organization - CLI Tests:**
-
-File: `tests/test_cli.py`
+**Parametrize with Composition:**
 
 ```python
-def test_info_reports_the_mate_it_was_asked_about(
-        capsys: pytest.CaptureFixture[str]) -> None:
-    cli.main(["info", "--teeth", "19", "--mate-teeth", "40"])
-    out = json.loads(capsys.readouterr().out)
-    assert out["mate_teeth"] == 40
-    assert out["centre_distance"] == pytest.approx(51.625)
+@pytest.mark.parametrize(("bore_type", "cutout_type"), [
+    ("round", "none"), ("d-flat", "spokes"), ("hex", "cells"), ...
+])
+def test_each_combination(bore_type: str, cutout_type: str) -> None:
+    p = GearParams.model_validate({**BORES[bore_type], **CUTOUTS[cutout_type]})
+    # test logic
 ```
 
-**Characteristics:**
+**Teardown with Dependency Override:**
 
-- The README's own commands are tests: `test_readme_export_examples_run()`
-- Capture stdout/stderr with `capsys` fixture
-- Test actual CLI invocation via `cli.main(["cmd", "args"])`
-- Verify exit codes: `pytest.raises(SystemExit)`
+```python
+@pytest.fixture(autouse=True, scope="module")
+def _inline_build_backend() -> Iterator[None]:
+    app.dependency_overrides[build_backend] = lambda: _inline_backend
+    yield
+    app.dependency_overrides.pop(build_backend, None)
+```
+
+**Async Testing:**
+Not used in this project — all tests are synchronous; async code in `app.py` is tested via TestClient (which runs the event loop internally).
+
+**Error Testing:**
+
+```python
+def test_infeasible_parameters_name_their_fields(kw: dict[str, object], field: str) -> None:
+    with pytest.raises(ValidationError) as exc:
+        GearParams.model_validate(kw)
+    assert field in str(exc.value)
+```
 
 ## Mocking
 
-**Framework:** pytest mocking, not used for external dependencies; focused on testing real behavior
+**Framework:** unittest.mock (pytest does not bundle a mocking library; unittest is in stdlib)
 
-**Do NOT Mock:**
+**What to Mock:**
+- External API calls (if any) — none currently in codebase
+- Subprocess/process calls (mocked in `pool.py` tests where needed)
+- Time (`unittest.mock.patch("time.time")` when testing timeouts)
 
-- OpenCascade/CadQuery: would test the mock, not the kernel
-- Network services (if any were added)
+**What NOT to Mock:**
+- CadQuery/OpenCascade kernel — test the real thing; a mock would only test the mock
+- Pydantic validators — test through real `GearParams` construction
+- Logging — capture and inspect real log output (see `conftest.py` logger reset, `test_records.py`)
 
-**Example of What Is Tested Directly:**
+**Dependency Injection Pattern:**
 
 ```python
-def test_recess_removes_expected_volume() -> None:
-    solid = build(GearParams(recess_sides="none", recess_fillet=0)).Volume()
-    # ...
-    ring = math.pi * (r_out ** 2 - r_in ** 2) * p.recess_depth * 2
-    assert solid - build(p).Volume() == pytest.approx(ring, rel=1e-3)
+
+# Override a FastAPI Depends() at test time
+
+app.dependency_overrides[build_backend] = lambda: test_implementation
+
+# Clean up after
+
+app.dependency_overrides.pop(build_backend, None)
 ```
-
-**What NOT to Test:**
-
-- Private implementation details or internal call counts
-- Snapshot/golden-file comparisons for geometry (too brittle; test properties instead)
 
 ## Fixtures and Factories
 
-**Test Data:**
+**Composition Data Families (composition.py):**
 
-- Use `GearParams()` directly in tests; it is hashable and frozen (immutable)
-- Parametrization over dedicated fixtures when testing combinations:
-  ```python
-  @pytest.mark.parametrize(("kw", "field"), [
-      ({"bore_flat": 3}, "bore_flat"),
-      ({"recess_depth": 3.6}, "recess_depth"),
-  ])
-  def test_infeasible_parameters_name_their_fields(kw, field):
-      with pytest.raises(ValidationError) as exc:
-          GearParams(**kw)
-      err = exc.value.errors()[0]
-      assert field in err["ctx"]["fields"]
-  ```
+```python
 
-**Location:**
+# Hand-written cross product — never computed from code under test
 
-- No shared fixture file (`conftest.py`); each test file is self-contained
-- Reuse `GearParams` defaults or construct inline
+BORES: dict[str, dict[str, object]]
+CUTOUTS: dict[str, dict[str, object]]
+RECESSES: dict[str, dict[str, object]]
+TIPS: dict[str, dict[str, object]]
 
-**Fixture Markers:**
+# Field presence tables — what `DerivedDimensions` fields are non-null in each family
 
-- Test argument names read as requirements: `capsys` for capturing stdout, `tmp_path` for temp files (built-in pytest)
+BORE_FIELDS: dict[str, frozenset[str]]
+CUTOUT_FIELDS: dict[str, frozenset[str]]
+RECESS_FIELDS: dict[str, frozenset[str]]
+TIP_FIELDS: dict[str, frozenset[str]]
+```
+
+**Test Data Construction:**
+
+```python
+
+# From composition
+
+p = GearParams.model_validate({**BORES["round"], **CUTOUTS["spokes"]})
+
+# Or direct
+
+p = GearParams(teeth=25, module=2.0, bore_d=12)
+
+# Or with parametrize IDs
+
+@pytest.mark.parametrize(("kw", "expected"), [
+    ({"teeth": 19}, "d-flat-both"),
+    ({"teeth": 20}, "d-flat-top"),
+])
+```
+
+**Regression Fixture:**
+- `tests/regression/pre_v0_2.json` — recorded parameter sets and their outputs (L05 fixture)
+- Regenerated with `make fixture.regen` → `tests/regression/capture.py`
+- Used by `test_pre_v0_2.py` to detect silent changes to defaults
 
 ## Coverage
 
-**Requirements:** Coverage is configured but no floor enforced yet
-
-Configuration (`pyproject.toml`):
+**Configuration:** `pyproject.toml` `[tool.coverage.run]`
 
 ```toml
-[tool.coverage.run]
 branch = true
 source = ["src/spur"]
 
-# No fail_under yet: docs/tech_debt/active/2026-09-21-no-coverage-floor.md
+# No fail_under yet: a floor picked without measuring is a number, not a guarantee.
 
 ```
 
 **View Coverage:**
 
 ```bash
-make test           # Runs pytest; capture coverage with: pytest --cov=src.spur --cov-report=html
-pytest --cov=src.spur --cov-report=html
-open htmlcov/index.html
+.venv/bin/pytest --cov=src/spur --cov-report=html
 ```
 
-**Coverage Gaps:**
+**Measured Baseline:** See `bench/RESULTS.md`
+- No enforced floor (D-23, `docs/tech_debt/active/2026-09-21-no-coverage-floor.md`)
+- Measured suite runtime ~11 seconds cold on a 12-core arm64 host (page cache for OpenCascade)
 
-- Not currently enforced via CI
-- Tracked gap: `docs/tech_debt/active/2026-09-21-no-coverage-floor.md` (fix pending decision on floor value)
+## Pre-Commit Hook
 
-## Test Types
+**Gate:** `.pre-commit-config.yaml` (installed with `pre-commit install`)
 
-**Unit Tests — Pure Math (`test_calc.py`):**
+**Hooks:**
+1. `make verify` — Runs ruff, mypy, lint-imports, unfinished-work scan, pytest (pre-commit stage)
+   - Passes filenames: false, always_run: true
+   - Staged: pre-commit only (not redundant with commit-msg)
+2. `no-skip-token` — Rejects GitHub Actions skip tokens in commit message (commit-msg stage)
+   - Ensures CI runs for every commit
 
-- Scope: `calc.py` functions (`derive()`, `centre_distance()`, `span_measurement()`, etc.)
-- Speed: All 100+ assertions complete in < 1s
-- Approach: Exhaustive on the rules; test names read as requirements
-- No mocking; pure functions with no side effects
-- Assertions use `pytest.approx()` for floating-point tolerance
+**Timing:** Warm run ~11 seconds (CAD tests dominate); first run post-`make clean` pages in 1.4 GB OpenCascade, takes a couple of minutes.
 
-**Integration Tests — CAD Kernel (`test_model.py`):**
+## CI/CD
 
-- Scope: `model.py` functions (`build()`, `export()`)
-- Assert geometry properties: volume, topology (valid solid), bounding box, mesh watertightness
-- Do NOT mock OpenCascade
-- Example: test that exported STL is watertight (every edge has exactly one opposite, consistent orientation)
+**GitHub Actions (.github/workflows/ci.yml):**
 
-**Contract Tests — HTTP API (`test_api.py`):**
+**Jobs (all required green on PR):**
 
-- Scope: All endpoints through `TestClient`
-- Assert response codes, error shapes, header values
-- Test admission control (queue saturation → 503)
-- Test edge cases: impossible mesh pairs, undersized gears, saturated queue
+1. **test** (`make verify PYTHON=python`)
+   - Runs on ubuntu-latest, Python 3.12 only (L23)
+   - Same gate as developer's local `make verify`
+   - Required by `tests/test_pr_land.py` (checks `.github/workflows/required-jobs.txt`)
 
-**CLI Tests (`test_cli.py`):**
+2. **vendor-bundle** (reproducibility check)
+   - Builds `web/` JavaScript bundle
+   - Compares built bundle against committed `src/spur/static/vendor/`
+   - Ensures vendored three.js is reproducible from source
 
-- Scope: Command-line interface via `cli.main()`
-- Verify documented examples run: README commands are tests
-- Test error exit codes and stderr messages
-- Example: `test_readme_export_examples_run()` exports both STL and STEP formats
+3. **image** (Docker smoke test)
+   - Builds Docker image
+   - Runs containerized smoke test: `/api/health`, model export (STL, STEP)
+   - Validates dependency closure and entrypoint
 
-## Common Patterns
+**Required jobs file:** `.github/workflows/required-jobs.txt`
+- Lists job names that must pass before merge
+- Kept in sync with `ci.yml`
+- Validated by `tests/test_pr_land.py`
 
-**Async Testing:**
+## Measured Suite Statistics
 
-- Not used; project is synchronous (no async/await)
+(From `bench/RESULTS.md`, 2026-09-23, Machine: 12-core Apple M2 Max, arm64)
 
-**Error Testing:**
+**Latency Benchmark (`make bench.latency`):**
+- Single scenario (one 200-tooth fine build): idle p95 0.6 ms → under-load p95 0.7-1.2 ms (ratio 1.12x-1.68x, target ≤ 2.0x) ✓
+- Concurrent scenario (ten concurrent fine builds): idle p95 0.6-1.0 ms → under-load p95 1.2-2.3 ms (ratio 2.02x-2.45x, target ≤ 2.0x) ✗
 
-```python
-def test_infeasible_parameters_name_their_fields(
-        kw: dict[str, Any], field: str) -> None:
-    with pytest.raises(ValidationError) as exc:
-        GearParams(**kw)
-    err = exc.value.errors()[0]
-    assert err["type"] == "infeasible"
-    assert field in err["ctx"]["fields"]
-```
+**Memory Benchmark** (`make bench.memory`):
+- Recorded for N=1 (2052.1 MiB), N=2 (2878.5 MiB), N=3 (3095.8 MiB) worker processes
 
-**Parametrization:**
-
-```python
-@pytest.mark.parametrize(("m", "pa", "k", "w"), [
-    (1.75, 20, 3, 13.381),
-    (1.75, 25, 3, 13.360),
-])
-def test_span_measurement(m: float, pa: float, k: int, w: float) -> None:
-    p = GearParams(module=m, pressure_angle=pa, bore_d=0, recess_sides="none")
-    kk, ww = span_measurement(p)
-    assert kk == k
-```
-
-**Floating-Point Assertions:**
-
-```python
-assert d["pitch_d"] == pytest.approx(33.25)           # absolute tolerance default
-assert shifted > 1.75 * 59 / 2                         # exact comparison where exact
-assert got == pytest.approx(expected, rel=1e-12)      # relative tolerance
-assert ww == pytest.approx(w, abs=2e-3)               # absolute tolerance explicit
-```
-
-**Capture Output:**
-
-```python
-def test_readme_export_examples_run(tmp_path, capsys):
-    stl = tmp_path / "gear.stl"
-    cli.main(["export", "-o", str(stl), ...])
-    assert "Recess narrowed" in capsys.readouterr().err  # stderr capture
-```
-
-## Verification Gate
-
-The `make verify` command (defined in `Makefile:47`) runs all these checks in sequence:
-
-```bash
-make verify                # The gate all changes must pass
-```
-
-Runs:
-
-1. **`make lint`** — `ruff check .` (correctness rules, no reformatting)
-2. **`make typecheck`** — `mypy src tests docker` (strict mode comes from `strict = true` in `[tool.mypy]` in `pyproject.toml`, not a CLI flag)
-3. **`make lint-imports`** — `lint-imports` (import boundary contracts from `pyproject.toml`)
-4. **`make no-fake-done`** — Scan for `TODO|FIXME|XXX|HACK|NotImplementedError` markers (unfinished work)
-5. **`make test`** — `pytest $(PYTEST_ARGS)` (full test suite)
-
-**Additional checks in `make check` (needs Docker):**
-
-- `make smoke` — Exercise kernel, exporters, and ASGI app inside the container (`docker/smoke.py`)
-- `make vendor-check` — Verify committed three.js bundle matches web/ build output
+**Export Cost** (`make bench.export_cost`):
+- Gzip compression levels measured; level 1 adopted (smaller CPU cost than level 9)
 
 ---
 
-*Testing analysis: 2026-09-21*
+*Testing analysis: 2026-10-02*

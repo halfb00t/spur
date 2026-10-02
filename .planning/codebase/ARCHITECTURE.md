@@ -1,308 +1,294 @@
 ---
-last_mapped_commit: 5252bdcd6a11f893246f614da8e5f0d431d1ed2a
-last_mapped_at: 2026-09-21
+last_mapped_commit: 41d23c70643108293120e36d6abd823739892ca8
+last_mapped_at: 2026-10-02
 ---
-<!-- refreshed: 2026-09-21 -->
+<!-- refreshed: 2026-10-02 -->
 
 # Architecture
 
-**Analysis Date:** 2026-09-21
+**Analysis Date:** 2026-10-02
 
 ## System Overview
 
 ```text
 ┌────────────────────────────────────────────────────────────────────┐
-│                         Three Entry Points                          │
-├────────────────────┬──────────────────┬───────────────────────────┤
-│   Web UI + API     │       CLI        │   Admission Control       │
-│  `src/spur/app.py` │  `src/spur/cli`  │   Build Queue (L04)      │
-└────────┬───────────┴──────────┬───────┴───────────────┬───────────┘
-         │                      │                       │
-         └──────────────────────┼───────────────────────┘
-                                │ GearParams (L02)
-                                ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                    Calculation & Validation Layer                   │
-│   `src/spur/params.py` - GearParams (frozen, hashable, validated)   │
-│   `src/spur/calc.py` - Pure math (no CAD kernel, L08)              │
-│     - profile(), derive(), check(), centre_distance()              │
-│     - root_fillet(), recess_radii(), span_measurement()            │
-└────────┬───────────────────────────────────────────────────────────┘
+│                  HTTP/CLI Request Entry                            │
+│  `src/spur/app.py` (endpoints)  or  `src/spur/cli.py` (commands)   │
+└──────────────────┬───────────────────────────────────────────────┘
+                   │
+         ┌─────────┴─────────┐
+         ▼                   ▼
+  ┌─────────────────┐  ┌──────────────┐
+  │  Pure Maths     │  │ Parameters   │
+  │  `calc.py`      │  │ `params.py`  │
+  │ (kernel-free)   │  │ (validated)  │
+  └─────────────────┘  └──────────────┘
+         ▲
+         │ (derive dimensions, feasibility)
          │
-         ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                         Model Layer                                 │
-│         `src/spur/model.py` - Only path to CadQuery (L06)          │
-│   - Kernel lock (_LOCK, RLock) - OCCT not thread-safe              │
-│   - Build cache: LRU by entry count (SPUR_SOLID_CACHE, default 4)  │
-│   - Export cache: LRU by size (SPUR_EXPORT_CACHE_MB, default 64MB) │
-│   - malloc_trim() after cache miss (L07)                           │
-└────────┬───────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌────────────────────────────────────────────────────────────────────┐
-│                      Binary Output (File Storage)                   │
-│              STL (binary, preview or fine quality)                  │
-│           STEP (AP214, exportable from OpenCascade)                 │
-└────────────────────────────────────────────────────────────────────┘
+  ┌──────┴────────────────────────────────────┐
+  │  Serving Process (kernel-free)             │
+  │  `src/spur/app.py`                         │
+  │  • Admission control (`_build_slot`)       │
+  │  • Byte cache (`_BlobCache`, 64 MiB)       │
+  │  • Worker pool management                  │
+  └──────────┬─────────────────────────────────┘
+             │ (spawn + route by affinity)
+    ┌────────┴────────┬────────────┬─────────────┐
+    ▼                 ▼            ▼             ▼
+ ┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐
+ │Worker 1 │Worker 2 │Worker N │...   │  (each: ProcessPoolExecutor, 1-task)
+ │ Pool    │ Pool    │ Pool    │      │  Initialized with _warm() → import cadquery
+ └────┬────┘ └───┬────┘ └───┬────┘ └─────┘
+      │          │          │
+      ▼          ▼          ▼
+   ┌─────────────────────────────────────┐
+   │  CAD Kernel Layer (per worker)       │
+   │  `src/spur/model.py`                 │
+   │  • CadQuery/OpenCascade              │
+   │  • One RLock per worker              │
+   │  • Solid cache (4 entries per worker)│
+   │  • STL/STEP export                   │
+   └──────────────┬──────────────────────┘
+                  │
+                  ▼
+          ┌───────────────────┐
+          │  Exported bytes    │
+          │  (STL or STEP)     │
+          └───────────────────┘
 ```
 
 ## Component Responsibilities
 
-| Component | Responsibility | File | Constraints |
-|-----------|----------------|------|-------------|
-| **GearParams** | Single validated model for all interfaces; JSON schema drives UI form and CLI flags | `src/spur/params.py` | Frozen, hashable; defaults are absolute mm (L05); validated once (L02) |
-| **Calculation** | Pure math: involute geometry, measurement aids, feasibility checks; runs on every keystroke | `src/spur/calc.py` | Cannot import cadquery/OCP (L08); uses only params attributes; returns None for impossible values (L08) |
-| **Solid Building** | CadQuery solid construction: toothed blank, recesses, bore, chamfers; all OCCT calls through lock | `src/spur/model.py` | Sole gateway to cadquery/OCP; thread-safe (L06); cached per params (L07) |
-| **Export** | STL and STEP generation; bounded byte cache; arena release after miss | `src/spur/model.py` | Size-bounded, not entry-bounded (L07); malloc_trim after miss |
-| **HTTP API** | REST endpoints, admission control (bounded build queue), static hosting | `src/spur/app.py` | Queue policy lives here, not in model (L04); cannot import cli, FastAPI policy is transport, not business logic |
-| **CLI** | Command-line interface: `serve` (uvicorn wrapper), `info` (JSON output), `export` (STL/STEP file write) | `src/spur/cli.py` | Cannot import app/fastapi/starlette (L04); builds directly without queue (immediate export) |
-| **Web UI** | Browser form and 3D preview; three.js vendored in bundle; communicates via REST queries | `src/spur/static/`, `web/` | Vanilla JS, no runtime Node dependency (L11); bundle is build artifact (CI byte-checks) |
+| Component | Responsibility | File |
+|-----------|----------------|------|
+| Parameters | Validated, frozen, hashable model shared by all three interfaces (API, CLI, web UI) | `src/spur/params.py` |
+| Gear maths | Pure-arithmetic derived dimensions, measurement aids, feasibility checks; runs on every keystroke | `src/spur/calc.py` |
+| Build pool | N independent worker process lifecycle, affinity-based routing, timeouts, worker replacement | `src/spur/pool.py` |
+| CAD kernel | CadQuery/OpenCascade solid construction, kernel lock, per-worker solid cache, STL/STEP export | `src/spur/model.py` |
+| HTTP API + serving | FastAPI endpoints, admission control, byte cache, request logging, static file hosting | `src/spur/app.py` |
+| CLI | `spur serve` / `spur info` / `spur export` command-line interface | `src/spur/cli.py` |
+| Build errors | Exception types for validation failures, build errors, timeouts (shared across layers) | `src/spur/build_errors.py` |
+| Structured logging | JSON log formatting, idempotent configuration, record vocabulary for observability | `src/spur/records.py` |
+| Web UI | HTML form, three.js preview, shareable URLs | `src/spur/static/index.html`, `src/spur/static/app.js`, `web/` |
 
 ## Pattern Overview
 
-**Overall:** Layered with strict boundaries enforced by import-linter contracts in `pyproject.toml`.
+**Overall:** Multi-process architecture with kernel isolation and layered responsibilities.
 
 **Key Characteristics:**
-
-- **One model, three interfaces** — GearParams is the single source of truth (L02); adding a field makes it appear in web, API, and CLI automatically.
-- **Pure math free of the kernel** — `calc.py` runs on every keystroke in the UI with no access to OpenCascade; the moment it can reach the kernel, that property is gone (L08).
-- **Thread-safe by lock, not by design** — OpenCascade demands serialization (L06); every build goes through `_LOCK` in `model.py`; concurrency buys latency, not throughput (L04 consequence).
-- **Caches are transparent optimizations** — safe to lose at any moment; nothing becomes correct only because something was cached (L07).
-- **Cap and warn, never guess** — dimensions that can be trimmed without contradicting an explicit choice are capped and warned (L03); a direct conflict is a 422 refusal (L03).
-- **No number is better than a wrong number** — `centre_distance()` returns `None` when the solver has no solution, and the API reports a warning instead of a plausible lie (L08).
+- **One parameter model drives three entry points** — `GearParams` (Pydantic) is the single source of truth for all parameters; the JSON schema generates the web form, CLI flags and API query parameters
+- **Kernel compartmentalization** — the CAD kernel runs in isolated worker processes only; the serving process is kernel-free and holds only high-level caches and routing logic
+- **Admission-controlled concurrency** — a bounded build queue prevents a runaway stack of build requests; slots cover both build time and first gzip encode time
+- **Parameter-hash affinity routing** — requests for the same gear (preview, fine, STEP) route to the same worker to reuse the cached solid
+- **Two-tier caching** — byte cache (per gear, 64 MiB default) in the serving process; solid cache (4 entries per worker) in each worker process
+- **Import-boundary contracts** — enforced by import-linter; prevent unintended dependencies (kernel off event loop, logging out of pure-maths layer, CLI away from web-specific policies)
 
 ## Layers
 
-**Parameters:**
+**HTTP API and Serving (`src/spur/app.py`):**
+- Purpose: FastAPI application entry point, admission control, byte cache, request routing
+- Location: `src/spur/app.py`
+- Contains: FastAPI app definition, lifespan startup/shutdown, endpoints (`/`, `/api/health`, `/api/schema`, `/api/info`, `/api/model.{fmt}`), `_BlobCache`, admission control via `_build_slot`, error handling
+- Depends on: `params.GearParams`, `calc.derive`, `pool.BuildPool`, `records` logging module, `build_errors` exception types
+- Used by: uvicorn (FastAPI's ASGI server), web UI (static files served here)
+- **Does NOT directly import:** `cadquery`, `OCP` (L17, enforced by import-linter contract with `allow_indirect_imports=false`)
 
-- **Purpose:** Single validated model; JSON schema generator for UI and CLI flags
-- **Location:** `src/spur/params.py`
-- **Contains:** `GearParams` (Pydantic BaseModel, frozen), field metadata (group, unit, step, help)
-- **Depends on:** `calc.check()` for cross-field validation (called from model validator)
-- **Used by:** All three entry points; every cached operation
+**Pure Mathematics (`src/spur/calc.py`):**
+- Purpose: Fast, keystroke-response-time calculation of derived dimensions and feasibility checks
+- Location: `src/spur/calc.py`
+- Contains: `derive()` function, `DerivedDimensions` Pydantic model, involute geometry, measurement aids, profile computation, bore/keyway/recess math
+- Depends on: `params.GearParams` (TYPE_CHECKING only, lazy import)
+- Used by: CLI (info command), web API (info endpoint), tests
+- **Does NOT directly import:** `cadquery`, `OCP`, `logging`, `records` (L04, L07, enforced by import-linter)
 
-**Calculation:**
+**CAD Kernel and Export (`src/spur/model.py`):**
+- Purpose: CadQuery/OpenCascade solid construction, mesh export, per-worker solid caching
+- Location: `src/spur/model.py`
+- Contains: `build()` (solid construction), `export()` (STL/STEP writer), `_build_cached()` LRU cache, `_LOCK` (RLock for kernel serialization), `_release_arenas()` (malloc_trim)
+- Depends on: `calc.py` geometry helpers, `params.GearParams`
+- Used by: Worker processes only, via dynamic import in `pool.py`
+- **Handles:** CadQuery/OCP native objects; kernel is only ever accessed through `_LOCK`
 
-- **Purpose:** Pure geometry and measurement: involutes, tooth profiles, derived dimensions, feasibility rules, measurement aids (span, caliper)
-- **Location:** `src/spur/calc.py`
-- **Contains:** `profile()`, `derive()`, `check()`, `centre_distance()`, `with_mate()`, `root_fillet()`, `recess_radii()`, `span_measurement()`, involute solver
-- **Depends on:** GearParams attributes only; no imports of CAD kernel (enforced, L08)
-- **Used by:** `app.py` (/api/info), `cli.py` (info and export commands), UI form validation
+**Worker Pool Management (`src/spur/pool.py`):**
+- Purpose: N independent single-worker ProcessPoolExecutor instances, parameter-hash routing, worker lifecycle
+- Location: `src/spur/pool.py`
+- Contains: `BuildPool` class, `build_export()` function (submittable across process boundary), worker warm-up (`_warm()`), timeout handling, worker replacement
+- Depends on: `params.GearParams`, `build_errors` exception types, `records` logging
+- Used by: FastAPI app (via `Depends(build_backend)` injectable)
+- **Key mechanism:** Runtime dynamic import of `model.py` inside worker, never a static import in `app.py`
 
-**Solid Model:**
+**CLI Interface (`src/spur/cli.py`):**
+- Purpose: Command-line interface for three commands: `serve`, `info`, `export`
+- Location: `src/spur/cli.py`
+- Contains: argument parsing, `_add_gear_args()`, command handlers (`cmd_serve`, `cmd_info`, `cmd_export`)
+- Depends on: `params.GearParams`, `calc.derive`, `records.configure`
+- Used by: Entry point `spur = "spur.cli:main"` (pyproject.toml)
+- **Does NOT import:** `app`, `fastapi`, `starlette` (L04, enforced by import-linter)
 
-- **Purpose:** CAD kernel gateway: solid construction, tessellation, export, caching, garbage collection
-- **Location:** `src/spur/model.py`
-- **Contains:** `_outline()` (analytic fillets), `_gear_blank()`, `_cut_face_recesses()`, `_cut_bore()`, `_build()`, `build()` (cached), `export()` (cached)
-- **Depends on:** `calc.Profile`, `GearParams`, CadQuery/OpenCascade (direct imports only here)
-- **Used by:** `app.py` (/api/model.stl, /api/model.step), `cli.py` (export command)
-- **Threading:** All kernel calls serialized by `_LOCK` (RLock, L06); cache miss triggers `malloc_trim(0)` (L07)
+**Structured Logging (`src/spur/records.py`):**
+- Purpose: JSON log formatting and idempotent configuration
+- Location: `src/spur/records.py`
+- Contains: `_JsonFormatter`, `_JsonHandler`, `configure()`, event helpers (`build_started()`, `build_failed()`, `export_served()`, `queue_refused()`, `worker_replaced()`)
+- Depends on: `params.GearParams`, `build_errors` exception types
+- Used by: `app.py` and `pool.py` (for event logging), `cli.py` (for setup)
+- **Configuration:** Called from both `cli.cmd_serve` (before uvicorn) and `app.py` lifespan (to catch spawned workers)
 
-**HTTP API + Web:**
+**Build Error Types (`src/spur/build_errors.py`):**
+- Purpose: Shared exception hierarchy used across all layers
+- Location: `src/spur/build_errors.py`
+- Contains: `BuildError` (validation failure), `BuildTimeout` (build overrunning wall clock)
+- Used by: `app.py` (exception handling), `model.py` (raised), `records.py` (logged), `pool.py` (logged)
 
-- **Purpose:** REST endpoints, static hosting, admission control, HTML/CSS/JS serving
-- **Location:** `src/spur/app.py`, `src/spur/static/`, `web/`
-- **Contains:** FastAPI routes (/api/info, /api/model.*, /api/schema, /api/health), build queue (BoundedSemaphore, L04), static mount
-- **Depends on:** `GearParams`, `calc.derive()`, `calc.with_mate()`, `model.export()`, FastAPI, Pydantic v2
-- **Used by:** Browser clients; the UI (index.html, app.js) queries /api/schema for the form, /api/info for numbers, /api/model.* for downloads
-- **Admission control:** `BUILD_QUEUE` (max SPUR_MAX_QUEUED_BUILDS, default 4); 503 + Retry-After if full (L04)
-
-**CLI:**
-
-- **Purpose:** Command-line commands: `spur serve` (uvicorn wrapper), `spur info` (JSON), `spur export` (file write)
-- **Location:** `src/spur/cli.py`
-- **Contains:** Argument parser (generated from GearParams fields), three commands, validation, error handling
-- **Depends on:** GearParams, `calc.derive()`, `calc.with_mate()`, `model.export()`, argparse
-- **Used by:** End users, scripts, CI
-- **No queue:** Direct export, no admission control (L04 enforcement)
+**Web UI (`src/spur/static/` and `web/`):**
+- Purpose: HTML form, three.js 3D preview, shareable model links
+- Location: `src/spur/static/index.html`, `src/spur/static/app.js`, `web/` (esbuild source)
+- Served by: FastAPI static file mounting at `/static`, index at `/`
+- Bundle: `src/spur/static/vendor/three.bundle.min.js` (vendored esbuild output of `web/`, committed to repo, byte-checked by CI)
 
 ## Data Flow
 
-### Primary Request Path: Build and Export
+### Primary Request Path: Build and Export a Gear Model
 
-1. **User sets parameters** (web form, API query, CLI args) → `GearParams(**values)` validated at boundary
-   - File: `src/spur/params.py` (model validator calls `calc.check()`)
-   - Validation happens once; after this, trust the types
+1. **HTTP GET /api/model.stl?teeth=30&module=2.0** → `app.model()` (`src/spur/app.py:381`)
+2. **Parameter parsing** → Pydantic `GearParams` validation via `ModelQuery` class
+3. **Cache lookup** → Check `_EXPORTS` (byte cache, 64 MiB, in serving process) for `(params, fmt, quality, encoding)` key
+4. **If cache miss:**
+   - **Admission control** → `_build_slot()` acquires `BUILD_QUEUE` semaphore (bounded to `MAX_QUEUED_BUILDS`, default 4)
+   - **Worker selection** → `BuildPool.executor_for(params)` routes by `hash(params) % N` (affinity)
+   - **Build request** → `backend(params, fmt, quality)` submits `build_export()` task to worker via `ProcessPoolExecutor`
+   - **Worker execution** → Inside worker process: `build_export()` → dynamic import of `model.py` → `model.export()` → `_build_cached(params)` (LRU cache, 4 entries, per worker) → `build()` solid construction under `_LOCK` → tessellate and export
+   - **Solid cache check** → If solid already cached in this worker, reuse; else build from scratch
+   - **Result:** Raw STL/STEP bytes returned to serving process
+5. **Gzip encoding** (if client sent `Accept-Encoding: gzip`) → inside `_build_slot()` via `run_in_threadpool(_gzip, raw)`, result cached under `(params, fmt, quality, "gzip")` key
+6. **Response** → Set `Content-Disposition: attachment`, media type, `Content-Encoding` header if gzip, return bytes
 
-2. **Fetch derived dimensions** (UI calls /api/info, CLI calls `info` command) → `calc.derive(params)`
-   - File: `src/spur/calc.py`
-   - Pure math; runs on every keystroke in the UI; no side effects
-   - Returns `dict[str, Any]` with pitch_d, tip_d, root_d, base_d, span, warnings, etc.
+### Secondary Request Path: Derived Dimensions
 
-3. **Build the solid** (UI preview, STL/STEP download) → `model.build(params)` under `_LOCK`
-   - File: `src/spur/model.py`, lines 260–262 (entry point)
-   - `_LOCK.acquire()` → `_build_cached(p)` (LRU, default 4 entries) → `_build_checked()` → `_build()`
-   - Steps: `_gear_blank()` (extruded outline with analytic fillets) → `_cut_face_recesses()` (annular grooves) → `_cut_bore()` (D-bore, chamfer)
-   - Validates: exactly one valid solid out
+1. **HTTP GET /api/info?teeth=30** → `app.info()` (`src/spur/app.py:374`)
+2. **Parameter parsing** → `InfoQuery` class (extends `GearParams`, adds optional `mate_teeth` field)
+3. **Calculation** → `calc.derive(params, mate_teeth=q.mate_teeth)` → pure arithmetic, no kernel, no cache
+4. **Return** → Pydantic model `DerivedDimensions` serialized as JSON
 
-4. **Export to binary** → `model.export(params, format, quality)` under `_LOCK`
-   - File: `src/spur/model.py`, lines 309–317
-   - Checks `_EXPORTS` cache (LRU by size, default 64 MB)
-   - Cache miss: `_write_export()` (temporary file, STL or STEP) → `_release_arenas()` (malloc_trim)
-   - Returns bytes; HTTP layer adds Content-Disposition header
+### CLI Request Path
 
-5. **HTTP response** (app.py: 200 with bytes, 422 with error detail, 503 if queue full)
-   - File: `src/spur/app.py`, lines 110–124
-   - Admission control: `_build_slot()` tries to acquire from `BUILD_QUEUE`; on fail, 503 with Retry-After
-
-### Secondary Flow: Mating Gear Centre Distance
-
-1. User provides `mate_teeth` query parameter (or CLI flag)
-2. `calc.centre_distance(params, mate_teeth)` solves involute solver for working pressure angle
-3. Returns `float` or `None` (unsolvable pair); `calc.with_mate()` adds to derive() output
-4. If `None`, adds a warning; no number reported (L08)
-5. Web UI displays centre_distance or "—"
-
-### Secondary Flow: Schema (UI Form Metadata)
-
-1. Browser requests GET /api/schema
-2. `GearParams.model_json_schema()` (Pydantic v2) returns JSON schema with field metadata
-3. UI builds form from schema: title, description, unit, step, group, choices
-4. Every field added to GearParams appears in schema automatically (L02)
+1. **`spur info` command** → `cmd_info()` → parses arguments → `derive(params)` → JSON to stdout
+2. **`spur export` command** → `cmd_export()` → `model.export(params, fmt, quality)` → writes file directly (no pool, no serving process)
+3. **`spur serve` command** → `cmd_serve()` → calls `configure()` (logging setup) → `uvicorn.run(app)` (starts FastAPI)
 
 **State Management:**
-
-- **No persistent state.** Every answer is derived from `GearParams` on demand.
-- **Caches are transparent.** Solid cache (LRU, entry-bounded) and export cache (LRU, size-bounded) speed up repeated requests; safe to lose at any moment (L07).
-- **Kernel lock** — module-level RLock; one thread builds at a time; others queue in the build semaphore (app.py) or wait (CLI).
-- **Build queue** — BoundedSemaphore in app.py; CLI bypasses it (L04).
+- **Parameter set** — immutable, hashable `GearParams` (frozen Pydantic model)
+- **Solid cache** — per-worker `@lru_cache(maxsize=SPUR_SOLID_CACHE)`, keyed on `params`; accessible only inside worker process via `_build_cached()`
+- **Byte cache** — in serving process, `_BlobCache` instance `_EXPORTS`, keyed on `(params, fmt, quality, encoding)`
+- **Build queue** — `threading.BoundedSemaphore(MAX_QUEUED_BUILDS)`, in serving process only
+- **Worker lifecycle** — `BuildPool._executors` list of `ProcessPoolExecutor` instances; warm-up happens in `lifespan()` startup
 
 ## Key Abstractions
 
-**GearParams:**
+**GearParams (`src/spur/params.py`):**
+- Purpose: Single, validated, frozen parameter model for all interfaces
+- Used as: cache key (hashable), JSON schema source (drives web form), CLI argument definitions
+- Properties: Frozen (immutable), hashable (cache-friendly), JSON schema export (metadata-driven form generation)
 
-- **Purpose:** Parametric gear model; validation boundary; JSON schema source
-- **Examples:** `src/spur/params.py`
-- **Pattern:** Pydantic BaseModel (frozen, hashable, v2); field metadata drives UI and CLI
+**DerivedDimensions (`src/spur/calc.py`):**
+- Purpose: Published response model for `/api/info` and `spur info` command
+- Properties: Frozen Pydantic model; includes `None` for inapplicable values (e.g., `centre_distance` when no `mate_teeth` provided)
 
-**Profile:**
+**BuildPool (`src/spur/pool.py`):**
+- Purpose: Manages N independent worker processes, routes by parameter-hash affinity
+- Mechanism: One `ProcessPoolExecutor(max_workers=1)` per worker; `executor_for()` selects by `hash(params) % N`
+- Lifecycle: Warm-up on startup (import cadquery), torn down on shutdown
 
-- **Purpose:** Involute tooth geometry computed from GearParams; passed through calc.py as intermediate result
-- **Examples:** `src/spur/calc.py`, line 24
-- **Pattern:** Frozen dataclass with maths-friendly single-letter fields (z, m, alpha, r, rb, ra, rf, psi_p); defined once in calc.py
+**_BlobCache (`src/spur/app.py`):**
+- Purpose: LRU cache for exported bytes, bounded by total size (not entry count)
+- Implementation: Maintains insertion order, evicts oldest entries when budget exceeded
+- Keyed by: `(params, fmt, quality, encoding)` to allow both raw and gzip variants to coexist
 
-**BuildError:**
-
-- **Purpose:** Exception raised when solid build fails; only exception that leaves model.py (L15 in CODING_VALUES)
-- **Examples:** `src/spur/model.py`, line 42; caught in app.py and cli.py
-- **Pattern:** Subclass of RuntimeError; carries actionable message
+**Profile (`src/spur/calc.py`):**
+- Purpose: Geometric profile data structure for involute geometry calculations
+- Fields: tooth count, module, pressure angle (radians), pitch/base/tip/root radii, half tooth-thickness angle
+- Computed once per keystroke (in `profile()` function), reused by derived dimensions and later by CAD kernel
 
 ## Entry Points
 
-**Web UI:**
+**HTTP API (FastAPI `app.py`):**
+- Location: `src/spur/app.py:app` (FastAPI instance)
+- Triggers: `GET /`, `/api/health`, `/api/schema`, `/api/info`, `/api/model.{fmt}` requests
+- Responsibilities: Routing, parameter validation, caching, admission control, error mapping to HTTP status codes
 
-- **Location:** `src/spur/static/index.html` (served at GET /)
-- **Triggers:** Browser load, form change
-- **Responsibilities:** 
-  - Builds form from /api/schema
-  - Queries /api/info on every keystroke (debounced)
-  - Renders 3D preview (three.js canvas)
-  - Downloads STL/STEP via /api/model.{fmt}
+**CLI (`cli.py`):**
+- Location: Entry point `spur = "spur.cli:main"` defined in `pyproject.toml`
+- Triggers: Command-line invocation (`spur serve`, `spur info`, `spur export`)
+- Responsibilities: Argument parsing, command dispatch, stdout/stderr management
 
-**HTTP API:**
-
-- **Location:** `src/spur/app.py`
-- **Entry:** `app = FastAPI(...)` (line 41)
-- **Triggers:** HTTP requests
-- **Routes:**
-  - GET / → index.html
-  - GET /api/health → `{"status": "ok", "version": "0.1.0"}`
-  - GET /api/schema → JSON schema
-  - GET /api/info → derive() output (± mating gear info)
-  - GET /api/model.{stl|step} → binary export
-- **Responsibilities:**
-  - Parse and validate query parameters (GearParams)
-  - Admission control (queue)
-  - Error formatting (422 with field names)
-  - Cache-busting via GearParams equality
-  - Download headers (Content-Disposition, media-type)
-
-**CLI:**
-
-- **Location:** `src/spur/cli.py`, `main()` function
-- **Entry:** `spur` command (installed as entry point in pyproject.toml)
-- **Triggers:** Shell invocation
-- **Commands:**
-  - `spur serve` → uvicorn wrapper (no queue, direct OCCT lock)
-  - `spur info [--mate-teeth N] [--teeth Z] ...` → JSON to stdout
-  - `spur export -o file.stl [--quality preview|fine] [--teeth Z] ...` → write to file
-- **Responsibilities:**
-  - Generate argparse from GearParams (one flag per field)
-  - Parse and validate arguments
-  - Call calc/model functions directly
-  - Write to stderr (stderr: progress, warnings; stdout: JSON for `info`)
+**Worker Process (`pool.py`):**
+- Location: `src/spur/pool.py:build_export()` (function submitted to `ProcessPoolExecutor`)
+- Triggers: Task submitted from serving process via `executor.submit(build_export, ...)`
+- Responsibilities: Runtime import of `model.py`, call `model.export()`, return bytes
 
 ## Architectural Constraints
 
-- **Threading:** Single-threaded event loop (uvicorn); all OCCT calls go through one RLock in model.py (L06). Concurrency buys latency (better responsiveness), not throughput (still serialized on the lock).
-- **Global state:** 
-  - `_LOCK` (RLock) in model.py — kernel lock (L06)
-  - `_build_cached` (lru_cache) in model.py — solid cache, entry-bounded (L07)
-  - `_EXPORTS` (_BlobCache) in model.py — export cache, size-bounded (L07)
-  - `BUILD_QUEUE` (BoundedSemaphore) in app.py — admission control (L04)
-  - All module-level; all documented at the point of definition
-- **Circular imports:** None enforced; import-linter contracts verify (pyproject.toml, lines 117–146)
-- **Vendor types:** CadQuery/OpenCascade objects do not escape model.py (enforced by design; model exports only bytes and Solids for testing)
+- **Threading:** Single-threaded event loop in serving process (uvicorn with `workers=1` by default); worker processes are isolated, one task per worker under `max_workers=1`
+- **Global state:** One `RLock` in `model.py` per worker (protects all OpenCascade calls); one `BoundedSemaphore` in `app.py` (admission control); `_EXPORTS` cache and `_in_flight_builds` counter in serving process only
+- **Circular imports:** Prevented by design: `app.py` never statically imports `model.py`; `calc.py` imports `params.py` only in `TYPE_CHECKING` block; `cli.py` never imports `app.py`
+- **Process boundary:** `pool.py`'s `build_export()` function is pickleable and submittable to worker via `ProcessPoolExecutor`; only `params.GearParams` and Pydantic-serializable values cross the boundary
+- **CAD kernel access:** Only inside worker processes; served-process lifespan never loads `cadquery`/`OCP` (L17, enforced by import-linter contract with `allow_indirect_imports=false`)
 
 ## Anti-Patterns
 
-### Direct imports of OCCT outside model.py
+### Direct CAD Kernel Calls in the Serving Process
 
-**What happens:** Code in calc.py, app.py, or cli.py directly imports cadquery or OCP.
+**What happens:** A future change adds a call to `cadquery.Solid()` or similar inside `app.py`.
 
-**Why it's wrong:** Calculation layer must run on every keystroke without the weight of OCCT; the moment calc.py can reach the kernel, that property is gone silently. App and CLI have different policies (queue vs. immediate) and should not inherit web transport decisions.
+**Why it's wrong:** Violates L17 (memory ceiling measurement), makes the memory model depend on N independently-measured process footprints, adds blocking I/O to the event loop, contradicts the admission-control design.
 
-**Do this instead:** Import only from model.py. If a new operation needs OCCT, add it to model.py and export a function. The import-linter contract at `pyproject.toml:128–137` enforces this.
+**Do this instead:** Route through `pool.export()` or a new worker-side function. The serving process must never load `cadquery` or `OCP`.
 
-### Calling model.export or model.build from CLI's path
+### Caching Based on Gear Identity Rather than Parameter Hash
 
-**What happens:** `src/spur/cli.py` acquires the kernel lock or checks the admission queue before exporting.
+**What happens:** Cache uses a generator ID or user-assigned name as the key instead of `hash(params)`.
 
-**Why it's wrong:** CLI exports must be immediate (no queue) and direct (no web-layer policy); the build queue is a property of serving HTTP, not of building a gear (L04).
+**Why it's wrong:** Breaks shareable links (L05 — parameters in URL are the source of truth, not a database ID) and affinity routing (same gear to the same worker).
 
-**Do this instead:** CLI calls `model.export()` and `model.build()` directly, bypassing the BoundedSemaphore in app.py. The lock is fine (synchronization is necessary); the queue is the violation. Import-linter contract at `pyproject.toml:139–146` enforces this.
+**Do this instead:** Cache keys must be derived from `GearParams` hash only. A URL like `/api/model.stl?teeth=30` is the canonical identity.
 
-### Changing GearParams defaults without updating tests
+### Unbounded Build Queue
 
-**What happens:** A default value is changed to suit a use case (e.g., smaller bore for smaller gears).
+**What happens:** Admission control (`_build_slot`) is removed or the queue size made unbounded.
 
-**Why it's wrong:** Every shareable model link omits fields it left at default. Rescaling the defaults would silently rebuild a different part from an old URL (L05).
+**Why it's wrong:** Latency explodes (L09 — bounded queue prevents latency-with-no-payoff), pool replacement gets starved, the 503 + Retry-After signal to clients disappears.
 
-**Do this instead:** Use capping and warnings (L03) for out-of-range defaults. The test `test_default_dimensions()` in `tests/test_calc.py` asserts that stock dimensions stay put; it will fail if this is violated, and that is the point.
+**Do this instead:** Keep `MAX_QUEUED_BUILDS` and the `BoundedSemaphore`; if capacity is insufficient, increase `SPUR_BUILD_WORKERS` and re-measure memory (L17).
 
-### Returning a plausible-sounding number when the calculation fails
+### Printing Values Without Measurement
 
-**What happens:** `centre_distance()` uses Newton's method to solve inv(aw) = inv(a) + 2·tan(a)·Σx/Σz; the unguarded loop returns confident garbage for pairs that cannot mesh.
+**What happens:** A performance or memory claim is made in a commit message without a corresponding entry in `bench/RESULTS.md`.
 
-**Why it's wrong:** This is the tool's headline "match a real gear" number. A wrong one gets cut into a bracket. The unguarded Newton loop returned negative distances and other implausible values all while returning 200 OK (L08).
+**Why it's wrong:** Violates L08 (no guesses, only measured numbers). A claim like "this is 2x faster" that is never re-verified becomes debt.
 
-**Do this instead:** Return `None` when there is no solution (bisection solver, not Newton, is safer). Report a warning instead of a number.
+**Do this instead:** Measure with `bench/latency.py`, `bench/memory.py` or a custom benchmark. Record the result in `bench/RESULTS.md` with date, machine, and method. Ground claims in evidence.
 
 ## Error Handling
 
-**Strategy:** Three responses, and picking the right one is the design work.
+**Strategy:** Distinguish user-correctable errors (parameters invalid) from system errors (worker died, timeout).
 
 **Patterns:**
-
-- **Refuse (422):** A direct conflict between two things the user set explicitly. Name the fields in the error detail. Example: `bore_flat` must be between `bore_d / 2` and `bore_d`, or it's a refusal. File: `src/spur/calc.py`, line 139.
-
-- **Cap and warn (200 OK, warning in dict):** A requested dimension that can be trimmed without contradicting an explicit choice. The trim is reported in the `warnings` array. Example: `root_fillet` is capped to fit the tooth gap; derive() warns. File: `src/spur/calc.py`, line 175.
-
-- **Report nothing (200 OK, value is None, warning):** A value that does not exist. A warning, not a number. Example: `centre_distance()` returns None when the pair cannot mesh; the warning explains why. File: `src/spur/calc.py`, line 266.
-
-**Beyond user input:** Fail loud, once, with an actionable message. If the kernel fails, `BuildError` is raised (deterministic for the same parameters, so retrying only burns seconds). File: `src/spur/model.py`, line 252.
+- **Parameter validation failure** → `BuildError` → HTTP 422 (Unprocessable Entity) with detailed field-level error in response body
+- **Build timeout** → `BuildTimeout` → HTTP 503 (Service Unavailable) with `Retry-After: 5` header
+- **Worker pool broken** → `BrokenProcessPool` → HTTP 503 with descriptive message about worker replacement
+- **Admission queue full** → HTTPException(503) in `_build_slot()` → `queue_refused()` log record, `Retry-After: 5` header
+- **Genuine exception from worker** → `BrokenProcessPool` (future regressions) → HTTP 500, log a `build.failed` record with traceback
 
 ## Cross-Cutting Concerns
 
-**Logging:** None today; a tracked gap (`docs/tech_debt/active/2026-09-21-no-structured-logging.md`). Until then, no print() for diagnostics in src/; cli.py printing to stderr is user-facing output, which is fine.
+**Logging:** Structured JSON via `records.py`; every build/export outcome is logged (started, served, failed, queued, replaced). Logs are on stderr, JSON-formatted, one object per line, readable via `jq`.
 
-**Validation:** Happens once, at the GearParams boundary. After that, trust the types. No re-validation downstream.
+**Validation:** Parameters validated once at boundary (`GearParams` constructor in `app.py` query parsing, `cli.py` arg handling). Validation errors name the field and say what to change (e.g., "D-flat must be between 4.5 and 9 mm").
 
-**Authentication:** Not applicable; no users or sessions.
+**Authentication:** None (no auth system in this version). Every public endpoint is readable and every format is downloadable. Deployment is assumed to be behind network access control (not exposed to the internet without additional auth layer).
 
-**Type Safety:** mypy strict mode with one exception: `dict[str, Any]` is the honest type for API responses whose keys vary with the parameters. File: `pyproject.toml:128–137` (disallow_any_explicit is OFF, ratcheted in tech_debt).
+**Performance Observability:** Every build logs its duration; every export logs source (cache / compressed / built). `health()` endpoint reports queue depth and worker count in real time.
 
 ---
 
-*Architecture analysis: 2026-09-21*
+*Architecture analysis: 2026-10-02*
