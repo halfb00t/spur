@@ -77,7 +77,7 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="session",
         description="One quiet-gated session: preflight, D-05's wait, server "
                      "lifecycle, the runs.")
-    parser.add_argument("--mode", required=True, choices=["pair", "bar"])
+    parser.add_argument("--mode", required=True, choices=["pair", "bar", "composed"])
     parser.add_argument("--label", required=True, type=_label)
     parser.add_argument("--pair", choices=["A", "B", "C"])
     parser.add_argument(
@@ -358,7 +358,7 @@ def main(argv: list[str] | None = None) -> int:
                 _atomic_write_json(status_path, status)
                 if exit2 != 0:
                     raise _RunFailedError(f"{run2_label} exited {exit2}")
-            else:  # bar
+            elif args.mode == "bar":
                 server_proc, server_count, log_file = _start_server(label, server_count)
                 status["host"]["server_env"] = {"SPUR_PORT": "8001"}
                 _atomic_write_json(status_path, status)
@@ -372,6 +372,20 @@ def main(argv: list[str] | None = None) -> int:
                     _atomic_write_json(status_path, status)
                     if "Traceback (most recent call last)" in output:
                         raise _RunFailedError(f"{run_label} raised -- see {run_label}.txt")
+            else:  # composed (SC3, D-16): one fresh server, one run, no second leg --
+                # SC3 is measured once, never retried in search of a different reading.
+                server_proc, server_count, log_file = _start_server(label, server_count)
+                status["host"]["server_env"] = {"SPUR_PORT": "8001"}
+                _atomic_write_json(status_path, status)
+
+                run1_label = f"{label}-run1"
+                load_before_1 = _one_minute_load()
+                exit1 = _run_experiment_leg(run1_label, "composed", 190)
+                status["runs"].append(
+                    {"label": run1_label, "exit_code": exit1, "load_before": load_before_1})
+                _atomic_write_json(status_path, status)
+                if exit1 != 0:
+                    raise _RunFailedError(f"{run1_label} exited {exit1}")
         finally:
             if server_proc is not None and log_file is not None:
                 dropped = _stop_server(server_proc, label, server_count, log_file)

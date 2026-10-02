@@ -44,16 +44,19 @@ from bench import machine_facts  # noqa: E402
 from bench.latency import (  # noqa: E402
     MIN_SAMPLES,
     SETTLE_SECONDS,
+    ComposedRun,
     ScenarioResult,
     _build,
     _collect,
+    _composed_markdown,
     _p95,
     _report_markdown,
     _sample_for,
     _sample_while_building,
+    run_composed,
 )
 
-_KNOWN_SCENARIOS = ("concurrent", "single")
+_KNOWN_SCENARIOS = ("concurrent", "single", "composed")
 
 
 def concurrent_run(base_url: str, teeth_start: int) -> tuple[ScenarioResult, float, float, float]:
@@ -91,6 +94,22 @@ def single_run(base_url: str) -> tuple[ScenarioResult, float, float, float]:
         slowest, attempted, refused = _collect(futures)
     result = ScenarioResult("single", idle, under_load, slowest, attempted, refused)
     return result, t_start, t_builds_start, t_builds_done
+
+
+def composed_run(base_url: str) -> tuple[ScenarioResult, float, float, float, ComposedRun]:
+    """Calls `bench.latency.run_composed` unmodified -- unlike `concurrent_run`/
+    `single_run` (A2), there is no hardcoded teeth range to work around here, so this is
+    a call, not a copy. `t_start` is stamped immediately before the call; `run_composed`
+    already stamps every one of its ten requests (`RequestOutcome.sent`/`.done`), so
+    `t_builds_start`/`t_builds_done` are the earliest `sent` and latest `done` among
+    them -- the composed scenario's own equivalent of the other two legs' three manual
+    `time.monotonic()` calls.
+    """
+    t_start = time.monotonic()
+    run = run_composed(base_url)
+    t_builds_start = min(r.sent for r in run.requests)
+    t_builds_done = max(r.done for r in run.requests)
+    return run.result, t_start, t_builds_start, t_builds_done, run
 
 
 def series_stats(samples: list[float]) -> dict[str, object]:
@@ -281,10 +300,19 @@ def main(argv: list[str] | None = None) -> int:
     inproc_lines: list[dict[str, object]] = []
     try:
         for name in order:
+            composed: ComposedRun | None = None
             if name == "concurrent":
                 result, t_start, t_builds_start, t_builds_done = concurrent_run(
                     args.base_url, args.teeth_start)
                 teeth: list[int] | None = [args.teeth_start, args.teeth_start + 9]
+            elif name == "composed":
+                result, t_start, t_builds_start, t_builds_done, composed = composed_run(
+                    args.base_url)
+                teeth = None
+                # `scenario_composed` prints `_composed_markdown` before `_run_scenario`
+                # prints `_report_markdown` below -- the same order a real
+                # `python -m bench.latency composed` run produces.
+                print(_composed_markdown(composed))
             else:
                 result, t_start, t_builds_start, t_builds_done = single_run(args.base_url)
                 teeth = None
@@ -294,7 +322,7 @@ def main(argv: list[str] | None = None) -> int:
             inproc_lines.append({"scenario": name, "series": "idle", "latency_s": result.idle})
             inproc_lines.append(
                 {"scenario": name, "series": "under_load", "latency_s": result.under_load})
-            scenarios[name] = {
+            scenario_entry: dict[str, object] = {
                 "t_start": t_start,
                 "t_builds_start": t_builds_start,
                 "t_builds_done": t_builds_done,
@@ -305,6 +333,16 @@ def main(argv: list[str] | None = None) -> int:
                 "inproc": {"idle": idle_stats, "under_load": under_stats,
                            **ratio_block(idle_stats, under_stats)},
             }
+            if composed is not None:
+                scenario_entry["requests"] = [
+                    {"params": r.params, "status": r.status, "wall_s": r.wall_s}
+                    for r in composed.requests
+                ]
+                scenario_entry["workers_replaced"] = {
+                    "before": composed.workers_replaced_before,
+                    "after": composed.workers_replaced_after,
+                }
+            scenarios[name] = scenario_entry
     finally:
         # The stop-file-then-wait-then-kill shape is 02's own try/finally lesson: the
         # poller must be stopped even when a scenario above raises.
