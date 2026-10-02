@@ -354,6 +354,61 @@ Neither run was repeated or restarted in search of a passing number. This sessio
 **non-decisive** (D-05): the quiet gate never released, so neither reading counts for
 outcome (a) or (b) — the decisive session (D-07) is a separate attempt.
 
+### Bar session bar-2 (Runs 11-12)
+
+Commit under test: `83bb448`. Command: `.venv/bin/python -m bench.latency --base-url
+http://127.0.0.1:8001` (not the bare `make bench.latency` target, which targets port
+8000 — RESEARCH.md Pitfall 1), two runs in immediate succession against one fresh
+server (Run 12 inherits Run 11's `_EXPORTS`, as every even-numbered run did), shipping
+defaults (`server_env`: `{"SPUR_PORT": "8001"}`).
+
+`fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8) was stopped for this
+session; `spur-spur-1` left running.
+
+**Environment snapshot** (`bar-2.status.json`, every D-05 quiet-gate sample, 30 s apart,
+2026-10-02T06:33:35Z through 2026-10-02T06:48:36Z UTC):
+
+5.51, 4.29, 3.69, 3.54, 2.59, 2.64, 2.51, 2.13, 2.30, 1.63, 1.84, 1.62, **1.31**, 1.97,
+1.47, 1.99, 2.37, 2.10, 1.97, 1.65, 2.13, 2.00, 2.13, 2.05, 2.08, 2.01, 1.55, 2.03, 2.15,
+1.88, 1.63 (31 samples; the load never fell far enough to approach the three-consecutive-
+under-1.5 streak the gate needs — sample 13 at 1.31 is the single lowest point, with no
+adjacent sample under 1.5 to build a streak around it).
+
+- `docker info`: exit 0.
+- Top CPU (`ps -Ao %cpu,comm -r`, latest sample): WindowServer 26.5%, Telegram 12.0%,
+  iTerm2 9.5%, claude 6.0%, go 5.9%.
+- `docker ps --format '{{.Names}} {{.Status}}'`: `spur-spur-1 Up 39 hours (healthy)`,
+  `fleet-user Exited (2) 17 hours ago`.
+- Load after: 2.11.
+
+Decisive (D-05): no — the 900 s cap expired; recorded, not counted for the bar.
+
+#### `single` scenario (Runs 11-12)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 11 | 0.6 ms (n=3682) | 0.7 ms (n=5098) | 1.11x | 3.08 s | 0 of 1 |
+| 12 | insufficient (n<20) | insufficient (n=18) | -- | -- | -- |
+
+Run 12 printed `warning: single/under-load has only 18 /api/health samples (need >= 20);
+refusing to report a p95` — the 200-tooth gear was cached from Run 11, so there was no
+load window to sample; no ratio, per L08, exactly as in Runs 6, 8 and 10.
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 11 (1.11x). Run 12: no ratio
+printed (insufficient samples).
+
+#### `concurrent` scenario (Runs 11-12)
+
+| Run | Idle p95 (n) | Under-load p95 (n) | Ratio | Slowest build | Refused |
+|---|---|---|---|---|---|
+| 11 | 0.6 ms (n=3640) | 0.8 ms (n=15653) | 1.38x | 11.24 s | 6 of 10 |
+| 12 | 0.6 ms (n=3578) | 0.9 ms (n=12634) | 1.42x | 9.44 s | 2 of 10 |
+
+Pass bar: under-load p95 <= 2.00x idle p95. **Met** on Run 11 (1.38x) and Run 12 (1.42x).
+Neither run was repeated or restarted in search of a passing number. This session is
+**non-decisive** (D-05): the quiet gate never released, so neither reading counts for
+outcome (a) or (b) — the decisive session (D-07) is a separate attempt.
+
 ### `SPUR_BUILD_TIMEOUT`
 
 Worst single build observed across both runs and both scenarios: **7.39 s** (`concurrent`
