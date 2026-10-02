@@ -58,7 +58,7 @@ every false claim in the record made true or warned, and the gate itself measure
 user-facing geometry, no new `GearParams` field, the 44-record pre-v0.2 fixture
 byte-unchanged throughout.
 
-- [ ] **Phase 13: Latency Bar** - The two unexplained concurrent-latency observations get
+- [x] **Phase 13: Latency Bar** - The two unexplained concurrent-latency observations get (completed 2026-10-02)
       a ruled cause, and the ten-concurrent bar is demonstrated on both runs of one session
       or superseded by a logged decision
 - [ ] **Phase 14: Honest Record** - The root lead-in warns when it rises above the pitch
@@ -102,7 +102,7 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the debt file
 already states the bounded investigation's shape.
-**Plans:** 7/7 plans executed (strictly serial: one host, sessions never overlap)
+**Plans:** 7/7 plans complete (strictly serial: one host, sessions never overlap)
 
 Plans:
 **Wave 1**
@@ -264,7 +264,7 @@ internal and one is process-only.
 |-------|-----------|-----------------|--------|-----------|
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
-| 13. Latency Bar | v0.3 | 7/7 | In Progress|  |
+| 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 0/TBD | Not started | - |
 | 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |

@@ -2,17 +2,17 @@
 gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
-current_phase: 13
-current_phase_name: Latency Bar
-status: verifying
-stopped_at: "Completed 13-07-PLAN.md -- Phase 13 complete: L32 logged, debt retired, fleet-user confirmed restored, make verify green"
-last_updated: "2026-10-02T09:39:39.467Z"
+current_phase: 14
+current_phase_name: Honest Record
+status: planning
+stopped_at: Phase 13 complete, ready to plan Phase 14
+last_updated: "2026-10-02T10:29:17.234Z"
 last_activity: 2026-10-02
-last_activity_desc: Phase 13 execution continued -- SC3 measured and recorded
-state_head: 05668efb17ccc311dd3254821f911acc422cc570
+last_activity_desc: Phase 13 complete, transitioned to Phase 14
+state_head: 4134d60028208d550a61798f02e4e43ab774d56c
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
   completed_plans: 7
   percent: 50
@@ -22,19 +22,18 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-01)
+See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 13 — Latency Bar
+**Current focus:** Phase 14 — Honest Record (ready to discuss, then plan)
 
 ## Current Position
 
-Phase: 13 (Latency Bar) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
-Last activity: 2026-10-02 — SC3 measured and recorded (13-06)
-  The Gate Measured and Pinned, Typing & Validation Debt), 11/11 requirements mapped
+Phase: 14 — Honest Record
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-02 — Phase 13 complete, transitioned to Phase 14
 
 ## Performance Metrics
 
@@ -63,6 +62,7 @@ Last activity: 2026-10-02 — SC3 measured and recorded (13-06)
 | 10 | 5 | - | - |
 | 11 | 9 | - | - |
 | 12 | 9 | - | - |
+| 13 | 7 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -285,6 +285,24 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 13] `src/spur/pool.py:204` (`_run_with_timeout`): two timed-out requests on one
+  worker slot race each other's cleanup — the second still holds the executor the first's
+  `recreate_for` already shut down, reads `executor._processes` as `None`, and the request
+  returns an undocumented 500 instead of a contracted 503. Found by SC3 (request ids
+  `912cd2d4`, `0fc30d53` in `investigation/sc3.server1.records.jsonl`). Filed
+  `docs/tech_debt/active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`
+  (must); no `src/` change in Phase 13 by D-17; trigger named in the file.
+- ⚠️ [Phase 13] D-05's quiet bar (1-min load under 1.5 for three consecutive 30 s samples,
+  900 s cap) was reached in 2 of 5 measurement sessions on this host; `bar-1`, `bar-2` and
+  SC3 capped out, and the idle floor with a Claude Code session active read ~2.0. Phase 15's
+  `make verify` profiling and any future re-measurement need an idle machine or a recorded
+  D-05 amendment, not a fourth attempt.
+- ℹ️ [Phase 13] Code review (`13-REVIEW-DISPOSITION.md`, both `open`): CR-01 — the Dockerfile
+  `HEALTHCHECK` comment counts the SC3 run among the "fifteen" runs behind the 0.7–2.3 ms
+  p95 range, but SC3 produced no p95 (fourteen did); WR-01 — `_report_markdown` prints the
+  single/concurrent `RECORDED_BASELINE` under a `composed` heading. CR-01 is a one-word fix.
+- ℹ️ [Phase 13] `/gsd-map-codebase --paths bench` is still owed: `.planning/codebase/`
+  predates `bench/`, and the drift gate advised on every wave of Phase 13.
 - ℹ️ [Phase 12] All 14 code-review findings (WR-01…WR-09, IN-01…IN-05) are `fixed` per
   `milestones/v0.2-phases/12-composition-pass/12-REVIEW-DISPOSITION.md` (`open: 0`, recorded
   2026-10-01). An earlier version of this entry said ten were still `open` — stale, corrected
@@ -331,13 +349,13 @@ None yet.
   fixture's provenance header and one named version test localise it, but the pin itself
   is open: `docs/tech_debt/active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`
   (must).
-- ⚠️ [Phase 2] The ten-concurrent `/api/health` latency bar (≤2.00x idle p95) was waived,
-  not demonstrated: eight runs across four sessions read 1.31x–2.45x and never ≤2.00x on
-  both runs of one session. The caveat and two uninvestigated observations (every second
-  run of a pair is worse than its first; the verdict sits at the harness floor, ~0.1 ms of
-  p95) live in `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`
-  (must). Triggers: the harness or the machine changes, or any run reads above 2.45x.
-  History: `bench/RESULTS.md`, `02-LATENCY-INVESTIGATION.md`, `02-04-SUMMARY.md`.
+- ℹ️ [Phase 2 → 13] The ten-concurrent latency bar is demonstrated on the unmodified harness
+  (L32: `bar-3` Runs 13–14 at 1.31×/1.42× idle p95 on both concurrent runs of one decisive
+  session) and `2026-09-23-concurrent-latency-bar-waived.md` retired in `6709953`; the two
+  observations are ruled — the second-run-worse effect not reproduced in this environment
+  (Pair A split; `fleet-user` stopped where Runs 1–8 had it restart-looping), the floor real
+  (4 of 24 verdict cells flip inside one percentile). History: `bench/RESULTS.md`,
+  `13-LATENCY-INVESTIGATION.md`, `milestones/v0.1-phases/02-*/02-LATENCY-INVESTIGATION.md`.
 - Resolved during v0.1 (recorded in `MILESTONES.md`, `docs/tech_debt/resolved/` and the
   decision log): five Phase 6 records (L24, L25); "CI workflow unverified" (Phase 5 — runs
   35963114939, 36088409707, 36122394253); "Untyped info contract" (Phase 4, L21); "No
@@ -376,21 +394,23 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T09:39:39.442Z
-Stopped at: Completed 13-07-PLAN.md -- Phase 13 complete: L32 logged, debt retired, fleet-user confirmed restored, make verify green
+Last session: 2026-10-02T10:31:14.000Z
+Stopped at: Phase 13 complete, ready to plan Phase 14
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-execute-phase 13` (13-07-PLAN.md) — L32, the Dockerfile `HEALTHCHECK` comment,
-  the 2026-09-23 debt file's retirement (or re-trigger, given SC3's finding), `fleet-user`
-  restored. Last plan of Phase 13.
+- Next: `/gsd-discuss-phase 14` then `/gsd-plan-phase 14` — Honest Record (the root lead-in
+  warns above the pitch circle, README states the real limit, the filleted-spoke volume is
+  checked against a closed form). Phase 13 landed on `gsd/phase-13-latency-bar`; land it via
+  `make pr.land PR=N` per ROADMAP.md's Process Notes before starting 14's branch.
+- Fix CR-01 (one word in the Dockerfile comment) and triage WR-01 from `13-REVIEW-DISPOSITION.md`.
 - Phase 15's discuss-phase carries two human decisions ROADMAP.md already names: the
   CI-kernel-pin mechanism (requirements.txt-first vs. a pyproject.toml upper bound) and the
   make-verify bar (set from the profile, not before)
 - Phase 16's REQ-nyquist-phases-7-8 carries a flagged ASSUMPTION (`/gsd-validate-phase` may
   not resolve `phase_dir` for an archived phase) — resolve at that phase's discuss-phase
-- Expect `gsd_run query commit` to time out on every commit (hook ~3.5 min at 907 tests);
+- Expect `gsd_run query commit` to time out on every commit (hook ~4 min at 910 tests);
   commit with plain `git commit` and wait for any orphaned `pre_commit hook-impl` to restore
   its stash before writing to the tree
   (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)
