@@ -1423,3 +1423,93 @@ later entry trims it — accepted, not undone, by this phase's own gate decision
 The parity tests and the CLI doc fix are pure additions with no published contract
 change. Milestone bookkeeping (`MILESTONES.md`, the audit) is left to
 `gsd-complete-milestone`, per D-19.
+
+## L32 — The concurrent latency bar, demonstrated on the harness as it stands (amends L18)
+
+Date: 2026-10-02.
+
+L18 stays as written; this entry amends its concurrent-scenario caveat paragraph with what
+was measured in Phase 13.
+
+**The two observations** (D-01 to D-04). A six-session, twelve-run campaign (Pairs A, B, C,
+each run twice) tested the three candidates the 2026-09-23 debt file left open for
+observation 1 (every second run of a pair reads worse than its first). Pair A split between
+its two repetitions (A1: 1.327x -> 1.940x, worse; A2: 1.896x -> 1.517x, not worse); the
+pre-registered rule states that when Pair A does not point worse, observation 1 is not
+reproduced and Pairs B and C (B: worse in both repetitions; C: split) cannot rule anything
+in or out. No candidate — four instant ~2.6 MB cache-hit sends, worker-side state, or a
+shorter load window read at the floor — is ruled in or out
+(`13-LATENCY-INVESTIGATION.md` § Verdict, § Observation 1). The split-process poller's
+run-2-vs-run-1 direction agreed with the in-process direction in all six sessions (H1 stays
+refuted, as 02's own H1 re-check found pre-fix). Observation 2 (the verdict sits at the
+harness's resolution floor) is ruled to candidate (ii), "the floor is real": four of
+twenty-four (run, source) verdict cells flip inside one percentile
+(`A1-run2`, `C1-run1`, `A2-run1` in-process; `B1-run2` on the poller), which refutes
+candidate (i) outright; candidate (iii)'s exact claim (the flipping runs are exactly the
+below-median-n runs) was checked directly and found false — three below-median-n runs do
+not flip (`13-LATENCY-INVESTIGATION.md` § Verdict, § Observation 2). The clock resolution
+read 41.7 ns on this host, uniform across all twelve runs; the measured smallest gap
+between distinct samples (2.328e-10 s) is reported as a float64-precision artifact below
+that resolution, not used to set a floor constant — the one-percentile spreads that
+actually flipped a verdict ran 0.090-0.296 ms, 100-700x the clock resolution rather than the
+~10x a floor-threshold heuristic would anticipate (`13-LATENCY-INVESTIGATION.md` §
+Recommendation). No server-side cause survived to be filed as debt (D-17): observation 1 was
+not reproduced and observation 2's cause is a harness/measurement-floor property, not a
+server defect.
+
+**The environment** (D-06). `fleet-user` (unrelated, restart-looping every ~40 s beside Runs 1–8)
+was stopped for every session this phase (the investigation campaign, the three bar
+sessions, and SC3); `spur-spur-1` was left running throughout
+(`bench/RESULTS.md` § "Phase 13 investigation sessions", § "Bar session bar-3"). This is an
+environment change relative to Runs 1–8, where `fleet-user` was up and restart-looping
+throughout every recorded run; a pass in this phase is not read as explaining the misses
+recorded on that noisier environment.
+
+**The bar** (D-05, D-07, D-09 to D-11). Observation 2 ruled to the floor being real, with no
+threshold change adopted — D-09's checkpoint for an outcome-(b) harness change was never
+reached because the decisive session demonstrated outcome (a) directly, so D-10's absolute
+floor was not needed and D-11's double-miss halt was not reached either. Two attempts
+(bar-1, bar-2) capped out on the D-05 quiet gate at 900 s and are recorded as non-decisive,
+never counted toward the verdict (`bench/RESULTS.md` § "Bar session bar-1 (Runs 9-10)", §
+"Bar session bar-2 (Runs 11-12)"). The third attempt (bar-3) released after 320 s on three
+consecutive 30 s load samples under 1.5 (1.39, 1.12, 0.96) and is decisive: both runs of the
+`concurrent` scenario read under the 2.00x pass bar — Run 13 printed 1.31x, Run 14 printed
+1.42x — on the unmodified harness, with the `single` scenario's Run 13 also passing (1.12x)
+and Run 14's single/under-load series refused for insufficient samples (n=18 < 20,
+`concurrent` decides it per D-08) (`bench/RESULTS.md` § "Bar session bar-3 (Runs 13-14)").
+**Outcome (a): demonstrated.** The bar is no longer accepted with caveat — it is measured,
+on both runs of one decisive session, on the harness as it stands.
+
+**SC3** (D-13 to D-16). The composed sweep's worst row (29.42 s alone, Phase 12's own
+0.58 s margin) plus the next nine heaviest composed rows were fired at a fresh server under
+the shipped configuration (2 workers, 4 queued builds, 30 s per-build timeout). The session
+never reached the D-05 quiet gate (900 s cap, non-decisive) and is recorded regardless, per
+D-16: 0 of 10 requests were served; 6 of 10 were refused by admission control (`503 busy`,
+exactly as designed); 4 of 10 were admitted, and all four exceeded `SPUR_BUILD_TIMEOUT` —
+two via the documented `BuildTimeout` path, two via an undocumented `500` raised by a
+same-slot timeout-cleanup race in `_run_with_timeout`. `/api/health`'s `workers_replaced`
+moved 0 -> 2 (`bench/RESULTS.md` § "Composed worst row under ten concurrent builds (Phase
+13)"). The worst row's own 0.58 s margin, measured alone in Phase 12, did not survive this
+contention — it too was terminated past `SPUR_BUILD_TIMEOUT`. The undocumented-`500` crash
+and the margin's disappearance under load are filed together as must-severity debt,
+`docs/tech_debt/active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`
+— a server defect this phase does not fix (D-17).
+
+**Reversibility.** `fleet-user`'s stop is reversible by `docker start` and is restored by
+the human at this plan's close (D-06). The composed scenario SC3 added to `bench/latency.py`
+is reversible by deletion alone; `DEFAULT_SCENARIOS` keeps the no-argument run at
+(`concurrent`, `single`) unchanged, so the bar's own run is exactly what it was before this
+phase. The floor itself — sample-to-sample variation at the achieved sample counts, not a
+fixed property of this host — is costly to re-measure, not to revert: the bar's published
+definition (<= 2.00x idle p95, no absolute-floor amendment adopted) is unchanged by this
+entry, because outcome (a) made D-10's floor moot.
+
+Reason: the 2026-09-23 waiver left two observations and a composed-concurrency question
+open; this phase closed all three by measurement — two candidates ruled out or found not
+reproducible, the bar demonstrated rather than accepted, and the composed worst row's
+behaviour under real concurrency recorded and filed as debt rather than guessed at.
+Machine: 12 CPUs, arm64, 32.0 GiB RAM (`.venv/bin/python -c "from bench import
+machine_facts; print(machine_facts())"`, read 2026-10-02); macOS 27.0 (`sw_vers
+-productVersion`), Darwin kernel 27.0.0 (`uname -r`); the investigation campaign ran
+2026-10-02T02:36:53Z–03:11:43Z, the bar sessions 2026-10-02T03:41:00Z–07:18:00Z (approx),
+and SC3 2026-10-02T08:08:01Z–08:23:01Z, all on this host.

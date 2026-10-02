@@ -39,13 +39,14 @@ ENV SPUR_HOST=0.0.0.0 \
 EXPOSE 8000
 
 # /api/health no longer touches the CAD kernel or waits on a build worker (Phase 2,
-# D-13): its measured under-load p95 is 0.7-2.3 ms across the eight bench/RESULTS.md
-# latency runs (worst: 2.3 ms, concurrent Run 3, pre-L19; 1.3 ms post-L19) -- three
-# orders of magnitude below the old 10 s. 2 s leaves that margin for what actually varies here: the probe
-# itself is a fresh Python process starting inside the container on every check, so its
-# floor is interpreter startup, not the ~1 ms request. The inner urlopen timeout (1 s)
-# stays below the outer --timeout so a genuinely hung request fails the check on its own
-# terms rather than via Docker's outer kill.
+# D-13): its measured under-load p95 is 0.7-2.3 ms across the fifteen
+# bench/RESULTS.md latency runs (worst: 2.3 ms, concurrent Run 3, pre-L19; 1.3 ms
+# post-L19) -- three orders of magnitude below the old 10 s. 2 s leaves that margin
+# for what actually varies here: the probe itself is a fresh Python process starting
+# inside the container on every check, so its floor is interpreter startup, not the
+# ~1 ms request. The inner urlopen timeout (1 s) stays below the outer --timeout so a
+# genuinely hung request fails the check on its own terms rather than via Docker's
+# outer kill.
 HEALTHCHECK --interval=30s --timeout=2s --start-period=30s --retries=3 \
   CMD ["python", "-c", "import os, urllib.request as u; u.urlopen('http://127.0.0.1:' + os.environ.get('SPUR_PORT', '8000') + '/api/health', timeout=1)"]
 
