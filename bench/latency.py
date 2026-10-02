@@ -14,12 +14,14 @@ assertion on shared hardware would flap until someone stopped believing it. Run 
 from __future__ import annotations
 
 import argparse
+import json
 import statistics
 import sys
 import time
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
+from pathlib import Path
 
 import httpx
 
@@ -67,22 +69,6 @@ def _sample_for(base_url: str, client: httpx.Client, duration: float) -> list[fl
     return samples
 
 
-def _sample_while_building(base_url: str, client: httpx.Client,
-                            futures: list[Future[float | None]]) -> list[float]:
-    """Keep sampling `/api/health` for as long as at least one build is in flight.
-
-    A do-while shape (sample first, check after) guarantees at least one sample even
-    for a build that finishes before the first check would otherwise run.
-    """
-    samples: list[float] = []
-    while True:
-        t0 = time.perf_counter()
-        client.get(f"{base_url}/api/health", timeout=30.0)
-        samples.append(time.perf_counter() - t0)
-        if all(future.done() for future in futures):
-            return samples
-
-
 def _build(base_url: str, client: httpx.Client, teeth: int, quality: str) -> float | None:
     """One `/api/model.stl` download; returns how long it took, in seconds, or `None`
     if admission control refused it (`503`) rather than building.
@@ -120,6 +106,192 @@ def _collect(futures: list[Future[float | None]]) -> tuple[float, int, int]:
     return (max(completed) if completed else 0.0), len(results), refused
 
 
+def _sample_while_building[T](base_url: str, client: httpx.Client,
+                               futures: list[Future[T]]) -> list[float]:
+    """Keep sampling `/api/health` for as long as at least one build is in flight.
+
+    A do-while shape (sample first, check after) guarantees at least one sample even
+    for a build that finishes before the first check would otherwise run.
+
+    A PEP 695 type parameter, not a fixed `Future[float | None]`: `Future` is invariant,
+    so the composed scenario's `Future[RequestOutcome]` list cannot satisfy a signature
+    typed for `Future[float | None]` even though this body never reads a future's
+    result -- only `scenario_single`/`scenario_concurrent`'s `Future[float | None]` and
+    `run_composed`'s `Future[RequestOutcome]` instantiate `T` differently; the body
+    below is unchanged either way.
+    """
+    samples: list[float] = []
+    while True:
+        t0 = time.perf_counter()
+        client.get(f"{base_url}/api/health", timeout=30.0)
+        samples.append(time.perf_counter() - t0)
+        if all(future.done() for future in futures):
+            return samples
+
+
+# bench/sweeps/composed.json (Phase 12, D-01): 18 rows stacking each body-cutout
+# pattern's own heaviest bore with the tip chamfer at its cap, plus six single-feature
+# baselines. SC3 fires ten of them concurrently (D-13).
+COMPOSED_SWEEP = Path(__file__).parent / "sweeps" / "composed.json"
+
+# The ten rows SC3 fires, 0-based into COMPOSED_SWEEP (1-based 4, 2, 3, 1, 9, 6, 10, 12,
+# 11, 5) -- the worst row first, then the next nine heaviest by "Build + slower export"
+# (bench/RESULTS.md "### Re-run after the gate (lower-le: spoke_count 32)"): 29.42,
+# 28.92, 28.87, 28.61, 27.27, 24.91, 24.06, 22.26, 22.09, 16.80 s of SPUR_BUILD_TIMEOUT's
+# 30 s shipping default. Ten distinct keys so admission control (MAX_QUEUED_BUILDS, 4)
+# takes exactly four of them and `hash(p) % workers` (D-07 affinity) spreads the four
+# admitted builds over both workers, stacking kernel work on the host rather than
+# queuing every admitted build behind a single worker (D-13).
+COMPOSED_ROWS = (3, 1, 2, 0, 8, 5, 9, 11, 10, 4)
+
+
+def _composed_rows() -> list[dict[str, int | float | str]]:
+    """The ten `COMPOSED_ROWS` rows of `COMPOSED_SWEEP`, read directly as JSON.
+
+    Not validated here, and not read through `bench.build_time.load_sweep`: that module
+    imports `spur.model`, and through it cadquery, which would pull the CAD kernel into
+    this harness's own measuring client -- the server validates every request on its
+    own. `tests/test_bench.py` pins every row against `load_sweep`'s own output, so the
+    two readings are checked to agree. Typed `int | float | str` (never the wider
+    `object`), not from the JSON spec in general but from this one sweep file's actual
+    field values -- the type `_fetch` needs to pass every row straight through as
+    `httpx` query params.
+    """
+    rows: list[dict[str, int | float | str]] = json.loads(COMPOSED_SWEEP.read_text())
+    return [rows[i] for i in COMPOSED_ROWS]
+
+
+@dataclass(frozen=True)
+class RequestOutcome:
+    params: str  # the `k=v` label `load_sweep` uses, from the row's own raw JSON dict
+    status: str  # "200", or "503 " + the server's own `detail[0]["type"]`
+    wall_s: float
+    sent: float  # time.monotonic() -- comparable across this process only
+    done: float
+
+
+@dataclass(frozen=True)
+class ComposedRun:
+    result: ScenarioResult
+    requests: tuple[RequestOutcome, ...]  # in firing order: worst row first
+    workers_replaced_before: int
+    workers_replaced_after: int
+
+
+def _fetch(base_url: str, client: httpx.Client,
+           row: dict[str, int | float | str]) -> RequestOutcome:
+    """One `/api/model.stl` request for a composed row, at `quality=fine` like `_build`
+    (timeout 120.0, same as `_build`): `"200"` on success; `"503 " + detail[0]["type"]`
+    (`"busy"` | `"timeout"` | `"pool_broken"` -- `src/spur/app.py`'s own three 503
+    `type` values) on refusal, read from the documented body; any other status still
+    raises (`_build`'s own rule) -- and a 503 without that documented field raises
+    naming the body, never a guessed reason (L08)."""
+    label = " ".join(f"{k}={v}" for k, v in row.items())
+    sent = time.monotonic()
+    response = client.get(f"{base_url}/api/model.stl",
+                           params={**row, "quality": "fine"}, timeout=120.0)
+    if response.status_code == 503:
+        try:
+            reason = response.json()["detail"][0]["type"]
+        except (ValueError, KeyError, IndexError) as exc:
+            raise ValueError(
+                f"503 response body missing detail[0].type: {response.text!r}") from exc
+        status = f"503 {reason}"
+    else:
+        response.raise_for_status()
+        status = "200"
+    done = time.monotonic()
+    return RequestOutcome(label, status, done - sent, sent, done)
+
+
+def _pool_state(base_url: str, client: httpx.Client) -> tuple[int, int]:
+    """`(queue_available, workers_replaced)` from `/api/health`'s `pool` key; raises if
+    `pool` is null -- SC3 needs a server whose lifespan actually started, not a
+    `TestClient(app)` run without `with` (`src/spur/app.py`'s `health()` docstring)."""
+    response = client.get(f"{base_url}/api/health", timeout=30.0)
+    response.raise_for_status()
+    pool = response.json()["pool"]
+    if pool is None:
+        raise ValueError(f"/api/health reports a null pool: {response.text!r}")
+    return pool["queue_available"], pool["workers_replaced"]
+
+
+def run_composed(base_url: str) -> ComposedRun:
+    """SC3 (D-13, D-16): the composed sweep's worst row fired alone first, confirmed
+    (via `/api/health`) to be holding a build slot before the other nine heaviest rows
+    fire beside it -- ten concurrent builds total, admission control (`MAX_QUEUED_BUILDS`
+    4) taking four. Never run on a server a bar session also used: a request this
+    scenario times out gets its worker replaced (D-10/D-12, `src/spur/pool.py`), and
+    that replacement would pollute a bar reading taken afterwards on the same server.
+    The admission-wait `/api/health` reads below are not samples -- they do not enter
+    `idle` or `under_load`.
+    """
+    rows = _composed_rows()
+    with httpx.Client() as client:
+        queue_available_before, workers_replaced_before = _pool_state(base_url, client)
+        idle = _sample_for(base_url, client, SETTLE_SECONDS)
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            worst_future = pool.submit(_fetch, base_url, client, rows[0])
+            deadline = time.monotonic() + 10.0
+            held = False
+            while True:
+                if worst_future.done():
+                    raise RuntimeError(
+                        "the worst composed row was served without holding a build "
+                        "slot -- a cache hit? SC3 needs a fresh server")
+                queue_available, _ = _pool_state(base_url, client)
+                if queue_available < queue_available_before:
+                    held = True
+                    break
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.1)
+            if not held:
+                raise RuntimeError(
+                    "the worst composed row never held a build slot within 10s -- "
+                    "SC3 needs a fresh server")
+            rest_futures = [pool.submit(_fetch, base_url, client, row) for row in rows[1:]]
+            futures = [worst_future, *rest_futures]
+            under_load = _sample_while_building(base_url, client, futures)
+        requests = tuple(future.result() for future in futures)
+        _, workers_replaced_after = _pool_state(base_url, client)
+    # "refused by admission control" (the harness's existing report line) means 503
+    # busy only -- a timeout or pool_broken is a different server behaviour, counted in
+    # the per-request table instead (A3).
+    slowest = max((r.wall_s for r in requests if r.status == "200"), default=0.0)
+    refused = sum(1 for r in requests if r.status == "503 busy")
+    result = ScenarioResult("composed", idle, under_load, slowest, 10, refused)
+    return ComposedRun(result, requests, workers_replaced_before, workers_replaced_after)
+
+
+def _composed_markdown(run: ComposedRun) -> str:
+    """The per-request table and health delta SC3's write-up copies verbatim (E10). No
+    `SPUR_BUILD_TIMEOUT` value is printed here: this client cannot know the server's
+    setting -- `bench/RESULTS.md` names it from the server's own recorded environment."""
+    lines = ["### Per-request outcomes (composed)", "",
+             "| # | Parameters | Outcome | Wall time (s) |", "|---|---|---|---|"]
+    for i, r in enumerate(run.requests, start=1):
+        lines.append(f"| {i} | {r.params} | {r.status} | {r.wall_s:.2f} |")
+    counts: dict[str, int] = {}
+    for r in run.requests:
+        counts[r.status] = counts.get(r.status, 0) + 1
+    lines.append("")
+    lines.append(", ".join(f"{status}: {count}" for status, count in counts.items()))
+    lines.append(f"- /api/health workers_replaced: {run.workers_replaced_before} -> "
+                 f"{run.workers_replaced_after}")
+    return "\n".join(lines) + "\n"
+
+
+def scenario_composed(base_url: str) -> ScenarioResult:
+    """SC3 (D-13, D-16): the composed worst row under ten concurrent builds. Never run
+    on a server a bar session will use -- a timed-out request here gets its worker
+    replaced, and that replacement would pollute a bar reading taken afterwards on the
+    same server."""
+    run = run_composed(base_url)
+    print(_composed_markdown(run))
+    return run.result
+
+
 def scenario_single(base_url: str) -> ScenarioResult:
     """Idle p95, then one 200-tooth fine build in flight -- the scenario that produced
     the recorded 0.22s -> 0.76s -> 2.00s progression."""
@@ -149,7 +321,15 @@ def scenario_concurrent(base_url: str) -> ScenarioResult:
 _SCENARIOS: dict[str, Callable[[str], ScenarioResult]] = {
     "single": scenario_single,
     "concurrent": scenario_concurrent,
+    "composed": scenario_composed,
 }
+
+# A third registered scenario would put `composed` first in `sorted(_SCENARIOS)` and
+# into every no-argument run -- where a worker it times out and replaces (D-10/D-12)
+# would pollute the bar (D-16). This tuple pins the order the no-argument run has
+# always had (D-07, D-15); `main()` reads it, never `sorted(_SCENARIOS)`, with no
+# scenario argument.
+DEFAULT_SCENARIOS: tuple[str, ...] = ("concurrent", "single")
 
 
 def _p95_or_warn(samples: list[float], label: str) -> tuple[float, int] | None:
@@ -205,14 +385,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "scenario", nargs="?", choices=sorted(_SCENARIOS), default=None,
-        help="Which load scenario to run. Omit to run both, in order -- the shape "
-             "`make bench.latency` uses.")
+        help="Which load scenario to run. Omit to run the two bar scenarios, "
+             "concurrent then single -- the shape `make bench.latency` uses.")
     parser.add_argument(
         "--base-url", default=DEFAULT_BASE_URL,
         help=f"The running host service (`make serve`). Default: {DEFAULT_BASE_URL}.")
     args = parser.parse_args(argv)
 
-    names = [args.scenario] if args.scenario else sorted(_SCENARIOS)
+    names = [args.scenario] if args.scenario else list(DEFAULT_SCENARIOS)
     # Run every scenario before deciding the exit code -- a generator inside all() would
     # short-circuit on the first failure and silently skip the rest.
     results = [_run_scenario(name, args.base_url) for name in names]
