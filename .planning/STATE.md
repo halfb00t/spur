@@ -5,16 +5,16 @@ milestone_name: Clean Ledger
 current_phase: 14
 current_phase_name: Honest Record
 status: "Phase 13 shipped — PR #16"
-stopped_at: Phase 13 complete, ready to plan Phase 14
-last_updated: "2026-10-02T11:13:20.249Z"
+stopped_at: Phase 14 context gathered
+last_updated: "2026-10-02T13:14:16.485Z"
 last_activity: 2026-10-02
-state_head: 37129f1d1920539fbc714c21303489bac2e9ffde
+state_head: 004c5feb728ced84110b3028c576b2bda2999116
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 7
   completed_plans: 7
-  percent: 50
+  percent: 75
 ---
 
 # Project State
@@ -393,9 +393,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T10:31:14.000Z
-Stopped at: Phase 13 complete, ready to plan Phase 14
-Resume file: None
+Last session: 2026-10-02T13:14:16.453Z
+Stopped at: Phase 14 context gathered
+Resume file: .planning/phases/14-honest-record/14-CONTEXT.md
 
 ## Operator Next Steps
 
