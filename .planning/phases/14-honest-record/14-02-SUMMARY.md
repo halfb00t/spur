@@ -124,7 +124,7 @@ All four match the planning-time figures to the digit.
 
 ## D-06 outcome
 
-D-06 not reached -- all four gaps at or below 1e-9 mm3 (largest 8.87e-12, about 1e-4 of the bar). Task 2's checkpoint was not presented; no tolerance was loosened and nothing was set from a measured gap. The bar is the 1e-9 the record already claimed.
+D-06 not reached -- all four gaps at or below 1e-9 mm3 (largest 8.87e-12, under 1% of the bar). Task 2's checkpoint was not presented; no tolerance was loosened and nothing was set from a measured gap. The bar is the 1e-9 the record already claimed.
 
 ## Tripwire measurement
 

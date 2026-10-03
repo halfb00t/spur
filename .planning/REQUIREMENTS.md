@@ -73,7 +73,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 
 ### Honest record
 
-- [ ] **REQ-root-lead-in-warned**: When the straight lead-in's end — `spline_start(pr,
+- [x] **REQ-root-lead-in-warned**: When the straight lead-in's end — `spline_start(pr,
   root_fillet(p))` — rises above the pitch radius `pr.r`, `derive()`'s `warnings` carries a
   sentence saying the flank starts with a chord that reaches that far above the pitch
   circle, naming the height in mm (3 dp, like every other warning) and that the chord
@@ -84,7 +84,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   14.5}`: +0.5625 mm, warns; `{0.75, 20}`: +0.1250 mm, warns) and one field step either
   side of the crossing; the fixture byte-unchanged — verified 2026-10-01 at kickoff that
   **0 of 44** records cross, so the new warning touches no pinned `warnings` tuple.
-- [ ] **REQ-readme-root-zone-states-the-limit**: README's root-fillets bullet ("the flank
+- [x] **REQ-readme-root-zone-states-the-limit**: README's root-fillets bullet ("the flank
   starts with a short chord onto the involute, in the non-working root zone", lines
   ~227–228) states the real condition: below the pitch circle on the default gear; above it
   when profile shift and root fillet are large for the module, in which case `warnings`
@@ -206,8 +206,8 @@ Filled by the roadmap.
 |-------------|-------|--------|
 | REQ-latency-observations-explained | Phase 13 | Complete |
 | REQ-latency-bar-demonstrated-or-superseded | Phase 13 | Complete |
-| REQ-root-lead-in-warned | Phase 14 | Pending |
-| REQ-readme-root-zone-states-the-limit | Phase 14 | Pending |
+| REQ-root-lead-in-warned | Phase 14 | Complete |
+| REQ-readme-root-zone-states-the-limit | Phase 14 | Complete |
 | REQ-filleted-spoke-closed-form | Phase 14 | Complete |
 | REQ-verify-profiled | Phase 15 | Pending |
 | REQ-verify-at-the-bar | Phase 15 | Pending |

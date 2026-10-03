@@ -5,16 +5,16 @@ milestone_name: Clean Ledger
 current_phase: 14
 current_phase_name: Honest Record
 status: "Phase 13 shipped — PR #16"
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-10-03T03:35:46.271Z"
+stopped_at: Completed 14-03-PLAN.md
+last_updated: "2026-10-03T03:49:58.494Z"
 last_activity: 2026-10-02
 last_activity_desc: Phase 14 planning complete
-state_head: b00c44c9b9bb81eaab0f52aad5f578ad19a464c6
+state_head: 9fb667d5ae36dc5d53aef9b52949587facff38cf
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
   percent: 75
 ---
 
@@ -175,6 +175,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 13 P07 | ~25min (continuation; Task 1 prior session) | 2 tasks | 8 files |
 | Phase 14 P01 | 22 min | 3 tasks | 6 files |
 | Phase 14 P02 | 25 min | 3 tasks | 7 files |
+| Phase 14 P03 | 22 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -283,6 +284,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 14]: 14-01: the root lead-in warning fires at round(h, 3) > 0 and sits after 'Root fillet reduced'; README states the condition with one clause beyond D-12's draft (profile shift above 0.125) because the chord is capped halfway up the tooth below it, proven by the mid-tooth rows; expected strings captured from derive() (debt-x1.0-pa14.5 prints 0.562, not CONTEXT's 0.563) — D-01/D-02/D-12 content kept; 0.125 clause proven by the mid-tooth-silent/touch/warns rows
 - [Phase 14]: 14-02: the filleted-spoke volume oracle is a polar closed form independent of _fillet_corner; the tripwire shifts the rim-corner root by 1e-6 mm, not 0.01 mm
 - [Phase 14]: 14-02: the shared cutout assertion defaults to abs=1e-9; composed-solid rows with 6 dp literals keep rel=1e-6 via volume_rel (debt filed)
+- [Phase 14]: L33 states the composed-row exception exactly: 15 rows (12 tip-chamfer, 3 single-sided-recess) keep volume_rel=1e-6; the four cutout rows and the three tripwire rows run at abs=1e-9
 
 ### Pending Todos
 
@@ -399,8 +401,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-03T03:35:46.243Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-10-03T03:49:58.466Z
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
