@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-29
-Resolved in: test(14-02): prove the filleted-spoke cutout against a closed form at 1e-9 mm3
+Resolved in: 61e1bea
 Source: 11-REVIEW.md WR-05 (external: codex, extended)
 Related files:
 - tests/test_model.py (`test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid`,
