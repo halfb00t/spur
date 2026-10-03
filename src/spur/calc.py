@@ -970,6 +970,18 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     rfil = root_fillet(p)
     if rfil < p.root_fillet:
         warnings.append(f"Root fillet reduced to {rfil:.2f} mm to fit the tooth gap.")
+    h = spline_start(pr, rfil) - pr.r
+    if round(h, 3) > 0:
+        # Compared at the 3 dp it prints, never the raw float: a crossing can sit
+        # arbitrarily close to zero and "0.000 mm above" must never print (the
+        # tip-chamfer branch's rule below, 10-REVIEW.md CR-01). The cause clause is true
+        # on every firing: the chord ends at r + 2*fillet - (1.25 - x)*m, capped halfway
+        # up the tooth at r + (x - 0.125)*m, so a positive height needs the fillet over
+        # half the dedendum. 0 of 44 pre-v0.2 fixture records cross (counted
+        # 2026-10-02), so no pinned warnings tuple moves (L26).
+        warnings.append(f"The flank starts with a straight chord reaching {h:.3f} mm above "
+                        "the pitch circle, where it deviates from the involute: the root "
+                        "fillet is larger than half the dedendum.")
     tch = tip_chamfer_effective(p)
     if tch < round(p.tip_chamfer, 3):
         # A limit only actually binds when it sits below the request at the 0.001 mm

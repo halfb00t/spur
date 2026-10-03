@@ -677,6 +677,33 @@ def test_a_sub_print_precision_tip_chamfer_request_still_warns() -> None:
     assert not any(w.startswith("Tip chamfer reduced to") for w in tip_warnings)
 
 
+@pytest.mark.parametrize(("kw", "fillet", "height", "warning"), [
+    # The default gear: the chord ends 1.1875 mm under the pitch circle, nothing to say.
+    pytest.param({}, 0.5, -1.1875, None, id="default"),
+    # A debt configuration (2026-09-28-root-lead-in-can-reach-above-the-pitch-circle).
+    pytest.param({"profile_shift": 0.75, "pressure_angle": 20}, 0.5, 0.125,
+                 "The flank starts with a straight chord reaching 0.125 mm above the pitch "
+                 "circle, where it deviates from the involute: the root fillet is larger "
+                 "than half the dedendum.",
+                 id="debt-x0.75-pa20"),
+])
+def test_the_root_lead_in_warns_when_it_ends_above_the_pitch_circle(
+        kw: dict[str, object], fillet: float, height: float, warning: str | None) -> None:
+    """REQ-root-lead-in-warned / D-01 to D-03: where the root fillet's straight chord ends
+    is calc's to report, not README's to wave away. Every expected string was captured
+    from derive() on cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1's pinned code, 2026-10-02,
+    never typed (Python's format rounds the binary value half-to-even), and asserted in
+    full: a prefix cannot see a wrong suffix (10-REVIEW.md CR-01). Each row also asserts
+    the fillet actually used, so a row cannot quietly sit on the 0.45 x gap cap instead of
+    the branch it claims."""
+    p = GearParams.model_validate(kw)
+    pr = profile(p)
+    assert root_fillet(p) == pytest.approx(fillet)
+    assert spline_start(pr, root_fillet(p)) - pr.r == pytest.approx(height, abs=1e-9)
+    lead_in = [w for w in derive(p).warnings if w.startswith("The flank starts")]
+    assert lead_in == ([warning] if warning else [])
+
+
 def test_the_tip_chamfer_field_is_bounded_zero_to_three() -> None:
     with pytest.raises(ValidationError):
         GearParams(tip_chamfer=3.05)
