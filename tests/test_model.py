@@ -1258,7 +1258,8 @@ def _honeycomb_nearest_point_angle(p: GearParams, rf: float) -> float:
 def _assert_the_cutout_is_what_derive_prints(
         cut: cq.Solid, plain: cq.Solid, p: GearParams, p0: GearParams, *,
         d_faces: collections.Counter[str], d_edges: int, d_volume: float,
-        hub_angle: float, rim_angle: float, volume_rel: float | None = None) -> None:
+        hub_angle: float, rim_angle: float, volume_rel: float | None = None,
+        volume_abs: float | None = None) -> None:
     """Shared by the proof
     (test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid) and the tripwire
     (test_the_cutout_proof_fails_when_the_cutout_step_is_skipped) -- 10-03's shape. The
@@ -1269,10 +1270,14 @@ def _assert_the_cutout_is_what_derive_prints(
     hand-picked location (L08) -- material just inside the hub wall and void just
     outside it, void just inside the rim wall and material just outside it.
 
-    The removed volume is held to abs=1e-9 mm3 -- the formula rows' bar. volume_rel is
-    for the two composed-solid tests only, whose d_volume is a 6 dp literal measured
-    after an arbitrary boolean (no closed form to agree with, so no 1e-9 claim): they
-    pass a relative one part in a million, the bar they always had.
+    The removed volume is held to abs=1e-9 mm3, the bar for every row whose d_volume is
+    a closed form. volume_rel is for the composed-solid rows whose d_volume is a 6 dp
+    literal measured on the pinned kernel, because their closed form is not derived
+    here: they pass a relative one part in a million, the bar they always had.
+    volume_abs is for the composed tip-chamfer holes rows, whose closed form is derived
+    but whose kernel volume difference is offset ~6e-10 mm3 by the tip chamfer (14-04):
+    they pass an absolute bar of their own, one the human chose as a multiple of that
+    measured offset (L33), not one the executor tuned.
     """
     faces_delta = (collections.Counter(f.geomType() for f in cut.Faces())
                   - collections.Counter(f.geomType() for f in plain.Faces()))
@@ -1283,10 +1288,12 @@ def _assert_the_cutout_is_what_derive_prints(
 
     assert len(cut.Edges()) - len(plain.Edges()) == d_edges
     removed = plain.Volume() - cut.Volume()
-    if volume_rel is None:
-        assert removed == pytest.approx(d_volume, abs=1e-9)
-    else:
+    if volume_rel is not None:
         assert removed == pytest.approx(d_volume, rel=volume_rel)
+    elif volume_abs is not None:
+        assert removed == pytest.approx(d_volume, abs=volume_abs)
+    else:
+        assert removed == pytest.approx(d_volume, abs=1e-9)
 
     bb_cut, bb_plain = cut.BoundingBox(), plain.BoundingBox()
     for attr in ("xmin", "xmax", "ymin", "ymax", "zmin", "zmax"):
@@ -1620,14 +1627,16 @@ _build_reference = functools.cache(_build_checked)
     # A cutout's own delta is bore-agnostic (d-flat and round read identical deltas):
     # it is a difference against the SAME bore's own no-cutout reference, so whatever
     # the bore itself contributes to face/edge/volume cancels out of the subtraction.
+    # A None d_volume is not pinned: the test body derives it from _holes_volume and
+    # asserts it at the bar the docstring names (14-04).
     pytest.param("d-flat", "holes", collections.Counter({"CYLINDER": 6}),
-                 18, 263.893783, id="d-flat-holes"),
+                 18, None, id="d-flat-holes"),
     pytest.param("d-flat", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
                  144, 1567.635231, id="d-flat-spokes"),
     pytest.param("d-flat", "cells", collections.Counter({"PLANE": 108, "CYLINDER": 10}),
                  390, 491.093432, id="d-flat-cells"),
     pytest.param("round", "holes", collections.Counter({"CYLINDER": 6}),
-                 18, 263.893783, id="round-holes"),
+                 18, None, id="round-holes"),
     pytest.param("round", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
                  144, 1567.635231, id="round-spokes"),
     pytest.param("round", "cells", collections.Counter({"PLANE": 108, "CYLINDER": 10}),
@@ -1639,7 +1648,7 @@ _build_reference = functools.cache(_build_checked)
     pytest.param("hex", "cells", collections.Counter({"PLANE": 144, "CYLINDER": 36}),
                  648, 686.855148, id="hex-cells"),
     pytest.param("keyed", "holes", collections.Counter({"CYLINDER": 6}),
-                 18, 263.893783, id="keyed-holes"),
+                 18, None, id="keyed-holes"),
     pytest.param("keyed", "spokes", collections.Counter({"PLANE": 8, "CYLINDER": 32}),
                  144, 1547.065402, id="keyed-spokes"),
     pytest.param("keyed", "cells", collections.Counter({"PLANE": 72}),
@@ -1647,15 +1656,26 @@ _build_reference = functools.cache(_build_checked)
 ])
 def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore(
         bore: str, cutout: str, d_faces: collections.Counter[str],
-        d_edges: int, d_volume: float) -> None:
+        d_edges: int, d_volume: float | None) -> None:
     """D-07 tier 2, D-09, ROADMAP SC1 on the built solid: the tip chamfer (1.75 mm, the
     default gear's own cap) applied together with each cutout on each bore, on one
     composed solid -- the features' own built-solid proofs (10-03's
     _assert_only_the_tip_arcs_were_chamfered, 11-08's
     _assert_the_cutout_is_what_derive_prints) run unchanged on that one solid, never a
-    new proof shape (D-09). Every face-type delta, edge delta and removed volume below
-    is measured on the pinned kernel and pinned as a literal -- no closed form is
-    claimed after an arbitrary boolean.
+    new proof shape (D-09). Every face-type and edge delta below is measured on the
+    pinned kernel and pinned. The removed volume of the d-flat, round and keyed holes
+    rows (both recesses) is `_holes_volume(p, 2)`, the web formula, asserted at
+    abs=1e-8 mm3 (14-04, the human's answer at its Task 2 checkpoint). Measured
+    2026-10-03 on cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1, the kernel-formula gaps are
+    d-flat 5.85e-10, round 5.94e-10 and keyed 6.55e-10 mm3. The tip chamfer causes them:
+    the d-flat row without it measured 1.36e-12 mm3. That is why those three rows do not
+    run at abs=1e-9, which would leave them about 1.5x of headroom; 1e-8 is about 15x
+    their largest gap. Every other row keeps a 6 dp literal at volume_rel=1e-6, because
+    its closed form is not derived here: the spokes and cells rows straddle the recess
+    walls (a polar or polygon-versus-circle integral split at the recess radii), and on
+    the hex bore the holes' 12 mm reach crosses the recess outer wall, pulled to
+    11.994 mm (14-REVIEW WR-03). See
+    docs/tech_debt/active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md.
 
     The keyed-spokes row sits at the phase's own tightest adjacency: SPOKES' 13.2 mm
     hub wall clears the keyed bore's floor-corner mouth (6.179 mm) by only 0.021 mm
@@ -1681,18 +1701,25 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
         hub_angle = _honeycomb_nearest_point_angle(p, pr.rf)
         rim_angle = _honeycomb_farthest_vertex_angle(p, pr.rf)
 
+    volume_rel: float | None = 1e-6
+    volume_abs: float | None = None
+    if d_volume is None:
+        # The six holes lie wholly inside the recess annulus, so the web formula is exact.
+        d_volume, volume_rel, volume_abs = _holes_volume(p, 2), None, 1e-8
     _assert_the_cutout_is_what_derive_prints(
         cut, _build_reference(p_no_cut), p, p_no_cut,
         d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
-        hub_angle=hub_angle, rim_angle=rim_angle, volume_rel=1e-6)
+        hub_angle=hub_angle, rim_angle=rim_angle,
+        volume_rel=volume_rel, volume_abs=volume_abs)
 
 
 @pytest.mark.parametrize(("cutout", "d_faces", "d_edges", "d_volume", "torus"), [
     # Measured on the pinned kernel this session, matching 12-06-PLAN.md <interfaces>
     # exactly -- no difference to record. d_faces/d_edges/d_volume are the cutout's own
     # delta against the same-recess no-cutout reference; torus is the finished solid's
-    # own TORUS face count (_assert_the_recess_fillet_survives's own proof, 11-08).
-    pytest.param("holes", collections.Counter({"CYLINDER": 6}), 18, 414.69023, 2,
+    # own TORUS face count (_assert_the_recess_fillet_survives's own proof, 11-08). A None
+    # d_volume is not pinned: the test body derives it from _holes_volume (14-04).
+    pytest.param("holes", collections.Counter({"CYLINDER": 6}), 18, None, 2,
                  id="holes"),
     pytest.param("spokes", collections.Counter({"PLANE": 11, "CYLINDER": 28, "TORUS": 4}),
                  144, 2184.523725, 6, id="spokes"),
@@ -1701,7 +1728,7 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
 ])
 def test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess(
         cutout: str, d_faces: collections.Counter[str], d_edges: int,
-        d_volume: float, torus: int) -> None:
+        d_volume: float | None, torus: int) -> None:
     """D-09: the single-sided pairs no existing matrix builds (11-08's own matrix at
     test_the_recess_floor_fillet_survives_every_cutout_on_every_bore is both recesses
     only). Each cutout composed with a top-only recess, on the default bore, default
@@ -1710,8 +1737,13 @@ def test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess(
     away every sharp corner the cutout leaves and reads the pinned kernel's own TORUS
     count on the finished solid; _assert_the_cutout_is_what_derive_prints (10-03/11-08)
     proves the cutout's own delta against the same-recess no-cutout reference. Every
-    count below is measured on the pinned kernel and pinned as a literal -- no closed
-    form after an arbitrary boolean.
+    count below is measured on the pinned kernel and pinned. The holes row's removed
+    volume is `_holes_volume(p, 1)`, the web formula with one recess, asserted at
+    abs=1e-9 mm3; measured 2026-10-03 on cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1, its
+    kernel-formula gap is 2.79e-12 mm3. The spokes and cells rows keep a 6 dp literal at
+    volume_rel=1e-6, because their closed form is not derived here: they straddle the
+    recess walls, and the floor fillet's torus enters the integral. See
+    docs/tech_debt/active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md.
     """
     p0 = GearParams(recess_sides="top")
     p = GearParams.model_validate({**COMPOSED_CUTOUTS[cutout], "recess_sides": "top"})
@@ -1728,10 +1760,14 @@ def test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess(
         hub_angle = _honeycomb_nearest_point_angle(p, pr.rf)
         rim_angle = _honeycomb_farthest_vertex_angle(p, pr.rf)
 
+    volume_rel: float | None = 1e-6
+    if d_volume is None:
+        # The six holes lie wholly inside the top recess annulus, so the web formula is exact.
+        d_volume, volume_rel = _holes_volume(p, 1), None
     _assert_the_cutout_is_what_derive_prints(
         cut, _build_reference(p0), p, p0,
         d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
-        hub_angle=hub_angle, rim_angle=rim_angle, volume_rel=1e-6)
+        hub_angle=hub_angle, rim_angle=rim_angle, volume_rel=volume_rel)
 
 
 def test_exports() -> None:

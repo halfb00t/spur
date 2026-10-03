@@ -1571,14 +1571,26 @@ gap per row is: holes 2.39e-12 mm3, spokes-sharp 1.36e-12 mm3, spokes-filleted 2
 cells 8.87e-12 mm3 (copied from the proof's docstring). Phase 11 measured this agreement but
 asserted a relative bar on the filleted row (about 2.9e-3 mm3 there); the four rows now
 assert the removed volume at `abs=1e-9` mm3, the largest gap (8.87e-12 mm3) under 1% of the bar. D-06
-(a gap above 1e-9 mm3, which would have gone to the human for a decision) was not reached:
-no tolerance was loosened and none was set from a measured gap. The bar does **not** apply
-to every caller of the shared assertion. Fifteen composed-solid rows (12 in
-`test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore`, 3 in
-`test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess`) pass
-`volume_rel=1e-6`, because their `d_volume` is a 6 dp literal measured after an arbitrary
-boolean and no closed form exists for it, so it cannot meet `abs=1e-9`; they keep the
-relative bar they had before this phase and never carried the 1e-9 claim. That is filed as
+(a gap above 1e-9 mm3, which would have gone to the human for a decision) was not reached
+on these four rows: no tolerance was loosened and none was set from a measured gap. The bar does **not** apply
+to every caller of the shared assertion. Eleven composed-solid rows (9 of the 12 in
+`test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore`, 2 of
+the 3 in `test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess`) pass
+`volume_rel=1e-6`. Their `d_volume` is a 6 dp literal measured on the pinned kernel, because
+no closed form has been derived for them here: the spokes and cells rows straddle the recess
+walls, and on the hex bore the holes cross the recess outer wall. A 6 dp literal cannot meet
+`abs=1e-9`; they keep the relative bar they had before this phase and never carried the 1e-9
+claim. The other four composed rows (the d-flat, round and keyed holes with both recesses and
+the tip chamfer, and the single-sided holes row) cut cylinders wholly inside the recess
+annulus, so their removed volume is `6*pi*(hole_d/2)**2*web` and each asserts it instead of
+a literal. Measured 2026-10-03 on the pinned kernel pair, the kernel-formula gaps are 5.85e-10,
+5.94e-10 and 6.55e-10 mm3 on the three tip-chamfer rows and 2.79e-12 mm3 on the single-sided
+row (copied from the docstrings). The tip chamfer causes the tip rows' offset: the d-flat row
+without it measured 1.36e-12 mm3. The tip rows sit within 10x of `1e-9`, so before the bar
+moved that went to the human (14-04 Task 2), who chose `abs=1e-8` for them, about 15x their
+largest gap; the single-sided row asserts `abs=1e-9`. That `1e-8` is the one bar in this
+phase set from a measured gap, and the human set it, not the executor (D-06). The eleven are
+filed as
 `docs/tech_debt/active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md`
 (nice; revisit when the kernel pair is bumped). The four cutout rows (holes, sharp spokes,
 filleted spokes, honeycomb) and all three skip-the-cutout tripwire rows run at `abs=1e-9`.
@@ -1604,9 +1616,11 @@ Reason: the record claimed two things it could not back — a lead-in always in 
 non-working root zone, and a `1e-9` bar asserted on every cutout row with the filleted row
 only pinned. This phase made each true, or warned, by tests rather than by re-pinning: the
 lead-in warns where it crosses the pitch circle and README says where it really ends, the
-four formula rows assert `1e-9` against closed forms, and the 15 composed rows that cannot
-are named as debt instead of implied.
+four formula rows assert `1e-9` against closed forms, the four hole-through-web composed rows
+assert the web formula (`1e-9` on the single-sided row, `1e-8` on the three tip rows), and
+the 11 composed rows whose closed form is not derived here are named as debt instead of
+implied.
 Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Python
-3.12.13 (`sys.version.split()[0]`), read 2026-10-03; the four gaps and the tripwire's shift
-were measured on 2026-10-03, the first filleted-spoke measurement on 2026-09-29, both on this
-kernel pair.
+3.12.13 (`sys.version.split()[0]`), read 2026-10-03; the four plain-row gaps, the tripwire's
+shift and the four hole-through-web gaps were measured on 2026-10-03, the first
+filleted-spoke measurement on 2026-09-29, all on this kernel pair.
