@@ -4,12 +4,11 @@ milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 15
 current_phase_name: The Gate, Measured and Pinned
-status: planning
+status: "Phase 14 shipped — PR #17"
 stopped_at: Phase 14 complete, ready to plan Phase 15
-last_updated: "2026-10-03T08:10:11.893Z"
+last_updated: "2026-10-03T09:59:41.859Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 14 complete, transitioned to Phase 15
-state_head: d3fc87a42e38cdbb11ea32dd89c8ede43af9bbbd
+state_head: c30b7bf26f22d0131d4a4e49931103fdc2754fb5
 progress:
   total_phases: 4
   completed_phases: 4
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 15 — The Gate, Measured and Pinned
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-03 — Phase 14 complete, transitioned to Phase 15
+Status: Phase 14 shipped — PR #17
+Last activity: 2026-10-03
 
 ## Performance Metrics
 
