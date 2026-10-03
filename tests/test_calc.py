@@ -680,12 +680,69 @@ def test_a_sub_print_precision_tip_chamfer_request_still_warns() -> None:
 @pytest.mark.parametrize(("kw", "fillet", "height", "warning"), [
     # The default gear: the chord ends 1.1875 mm under the pitch circle, nothing to say.
     pytest.param({}, 0.5, -1.1875, None, id="default"),
-    # A debt configuration (2026-09-28-root-lead-in-can-reach-above-the-pitch-circle).
+    # The other two configurations the debt file measured
+    # (2026-09-28-root-lead-in-can-reach-above-the-pitch-circle).
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5}, 0.5, 0.5625,
+                 "The flank starts with a straight chord reaching 0.562 mm above the pitch "
+                 "circle, where it deviates from the involute: the root fillet is larger "
+                 "than half the dedendum.",
+                 id="debt-x1.0-pa14.5"),
     pytest.param({"profile_shift": 0.75, "pressure_angle": 20}, 0.5, 0.125,
                  "The flank starts with a straight chord reaching 0.125 mm above the pitch "
                  "circle, where it deviates from the involute: the root fillet is larger "
                  "than half the dedendum.",
                  id="debt-x0.75-pa20"),
+    # One field step (0.05) of profile_shift either side of the crossing. It must sit at
+    # pressure angle 14.5: at the default 25 degrees the 0.45 x gap cap trims the fillet
+    # first and nothing crosses (14-CONTEXT.md D-03's trap).
+    pytest.param({"profile_shift": 0.65, "pressure_angle": 14.5},
+                 0.5, -0.05, None, id="x-step-silent"),
+    pytest.param({"profile_shift": 0.70, "pressure_angle": 14.5}, 0.5, 0.0375,
+                 "The flank starts with a straight chord reaching 0.038 mm above the pitch "
+                 "circle, where it deviates from the involute: the root fillet is larger "
+                 "than half the dedendum.",
+                 id="x-step-warns"),
+    # One field step of root_fillet either side, at the debt's own configuration.
+    pytest.param({"profile_shift": 0.75, "pressure_angle": 20, "root_fillet": 0.40},
+                 0.4, -0.075, None, id="fillet-step-silent"),
+    pytest.param({"profile_shift": 0.75, "pressure_angle": 20, "root_fillet": 0.45}, 0.45, 0.025,
+                 "The flank starts with a straight chord reaching 0.025 mm above the pitch "
+                 "circle, where it deviates from the involute: the root fillet is larger "
+                 "than half the dedendum.",
+                 id="fillet-step-warns"),
+    # One field step of module either side: README's crossing formula carries m.
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "module": 3.95}, 0.5, 0.0125,
+                 "The flank starts with a straight chord reaching 0.013 mm above the pitch "
+                 "circle, where it deviates from the involute: the root fillet is larger "
+                 "than half the dedendum.",
+                 id="module-step-warns"),
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "module": 4.05},
+                 0.5, -0.0125, None, id="module-step-silent"),
+    # The 0.125 profile-shift floor README states: the chord is capped halfway up the
+    # tooth at r + (x - 0.125)*m, so below it a fillet over half the dedendum still ends
+    # under the pitch circle (silent), at it the chord touches (not above, silent), and
+    # just past it the chord is above (warns).
+    pytest.param({"profile_shift": 0.10, "pressure_angle": 14.5, "root_fillet": 2},
+                 1.018, -0.04375, None, id="mid-tooth-silent"),
+    pytest.param({"profile_shift": 0.125, "pressure_angle": 14.5, "root_fillet": 2},
+                 1.012, 0.0, None, id="mid-tooth-touch"),
+    pytest.param({"profile_shift": 0.15, "pressure_angle": 14.5, "root_fillet": 2}, 1.006, 0.04375,
+                 "The flank starts with a straight chord reaching 0.044 mm above the pitch "
+                 "circle, where it deviates from the involute: the root fillet is larger "
+                 "than half the dedendum.",
+                 id="mid-tooth-warns"),
+    # No fillet, no lead-in: the spline starts at the root circle, under the pitch circle.
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "root_fillet": 0},
+                 0.0, -0.4375, None, id="no-fillet"),
+    # The print resolution: 0.0003 mm above the pitch circle prints nothing (a zero
+    # height can never print); 0.001 mm does.
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "module": 3.9988},
+                 0.5, 0.0003, None, id="print-precision-silent"),
+    pytest.param({"profile_shift": 1.0, "pressure_angle": 14.5, "module": 3.996}, 0.5, 0.001,
+                 "The flank starts with a straight chord reaching 0.001 mm above the pitch "
+                 "circle, where it deviates from the involute: the root fillet is larger "
+                 "than half the dedendum.",
+                 id="print-precision-warns"),
 ])
 def test_the_root_lead_in_warns_when_it_ends_above_the_pitch_circle(
         kw: dict[str, object], fillet: float, height: float, warning: str | None) -> None:
@@ -695,7 +752,13 @@ def test_the_root_lead_in_warns_when_it_ends_above_the_pitch_circle(
     never typed (Python's format rounds the binary value half-to-even), and asserted in
     full: a prefix cannot see a wrong suffix (10-REVIEW.md CR-01). Each row also asserts
     the fillet actually used, so a row cannot quietly sit on the 0.45 x gap cap instead of
-    the branch it claims."""
+    the branch it claims.
+
+    The rows are the three debt configurations, one field step either side of the
+    crossing on each driver (profile_shift, root_fillet, module), the mid-tooth floor
+    (a fillet over half the dedendum under a profile shift of 0.125 or less ends
+    under the pitch circle) and the print-resolution edge (0.0003 mm above the pitch
+    circle is silent, 0.001 mm warns)."""
     p = GearParams.model_validate(kw)
     pr = profile(p)
     assert root_fillet(p) == pytest.approx(fillet)
