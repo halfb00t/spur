@@ -2196,3 +2196,198 @@ fixture itself was never regenerated).
 The human's verbatim answer to Task 2's checkpoint: "accept (Recommended)". The measured
 **28.28s** delta against D-10's 30.0s line stands as recorded above; no tier-2 row is
 trimmed; `tests/test_model.py` is untouched.
+
+## The gate, measured and pinned (Phase 15)
+
+What this section measures: `make verify`'s wall time per stage and per test file, the
+`pytest-xdist` sweep, then (later subsections, added by 15-02 to 15-05) the coverage floor,
+the bar and the CI kernel pin. The method is D-04's, which is Phase 12's D-10 method
+without a quiet bar: full `make verify` runs in one session, the 1-minute load read
+immediately before each, no waiting for a quiet host, and every delta is
+`mean(B) - mean(A)` of alternating runs; a single-sided profile is two runs with their
+loads recorded and per-file seconds read as shares. The bar itself is not set here: the
+human sets it at 15-03's checkpoint from these rows (D-01).
+
+### Host state
+
+- CPU: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13 (`.venv`); pytest: 9.1.1
+- Date: 2026-10-03
+- Phase-start HEAD: `20cd484`. HEAD measured by P1 and P2: `862a807` (three `docs(15)`
+  commits on top of `20cd484`; `git diff --quiet 20cd484 -- src tests Makefile
+  pyproject.toml requirements.txt bench .github` exits 0, so the code and the gate under
+  test are the phase-start ones)
+- SPUR_* environment: none set (`env | grep '^SPUR_'` empty) -- defaults apply
+- Load (1-minute, `sysctl -n vm.loadavg`), read immediately before each run: P1 6.53,
+  P2 9.09. The host carried background load throughout (this session's own Claude Code
+  process, OrbStack, a browser and other desktop apps were open; a reading of 8.46 was
+  taken half a minute before P1). Per D-04 no quiet bar was waited for; each row carries its load.
+- Peak RSS: the sum of per-process RSS over the `make` process tree (the `/usr/bin/time`
+  process, `make`, `pytest` and every child), sampled once a second. It is an upper bound
+  of real memory: file-backed pages of the shared OpenCascade/VTK libraries count once per
+  process (RESEARCH A2). `/usr/bin/time -l` would report only the waited-for child's
+  `ru_maxrss`, not the tree.
+
+### Method
+
+Every Phase 15 row uses this run recipe and nothing else. The raw `.out`, `.time` and
+`.rss` files of each run are session scratch, not committed; the numbers below are read
+from them.
+
+- R1: before each run, `pgrep -fl '[p]ytest|[p]re_commit|[m]ake verify'` prints nothing --
+  no other gate, test run or commit hook of this session is alive. (The bracketed first
+  letters are `pytest|pre_commit|make verify` spelt so the pattern does not match the shell
+  command line that holds it.)
+- R2: read `sysctl -n vm.loadavg` and keep the 1-minute figure.
+- R3: in ONE Bash call with timeout 600000 ms, start
+  `/usr/bin/time -p make verify PYTEST_ARGS="<args>"` in the background with stdout to
+  `<scratch>/<label>.out` and stderr to `<scratch>/<label>.time`, keep its PID, and while
+  `kill -0` on that PID succeeds append one sampler line (root = that PID) to
+  `<scratch>/<label>.rss` and sleep 1; then `wait` on the PID and keep its exit status:
+
+  ```bash
+  /usr/bin/time -p make verify PYTEST_ARGS="$ARGS" > "$S/$L.out" 2> "$S/$L.time" &
+  PID=$!
+  : > "$S/$L.rss"
+  while kill -0 $PID 2>/dev/null; do
+    ps -axo pid=,ppid=,rss= | awk -v root=$PID '{p[$1]=$2; r[$1]=$3; ids[NR]=$1}
+      END{keep[root]=1; c=1; while(c){c=0; for(i in ids){id=ids[i]; if(!(id in keep)&&(p[id] in keep)){keep[id]=1;c=1}}}
+          t=0;n=0; for(id in keep){t+=r[id];n++} print t, n}' >> "$S/$L.rss"
+    sleep 1
+  done
+  wait $PID
+  ```
+
+  The awk prints the summed RSS in KiB and the process count over the root PID and all its
+  descendants.
+- R4: read the exit status, `real` from the `.time` file (wall seconds), pytest's final
+  summary line from the `.out` file (count and seconds), and the largest summed RSS in the
+  `.rss` file divided by 1024 (MiB, no decimals) with that sample's process count
+  (`sort -n -k1 "$S/$L.rss" | tail -1`); on `--cov` runs also the TOTAL row.
+- R5: one table row per run, in the order run. A red run (non-zero exit, a summary other
+  than `927 passed`, any failed, error or rerun) is recorded red with its failing node ids
+  and is never re-run to replace it.
+
+Per-stage method. Make reports no per-recipe time, so after each full run the four quick
+stages are timed as separate warm invocations, `/usr/bin/time -p make lint`,
+`make typecheck`, `make lint-imports` and `make no-fake-done`, keeping each `real`; pytest's
+stage is the run's wall minus those four, with pytest's own reported seconds beside it.
+
+Per-file method. A run with `--durations=0 --durations-min=0` prints one line per
+setup, call and teardown phase, `<seconds>s <phase> <nodeid>`; the per-file seconds are
+those lines grouped by the node id's path before its first `::` (the regression ids
+contain further `test_x.py::` text and stay with their own file):
+
+```bash
+grep -E '^[0-9.]+s (call|setup|teardown) ' "$S/$L.out" \
+  | awk '{split($3,a,"::"); t[a[1]]+=$1; n[a[1]]++} END{for(f in t) printf "%8.2fs %5d %s\n", t[f], n[f], f}' \
+  | sort -rn
+```
+
+The item counts come from `.venv/bin/python -m pytest --collect-only -q` (one line per
+item, grouped the same way); the awk's own count is three phases per item.
+
+Precision. Wall seconds are `/usr/bin/time -p`'s two-decimal `real`; loads are sysctl's
+two-decimal figures; pytest prints each phase to two decimals, so a per-file figure is a
+sum of rounded values (a phase under 0.005 s reads 0.00). Means and shares are computed
+from the recorded values and rounded only when written.
+
+Where the numbers stand (RESEARCH Open Question 3, decided here): the per-file and RSS
+readings stand on these committed commands plus the `make verify` target, and no
+`bench/` script is added -- a script would need its own tests under `mypy --strict` for
+two lines of awk (12 D-17 asks that every number be reproducible from committed material,
+which committed prose plus a make target is).
+
+### Per-stage wall time
+
+Two serial profile runs, each `make verify PYTEST_ARGS="--durations=0 --durations-min=0"`,
+P1 then P2, in the order run:
+
+| Run | HEAD | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit |
+|---|---|---|---|---|---|---|
+| P1 | `862a807` | 6.53 | 927 passed in 229.15s | 230.20 | 1396 (6) | 0 |
+| P2 | `862a807` | 9.09 | 927 passed in 217.59s | 218.36 | 1390 (5) | 0 |
+
+| Stage | P1 (s) | P2 (s) |
+|---|---|---|
+| ruff (`make lint`) | 0.07 | 0.03 |
+| mypy (`make typecheck`) | 0.37 | 0.20 |
+| import-linter (`make lint-imports`) | 0.11 | 0.09 |
+| unfinished-work scan (`make no-fake-done`) | 0.02 | 0.01 |
+| pytest (wall minus the four; pytest's own seconds in brackets) | 229.63 (229.15) | 218.03 (217.59) |
+| whole gate (`/usr/bin/time -p make verify`) | 230.20 | 218.36 |
+
+The four quick stages were timed as separate warm invocations right after each full run,
+which is what they cost inside the gate. Pytest is 99.75 % of the gate in P1 and 99.85 % in
+P2: nothing outside the test suite is worth cutting on this host. The two runs differ by
+11.84 s (mean wall 224.28 s) with the heavier load on P2, so a single-sided pair says only
+that the gate is about 3.6-3.8 minutes serial here. The serial run is already multi-core:
+`/usr/bin/time -p` read user 350.77 s + sys 616.20 s over 230.20 s real in P1 (4.2 cores
+on average) and 343.14 s + 629.40 s over 218.36 s in P2 (4.5), which is why the xdist gain
+below is expected to be sublinear (RESEARCH Pitfall 9).
+
+### Per-file share
+
+Item counts from `--collect-only`; seconds are the per-file sums of the duration lines
+(P1 sums to 226.41 s, P2 to 214.79 s of the 229.15 s and 217.59 s pytest reported -- the
+difference is collection and session start, which sit outside the duration lines, plus
+rounding); the share is each file's seconds over the sum of that run's per-file seconds
+(P1 % / P2 %). Sorted by P1 seconds descending, ties by path ascending.
+
+| File | Items | P1 (s) | P2 (s) | Share of pytest (%) |
+|---|---|---|---|---|
+| tests/test_model.py | 201 | 167.76 | 157.53 | 74.1 / 73.3 |
+| tests/test_pool.py | 16 | 19.29 | 17.92 | 8.5 / 8.3 |
+| tests/regression/test_pre_v0_2.py | 85 | 17.58 | 17.01 | 7.8 / 7.9 |
+| tests/test_api.py | 54 | 10.92 | 11.23 | 4.8 / 5.2 |
+| tests/test_cli.py | 44 | 9.75 | 10.04 | 4.3 / 4.7 |
+| tests/test_records.py | 13 | 0.46 | 0.44 | 0.2 / 0.2 |
+| tests/test_bench.py | 24 | 0.42 | 0.43 | 0.2 / 0.2 |
+| tests/test_skip_tokens.py | 27 | 0.17 | 0.13 | 0.1 / 0.1 |
+| tests/test_calc.py | 404 | 0.06 | 0.06 | 0.0 / 0.0 |
+| tests/regression/test_corpus.py | 1 | 0.00 | 0.00 | 0.0 / 0.0 |
+| tests/test_pr_land.py | 58 | 0.00 | 0.00 | 0.0 / 0.0 |
+| total | 927 | 226.41 | 214.79 | 100.0 / 100.0 |
+
+`tests/test_model.py` is three quarters of pytest's time in both runs; the next three
+files (pool, regression fixture, api) together are about a fifth. The 1212 phases of
+`tests/test_calc.py` print 0.06 s in total (its slowest is 0.03 s), and every printed phase
+of `tests/test_pr_land.py` and `tests/regression/test_corpus.py` reads 0.00 s, so those
+shares are below what two-decimal printing can resolve; they are rows of the table, not of
+the cost.
+
+### Slowest 25
+
+P1's own `--durations` output, the first 25 duration lines, verbatim in pytest's order:
+
+```
+7.03s call     tests/test_cli.py::test_readme_export_examples_run
+5.22s call     tests/test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation
+4.62s call     tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced
+4.43s call     tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced
+3.25s call     tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[module-0.2]
+2.96s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[keyed-holes]
+2.85s call     tests/test_model.py::test_the_same_cutout_link_builds_the_same_solid_twice[spokes-filleted]
+2.77s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[round-holes]
+2.76s call     tests/test_model.py::test_every_selector_takes_only_its_own_edges_with_a_body_cutout[teeth-200-holes]
+2.67s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[hex-holes]
+2.57s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[keyed-spokes]
+2.50s call     tests/test_model.py::test_the_same_cutout_link_builds_the_same_solid_twice[cells]
+2.50s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[d-flat-holes]
+2.49s call     tests/test_pool.py::test_two_same_slot_deaths_from_one_incident_replace_the_worker_once
+2.48s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[round-spokes]
+2.38s call     tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[teeth-200]
+2.23s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[hex-spokes]
+2.23s call     tests/test_pool.py::test_a_real_worker_builds_and_downloads
+2.18s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[hex-cells]
+2.18s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[d-flat-spokes]
+2.16s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[d-flat-cells]
+2.15s call     tests/test_cli.py::test_an_unknown_output_extension_exits_1_from_the_real_process
+2.14s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[round-cells]
+2.08s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[keyed-cells]
+1.93s call     tests/test_model.py::test_the_recess_floor_fillet_survives_every_cutout_on_every_bore[hex-cells]
+```
+
+`tests/test_model.py` holds 18 of the 25 (the twelve tip-chamfer-with-each-cutout-on-each-bore
+rows alone take 28.9 s of P1's call time), `tests/test_pool.py` 5 and `tests/test_cli.py` 2.
