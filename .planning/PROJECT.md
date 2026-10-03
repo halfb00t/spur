@@ -285,6 +285,24 @@ pytest — L13). Full list with sources and acceptance evidence:
   `2026-09-23-concurrent-latency-bar-waived.md` retired in `6709953`; verified 4/4, Nyquist
   and security audits clean, `make verify` 910 tests; two review findings (CR-01, WR-01) at
   disposition `open` (L32) — Phase 13
+- ✓ REQ-root-lead-in-warned, REQ-readme-root-zone-states-the-limit,
+  REQ-filleted-spoke-closed-form — the record is true as written: `derive()` warns when the
+  root fillet's straight chord ends above the pitch circle (height at 3 dp; default gear
+  −1.1875 mm silent, `{1.0, 14.5°}` +0.5625 mm and `{0.75, 20°}` +0.1250 mm warn, one field
+  step either side proven), README and `_outline` say where the chord really ends; the
+  filleted-spoke removed volume is checked against `_filleted_spoke_volume` (a polar closed
+  form sharing no code with `_fillet_corner`, agreeing with the kernel to 2.73e-12 mm³) and
+  all four plain cutout rows assert at `abs=1e-9` with a rim-corner tripwire proving the bar
+  is load-bearing; L33 records both corrections and amends L09/L10/L30 by appending. UAT
+  found two gaps — the skip-the-cutout tripwire's holes and cells rows proved nothing at
+  `abs=1e-9`, and the debt file said a closed form "cannot exist" for four hole-through-web
+  rows that have one — closed by 14-04: shared pure-math oracles `_holes_volume` /
+  `_hex_cells_volume`, a control call on the unpatched build before the monkeypatch, the four
+  rows on the web formula (tip-chamfer rows at `abs=1e-8` by the human's checkpoint answer
+  over measured gaps of 5.85e-10 / 5.94e-10 / 6.55e-10 mm³; single-sided at `abs=1e-9`,
+  gap 2.79e-12), every "cannot exist" reworded to "not derived here", the debt narrowed to
+  eleven rows; verified 8/8, `make verify` 927 tests; three review findings (WR-01, IN-01,
+  IN-02) at disposition `open` — Phase 14
 
 ### Active
 
@@ -292,9 +310,6 @@ Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance
 `REQUIREMENTS.md`.
 
 - [ ] CI installs the kernel pair the fixture pins; the choice logged against L12
-- [ ] A gear whose root lead-in rises above the pitch circle says so in `warnings`; README
-  states the real limit
-- [ ] The filleted-spoke removed volume is checked against a closed form at 1e-9 mm³
 - [ ] `make verify`'s wall time is profiled and recorded; its bar set from the profile
 - [ ] A measured coverage floor gates `make verify`
 - [ ] `model.py` carries no `type: ignore`
@@ -431,6 +446,7 @@ quick reference.
 | L30 | Body cutouts are one pattern per part, cut in one boolean, and the honeycomb's cell count is capped at a measured constant: ten fields in three groups, `_cut_body` after the keyway and before the tip chamfer; spoke corners are analytic tangent arcs (`_fillet_corner(inside=)`); honeycomb whole cells only, `HEX_CELL_CAP = 120` written from the pre-implementation spike's row (7.15 s of D-11's 7.5 s share at 200 teeth, module 10; 150 cells read 7.95 s), raise-to-fit in the field's own 0.05 mm step; every `MIN_WALL` comparison goes through `_under_min_wall` (`round(wall, 6) < MIN_WALL` — float residue measured at 0.39999999999999947 at the tracer's hub boundary); `spoke_count`/`hole_count` `le` lowered from 200 to 40/60 after the build-time gate fired | ✓ Good — verified 7/7, UAT 5/5, `make verify` 621 tests; the cap and its 8.65 s row accepted as measured under a loaded host (UAT 2–3); the spokes' 33.39 s arithmetic total with the tip chamfer filed as must-debt for Phase 12's composed sweep (UAT 4); six review findings still `open` (UAT 5) |
 | L31 | v0.2 composes: the 18-row composed sweep measured across four runs (the four over-budget `spoke_count=40` rows load-independent, so D-02 superseded for that one gate by the human); `spoke_count` `le` 40 → 32 from a probe (32 inside at 29.41 s, 33 over at 30.11 s); every composed row inside 30 s on the re-run (heaviest 29.42 s); L19's rule re-applied on the 17.3 MB heaviest fine STL keeps `_GZIP_LEVEL = 1`, L24's copy cost recorded only; 96 + 138 calc rows and 15 kernel rows prove the matrix; one field walk, a byte-identical composed document and 23 identically routed refusals prove three-interface parity; the CLI's real 2/1/1 exit contract moved into `cli.md`; export bytes are explicitly not compared by the fixture replay (L26); the phase's +28.28 s gate cost accepted against D-10's 30 s line | ✓ Good — verified 5/5, UAT 4/4, `make verify` 907 tests; ten review findings (5 warning, 5 info) at disposition `open` |
 | L32 | The concurrent latency bar is demonstrated on the harness as it stands, not waived (amends L18): `bar-3` Runs 13–14 read 1.31× and 1.42× idle p95 on both concurrent runs of one decisive session behind the D-05 quiet gate, after two capped-out attempts recorded non-decisive; the two observations L18 left unexplained are ruled by a pre-registered twelve-run campaign — the second-run-worse effect not reproduced in this environment, the floor real; SC3 measured once: the composed worst row does not complete under ten concurrent builds (0/10 served; a same-slot timeout-cleanup race returns an undocumented 500, filed as debt, `src/` untouched); the Dockerfile `HEALTHCHECK` comment and the retired debt say what was measured | ✓ Good — verified 4/4; `make verify` 910 tests; `2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md` (must) open with a named trigger; review CR-01/WR-01 open |
+| L33 | The root lead-in is warned, not re-cut, and the filleted-spoke cutout is proved against a closed form (amends L09, L10 and L30): `derive()` appends one sentence when `round(spline_start(pr, root_fillet(p)) − pr.r, 3) > 0`, naming the height, instead of regenerating the pre-v0.2 fixture under a new entry (L05 keeps every shared link's part); the filleted-spoke removed volume is asserted against `_filleted_spoke_volume` at `abs=1e-9` (kernel agreement 2.73e-12 mm³), the pinned literal `2934.725405` demoted to a comment; the 15 composed cutout rows are named — four hole-through-web rows on the web formula (tip-chamfer rows at `abs=1e-8`, a bar the human set over measured gaps of ~6e-10 mm³ with 1.5× headroom at 1e-9; single-sided at `abs=1e-9`), eleven still at a 6 dp literal and `volume_rel=1e-6` because their closed form is not derived here | ✓ Good — verified 8/8, UAT 5/5 after gap plan 14-04, `make verify` 927 tests; `src/` untouched by 14-04 and the pre-v0.2 fixture byte-identical to `5d9e907`; review WR-01 (`volume_rel` shadows `volume_abs`), IN-01, IN-02 open; the prior platform-calibration finding (abs bars measured only on macOS arm64) is no longer in the ledger — see `8cfbc16`'s REVIEW.md |
 
 ## Success Metric (Milestone v0.1)
 
@@ -501,4 +517,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-02 after Phase 13 (Latency Bar).*
+*Last updated: 2026-10-03 after Phase 14 (Honest Record).*

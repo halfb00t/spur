@@ -73,7 +73,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 
 ### Honest record
 
-- [ ] **REQ-root-lead-in-warned**: When the straight lead-in's end — `spline_start(pr,
+- [x] **REQ-root-lead-in-warned**: When the straight lead-in's end — `spline_start(pr,
   root_fillet(p))` — rises above the pitch radius `pr.r`, `derive()`'s `warnings` carries a
   sentence saying the flank starts with a chord that reaches that far above the pitch
   circle, naming the height in mm (3 dp, like every other warning) and that the chord
@@ -84,18 +84,20 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   14.5}`: +0.5625 mm, warns; `{0.75, 20}`: +0.1250 mm, warns) and one field step either
   side of the crossing; the fixture byte-unchanged — verified 2026-10-01 at kickoff that
   **0 of 44** records cross, so the new warning touches no pinned `warnings` tuple.
-- [ ] **REQ-readme-root-zone-states-the-limit**: README's root-fillets bullet ("the flank
+- [x] **REQ-readme-root-zone-states-the-limit**: README's root-fillets bullet ("the flank
   starts with a short chord onto the involute, in the non-working root zone", lines
   ~227–228) states the real condition: below the pitch circle on the default gear; above it
   when profile shift and root fillet are large for the module, in which case `warnings`
   says so. No number in README that was not measured by the phase. *Acceptance*: the
   sentence cites the warning; `2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md`
   retires with this and the previous requirement's sha.
-- [ ] **REQ-filleted-spoke-closed-form**: The filleted-spoke row of
+- [x] **REQ-filleted-spoke-closed-form**: The filleted-spoke row of
   `test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid` asserts the removed
   volume against an independent closed form — the sharp sector-opening area minus four
-  circular-segment corrections at `spoke_fillet_effective(p)`, times `face_width` — to the
-  same 1e-9 mm³ bar the holes, sharp-spoke and honeycomb rows already meet; the pinned
+  circular-segment corrections at `spoke_fillet_effective(p)`, times `face_width` — to a
+  1e-9 mm³ bar (the agreement the holes, sharp-spoke and honeycomb rows were measured at in
+  Phase 11, asserted only at `rel=1e-6` until Phase 14, which asserts all four rows at
+  `abs=1e-9`); the pinned
   literal `2934.725405` is demoted to a comment recording the first measurement, not the
   oracle. *Acceptance*: the derivation lives in the test's docstring or a `bench/` script
   with no kernel import; a tripwire proves the assertion goes red when `_fillet_corner`'s
@@ -204,9 +206,9 @@ Filled by the roadmap.
 |-------------|-------|--------|
 | REQ-latency-observations-explained | Phase 13 | Complete |
 | REQ-latency-bar-demonstrated-or-superseded | Phase 13 | Complete |
-| REQ-root-lead-in-warned | Phase 14 | Pending |
-| REQ-readme-root-zone-states-the-limit | Phase 14 | Pending |
-| REQ-filleted-spoke-closed-form | Phase 14 | Pending |
+| REQ-root-lead-in-warned | Phase 14 | Complete |
+| REQ-readme-root-zone-states-the-limit | Phase 14 | Complete |
+| REQ-filleted-spoke-closed-form | Phase 14 | Complete |
 | REQ-verify-profiled | Phase 15 | Pending |
 | REQ-verify-at-the-bar | Phase 15 | Pending |
 | REQ-coverage-floor | Phase 15 | Pending |

@@ -135,9 +135,10 @@ def _outline(pr: Profile, fillet: float) -> cq.Wire:
 
     Each flank starts with a straight segment from the root circle: radial up to the
     base circle when the root lies inside it, extended as a short chord onto the
-    involute when the fillet needs room (the chord sits in the non-working root zone
-    and deviates from the involute by microns). Fillet arcs are computed here rather
-    than with OCCT's fillet operator, which is ~50x slower on a many-toothed outline.
+    involute when the fillet needs room (below the pitch circle on the default gear;
+    calc.derive warns when the chord ends above it, naming the height). Fillet arcs are
+    computed here rather than with OCCT's fillet operator, which is ~50x slower on a
+    many-toothed outline.
 
     calc.spline_start places the spline's start, so the tip chamfer's cap reads the
     same radius the outline is built from.

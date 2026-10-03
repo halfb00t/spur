@@ -1,8 +1,9 @@
 # The filleted-spoke removed-volume proof has no closed-form cross-check
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-29
+Resolved in: 61e1bea
 Source: 11-REVIEW.md WR-05 (external: codex, extended)
 Related files:
 - tests/test_model.py (`test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid`,
@@ -49,3 +50,25 @@ instead of living only in a docstring comment.
 edit), or the pinned CadQuery/OCP kernel version is bumped — either event invalidates the
 pinned literal's provenance and is the moment to either re-derive the closed form or
 re-pin with fresh measurement plus this same absent cross-check.
+
+## Resolution (2026-10-03)
+The Next step, taken. `tests/test_model.py::_filleted_spoke_volume` is a closed form for
+the filleted sector's removed volume: the sharp sector's area minus four corner cut-offs
+at `spoke_fillet_effective(p)`, times `face_width`. It builds each fillet centre and
+tangent point in its own polar form (centre `rho` off the bar side, `R + rho` / `R - rho`
+from the axis) and never calls or copies `_fillet_corner`'s quadratic and root choice
+(D-09), so a wrong root, sign or side there now disagrees with it. All four cutout rows
+(holes, spokes-sharp, spokes-filleted, cells) are asserted at `abs=1e-9` mm3, where they
+were `rel=1e-6` before. The fifteen composed-solid rows that reuse the shared assertion
+carry 6 dp literals, so they pass `volume_rel=1e-6`; that residual is filed as
+`active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md`.
+
+Measured kernel-formula gaps, 2026-10-03, cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1: holes
+2.39e-12, spokes-sharp 1.36e-12, spokes-filleted 2.73e-12, cells 8.87e-12 mm3. D-06 (a
+gap above 1e-9) was not reached; the bar was not loosened.
+
+`test_the_cutout_proof_fails_when_a_rim_corner_tangent_root_moves` moves the inside=True
+root by 1e-6 mm: the part builds, `derive()` still prints the fillet, faces and edges are
+unchanged, the removed volume is off by 2.522e-4 mm3 (relative 8.59e-8, inside the old
+bar), and the `abs=1e-9` assertion raises. The pinned literal 2934.725405 survives only
+as a comment in the proof's docstring (first measurement). Decision log L33 records it.

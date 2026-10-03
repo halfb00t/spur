@@ -61,7 +61,7 @@ byte-unchanged throughout.
 - [x] **Phase 13: Latency Bar** - The two unexplained concurrent-latency observations get (completed 2026-10-02)
       a ruled cause, and the ten-concurrent bar is demonstrated on both runs of one session
       or superseded by a logged decision
-- [ ] **Phase 14: Honest Record** - The root lead-in warns when it rises above the pitch
+- [x] **Phase 14: Honest Record** - The root lead-in warns when it rises above the pitch (completed 2026-10-03)
       circle, README states the real limit, and the filleted-spoke removed-volume proof
       gets an independent closed form
 - [ ] **Phase 15: The Gate, Measured and Pinned** - `make verify`'s wall time, its bar and
@@ -151,9 +151,10 @@ independent of the other v0.3 phases.
   3. The filleted-spoke row of
      `test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid` asserts the removed
      volume against the independent closed form (sharp sector-opening area minus four
-     circular-segment corrections at `spoke_fillet_effective(p)`, × `face_width`) to the
-     same 1e-9 mm³ bar the other three cutout rows meet; the pinned literal `2934.725405` is
-     demoted to a comment recording the first measurement, and a tripwire proves the
+     circular-segment corrections at `spoke_fillet_effective(p)`, × `face_width`) to 1e-9
+     mm³ (the agreement the other three cutout rows were measured at in Phase 11, asserted
+     only at `rel=1e-6` until this phase, which asserts all four rows at `abs=1e-9`); the
+     pinned literal `2934.725405` is demoted to a comment recording the first measurement, and a tripwire proves the
      assertion goes red when `_fillet_corner`'s `inside=True` tangent root is perturbed.
   4. Both debt files — `2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md`
      (closed by this phase's first two requirements together) and
@@ -164,7 +165,20 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); both debt
 files already state the next step.
-**Plans**: TBD
+**Plans:** 4/4 plans complete (strictly serial: one working tree, and the pre-commit `make verify` hook reads all of it)
+
+Plans:
+**Wave 1**
+- [x] 14-01-PLAN.md — the lead-in warning, tracer first (derive() through `spur info` and `/api/info`), its 15 rows, README and `_outline` corrected, the root lead-in debt retired
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 14-02-PLAN.md — the filleted-spoke closed form, every row's gap measured then asserted at `abs=1e-9` (D-06 halt on a miss), the rim-corner root tripwire, the filleted-spoke debt retired, D-07 sentences
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 14-03-PLAN.md — L33 (amends L09, L10 and L30) and the phase's end-state check
+
+**Wave 4** *(gap closure, blocked on Wave 3 completion)*
+- [x] 14-04-PLAN.md — UAT gaps G-14-2 and G-14-5: the skip-the-cutout tripwire's holes and cells rows made discriminating; the four hole-through-web composed rows on the web formula, measured before the bar moves; "not derived here" in the debt file, L33 (in place) and three docstrings
 
 ### Phase 15: The Gate, Measured and Pinned
 
@@ -265,6 +279,6 @@ internal and one is process-only.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
-| 14. Honest Record | v0.3 | 0/TBD | Not started | - |
+| 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
 | 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |

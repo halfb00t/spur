@@ -2,37 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
-current_phase: 14
-current_phase_name: Honest Record
-status: "Phase 13 shipped — PR #16"
-stopped_at: Phase 13 complete, ready to plan Phase 14
-last_updated: "2026-10-02T11:13:20.249Z"
-last_activity: 2026-10-02
-state_head: 37129f1d1920539fbc714c21303489bac2e9ffde
+current_phase: 15
+current_phase_name: The Gate, Measured and Pinned
+status: "Phase 14 shipped — PR #17"
+stopped_at: Phase 14 complete, ready to plan Phase 15
+last_updated: "2026-10-03T09:59:41.859Z"
+last_activity: 2026-10-03
+state_head: c30b7bf26f22d0131d4a4e49931103fdc2754fb5
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 50
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
+  percent: 67
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-02)
+See: .planning/PROJECT.md (updated 2026-10-03)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 14 — Honest Record (ready to discuss, then plan)
+**Current focus:** Phase 15 — The Gate, Measured and Pinned
 
 ## Current Position
 
-Phase: 14 — Honest Record
+Phase: 15 — The Gate, Measured and Pinned
 Plan: Not started
-Status: Phase 13 shipped — PR #16
-Last activity: 2026-10-02
+Status: Phase 14 shipped — PR #17
+Last activity: 2026-10-03
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Last activity: 2026-10-02
 | 11 | 9 | - | - |
 | 12 | 9 | - | - |
 | 13 | 7 | - | - |
+| 14 | 4 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -172,6 +173,10 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 13 P05 | 2min | 0 tasks | 0 files |
 | Phase 13 P06 | ~69min total (continuation: Task 2 close-out + Task 3, ~45min) | 3 tasks | 13 files |
 | Phase 13 P07 | ~25min (continuation; Task 1 prior session) | 2 tasks | 8 files |
+| Phase 14 P01 | 22 min | 3 tasks | 6 files |
+| Phase 14 P02 | 25 min | 3 tasks | 7 files |
+| Phase 14 P03 | 22 min | 2 tasks | 2 files |
+| Phase 14 P04 | 70 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -183,7 +188,7 @@ fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar acc
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
 verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
-L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11. L31 (v0.2 composes: the composed sweep measured, `spoke_count` `le` 32, the matrix and the three-interface parity proven, export bytes explicitly not compared) was appended in Phase 12.
+L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11. L31 (v0.2 composes: the composed sweep measured, `spoke_count` `le` 32, the matrix and the three-interface parity proven, export bytes explicitly not compared) was appended in Phase 12. L33 (the root lead-in warned, not re-cut; the filleted-spoke cutout proved against a closed form at `abs=1e-9`; the 15 composed cutout rows named — four hole-through-web rows on the web formula, the three tip-chamfer rows at `abs=1e-8` by the human's 14-04 checkpoint answer over measured ~6e-10 mm³ gaps, eleven still at a 6 dp literal because their closed form is not derived here; amends L09, L10 and L30) was appended in Phase 14 and corrected in place by gap plan 14-04.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -277,6 +282,11 @@ pending; the next milestone starts this list fresh.
 - [Phase 13]: L32 appended (amends L18, append-only): the bar demonstrated outright on bar-3 (outcome a, Run 13 1.31x / Run 14 1.42x) -- 13-05's outcome-(b) path and D-09/D-11 were never reached
 - [Phase 13]: The 2026-09-23 waived-latency debt retired in 6709953 (sha recorded in follow-up 05668ef, since a file cannot carry its own commit's sha); Dockerfile's measured-p95 comment updated (eight -> fifteen runs), no ratio bar cited
 - [Phase 13]: fleet-user's pre-phase state was already Exited -- the phase never started it, so 13-07's host-restore step confirmed it unchanged (Exited) rather than running docker start; spur-spur-1 stayed Up throughout; make verify green (910 passed) at phase close
+- [Phase 14]: 14-01: the root lead-in warning fires at round(h, 3) > 0 and sits after 'Root fillet reduced'; README states the condition with one clause beyond D-12's draft (profile shift above 0.125) because the chord is capped halfway up the tooth below it, proven by the mid-tooth rows; expected strings captured from derive() (debt-x1.0-pa14.5 prints 0.562, not CONTEXT's 0.563) — D-01/D-02/D-12 content kept; 0.125 clause proven by the mid-tooth-silent/touch/warns rows
+- [Phase 14]: 14-02: the filleted-spoke volume oracle is a polar closed form independent of _fillet_corner; the tripwire shifts the rim-corner root by 1e-6 mm, not 0.01 mm
+- [Phase 14]: 14-02: the shared cutout assertion defaults to abs=1e-9; composed-solid rows with 6 dp literals keep rel=1e-6 via volume_rel (debt filed)
+- [Phase 14]: L33 states the composed-row exception exactly: 15 rows (12 tip-chamfer, 3 single-sided-recess) keep volume_rel=1e-6; the four cutout rows and the three tripwire rows run at abs=1e-9
+- [Phase 14]: 14-04 Task 2: noise-multiple 1e-8 -- the three tip-chamfer holes rows assert the web formula at abs=1e-8 (about 15x their largest measured gap 6.55e-10), the single-sided holes row at abs=1e-9; logged in L33
 
 ### Pending Todos
 
@@ -284,6 +294,19 @@ None yet.
 
 ### Blockers/Concerns
 
+- ℹ️ [Phase 14] Code review (`14-REVIEW-DISPOSITION.md`, 4 open): WR-01 — the shared cutout
+  assertion's `volume_rel` silently wins over the new `volume_abs` when both are passed (no
+  caller does; an at-most-one assert closes it); IN-01 — three `tests/test_model.py` comments
+  cite `14-REVIEW WR-02`/`WR-03`, ids the re-review renumbered; IN-02 — L33 credits the
+  tip-row `1e-8` bar to D-06, whose trigger (a gap above 1e-9) was not met — the bar was set
+  over thin headroom, and L33 should say so; IN-03 carried. The prior review's WR-01 (the
+  `abs=1e-9`/`1e-8` volume bars are calibrated only on macOS arm64 while CI runs
+  ubuntu-latest) is no longer in the ledger — its id was reused and the reviewer did not
+  re-file it; the text lives in `8cfbc16`'s `14-REVIEW.md`. It still applies to the four
+  moved rows.
+- ℹ️ [Phase 14] `test_the_hole_link_cuts_six_holes_through_the_recessed_floor` asserts the same
+  web formula at `rel=1e-6` on the default gear — outside G-14-5's four rows; 14-04 left the
+  decision to the human. No `14-SECURITY.md` yet while `workflow.security_enforcement` is on.
 - ⚠️ [Phase 13] `src/spur/pool.py:204` (`_run_with_timeout`): two timed-out requests on one
   worker slot race each other's cleanup — the second still holds the executor the first's
   `recreate_for` already shut down, reads `executor._processes` as `None`, and the request
@@ -393,16 +416,21 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T10:31:14.000Z
-Stopped at: Phase 13 complete, ready to plan Phase 14
+Last session: 2026-10-03T08:40:00Z
+Stopped at: Phase 14 complete (verified 8/8, UAT gaps G-14-2/G-14-5 closed by 14-04), ready to discuss Phase 15
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-discuss-phase 14` then `/gsd-plan-phase 14` — Honest Record (the root lead-in
-  warns above the pitch circle, README states the real limit, the filleted-spoke volume is
-  checked against a closed form). Phase 13 landed on `gsd/phase-13-latency-bar`; land it via
-  `make pr.land PR=N` per ROADMAP.md's Process Notes before starting 14's branch.
+- Next: `/gsd-discuss-phase 15` then `/gsd-plan-phase 15` — The Gate, Measured and Pinned.
+  Phase 14 is complete on `gsd/phase-14-honest-record`; land it via `make pr.land PR=N` per
+  ROADMAP.md's Process Notes before starting 15's branch.
+- `/gsd-secure-phase 14` — `workflow.security_enforcement` is on and the phase has no
+  `SECURITY.md`; required before advancing.
+- Triage `14-REVIEW-DISPOSITION.md`: WR-01 (one assert in the shared cutout assertion), IN-01
+  (three stale finding-id citations in `tests/test_model.py`), IN-02 (L33's D-06 attribution
+  for the `1e-8` bar), and decide whether the hole-link test's `rel=1e-6` row moves to the web
+  formula. Re-file the macOS-only calibration finding if it is to stay tracked.
 - Fix CR-01 (one word in the Dockerfile comment) and triage WR-01 from `13-REVIEW-DISPOSITION.md`.
 - Phase 15's discuss-phase carries two human decisions ROADMAP.md already names: the
   CI-kernel-pin mechanism (requirements.txt-first vs. a pyproject.toml upper bound) and the

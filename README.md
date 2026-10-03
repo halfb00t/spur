@@ -224,8 +224,11 @@ while a bore too wide for the root is still refused.
   counts, and the UI warns when that applies.
 - Root fillets are computed analytically in the 2D outline rather than with the kernel's
   fillet operator, which is far slower on a many-toothed profile. Where a fillet needs
-  room above the base circle, the flank starts with a short chord onto the involute,
-  in the non-working root zone.
+  room above the base circle, the flank starts with a short chord onto the involute:
+  1.188 mm below the pitch circle on the default gear, but above it, where the chord
+  deviates from the true involute, when the root fillet exceeds half the dedendum,
+  `(1.25 − x)·m / 2`, and the profile shift `x` exceeds 0.125 (below that shift the chord
+  stops halfway up the tooth, at or under the pitch circle). `warnings` says how far.
 - The tip chamfer is a 45-degree edge break on each tooth's tip arc at both faces,
   `tip_chamfer` off the end face and the same off the tip, cut on the finished solid.
   It touches only those arcs: the flanks, the root fillets, the bore and the recess are
