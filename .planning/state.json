@@ -21,7 +21,7 @@
     {
       "number": "14",
       "name": "Honest Record",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "15",
@@ -35,9 +35,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 15)",
+    "reason": "Phase 15 of 4 — needs a plan"
   },
-  "updated_at": "2026-10-02T16:47:21.898Z"
+  "updated_at": "2026-10-03T08:10:11.912Z"
 }
