@@ -224,7 +224,26 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the bar is set
 from the profile at this phase's discuss-phase, not before.
-**Plans**: TBD
+**Plans:** 6 plans (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
+
+Plans:
+**Wave 1**
+- [ ] 15-01-PLAN.md — the profile, tracer first: two serial runs into bench/RESULTS.md, the package-legitimacy check, pytest-xdist/pytest-cov in [dev], the N sweep and its apparent knee, D-01's sentences
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 15-02-PLAN.md — the floor: worker lines counted, the baseline, D-05's tolerance runs alternating with D-12's cost runs, fail_under by D-10, --cov in make test, red on the floor, the coverage debt retired
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 15-03-PLAN.md — the heaviest tests and every cut priced; the D-01 checkpoint where the human sets the bar and N; the answer in CONTEXT and RESULTS
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 15-04-PLAN.md — N in the Makefile (CPU-capped for CI), accepted cuts only, before/after read against the bar, the miss checkpoint only on a miss
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 15-05-PLAN.md — PIP_CONSTRAINT on CI's make verify and the pair printed; the human decides how CI runs on the branch (D-16's premise); one green run read, the CI-kernel debt retired, D-13's sentences
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 15-06-PLAN.md — the measured gate time at every eleven-second site, L34 (amends L12 and L13), the phase's end state
 
 ### Phase 16: Typing & Validation Debt
 
@@ -280,5 +299,5 @@ internal and one is process-only.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
-| 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
+| 15. The Gate, Measured and Pinned | v0.3 | 0/6 | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
