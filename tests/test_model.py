@@ -1178,6 +1178,35 @@ def _filleted_spoke_volume(p: GearParams) -> float:
     return area * p.face_width
 
 
+def _holes_volume(p: GearParams, recesses: int) -> float:
+    """The removed volume of the holes cutout, closed form: hole_count right cylinders of
+    radius hole_d / 2, each through one material thickness -- the face width less
+    recess_depth on every recessed side the hole passes through (recesses 0, 1 or 2).
+
+    Exact only while every hole lies wholly inside the recess annulus, or there is no
+    recess. The composed hex-holes row is the exception: its holes reach 12 mm, past the
+    hex-shifted recess outer wall at 11.994 mm (14-REVIEW WR-03), so it does not use this.
+
+    Measured 2026-10-03 against the built solid (cadquery 2.8.0 / cadquery-ocp
+    7.9.3.1.1): HOLES with recess_sides "none" agrees to 2.39e-12 mm3 (14-02).
+    """
+    return (p.hole_count * math.pi * (p.hole_d / 2) ** 2
+            * (p.face_width - recesses * p.recess_depth))
+
+
+def _hex_cells_volume(p: GearParams) -> float:
+    """The removed volume of the honeycomb cutout, closed form: a regular hexagon of
+    across-flats size has area (sqrt(3) / 2) * size^2, and the cut is the whole-cell
+    lattice hex_cells lays out, so the volume is that area times the cell count times
+    face_width.
+
+    Measured 2026-10-03 against the built solid (cadquery 2.8.0 / cadquery-ocp
+    7.9.3.1.1): CELLS with recess_sides "none" agrees to 8.87e-12 mm3 (14-02).
+    """
+    size, cells = hex_cells(p, profile(p).rf)
+    return len(cells) * (math.sqrt(3) / 2) * size * size * p.face_width
+
+
 def _honeycomb_farthest_vertex_angle(p: GearParams, rf: float) -> float:
     """The angle (radians) of the farthest honeycomb-cell vertex from the axis (D-08:
     flats face +-X, vertices +-Y -- the same polygon(6, size, circumscribed=True) vertex
@@ -1311,7 +1340,7 @@ def test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid(kind: str)
         _assert_the_cutout_is_what_derive_prints(
             cut, plain, p, p0,
             d_faces=collections.Counter({"CYLINDER": 6}), d_edges=18,
-            d_volume=p.hole_count * math.pi * (p.hole_d / 2) ** 2 * p.face_width,
+            d_volume=_holes_volume(p, 0),
             hub_angle=0.0, rim_angle=0.0)
     elif kind == "spokes-sharp":
         p = GearParams.model_validate({**SPOKES12, "recess_sides": "none"})
@@ -1342,10 +1371,10 @@ def test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid(kind: str)
         p = GearParams.model_validate({**CELLS, "recess_sides": "none"})
         cut = _build_checked(p)
         pr = profile(p)
-        size, cells = hex_cells(p, pr.rf)
+        _, cells = hex_cells(p, pr.rf)
         d = derive(p)
         assert d.hex_cell_count == len(cells)
-        volume = len(cells) * (math.sqrt(3) / 2) * size * size * p.face_width
+        volume = _hex_cells_volume(p)
         rim_angle = _honeycomb_farthest_vertex_angle(p, pr.rf)
         _assert_the_cutout_is_what_derive_prints(
             cut, plain, p, p0,
@@ -1353,34 +1382,61 @@ def test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid(kind: str)
             d_volume=volume, hub_angle=0.0, rim_angle=rim_angle)
 
 
-@pytest.mark.parametrize(("kw", "d_faces", "d_edges", "d_volume", "angle"), [
+# The cells row's rim probe sits on the farthest cell vertex, as in the proof above: the
+# angle 0.0 the other rows use is not on the rim wall of a honeycomb (14-04's control call
+# failed there on the unpatched build).
+_CELLS_NO_RECESS = GearParams.model_validate({**CELLS, "recess_sides": "none"})
+
+
+@pytest.mark.parametrize(
+    ("kw", "d_faces", "d_edges", "d_volume", "hub_angle", "rim_angle"), [
     pytest.param({**HOLES, "recess_sides": "none"},
-                 collections.Counter({"CYLINDER": 6}), 18, 565.486678, 0.0, id="holes"),
+                 collections.Counter({"CYLINDER": 6}), 18,
+                 _holes_volume(GearParams.model_validate(
+                     {**HOLES, "recess_sides": "none"}), 0),
+                 0.0, 0.0, id="holes"),
     pytest.param({**SPOKES12, "spoke_fillet": 1, "recess_sides": "none"},
                  collections.Counter({"PLANE": 8, "CYLINDER": 24}), 96,
                  _filleted_spoke_volume(GearParams.model_validate(
                      {**SPOKES12, "spoke_fillet": 1, "recess_sides": "none"})),
-                 math.pi / 4, id="spokes-filleted"),
+                 math.pi / 4, math.pi / 4, id="spokes-filleted"),
     pytest.param({**CELLS, "recess_sides": "none"},
-                 collections.Counter({"PLANE": 108}), 324, 1052.220866, 0.0, id="cells"),
+                 collections.Counter({"PLANE": 108}), 324,
+                 _hex_cells_volume(_CELLS_NO_RECESS), 0.0,
+                 _honeycomb_farthest_vertex_angle(
+                     _CELLS_NO_RECESS, profile(_CELLS_NO_RECESS).rf), id="cells"),
 ])
 def test_the_cutout_proof_fails_when_the_cutout_step_is_skipped(
         monkeypatch: pytest.MonkeyPatch, kw: dict[str, object],
         d_faces: collections.Counter[str], d_edges: int, d_volume: float,
-        angle: float) -> None:
+        hub_angle: float, rim_angle: float) -> None:
     """L08's failure, 10-03's tripwire shape: patches _cut_body to a no-op -- the cut
     solid comes back identical to the plain one, so every delta the proof checks reads
     zero -- and shows the proof above fail while derive() still prints the cutout's
-    wall, the number the part no longer matches."""
-    monkeypatch.setattr("spur.model._cut_body", lambda solid, _p, _pr: solid)
+    wall, the number the part no longer matches.
+
+    The same call runs first on the unpatched build and passes, so the raise below can
+    only come from the skipped cutout. Before 14-04 the holes and cells rows passed 6 dp
+    literals that sat +3.54e-7 and +4.02e-7 mm3 off their closed forms (14-REVIEW WR-02),
+    so the abs=1e-9 volume line raised on a correct build too, and the raise could not
+    tell the patched build from the unpatched one.
+    """
     p0 = GearParams(recess_sides="none")
     p = GearParams.model_validate(kw)
+    # p0 has no cutout pattern, so _cut_body's last branch returns the solid unchanged
+    # whether or not it is patched: one plain build serves the control and the patched call.
+    plain = _build_checked(p0)
+    _assert_the_cutout_is_what_derive_prints(
+        _build_checked(p), plain, p, p0,
+        d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
+        hub_angle=hub_angle, rim_angle=rim_angle)
+    monkeypatch.setattr("spur.model._cut_body", lambda solid, _p, _pr: solid)
     assert derive(p).cutout_hub_wall is not None  # the number still prints -- L08's failure
     with pytest.raises(AssertionError):
         _assert_the_cutout_is_what_derive_prints(
-            _build_checked(p), _build_checked(p0), p, p0,
+            _build_checked(p), plain, p, p0,
             d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
-            hub_angle=angle, rim_angle=angle)
+            hub_angle=hub_angle, rim_angle=rim_angle)
 
 
 def test_the_cutout_proof_fails_when_a_rim_corner_tangent_root_moves(
