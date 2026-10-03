@@ -240,7 +240,7 @@ Plans:
 - [ ] 15-04-PLAN.md — N in the Makefile (CPU-capped for CI), accepted cuts only, before/after read against the bar, the miss checkpoint only on a miss
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 15-05-PLAN.md — PIP_CONSTRAINT on CI's make verify and the pair printed; the human decides how CI runs on the branch (D-16's premise); one green run read, the CI-kernel debt retired, D-13's sentences
+- [ ] 15-05-PLAN.md — PIP_CONSTRAINT on CI's make verify and the pair printed; one push and the phase PR opened as a draft (D-16 addendum: draft-pr); one green run read, the CI-kernel debt retired, D-13's sentences
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 15-06-PLAN.md — the measured gate time at every eleven-second site, L34 (amends L12 and L13), the phase's end state

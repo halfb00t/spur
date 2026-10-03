@@ -139,6 +139,14 @@ constraining local `make venv` to the closure (filed as an idea — D-14); `mode
   Rejected: declaring them uncovered and setting the floor on that reading (understates
   what the suite exercises); `# pragma: no cover` on the entry points (hides code the
   pool tests do run — the opposite of a floor's purpose).
+  **Addendum 2026-10-03 (plan-phase, from 15-RESEARCH.md Pitfalls 1–2; human accepted):**
+  the mechanism above is stale — pytest-cov 7.0 dropped its subprocess hook, and
+  `concurrency = ["multiprocessing"]` alone replaces coverage.py's default `"thread"`, so
+  the `TestClient` portal thread that builds and shuts down the `BuildPool` stops being
+  traced (`pool.py` read 85 %, lines 74–91, 222, 225–226 missing). The decision's intent
+  stands; the config is `concurrency = ["multiprocessing", "thread"]`, `parallel = true`,
+  `sigterm = true` (verified: `pool.py` 100 %, identical totals serial and at `-n 4`).
+  L34 records the correction.
 - **D-10:** **`fail_under` = the baseline total rounded down to a whole percent; one more
   point down if that leaves under 0.25 pt of slack; the spread across D-05's three runs
   must fit inside the slack.** The three tolerance runs are run with `--cov` on, so their
@@ -148,6 +156,15 @@ constraining local `make venv` to the closure (filed as an idea — D-14); `mode
   branch does not. Rejected: baseline − 1.0 at two decimals (always one point, reads as a
   strange literal); baseline − 0.1 (a single timing-dependent branch could flip a run
   red with no code change — the flaky-gate failure, not the drift the floor is for).
+  **Addendum 2026-10-03 (plan-phase, from 15-RESEARCH.md Pitfalls 3 and 7; human
+  accepted):** the arithmetic above is off — `src/spur` is 1,069 statements and 294
+  branches, so with `branch = true` one point is ~13.6 units, not ~31 lines on ~3,100
+  statements; the qualitative argument (a new untested function trips a one-point slack,
+  one timing-dependent branch does not) survives. And `fail_under` compares
+  `round(total, precision) < fail_under` with `precision = 0` by default: a total of
+  45.93 against `fail_under = 46` printed FAIL and exited 0. `[tool.coverage.report]`
+  therefore sets `precision = 2`, and the slack is computed with that rounding. The rule
+  stands; L34 cites 1,069 / 294.
 - **D-11:** **Scope is `src/spur` only**, as `[tool.coverage.run] source` already says.
   `scripts/` (78 tests of its own) and `bench/` are tooling, not the gate's subject;
   `bench/` in particular is hand-run measurement code with no test by design. Rejected:
@@ -213,6 +230,17 @@ constraining local `make venv` to the closure (filed as an idea — D-14); `mode
   scratch branch run constrained to `cadquery-ocp==8.0.1.0.0` to show the tripwire fire on
   CI (manufactures a trigger that has not fired in nature; the test's own unit coverage is
   the proof it fires); pip's "Successfully installed …" line alone.
+  **Addendum 2026-10-03 (plan-phase; the human's answer to 15-05 Task 2's checkpoint):**
+  `.github/workflows/ci.yml` triggers only on `pull_request` and on pushes to `main`
+  (planner's reading; every past phase-branch run was a `pull_request` event), so pushing
+  the branch alone starts no run. Mechanism: **`draft-pr`** — 15-05 opens the phase PR as
+  a draft at its push (`gh pr create --draft`) and reads the run URL from that PR's checks;
+  at ship, `/gsd-ship`'s `gh pr create` would refuse a second PR, so the draft is updated
+  with `gh pr edit` and marked ready with `gh pr ready` instead. Also corrected here: the
+  "absent on a cache hit" justification above is false for this workflow (RESEARCH Pitfall
+  14 — run 37116412012 hit the pip cache and still printed the pair); the print step stands
+  as the cheaper-to-read proof, and L34 says so. 15-05 Task 2's checkpoint is pre-answered
+  by this addendum.
 
 ### The record
 - **D-17:** **One L34, append-only, amending L12 and L13.** L26–L33 are one entry per
