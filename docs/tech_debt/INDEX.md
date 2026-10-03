@@ -23,7 +23,6 @@ Severity (grep-able `Severity:` field):
 | nice | [Enji Guard not connected](active/2026-09-21-enji-guard-not-connected.md) | owner decides they want continuous AI audit |
 | nice | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook on a cold cache](active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | gsd exposes a commit-timeout setting, or an executor's warm retry also times out |
 | must | [CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly](active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md) | a fresh `pip install -e '.[dev]'` resolves a `cadquery`/`cadquery-ocp` pair different from the fixture's provenance |
-| must | [The root fillet's straight lead-in can reach above the pitch circle](active/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md) | a profile-shifted flank is measured, L10's trochoidal root is taken up, or _outline is next touched |
 | must | [The filleted-spoke removed-volume proof has no closed-form cross-check](active/2026-09-29-filleted-spoke-volume-proof-pinned-not-derived.md) | `_fillet_corner` is next touched, or the pinned CadQuery/OCP kernel version is bumped |
 | must | [A same-slot timeout cleanup race produces an undocumented 500 instead of a 503](active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md) | the ten-identical-worst-row scenario is run, a 500 is observed in production, `_run_with_timeout`/`recreate_for` is next touched, or `SPUR_BUILD_TIMEOUT`'s default is reconsidered |
 
@@ -46,3 +45,4 @@ Severity (grep-able `Severity:` field):
 | [The heaviest spoke row's arithmetic total with Phase 10's tip-chamfer row crosses 30 s under load](resolved/2026-09-29-spoke-le-arithmetic-total-crosses-30s-under-load.md) | `89304e2` — see the file's own `Resolved in:` field |
 | [`cli.md` claims exit 2 where `cmd_export` exits 1](resolved/2026-09-28-cli-md-claims-exit-2-where-cmd-export-exits-1.md) | `0deb25a` — see the file's own `Resolved in:` field |
 | [The concurrent latency bar was waived, not demonstrated](resolved/2026-09-23-concurrent-latency-bar-waived.md) | `6709953` — see the file's own `Resolved in:` field |
+| [The root fillet's straight lead-in can reach above the pitch circle](resolved/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md) | docs(14-01): state where the root lead-in really ends and retire its debt -- see the file's own `Resolved in:` field |
