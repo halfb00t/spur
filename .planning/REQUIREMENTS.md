@@ -91,11 +91,13 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   says so. No number in README that was not measured by the phase. *Acceptance*: the
   sentence cites the warning; `2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md`
   retires with this and the previous requirement's sha.
-- [ ] **REQ-filleted-spoke-closed-form**: The filleted-spoke row of
+- [x] **REQ-filleted-spoke-closed-form**: The filleted-spoke row of
   `test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid` asserts the removed
   volume against an independent closed form — the sharp sector-opening area minus four
-  circular-segment corrections at `spoke_fillet_effective(p)`, times `face_width` — to the
-  same 1e-9 mm³ bar the holes, sharp-spoke and honeycomb rows already meet; the pinned
+  circular-segment corrections at `spoke_fillet_effective(p)`, times `face_width` — to a
+  1e-9 mm³ bar (the agreement the holes, sharp-spoke and honeycomb rows were measured at in
+  Phase 11, asserted only at `rel=1e-6` until Phase 14, which asserts all four rows at
+  `abs=1e-9`); the pinned
   literal `2934.725405` is demoted to a comment recording the first measurement, not the
   oracle. *Acceptance*: the derivation lives in the test's docstring or a `bench/` script
   with no kernel import; a tripwire proves the assertion goes red when `_fillet_corner`'s
@@ -206,7 +208,7 @@ Filled by the roadmap.
 | REQ-latency-bar-demonstrated-or-superseded | Phase 13 | Complete |
 | REQ-root-lead-in-warned | Phase 14 | Pending |
 | REQ-readme-root-zone-states-the-limit | Phase 14 | Pending |
-| REQ-filleted-spoke-closed-form | Phase 14 | Pending |
+| REQ-filleted-spoke-closed-form | Phase 14 | Complete |
 | REQ-verify-profiled | Phase 15 | Pending |
 | REQ-verify-at-the-bar | Phase 15 | Pending |
 | REQ-coverage-floor | Phase 15 | Pending |
