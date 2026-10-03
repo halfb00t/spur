@@ -3,7 +3,7 @@ status: testing
 phase: 14-honest-record
 source: [14-VERIFICATION.md]
 started: 2026-10-03T12:00:00Z
-updated: 2026-10-03T12:00:00Z
+updated: 2026-10-03T10:40:00Z
 ---
 
 ## Current Test
@@ -32,12 +32,16 @@ result: [pending]
 expected: Accept the verifier's manual check (1.188, 1.25, 0.125 only, each a test row value), or ask for a repo test guarding README numbers
 result: [pending]
 
+### 5. WR-03: "no closed form exists after an arbitrary boolean" is false for 4 of the 15 composed rows; the claim sits in the debt file, L33 (twice) and three test_model.py docstrings
+expected: Reword to "not derived" where it is false (tied to item 2's L33 decision: edit in place on the unlanded branch, or append an amendment), and decide whether the four web-formula rows move to abs=1e-9 now or stay with the debt
+result: [pending]
+
 ## Summary
 
-total: 4
+total: 5
 passed: 0
 issues: 0
-pending: 4
+pending: 5
 skipped: 0
 blocked: 0
 
