@@ -9,11 +9,11 @@ findings:
     title: "abs=1e-9 volume bars calibrated only on macOS arm64; CI runs ubuntu-latest"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "skip-the-cutout tripwire: holes and cells literals (6 dp) fail abs=1e-9 on a correct build, so pytest.raises cannot tell the patched build from the unpatched one; L33's claim that all three rows exercise the bar is vacuous for them (corroborated by codex)"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "'no closed form exists after an arbitrary boolean' is false for 4 of the 15 composed rows (web formula matches them to 6 dp); claim appears in the debt file, L33 (twice) and three test docstrings (external: codex)"
   - id: IN-01
     severity: info
@@ -27,7 +27,7 @@ findings:
     severity: info
     disposition: open
     title: "lead-in warning omits the x > 0.125 clause README states (correct as a cause statement)"
-open: 6
+open: 4
 total: 6
 recorded: 2026-10-03T10:40:00.000Z
 ---
@@ -37,10 +37,17 @@ recorded: 2026-10-03T10:40:00.000Z
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | WR-01 | warning | open | 14-REVIEW.md |
-| WR-02 | warning | open | 14-REVIEW.md (corroborated by codex lane) |
-| WR-03 | warning | open | 14-REVIEW.md (external: codex lane, verified by gsd-code-reviewer) |
+| WR-02 | warning | fixed | 14-REVIEW.md (corroborated by codex lane) |
+| WR-03 | warning | fixed | 14-REVIEW.md (external: codex lane, verified by gsd-code-reviewer) |
 | IN-01 | info | open | 14-REVIEW.md |
 | IN-02 | info | open | 14-REVIEW.md |
 | IN-03 | info | open | 14-REVIEW.md |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
+
+## Fixed by 14-04 (UAT gaps G-14-2 and G-14-5)
+
+- WR-02: `a4347be` (`test(14-04)`), the skip-the-cutout tripwire's holes and cells rows now take closed-form
+  volumes and a control call passes on the unpatched build before the patch.
+- WR-03: `4892853` (`test(14-04)`), the four hole-through-web composed rows assert the web formula and every
+  "no closed form exists" is reworded to "not derived here" (debt file, L33 edited in place, three docstrings).

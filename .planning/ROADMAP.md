@@ -165,7 +165,7 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); both debt
 files already state the next step.
-**Plans:** 3/4 plans executed (strictly serial: one working tree, and the pre-commit `make verify` hook reads all of it)
+**Plans:** 4/4 plans executed (strictly serial: one working tree, and the pre-commit `make verify` hook reads all of it)
 
 Plans:
 **Wave 1**
@@ -178,7 +178,7 @@ Plans:
 - [x] 14-03-PLAN.md — L33 (amends L09, L10 and L30) and the phase's end-state check
 
 **Wave 4** *(gap closure, blocked on Wave 3 completion)*
-- [ ] 14-04-PLAN.md — UAT gaps G-14-2 and G-14-5: the skip-the-cutout tripwire's holes and cells rows made discriminating; the four hole-through-web composed rows on the web formula, measured before the bar moves; "not derived here" in the debt file, L33 (in place) and three docstrings
+- [x] 14-04-PLAN.md — UAT gaps G-14-2 and G-14-5: the skip-the-cutout tripwire's holes and cells rows made discriminating; the four hole-through-web composed rows on the web formula, measured before the bar moves; "not derived here" in the debt file, L33 (in place) and three docstrings
 
 ### Phase 15: The Gate, Measured and Pinned
 
@@ -279,6 +279,6 @@ internal and one is process-only.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
-| 14. Honest Record | v0.3 | 3/3 | In Progress|  |
+| 14. Honest Record | v0.3 | 4/4 | In Progress|  |
 | 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
