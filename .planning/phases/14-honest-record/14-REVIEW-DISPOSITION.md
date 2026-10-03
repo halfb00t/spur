@@ -6,7 +6,15 @@ findings:
   - id: WR-01
     severity: warning
     disposition: open
-    title: "abs=1e-9 volume bars calibrated only on macOS arm64; CI runs ubuntu-latest"
+    title: "`volume_rel` silently shadows `volume_abs` when both are passed"
+  - id: IN-01
+    severity: info
+    disposition: open
+    title: "Test docstrings cite `14-REVIEW WR-02` / `WR-03`, a file this review replaces"
+  - id: IN-02
+    severity: info
+    disposition: open
+    title: "L33 attributes the tip-row bar to D-06, whose stated trigger was not met"
   - id: WR-02
     severity: warning
     disposition: fixed
@@ -15,39 +23,26 @@ findings:
     severity: warning
     disposition: fixed
     title: "'no closed form exists after an arbitrary boolean' is false for 4 of the 15 composed rows (web formula matches them to 6 dp); claim appears in the debt file, L33 (twice) and three test docstrings (external: codex)"
-  - id: IN-01
-    severity: info
-    disposition: open
-    title: "resolved root-lead-in debt file still carries the template's On-resolve comment"
-  - id: IN-02
-    severity: info
-    disposition: open
-    title: "closed-form spoke oracle checked at one configuration; tripwire's perturbed() is a hand copy of _fillet_corner"
   - id: IN-03
     severity: info
     disposition: open
     title: "lead-in warning omits the x > 0.125 clause README states (correct as a cause statement)"
 open: 4
 total: 6
-recorded: 2026-10-03T10:40:00.000Z
+recorded: 2026-10-03T08:06:02.670Z
 ---
 
 # Phase 14: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | 14-REVIEW.md |
-| WR-02 | warning | fixed | 14-REVIEW.md (corroborated by codex lane) |
-| WR-03 | warning | fixed | 14-REVIEW.md (external: codex lane, verified by gsd-code-reviewer) |
-| IN-01 | info | open | 14-REVIEW.md |
-| IN-02 | info | open | 14-REVIEW.md |
-| IN-03 | info | open | 14-REVIEW.md |
+| WR-01 | warning | open | - |
+| IN-01 | info | open | - |
+| IN-02 | info | open | - |
+| WR-02 | warning | fixed | 14-REVIEW.md (corroborated by codex lane) (not in the current review) |
+| WR-03 | warning | fixed | 14-REVIEW.md (external: codex lane, verified by gsd-code-reviewer) (not in the current review) |
+| IN-03 | info | open | 14-REVIEW.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
-
-## Fixed by 14-04 (UAT gaps G-14-2 and G-14-5)
-
-- WR-02: `a4347be` (`test(14-04)`), the skip-the-cutout tripwire's holes and cells rows now take closed-form
-  volumes and a control call passes on the unpatched build before the patch.
-- WR-03: `4892853` (`test(14-04)`), the four hole-through-web composed rows assert the web formula and every
-  "no closed form exists" is reworded to "not derived here" (debt file, L33 edited in place, three docstrings).
+Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
+Re-running the gate keeps every row it can. A row the current review no longer reports is kept and its Source cell flagged, so a finding does not leave this record silently. ONE exception: when a finding id is REUSED by a different finding, the earlier decision cannot keep a row — the id is taken — and it is dropped. A RECORDED decision (anything but `open`) is named on the console when that happens; a row still at `open` is replaced silently, because `open` records no decision to lose.
