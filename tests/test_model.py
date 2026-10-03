@@ -1123,6 +1123,61 @@ def _spoke_bar_area(rh: float, rr: float, o: float) -> float:
     return s(rr) - s(rh)
 
 
+def _filleted_spoke_volume(p: GearParams) -> float:
+    """The removed volume of the filleted spoke cutout (D-08, D-09), closed form: the
+    sharp sector's area -- the spokes-sharp row's own proven formula,
+    pi * (rr^2 - rh^2) - n * _spoke_bar_area -- minus the four corner cut-offs the
+    fillets of radius rho = spoke_fillet_effective(p) take off it, times face_width.
+
+    The four corners are two mirror pairs about the sector's bisector, so one hub and
+    one rim cut-off are derived and each counted twice. cut_off works in the frame
+    where the bar side is the line y = o (x > 0) and the sector lies on y > o. The
+    fillet centre is rho off the bar side, cy = o + rho, and rc from the axis, rc = R + rho
+    at the hub (the void lies outside the hub circle) or R - rho at the rim (inside the
+    rim circle), so cx = sqrt(rc^2 - cy^2). The tangent point on the bar side is
+    (cx, o); on the circle it is the centre scaled to R. The sharp corner (the bar side
+    meets the circle) is (sqrt(R^2 - o^2), o). The cut-off is the quadrilateral
+    corner / bar tangent / centre / circle tangent, less the fillet's own sector
+    0.5 * rho^2 * theta (theta = pi/2 -/+ phi, phi the centre's polar angle), then
+    corrected for the circle's arc, which the quadrilateral's chord replaces: the
+    segment 0.5 * R^2 * (delta - sin delta), delta = phi - asin(o / R), is
+    material at the hub (subtract it) and void at the rim (add it) -- the same sign
+    on both is off by about 1 mm3.
+
+    It re-derives every centre and tangent point in this polar form and never touches
+    model._fillet_corner's quadratic and root choice, so a wrong root, sign or side
+    there disagrees with this function instead of moving both sides together (L08).
+    Measured 2026-10-03 against the built solid (cadquery 2.8.0 / cadquery-ocp
+    7.9.3.1.1): SPOKES12 + spoke_fillet 1 agrees to 2.73e-12 mm3.
+    """
+    n = p.spoke_count
+    rh = p.hub_d / 2
+    rr = profile(p).rf - p.rim_wall
+    o = p.spoke_width / 2
+    rho = spoke_fillet_effective(p)
+
+    def cut_off(big_r: float, inside: bool) -> float:
+        rc = big_r - rho if inside else big_r + rho
+        cy = o + rho
+        cx = math.sqrt(rc * rc - cy * cy)
+        corner = (math.sqrt(big_r * big_r - o * o), o)
+        on_bar = (cx, o)
+        on_circle = (cx * big_r / rc, cy * big_r / rc)
+        pts = [corner, on_bar, (cx, cy), on_circle]
+        quad = abs(sum(pts[i][0] * pts[(i + 1) % 4][1] - pts[(i + 1) % 4][0] * pts[i][1]
+                       for i in range(4))) / 2
+        phi = math.atan2(cy, cx)
+        theta = math.pi / 2 + phi if inside else math.pi / 2 - phi
+        delta = phi - math.asin(o / big_r)
+        segment = 0.5 * big_r * big_r * (delta - math.sin(delta))
+        sector = 0.5 * rho * rho * theta
+        return quad - sector + segment if inside else quad - sector - segment
+
+    area = (math.pi * (rr * rr - rh * rh) - n * _spoke_bar_area(rh, rr, o)
+            - 2 * n * (cut_off(rh, False) + cut_off(rr, True)))
+    return area * p.face_width
+
+
 def _honeycomb_farthest_vertex_angle(p: GearParams, rf: float) -> float:
     """The angle (radians) of the farthest honeycomb-cell vertex from the axis (D-08:
     flats face +-X, vertices +-Y -- the same polygon(6, size, circumscribed=True) vertex
@@ -1174,7 +1229,7 @@ def _honeycomb_nearest_point_angle(p: GearParams, rf: float) -> float:
 def _assert_the_cutout_is_what_derive_prints(
         cut: cq.Solid, plain: cq.Solid, p: GearParams, p0: GearParams, *,
         d_faces: collections.Counter[str], d_edges: int, d_volume: float,
-        hub_angle: float, rim_angle: float) -> None:
+        hub_angle: float, rim_angle: float, volume_rel: float | None = None) -> None:
     """Shared by the proof
     (test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid) and the tripwire
     (test_the_cutout_proof_fails_when_the_cutout_step_is_skipped) -- 10-03's shape. The
@@ -1184,6 +1239,11 @@ def _assert_the_cutout_is_what_derive_prints(
     own hub_angle/rim_angle: the probe points come from the printed numbers, never a
     hand-picked location (L08) -- material just inside the hub wall and void just
     outside it, void just inside the rim wall and material just outside it.
+
+    The removed volume is held to abs=1e-9 mm3 -- the formula rows' bar. volume_rel is
+    for the two composed-solid tests only, whose d_volume is a 6 dp literal measured
+    after an arbitrary boolean (no closed form to agree with, so no 1e-9 claim): they
+    pass a relative one part in a million, the bar they always had.
     """
     faces_delta = (collections.Counter(f.geomType() for f in cut.Faces())
                   - collections.Counter(f.geomType() for f in plain.Faces()))
@@ -1193,7 +1253,11 @@ def _assert_the_cutout_is_what_derive_prints(
     assert not faces_reverse
 
     assert len(cut.Edges()) - len(plain.Edges()) == d_edges
-    assert plain.Volume() - cut.Volume() == pytest.approx(d_volume, rel=1e-6)
+    removed = plain.Volume() - cut.Volume()
+    if volume_rel is None:
+        assert removed == pytest.approx(d_volume, abs=1e-9)
+    else:
+        assert removed == pytest.approx(d_volume, rel=volume_rel)
 
     bb_cut, bb_plain = cut.BoundingBox(), plain.BoundingBox()
     for attr in ("xmin", "xmax", "ymin", "ymax", "zmin", "zmax"):
@@ -1223,13 +1287,20 @@ def test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid(kind: str)
     the pinned kernel (cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1): HOLES +6 CYLINDER, +18
     edges, 565.486678 mm3; sharp SPOKES12 +8 PLANE +8 CYLINDER, +48 edges, 2959.086823
     mm3 (the analytic bar-area formula below matches to 1e-9 mm3); filleted SPOKES12 +8
-    PLANE +24 CYLINDER, +96 edges, 2934.725405 mm3 (no closed form for a filleted
-    sector's volume -- pinned, not derived, L08) plus 32 CIRCLE edges of radius
+    PLANE +24 CYLINDER, +96 edges, removed volume _filleted_spoke_volume(p)'s closed
+    form (first measurement 2026-09-29 on cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1:
+    2934.725405 mm3) plus 32 CIRCLE edges of radius
     spoke_fillet_effective(p) split 16/16 across the end faces; CELLS +108 PLANE, +324
     edges, 1052.220866 mm3 (18 whole cells at the requested 3 mm size, matching the
     analytic hexagon-area formula to 1e-9 mm3). Arm 0 and hole 0 sit on +X (D-03); the
     (8, 0) cell's -X flat faces +X (D-08) -- hub_angle 0 for holes and cells, pi/4 for
     spokes (the middle of sector 0, since arm 0 itself is on +X).
+
+    The removed volume is asserted at abs=1e-9 mm3 on all four rows. Kernel-formula gap
+    per row, measured 2026-10-03 on cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1: holes
+    2.39e-12, spokes-sharp 1.36e-12, spokes-filleted 2.73e-12, cells 8.87e-12 mm3. Phase
+    11 measured this agreement but asserted it only at rel=1e-6 (about 2.9e-3 mm3 on the
+    filleted row) until Phase 14.
     """
     p0 = GearParams(recess_sides="none")
     plain = _build_checked(p0)
@@ -1259,10 +1330,7 @@ def test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid(kind: str)
         _assert_the_cutout_is_what_derive_prints(
             cut, plain, p, p0,
             d_faces=collections.Counter({"PLANE": 8, "CYLINDER": 24}), d_edges=96,
-            # No closed form for a filleted sector's removed volume; measured on the
-            # pinned kernel 2026-09-29 and pinned (L08), like the sharp row's formula
-            # cross-check above but without one to check it against.
-            d_volume=2934.725405,
+            d_volume=_filleted_spoke_volume(p),
             hub_angle=math.pi / 4, rim_angle=math.pi / 4)
         rho = spoke_fillet_effective(p)
         fillet_edges = [e for e in cut.Edges()
@@ -1289,7 +1357,9 @@ def test_each_cutout_is_exactly_what_derive_prints_on_the_built_solid(kind: str)
     pytest.param({**HOLES, "recess_sides": "none"},
                  collections.Counter({"CYLINDER": 6}), 18, 565.486678, 0.0, id="holes"),
     pytest.param({**SPOKES12, "spoke_fillet": 1, "recess_sides": "none"},
-                 collections.Counter({"PLANE": 8, "CYLINDER": 24}), 96, 2934.725405,
+                 collections.Counter({"PLANE": 8, "CYLINDER": 24}), 96,
+                 _filleted_spoke_volume(GearParams.model_validate(
+                     {**SPOKES12, "spoke_fillet": 1, "recess_sides": "none"})),
                  math.pi / 4, id="spokes-filleted"),
     pytest.param({**CELLS, "recess_sides": "none"},
                  collections.Counter({"PLANE": 108}), 324, 1052.220866, 0.0, id="cells"),
@@ -1311,6 +1381,55 @@ def test_the_cutout_proof_fails_when_the_cutout_step_is_skipped(
             _build_checked(p), _build_checked(p0), p, p0,
             d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
             hub_angle=angle, rim_angle=angle)
+
+
+def test_the_cutout_proof_fails_when_a_rim_corner_tangent_root_moves(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """L08's failure, 10-03/11-08's tripwire shape, for the filleted spoke's rim corners:
+    the inside=True tangent root of model._fillet_corner moves by 1e-6 mm. The part
+    still builds, derive() still prints spoke_fillet_effective, the face and edge deltas
+    are the right ones, and the removed volume still agrees with the closed form at the
+    pre-phase rel=1e-6 bar -- only the abs=1e-9 assertion sees it.
+
+    The shift is 1e-6 mm, not 0.01 mm: 0.01 mm moved the removed volume by 2.522 mm3
+    (planning, 2026-10-02), which the old relative bar catches too, so it could not show
+    the tightening is load-bearing. 1e-6 mm moves it by 2.522e-4 mm3 (measured
+    2026-10-03, gap to the oracle 2.522e-4 mm3, relative 8.59e-8) -- inside the old bar
+    and about 2.5e5 times the new one, so loosening the bar back turns this test red.
+    """
+    def perturbed(p0: cq.Vector, p1: cq.Vector, rf: float, rho: float, gap_side: int,
+                  inside: bool = False) -> tuple[cq.Vector, cq.Vector, cq.Vector]:
+        if not inside:  # tooth roots and hub corners stay byte-identical
+            return _fillet_corner(p0, p1, rf, rho, gap_side)
+        u = (p1 - p0).normalized()
+        n = cq.Vector(-u.y, u.x, 0) * gap_side
+        q = p0 + n * rho
+        b = q.dot(u)
+        rc = rf - rho
+        root = math.sqrt(max(0.0, b * b - (q.dot(q) - rc ** 2)))
+        t = -b - root + 1e-6
+        centre = q + u * t
+        on_line = p0 + u * t
+        on_root = centre * (rf / rc)
+        mid = centre + ((on_line + on_root) * 0.5 - centre).normalized() * rho
+        return on_root, mid, on_line
+
+    monkeypatch.setattr("spur.model._fillet_corner", perturbed)
+    p0 = GearParams(recess_sides="none")
+    p = GearParams.model_validate({**SPOKES12, "spoke_fillet": 1, "recess_sides": "none"})
+    assert derive(p).spoke_fillet_effective is not None  # the number still prints
+    plain, cut = _build_checked(p0), _build_checked(p)
+    d_faces = collections.Counter({"PLANE": 8, "CYLINDER": 24})
+    faces_delta = (collections.Counter(f.geomType() for f in cut.Faces())
+                  - collections.Counter(f.geomType() for f in plain.Faces()))
+    assert faces_delta == d_faces
+    assert len(cut.Edges()) - len(plain.Edges()) == 96
+    d_volume = _filleted_spoke_volume(p)
+    assert plain.Volume() - cut.Volume() == pytest.approx(d_volume, rel=1e-6)
+    with pytest.raises(AssertionError):
+        _assert_the_cutout_is_what_derive_prints(
+            cut, plain, p, p0, d_faces=d_faces, d_edges=96, d_volume=d_volume,
+            hub_angle=math.pi / 4, rim_angle=math.pi / 4)
 
 
 @pytest.mark.parametrize("kw", [
@@ -1509,7 +1628,7 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
     _assert_the_cutout_is_what_derive_prints(
         cut, _build_reference(p_no_cut), p, p_no_cut,
         d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
-        hub_angle=hub_angle, rim_angle=rim_angle)
+        hub_angle=hub_angle, rim_angle=rim_angle, volume_rel=1e-6)
 
 
 @pytest.mark.parametrize(("cutout", "d_faces", "d_edges", "d_volume", "torus"), [
@@ -1556,7 +1675,7 @@ def test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess(
     _assert_the_cutout_is_what_derive_prints(
         cut, _build_reference(p0), p, p0,
         d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
-        hub_angle=hub_angle, rim_angle=rim_angle)
+        hub_angle=hub_angle, rim_angle=rim_angle, volume_rel=1e-6)
 
 
 def test_exports() -> None:
