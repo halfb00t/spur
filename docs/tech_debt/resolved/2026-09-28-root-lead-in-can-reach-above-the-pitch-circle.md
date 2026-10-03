@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-28
-Resolved in: docs(14-01): state where the root lead-in really ends and retire its debt
+Resolved in: 825095f
 Source: 10-01's tip-chamfer spike
 Related files:
 - src/spur/calc.py (spline_start)
