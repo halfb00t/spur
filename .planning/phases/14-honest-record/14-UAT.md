@@ -88,3 +88,4 @@ blocked: 0
     - "before changing the bar, measure each of the four rows' kernel-vs-formula gap on the pinned kernel and record it in the test docstring; if any gap exceeds 1e-9 mm3 stop at a blocking-human checkpoint with the numbers (14-02's D-06 pattern), never loosen the bar"
     - "the debt file: 11 rows remain at rel=1e-6, the four moved rows named, the next step naming the recess-split integral for spokes and cells"
   debug_session: ""
+  human_pre_decision: "2026-10-03, after the planner probe (tip rows 5.85e-10 / 5.94e-10 / 6.55e-10 mm3, single-sided 2.79e-12): noise-multiple 1e-8 -- the three tip rows at abs=1e-8, the single-sided row at abs=1e-9; applies only if the executor measurement reproduces those bands (14-04-PLAN.md Task 2)"
