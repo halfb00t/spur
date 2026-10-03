@@ -1513,3 +1513,100 @@ machine_facts; print(machine_facts())"`, read 2026-10-02); macOS 27.0 (`sw_vers
 -productVersion`), Darwin kernel 27.0.0 (`uname -r`); the investigation campaign ran
 2026-10-02T02:36:53Z–03:11:43Z, the bar sessions 2026-10-02T03:41:00Z–07:18:00Z (approx),
 and SC3 2026-10-02T08:08:01Z–08:23:01Z, all on this host.
+
+## L33 — The root lead-in is warned, not re-cut, and the filleted-spoke cutout is proved against a closed form (amends L09, L10 and L30)
+
+Date: 2026-10-03.
+
+L09, L10 and L30 stay as written; this entry amends the root-zone claim README and
+`_outline` made beside L09 and L10, and L30's clause that the filleted spoke's removed
+volume is pinned because it has no closed form, with what Phase 14 measured and proved.
+
+**The root lead-in** (D-01 to D-04, D-12, D-13). The kickoff choice, "warned, not re-cut":
+the root fillet's straight chord can end above the pitch circle, and the alternative was to
+re-cut the outline so it never does. That path was not taken — it regenerates the pre-v0.2
+fixture under its own `Lxx` and changes the part of every shared link that sets a large
+profile shift or root fillet (L05); REQUIREMENTS.md "Out of Scope" records it, and L10's
+trochoidal root stays in `docs/ideas/`. The rule: `derive()` appends one sentence when
+`round(spline_start(pr, root_fillet(p)) - pr.r, 3) > 0`, comparing at the resolution it
+prints (10-REVIEW.md CR-01), so a height that would print as `0.000` is silent. The sentence
+names the height and the cause (the root fillet is larger than half the dedendum) and quotes
+no deviation figure and no remedy number: the retired debt file's planning-time deviation
+figures had no script in the repo behind them, so the warning and README quote none of them
+(L08). The real condition: the chord ends above the pitch circle exactly when the root fillet
+exceeds half the dedendum, `(1.25 - x)*m/2`, **and** the profile shift `x` exceeds 0.125,
+because the chord is capped halfway up the tooth at `r + (x - 0.125)*m`, so at or below that
+shift a fillet over half the dedendum still ends at or under the pitch circle. The second
+clause was found in planning (the first draft's condition alone was false wherever the cap
+binds) and is pinned by the mid-tooth rows. The evidence: the 15 rows of
+`test_the_root_lead_in_warns_when_it_ends_above_the_pitch_circle` — the default gear's
+-1.1875 mm (silent), the debt file's two crossing configurations (+0.5625 mm at
+`{profile_shift 1.0, pressure_angle 14.5}`, which prints 0.562 because Python rounds the
+binary value half-to-even, and +0.125 mm at `{profile_shift 0.75, pressure_angle 20}`), one
+field step either side of the crossing on each of `profile_shift`, `root_fillet` and
+`module`, the mid-tooth trio (x 0.10 silent, 0.125 an exact touch and silent, 0.15 warns),
+zero fillet, and the print-resolution pair (0.0003 mm silent, 0.001 mm warns) — each
+asserting the fillet actually used, the height and the full warning string, captured from
+`derive()` and never typed. All 44 records of the pre-v0.2 fixture sit below the crossing:
+0 of 44 warn, recomputed 2026-10-03 on the committed code over `tests/regression/corpus.py`'s
+cases (`14-03-SUMMARY.md`), so the fixture is byte-identical to `5d9e907` and
+`tests/regression/test_pre_v0_2.py` still passes (85 passed, `14-01-SUMMARY.md`). README's
+root-fillets bullet and `_outline`'s docstring no longer call the chord non-working; they
+state the condition, the default gear's 1.188 mm below the pitch circle, and cite
+`warnings`. Commits: `13857e1` (`feat(14-01)`, the warning), `ac607d7` (`test(14-01)`, the
+15 rows), `825095f` (`docs(14-01): state ...`, README and `_outline`, the debt retired).
+
+**The filleted-spoke proof** (D-05 to D-10). L30 said the cutout proof was checked to
+`1e-9 mm3` against a closed form for holes, sharp spokes and honeycomb and pinned for the
+filleted spoke, which has none. The filleted spoke does have one. `_filleted_spoke_volume`
+in `tests/test_model.py` is the sharp opening, `pi*(rr^2 - rh^2) - n*_spoke_bar_area`, minus
+the four corner cut-offs the fillets of radius `spoke_fillet_effective(p)` take off it (two
+mirror pairs, one hub and one rim corner derived and each counted twice), times
+`face_width`. Each fillet centre is placed from its two distances — `rho` off the bar side,
+and `rh + rho` (hub) or `rr - rho` (rim) from the axis — and the circle's chord-versus-arc
+sliver is subtracted at the hub and added at the rim; it never calls `_fillet_corner`, so a
+wrong root, sign or side there disagrees with the oracle instead of moving both sides
+together (D-09, L08). Measured 2026-10-03 on the pinned kernel pair, the kernel-to-formula
+gap per row is: holes 2.39e-12 mm3, spokes-sharp 1.36e-12 mm3, spokes-filleted 2.73e-12 mm3,
+cells 8.87e-12 mm3 (copied from the proof's docstring). Phase 11 measured this agreement but
+asserted a relative bar on the filleted row (about 2.9e-3 mm3 there); the four rows now
+assert the removed volume at `abs=1e-9` mm3, the largest gap (8.87e-12 mm3) under 1% of the bar. D-06
+(a gap above 1e-9 mm3, which would have gone to the human for a decision) was not reached:
+no tolerance was loosened and none was set from a measured gap. The bar does **not** apply
+to every caller of the shared assertion. Fifteen composed-solid rows (12 in
+`test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore`, 3 in
+`test_the_recess_fillet_and_cutout_proofs_hold_with_a_single_sided_recess`) pass
+`volume_rel=1e-6`, because their `d_volume` is a 6 dp literal measured after an arbitrary
+boolean and no closed form exists for it, so it cannot meet `abs=1e-9`; they keep the
+relative bar they had before this phase and never carried the 1e-9 claim. That is filed as
+`docs/tech_debt/active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md`
+(nice; revisit when the kernel pair is bumped). The four cutout rows (holes, sharp spokes,
+filleted spokes, honeycomb) and all three skip-the-cutout tripwire rows run at `abs=1e-9`.
+The tripwire, `test_the_cutout_proof_fails_when_a_rim_corner_tangent_root_moves`: the
+`inside=True` tangent root of `_fillet_corner` is moved by 1e-6 mm. The solid still builds
+valid, the face delta (`{CYLINDER: 24, PLANE: 8}`) and edge delta (96) are the right ones,
+and `derive()` still prints `spoke_fillet_effective`, so every check but the volume is blind
+to it. The removed volume moves by 2.522e-4 mm3 (relative 8.59e-8) — inside the old
+`rel=1e-6` bar, about 2.5e5 times the new one — and the `abs=1e-9` assertion goes red, so
+loosening the bar back turns the test red. The shift is 1e-6 mm, not 0.01 mm: 0.01 mm moves
+the volume by 2.522 mm3, which the old relative bar catches too. The literal 2934.725405
+survives only as the docstring's record of the 2026-09-29 first measurement. Commits:
+`61e1bea` (`test(14-02)`, the oracle, the bar, the tripwire, the debt retired) and `b00c44c`
+(`docs(14-02)`, its sha recorded in the debt file).
+
+**Reversibility.** Reversible on every axis this entry adds: the warning is one appended
+sentence from a pure function that no fixture record carries; README and the docstring are
+prose; the bar is one test tolerance (D-05). The path not taken stays costly and untouched:
+re-cutting the outline re-cuts every link that sets a large profile shift or root fillet and
+regenerates the fixture (L05, L26).
+
+Reason: the record claimed two things it could not back — a lead-in always in the
+non-working root zone, and a `1e-9` bar asserted on every cutout row with the filleted row
+only pinned. This phase made each true, or warned, by tests rather than by re-pinning: the
+lead-in warns where it crosses the pitch circle and README says where it really ends, the
+four formula rows assert `1e-9` against closed forms, and the 15 composed rows that cannot
+are named as debt instead of implied.
+Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Python
+3.12.13 (`sys.version.split()[0]`), read 2026-10-03; the four gaps and the tripwire's shift
+were measured on 2026-10-03, the first filleted-spoke measurement on 2026-09-29, both on this
+kernel pair.
