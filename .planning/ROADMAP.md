@@ -164,11 +164,11 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); both debt
 files already state the next step.
-**Plans:** 3 plans (strictly serial: one working tree, and the pre-commit `make verify` hook reads all of it)
+**Plans:** 1/3 plans executed (strictly serial: one working tree, and the pre-commit `make verify` hook reads all of it)
 
 Plans:
 **Wave 1**
-- [ ] 14-01-PLAN.md — the lead-in warning, tracer first (derive() through `spur info` and `/api/info`), its 15 rows, README and `_outline` corrected, the root lead-in debt retired
+- [x] 14-01-PLAN.md — the lead-in warning, tracer first (derive() through `spur info` and `/api/info`), its 15 rows, README and `_outline` corrected, the root lead-in debt retired
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 14-02-PLAN.md — the filleted-spoke closed form, every row's gap measured then asserted at `abs=1e-9` (D-06 halt on a miss), the rim-corner root tripwire, the filleted-spoke debt retired, D-07 sentences
@@ -275,6 +275,6 @@ internal and one is process-only.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
-| 14. Honest Record | v0.3 | 0/3 | Planned | - |
+| 14. Honest Record | v0.3 | 1/3 | In Progress|  |
 | 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |

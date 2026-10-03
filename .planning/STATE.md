@@ -5,11 +5,11 @@ milestone_name: Clean Ledger
 current_phase: 14
 current_phase_name: Honest Record
 status: "Phase 13 shipped — PR #16"
-stopped_at: Phase 14 context gathered
-last_updated: "2026-10-02T16:47:21.865Z"
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-10-03T03:10:00.118Z"
 last_activity: 2026-10-02
 last_activity_desc: Phase 14 planning complete
-state_head: fb88639bfccda39e908a51188d4392ae9ec960ea
+state_head: 775ee6ffa6992474287b69ba56a6e65cc1880a22
 progress:
   total_phases: 4
   completed_phases: 3
@@ -173,6 +173,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 13 P05 | 2min | 0 tasks | 0 files |
 | Phase 13 P06 | ~69min total (continuation: Task 2 close-out + Task 3, ~45min) | 3 tasks | 13 files |
 | Phase 13 P07 | ~25min (continuation; Task 1 prior session) | 2 tasks | 8 files |
+| Phase 14 P01 | 22 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -278,6 +279,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 13]: L32 appended (amends L18, append-only): the bar demonstrated outright on bar-3 (outcome a, Run 13 1.31x / Run 14 1.42x) -- 13-05's outcome-(b) path and D-09/D-11 were never reached
 - [Phase 13]: The 2026-09-23 waived-latency debt retired in 6709953 (sha recorded in follow-up 05668ef, since a file cannot carry its own commit's sha); Dockerfile's measured-p95 comment updated (eight -> fifteen runs), no ratio bar cited
 - [Phase 13]: fleet-user's pre-phase state was already Exited -- the phase never started it, so 13-07's host-restore step confirmed it unchanged (Exited) rather than running docker start; spur-spur-1 stayed Up throughout; make verify green (910 passed) at phase close
+- [Phase 14]: 14-01: the root lead-in warning fires at round(h, 3) > 0 and sits after 'Root fillet reduced'; README states the condition with one clause beyond D-12's draft (profile shift above 0.125) because the chord is capped halfway up the tooth below it, proven by the mid-tooth rows; expected strings captured from derive() (debt-x1.0-pa14.5 prints 0.562, not CONTEXT's 0.563) — D-01/D-02/D-12 content kept; 0.125 clause proven by the mid-tooth-silent/touch/warns rows
 
 ### Pending Todos
 
@@ -394,9 +396,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-02T13:14:16.453Z
-Stopped at: Phase 14 context gathered
-Resume file: .planning/phases/14-honest-record/14-CONTEXT.md
+Last session: 2026-10-03T03:10:00.091Z
+Stopped at: Completed 14-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
