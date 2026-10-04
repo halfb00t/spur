@@ -4,12 +4,12 @@ milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 16
 current_phase_name: Typing & Validation Debt
-status: "Phase 15 shipped — PR #18"
-stopped_at: Phase 16 context gathered
-last_updated: "2026-10-04T16:37:09.391Z"
+status: executing
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-10-04T17:34:00.304Z"
 last_activity: 2026-10-04
-last_activity_desc: Phase 16 planning complete
-state_head: 5ff5e7db51ea77c6d8608aaa689f103b9edcd861
+last_activity_desc: Phase 16 execution started
+state_head: c11213eb00f133f385728812bfdda5f35cdff751
 progress:
   total_phases: 4
   completed_phases: 5
@@ -30,10 +30,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 16 (Typing & Validation Debt) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 15 shipped — PR #18
-Last activity: 2026-10-04 — Phase 16 planning complete
+Phase: 16 (Typing & Validation Debt) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-10-04 — Phase 16 execution started
 
 ## Performance Metrics
 
@@ -185,6 +185,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 15 P04 | 23 min | 2 tasks | 3 files |
 | Phase 15 P05 | 10min | 3 tasks | 8 files |
 | Phase 15 P06 | 8 min | 3 tasks | 6 files |
+| Phase 16 P01 | 7 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -304,6 +305,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 15]: 15-05: CI's kernel pin is PIP_CONSTRAINT=requirements.txt as step-level env on make verify, plus an always-run step printing the resolved pair; run 37181871926 on draft PR #18 printed cadquery 2.8.0 cadquery-ocp 7.9.3.1.1 — D-13: one env line reaches pip's self-upgrade and the editable install inside the venv recipe; neither named REQ option was taken
 - [Phase 15]: 15-05: phase PR #18 is a draft; at ship update it with gh pr edit and gh pr ready, not gh pr create — gh pr create would refuse a second PR for the branch (D-16 addendum)
 - [Phase 15]: L34 appended after L33 amends L12 and L13: the gate is measured (mean(B) 63.555 s at -n 8 with coverage, bar 66 s met), floored (fail_under 96) and CI installs the pinned kernel; every '~11 s' site now states the measured figure — Phase 15 plan 06; the figure is the gate as committed on the 12-core dev host (bench/RESULTS.md Before and after); the commit-timeout debt stays active
+- [Phase 16]: 16-01: the Shape narrowing is two isinstance helpers raising BuildError (_body at three fillet/chamfer sites, _shape_of at two .val() sites), never a cast; _gear_blank stays -> cq.Shape — Shape.cut returns Shape whatever goes in, so a cast at .val() reaches two of five; -> cq.Solid makes mypy flag five [assignment] errors in _build (16-RESEARCH Pitfall 1)
+- [Phase 16]: 16-01: mypy's override dropped cadquery.* (OCP.* stays); D-04's gate passed -- mypy output over src tests docker bench scripts byte-identical with the cache cleared before and after — cadquery ships py.typed, OCP ships no type information; cmp of the two captures, both 'Success: no issues found in 37 source files'
+- [Phase 16]: 16-01: make no-fake-done refuses a mypy suppression under src/spur/ (seen red against the five lines at 085e5a6); tests/ keeps its two deliberate ones — mypy's warn_unused_ignores refuses a stale suppression but nothing refused a new one (the fifth arrived unnoticed in 10-02)
 
 ### Pending Todos
 
@@ -433,6 +437,7 @@ None yet.
 - Phase 15 edited: edited fields: depends_on, success_criteria SC2, research flag (per 15-CONTEXT.md D-01)
 - Phase 15 edited: edited fields: success_criteria SC3 (per 15-RESEARCH Open Question 2 and the 15-CONTEXT.md D-09 addendum, decided in 15-02)
 - Phase 15 edited: edited fields: success_criteria SC4 (per 15-CONTEXT.md D-13)
+- Phase 16 edited: edited fields: success_criteria SC1, SC2 (per 16-CONTEXT.md D-01, D-12 and 16-RESEARCH Finding 7)
 
 ## Deferred Items
 
@@ -442,9 +447,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T15:10:20.605Z
-Stopped at: Phase 16 context gathered
-Resume file: .planning/phases/16-typing-validation-debt/16-CONTEXT.md
+Last session: 2026-10-04T17:34:00.268Z
+Stopped at: Completed 16-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
