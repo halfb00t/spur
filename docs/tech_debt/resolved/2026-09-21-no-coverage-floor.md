@@ -3,7 +3,7 @@
 Severity: nice
 Status: resolved
 Date: 2026-09-21
-Resolved in: test(15-02): gate make verify on a coverage floor set from the measured baseline
+Resolved in: 2aadcea
 Source: setting up the gate (L13)
 Related files:
 - pyproject.toml (`[tool.coverage.run]`)
