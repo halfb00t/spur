@@ -2,38 +2,38 @@
 gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
-current_phase: 15
-current_phase_name: The Gate, Measured and Pinned
-status: verifying
-stopped_at: Completed 15-06-PLAN.md
-last_updated: "2026-10-04T06:27:46.824Z"
-last_activity: 2026-10-03
-last_activity_desc: Phase 15 execution started
-state_head: 298677ae8ecd35e39fb058d737701ebaf9288b38
+current_phase: 16
+current_phase_name: Typing & Validation Debt
+status: planning
+stopped_at: Phase 15 complete, ready to plan Phase 16
+last_updated: "2026-10-04T10:50:39.897Z"
+last_activity: 2026-10-04
+last_activity_desc: Phase 15 complete, transitioned to Phase 16
+state_head: 20f33c4346558c41396a5a15ad48fe54e294dd55
 progress:
   total_phases: 4
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 17
   completed_plans: 17
-  percent: 100
+  percent: 83
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-03)
+See: .planning/PROJECT.md (updated 2026-10-04)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 15 — The Gate, Measured and Pinned
+**Current focus:** Phase 16 — Typing & Validation Debt
 
 ## Current Position
 
-Phase: 15 (The Gate, Measured and Pinned) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-10-03 — Phase 15 execution started
+Phase: 16 — Typing & Validation Debt
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-04 — Phase 15 complete, transitioned to Phase 16
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Last activity: 2026-10-03 — Phase 15 execution started
 | 12 | 9 | - | - |
 | 13 | 7 | - | - |
 | 14 | 4 | - | - |
+| 15 | 6 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -195,7 +196,7 @@ fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar acc
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
 verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
-L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11. L31 (v0.2 composes: the composed sweep measured, `spoke_count` `le` 32, the matrix and the three-interface parity proven, export bytes explicitly not compared) was appended in Phase 12. L33 (the root lead-in warned, not re-cut; the filleted-spoke cutout proved against a closed form at `abs=1e-9`; the 15 composed cutout rows named — four hole-through-web rows on the web formula, the three tip-chamfer rows at `abs=1e-8` by the human's 14-04 checkpoint answer over measured ~6e-10 mm³ gaps, eleven still at a 6 dp literal because their closed form is not derived here; amends L09, L10 and L30) was appended in Phase 14 and corrected in place by gap plan 14-04.
+L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11. L31 (v0.2 composes: the composed sweep measured, `spoke_count` `le` 32, the matrix and the three-interface parity proven, export bytes explicitly not compared) was appended in Phase 12. L33 (the root lead-in warned, not re-cut; the filleted-spoke cutout proved against a closed form at `abs=1e-9`; the 15 composed cutout rows named — four hole-through-web rows on the web formula, the three tip-chamfer rows at `abs=1e-8` by the human's 14-04 checkpoint answer over measured ~6e-10 mm³ gaps, eleven still at a 6 dp literal because their closed form is not derived here; amends L09, L10 and L30) was appended in Phase 14 and corrected in place by gap plan 14-04. L34 (the gate measured: 63.555 s at `-n 8` with coverage against the human's 66 s bar, `fail_under = 96` from a 96.99 % serial baseline, CI's `make verify` under `PIP_CONSTRAINT: requirements.txt` printing the fixture's kernel pair; amends L12 and L13) was appended in Phase 15.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -322,7 +323,7 @@ None yet.
   moved rows.
 - ℹ️ [Phase 14] `test_the_hole_link_cuts_six_holes_through_the_recessed_floor` asserts the same
   web formula at `rel=1e-6` on the default gear — outside G-14-5's four rows; 14-04 left the
-  decision to the human. No `14-SECURITY.md` yet while `workflow.security_enforcement` is on.
+  decision to the human. `14-SECURITY.md` exists (verified 2026-10-03, `threats_open: 0`).
 - ⚠️ [Phase 13] `src/spur/pool.py:204` (`_run_with_timeout`): two timed-out requests on one
   worker slot race each other's cleanup — the second still holds the executor the first's
   `recreate_for` already shut down, reads `executor._processes` as `None`, and the request
@@ -350,6 +351,12 @@ None yet.
   tip-chamfer debt's concurrent-load question was re-homed into the Phase 2 latency debt's
   trigger set (12-03). Phase 11's six review findings were all fixed in `11-REVIEW-FIX.md`
   before that branch landed.
+- ⚠️ [Phase 15] The pre-commit `make verify` hook is now ~64 s warm at 927 tests (`-n 8`
+  with coverage, L34) — still over `gsd_run query commit`'s 30 s. This session's UAT commit
+  was killed at 30 s mid-hook (no stash was taken; the orphaned hook finished on its own) and
+  every Phase 15 close-out commit was a plain `git commit` with the hook running, never
+  `--no-verify`. The debt stays active (`nice`) and now carries the ~64 s figure; review
+  WR-03 (`15-REVIEW-DISPOSITION.md`) says its recovery argument and trigger contradict it.
 - ⚠️ [Phase 12] The pre-commit `make verify` hook now runs ~3.5 min at 907 tests (D-10's
   measured +28.28 s on top of Phase 11's 178 s); `gsd_run query commit`'s 30 s timeout cannot
   complete it (the Phase 9–11 items below stand) — every Phase 12 close-out commit was a plain
@@ -381,12 +388,12 @@ None yet.
   at the kernel's measured contact (`ROOT_CONTACT` 1e-9 mm) and refuses no link the pinned kernel
   built before. One residual float band (last failing gap −3.8e-8 mm, first building +1.9e-8 mm)
   is unreachable from any settable field value; recorded in the resolved debt file.
-- ⚠️ [Phase 7] CI resolves `cadquery`/`cadquery-ocp` from an unpinned `pyproject.toml`
-  range while `tests/regression/pre_v0_2.json` pins one resolved kernel's exact topology;
-  a kernel bump turns the fixture red for reasons that are not a spur regression. The
-  fixture's provenance header and one named version test localise it, but the pin itself
-  is open: `docs/tech_debt/active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`
-  (must).
+- ℹ️ [Phase 7 → 15] CI now resolves the kernel pair the fixture pins: `PIP_CONSTRAINT:
+  requirements.txt` on CI's `make verify` step (L34, 15-CONTEXT D-13); run 37181871926
+  printed `cadquery 2.8.0 cadquery-ocp 7.9.3.1.1`; the `must` debt retired in `839dfea`
+  (`docs/tech_debt/resolved/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`). What
+  the green run cannot show — the constraint vs. cadquery 2.8.0's own `cadquery-ocp<8.0`
+  cap — rests on the local fail-closed dry run (`ResolutionImpossible`; UAT test 7, accepted).
 - ℹ️ [Phase 2 → 13] The ten-concurrent latency bar is demonstrated on the unmodified harness
   (L32: `bar-3` Runs 13–14 at 1.31×/1.42× idle p95 on both concurrent runs of one decisive
   session) and `2026-09-23-concurrent-latency-bar-waived.md` retired in `6709953`; the two
@@ -435,28 +442,34 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T06:27:46.789Z
-Stopped at: Completed 15-06-PLAN.md
+Last session: 2026-10-04T10:52:00Z
+Stopped at: Phase 15 complete, ready to plan Phase 16
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-discuss-phase 15` then `/gsd-plan-phase 15` — The Gate, Measured and Pinned.
-  Phase 14 is complete on `gsd/phase-14-honest-record`; land it via `make pr.land PR=N` per
-  ROADMAP.md's Process Notes before starting 15's branch.
-- `/gsd-secure-phase 14` — `workflow.security_enforcement` is on and the phase has no
-  `SECURITY.md`; required before advancing.
+- Next: `/gsd-discuss-phase 16` then `/gsd-plan-phase 16` — Typing & Validation Debt.
+  Phase 15 is complete on `gsd/phase-15-the-gate-measured-and-pinned`; its PR #18 is still a
+  draft — at ship, `gh pr edit` + `gh pr ready` (never `gh pr create`, 15-05 D-16 addendum),
+  then `make pr.land PR=18` per ROADMAP.md's Process Notes before starting 16's branch.
+- `/gsd-validate-phase 15` — `15-VALIDATION.md` is still `draft` (`nyquist_compliant: false`;
+  14's is too, 13's is validated). Not dispatched at the Phase 15 transition: the Nyquist
+  auditor may add tests, and Phase 15's record pins `tests/` unchanged at 927 — run it as its
+  own change.
+- Triage `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4`
+  baseline, WR-02 a false statement and two dangling links left by the two retirements, WR-03
+  the commit-timeout debt contradicting its own trigger, WR-04 the "five runs" undercount,
+  IN-01…IN-04).
 - Triage `14-REVIEW-DISPOSITION.md`: WR-01 (one assert in the shared cutout assertion), IN-01
   (three stale finding-id citations in `tests/test_model.py`), IN-02 (L33's D-06 attribution
   for the `1e-8` bar), and decide whether the hole-link test's `rel=1e-6` row moves to the web
   formula. Re-file the macOS-only calibration finding if it is to stay tracked.
 - Fix CR-01 (one word in the Dockerfile comment) and triage WR-01 from `13-REVIEW-DISPOSITION.md`.
-- Phase 15's discuss-phase carries two human decisions ROADMAP.md already names: the
-  CI-kernel-pin mechanism (requirements.txt-first vs. a pyproject.toml upper bound) and the
-  make-verify bar (set from the profile, not before)
 - Phase 16's REQ-nyquist-phases-7-8 carries a flagged ASSUMPTION (`/gsd-validate-phase` may
   not resolve `phase_dir` for an archived phase) — resolve at that phase's discuss-phase
-- Expect `gsd_run query commit` to time out on every commit (hook ~4 min at 910 tests);
-  commit with plain `git commit` and wait for any orphaned `pre_commit hook-impl` to restore
-  its stash before writing to the tree
+- `/gsd-map-codebase` — `.planning/codebase/TESTING.md` still says "Warm run ~11 seconds"
+  and predates coverage and xdist; `--paths bench` is also owed (Phase 13).
+- Expect `gsd_run query commit` to time out on every commit (hook ~64 s warm at 927 tests,
+  `-n 8` with coverage — L34); commit with plain `git commit` and wait for any orphaned
+  `pre_commit hook-impl` to exit before writing to the tree
   (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)

@@ -26,7 +26,7 @@
     {
       "number": "15",
       "name": "The Gate, Measured and Pinned",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "16",
@@ -36,8 +36,8 @@
   ],
   "next": {
     "command": "/gsd:progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 15 of 4 · 100% · ready to verify"
+    "label": "Advance to the next step (plan phase 16)",
+    "reason": "Phase 16 of 4 — needs a plan"
   },
-  "updated_at": "2026-10-04T06:27:46.072Z"
+  "updated_at": "2026-10-04T10:50:39.918Z"
 }

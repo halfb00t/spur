@@ -64,7 +64,7 @@ byte-unchanged throughout.
 - [x] **Phase 14: Honest Record** - The root lead-in warns when it rises above the pitch (completed 2026-10-03)
       circle, README states the real limit, and the filleted-spoke removed-volume proof
       gets an independent closed form
-- [ ] **Phase 15: The Gate, Measured and Pinned** - `make verify`'s wall time, its bar and
+- [x] **Phase 15: The Gate, Measured and Pinned** - `make verify`'s wall time, its bar and (completed 2026-10-04)
       its coverage floor become measured numbers in `bench/RESULTS.md`, and CI installs the
       exact kernel pair the regression fixture pins
 - [ ] **Phase 16: Typing & Validation Debt** - `model.py` carries no `type: ignore`, and
@@ -231,7 +231,7 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the bar is set
 from the profile at this phase's profile checkpoint (15-CONTEXT.md D-01), not before.
-**Plans:** 6/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
+**Plans:** 6/6 plans complete (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
 
 Plans:
 **Wave 1**
@@ -306,5 +306,5 @@ internal and one is process-only.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
-| 15. The Gate, Measured and Pinned | v0.3 | 6/6 | In Progress|  |
+| 15. The Gate, Measured and Pinned | v0.3 | 6/6 | Complete    | 2026-10-04 |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
