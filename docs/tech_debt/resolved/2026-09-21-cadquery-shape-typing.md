@@ -3,7 +3,7 @@
 Severity: nice
 Status: resolved
 Date: 2026-09-21
-Resolved in: refactor(16-01): narrow CadQuery shapes at two checked boundaries instead of five suppressions
+Resolved in: 4f7e8fe
 Source: setting up the gate — mypy --strict over src/spur/model.py
 Related files:
 - src/spur/model.py:213, 237, 239, 411, 420 (the five sites at 085e5a6, before this fix)
