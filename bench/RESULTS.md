@@ -2579,3 +2579,116 @@ source and ran 927 tests, the documented `--no-cov` hatch included. The recipe i
 `pytest --cov --cov-report=term $(PYTEST_ARGS)`: the option after `--cov` stops it from
 taking the path, `make test PYTEST_ARGS="tests/test_calc.py -q"` then runs 404 tests, reads
 45.93 % and fails the floor, and the same with `--no-cov` exits 0 (404 passed in 0.25 s).
+
+### Heaviest contributors
+
+Selection rule, fixed before any per-test second was read: every file whose mean share of
+pytest's seconds over P1 and P2 (### Per-file share) is at least 5 %. Four files qualify,
+together 95.0 % of pytest's seconds. `tests/test_api.py` is just over the line (4.8 % in P1,
+5.2 % in P2, 5.03 % unrounded). `tests/test_cli.py` is under it (4.3 % / 4.7 %, mean
+4.5 %), so the rule leaves out its two slow tests (`test_readme_export_examples_run`,
+7.03 s, the slowest single test in P1, and
+`test_an_unknown_output_extension_exits_1_from_the_real_process`, 2.15 s) and no cut is
+proposed for them.
+
+| File | Items | Serial s (P1, P2) | Share (%) | What it proves |
+|---|---|---|---|---|
+| tests/test_model.py | 201 | 167.76, 157.53 | 73.7 (74.1 / 73.3) | The kernel-level geometry proofs, on real solids: every feature builds one valid solid and its edge selector takes exactly its own edges and never none (L26: rim chamfer, recess-floor fillet, tip arcs; L27 hex bore; L28 keyway; L29 tip chamfer; L30 body cutouts), the features compose on one gear (L31, tier 2: tip chamfer with each cutout on each bore), the spoke fillet against its closed form (L33), and a cached solid never carries a mesh (L24) |
+| tests/test_pool.py | 16 | 19.29, 17.92 | 8.4 (8.5 / 8.3) | The one place a build really crosses a process boundary: a real worker builds and downloads, a wedged build is killed and its worker replaced, a dying worker surfaces as `BrokenProcessPool` and is replaced, same-slot requests queued behind a timeout refuse without cancellation and replace the worker once (L17, L18) |
+| tests/regression/test_pre_v0_2.py | 85 | 17.58, 17.01 | 7.8 (7.8 / 7.9) | The pre-v0.2 part is unchanged: every pre-v0.2 parameter set derives the same dimensions (44 records, exact) and builds the same solid (39 records: faces, edges, volume at rel 1e-6, six bounding-box corners at abs 1e-6), and the fixture was captured on the kernel pair this run uses (L05, L26; Success Metric 3 of v0.2, "old links unchanged") |
+| tests/test_api.py | 54 | 10.92, 11.23 | 5.0 (4.8 / 5.2) | The HTTP layer end to end on an in-process build: schema, info and download for each feature's link with the numbers it prints, the refusal and cap-and-warn contracts, the byte cache and its log events (L02, L03, L07, L19, L20, L24, L29, L30) |
+
+### Proposed cuts
+
+Pricing source: the per-test duration lines of P1 and P2 themselves, that is
+`make verify PYTEST_ARGS="--durations=0 --durations-min=0"` serial and without coverage (the
+profile's own kind), loads 6.53 and 9.09 (`sysctl -n vm.loadavg`, ### Host state), HEAD
+`862a807`; `src/`, `tests/` and `requirements.txt` there are byte-identical to the current
+HEAD `4b798ac` (`git diff --quiet 862a807 4b798ac -- src tests requirements.txt` exits 0).
+Those two runs already printed every test phase, so no separate pricing run was made. The raw
+`.out` files are session scratch (as ### Method says); a reader reproduces the figures by
+re-running P1 and P2 and aggregating per test function, parametrize id stripped, setup, call
+and teardown summed:
+
+```bash
+grep -E '^[0-9.]+s (call|setup|teardown) ' "$S/$L.out" \
+  | awk '{n=$3; sub(/\[.*$/,"",n); t[n]+=$1} END{for(k in t) printf "%8.2f %s\n", t[k], k}' \
+  | sort -rn
+```
+
+The Serial s column is the mean of P1 and P2 with the pair in brackets. These are serial
+seconds of the named tests. They say nothing about what removing them saves at `-n 8`: that
+is not measured here (L08), and a saving at N depends on how the workers are balanced.
+Candidate selection, fixed before the numbers were read: for each file in the Heaviest
+contributors table, the test functions that together make up at least half of that file's
+seconds, taken heaviest first (five in `tests/test_model.py`, two in
+`tests/test_pool.py`, the one build function in the regression file, seven in
+`tests/test_api.py`), plus every dedup pair found among them. For a matrix group the cut
+named is a sample of rows (the rows left out are named; the rest keep running). No row
+proposes a tier the hook skips and CI runs (D-03, L13), and no row is a `mark`: the only
+marker that would save hook seconds the gate then does not spend is that rejected tier.
+
+| Candidate | Kind | Tests | Serial s | What it proves | Proof-value cost of losing it | Needs acceptance |
+|---|---|---|---|---|---|---|
+| `tier2-round-bore` | sample | tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore, rows `round-holes`, `round-spokes`, `round-cells` (3 of 12; group 27.61 s) | 6.96 (7.39 / 6.53) | The tip chamfer (1.75 mm) composed with each cutout on a round bore, the tip-arc and cutout-delta proofs on one built solid (L31 tier 2, L29, L30) | The round-bore composition is no longer built. The test's own comment says d-flat and round read identical cutout deltas and the d-flat rows stay, so what goes unseen is a fault of the chamfer-plus-cutout boolean that only a round bore shows (L31) | by name |
+| `selector-cutout-no-recess` | sample | tests/test_model.py::test_every_selector_takes_only_its_own_edges_with_a_body_cutout, rows `no-recess-holes`, `no-recess-spokes`, `no-recess-cells` (3 of 19; group 17.31 s) | 0.83 (0.82 / 0.84) | With a cutout and the recesses off, the floor selector is never called and the rim and tip counts still match (L26, L30) | "No floor call without a recess" is no longer observed on a part with a cutout; its no-cutout twin (`d-flat-no-recess` in `test_each_edge_selector_picks_exactly_its_own_edges`) stays | by name |
+| `selector-bottom-recess` | sample | tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges, rows `d-flat-bottom`, `round-bottom`, `hex-bottom`, `keyway-d-flat-bottom`, `keyway-round-bottom` (5 of 30; group 14.07 s) | 1.33 (1.35 / 1.32) | A bottom-only recess: the floor selector takes the two floor edges at z = recess_depth, on the d-flat, round, hex and keyed bores (L26, L27, L28) | Bottom-only floor selection is no longer observed on those five bores; the top-only and both-sides rows stay | by name |
+| `pre-v0.2-solids` | skip | tests/regression/test_pre_v0_2.py::test_a_pre_v0_2_parameter_set_builds_the_same_solid (39 rows, 39 distinct GearParams; the whole group) | 17.30 (17.58 / 17.01) | Every pre-v0.2 parameter set that builds still builds the same solid: faces, edges, volume at rel 1e-6, six corners at abs 1e-6 (L05, L26) | The milestone's "old links unchanged" proof for the geometry is gone. Only the dimension replay (44 rows) and the kernel-pair tripwire remain, and the fixture's own rule is that a red row here is the code's bug, never the fixture's | by name |
+| `pool-same-slot-refusal` | skip | tests/test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation | 5.10 (5.22 / 4.98) | CR-01, WR-01: four requests queued on one hash slot behind a timeout all surface as `BrokenProcessPool`, never `CancelledError` nor their own `BuildTimeout`; the worker is replaced exactly once and the slot works again (L17, L18) | The only test of the queued same-slot path with real processes: a cancellation escaping every handler, or a double replacement, would no longer be seen | by name |
+| `pool-wedged-build` | skip | tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced | 4.43 (4.62 / 4.24) | A build over its timeout is killed, not abandoned, its slot's worker is replaced and the next request succeeds (L17, L18) | The kill-on-timeout and replace path is no longer exercised; `test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced` stays and covers a hard death, not a timeout | by name |
+| `api-honeycomb-link` | remove | tests/test_api.py::test_a_honeycomb_link_is_served_with_its_cells | 1.24 (1.21 / 1.27) | `?hex_cell=3&hex_wall=1` end to end: schema group, info's 18 cells and walls, the null default, the large-gear raise-to-fit warning, STL and STEP (L30, L02) | The honeycomb's HTTP contract goes unobserved; the kernel-level honeycomb proofs stay | by name |
+| `api-spoke-link` | remove | tests/test_api.py::test_a_spoke_link_is_served_with_the_fillet_it_cut | 1.12 (1.12 / 1.13) | The spoke link end to end: schema group, info's cap and walls, the null default, both exports (L30, L33) | The spokes' HTTP contract goes unobserved; the kernel-level spoke proofs stay | by name |
+| `api-tip-chamfer-link` | remove | tests/test_api.py::test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut | 0.76 (0.76 / 0.76) | `?tip_chamfer=0.4` end to end: schema, applied value and `tip_d`, the cap to 1.75 mm with its warning, the field's refusal above 3, both exports (L29, L03) | The tip chamfer's HTTP contract, including the cap warning a user reads, goes unobserved | by name |
+| `api-gzip-after-identity` | remove | tests/test_api.py::test_a_gzip_request_after_an_identity_download_emits_source_compressed | 0.69 (0.69 / 0.69) | After an identity download, the gzip request logs `export.served` with `source=compressed` and a duration above zero (L19, L20) | The compress-from-cached-raw path of the byte cache is no longer observed | by name |
+| `api-two-request-ids` | remove | tests/test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids | 0.68 (0.66 / 0.69) | Two requests for one gear log two different request ids, the case params and time cannot tell apart (L20) | A log line could no longer be tied to its request when two identical requests arrive | by name |
+| `api-small-gear-recess` | remove | tests/test_api.py::test_a_gear_too_small_for_the_stock_recess_is_still_served | 0.66 (0.64 / 0.68) | A 24-tooth, module-1 gear too small for the stock recess is still served and `/api/info` still reports a recess id (L03, L05) | The cap-and-warn path for the stock recess on a small gear is no longer observed over HTTP | by name |
+| `api-repeat-download` | remove | tests/test_api.py::test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started | 0.65 (0.63 / 0.66) | A repeat download logs `source=cache` with `duration_ms` 0 and no `build.started` (L07, L20) | A byte-cache hit that silently rebuilds would no longer be seen | by name |
+| `dedup-g4-regression` | dedup | tests/test_model.py::test_builds_one_valid_solid, rows `kw0` to `kw8` (9 of 23; group 13.78 s), against the nine records of test_a_pre_v0_2_parameter_set_builds_the_same_solid with the same GearParams (six of the records are named after these very rows, `test_model.py::test_builds_one_valid_solid[2]` and so on); both build through `build()` | at most 2.90 (2.84 / 2.95), the nine rows; the saving is one build of each pair, not measured | kw0 to kw8: the built solid is valid, its z length is the face width and its extent is inside the module bound; the replay compares faces, edges, volume and corners of the same solids (L05, L26) | None if the replay's `solid()` gains `isValid()`, the z-length and the extent assertions, so every assertion stays on one build. Deleting the nine rows alone would drop those three assertions | free (D-03) with the assertions moved; by name if the rows are only deleted |
+| `dedup-g4-g5` | dedup | tests/test_model.py::test_builds_one_valid_solid rows `kw18`, `kw19`, `kw22` (holes, filleted spokes, cells) and test_the_recess_floor_fillet_survives_every_cutout_on_every_bore rows `d-flat-holes`, `d-flat-spokes`, `d-flat-cells`: the same GearParams built twice (`build()` and `_build_checked()`) | at most 2.81 (2.92 / 2.71), the three fillet rows; the other three rows are 3.08 (3.13 / 3.03); the saving is one build of each pair, not measured | kw18, kw19, kw22: a valid solid of the right height and extent (L30). The fillet rows: the recess floor fillet survives the cutout and the TORUS count is the kernel's (4, 20, 14) (L30, L31) | None: every assertion of both stays on one built solid. The cache cannot do it today (`build()`'s lru_cache holds 4 solids, `SPUR_SOLID_CACHE`, and the rows are about 1,500 lines apart), so it needs one session-level cache of the `_build_reference` kind for these three, and those three `build()` rows would then run `_build_checked` | free (D-03) |
+
+Pairs found and not proposed, so the list is complete. Counted over the five test_model
+groups and the 39 regression records by canonical GearParams, nineteen parameter sets are
+built by more than one test: nine are the `dedup-g4-regression` pair, three are
+`dedup-g4-g5` (two of them, holes and cells, are also built by the d-flat rows of
+`test_every_selector_takes_only_its_own_edges_with_a_body_cutout`), and seven more pair the
+selector-with-cutout rows `round-holes`, `round-cells`, `hex-holes`, `hex-cells`,
+`keyway-holes`, `keyway-spokes` and `keyway-cells` with the matching rows of the
+recess-fillet group (nine of the selector test's rows share GearParams with that group in
+all). Those are not candidates: the selector test
+patches `_bore_rim_edges` and `_groove_floor_edges` with spies and builds through
+`_build_checked`, never `build()`, with a comment that says why (15-RESEARCH Pitfall 10), so
+its builds cannot be shared. `test_each_edge_selector_picks_exactly_its_own_edges` builds a
+bare variant (chamfer and fillet off, `_cut_keyway` patched out) that no other test builds,
+the tier-2 rows build a tip-chamfered composition no other test builds, and the 39
+regression records are 39 distinct GearParams. The `test_api.py` link tests build the same
+links over HTTP, whose build is incidental to the route they prove, and a cross-file
+share would be a new design, so none is listed.
+
+Coverage check of every row that removes a test (REQ-coverage-floor's trip point, 96.00).
+One scratch run removed all 71 items of the rows above at once, the two dedup rows
+included as the worst case: `make test PYTEST_ARGS="-n 8 -q --deselect=<the 71 node ids>"`,
+the recipe's `--cov --cov-report=term` first, per R1 and R2 of the recipe (nothing else
+alive, load 1.01 read before), HEAD `4b798ac`. Result: `856 passed in 53.67s` (927 - 71),
+exit 0, wall 53.91 s, peak tree RSS 6690 MiB (18 processes), and
+
+```
+src/spur/app.py              157      3     20      3  96.61%
+src/spur/pool.py              54      0      6      0 100.00%
+TOTAL                       1069     28    294     17  96.40%
+Required test coverage of 96.0% reached. Total coverage: 96.40%
+```
+
+With every candidate gone the total is 96.40 %, 0.40 points over the trip point and 0.81
+under the 97.21 % the three `-n 8 --cov` runs read (23 missed statements, 15 partial
+branches there, 28 and 17 here). A smaller set of removed tests cannot cover less than a
+larger one, so every row alone reads at least 96.40 %; the single-row totals were not run.
+If the lost worker flush of C0 (0.22 points, debt
+`2026-10-04-worker-coverage-flush-is-sometimes-lost.md`) struck on top of the union it would
+read 96.18 %, still over. This run is a coverage reading, scratch and not committed: its
+53.91 s is one run at load 1.01 and not an alternating A/B pair, so it is no reading of
+what the cuts save. The 71 items' seconds in the table add up to 47.46 s serial (the two
+dedup rows, 5.71 s of it, are upper bounds), of the 224.28 s serial mean.
+
+None of these rows is recommended here. The gate at `-n 8` with coverage reads a mean of
+64.12 s (### Tolerance and coverage cost), so no cut is needed to reach a bar set from
+that; the rows are for the record (D-03).
