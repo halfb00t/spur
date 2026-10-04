@@ -79,7 +79,13 @@ def test_the_fixture_records_every_corpus_set() -> None:
 
 def test_the_fixture_was_captured_on_the_kernel_this_run_uses() -> None:
     """Pitfall 11: an unpinned kernel bump otherwise shows up as dozens of unexplained
-    topology mismatches instead of one named test."""
+    topology mismatches instead of one named test.
+
+    The pin lives in requirements.txt (the L12 closure); CI's install is constrained to
+    it through PIP_CONSTRAINT on the `make verify` step (.github/workflows/ci.yml, L34).
+    docker/refresh-requirements.sh is what moves it and `make fixture.regen` is the
+    fixture's own move. A local `make venv` is not constrained (15-CONTEXT D-14), so this
+    test is how a mismatched venv gets named."""
     provenance = _FIXTURE["provenance"]
     running = {"cadquery": metadata.version("cadquery"),
               "cadquery-ocp": metadata.version("cadquery-ocp")}
