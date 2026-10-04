@@ -2391,3 +2391,56 @@ P1's own `--durations` output, the first 25 duration lines, verbatim in pytest's
 
 `tests/test_model.py` holds 18 of the 25 (the twelve tip-chamfer-with-each-cutout-on-each-bore
 rows alone take 28.9 s of P1's call time), `tests/test_pool.py` 5 and `tests/test_cli.py` 2.
+
+### xdist sweep
+
+`pytest-xdist` 3.8.0 and `pytest-cov` 7.1.0 were added to the `[dev]` extras and installed
+into `.venv` only after the human confirmed both are the pytest-dev packages (`approved`);
+neither is in `requirements.txt` or `[project] dependencies`, and `addopts` is unchanged.
+No `--cov` is on in this sweep (the floor is 15-02's).
+
+Knee rule, fixed before any sweep number was read (D-06): the apparent knee is the
+smallest N among the green sweep rows whose wall is at most 1.10 times the fastest green
+sweep wall (a row at exactly 1.10 times qualifies); two green rows with equal wall go to
+the smaller N. A red row is recorded red with its failing node ids, never re-run, and is
+left out of the rule.
+
+Each row is `make verify PYTEST_ARGS="-n N"` per the run recipe above, in the order run
+(P1 and P2 repeat as the serial reference). HEAD is `39eb062` for S2-S12: the Task 1
+commit, with only the `pyproject.toml` dev-extras edit uncommitted on top. Each load is
+the 1-minute figure read immediately before that run, so for S4-S12 it still carries the
+previous sweep row's own work; no quiet bar was waited for (D-04), and nothing else of
+this session ran on the host between rows.
+
+| Run | N | HEAD | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit |
+|---|---|---|---|---|---|---|---|
+| P1 | serial | `862a807` | 6.53 | 927 passed in 229.15s | 230.20 | 1396 (6) | 0 |
+| P2 | serial | `862a807` | 9.09 | 927 passed in 217.59s | 218.36 | 1390 (5) | 0 |
+| S2 | 2 | `39eb062` | 2.29 | 927 passed in 128.45s | 130.72 | 2226 (8) | 0 |
+| S4 | 4 | `39eb062` | 9.33 | 927 passed in 84.02s | 84.76 | 3969 (11) | 0 |
+| S8 | 8 | `39eb062` | 17.07 | 927 passed in 67.95s | 68.93 | 5649 (17) | 0 |
+| S12 | 12 | `39eb062` | 28.01 | 927 passed in 74.21s | 75.47 | 7880 (22) | 0 |
+
+All four sweep rows are green: exit 0, `927 passed`, no failed, error or rerun in any
+`.out`. No shared-state site (`tests/test_pool.py`, `tests/test_api.py`,
+`tests/test_records.py`) failed at any N, so there is nothing for 15-02's `xdist_group`
+response to inherit from this sweep.
+
+Apparent knee: N = 8 (68.93 s against the fastest 68.93 s at N = 8)
+
+The rule's ceiling is 1.10 x 68.93 = 75.82 s: S4 (84.76 s) is above it, S8 qualifies, S12
+(75.47 s, 1.095 x) is also under it but is the larger N. S12 is slower than S8 by 6.54 s on
+a 12-CPU host; a likely cause is oversubscription (12 workers plus the controller on 12
+CPUs), but this sweep did not test that.
+
+Peak RSS grows with N and is an upper bound (shared-library pages count once per process):
+1396 and 1390 MiB serial, then 2226, 3969, 5649 and 7880 MiB at N = 2, 4, 8, 12, so the
+sweep at N = 12 holds about 5.7 times the serial peak for 3.0 times the speed.
+
+Pitfall 9 shows in the speed-ups against the serial mean of 224.28 s: 1.72 x at N = 2, 2.65 x
+at N = 4, 3.25 x at N = 8 and 2.97 x at N = 12, far from linear because the serial gate
+already spends 4.2-4.5 cores on average (user + sys / real). By the same reading user time
+stays near 340 s at every N (S2 344.23, S4 334.38, S8 338.57, S12 337.21) while sys time
+falls from 507.65 s at N = 2 to 106.30 s at N = 12 (serial: 616.20 s in P1, 629.40 s in P2).
+
+No N is chosen here: the human picks it at 15-03 from these rows (D-06).
