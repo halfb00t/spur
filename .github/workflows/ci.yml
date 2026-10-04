@@ -24,7 +24,24 @@ jobs:
       # The same gate a developer runs locally and `make worktree.land` runs before a
       # merge: ruff, mypy --strict, the import-boundary contracts, the unfinished-work
       # scan and the tests. One definition of "passing", enforced in three places.
+      #
+      # The kernel pair the regression fixture was captured on (cadquery 2.8.0 /
+      # cadquery-ocp 7.9.3.1.1) is pinned here: requirements.txt, the L12 closure the
+      # image installs, doubles as a pip constraints file for every install `make verify`
+      # runs inside `$(STAMP)`, so a fresh resolve cannot move the kernel under the
+      # fixture. docker/refresh-requirements.sh moves the pin; `make fixture.regen` moves
+      # the fixture; test_the_fixture_was_captured_on_the_kernel_this_run_uses names any
+      # mismatch (L34). A relative path works: make runs in the repo root.
       - run: make verify PYTHON=python
+        env:
+          PIP_CONSTRAINT: requirements.txt
+      # `.venv` exists only once make verify has made it; `if: always()` keeps the pair
+      # in the log of a red run too.
+      - name: kernel pair this run resolved
+        if: always()
+        run: >-
+          .venv/bin/python -c "from importlib.metadata import version;
+          print('cadquery', version('cadquery'), 'cadquery-ocp', version('cadquery-ocp'))"
 
   vendor-bundle:
     # The committed three.js bundle must stay reproducible from web/, or nobody can

@@ -2196,3 +2196,620 @@ fixture itself was never regenerated).
 The human's verbatim answer to Task 2's checkpoint: "accept (Recommended)". The measured
 **28.28s** delta against D-10's 30.0s line stands as recorded above; no tier-2 row is
 trimmed; `tests/test_model.py` is untouched.
+
+## The gate, measured and pinned (Phase 15)
+
+What this section measures: `make verify`'s wall time per stage and per test file, the
+`pytest-xdist` sweep, then (later subsections, added by 15-02 to 15-05) the coverage floor,
+the bar and the CI kernel pin. The method is D-04's, which is Phase 12's D-10 method
+without a quiet bar: full `make verify` runs in one session, the 1-minute load read
+immediately before each, no waiting for a quiet host, and every delta is
+`mean(B) - mean(A)` of alternating runs; a single-sided profile is two runs with their
+loads recorded and per-file seconds read as shares. The bar itself is not set here: the
+human sets it at 15-03's checkpoint from these rows (D-01).
+
+### Host state
+
+- CPU: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python: 3.12.13 (`.venv`); pytest: 9.1.1
+- Date: 2026-10-03
+- Phase-start HEAD: `20cd484`. HEAD measured by P1 and P2: `862a807` (three `docs(15)`
+  commits on top of `20cd484`; `git diff --quiet 20cd484 -- src tests Makefile
+  pyproject.toml requirements.txt bench .github` exits 0, so the code and the gate under
+  test are the phase-start ones)
+- SPUR_* environment: none set (`env | grep '^SPUR_'` empty) -- defaults apply
+- Load (1-minute, `sysctl -n vm.loadavg`), read immediately before each run: P1 6.53,
+  P2 9.09. The host carried background load throughout (this session's own Claude Code
+  process, OrbStack, a browser and other desktop apps were open; a reading of 8.46 was
+  taken half a minute before P1). Per D-04 no quiet bar was waited for; each row carries its load.
+- Peak RSS: the sum of per-process RSS over the `make` process tree (the `/usr/bin/time`
+  process, `make`, `pytest` and every child), sampled once a second. It is an upper bound
+  of real memory: file-backed pages of the shared OpenCascade/VTK libraries count once per
+  process (RESEARCH A2). `/usr/bin/time -l` would report only the waited-for child's
+  `ru_maxrss`, not the tree.
+
+### Method
+
+Every Phase 15 row uses this run recipe and nothing else. The raw `.out`, `.time` and
+`.rss` files of each run are session scratch, not committed; the numbers below are read
+from them.
+
+- R1: before each run, `pgrep -fl '[p]ytest|[p]re_commit|[m]ake verify'` prints nothing --
+  no other gate, test run or commit hook of this session is alive. (The bracketed first
+  letters are `pytest|pre_commit|make verify` spelt so the pattern does not match the shell
+  command line that holds it.)
+- R2: read `sysctl -n vm.loadavg` and keep the 1-minute figure.
+- R3: in ONE Bash call with timeout 600000 ms, start
+  `/usr/bin/time -p make verify PYTEST_ARGS="<args>"` in the background with stdout to
+  `<scratch>/<label>.out` and stderr to `<scratch>/<label>.time`, keep its PID, and while
+  `kill -0` on that PID succeeds append one sampler line (root = that PID) to
+  `<scratch>/<label>.rss` and sleep 1; then `wait` on the PID and keep its exit status:
+
+  ```bash
+  /usr/bin/time -p make verify PYTEST_ARGS="$ARGS" > "$S/$L.out" 2> "$S/$L.time" &
+  PID=$!
+  : > "$S/$L.rss"
+  while kill -0 $PID 2>/dev/null; do
+    ps -axo pid=,ppid=,rss= | awk -v root=$PID '{p[$1]=$2; r[$1]=$3; ids[NR]=$1}
+      END{keep[root]=1; c=1; while(c){c=0; for(i in ids){id=ids[i]; if(!(id in keep)&&(p[id] in keep)){keep[id]=1;c=1}}}
+          t=0;n=0; for(id in keep){t+=r[id];n++} print t, n}' >> "$S/$L.rss"
+    sleep 1
+  done
+  wait $PID
+  ```
+
+  The awk prints the summed RSS in KiB and the process count over the root PID and all its
+  descendants.
+- R4: read the exit status, `real` from the `.time` file (wall seconds), pytest's final
+  summary line from the `.out` file (count and seconds), and the largest summed RSS in the
+  `.rss` file divided by 1024 (MiB, no decimals) with that sample's process count
+  (`sort -n -k1 "$S/$L.rss" | tail -1`); on `--cov` runs also the TOTAL row.
+- R5: one table row per run, in the order run. A red run (non-zero exit, a summary other
+  than `927 passed`, any failed, error or rerun) is recorded red with its failing node ids
+  and is never re-run to replace it.
+
+Per-stage method. Make reports no per-recipe time, so after each full run the four quick
+stages are timed as separate warm invocations, `/usr/bin/time -p make lint`,
+`make typecheck`, `make lint-imports` and `make no-fake-done`, keeping each `real`; pytest's
+stage is the run's wall minus those four, with pytest's own reported seconds beside it.
+
+Per-file method. A run with `--durations=0 --durations-min=0` prints one line per
+setup, call and teardown phase, `<seconds>s <phase> <nodeid>`; the per-file seconds are
+those lines grouped by the node id's path before its first `::` (the regression ids
+contain further `test_x.py::` text and stay with their own file):
+
+```bash
+grep -E '^[0-9.]+s (call|setup|teardown) ' "$S/$L.out" \
+  | awk '{split($3,a,"::"); t[a[1]]+=$1; n[a[1]]++} END{for(f in t) printf "%8.2fs %5d %s\n", t[f], n[f], f}' \
+  | sort -rn
+```
+
+The item counts come from `.venv/bin/python -m pytest --collect-only -q` (one line per
+item, grouped the same way); the awk's own count is three phases per item.
+
+Precision. Wall seconds are `/usr/bin/time -p`'s two-decimal `real`; loads are sysctl's
+two-decimal figures; pytest prints each phase to two decimals, so a per-file figure is a
+sum of rounded values (a phase under 0.005 s reads 0.00). Means and shares are computed
+from the recorded values and rounded only when written.
+
+Where the numbers stand (RESEARCH Open Question 3, decided here): the per-file and RSS
+readings stand on these committed commands plus the `make verify` target, and no
+`bench/` script is added -- a script would need its own tests under `mypy --strict` for
+two lines of awk (12 D-17 asks that every number be reproducible from committed material,
+which committed prose plus a make target is).
+
+### Per-stage wall time
+
+Two serial profile runs, each `make verify PYTEST_ARGS="--durations=0 --durations-min=0"`,
+P1 then P2, in the order run:
+
+| Run | HEAD | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit |
+|---|---|---|---|---|---|---|
+| P1 | `862a807` | 6.53 | 927 passed in 229.15s | 230.20 | 1396 (6) | 0 |
+| P2 | `862a807` | 9.09 | 927 passed in 217.59s | 218.36 | 1390 (5) | 0 |
+
+| Stage | P1 (s) | P2 (s) |
+|---|---|---|
+| ruff (`make lint`) | 0.07 | 0.03 |
+| mypy (`make typecheck`) | 0.37 | 0.20 |
+| import-linter (`make lint-imports`) | 0.11 | 0.09 |
+| unfinished-work scan (`make no-fake-done`) | 0.02 | 0.01 |
+| pytest (wall minus the four; pytest's own seconds in brackets) | 229.63 (229.15) | 218.03 (217.59) |
+| whole gate (`/usr/bin/time -p make verify`) | 230.20 | 218.36 |
+
+The four quick stages were timed as separate warm invocations right after each full run,
+which is what they cost inside the gate. Pytest is 99.75 % of the gate in P1 and 99.85 % in
+P2: nothing outside the test suite is worth cutting on this host. The two runs differ by
+11.84 s (mean wall 224.28 s) with the heavier load on P2, so a single-sided pair says only
+that the gate is about 3.6-3.8 minutes serial here. The serial run is already multi-core:
+`/usr/bin/time -p` read user 350.77 s + sys 616.20 s over 230.20 s real in P1 (4.2 cores
+on average) and 343.14 s + 629.40 s over 218.36 s in P2 (4.5), which is why the xdist gain
+below is expected to be sublinear (RESEARCH Pitfall 9).
+
+### Per-file share
+
+Item counts from `--collect-only`; seconds are the per-file sums of the duration lines
+(P1 sums to 226.41 s, P2 to 214.79 s of the 229.15 s and 217.59 s pytest reported -- the
+difference is collection and session start, which sit outside the duration lines, plus
+rounding); the share is each file's seconds over the sum of that run's per-file seconds
+(P1 % / P2 %). Sorted by P1 seconds descending, ties by path ascending.
+
+| File | Items | P1 (s) | P2 (s) | Share of pytest (%) |
+|---|---|---|---|---|
+| tests/test_model.py | 201 | 167.76 | 157.53 | 74.1 / 73.3 |
+| tests/test_pool.py | 16 | 19.29 | 17.92 | 8.5 / 8.3 |
+| tests/regression/test_pre_v0_2.py | 85 | 17.58 | 17.01 | 7.8 / 7.9 |
+| tests/test_api.py | 54 | 10.92 | 11.23 | 4.8 / 5.2 |
+| tests/test_cli.py | 44 | 9.75 | 10.04 | 4.3 / 4.7 |
+| tests/test_records.py | 13 | 0.46 | 0.44 | 0.2 / 0.2 |
+| tests/test_bench.py | 24 | 0.42 | 0.43 | 0.2 / 0.2 |
+| tests/test_skip_tokens.py | 27 | 0.17 | 0.13 | 0.1 / 0.1 |
+| tests/test_calc.py | 404 | 0.06 | 0.06 | 0.0 / 0.0 |
+| tests/regression/test_corpus.py | 1 | 0.00 | 0.00 | 0.0 / 0.0 |
+| tests/test_pr_land.py | 58 | 0.00 | 0.00 | 0.0 / 0.0 |
+| total | 927 | 226.41 | 214.79 | 100.0 / 100.0 |
+
+`tests/test_model.py` is three quarters of pytest's time in both runs; the next three
+files (pool, regression fixture, api) together are about a fifth. The 1212 phases of
+`tests/test_calc.py` print 0.06 s in total (its slowest is 0.03 s), and every printed phase
+of `tests/test_pr_land.py` and `tests/regression/test_corpus.py` reads 0.00 s, so those
+shares are below what two-decimal printing can resolve; they are rows of the table, not of
+the cost.
+
+### Slowest 25
+
+P1's own `--durations` output, the first 25 duration lines, verbatim in pytest's order:
+
+```
+7.03s call     tests/test_cli.py::test_readme_export_examples_run
+5.22s call     tests/test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation
+4.62s call     tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced
+4.43s call     tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced
+3.25s call     tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[module-0.2]
+2.96s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[keyed-holes]
+2.85s call     tests/test_model.py::test_the_same_cutout_link_builds_the_same_solid_twice[spokes-filleted]
+2.77s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[round-holes]
+2.76s call     tests/test_model.py::test_every_selector_takes_only_its_own_edges_with_a_body_cutout[teeth-200-holes]
+2.67s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[hex-holes]
+2.57s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[keyed-spokes]
+2.50s call     tests/test_model.py::test_the_same_cutout_link_builds_the_same_solid_twice[cells]
+2.50s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[d-flat-holes]
+2.49s call     tests/test_pool.py::test_two_same_slot_deaths_from_one_incident_replace_the_worker_once
+2.48s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[round-spokes]
+2.38s call     tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges[teeth-200]
+2.23s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[hex-spokes]
+2.23s call     tests/test_pool.py::test_a_real_worker_builds_and_downloads
+2.18s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[hex-cells]
+2.18s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[d-flat-spokes]
+2.16s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[d-flat-cells]
+2.15s call     tests/test_cli.py::test_an_unknown_output_extension_exits_1_from_the_real_process
+2.14s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[round-cells]
+2.08s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[keyed-cells]
+1.93s call     tests/test_model.py::test_the_recess_floor_fillet_survives_every_cutout_on_every_bore[hex-cells]
+```
+
+`tests/test_model.py` holds 18 of the 25 (the twelve tip-chamfer-with-each-cutout-on-each-bore
+rows alone take 28.9 s of P1's call time), `tests/test_pool.py` 5 and `tests/test_cli.py` 2.
+
+### xdist sweep
+
+`pytest-xdist` 3.8.0 and `pytest-cov` 7.1.0 were added to the `[dev]` extras and installed
+into `.venv` only after the human confirmed both are the pytest-dev packages (`approved`);
+neither is in `requirements.txt` or `[project] dependencies`, and `addopts` is unchanged.
+No `--cov` is on in this sweep (the floor is 15-02's).
+
+Knee rule, fixed before any sweep number was read (D-06): the apparent knee is the
+smallest N among the green sweep rows whose wall is at most 1.10 times the fastest green
+sweep wall (a row at exactly 1.10 times qualifies); two green rows with equal wall go to
+the smaller N. A red row is recorded red with its failing node ids, never re-run, and is
+left out of the rule.
+
+Each row is `make verify PYTEST_ARGS="-n N"` per the run recipe above, in the order run
+(P1 and P2 repeat as the serial reference). HEAD is `39eb062` for S2-S12: the Task 1
+commit, with only the `pyproject.toml` dev-extras edit uncommitted on top. Each load is
+the 1-minute figure read immediately before that run, so for S4-S12 it still carries the
+previous sweep row's own work; no quiet bar was waited for (D-04), and nothing else of
+this session ran on the host between rows.
+
+| Run | N | HEAD | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit |
+|---|---|---|---|---|---|---|---|
+| P1 | serial | `862a807` | 6.53 | 927 passed in 229.15s | 230.20 | 1396 (6) | 0 |
+| P2 | serial | `862a807` | 9.09 | 927 passed in 217.59s | 218.36 | 1390 (5) | 0 |
+| S2 | 2 | `39eb062` | 2.29 | 927 passed in 128.45s | 130.72 | 2226 (8) | 0 |
+| S4 | 4 | `39eb062` | 9.33 | 927 passed in 84.02s | 84.76 | 3969 (11) | 0 |
+| S8 | 8 | `39eb062` | 17.07 | 927 passed in 67.95s | 68.93 | 5649 (17) | 0 |
+| S12 | 12 | `39eb062` | 28.01 | 927 passed in 74.21s | 75.47 | 7880 (22) | 0 |
+
+All four sweep rows are green: exit 0, `927 passed`, no failed, error or rerun in any
+`.out`. No shared-state site (`tests/test_pool.py`, `tests/test_api.py`,
+`tests/test_records.py`) failed at any N, so there is nothing for 15-02's `xdist_group`
+response to inherit from this sweep.
+
+Apparent knee: N = 8 (68.93 s against the fastest 68.93 s at N = 8)
+
+The rule's ceiling is 1.10 x 68.93 = 75.82 s: S4 (84.76 s) is above it, S8 qualifies, S12
+(75.47 s, 1.095 x) is also under it but is the larger N. S12 is slower than S8 by 6.54 s on
+a 12-CPU host; a likely cause is oversubscription (12 workers plus the controller on 12
+CPUs), but this sweep did not test that.
+
+Peak RSS grows with N and is an upper bound (shared-library pages count once per process):
+1396 and 1390 MiB serial, then 2226, 3969, 5649 and 7880 MiB at N = 2, 4, 8, 12, so the
+sweep at N = 12 holds about 5.7 times the serial peak for 3.0 times the speed.
+
+Pitfall 9 shows in the speed-ups against the serial mean of 224.28 s: 1.72 x at N = 2, 2.65 x
+at N = 4, 3.25 x at N = 8 and 2.97 x at N = 12, far from linear because the serial gate
+already spends 4.2-4.5 cores on average (user + sys / real). By the same reading user time
+stays near 340 s at every N (S2 344.23, S4 334.38, S8 338.57, S12 337.21) while sys time
+falls from 507.65 s at N = 2 to 106.30 s at N = 12 (serial: 616.20 s in P1, 629.40 s in P2).
+
+No N is chosen here: the human picks it at 15-03 from these rows (D-06).
+
+### Coverage baseline
+
+One serial run with coverage on, per the run recipe above (REQ-coverage-floor's "one
+baseline `pytest --cov` run"). HEAD is `f771c5e`, the commit that added the coverage config
+(`concurrency = ["multiprocessing", "thread"]`, `parallel`, `sigterm`, `precision = 2`) and
+the `.gitignore` entries; the Makefile `test` recipe has no `--cov` yet, so `--cov` rides in
+`PYTEST_ARGS` for every row here. Args: `--cov --cov-report=term-missing`, no `-n`.
+
+| Run | Args | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit | Coverage |
+|---|---|---|---|---|---|---|---|
+| C0 | `--cov --cov-report=term-missing` | 8.37 | 927 passed in 243.54s (0:04:03) | 244.59 | 1407 (5) | 0 | 96.99% |
+
+The rows of C0's report that matter, verbatim:
+
+```
+Name                       Stmts   Miss Branch BrPart   Cover   Missing
+src/spur/pool.py              54      3      6      0  95.00%   63-67, 222
+TOTAL                       1069     26    294     15  96.99%
+```
+
+Worker lines are counted. `BuildPool`'s workers are spawned processes (`pool.py:35`) and
+`pytest-cov` 7 has no subprocess hook of its own, so coverage's own multiprocessing support
+does the counting: `concurrency = ["multiprocessing", "thread"]` (the thread entry keeps the
+lifespan thread that builds and shuts down the pool traced, which the key's replacement of
+coverage's default would otherwise drop), `parallel = true` writes one data file per
+process for `pytest-cov` to combine, and `sigterm = true` saves the data of a worker
+`pool.py` terminates. The proof is `tests/test_pool.py` alone, run with `--cov`, which reads
+`src/spur/pool.py 54 0 6 0 100.00%` both serially and at `-n 2` (16 passed each): the
+statements of `_warm` and `build_export`, which run only inside a spawned worker, read
+covered. Today's config without those keys reads 95 % there with `build_export`'s body
+missing (15-RESEARCH Pitfall 1).
+
+C0's own pool.py row is not 100 %. Lines 63-67 (the body of `build_export`, the worker's
+side) and 222 (`return await self._run_with_timeout(...)` in `export()`) read missing on
+this full serial run: three statements, 0.22 points, which is exactly the difference
+between C0's 96.99 % (26 missed) and the 97.21 % (23 missed) every `--cov` run at `-n 8`
+below reads. This is 15-RESEARCH Pitfall 13 (a lost worker flush, cause unproven) occurring
+once in four full `--cov` runs here and, unlike the sightings in that note, on a serial run
+(the first of the four, the only serial one), so it is not specific to xdist. It is a
+reading, not a retry: C0 stays as measured (R5), is the lowest green total of the set, and
+sets L in the floor below.
+
+One point of this total is (statements + branches) / 100 units: 1,069 statements and 294
+branches are 1,363 units, so one point is 13.63 units and one missed statement is 0.073
+points (C0 missed 26 statements and had 15 partially covered branches).
+
+### Tolerance and coverage cost
+
+D-05's three tolerance runs at the apparent knee K = 8 (the sweep above) and D-12's cost
+runs are the same six runs: A is `-n 8` without coverage and B is `-n 8 --cov`, alternating
+A1 B1 A2 B2 A3 B3. The order was fixed before the first of them ran, after C0, with no
+`--dist` option (D-08's `loadgroup` only if a shared-state module failed). HEAD `f771c5e`
+for every row; each load is the 1-minute figure read immediately before the run and, the
+rows running back to back, still carries the previous row's own work (D-04: recorded as
+read, no quiet bar). Nothing else of this session ran on the host between rows.
+
+| Run | Args | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit | Coverage |
+|---|---|---|---|---|---|---|---|
+| A1 | `-n 8` | 7.94 | 927 passed in 60.86s (0:01:00) | 61.60 | 6829 (17) | 0 | none |
+| B1 | `-n 8 --cov` | 22.37 | 927 passed in 63.23s (0:01:03) | 64.03 | 6596 (16) | 0 | 97.21% |
+| A2 | `-n 8` | 23.15 | 927 passed in 59.14s | 59.88 | 6968 (18) | 0 | none |
+| B2 | `-n 8 --cov` | 28.31 | 927 passed in 65.03s (0:01:05) | 65.83 | 6614 (15) | 0 | 97.21% |
+| A3 | `-n 8` | 28.25 | 927 passed in 59.61s | 60.35 | 6911 (17) | 0 | none |
+| B3 | `-n 8 --cov` | 30.02 | 927 passed in 61.94s (0:01:01) | 62.50 | 6673 (16) | 0 | 97.21% |
+
+All six rows read `927 passed`, exit 0, no failed, error or rerun in any output, so no
+shared-state module (`tests/test_pool.py`, `tests/test_api.py`, `tests/test_records.py`)
+failed and D-08's `xdist_group` response did not fire.
+
+mean(A) = 60.61 s, mean(B) = 64.12 s -> coverage cost = 3.51 s at -n 8 (5.8 % of mean(A))
+
+D-05 tolerance at N = 8: adopted -- 6 of 6 green, 927 passed each
+
+Largest peak RSS of the set: 6968 MiB (A2, 18 processes), an upper bound by the same rule
+as the sweep (shared-library pages count once per process); the B rows peak at 6596-6673
+MiB, no higher than the A rows.
+
+The three B totals are 97.21 %, 97.21 % and 97.21 %, the same 23 missed statements and 15
+partial branches each, so their spread is 0.00 points: the combined total did not depend on
+the order in which the eight workers' and the pool workers' data files were written, at
+this resolution (D-10's determinism reading). The one thing this set does not show is
+Pitfall 13's lost flush, which cost C0 0.22 points: three xdist runs of three did not lose
+it, one serial run did, so the B spread understates the real one and L below takes C0.
+
+### Coverage floor
+
+D-10's rule: a whole percent under the baseline, one more point when that leaves under
+0.25 points of slack, wider when the spread of the totals needs it. Written against the
+lowest observed total: L is the lowest of C0 and every green tolerance total (96.99, 97.21,
+97.21, 97.21), S is the spread of the green tolerance totals (max - min over all of them),
+and the floor is the whole percent under L - max(0.25, S).
+
+Floor: L = 96.99, S = 0.00, slack = max(0.25, S) = 0.25 -> fail_under = 96
+
+L - slack = 96.74, whose whole percent below is 96. With `precision = 2` the total is
+compared as printed: a total of exactly 96.00 passes and 95.99 fails
+(`coverage.results.should_fail_under(96, 96, 2)` is False, `(95.99, 96, 2)` is True), so
+the gate trips 0.99 points (about 13.5 units) under C0 and 1.21 points under the xdist
+totals; a lost worker flush (0.22 points) cannot trip it by itself. The literal lives in
+`pyproject.toml` `[tool.coverage.report]` alone: `make test` passes no `--cov-fail-under`,
+and `pytest-cov` copies the config value when the flag is absent.
+
+### Red on the floor
+
+D-12's proof that the floor gates: with `fail_under = 96` in `pyproject.toml` and `--cov` in
+`make test` applied to the working tree but not yet committed, one test file is left out of
+a full run by `--ignore`. Attempt 1 of at most two went red on the floor, so no second file
+was tried.
+
+- File left out: `tests/test_cli.py` (44 of the 927 tests)
+- Command: `make verify PYTEST_ARGS="-n 8 --ignore=tests/test_cli.py"` per the run recipe,
+  so pytest ran `pytest --cov --cov-report=term -n 8 --ignore=tests/test_cli.py`; HEAD
+  `6599677` plus the uncommitted `pyproject.toml` and `Makefile` edits; load 5.57
+- pytest line: `883 passed in 59.03s`; wall 59.59 s; peak RSS 7021 MiB (17 processes)
+- Total read: 90.24 % (`TOTAL 1069 105 294 14 90.24%`); floor: 96
+- Exit: pytest 1, `make` 2 (`make: *** [Makefile:78: test] Error 1`)
+- Failure lines, verbatim:
+
+  ```
+  ERROR: Coverage failure: total of 90.24 is less than fail-under=96.00
+  FAIL Required test coverage of 96.0% not reached. Total coverage: 90.24%
+  ```
+
+The total sits 5.76 points under the floor, so losing one test file is far outside the
+slack the floor was given (0.99 points under C0). `--ignore` left every file in the tree
+as it was (`git diff --quiet HEAD -- tests` exits 0); scratch run, not committed (D-12).
+
+Checking the partial-run edge found that the first Makefile recipe, `pytest --cov
+$(PYTEST_ARGS)`, ran the whole suite when `PYTEST_ARGS` began with a path:
+`--cov` takes an optional value, so `--cov tests/test_calc.py` read the path as the coverage
+source and ran 927 tests, the documented `--no-cov` hatch included. The recipe is
+`pytest --cov --cov-report=term $(PYTEST_ARGS)`: the option after `--cov` stops it from
+taking the path, `make test PYTEST_ARGS="tests/test_calc.py -q"` then runs 404 tests, reads
+45.93 % and fails the floor, and the same with `--no-cov` exits 0 (404 passed in 0.25 s).
+
+### Heaviest contributors
+
+Selection rule, fixed before any per-test second was read: every file whose mean share of
+pytest's seconds over P1 and P2 (### Per-file share) is at least 5 %. Four files qualify,
+together 95.0 % of pytest's seconds. `tests/test_api.py` is just over the line (4.8 % in P1,
+5.2 % in P2, 5.03 % unrounded). `tests/test_cli.py` is under it (4.3 % / 4.7 %, mean
+4.5 %), so the rule leaves out its two slow tests (`test_readme_export_examples_run`,
+7.03 s, the slowest single test in P1, and
+`test_an_unknown_output_extension_exits_1_from_the_real_process`, 2.15 s) and no cut is
+proposed for them.
+
+| File | Items | Serial s (P1, P2) | Share (%) | What it proves |
+|---|---|---|---|---|
+| tests/test_model.py | 201 | 167.76, 157.53 | 73.7 (74.1 / 73.3) | The kernel-level geometry proofs, on real solids: every feature builds one valid solid and its edge selector takes exactly its own edges and never none (L26: rim chamfer, recess-floor fillet, tip arcs; L27 hex bore; L28 keyway; L29 tip chamfer; L30 body cutouts), the features compose on one gear (L31, tier 2: tip chamfer with each cutout on each bore), the spoke fillet against its closed form (L33), and a cached solid never carries a mesh (L24) |
+| tests/test_pool.py | 16 | 19.29, 17.92 | 8.4 (8.5 / 8.3) | The one place a build really crosses a process boundary: a real worker builds and downloads, a wedged build is killed and its worker replaced, a dying worker surfaces as `BrokenProcessPool` and is replaced, same-slot requests queued behind a timeout refuse without cancellation and replace the worker once (L17, L18) |
+| tests/regression/test_pre_v0_2.py | 85 | 17.58, 17.01 | 7.8 (7.8 / 7.9) | The pre-v0.2 part is unchanged: every pre-v0.2 parameter set derives the same dimensions (44 records, exact) and builds the same solid (39 records: faces, edges, volume at rel 1e-6, six bounding-box corners at abs 1e-6), and the fixture was captured on the kernel pair this run uses (L05, L26; Success Metric 3 of v0.2, "old links unchanged") |
+| tests/test_api.py | 54 | 10.92, 11.23 | 5.0 (4.8 / 5.2) | The HTTP layer end to end on an in-process build: schema, info and download for each feature's link with the numbers it prints, the refusal and cap-and-warn contracts, the byte cache and its log events (L02, L03, L07, L19, L20, L24, L29, L30) |
+
+### Proposed cuts
+
+Pricing source: the per-test duration lines of P1 and P2 themselves, that is
+`make verify PYTEST_ARGS="--durations=0 --durations-min=0"` serial and without coverage (the
+profile's own kind), loads 6.53 and 9.09 (`sysctl -n vm.loadavg`, ### Host state), HEAD
+`862a807`; `src/`, `tests/` and `requirements.txt` there are byte-identical to the current
+HEAD `4b798ac` (`git diff --quiet 862a807 4b798ac -- src tests requirements.txt` exits 0).
+Those two runs already printed every test phase, so no separate pricing run was made. The raw
+`.out` files are session scratch (as ### Method says); a reader reproduces the figures by
+re-running P1 and P2 and aggregating per test function, parametrize id stripped, setup, call
+and teardown summed:
+
+```bash
+grep -E '^[0-9.]+s (call|setup|teardown) ' "$S/$L.out" \
+  | awk '{n=$3; sub(/\[.*$/,"",n); t[n]+=$1} END{for(k in t) printf "%8.2f %s\n", t[k], k}' \
+  | sort -rn
+```
+
+The Serial s column is the mean of P1 and P2 with the pair in brackets. These are serial
+seconds of the named tests. They say nothing about what removing them saves at `-n 8`: that
+is not measured here (L08), and a saving at N depends on how the workers are balanced.
+Candidate selection, fixed before the numbers were read: for each file in the Heaviest
+contributors table, the test functions that together make up at least half of that file's
+seconds, taken heaviest first (five in `tests/test_model.py`, two in
+`tests/test_pool.py`, the one build function in the regression file, seven in
+`tests/test_api.py`), plus every dedup pair found among them. For a matrix group the cut
+named is a sample of rows (the rows left out are named; the rest keep running). No row
+proposes a tier the hook skips and CI runs (D-03, L13), and no row is a `mark`: the only
+marker that would save hook seconds the gate then does not spend is that rejected tier.
+
+| Candidate | Kind | Tests | Serial s | What it proves | Proof-value cost of losing it | Needs acceptance |
+|---|---|---|---|---|---|---|
+| `tier2-round-bore` | sample | tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore, rows `round-holes`, `round-spokes`, `round-cells` (3 of 12; group 27.61 s) | 6.96 (7.39 / 6.53) | The tip chamfer (1.75 mm) composed with each cutout on a round bore, the tip-arc and cutout-delta proofs on one built solid (L31 tier 2, L29, L30) | The round-bore composition is no longer built. The test's own comment says d-flat and round read identical cutout deltas and the d-flat rows stay, so what goes unseen is a fault of the chamfer-plus-cutout boolean that only a round bore shows (L31) | by name |
+| `selector-cutout-no-recess` | sample | tests/test_model.py::test_every_selector_takes_only_its_own_edges_with_a_body_cutout, rows `no-recess-holes`, `no-recess-spokes`, `no-recess-cells` (3 of 19; group 17.31 s) | 0.83 (0.82 / 0.84) | With a cutout and the recesses off, the floor selector is never called and the rim and tip counts still match (L26, L30) | "No floor call without a recess" is no longer observed on a part with a cutout; its no-cutout twin (`d-flat-no-recess` in `test_each_edge_selector_picks_exactly_its_own_edges`) stays | by name |
+| `selector-bottom-recess` | sample | tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges, rows `d-flat-bottom`, `round-bottom`, `hex-bottom`, `keyway-d-flat-bottom`, `keyway-round-bottom` (5 of 30; group 14.07 s) | 1.33 (1.35 / 1.32) | A bottom-only recess: the floor selector takes the two floor edges at z = recess_depth, on the d-flat, round, hex and keyed bores (L26, L27, L28) | Bottom-only floor selection is no longer observed on those five bores; the top-only and both-sides rows stay | by name |
+| `pre-v0.2-solids` | skip | tests/regression/test_pre_v0_2.py::test_a_pre_v0_2_parameter_set_builds_the_same_solid (39 rows, 39 distinct GearParams; the whole group) | 17.30 (17.58 / 17.01) | Every pre-v0.2 parameter set that builds still builds the same solid: faces, edges, volume at rel 1e-6, six corners at abs 1e-6 (L05, L26) | The milestone's "old links unchanged" proof for the geometry is gone. Only the dimension replay (44 rows) and the kernel-pair tripwire remain, and the fixture's own rule is that a red row here is the code's bug, never the fixture's | by name |
+| `pool-same-slot-refusal` | skip | tests/test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation | 5.10 (5.22 / 4.98) | CR-01, WR-01: four requests queued on one hash slot behind a timeout all surface as `BrokenProcessPool`, never `CancelledError` nor their own `BuildTimeout`; the worker is replaced exactly once and the slot works again (L17, L18) | The only test of the queued same-slot path with real processes: a cancellation escaping every handler, or a double replacement, would no longer be seen | by name |
+| `pool-wedged-build` | skip | tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced | 4.43 (4.62 / 4.24) | A build over its timeout is killed, not abandoned, its slot's worker is replaced and the next request succeeds (L17, L18) | The kill-on-timeout and replace path is no longer exercised; `test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced` stays and covers a hard death, not a timeout | by name |
+| `api-honeycomb-link` | remove | tests/test_api.py::test_a_honeycomb_link_is_served_with_its_cells | 1.24 (1.21 / 1.27) | `?hex_cell=3&hex_wall=1` end to end: schema group, info's 18 cells and walls, the null default, the large-gear raise-to-fit warning, STL and STEP (L30, L02) | The honeycomb's HTTP contract goes unobserved; the kernel-level honeycomb proofs stay | by name |
+| `api-spoke-link` | remove | tests/test_api.py::test_a_spoke_link_is_served_with_the_fillet_it_cut | 1.12 (1.12 / 1.13) | The spoke link end to end: schema group, info's cap and walls, the null default, both exports (L30, L33) | The spokes' HTTP contract goes unobserved; the kernel-level spoke proofs stay | by name |
+| `api-tip-chamfer-link` | remove | tests/test_api.py::test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut | 0.76 (0.76 / 0.76) | `?tip_chamfer=0.4` end to end: schema, applied value and `tip_d`, the cap to 1.75 mm with its warning, the field's refusal above 3, both exports (L29, L03) | The tip chamfer's HTTP contract, including the cap warning a user reads, goes unobserved | by name |
+| `api-gzip-after-identity` | remove | tests/test_api.py::test_a_gzip_request_after_an_identity_download_emits_source_compressed | 0.69 (0.69 / 0.69) | After an identity download, the gzip request logs `export.served` with `source=compressed` and a duration above zero (L19, L20) | The compress-from-cached-raw path of the byte cache is no longer observed | by name |
+| `api-two-request-ids` | remove | tests/test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids | 0.68 (0.66 / 0.69) | Two requests for one gear log two different request ids, the case params and time cannot tell apart (L20) | A log line could no longer be tied to its request when two identical requests arrive | by name |
+| `api-small-gear-recess` | remove | tests/test_api.py::test_a_gear_too_small_for_the_stock_recess_is_still_served | 0.66 (0.64 / 0.68) | A 24-tooth, module-1 gear too small for the stock recess is still served and `/api/info` still reports a recess id (L03, L05) | The cap-and-warn path for the stock recess on a small gear is no longer observed over HTTP | by name |
+| `api-repeat-download` | remove | tests/test_api.py::test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started | 0.65 (0.63 / 0.66) | A repeat download logs `source=cache` with `duration_ms` 0 and no `build.started` (L07, L20) | A byte-cache hit that silently rebuilds would no longer be seen | by name |
+| `dedup-g4-regression` | dedup | tests/test_model.py::test_builds_one_valid_solid, rows `kw0` to `kw8` (9 of 23; group 13.78 s), against the nine records of test_a_pre_v0_2_parameter_set_builds_the_same_solid with the same GearParams (six of the records are named after these very rows, `test_model.py::test_builds_one_valid_solid[2]` and so on); both build through `build()` | at most 2.90 (2.84 / 2.95), the nine rows; the saving is one build of each pair, not measured | kw0 to kw8: the built solid is valid, its z length is the face width and its extent is inside the module bound; the replay compares faces, edges, volume and corners of the same solids (L05, L26) | None if the replay's `solid()` gains `isValid()`, the z-length and the extent assertions, so every assertion stays on one build. Deleting the nine rows alone would drop those three assertions | free (D-03) with the assertions moved; by name if the rows are only deleted |
+| `dedup-g4-g5` | dedup | tests/test_model.py::test_builds_one_valid_solid rows `kw18`, `kw19`, `kw22` (holes, filleted spokes, cells) and test_the_recess_floor_fillet_survives_every_cutout_on_every_bore rows `d-flat-holes`, `d-flat-spokes`, `d-flat-cells`: the same GearParams built twice (`build()` and `_build_checked()`) | at most 2.81 (2.92 / 2.71), the three fillet rows; the other three rows are 3.08 (3.13 / 3.03); the saving is one build of each pair, not measured | kw18, kw19, kw22: a valid solid of the right height and extent (L30). The fillet rows: the recess floor fillet survives the cutout and the TORUS count is the kernel's (4, 20, 14) (L30, L31) | None: every assertion of both stays on one built solid. The cache cannot do it today (`build()`'s lru_cache holds 4 solids, `SPUR_SOLID_CACHE`, and the rows are about 1,500 lines apart), so it needs one session-level cache of the `_build_reference` kind for these three, and those three `build()` rows would then run `_build_checked` | free (D-03) |
+
+Pairs found and not proposed, so the list is complete. Counted over the five test_model
+groups and the 39 regression records by canonical GearParams, nineteen parameter sets are
+built by more than one test: nine are the `dedup-g4-regression` pair, three are
+`dedup-g4-g5` (two of them, holes and cells, are also built by the d-flat rows of
+`test_every_selector_takes_only_its_own_edges_with_a_body_cutout`), and seven more pair the
+selector-with-cutout rows `round-holes`, `round-cells`, `hex-holes`, `hex-cells`,
+`keyway-holes`, `keyway-spokes` and `keyway-cells` with the matching rows of the
+recess-fillet group (nine of the selector test's rows share GearParams with that group in
+all). Those are not candidates: the selector test
+patches `_bore_rim_edges` and `_groove_floor_edges` with spies and builds through
+`_build_checked`, never `build()`, with a comment that says why (15-RESEARCH Pitfall 10), so
+its builds cannot be shared. `test_each_edge_selector_picks_exactly_its_own_edges` builds a
+bare variant (chamfer and fillet off, `_cut_keyway` patched out) that no other test builds,
+the tier-2 rows build a tip-chamfered composition no other test builds, and the 39
+regression records are 39 distinct GearParams. The `test_api.py` link tests build the same
+links over HTTP, whose build is incidental to the route they prove, and a cross-file
+share would be a new design, so none is listed.
+
+Coverage check of every row that removes a test (REQ-coverage-floor's trip point, 96.00).
+One scratch run removed all 71 items of the rows above at once, the two dedup rows
+included as the worst case: `make test PYTEST_ARGS="-n 8 -q --deselect=<the 71 node ids>"`,
+the recipe's `--cov --cov-report=term` first, per R1 and R2 of the recipe (nothing else
+alive, load 1.01 read before), HEAD `4b798ac`. Result: `856 passed in 53.67s` (927 - 71),
+exit 0, wall 53.91 s, peak tree RSS 6690 MiB (18 processes), and
+
+```
+src/spur/app.py              157      3     20      3  96.61%
+src/spur/pool.py              54      0      6      0 100.00%
+TOTAL                       1069     28    294     17  96.40%
+Required test coverage of 96.0% reached. Total coverage: 96.40%
+```
+
+With every candidate gone the total is 96.40 %, 0.40 points over the trip point and 0.81
+under the 97.21 % the three `-n 8 --cov` runs read (23 missed statements, 15 partial
+branches there, 28 and 17 here). A smaller set of removed tests cannot cover less than a
+larger one, so every row alone reads at least 96.40 %; the single-row totals were not run.
+If the lost worker flush of C0 (0.22 points, debt
+`2026-10-04-worker-coverage-flush-is-sometimes-lost.md`) struck on top of the union it would
+read 96.18 %, still over. This run is a coverage reading, scratch and not committed: its
+53.91 s is one run at load 1.01 and not an alternating A/B pair, so it is no reading of
+what the cuts save. The 71 items' seconds in the table add up to 47.46 s serial (the two
+dedup rows, 5.71 s of it, are upper bounds), of the 224.28 s serial mean.
+
+None of these rows is recommended here. The gate at `-n 8` with coverage reads a mean of
+64.12 s (### Tolerance and coverage cost), so no cut is needed to reach a bar set from
+that; the rows are for the record (D-03).
+
+### Gate decision
+
+The human's verbatim answer to 15-03's D-01 checkpoint: "knee-headroom N=8 bar=66 cuts=none before=244.59".
+
+The option taken is `knee-headroom`. Its four consequences, recorded here as the CONTEXT
+addendum records them:
+
+- **Bar.** 66 s of `make verify` wall time on this host: the largest of B1-B3 (65.83 s, B2)
+  rounded up to the next whole second, to be read in 15-04 as mean(B) of the `-n 8 --cov`
+  gate by this section's recipe, alternating with A, and at or under 66 s (D-04, D-05: a
+  miss is recorded and goes to the human, never re-run). For scale, the six runs read
+  mean(B) 64.12 s, spread 3.33 s (62.50 to 65.83), loads 22.37 to 30.02.
+- **N.** 8, the apparent knee K, so ### Tolerance and coverage cost (6 of 6 green at
+  N = 8) stands and 15-04 runs no further tolerance runs. CI runs `-n 4` on its 4-vCPU
+  runner (Open Question 4).
+- **Cuts.** None accepted. Every row of ### Proposed cuts is refused by name:
+  `tier2-round-bore`, `selector-cutout-no-recess`, `selector-bottom-recess`,
+  `pre-v0.2-solids`, `pool-same-slot-refusal`, `pool-wedged-build`, `api-honeycomb-link`,
+  `api-spoke-link`, `api-tip-chamfer-link`, `api-gzip-after-identity`,
+  `api-two-request-ids`, `api-small-gear-recess`, `api-repeat-download`,
+  `dedup-g4-regression`, `dedup-g4-g5`. Nothing in `tests/` changes in 15-04.
+- **Before.** 15-04's Before row is C0, the serial `--cov` run: 244.59 s (### Coverage
+  baseline), not the no-`--cov` serial profile's 224.28 s (P1/P2).
+
+### Before and after
+
+Order, fixed before A1: A1 B1 A2 B2.
+
+What A and B are. B is the gate as committed: `make verify` with no extra arguments, which
+now runs `pytest -n 8 --cov --cov-report=term` (Makefile `PYTEST_WORKERS`, HEAD `5797199`).
+A is the Before the human chose at the profile checkpoint (### Gate decision): the serial
+gate with coverage, the gate as 15-02 left it. With `-n 8` in the recipe that is
+`make verify PYTEST_ARGS="-n0"`: `PYTEST_ARGS` comes last, so `-n0` overrides `-n 8`, runs
+the tests in-process and leaves `--cov --cov-report=term` in place, so the only variable
+between A and B is `-n`. (The plan's own A, serial without coverage, is not used: the
+human's answer replaces it, and 15-02's C0 at 244.59 s is the same configuration measured
+before the Makefile change.) Each run follows ### Method's recipe R1-R5; the read-out below
+is from its `.out`, `.time` and `.rss` files. No rerun, no quiet bar (D-04).
+
+Date 2026-10-04, HEAD `5797199` for every row (the `-n 8` commit; `src/`, `tests/` and
+`requirements.txt` are byte-identical to `20cd484`, `git diff --quiet 20cd484 -- src tests
+requirements.txt` exits 0). Each load is the 1-minute figure read immediately before the
+run; it carries the previous row's own work, and nothing else of this session ran on the
+host between rows.
+
+| Run | Code | Args | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit |
+|---|---|---|---|---|---|---|---|
+| A1 | `5797199` | `PYTEST_ARGS="-n0"` (serial, `--cov`) | 14.15 | 927 passed in 227.22s (0:03:47) | 228.23 | 1415 (5) | 0 |
+| B1 | `5797199` | none (`-n 8 --cov`) | 5.91 | 927 passed in 63.63s (0:01:03) | 64.19 | 6638 (17) | 0 |
+| A2 | `5797199` | `PYTEST_ARGS="-n0"` (serial, `--cov`) | 19.17 | 927 passed in 228.73s (0:03:48) | 229.75 | 1418 (5) | 0 |
+| B2 | `5797199` | none (`-n 8 --cov`) | 5.31 | 927 passed in 62.35s (0:01:02) | 62.92 | 6634 (15) | 0 |
+
+mean(A) = 228.99 s, mean(B) = 63.555 s -> delta = -165.435 s (B is 3.60 times faster)
+
+Bar: 66 s (15-CONTEXT.md D-01 addendum) -> met, mean(B) = 63.555 s
+
+mean(B) is 2.445 s under the bar. The two B walls are 64.19 s and 62.92 s (spread 1.27 s);
+15-02's three `-n 8 --cov` runs read 64.03, 65.83 and 62.50 s at loads 22.37 to 30.02, so
+these two, at loads 5.31 and 5.91, sit inside that range. The bar is the largest of those
+three rounded up (65.83 s -> 66 s) and neither B row here is over it.
+
+Test count: 927 passed in every row, exit 0, no failed, error or rerun in any `.out` (the
+only "error" text is the file name `src/spur/build_errors.py` in the coverage table); no cut
+was applied, so there is no difference to name.
+
+Coverage on the four rows (`--cov`, floor `fail_under = 96`, "Required test coverage of
+96.0% reached" in every `.out`): A1 and A2 read `TOTAL 1069 26 294 15 96.99%` with
+`src/spur/pool.py` at 95.00% (lines 63-67 and 222 missing, the lost worker flush of C0),
+B1 and B2 read `TOTAL 1069 23 294 15 97.21%` with `pool.py` at 100.00%. Counting C0, all
+three serial full `--cov` runs of this phase lost those three statements, and none of the
+five `-n 8 --cov` runs that printed `pool.py` did (15-02's B1-B3, B1 and B2 here). 15-RESEARCH
+Pitfall 13 saw the same loss once at `-n 4`, so it is not specific to serial; the tally
+is a count of eight runs, not a cause.
+
+Largest peak RSS of the four rows: 6638 MiB (B1, 17 processes), an upper bound by the same
+rule as the sweep (shared-library pages count once per process); the serial A rows peak at
+1415 and 1418 MiB. CPU time (`/usr/bin/time -p`): A1 user 354.94 s + sys 619.62 s, A2 357.00
+s + 627.82 s; B1 366.42 s + 283.93 s, B2 365.48 s + 274.63 s.
+
+A is the Before the human chose (serial, coverage on): 15-02's C0 read 244.59 s at load
+8.37 before `-n 8` went in; A1 and A2 read 228.23 s and 229.75 s here, 16.36 s and 14.84 s
+less, at loads 14.15 and 19.17 (the cause of the difference was not tested). Context, not a
+bar reading: the pre-commit hook of the Makefile commit itself (`make verify` with the new
+recipe plus the commit-msg hook), taken from `date` before and after `git commit`, was
+64 s. CI's `test (3.12)` job duration is context on a
+different, 4-vCPU host, recorded in 15-05's CI-run subsection, below, and never the bar (D-02).
+
+### CI run
+
+Run: https://github.com/halfb00t/spur/actions/runs/37181871926 (id 37181871926), the
+`pull_request` run of ci.yml on the draft phase PR #18, head `839dfeaa33d60c1c996c9d7c111190a1dcca4cbc`
+(the `ci(15-05)` commit that carries the pin). Conclusion `success`; `test (3.12)`, `image` and
+`vendor-bundle` all `success` (the three jobs `required-jobs.txt` lists).
+
+What the log printed, copied from `gh run view 37181871926 --log`:
+
+- The step `kernel pair this run resolved` printed `cadquery 2.8.0 cadquery-ocp 7.9.3.1.1`,
+  the strings in `tests/regression/pre_v0_2.json`'s provenance header.
+- The install line of the `make verify PYTHON=python` step (pip's own output, under
+  `PIP_CONSTRAINT: requirements.txt`) lists `cadquery-2.8.0 cadquery-ocp-7.9.3.1.1
+  cadquery-ocp-proxy-7.9.3.1.1`, and `pytest-cov-7.1.0` and `pytest-xdist-3.8.0` from the
+  dev extras. setup-python reported `Cache hit` for its pip cache and pip's install output
+  still named the pair (RESEARCH Pitfall 14 again: the cache restores downloads, not the
+  venv).
+- Workers: `created: 4/4 workers`, then `4 workers [927 items]`. `PYTEST_WORKERS` is 8
+  clamped to the online CPUs (15-04), and `ubuntu-latest` has 4, so `-n 4`.
+- pytest: `927 passed in 203.16s (0:03:23)`, no failed, error or rerun. Coverage
+  `TOTAL 1069 22 294 15 97.29%` against the floor `fail_under = 96`.
+- `test (3.12)` job: started 2026-10-04T06:07:19Z, completed 2026-10-04T06:11:46Z, 267 s
+  (4 min 27 s) including checkout, setup-python and the venv install.
+
+The pair came out right on the first run, so the tripwire
+`test_the_fixture_was_captured_on_the_kernel_this_run_uses` passed in this run's 927. Whether the
+constraint, rather than cadquery 2.8.0's own `cadquery-ocp<8.0` cap, held the pair here cannot be
+read from one run: both give 7.9.3.1.1 today. The local dry run in 15-05 Task 1 is what shows the
+constraint fails closed (a `cadquery-ocp==8.0.1.0.0` constraint file gives `ResolutionImpossible`).
+
+This is context on GitHub's 4-vCPU `ubuntu-latest` runner with a different CPU and `-n 4`, never
+the bar: the 66 s bar is the dev host's gate (15-CONTEXT.md D-01 addendum, D-02), and 203.16 s here
+is not read against it.

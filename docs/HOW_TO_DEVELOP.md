@@ -18,7 +18,7 @@
 проскочило:
 
 - `make verify` — единый гейт: ruff, mypy `--strict`, контракты границ импортов, скан
-  незавершёнки (`TODO`/`FIXME`/`NotImplementedError`), pytest. ~11 с на прогретом кеше.
+  незавершёнки (`TODO`/`FIXME`/`NotImplementedError`), pytest. ~64 с на прогретом кеше (12-ядерный dev-хост, `bench/RESULTS.md`, фаза 15).
 - Тот же `make verify` стоит в pre-commit хуке, в CI (на каждый push в `main` и на
   каждый PR, Python 3.12) и внутри `make worktree.land` перед вливанием. Одно
   определение «прошло» в трёх местах.

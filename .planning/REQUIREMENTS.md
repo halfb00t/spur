@@ -58,11 +58,14 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 
 ### Kernel pin
 
-- [ ] **REQ-ci-installs-the-pinned-kernel**: CI's `make verify PYTHON=python` resolves the
+- [x] **REQ-ci-installs-the-pinned-kernel**: CI's `make verify PYTHON=python` resolves the
   kernel pair the fixture's provenance names — `cadquery==2.8.0` /
   `cadquery-ocp==7.9.3.1.1` (`requirements.txt` lines 11–13 already pin them for
-  deployment) — by one of two mechanisms the human picks: install `requirements.txt`
-  before the dev extras in CI, or an upper bound on `cadquery` in `pyproject.toml`. The
+  deployment) — by the mechanism the human picked at Phase 15's discuss-phase
+  (15-CONTEXT.md D-13): `requirements.txt`, the L12 closure, constrains every pip install
+  in CI's `test` job (`PIP_CONSTRAINT` on the `make verify` step) -- neither of the two
+  first named here (install `requirements.txt` before the dev extras; an upper bound on
+  `cadquery` in `pyproject.toml`), both rejected in D-13. The
   choice is a decision against L12's "why floors and ranges" rationale and is logged as an
   `Lxx`. *Acceptance*: a green CI run URL whose log shows the resolved pair;
   `test_the_fixture_was_captured_on_the_kernel_this_run_uses` stays the named tripwire; the
@@ -109,7 +112,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 
 ### The gate
 
-- [ ] **REQ-verify-profiled**: `make verify`'s wall time is measured per stage (ruff, mypy,
+- [x] **REQ-verify-profiled**: `make verify`'s wall time is measured per stage (ruff, mypy,
   import-linter, unfinished-work scan, pytest) and pytest's per-file and top-N
   `--durations` on the dev host with load recorded, the way D-10 measured it (alternating
   full runs, same session), and written to `bench/RESULTS.md`. The heaviest contributors
@@ -118,23 +121,30 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   `pytest-xdist` is not a dev extra), and the `BuildPool`/OCCT tests' tolerance of workers
   is measured, not assumed. Every proposed cut names its proof-value cost. *Acceptance*:
   the table and the proposal list exist in `bench/RESULTS.md`; the human sets the bar from
-  them at discuss-phase and it is recorded in that phase's CONTEXT. This requirement is
+  them at the phase's profile checkpoint (15-CONTEXT.md D-01; the profile is the phase's
+  own first deliverable) and it is recorded in that phase's CONTEXT. This requirement is
   done when the numbers exist — it promises no cut.
-- [ ] **REQ-verify-at-the-bar**: `make verify`'s wall time reads at or under the bar the
+- [x] **REQ-verify-at-the-bar**: `make verify`'s wall time reads at or under the bar the
   human set from the profile, measured the same way on the same host; nothing was cut that
   was a proof unless the human accepted the loss by name; any new dev dependency
   (`pytest-xdist` or kin) is a `[dev]` extra only — `requirements.txt` is the runtime
   closure (L12) and gains nothing. *Acceptance*: the before/after rows in
   `bench/RESULTS.md`; the test count and what it proves unchanged or the difference named;
   the pre-commit hook's own comment ("A warm run is ~11 s") corrected to what it measures.
-- [ ] **REQ-coverage-floor**: `pytest-cov` is added to the `dev` extras — it is **not**
+- [x] **REQ-coverage-floor**: `pytest-cov` is added to the `dev` extras — it is **not**
   installed today (`pip show pytest-cov` empty on 2026-10-01; the debt file's "pytest-cov
   is installed" is false and is corrected on retirement) — one baseline `pytest --cov` run
   is recorded in `bench/RESULTS.md`, `fail_under` is set just under it in
-  `[tool.coverage.report]`, and `make verify`'s test target runs `--cov
-  --cov-fail-under`. ASSUMPTION to settle in the phase: the `BuildPool` worker processes
+  `[tool.coverage.report]`, and `make verify`'s test target runs `--cov` with the floor
+  read from `[tool.coverage.report] fail_under` (pytest-cov uses it when
+  `--cov-fail-under` is absent, so the number lives in one place — 15-RESEARCH Open
+  Question 2). ASSUMPTION to settle in the phase: the `BuildPool` worker processes
   need `concurrency = ["multiprocessing"]` (+ `parallel`/combine) or their lines read as
-  uncovered — the baseline states whether worker coverage is counted. *Acceptance*: a
+  uncovered — the baseline states whether worker coverage is counted. Settled in Phase 15
+  (15-CONTEXT.md D-09 addendum): `concurrency = ["multiprocessing", "thread"]`,
+  `parallel = true` and `sigterm = true` count them; `"multiprocessing"` alone drops
+  thread tracing, and pytest-cov 7 has no subprocess hook (`bench/RESULTS.md` Phase 15
+  § Coverage baseline). *Acceptance*: a
   scratch run with one test file removed shows `make verify` going red on the floor
   (recorded, not committed); the floor's own wall-time cost is measured against
   REQ-verify-profiled's baseline (so this lands after the profile);
@@ -209,10 +219,10 @@ Filled by the roadmap.
 | REQ-root-lead-in-warned | Phase 14 | Complete |
 | REQ-readme-root-zone-states-the-limit | Phase 14 | Complete |
 | REQ-filleted-spoke-closed-form | Phase 14 | Complete |
-| REQ-verify-profiled | Phase 15 | Pending |
-| REQ-verify-at-the-bar | Phase 15 | Pending |
-| REQ-coverage-floor | Phase 15 | Pending |
-| REQ-ci-installs-the-pinned-kernel | Phase 15 | Pending |
+| REQ-verify-profiled | Phase 15 | Complete |
+| REQ-verify-at-the-bar | Phase 15 | Complete |
+| REQ-coverage-floor | Phase 15 | Complete |
+| REQ-ci-installs-the-pinned-kernel | Phase 15 | Complete |
 | REQ-model-py-no-type-ignore | Phase 16 | Pending |
 | REQ-nyquist-phases-7-8 | Phase 16 | Pending |
 

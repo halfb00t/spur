@@ -64,7 +64,7 @@ byte-unchanged throughout.
 - [x] **Phase 14: Honest Record** - The root lead-in warns when it rises above the pitch (completed 2026-10-03)
       circle, README states the real limit, and the filleted-spoke removed-volume proof
       gets an independent closed form
-- [ ] **Phase 15: The Gate, Measured and Pinned** - `make verify`'s wall time, its bar and
+- [x] **Phase 15: The Gate, Measured and Pinned** - `make verify`'s wall time, its bar and (completed 2026-10-04)
       its coverage floor become measured numbers in `bench/RESULTS.md`, and CI installs the
       exact kernel pair the regression fixture pins
 - [ ] **Phase 16: Typing & Validation Debt** - `model.py` carries no `type: ignore`, and
@@ -188,7 +188,8 @@ regression fixture's provenance header names, so the fixture's exact-value asser
 honest.
 **Depends on**: Nothing new — builds on the shipped v0.1–v0.2 pipeline (Phases 1–12);
 independent of the other v0.3 phases. Internally: `REQ-verify-profiled`'s baseline lands
-before `REQ-verify-at-the-bar` (the bar is set from it at this phase's discuss-phase) and
+before `REQ-verify-at-the-bar` (the bar is set from it at this phase's profile checkpoint,
+15-CONTEXT.md D-01) and
 before `REQ-coverage-floor` (its wall-time cost is measured against the same baseline) —
 sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
 **Requirements**: REQ-verify-profiled, REQ-verify-at-the-bar, REQ-coverage-floor, REQ-ci-installs-the-pinned-kernel
@@ -200,20 +201,26 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
      recorded); the heaviest contributors are named with what each proves, and whether the
      `BuildPool`/OCCT tests tolerate `pytest-xdist` workers is measured, not assumed
      (pytest runs serially today — no `-n`, `pytest-xdist` not a dev extra).
-  2. The bar the human sets at this phase's discuss-phase from the profile (recorded in
-     that phase's CONTEXT) is read at or under, measured the same way; the before/after rows
+  2. The bar the human sets at this phase's profile checkpoint from the profile (recorded in
+     this phase's CONTEXT as a dated addendum under D-01) is read at or under, measured the
+     same way; the before/after rows
      sit in `bench/RESULTS.md`, the test count is unchanged or the difference is named, and
      the pre-commit hook's own "a warm run is ~11 s" comment is corrected to what it now
      measures.
   3. `pytest-cov` is added to the `dev` extras, one baseline `pytest --cov` run is recorded
      in `bench/RESULTS.md`, `fail_under` is set just under it in `[tool.coverage.report]`,
-     and `make verify`'s test target runs `--cov --cov-fail-under`; a scratch run with one
+     and `make verify`'s test target runs `--cov`, the floor read from `fail_under` (one
+     literal; 15-RESEARCH Open Question 2); a scratch run with one
      test file removed shows `make verify` going red on the floor (recorded, not committed);
-     the ASSUMPTION about `BuildPool` worker coverage (`concurrency = ["multiprocessing"]`)
-     is settled and stated.
+     the `BuildPool` worker coverage is settled and stated:
+     `concurrency = ["multiprocessing", "thread"]`, `parallel = true` and `sigterm = true`
+     count the spawned workers' lines (15-CONTEXT.md D-09 addendum: `"multiprocessing"`
+     alone stops thread tracing, and pytest-cov 7 has no subprocess hook).
   4. CI's `make verify PYTHON=python` resolves `cadquery==2.8.0`/`cadquery-ocp==7.9.3.1.1`
-     by the mechanism the human picks at this phase's discuss-phase (install
-     `requirements.txt` before the dev extras, or an upper bound in `pyproject.toml`),
+     by the mechanism the human picked at this phase's discuss-phase (15-CONTEXT.md D-13:
+     `requirements.txt` as a pip constraints file for the install CI's `make verify` runs,
+     via `PIP_CONSTRAINT` -- neither of the two first named, `requirements.txt` before the
+     dev extras or an upper bound in `pyproject.toml`),
      proven by a green CI run URL whose log shows the resolved pair, logged as a new `Lxx`
      against L12's rationale; `test_the_fixture_was_captured_on_the_kernel_this_run_uses`
      stays the named tripwire.
@@ -223,8 +230,27 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
      the `[dev]` extra — `requirements.txt`'s 31 runtime pins are unchanged.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the bar is set
-from the profile at this phase's discuss-phase, not before.
-**Plans**: TBD
+from the profile at this phase's profile checkpoint (15-CONTEXT.md D-01), not before.
+**Plans:** 6/6 plans complete (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
+
+Plans:
+**Wave 1**
+- [x] 15-01-PLAN.md — the profile, tracer first: two serial runs into bench/RESULTS.md, the package-legitimacy check, pytest-xdist/pytest-cov in [dev], the N sweep and its apparent knee, D-01's sentences
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 15-02-PLAN.md — the floor: worker lines counted, the baseline, D-05's tolerance runs alternating with D-12's cost runs, fail_under by D-10, --cov in make test, red on the floor, the coverage debt retired
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 15-03-PLAN.md — the heaviest tests and every cut priced; the D-01 checkpoint where the human sets the bar and N; the answer in CONTEXT and RESULTS
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 15-04-PLAN.md — N in the Makefile (CPU-capped for CI), accepted cuts only, before/after read against the bar, the miss checkpoint only on a miss
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 15-05-PLAN.md — PIP_CONSTRAINT on CI's make verify and the pair printed; one push and the phase PR opened as a draft (D-16 addendum: draft-pr); one green run read, the CI-kernel debt retired, D-13's sentences
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 15-06-PLAN.md — the measured gate time at every eleven-second site, L34 (amends L12 and L13), the phase's end state
 
 ### Phase 16: Typing & Validation Debt
 
@@ -280,5 +306,5 @@ internal and one is process-only.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
-| 15. The Gate, Measured and Pinned | v0.3 | 0/TBD | Not started | - |
+| 15. The Gate, Measured and Pinned | v0.3 | 6/6 | Complete    | 2026-10-04 |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |

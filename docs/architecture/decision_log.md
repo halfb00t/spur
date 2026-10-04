@@ -1624,3 +1624,136 @@ Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), P
 3.12.13 (`sys.version.split()[0]`), read 2026-10-03; the four plain-row gaps, the tripwire's
 shift and the four hole-through-web gaps were measured on 2026-10-03, the first
 filleted-spoke measurement on 2026-09-29, all on this kernel pair.
+
+## L34 — The gate is measured, runs on eight workers under a coverage floor, and CI installs the pinned kernel (amends L12 and L13)
+
+Date: 2026-10-04.
+
+L12 and L13 stay as written; this entry amends L13's "~11 s warm" and its unmeasured gate,
+and L12's "loose ranges for developer environments" as far as CI is concerned, with what
+Phase 15 measured, decided and proved.
+
+**The measured gate** (D-01 to D-08). At the phase's start the gate was serial and had never
+been profiled. Two runs of `make verify` without coverage, taken in the session
+`bench/RESULTS.md` § "Host state" dates 2026-10-03 (HEAD `862a807`, code identical to
+`20cd484`), read P1 230.20 s at load 6.53 and P2 218.36 s at load 9.09, mean 224.28 s, so
+L13's "~11 s warm" was not what the gate cost. Pytest was 99.75 % and 99.85 % of the
+gate (ruff, mypy, import-linter and the unfinished-work scan read 0.07, 0.37, 0.11 and 0.02 s
+in P1), and `tests/test_model.py` was 74.1 % and 73.3 % of pytest's seconds (167.76 s over
+201 items in P1): the kernel-level geometry proofs of L24, L26 to L31 and L33, with
+`tests/test_pool.py` (8.5 % / 8.3 %), the pre-v0.2 regression replay (7.8 % / 7.9 %) and
+`tests/test_api.py` (4.8 % / 5.2 %) behind it (`bench/RESULTS.md` § "Per-stage wall time",
+§ "Per-file share", § "Heaviest contributors"). The `pytest-xdist` sweep read N = 2 at
+130.72 s, N = 4 at 84.76 s, N = 8 at 68.93 s and N = 12 at 75.47 s, every row green with
+927 passed (§ "xdist sweep"). The knee rule was fixed before any number was read: the
+smallest N whose wall is within 1.10 times the fastest green wall. It gave K = 8 (N = 12
+was inside the ceiling but is the larger N and slower). D-05's verdict is **adopted**: six
+alternating runs at N = 8, three without and three with coverage, were 6 of 6 green with 927
+passed each, no shared-state module failed, no `xdist_group` was needed and `tests/` is
+untouched; coverage costs 3.51 s there, mean 60.61 s without it against 64.12 s with it
+(§ "Tolerance and coverage cost"). The human's answer at the profile checkpoint, verbatim:
+"knee-headroom N=8 bar=66 cuts=none before=244.59" (`15-CONTEXT.md` D-01 addendum;
+§ "Gate decision"). The bar is 66 s of `make verify` wall time on the dev host, the largest of
+the three `-n 8 --cov` runs (65.83 s) rounded up, read as the mean of alternating runs of
+the gate as committed. N is 8. Cuts: none accepted; all 15 rows of § "Proposed cuts" were
+priced from P1 and P2's own `--durations` lines and refused by name (three samples of
+`tests/test_model.py` rows, skips of the pre-v0.2 solid replay and of two pool process tests,
+seven removals in `tests/test_api.py` and two dedups), so no test was removed, skipped,
+sampled or marked; the whole cut set deselected at once still read 96.40 %
+coverage against the floor below. The Before row is the serial run with coverage, 244.59 s
+(C0), not the no-coverage profile's 224.28 s. The Makefile `test` recipe runs
+`pytest -n $(PYTEST_WORKERS) --cov --cov-report=term`, `PYTEST_WORKERS` being 8 clamped to
+the host's online CPUs, one literal, overridable on the command line (`5797199`; `-n` stays out
+of `addopts`, so a bare `pytest` and `make test-image` are serial, D-07). The reading, on
+the same host and recipe, alternating serial A (`PYTEST_ARGS="-n0"`, coverage on) with B (the
+gate as committed): A1 228.23 s, B1 64.19 s, A2 229.75 s, B2 62.92 s, so mean(A) 228.99 s and
+**mean(B) 63.555 s**, a delta of -165.435 s (3.60 times faster), **the bar met** with 2.445 s
+to spare (§ "Before and after", `b8b4dd1`). That is the warm figure that replaces L13's
+"~11 s": the whole gate, `-n 8` with coverage, on a 12-core M2 Max; a commit through the
+pre-commit hook (the gate plus the commit-msg hook) was timed at 63-64 s by `date`
+(`15-04-SUMMARY.md`, context and not a bar reading). CI's 4-vCPU runner is never the bar
+(D-02): its run read 203.16 s of pytest at `-n 4`. RESEARCH Open Question 3 is decided
+as: no `bench/` script, the per-file awk and the RSS sampler are committed prose in
+§ "Method" (a script would need its own tests under `mypy --strict` for two lines of awk).
+Open Question 4 is decided as: CI's worker count is whatever the clamp gives, and the CI run's
+own line states it, `created: 4/4 workers` (§ "CI run"). The five sites that repeated
+"~11 s" outside this log now carry the figure (`ad99df9`); the commit-timeout debt stays
+active, because the hook is ~64 s and gsd's 30 s commit timeout still kills it. Commits:
+`39eb062` (the profile), `65ef9db` (the dev extras and the sweep), `5797199` (the workers),
+`b8b4dd1` (the reading), `a5c9365` (the summary of it).
+
+**The floor** (D-09 to D-12). C0, the serial `--cov` baseline, read 96.99 % over 1,069
+statements and 294 branches (26 missed statements, 15 partial branches); the three `-n 8
+--cov` runs read 97.21 % each (23 missed statements), so their spread is 0.00 points
+(§ "Coverage baseline", § "Tolerance and coverage cost"). D-10's rule, a whole percent under
+the lowest total less `max(0.25, spread)`, gives L = 96.99, S = 0.00, slack 0.25, 96.74 and
+so `fail_under = 96`; `precision = 2` is set because coverage compares the total rounded to
+`precision` and the default of 0 let a 45.93 % run pass a floor of 46, and one point is
+13.63 units of 1,069 statements plus 294 branches, not the ~31 lines D-10's first text
+counted (§ "Coverage floor"; the D-10 addendum). The literal lives in `pyproject.toml`
+`[tool.coverage.report]` alone: `make test` passes no `--cov-fail-under`, so the floor is
+read from config only (RESEARCH Open Question 2). Worker lines count through
+`concurrency = ["multiprocessing", "thread"]`, `parallel = true` and `sigterm = true`,
+and not through `pytest-cov`: version 7 dropped its subprocess hook, and `"multiprocessing"`
+alone replaces coverage's default `"thread"`, which stops tracing the thread that builds and
+shuts down `BuildPool` in the app's lifespan. This corrects D-09's first text (the D-09
+addendum); `tests/test_pool.py` alone reads `src/spur/pool.py` at 100.00 % serially and at
+`-n 2`. The red run: without `tests/test_cli.py` a full run at `-n 8` read 90.24 % against 96
+and failed with `Coverage failure: total of 90.24 is less than fail-under=96.00` (§ "Red on
+the floor", scratch, not committed). That section also records why the recipe is `--cov
+--cov-report=term` and not a bare `--cov`: a bare `--cov` took the first path in
+`PYTEST_ARGS` as its coverage source and ran the whole suite. One loss is not fixed and not
+hidden: all three serial full `--cov` runs of the phase lost `pool.py` lines 63-67 and 222
+(0.22 points, below the 0.99-point margin) and no `-n 8` run did; it is filed as the nice
+debt `docs/tech_debt/active/2026-10-04-worker-coverage-flush-is-sometimes-lost.md`
+(`4fef83d`). Commits: `f771c5e` (the config), `2aadcea` (the floor and `--cov` in `make
+test`; the no-coverage-floor debt retired there, its sha recorded in `b8926e7`).
+
+**The pin** (D-13 to D-16). CI's `make verify` step runs under `PIP_CONSTRAINT:
+requirements.txt`, so L12's closure does one more job: its 31 `==` lines pin both halves of
+the kernel pair, `cadquery` and `cadquery-ocp`, and every other runtime package to what the
+image ships, for the pip calls inside `make venv`'s recipe (`ci(15-05)`, `839dfea`). L12's
+"`pyproject.toml` keeps loose ranges for developer environments" stays true: the ranges and
+`make venv` are untouched, and a developer's venv can still drift under the fixture, where
+`test_the_fixture_was_captured_on_the_kernel_this_run_uses` stays the local remedy; the
+unconstrained local path is `docs/ideas/2026-10-03-constrain-make-venv-to-the-closure.md`
+(D-14). Neither option the debt file named was taken. Installing the closure with `--no-deps`
+and then the dev extras works, but the second install pulls the pruned transitive
+dependencies back in and is CI-only by construction; an upper bound on `cadquery` pins every
+environment and still leaves `cadquery-ocp` free to move inside cadquery 2.8.0's own cap, a
+7.9.x patch under the fixture. A separate `pip -c` step would install into the runner's
+Python, not `.venv` (RESEARCH Pitfall 8). The proof is one green run on draft PR #18,
+https://github.com/halfb00t/spur/actions/runs/37181871926: the step `kernel pair this run
+resolved` printed `cadquery 2.8.0 cadquery-ocp 7.9.3.1.1`, pytest printed `created: 4/4
+workers` and `927 passed in 203.16s`, coverage read 97.29 % against the floor (§ "CI run").
+Locally, a dry-run install under the constraint resolved that pair and the same install
+under a scratch constraint of `cadquery-ocp==8.0.1.0.0` failed with `ResolutionImpossible`,
+so the constraint fails closed. One run cannot show which of the constraint and cadquery
+2.8.0's own `cadquery-ocp<8.0` cap held the pair, since both give 7.9.3.1.1 today. The
+tripwire stays, its docstring now names `requirements.txt`, `PIP_CONSTRAINT`,
+`docker/refresh-requirements.sh` and `make fixture.regen`; the fixture file is untouched. D-16
+justified its print step with "absent on a cache hit"; that is false for this workflow (the D-16
+addendum, RESEARCH Pitfall 14): run 37116412012 hit setup-python's pip cache and still printed
+the pair in pip's install output, because the cache restores downloads and the venv is
+created fresh, and the pin run did the same. The print step stands as the cheaper-to-read
+proof, not the only one. The CI-kernel debt
+`docs/tech_debt/resolved/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md` retired
+citing `839dfea` and that run (`454af54`).
+
+**Reversibility.** `-n` is one Makefile variable and the floor one config literal; neither
+touches a test. The pin is one env line in `ci.yml` (D-13 rated it reversible). The costly
+direction is a kernel bump: it moves `requirements.txt` through
+`docker/refresh-requirements.sh` and regenerates the fixture together (`make fixture.regen`),
+under its own `Lxx`.
+
+Reason: L13 promised a gate whose cost nobody had measured, and it had grown to 224.28 s
+serial without a floor on what it covered; L12's ranges let CI's kernel drift under a
+fixture that pins one pair. Phase 15 measured the first, brought it to 63.555 s without
+removing a single proof, put a floor under coverage that counts the worker processes, and
+made CI install what the fixture was captured on.
+Machine: 12 CPUs, arm64, 32.0 GiB RAM (`.venv/bin/python -c "from bench import
+machine_facts; print(machine_facts())"`, read 2026-10-04), Apple M2 Max; macOS 27.0.1
+(`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`). The profile session is the
+one `bench/RESULTS.md` § "Host state" dates 2026-10-03; the coverage, tolerance and
+before/after runs were taken on 2026-10-04, and CI run 37181871926 on the same day on
+GitHub's 4-vCPU `ubuntu-latest`.

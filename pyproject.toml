@@ -24,6 +24,8 @@ dev = [
     "mypy>=1.18",
     "import-linter>=2.3",
     "pre-commit>=4",
+    "pytest-xdist>=3.8",
+    "pytest-cov>=7.1",
 ]
 
 [project.scripts]
@@ -125,8 +127,28 @@ filterwarnings = [
 [tool.coverage.run]
 branch = true
 source = ["src/spur"]
-# No fail_under yet: a floor picked without measuring is a number, not a guarantee.
-# See docs/tech_debt/active/2026-09-21-no-coverage-floor.md.
+# BuildPool's workers are spawned processes (pool.py:35) and pytest-cov 7 dropped its
+# subprocess hook, so "multiprocessing" is what makes coverage measure them. "thread"
+# must be listed too: setting the key replaces coverage's default, and without it the
+# lifespan thread that builds and shuts down the pool stops being traced (pool.py read
+# 85 % that way, 15-RESEARCH Pitfall 2). "parallel" writes one data file per process for
+# pytest-cov to combine; "sigterm" saves the data of a worker pool.py terminates -- a
+# guard, since no test terminates a worker inside src/spur today (15-RESEARCH Code
+# Example 5).
+concurrency = ["multiprocessing", "thread"]
+parallel = true
+sigterm = true
+
+[tool.coverage.report]
+# The floor, read by `make test`'s --cov and nowhere else (pytest-cov copies this value
+# when --cov-fail-under is absent): 96 = floor(L - max(0.25, S)) with L = 96.99 (the serial
+# baseline, the lowest of four totals), S = 0.00 (the spread of three -n 8 totals at
+# 97.21) -- bench/RESULTS.md "The gate, measured and pinned (Phase 15)", Coverage floor,
+# measured 2026-10-04, D-10's rule. Re-measure the same way before moving it.
+fail_under = 96
+# fail_under compares the total rounded to `precision`; the default 0 let a 45.93 % total
+# pass a floor of 46 (15-RESEARCH Pitfall 3).
+precision = 2
 
 [tool.importlinter]
 root_package = "spur"

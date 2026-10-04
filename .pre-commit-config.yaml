@@ -3,9 +3,12 @@
 # three places that enforce it.
 #
 # Install once per clone:  .venv/bin/pre-commit install
-# A warm run is ~11 s (the CAD tests dominate). The first run after `make clean` pages
-# in ~1.4 GB of OpenCascade and takes a couple of minutes; that is the page cache, not
-# the tests.
+# A warm run measured 63.555 s (`-n 8` with coverage, mean of two runs) on the 12-core
+# M2 Max dev host: bench/RESULTS.md, "The gate, measured and pinned (Phase 15)", section
+# "Before and after", 2026-10-04. The CAD tests dominate it (tests/test_model.py is about
+# three quarters of pytest's seconds, section "Per-file share"). The first run after
+# `make clean` pages in ~1.4 GB of OpenCascade and takes a couple of minutes; that is the
+# page cache, not the tests.
 #
 # There is deliberately no formatter hook: see L16 in docs/architecture/decision_log.md.
 #
