@@ -132,10 +132,16 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   installed today (`pip show pytest-cov` empty on 2026-10-01; the debt file's "pytest-cov
   is installed" is false and is corrected on retirement) — one baseline `pytest --cov` run
   is recorded in `bench/RESULTS.md`, `fail_under` is set just under it in
-  `[tool.coverage.report]`, and `make verify`'s test target runs `--cov
-  --cov-fail-under`. ASSUMPTION to settle in the phase: the `BuildPool` worker processes
+  `[tool.coverage.report]`, and `make verify`'s test target runs `--cov` with the floor
+  read from `[tool.coverage.report] fail_under` (pytest-cov uses it when
+  `--cov-fail-under` is absent, so the number lives in one place — 15-RESEARCH Open
+  Question 2). ASSUMPTION to settle in the phase: the `BuildPool` worker processes
   need `concurrency = ["multiprocessing"]` (+ `parallel`/combine) or their lines read as
-  uncovered — the baseline states whether worker coverage is counted. *Acceptance*: a
+  uncovered — the baseline states whether worker coverage is counted. Settled in Phase 15
+  (15-CONTEXT.md D-09 addendum): `concurrency = ["multiprocessing", "thread"]`,
+  `parallel = true` and `sigterm = true` count them; `"multiprocessing"` alone drops
+  thread tracing, and pytest-cov 7 has no subprocess hook (`bench/RESULTS.md` Phase 15
+  § Coverage baseline). *Acceptance*: a
   scratch run with one test file removed shows `make verify` going red on the floor
   (recorded, not committed); the floor's own wall-time cost is measured against
   REQ-verify-profiled's baseline (so this lands after the profile);

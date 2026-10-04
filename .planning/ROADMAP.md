@@ -209,10 +209,13 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
      measures.
   3. `pytest-cov` is added to the `dev` extras, one baseline `pytest --cov` run is recorded
      in `bench/RESULTS.md`, `fail_under` is set just under it in `[tool.coverage.report]`,
-     and `make verify`'s test target runs `--cov --cov-fail-under`; a scratch run with one
+     and `make verify`'s test target runs `--cov`, the floor read from `fail_under` (one
+     literal; 15-RESEARCH Open Question 2); a scratch run with one
      test file removed shows `make verify` going red on the floor (recorded, not committed);
-     the ASSUMPTION about `BuildPool` worker coverage (`concurrency = ["multiprocessing"]`)
-     is settled and stated.
+     the `BuildPool` worker coverage is settled and stated:
+     `concurrency = ["multiprocessing", "thread"]`, `parallel = true` and `sigterm = true`
+     count the spawned workers' lines (15-CONTEXT.md D-09 addendum: `"multiprocessing"`
+     alone stops thread tracing, and pytest-cov 7 has no subprocess hook).
   4. CI's `make verify PYTHON=python` resolves `cadquery==2.8.0`/`cadquery-ocp==7.9.3.1.1`
      by the mechanism the human picks at this phase's discuss-phase (install
      `requirements.txt` before the dev extras, or an upper bound in `pyproject.toml`),
@@ -226,14 +229,14 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the bar is set
 from the profile at this phase's profile checkpoint (15-CONTEXT.md D-01), not before.
-**Plans:** 1/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
+**Plans:** 2/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
 
 Plans:
 **Wave 1**
 - [x] 15-01-PLAN.md — the profile, tracer first: two serial runs into bench/RESULTS.md, the package-legitimacy check, pytest-xdist/pytest-cov in [dev], the N sweep and its apparent knee, D-01's sentences
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 15-02-PLAN.md — the floor: worker lines counted, the baseline, D-05's tolerance runs alternating with D-12's cost runs, fail_under by D-10, --cov in make test, red on the floor, the coverage debt retired
+- [x] 15-02-PLAN.md — the floor: worker lines counted, the baseline, D-05's tolerance runs alternating with D-12's cost runs, fail_under by D-10, --cov in make test, red on the floor, the coverage debt retired
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 15-03-PLAN.md — the heaviest tests and every cut priced; the D-01 checkpoint where the human sets the bar and N; the answer in CONTEXT and RESULTS
@@ -301,5 +304,5 @@ internal and one is process-only.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
-| 15. The Gate, Measured and Pinned | v0.3 | 1/6 | In Progress|  |
+| 15. The Gate, Measured and Pinned | v0.3 | 2/6 | In Progress|  |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |

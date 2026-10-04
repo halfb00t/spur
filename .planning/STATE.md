@@ -5,11 +5,11 @@ milestone_name: Clean Ledger
 current_phase: 15
 current_phase_name: The Gate, Measured and Pinned
 status: executing
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-10-04T03:36:35.339Z"
+stopped_at: Completed 15-02-PLAN.md
+last_updated: "2026-10-04T04:28:59.600Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 15 execution started
-state_head: 65ef9db1cd5f132119d28565d656f24ff8d1b7c2
+state_head: 4fef83d716c5463cddbf2758cbe50a8cba8d6b9d
 progress:
   total_phases: 4
   completed_phases: 4
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 15 (The Gate, Measured and Pinned) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-10-03 — Phase 15 execution started
 
@@ -179,6 +179,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 14 P03 | 22 min | 2 tasks | 2 files |
 | Phase 14 P04 | 70 min | 3 tasks | 5 files |
 | Phase 15 P01 | 10h 41m | 3 tasks | 5 files |
+| Phase 15 P02 | 41 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -290,6 +291,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 14]: L33 states the composed-row exception exactly: 15 rows (12 tip-chamfer, 3 single-sided-recess) keep volume_rel=1e-6; the four cutout rows and the three tripwire rows run at abs=1e-9
 - [Phase 14]: 14-04 Task 2: noise-multiple 1e-8 -- the three tip-chamfer holes rows assert the web formula at abs=1e-8 (about 15x their largest measured gap 6.55e-10), the single-sided holes row at abs=1e-9; logged in L33
 - [Phase 15]: 15-01: apparent xdist knee is N = 8 (68.93 s, all four sweep rows green); human picks N at 15-03 — Pre-registered rule: smallest N within 1.10x of the fastest green wall; S12 (75.47 s) is within the band but larger and slower than S8
+- [Phase 15]: fail_under = 96 from D-10's rule: L = 96.99 (serial C0, lowest of four totals), S = 0.00 (three -n 8 totals at 97.21); precision = 2 — bench/RESULTS.md Phase 15 Coverage floor; red on the floor without tests/test_cli.py read 90.24 against 96
+- [Phase 15]: xdist tolerance at N = 8 adopted: six alternating runs 927 passed each; coverage costs 3.51 s at -n 8 (60.61 s -> 64.12 s) — D-05 verdict and D-12 cost row in bench/RESULTS.md Tolerance and coverage cost; no D-08 xdist_group needed
+- [Phase 15]: make test runs 'pytest --cov --cov-report=term $(PYTEST_ARGS)': the option after --cov stops it taking a path in PYTEST_ARGS as its source — measured: bare --cov plus tests/test_calc.py ran 927 tests, not 404, --no-cov no help; 15-04 must keep --cov-report=term right after --cov when it inserts -n
 
 ### Pending Todos
 
@@ -411,6 +415,7 @@ None yet.
 - Phase 12 edited: edited fields: success_criteria SC3, SC5 (per 12-CONTEXT.md D-06/D-15)
 - v0.3 roadmap created: Phases 13–16 (Latency Bar; Honest Record; The Gate, Measured and Pinned; Typing & Validation Debt) — 11/11 v0.3 requirements mapped, 0 orphans, numbering continues from Phase 12
 - Phase 15 edited: edited fields: depends_on, success_criteria SC2, research flag (per 15-CONTEXT.md D-01)
+- Phase 15 edited: edited fields: success_criteria SC3 (per 15-RESEARCH Open Question 2 and the 15-CONTEXT.md D-09 addendum, decided in 15-02)
 
 ## Deferred Items
 
@@ -420,8 +425,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T03:36:35.304Z
-Stopped at: Completed 15-01-PLAN.md
+Last session: 2026-10-04T04:28:59.565Z
+Stopped at: Completed 15-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
