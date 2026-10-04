@@ -60,6 +60,23 @@ constraining local `make venv` to the closure (filed as an idea — D-14); `mode
   Rejected: one `--durations` run now on a loaded host (load 4.37, a single non-alternating
   sample); a number picked today from Phase 12's 217.83 s (REQUIREMENTS "Out of Scope: a
   target chosen before the profile exists").
+  **Addendum 2026-10-04 (profile checkpoint, 15-03; the human's answer):**
+  "knee-headroom N=8 bar=66 cuts=none before=244.59". The bar is 66 s of `make verify`
+  wall time on this host: the largest of B1-B3 (65.83 s; B1 64.03, B3 62.50; mean(B)
+  64.12 s) rounded up to the next whole second, read by `bench/RESULTS.md` ### Method's
+  recipe as mean(B) of 15-04's alternating runs of the `-n 8 --cov` gate, and it must come
+  out at or under 66 s. N = 8, the apparent knee K, so D-05's six runs at N = 8 (6 of 6
+  green) stand and 15-04 runs no further tolerance runs; CI runs `-n 4` on its 4-vCPU
+  runner (Open Question 4: a bare literal when N <= 4, else min(N, online CPUs)). Cuts
+  accepted by name: none. Refused by name, every row of `### Proposed cuts`:
+  `tier2-round-bore`, `selector-cutout-no-recess`, `selector-bottom-recess`,
+  `pre-v0.2-solids`, `pool-same-slot-refusal`, `pool-wedged-build`, `api-honeycomb-link`,
+  `api-spoke-link`, `api-tip-chamfer-link`, `api-gzip-after-identity`,
+  `api-two-request-ids`, `api-small-gear-recess`, `api-repeat-download`,
+  `dedup-g4-regression`, `dedup-g4-g5`. 15-04's Before row is the serial `--cov` run C0
+  (244.59 s, `--cov --cov-report=term-missing`, 15-02's item 3), not the no-`--cov` serial
+  profile (P1/P2, 224.28 s); 15-04 inserts `-n 8` after `--cov --cov-report=term` in the
+  `make test` recipe and applies no cut. ROADMAP SC2 reads this addendum.
 - **D-02:** **Absolute wall seconds of `make verify` on the dev host.** `/usr/bin/time -p`
   around the whole gate (Phase 12 B2's shape), measured D-10's way (D-04). It is what the
   pre-commit hook costs per commit and what REQ-verify-at-the-bar's "same way, same host"

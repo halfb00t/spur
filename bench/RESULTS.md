@@ -2692,3 +2692,27 @@ dedup rows, 5.71 s of it, are upper bounds), of the 224.28 s serial mean.
 None of these rows is recommended here. The gate at `-n 8` with coverage reads a mean of
 64.12 s (### Tolerance and coverage cost), so no cut is needed to reach a bar set from
 that; the rows are for the record (D-03).
+
+### Gate decision
+
+The human's verbatim answer to 15-03's D-01 checkpoint: "knee-headroom N=8 bar=66 cuts=none before=244.59".
+
+The option taken is `knee-headroom`. Its four consequences, recorded here as the CONTEXT
+addendum records them:
+
+- **Bar.** 66 s of `make verify` wall time on this host: the largest of B1-B3 (65.83 s, B2)
+  rounded up to the next whole second, to be read in 15-04 as mean(B) of the `-n 8 --cov`
+  gate by this section's recipe, alternating with A, and at or under 66 s (D-04, D-05: a
+  miss is recorded and goes to the human, never re-run). For scale, the six runs read
+  mean(B) 64.12 s, spread 3.33 s (62.50 to 65.83), loads 22.37 to 30.02.
+- **N.** 8, the apparent knee K, so ### Tolerance and coverage cost (6 of 6 green at
+  N = 8) stands and 15-04 runs no further tolerance runs. CI runs `-n 4` on its 4-vCPU
+  runner (Open Question 4).
+- **Cuts.** None accepted. Every row of ### Proposed cuts is refused by name:
+  `tier2-round-bore`, `selector-cutout-no-recess`, `selector-bottom-recess`,
+  `pre-v0.2-solids`, `pool-same-slot-refusal`, `pool-wedged-build`, `api-honeycomb-link`,
+  `api-spoke-link`, `api-tip-chamfer-link`, `api-gzip-after-identity`,
+  `api-two-request-ids`, `api-small-gear-recess`, `api-repeat-download`,
+  `dedup-g4-regression`, `dedup-g4-g5`. Nothing in `tests/` changes in 15-04.
+- **Before.** 15-04's Before row is C0, the serial `--cov` run: 244.59 s (### Coverage
+  baseline), not the no-`--cov` serial profile's 224.28 s (P1/P2).
