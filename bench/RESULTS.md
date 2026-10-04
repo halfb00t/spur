@@ -2778,4 +2778,38 @@ less, at loads 14.15 and 19.17 (the cause of the difference was not tested). Con
 bar reading: the pre-commit hook of the Makefile commit itself (`make verify` with the new
 recipe plus the commit-msg hook), taken from `date` before and after `git commit`, was
 64 s. CI's `test (3.12)` job duration is context on a
-different, 4-vCPU host, recorded in 15-05's `### CI run`, and never the bar (D-02).
+different, 4-vCPU host, recorded in 15-05's CI-run subsection, below, and never the bar (D-02).
+
+### CI run
+
+Run: https://github.com/halfb00t/spur/actions/runs/37181871926 (id 37181871926), the
+`pull_request` run of ci.yml on the draft phase PR #18, head `839dfeaa33d60c1c996c9d7c111190a1dcca4cbc`
+(the `ci(15-05)` commit that carries the pin). Conclusion `success`; `test (3.12)`, `image` and
+`vendor-bundle` all `success` (the three jobs `required-jobs.txt` lists).
+
+What the log printed, copied from `gh run view 37181871926 --log`:
+
+- The step `kernel pair this run resolved` printed `cadquery 2.8.0 cadquery-ocp 7.9.3.1.1`,
+  the strings in `tests/regression/pre_v0_2.json`'s provenance header.
+- The install line of the `make verify PYTHON=python` step (pip's own output, under
+  `PIP_CONSTRAINT: requirements.txt`) lists `cadquery-2.8.0 cadquery-ocp-7.9.3.1.1
+  cadquery-ocp-proxy-7.9.3.1.1`, and `pytest-cov-7.1.0` and `pytest-xdist-3.8.0` from the
+  dev extras. setup-python reported `Cache hit` for its pip cache and pip's install output
+  still named the pair (RESEARCH Pitfall 14 again: the cache restores downloads, not the
+  venv).
+- Workers: `created: 4/4 workers`, then `4 workers [927 items]`. `PYTEST_WORKERS` is 8
+  clamped to the online CPUs (15-04), and `ubuntu-latest` has 4, so `-n 4`.
+- pytest: `927 passed in 203.16s (0:03:23)`, no failed, error or rerun. Coverage
+  `TOTAL 1069 22 294 15 97.29%` against the floor `fail_under = 96`.
+- `test (3.12)` job: started 2026-10-04T06:07:19Z, completed 2026-10-04T06:11:46Z, 267 s
+  (4 min 27 s) including checkout, setup-python and the venv install.
+
+The pair came out right on the first run, so the tripwire
+`test_the_fixture_was_captured_on_the_kernel_this_run_uses` passed in this run's 927. Whether the
+constraint, rather than cadquery 2.8.0's own `cadquery-ocp<8.0` cap, held the pair here cannot be
+read from one run: both give 7.9.3.1.1 today. The local dry run in 15-05 Task 1 is what shows the
+constraint fails closed (a `cadquery-ocp==8.0.1.0.0` constraint file gives `ResolutionImpossible`).
+
+This is context on GitHub's 4-vCPU `ubuntu-latest` runner with a different CPU and `-n 4`, never
+the bar: the 66 s bar is the dev host's gate (15-CONTEXT.md D-01 addendum, D-02), and 203.16 s here
+is not read against it.

@@ -23,7 +23,6 @@ Severity (grep-able `Severity:` field):
 | nice | [Enji Guard not connected](active/2026-09-21-enji-guard-not-connected.md) | owner decides they want continuous AI audit |
 | nice | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook on a cold cache](active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | gsd exposes a commit-timeout setting, or an executor's warm retry also times out |
 | nice | [Eleven composed-solid cutout volumes are 6 dp literals asserted at rel=1e-6](active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md) | the CadQuery/OCP kernel pair is bumped, or a composed-solid cutout row is next re-pinned |
-| must | [CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly](active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md) | a fresh `pip install -e '.[dev]'` resolves a `cadquery`/`cadquery-ocp` pair different from the fixture's provenance |
 | must | [A same-slot timeout cleanup race produces an undocumented 500 instead of a 503](active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md) | the ten-identical-worst-row scenario is run, a 500 is observed in production, `_run_with_timeout`/`recreate_for` is next touched, or `SPUR_BUILD_TIMEOUT`'s default is reconsidered |
 
 ## Resolved
@@ -48,3 +47,4 @@ Severity (grep-able `Severity:` field):
 | [The root fillet's straight lead-in can reach above the pitch circle](resolved/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md) | `825095f` — see the file's own `Resolved in:` field |
 | [The filleted-spoke removed-volume proof has no closed-form cross-check](resolved/2026-09-29-filleted-spoke-volume-proof-pinned-not-derived.md) | `61e1bea` — see the file's own `Resolved in:` field |
 | [No coverage floor in the gate](resolved/2026-09-21-no-coverage-floor.md) | `2aadcea` — see the file's own `Resolved in:` field |
+| [CI resolves the kernel from an unpinned range; the fixture pins one kernel exactly](resolved/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md) | `839dfea` — see the file's own `Resolved in:` field |
