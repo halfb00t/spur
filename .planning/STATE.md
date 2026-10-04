@@ -4,18 +4,18 @@ milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 15
 current_phase_name: The Gate, Measured and Pinned
-status: "Phase 14 shipped — PR #17"
-stopped_at: Phase 15 context gathered
-last_updated: "2026-10-03T15:53:25.103Z"
+status: executing
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-10-04T03:36:35.339Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 15 planning complete
-state_head: 847650897a1804fbeeddb7d9420ac1187fbf7864
+last_activity_desc: Phase 15 execution started
+state_head: 65ef9db1cd5f132119d28565d656f24ff8d1b7c2
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 17
-  completed_plans: 11
-  percent: 65
+  completed_plans: 12
+  percent: 71
 ---
 
 # Project State
@@ -30,10 +30,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 15 (The Gate, Measured and Pinned) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 14 shipped — PR #17
-Last activity: 2026-10-03 — Phase 15 planning complete
+Phase: 15 (The Gate, Measured and Pinned) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-10-03 — Phase 15 execution started
 
 ## Performance Metrics
 
@@ -178,6 +178,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 14 P02 | 25 min | 3 tasks | 7 files |
 | Phase 14 P03 | 22 min | 2 tasks | 2 files |
 | Phase 14 P04 | 70 min | 3 tasks | 5 files |
+| Phase 15 P01 | 10h 41m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -288,6 +289,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 14]: 14-02: the shared cutout assertion defaults to abs=1e-9; composed-solid rows with 6 dp literals keep rel=1e-6 via volume_rel (debt filed)
 - [Phase 14]: L33 states the composed-row exception exactly: 15 rows (12 tip-chamfer, 3 single-sided-recess) keep volume_rel=1e-6; the four cutout rows and the three tripwire rows run at abs=1e-9
 - [Phase 14]: 14-04 Task 2: noise-multiple 1e-8 -- the three tip-chamfer holes rows assert the web formula at abs=1e-8 (about 15x their largest measured gap 6.55e-10), the single-sided holes row at abs=1e-9; logged in L33
+- [Phase 15]: 15-01: apparent xdist knee is N = 8 (68.93 s, all four sweep rows green); human picks N at 15-03 — Pre-registered rule: smallest N within 1.10x of the fastest green wall; S12 (75.47 s) is within the band but larger and slower than S8
 
 ### Pending Todos
 
@@ -408,6 +410,7 @@ None yet.
 - Phase 11 edited: edited fields: success_criteria (per 11-CONTEXT.md D-21)
 - Phase 12 edited: edited fields: success_criteria SC3, SC5 (per 12-CONTEXT.md D-06/D-15)
 - v0.3 roadmap created: Phases 13–16 (Latency Bar; Honest Record; The Gate, Measured and Pinned; Typing & Validation Debt) — 11/11 v0.3 requirements mapped, 0 orphans, numbering continues from Phase 12
+- Phase 15 edited: edited fields: depends_on, success_criteria SC2, research flag (per 15-CONTEXT.md D-01)
 
 ## Deferred Items
 
@@ -417,9 +420,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-03T12:20:34.761Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-the-gate-measured-and-pinned/15-CONTEXT.md
+Last session: 2026-10-04T03:36:35.304Z
+Stopped at: Completed 15-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

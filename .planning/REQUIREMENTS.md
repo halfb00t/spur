@@ -118,7 +118,8 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   `pytest-xdist` is not a dev extra), and the `BuildPool`/OCCT tests' tolerance of workers
   is measured, not assumed. Every proposed cut names its proof-value cost. *Acceptance*:
   the table and the proposal list exist in `bench/RESULTS.md`; the human sets the bar from
-  them at discuss-phase and it is recorded in that phase's CONTEXT. This requirement is
+  them at the phase's profile checkpoint (15-CONTEXT.md D-01; the profile is the phase's
+  own first deliverable) and it is recorded in that phase's CONTEXT. This requirement is
   done when the numbers exist — it promises no cut.
 - [ ] **REQ-verify-at-the-bar**: `make verify`'s wall time reads at or under the bar the
   human set from the profile, measured the same way on the same host; nothing was cut that

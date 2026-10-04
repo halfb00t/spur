@@ -188,7 +188,8 @@ regression fixture's provenance header names, so the fixture's exact-value asser
 honest.
 **Depends on**: Nothing new — builds on the shipped v0.1–v0.2 pipeline (Phases 1–12);
 independent of the other v0.3 phases. Internally: `REQ-verify-profiled`'s baseline lands
-before `REQ-verify-at-the-bar` (the bar is set from it at this phase's discuss-phase) and
+before `REQ-verify-at-the-bar` (the bar is set from it at this phase's profile checkpoint,
+15-CONTEXT.md D-01) and
 before `REQ-coverage-floor` (its wall-time cost is measured against the same baseline) —
 sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
 **Requirements**: REQ-verify-profiled, REQ-verify-at-the-bar, REQ-coverage-floor, REQ-ci-installs-the-pinned-kernel
@@ -200,8 +201,9 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
      recorded); the heaviest contributors are named with what each proves, and whether the
      `BuildPool`/OCCT tests tolerate `pytest-xdist` workers is measured, not assumed
      (pytest runs serially today — no `-n`, `pytest-xdist` not a dev extra).
-  2. The bar the human sets at this phase's discuss-phase from the profile (recorded in
-     that phase's CONTEXT) is read at or under, measured the same way; the before/after rows
+  2. The bar the human sets at this phase's profile checkpoint from the profile (recorded in
+     this phase's CONTEXT as a dated addendum under D-01) is read at or under, measured the
+     same way; the before/after rows
      sit in `bench/RESULTS.md`, the test count is unchanged or the difference is named, and
      the pre-commit hook's own "a warm run is ~11 s" comment is corrected to what it now
      measures.
@@ -223,12 +225,12 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
      the `[dev]` extra — `requirements.txt`'s 31 runtime pins are unchanged.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the bar is set
-from the profile at this phase's discuss-phase, not before.
-**Plans:** 6 plans (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
+from the profile at this phase's profile checkpoint (15-CONTEXT.md D-01), not before.
+**Plans:** 1/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
 
 Plans:
 **Wave 1**
-- [ ] 15-01-PLAN.md — the profile, tracer first: two serial runs into bench/RESULTS.md, the package-legitimacy check, pytest-xdist/pytest-cov in [dev], the N sweep and its apparent knee, D-01's sentences
+- [x] 15-01-PLAN.md — the profile, tracer first: two serial runs into bench/RESULTS.md, the package-legitimacy check, pytest-xdist/pytest-cov in [dev], the N sweep and its apparent knee, D-01's sentences
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 15-02-PLAN.md — the floor: worker lines counted, the baseline, D-05's tolerance runs alternating with D-12's cost runs, fail_under by D-10, --cov in make test, red on the floor, the coverage debt retired
@@ -299,5 +301,5 @@ internal and one is process-only.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
-| 15. The Gate, Measured and Pinned | v0.3 | 0/6 | Not started | - |
+| 15. The Gate, Measured and Pinned | v0.3 | 1/6 | In Progress|  |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
