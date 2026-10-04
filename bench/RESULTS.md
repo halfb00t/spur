@@ -2444,3 +2444,105 @@ stays near 340 s at every N (S2 344.23, S4 334.38, S8 338.57, S12 337.21) while 
 falls from 507.65 s at N = 2 to 106.30 s at N = 12 (serial: 616.20 s in P1, 629.40 s in P2).
 
 No N is chosen here: the human picks it at 15-03 from these rows (D-06).
+
+### Coverage baseline
+
+One serial run with coverage on, per the run recipe above (REQ-coverage-floor's "one
+baseline `pytest --cov` run"). HEAD is `f771c5e`, the commit that added the coverage config
+(`concurrency = ["multiprocessing", "thread"]`, `parallel`, `sigterm`, `precision = 2`) and
+the `.gitignore` entries; the Makefile `test` recipe has no `--cov` yet, so `--cov` rides in
+`PYTEST_ARGS` for every row here. Args: `--cov --cov-report=term-missing`, no `-n`.
+
+| Run | Args | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit | Coverage |
+|---|---|---|---|---|---|---|---|
+| C0 | `--cov --cov-report=term-missing` | 8.37 | 927 passed in 243.54s (0:04:03) | 244.59 | 1407 (5) | 0 | 96.99% |
+
+The rows of C0's report that matter, verbatim:
+
+```
+Name                       Stmts   Miss Branch BrPart   Cover   Missing
+src/spur/pool.py              54      3      6      0  95.00%   63-67, 222
+TOTAL                       1069     26    294     15  96.99%
+```
+
+Worker lines are counted. `BuildPool`'s workers are spawned processes (`pool.py:35`) and
+`pytest-cov` 7 has no subprocess hook of its own, so coverage's own multiprocessing support
+does the counting: `concurrency = ["multiprocessing", "thread"]` (the thread entry keeps the
+lifespan thread that builds and shuts down the pool traced, which the key's replacement of
+coverage's default would otherwise drop), `parallel = true` writes one data file per
+process for `pytest-cov` to combine, and `sigterm = true` saves the data of a worker
+`pool.py` terminates. The proof is `tests/test_pool.py` alone, run with `--cov`, which reads
+`src/spur/pool.py 54 0 6 0 100.00%` both serially and at `-n 2` (16 passed each): the
+statements of `_warm` and `build_export`, which run only inside a spawned worker, read
+covered. Today's config without those keys reads 95 % there with `build_export`'s body
+missing (15-RESEARCH Pitfall 1).
+
+C0's own pool.py row is not 100 %. Lines 63-67 (the body of `build_export`, the worker's
+side) and 222 (`return await self._run_with_timeout(...)` in `export()`) read missing on
+this full serial run: three statements, 0.22 points, which is exactly the difference
+between C0's 96.99 % (26 missed) and the 97.21 % (23 missed) every `--cov` run at `-n 8`
+below reads. This is 15-RESEARCH Pitfall 13 (a lost worker flush, cause unproven) occurring
+once in four full `--cov` runs here and, unlike the sightings in that note, on a serial run
+(the first of the four, the only serial one), so it is not specific to xdist. It is a
+reading, not a retry: C0 stays as measured (R5), is the lowest green total of the set, and
+sets L in the floor below.
+
+One point of this total is (statements + branches) / 100 units: 1,069 statements and 294
+branches are 1,363 units, so one point is 13.63 units and one missed statement is 0.073
+points (C0 missed 26 statements and had 15 partially covered branches).
+
+### Tolerance and coverage cost
+
+D-05's three tolerance runs at the apparent knee K = 8 (the sweep above) and D-12's cost
+runs are the same six runs: A is `-n 8` without coverage and B is `-n 8 --cov`, alternating
+A1 B1 A2 B2 A3 B3. The order was fixed before the first of them ran, after C0, with no
+`--dist` option (D-08's `loadgroup` only if a shared-state module failed). HEAD `f771c5e`
+for every row; each load is the 1-minute figure read immediately before the run and, the
+rows running back to back, still carries the previous row's own work (D-04: recorded as
+read, no quiet bar). Nothing else of this session ran on the host between rows.
+
+| Run | Args | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit | Coverage |
+|---|---|---|---|---|---|---|---|
+| A1 | `-n 8` | 7.94 | 927 passed in 60.86s (0:01:00) | 61.60 | 6829 (17) | 0 | none |
+| B1 | `-n 8 --cov` | 22.37 | 927 passed in 63.23s (0:01:03) | 64.03 | 6596 (16) | 0 | 97.21% |
+| A2 | `-n 8` | 23.15 | 927 passed in 59.14s | 59.88 | 6968 (18) | 0 | none |
+| B2 | `-n 8 --cov` | 28.31 | 927 passed in 65.03s (0:01:05) | 65.83 | 6614 (15) | 0 | 97.21% |
+| A3 | `-n 8` | 28.25 | 927 passed in 59.61s | 60.35 | 6911 (17) | 0 | none |
+| B3 | `-n 8 --cov` | 30.02 | 927 passed in 61.94s (0:01:01) | 62.50 | 6673 (16) | 0 | 97.21% |
+
+All six rows read `927 passed`, exit 0, no failed, error or rerun in any output, so no
+shared-state module (`tests/test_pool.py`, `tests/test_api.py`, `tests/test_records.py`)
+failed and D-08's `xdist_group` response did not fire.
+
+mean(A) = 60.61 s, mean(B) = 64.12 s -> coverage cost = 3.51 s at -n 8 (5.8 % of mean(A))
+
+D-05 tolerance at N = 8: adopted -- 6 of 6 green, 927 passed each
+
+Largest peak RSS of the set: 6968 MiB (A2, 18 processes), an upper bound by the same rule
+as the sweep (shared-library pages count once per process); the B rows peak at 6596-6673
+MiB, no higher than the A rows.
+
+The three B totals are 97.21 %, 97.21 % and 97.21 %, the same 23 missed statements and 15
+partial branches each, so their spread is 0.00 points: the combined total did not depend on
+the order in which the eight workers' and the pool workers' data files were written, at
+this resolution (D-10's determinism reading). The one thing this set does not show is
+Pitfall 13's lost flush, which cost C0 0.22 points: three xdist runs of three did not lose
+it, one serial run did, so the B spread understates the real one and L below takes C0.
+
+### Coverage floor
+
+D-10's rule: a whole percent under the baseline, one more point when that leaves under
+0.25 points of slack, wider when the spread of the totals needs it. Written against the
+lowest observed total: L is the lowest of C0 and every green tolerance total (96.99, 97.21,
+97.21, 97.21), S is the spread of the green tolerance totals (max - min over all of them),
+and the floor is the whole percent under L - max(0.25, S).
+
+Floor: L = 96.99, S = 0.00, slack = max(0.25, S) = 0.25 -> fail_under = 96
+
+L - slack = 96.74, whose whole percent below is 96. With `precision = 2` the total is
+compared as printed: a total of exactly 96.00 passes and 95.99 fails
+(`coverage.results.should_fail_under(96, 96, 2)` is False, `(95.99, 96, 2)` is True), so
+the gate trips 0.99 points (about 13.5 units) under C0 and 1.21 points under the xdist
+totals; a lost worker flush (0.22 points) cannot trip it by itself. The literal lives in
+`pyproject.toml` `[tool.coverage.report]` alone: `make test` passes no `--cov-fail-under`,
+and `pytest-cov` copies the config value when the flag is absent.
