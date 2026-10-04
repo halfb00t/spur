@@ -129,6 +129,22 @@ branch = true
 source = ["src/spur"]
 # No fail_under yet: a floor picked without measuring is a number, not a guarantee.
 # See docs/tech_debt/active/2026-09-21-no-coverage-floor.md.
+# BuildPool's workers are spawned processes (pool.py:35) and pytest-cov 7 dropped its
+# subprocess hook, so "multiprocessing" is what makes coverage measure them. "thread"
+# must be listed too: setting the key replaces coverage's default, and without it the
+# lifespan thread that builds and shuts down the pool stops being traced (pool.py read
+# 85 % that way, 15-RESEARCH Pitfall 2). "parallel" writes one data file per process for
+# pytest-cov to combine; "sigterm" saves the data of a worker pool.py terminates -- a
+# guard, since no test terminates a worker inside src/spur today (15-RESEARCH Code
+# Example 5).
+concurrency = ["multiprocessing", "thread"]
+parallel = true
+sigterm = true
+
+[tool.coverage.report]
+# fail_under compares the total rounded to `precision`; the default 0 let a 45.93 % total
+# pass a floor of 46 (15-RESEARCH Pitfall 3).
+precision = 2
 
 [tool.importlinter]
 root_package = "spur"

@@ -21,3 +21,9 @@ web/node_modules/
 
 # research-tool response cache (hashed JSON), regenerated on demand
 /.planning/research/.cache/
+
+# coverage data files: one per process because [tool.coverage.run] parallel = true,
+# combined by pytest-cov after the run. Not a bare .coverage*, which would also hide a
+# future .coveragerc.
+.coverage
+.coverage.*
