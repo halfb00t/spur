@@ -279,7 +279,7 @@ while a bore too wide for the root is still refused.
 
 ```sh
 make venv        # .venv with the dev extras (needs CPython 3.12; see below)
-make verify      # the gate: ruff, mypy --strict, import boundaries, pytest (~11 s, no Docker)
+make verify      # the gate: ruff, mypy --strict, import boundaries, pytest (~64 s warm on a 12-core dev host, no Docker)
 make up          # build the image and wait for the service on :8000
 make check       # verify + the image smoke test + the vendored-bundle check (needs Docker)
 ```

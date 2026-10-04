@@ -38,7 +38,7 @@ both halves of that sentence automatically.
 ## The gate (L13)
 
 ```
-make verify   ruff + mypy --strict + import-linter + unfinished-work scan + pytest   (~11 s warm, no Docker)
+make verify   ruff + mypy --strict + import-linter + unfinished-work scan + pytest   (~64 s warm, no Docker)
 make check    verify + the in-image smoke test + the vendored-bundle byte check      (needs Docker)
 make bench    bench.latency (host) + bench.memory (Docker) -- NOT part of the gate
 ```
