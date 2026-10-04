@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 15
 current_phase_name: The Gate, Measured and Pinned
 status: executing
-stopped_at: Completed 15-04-PLAN.md
-last_updated: "2026-10-04T06:00:09.478Z"
+stopped_at: Completed 15-05-PLAN.md
+last_updated: "2026-10-04T06:15:44.607Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 15 execution started
-state_head: ba53d1786da5264daeac92f4633c24cad6eafd8c
+state_head: 454af540179061754e32e08108bdc30ff4b525b7
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 17
-  completed_plans: 15
-  percent: 88
+  completed_plans: 16
+  percent: 94
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 15 (The Gate, Measured and Pinned) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-10-03 — Phase 15 execution started
 
@@ -182,6 +182,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 15 P02 | 41 min | 3 tasks | 11 files |
 | Phase 15 P03 | 22 min | 3 tasks | 2 files |
 | Phase 15 P04 | 23 min | 2 tasks | 3 files |
+| Phase 15 P05 | 10min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -298,6 +299,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 15]: make test runs 'pytest --cov --cov-report=term $(PYTEST_ARGS)': the option after --cov stops it taking a path in PYTEST_ARGS as its source — measured: bare --cov plus tests/test_calc.py ran 927 tests, not 404, --no-cov no help; 15-04 must keep --cov-report=term right after --cov when it inserts -n
 - [Phase 15]: D-01 checkpoint answer: knee-headroom N=8 bar=66 cuts=none before=244.59 (bar = largest of B1-B3 rounded up, read as mean(B) of the -n 8 --cov gate; all 15 proposed cuts refused by name; 15-04 Before row = serial --cov run C0 244.59 s) — The human set the bar from the profile at the 15-03 checkpoint; N equals K so no extra tolerance runs; CI runs -n 4 on 4 vCPUs.
 - [Phase 15]: 15-04: N = 8 goes into the Makefile as PYTEST_WORKERS, one literal clamped to the online CPUs; the gate read mean(B) 63.555 s against the 66 s bar (met), serial --cov mean(A) 228.99 s; the pre-commit hook comment '~11 s' stays for 15-06
+- [Phase 15]: 15-05: CI's kernel pin is PIP_CONSTRAINT=requirements.txt as step-level env on make verify, plus an always-run step printing the resolved pair; run 37181871926 on draft PR #18 printed cadquery 2.8.0 cadquery-ocp 7.9.3.1.1 — D-13: one env line reaches pip's self-upgrade and the editable install inside the venv recipe; neither named REQ option was taken
+- [Phase 15]: 15-05: phase PR #18 is a draft; at ship update it with gh pr edit and gh pr ready, not gh pr create — gh pr create would refuse a second PR for the branch (D-16 addendum)
 
 ### Pending Todos
 
@@ -420,6 +423,7 @@ None yet.
 - v0.3 roadmap created: Phases 13–16 (Latency Bar; Honest Record; The Gate, Measured and Pinned; Typing & Validation Debt) — 11/11 v0.3 requirements mapped, 0 orphans, numbering continues from Phase 12
 - Phase 15 edited: edited fields: depends_on, success_criteria SC2, research flag (per 15-CONTEXT.md D-01)
 - Phase 15 edited: edited fields: success_criteria SC3 (per 15-RESEARCH Open Question 2 and the 15-CONTEXT.md D-09 addendum, decided in 15-02)
+- Phase 15 edited: edited fields: success_criteria SC4 (per 15-CONTEXT.md D-13)
 
 ## Deferred Items
 
@@ -429,8 +433,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T06:00:09.442Z
-Stopped at: Completed 15-04-PLAN.md
+Last session: 2026-10-04T06:15:44.572Z
+Stopped at: Completed 15-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

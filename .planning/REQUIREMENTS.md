@@ -61,8 +61,11 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 - [ ] **REQ-ci-installs-the-pinned-kernel**: CI's `make verify PYTHON=python` resolves the
   kernel pair the fixture's provenance names — `cadquery==2.8.0` /
   `cadquery-ocp==7.9.3.1.1` (`requirements.txt` lines 11–13 already pin them for
-  deployment) — by one of two mechanisms the human picks: install `requirements.txt`
-  before the dev extras in CI, or an upper bound on `cadquery` in `pyproject.toml`. The
+  deployment) — by the mechanism the human picked at Phase 15's discuss-phase
+  (15-CONTEXT.md D-13): `requirements.txt`, the L12 closure, constrains every pip install
+  in CI's `test` job (`PIP_CONSTRAINT` on the `make verify` step) -- neither of the two
+  first named here (install `requirements.txt` before the dev extras; an upper bound on
+  `cadquery` in `pyproject.toml`), both rejected in D-13. The
   choice is a decision against L12's "why floors and ranges" rationale and is logged as an
   `Lxx`. *Acceptance*: a green CI run URL whose log shows the resolved pair;
   `test_the_fixture_was_captured_on_the_kernel_this_run_uses` stays the named tripwire; the
