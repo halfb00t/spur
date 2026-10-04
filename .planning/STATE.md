@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 15
 current_phase_name: The Gate, Measured and Pinned
 status: executing
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-10-04T04:28:59.600Z"
+stopped_at: Completed 15-03-PLAN.md
+last_updated: "2026-10-04T05:27:43.694Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 15 execution started
-state_head: 4fef83d716c5463cddbf2758cbe50a8cba8d6b9d
+state_head: df607f9566ec136c46fbf03dc29c7caea53286b4
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 17
-  completed_plans: 12
-  percent: 71
+  completed_plans: 14
+  percent: 82
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 15 (The Gate, Measured and Pinned) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-10-03 — Phase 15 execution started
 
@@ -180,6 +180,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 14 P04 | 70 min | 3 tasks | 5 files |
 | Phase 15 P01 | 10h 41m | 3 tasks | 5 files |
 | Phase 15 P02 | 41 min | 3 tasks | 11 files |
+| Phase 15 P03 | 22 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -294,6 +295,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 15]: fail_under = 96 from D-10's rule: L = 96.99 (serial C0, lowest of four totals), S = 0.00 (three -n 8 totals at 97.21); precision = 2 — bench/RESULTS.md Phase 15 Coverage floor; red on the floor without tests/test_cli.py read 90.24 against 96
 - [Phase 15]: xdist tolerance at N = 8 adopted: six alternating runs 927 passed each; coverage costs 3.51 s at -n 8 (60.61 s -> 64.12 s) — D-05 verdict and D-12 cost row in bench/RESULTS.md Tolerance and coverage cost; no D-08 xdist_group needed
 - [Phase 15]: make test runs 'pytest --cov --cov-report=term $(PYTEST_ARGS)': the option after --cov stops it taking a path in PYTEST_ARGS as its source — measured: bare --cov plus tests/test_calc.py ran 927 tests, not 404, --no-cov no help; 15-04 must keep --cov-report=term right after --cov when it inserts -n
+- [Phase 15]: D-01 checkpoint answer: knee-headroom N=8 bar=66 cuts=none before=244.59 (bar = largest of B1-B3 rounded up, read as mean(B) of the -n 8 --cov gate; all 15 proposed cuts refused by name; 15-04 Before row = serial --cov run C0 244.59 s) — The human set the bar from the profile at the 15-03 checkpoint; N equals K so no extra tolerance runs; CI runs -n 4 on 4 vCPUs.
 
 ### Pending Todos
 
@@ -425,8 +427,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T04:28:59.565Z
-Stopped at: Completed 15-02-PLAN.md
+Last session: 2026-10-04T05:27:43.658Z
+Stopped at: Completed 15-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -229,7 +229,7 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the bar is set
 from the profile at this phase's profile checkpoint (15-CONTEXT.md D-01), not before.
-**Plans:** 2/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
+**Plans:** 3/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
 
 Plans:
 **Wave 1**
@@ -239,7 +239,7 @@ Plans:
 - [x] 15-02-PLAN.md — the floor: worker lines counted, the baseline, D-05's tolerance runs alternating with D-12's cost runs, fail_under by D-10, --cov in make test, red on the floor, the coverage debt retired
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 15-03-PLAN.md — the heaviest tests and every cut priced; the D-01 checkpoint where the human sets the bar and N; the answer in CONTEXT and RESULTS
+- [x] 15-03-PLAN.md — the heaviest tests and every cut priced; the D-01 checkpoint where the human sets the bar and N; the answer in CONTEXT and RESULTS
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 15-04-PLAN.md — N in the Makefile (CPU-capped for CI), accepted cuts only, before/after read against the bar, the miss checkpoint only on a miss
@@ -304,5 +304,5 @@ internal and one is process-only.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
-| 15. The Gate, Measured and Pinned | v0.3 | 2/6 | In Progress|  |
+| 15. The Gate, Measured and Pinned | v0.3 | 3/6 | In Progress|  |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
