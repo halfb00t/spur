@@ -2546,3 +2546,36 @@ the gate trips 0.99 points (about 13.5 units) under C0 and 1.21 points under the
 totals; a lost worker flush (0.22 points) cannot trip it by itself. The literal lives in
 `pyproject.toml` `[tool.coverage.report]` alone: `make test` passes no `--cov-fail-under`,
 and `pytest-cov` copies the config value when the flag is absent.
+
+### Red on the floor
+
+D-12's proof that the floor gates: with `fail_under = 96` in `pyproject.toml` and `--cov` in
+`make test` applied to the working tree but not yet committed, one test file is left out of
+a full run by `--ignore`. Attempt 1 of at most two went red on the floor, so no second file
+was tried.
+
+- File left out: `tests/test_cli.py` (44 of the 927 tests)
+- Command: `make verify PYTEST_ARGS="-n 8 --ignore=tests/test_cli.py"` per the run recipe,
+  so pytest ran `pytest --cov --cov-report=term -n 8 --ignore=tests/test_cli.py`; HEAD
+  `6599677` plus the uncommitted `pyproject.toml` and `Makefile` edits; load 5.57
+- pytest line: `883 passed in 59.03s`; wall 59.59 s; peak RSS 7021 MiB (17 processes)
+- Total read: 90.24 % (`TOTAL 1069 105 294 14 90.24%`); floor: 96
+- Exit: pytest 1, `make` 2 (`make: *** [Makefile:78: test] Error 1`)
+- Failure lines, verbatim:
+
+  ```
+  ERROR: Coverage failure: total of 90.24 is less than fail-under=96.00
+  FAIL Required test coverage of 96.0% not reached. Total coverage: 90.24%
+  ```
+
+The total sits 5.76 points under the floor, so losing one test file is far outside the
+slack the floor was given (0.99 points under C0). `--ignore` left every file in the tree
+as it was (`git diff --quiet HEAD -- tests` exits 0); scratch run, not committed (D-12).
+
+Checking the partial-run edge found that the first Makefile recipe, `pytest --cov
+$(PYTEST_ARGS)`, ran the whole suite when `PYTEST_ARGS` began with a path:
+`--cov` takes an optional value, so `--cov tests/test_calc.py` read the path as the coverage
+source and ran 927 tests, the documented `--no-cov` hatch included. The recipe is
+`pytest --cov --cov-report=term $(PYTEST_ARGS)`: the option after `--cov` stops it from
+taking the path, `make test PYTEST_ARGS="tests/test_calc.py -q"` then runs 404 tests, reads
+45.93 % and fails the floor, and the same with `--no-cov` exits 0 (404 passed in 0.25 s).

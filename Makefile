@@ -67,8 +67,15 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 	  exit 1; \
 	fi
 
+# --cov gates every run on [tool.coverage.report] fail_under (bench/RESULTS.md, Phase 15,
+# Coverage floor). A run over part of the suite reads a low total and fails it: pass
+# --no-cov, e.g. make test PYTEST_ARGS="tests/regression -q --no-cov". PYTEST_ARGS comes
+# last so the caller's --no-cov wins. --cov-report=term is the default report, spelt out
+# because --cov takes an optional value: a bare --cov followed by a path in PYTEST_ARGS
+# swallows it as the coverage source and runs the whole suite instead (measured: 927
+# tests, not test_calc.py's 404, with --no-cov no help).
 test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the tests)
-	$(PY) -m pytest $(PYTEST_ARGS)
+	$(PY) -m pytest --cov --cov-report=term $(PYTEST_ARGS)
 
 serve: $(STAMP)  ## run the dev server on http://127.0.0.1:8000
 	$(VENV)/bin/spur serve

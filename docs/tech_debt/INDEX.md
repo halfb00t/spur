@@ -18,7 +18,6 @@ Severity (grep-able `Severity:` field):
 |---|---|---|
 | nice | [CadQuery's `Shape` typing forces five `type: ignore`s](active/2026-09-21-cadquery-shape-typing.md) | CadQuery narrows its own return types, or the pipeline is touched anyway |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
-| nice | [No coverage floor in the gate](active/2026-09-21-no-coverage-floor.md) | after one measured baseline run |
 | nice | [The service has no authentication](active/2026-09-21-no-authentication.md) | the moment it is bound to anything but localhost |
 | nice | [Enji Guard not connected](active/2026-09-21-enji-guard-not-connected.md) | owner decides they want continuous AI audit |
 | nice | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook on a cold cache](active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | gsd exposes a commit-timeout setting, or an executor's warm retry also times out |
@@ -47,3 +46,4 @@ Severity (grep-able `Severity:` field):
 | [The concurrent latency bar was waived, not demonstrated](resolved/2026-09-23-concurrent-latency-bar-waived.md) | `6709953` — see the file's own `Resolved in:` field |
 | [The root fillet's straight lead-in can reach above the pitch circle](resolved/2026-09-28-root-lead-in-can-reach-above-the-pitch-circle.md) | `825095f` — see the file's own `Resolved in:` field |
 | [The filleted-spoke removed-volume proof has no closed-form cross-check](resolved/2026-09-29-filleted-spoke-volume-proof-pinned-not-derived.md) | `61e1bea` — see the file's own `Resolved in:` field |
+| [No coverage floor in the gate](resolved/2026-09-21-no-coverage-floor.md) | test(15-02): gate make verify on a coverage floor set from the measured baseline — see the file's own `Resolved in:` field |
