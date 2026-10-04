@@ -22,6 +22,12 @@ once in three full `-n 4` runs. The cause is not established: candidates are a w
 data written after the controller's combine (workers are shut down with
 `shutdown(wait=False)`) or a lost flush under load.
 
+Tally after 15-04's before/after (bench/RESULTS.md, "Before and after"): all three serial
+full `--cov` runs of the phase (C0, A1, A2) lost the three statements and read 96.99 %;
+none of the five `-n 8 --cov` runs that printed `pool.py` did (15-02's B1-B3, B1 and B2 of
+15-04), all 97.21 %. Eight runs, no cause; the one loss at `-n 4` in 15-RESEARCH says it is
+not serial-only.
+
 ## Why it matters
 
 The floor (`fail_under = 96`) was set with that loss inside its slack, 0.99 points under
