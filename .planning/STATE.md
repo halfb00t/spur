@@ -4,18 +4,18 @@ milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 15
 current_phase_name: The Gate, Measured and Pinned
-status: executing
-stopped_at: Completed 15-05-PLAN.md
-last_updated: "2026-10-04T06:15:44.607Z"
+status: verifying
+stopped_at: Completed 15-06-PLAN.md
+last_updated: "2026-10-04T06:27:46.824Z"
 last_activity: 2026-10-03
 last_activity_desc: Phase 15 execution started
-state_head: 454af540179061754e32e08108bdc30ff4b525b7
+state_head: 298677ae8ecd35e39fb058d737701ebaf9288b38
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 15 (The Gate, Measured and Pinned) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-03 — Phase 15 execution started
 
 ## Performance Metrics
@@ -183,6 +183,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 15 P03 | 22 min | 3 tasks | 2 files |
 | Phase 15 P04 | 23 min | 2 tasks | 3 files |
 | Phase 15 P05 | 10min | 3 tasks | 8 files |
+| Phase 15 P06 | 8 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -301,6 +302,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 15]: 15-04: N = 8 goes into the Makefile as PYTEST_WORKERS, one literal clamped to the online CPUs; the gate read mean(B) 63.555 s against the 66 s bar (met), serial --cov mean(A) 228.99 s; the pre-commit hook comment '~11 s' stays for 15-06
 - [Phase 15]: 15-05: CI's kernel pin is PIP_CONSTRAINT=requirements.txt as step-level env on make verify, plus an always-run step printing the resolved pair; run 37181871926 on draft PR #18 printed cadquery 2.8.0 cadquery-ocp 7.9.3.1.1 — D-13: one env line reaches pip's self-upgrade and the editable install inside the venv recipe; neither named REQ option was taken
 - [Phase 15]: 15-05: phase PR #18 is a draft; at ship update it with gh pr edit and gh pr ready, not gh pr create — gh pr create would refuse a second PR for the branch (D-16 addendum)
+- [Phase 15]: L34 appended after L33 amends L12 and L13: the gate is measured (mean(B) 63.555 s at -n 8 with coverage, bar 66 s met), floored (fail_under 96) and CI installs the pinned kernel; every '~11 s' site now states the measured figure — Phase 15 plan 06; the figure is the gate as committed on the 12-core dev host (bench/RESULTS.md Before and after); the commit-timeout debt stays active
 
 ### Pending Todos
 
@@ -433,8 +435,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T06:15:44.572Z
-Stopped at: Completed 15-05-PLAN.md
+Last session: 2026-10-04T06:27:46.789Z
+Stopped at: Completed 15-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

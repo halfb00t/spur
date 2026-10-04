@@ -58,7 +58,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 
 ### Kernel pin
 
-- [ ] **REQ-ci-installs-the-pinned-kernel**: CI's `make verify PYTHON=python` resolves the
+- [x] **REQ-ci-installs-the-pinned-kernel**: CI's `make verify PYTHON=python` resolves the
   kernel pair the fixture's provenance names — `cadquery==2.8.0` /
   `cadquery-ocp==7.9.3.1.1` (`requirements.txt` lines 11–13 already pin them for
   deployment) — by the mechanism the human picked at Phase 15's discuss-phase
@@ -112,7 +112,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 
 ### The gate
 
-- [ ] **REQ-verify-profiled**: `make verify`'s wall time is measured per stage (ruff, mypy,
+- [x] **REQ-verify-profiled**: `make verify`'s wall time is measured per stage (ruff, mypy,
   import-linter, unfinished-work scan, pytest) and pytest's per-file and top-N
   `--durations` on the dev host with load recorded, the way D-10 measured it (alternating
   full runs, same session), and written to `bench/RESULTS.md`. The heaviest contributors
@@ -124,14 +124,14 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   them at the phase's profile checkpoint (15-CONTEXT.md D-01; the profile is the phase's
   own first deliverable) and it is recorded in that phase's CONTEXT. This requirement is
   done when the numbers exist — it promises no cut.
-- [ ] **REQ-verify-at-the-bar**: `make verify`'s wall time reads at or under the bar the
+- [x] **REQ-verify-at-the-bar**: `make verify`'s wall time reads at or under the bar the
   human set from the profile, measured the same way on the same host; nothing was cut that
   was a proof unless the human accepted the loss by name; any new dev dependency
   (`pytest-xdist` or kin) is a `[dev]` extra only — `requirements.txt` is the runtime
   closure (L12) and gains nothing. *Acceptance*: the before/after rows in
   `bench/RESULTS.md`; the test count and what it proves unchanged or the difference named;
   the pre-commit hook's own comment ("A warm run is ~11 s") corrected to what it measures.
-- [ ] **REQ-coverage-floor**: `pytest-cov` is added to the `dev` extras — it is **not**
+- [x] **REQ-coverage-floor**: `pytest-cov` is added to the `dev` extras — it is **not**
   installed today (`pip show pytest-cov` empty on 2026-10-01; the debt file's "pytest-cov
   is installed" is false and is corrected on retirement) — one baseline `pytest --cov` run
   is recorded in `bench/RESULTS.md`, `fail_under` is set just under it in
@@ -219,10 +219,10 @@ Filled by the roadmap.
 | REQ-root-lead-in-warned | Phase 14 | Complete |
 | REQ-readme-root-zone-states-the-limit | Phase 14 | Complete |
 | REQ-filleted-spoke-closed-form | Phase 14 | Complete |
-| REQ-verify-profiled | Phase 15 | Pending |
-| REQ-verify-at-the-bar | Phase 15 | Pending |
-| REQ-coverage-floor | Phase 15 | Pending |
-| REQ-ci-installs-the-pinned-kernel | Phase 15 | Pending |
+| REQ-verify-profiled | Phase 15 | Complete |
+| REQ-verify-at-the-bar | Phase 15 | Complete |
+| REQ-coverage-floor | Phase 15 | Complete |
+| REQ-ci-installs-the-pinned-kernel | Phase 15 | Complete |
 | REQ-model-py-no-type-ignore | Phase 16 | Pending |
 | REQ-nyquist-phases-7-8 | Phase 16 | Pending |
 

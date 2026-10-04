@@ -231,7 +231,7 @@ sequential plans within this phase, the way 12-01 preceded the rest of Phase 12.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); the bar is set
 from the profile at this phase's profile checkpoint (15-CONTEXT.md D-01), not before.
-**Plans:** 5/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
+**Plans:** 6/6 plans executed (strictly serial: one host and one working tree -- every measurement needs the machine to itself, and the pre-commit `make verify` hook reads all of it)
 
 Plans:
 **Wave 1**
@@ -250,7 +250,7 @@ Plans:
 - [x] 15-05-PLAN.md — PIP_CONSTRAINT on CI's make verify and the pair printed; one push and the phase PR opened as a draft (D-16 addendum: draft-pr); one green run read, the CI-kernel debt retired, D-13's sentences
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 15-06-PLAN.md — the measured gate time at every eleven-second site, L34 (amends L12 and L13), the phase's end state
+- [x] 15-06-PLAN.md — the measured gate time at every eleven-second site, L34 (amends L12 and L13), the phase's end state
 
 ### Phase 16: Typing & Validation Debt
 
@@ -306,5 +306,5 @@ internal and one is process-only.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
-| 15. The Gate, Measured and Pinned | v0.3 | 5/6 | In Progress|  |
+| 15. The Gate, Measured and Pinned | v0.3 | 6/6 | In Progress|  |
 | 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
