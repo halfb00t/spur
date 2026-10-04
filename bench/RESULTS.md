@@ -2716,3 +2716,66 @@ addendum records them:
   `dedup-g4-regression`, `dedup-g4-g5`. Nothing in `tests/` changes in 15-04.
 - **Before.** 15-04's Before row is C0, the serial `--cov` run: 244.59 s (### Coverage
   baseline), not the no-`--cov` serial profile's 224.28 s (P1/P2).
+
+### Before and after
+
+Order, fixed before A1: A1 B1 A2 B2.
+
+What A and B are. B is the gate as committed: `make verify` with no extra arguments, which
+now runs `pytest -n 8 --cov --cov-report=term` (Makefile `PYTEST_WORKERS`, HEAD `5797199`).
+A is the Before the human chose at the profile checkpoint (### Gate decision): the serial
+gate with coverage, the gate as 15-02 left it. With `-n 8` in the recipe that is
+`make verify PYTEST_ARGS="-n0"`: `PYTEST_ARGS` comes last, so `-n0` overrides `-n 8`, runs
+the tests in-process and leaves `--cov --cov-report=term` in place, so the only variable
+between A and B is `-n`. (The plan's own A, serial without coverage, is not used: the
+human's answer replaces it, and 15-02's C0 at 244.59 s is the same configuration measured
+before the Makefile change.) Each run follows ### Method's recipe R1-R5; the read-out below
+is from its `.out`, `.time` and `.rss` files. No rerun, no quiet bar (D-04).
+
+Date 2026-10-04, HEAD `5797199` for every row (the `-n 8` commit; `src/`, `tests/` and
+`requirements.txt` are byte-identical to `20cd484`, `git diff --quiet 20cd484 -- src tests
+requirements.txt` exits 0). Each load is the 1-minute figure read immediately before the
+run; it carries the previous row's own work, and nothing else of this session ran on the
+host between rows.
+
+| Run | Code | Args | Load | pytest | Wall (s) | Peak RSS (MiB, procs) | Exit |
+|---|---|---|---|---|---|---|---|
+| A1 | `5797199` | `PYTEST_ARGS="-n0"` (serial, `--cov`) | 14.15 | 927 passed in 227.22s (0:03:47) | 228.23 | 1415 (5) | 0 |
+| B1 | `5797199` | none (`-n 8 --cov`) | 5.91 | 927 passed in 63.63s (0:01:03) | 64.19 | 6638 (17) | 0 |
+| A2 | `5797199` | `PYTEST_ARGS="-n0"` (serial, `--cov`) | 19.17 | 927 passed in 228.73s (0:03:48) | 229.75 | 1418 (5) | 0 |
+| B2 | `5797199` | none (`-n 8 --cov`) | 5.31 | 927 passed in 62.35s (0:01:02) | 62.92 | 6634 (15) | 0 |
+
+mean(A) = 228.99 s, mean(B) = 63.555 s -> delta = -165.435 s (B is 3.60 times faster)
+
+Bar: 66 s (15-CONTEXT.md D-01 addendum) -> met, mean(B) = 63.555 s
+
+mean(B) is 2.445 s under the bar. The two B walls are 64.19 s and 62.92 s (spread 1.27 s);
+15-02's three `-n 8 --cov` runs read 64.03, 65.83 and 62.50 s at loads 22.37 to 30.02, so
+these two, at loads 5.31 and 5.91, sit inside that range. The bar is the largest of those
+three rounded up (65.83 s -> 66 s) and neither B row here is over it.
+
+Test count: 927 passed in every row, exit 0, no failed, error or rerun in any `.out` (the
+only "error" text is the file name `src/spur/build_errors.py` in the coverage table); no cut
+was applied, so there is no difference to name.
+
+Coverage on the four rows (`--cov`, floor `fail_under = 96`, "Required test coverage of
+96.0% reached" in every `.out`): A1 and A2 read `TOTAL 1069 26 294 15 96.99%` with
+`src/spur/pool.py` at 95.00% (lines 63-67 and 222 missing, the lost worker flush of C0),
+B1 and B2 read `TOTAL 1069 23 294 15 97.21%` with `pool.py` at 100.00%. Counting C0, all
+three serial full `--cov` runs of this phase lost those three statements, and none of the
+five `-n 8 --cov` runs that printed `pool.py` did (15-02's B1-B3, B1 and B2 here). 15-RESEARCH
+Pitfall 13 saw the same loss once at `-n 4`, so it is not specific to serial; the tally
+is a count of eight runs, not a cause.
+
+Largest peak RSS of the four rows: 6638 MiB (B1, 17 processes), an upper bound by the same
+rule as the sweep (shared-library pages count once per process); the serial A rows peak at
+1415 and 1418 MiB. CPU time (`/usr/bin/time -p`): A1 user 354.94 s + sys 619.62 s, A2 357.00
+s + 627.82 s; B1 366.42 s + 283.93 s, B2 365.48 s + 274.63 s.
+
+A is the Before the human chose (serial, coverage on): 15-02's C0 read 244.59 s at load
+8.37 before `-n 8` went in; A1 and A2 read 228.23 s and 229.75 s here, 16.36 s and 14.84 s
+less, at loads 14.15 and 19.17 (the cause of the difference was not tested). Context, not a
+bar reading: the pre-commit hook of the Makefile commit itself (`make verify` with the new
+recipe plus the commit-msg hook), taken from `date` before and after `git commit`, was
+64 s. CI's `test (3.12)` job duration is context on a
+different, 4-vCPU host, recorded in 15-05's `### CI run`, and never the bar (D-02).
