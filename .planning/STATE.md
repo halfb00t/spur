@@ -4,12 +4,11 @@ milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 16
 current_phase_name: Typing & Validation Debt
-status: planning
+status: "Phase 15 shipped — PR #18"
 stopped_at: Phase 15 complete, ready to plan Phase 16
-last_updated: "2026-10-04T10:50:39.897Z"
+last_updated: "2026-10-04T10:55:33.840Z"
 last_activity: 2026-10-04
-last_activity_desc: Phase 15 complete, transitioned to Phase 16
-state_head: 20f33c4346558c41396a5a15ad48fe54e294dd55
+state_head: 9a773b061adf851f988450b8223040530fe3acd1
 progress:
   total_phases: 4
   completed_phases: 5
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 16 — Typing & Validation Debt
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-04 — Phase 15 complete, transitioned to Phase 16
+Status: Phase 15 shipped — PR #18
+Last activity: 2026-10-04
 
 ## Performance Metrics
 
