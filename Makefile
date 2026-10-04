@@ -69,13 +69,23 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 
 # --cov gates every run on [tool.coverage.report] fail_under (bench/RESULTS.md, Phase 15,
 # Coverage floor). A run over part of the suite reads a low total and fails it: pass
-# --no-cov, e.g. make test PYTEST_ARGS="tests/regression -q --no-cov". PYTEST_ARGS comes
-# last so the caller's --no-cov wins. --cov-report=term is the default report, spelt out
-# because --cov takes an optional value: a bare --cov followed by a path in PYTEST_ARGS
-# swallows it as the coverage source and runs the whole suite instead (measured: 927
-# tests, not test_calc.py's 404, with --no-cov no help).
+# --no-cov, e.g. make test PYTEST_ARGS="tests/regression -q -n0 --no-cov" (-n0 also runs
+# it serially, which -x and --pdb need). PYTEST_ARGS comes last so the caller's flags
+# win. --cov-report=term is the default report, spelt out because --cov takes an
+# optional value: a bare --cov followed by a path in PYTEST_ARGS swallows it as the
+# coverage source and runs the whole suite instead (measured: 927 tests, not
+# test_calc.py's 404, with --no-cov no help).
+#
+# PYTEST_WORKERS is 8, the apparent knee of the pytest-xdist sweep the human picked at the
+# profile checkpoint (bench/RESULTS.md, "The gate, measured and pinned (Phase 15)", xdist
+# sweep and Gate decision; 12-CPU M2 Max, 2026-10-03/04). It is a measured choice, not
+# the host's CPU count: the sweep's N = 12 ran slower than N = 8. The clamp keeps it
+# from oversubscribing a smaller host: CI's runner has 4 vCPUs, and tests/test_pool.py's
+# injected 0.2 s and 1.0 s timeouts are what a starved runner would trip.
+PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN); echo $$(( n < w ? n : w )))
+
 test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the tests)
-	$(PY) -m pytest --cov --cov-report=term $(PYTEST_ARGS)
+	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
 
 serve: $(STAMP)  ## run the dev server on http://127.0.0.1:8000
 	$(VENV)/bin/spur serve
