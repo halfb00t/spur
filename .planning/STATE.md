@@ -2,18 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
-current_phase: 16
-status: "Phase 16 shipped — PR #19"
+status: Awaiting next milestone
 stopped_at: Phase 16 complete — all phases complete
-last_updated: "2026-10-05T05:46:11.000Z"
+last_updated: "2026-10-05T06:41:26.113Z"
 last_activity: 2026-10-05
-state_head: ef4d0c9fa7e098b02c204e0ee3af6b32bbe6ff42
+last_activity_desc: Milestone v0.3 completed and archived
+state_head: 1614d60ba80c116b9480e6fef6d31e9033cc56c8
 progress:
   total_phases: 4
-  completed_phases: 6
+  completed_phases: 4
   total_plans: 20
   completed_plans: 20
   percent: 100
+current_phase: 16
 ---
 
 # Project State
@@ -24,15 +25,15 @@ See: .planning/PROJECT.md (updated 2026-10-05)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.3 close — all four phases complete; ship Phase 16's branch,
-then `/gsd-complete-milestone v0.3`
+**Current focus:** v0.3 Clean Ledger shipped 2026-10-05 (close PR from
+`gsd/milestone-v0.3-close`, tag `v0.3` on its squash); next `/gsd-new-milestone`
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
-Status: Phase 16 shipped — PR #19
-Last activity: 2026-10-05
+Phase: Milestone v0.3 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-05 — Milestone v0.3 completed and archived
 
 ## Performance Metrics
 
@@ -363,10 +364,10 @@ None yet.
   SC3 capped out, and the idle floor with a Claude Code session active read ~2.0. Phase 15's
   `make verify` profiling and any future re-measurement need an idle machine or a recorded
   D-05 amendment, not a fourth attempt.
-- ℹ️ [Phase 13] Code review (`13-REVIEW-DISPOSITION.md`, both `open`): CR-01 — the Dockerfile
-  `HEALTHCHECK` comment counts the SC3 run among the "fifteen" runs behind the 0.7–2.3 ms
-  p95 range, but SC3 produced no p95 (fourteen did); WR-01 — `_report_markdown` prints the
-  single/concurrent `RECORDED_BASELINE` under a `composed` heading. CR-01 is a one-word fix.
+- ℹ️ [Phase 13] Code review (`13-REVIEW-DISPOSITION.md`): CR-01 (the Dockerfile `HEALTHCHECK`
+  comment's run count) and WR-01 (`_report_markdown`'s heading) are both `fixed` in
+  `13-REVIEW-FIX.md`, ledger `open: 0` (recorded 2026-10-02). An earlier version of this
+  entry said both were open — stale, corrected at the v0.3 close.
 - ℹ️ [Phase 13] `/gsd-map-codebase --paths bench` is still owed: `.planning/codebase/`
   predates `bench/`, and the drift gate advised on every wave of Phase 13.
 - ℹ️ [Phase 12] All 14 code-review findings (WR-01…WR-09, IN-01…IN-05) are `fixed` per
@@ -434,6 +435,15 @@ None yet.
   structured logging" (Phase 3, L20); "CAD builds block the event loop" (Phase 2,
   L17/L18); and the v0.1-start "Forward scope undefined" / "Success metric not
   derivable" items, both set by the human.
+- ℹ️ Milestone v0.3 closed as `override_closeout` (human decision 2026-10-05): Phases 13–15
+  read `stale` in `init.manager` because later phases legitimately changed shared files their
+  reports cover (Phase 13: `bench/RESULTS.md`, `decision_log.md`, `INDEX.md`; Phase 14:
+  `README.md`, `decision_log.md`, `model.py`, `test_model.py`; Phase 15: `Makefile`,
+  `decision_log.md`, `pyproject.toml`); no plan, summary or verified source of those phases
+  changed; Phase 16 `passed` on the final tree. Success metric 1 (zero `must` rows) not met
+  as written — the same-slot timeout race Phase 13 filed stays `must` with its trigger;
+  accepted as a known gap. `audit-open` clear, 0 acknowledged. Audit
+  `milestones/v0.3-MILESTONE-AUDIT.md` (`tech_debt`).
 - ℹ️ Milestone v0.1 closed as `override_closeout` (human decision 2026-09-25): Phase 1 has
   no phase directory (pre-GSD baseline), and Phases 2–6 read `stale` in `init.manager`
   because each VERIFICATION.md fingerprints `.planning/STATE.md`, which GSD's own
@@ -477,31 +487,25 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Next: ship Phase 16 — `gsd/phase-16-typing-validation-debt` is 24 commits ahead of
-  `origin/main` (Phase 15's #18 landed as `085e5a6`) and has no PR yet (`gh pr list --head`
-  empty, 2026-10-05): open one, then `make pr.land PR=N` per ROADMAP.md's Process Notes.
-  Then `/gsd-complete-milestone v0.3` — all four v0.3 phases are complete.
-- `14-VALIDATION.md` is still `draft` (`nyquist_compliant: false`); 13's, 15's and 16's are
-  validated. Not dispatched at the Phase 14 transition — run `/gsd-validate-phase 14` as its
-  own change (the auditor may add tests).
-- Triage `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4`
-  baseline, WR-02 a false statement and two dangling links left by the two retirements, WR-03
-  the commit-timeout debt contradicting its own trigger, WR-04 the "five runs" undercount,
-  IN-01…IN-04).
-- Triage `14-REVIEW-DISPOSITION.md`: WR-01 (one assert in the shared cutout assertion), IN-01
-  (three stale finding-id citations in `tests/test_model.py`), IN-02 (L33's D-06 attribution
-  for the `1e-8` bar), and decide whether the hole-link test's `rel=1e-6` row moves to the web
-  formula. Re-file the macOS-only calibration finding if it is to stay tracked.
-- Fix CR-01 (one word in the Dockerfile comment) and triage WR-01 from `13-REVIEW-DISPOSITION.md`.
-- Triage `16-REVIEW-DISPOSITION.md` (5 open: WR-01 the third `.val()` narrowing in
-  `_cell_cutters` raising a bare `TypeError` with a stale comment, WR-02 the `no-fake-done`
-  pin missing the spellings and files mypy accepts, IN-01 `_body`'s comment overstating its
-  assertion, IN-02 the D-04 mypy comparison covering only the pinned kernel while
-  `pyproject.toml` declares `cadquery>=2.5`, IN-03 the refusal tests proving the helpers in
-  isolation, not the call sites).
+- Next: land the milestone-close PR from `gsd/milestone-v0.3-close` with `make pr.land PR=N`,
+  tag `v0.3` on its squash and push the tag (the v0.1/v0.2 precedent); then `/clear` and
+  `/gsd-new-milestone`. Phase 16 landed as PR #19 (`7a491bf`); the four local
+  `gsd/phase-13…16` branches were deleted at the close (remotes kept).
+- Carried from v0.3 (phase artefacts now under `milestones/v0.3-phases/`): triage
+  `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4` baseline,
+  WR-02 a false statement and two dangling links left by the two retirements, WR-03 the
+  commit-timeout debt contradicting its own trigger, WR-04 the "five runs" undercount,
+  IN-01…IN-04); `14-REVIEW-DISPOSITION.md` (4 open: WR-01 one assert in the shared cutout
+  assertion, IN-01 three stale finding-id citations in `tests/test_model.py`, IN-02 L33's
+  D-06 attribution for the `1e-8` bar, IN-03; decide whether the hole-link test's `rel=1e-6`
+  row moves to the web formula; re-file the macOS-only calibration finding if it is to stay
+  tracked); `16-REVIEW-DISPOSITION.md` (5 open: WR-01 `_cell_cutters`' bare `TypeError`,
+  WR-02 the `no-fake-done` pin's spellings, IN-01…IN-03). Phase 13's two are fixed.
 - `/gsd-map-codebase` — `.planning/codebase/TESTING.md` still says "Warm run ~11 seconds"
   and predates coverage and xdist; `--paths bench` is also owed (Phase 13).
-- Expect `gsd_run query commit` to time out on every commit (hook ~64 s warm at 927 tests,
+- Decide whether `_cell_cutters`' bare `TypeError` on a non-Solid prototype
+  (`src/spur/model.py:355-357`, review 16 WR-01) gets a `docs/tech_debt/active/` file.
+- Expect `gsd_run query commit` to time out on every commit (hook ~64 s warm at 929 tests,
   `-n 8` with coverage — L34); commit with plain `git commit` and wait for any orphaned
   `pre_commit hook-impl` to exit before writing to the tree
-  (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md)
+  (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md).
