@@ -12,12 +12,13 @@ Related files:
 ## Context
 
 Every phase lands on `main` as one squash commit (L22, L25). A debt file is retired in the
-commit that fixes it, on the phase branch, and records that commit's sha. So 19 of the 21
+commit that fixes it, on the phase branch, and records that commit's sha. So 19 of the 20
 `Resolved in:` shas at the v0.3 close are not ancestors of `main`: `git merge-base
---is-ancestor <sha> main` fails for them. Measured 2026-10-05 at `7a491bf`: only `daeb284`
-and `0573319` are on `main`; `89304e2`, `ae052f8` and `3c096de` are contained in no local
-branch at all (the objects are still present); Phases 13–16's shas are reachable only
-through `origin/gsd/phase-1[3-6]-*`. All five spot-checked shas resolve on GitHub
+--is-ancestor <sha> origin/main` fails for them. Measured 2026-10-05 at `7a491bf` over every
+file in `resolved/`: only `daeb284` (Phase 2, which landed by direct push) is on `main`; 13
+of the 19 are contained in no local branch at all (the objects are still present); the six
+v0.3 shas (`6709953`, `825095f`, `61e1bea`, `2aadcea`, `839dfea`, `4f7e8fe`) are reachable
+only through `origin/gsd/phase-1[3-6]-*`. All five spot-checked shas resolve on GitHub
 (`gh api repos/halfb00t/spur/commits/<sha>`), because the merged PRs' `refs/pull/N/head`
 keep them — 19 such refs on `origin`.
 
@@ -25,7 +26,7 @@ keep them — 19 such refs on `origin`.
 
 Low. The record is true but fragile outside GitHub: a fresh clone cannot `git show 89304e2`
 until it fetches `refs/pull/*/head`, and a local `git gc` after branch deletion drops the
-three branchless objects. No number a user cuts metal to depends on it; it is the
+thirteen branchless objects. No number a user cuts metal to depends on it; it is the
 traceability of the ledger.
 
 ## Next step
