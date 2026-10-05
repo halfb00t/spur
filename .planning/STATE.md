@@ -3,12 +3,11 @@ gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 16
-status: completed
+status: "Phase 16 shipped — PR #19"
 stopped_at: Phase 16 complete — all phases complete
-last_updated: "2026-10-05T05:26:09.619Z"
+last_updated: "2026-10-05T05:46:11.000Z"
 last_activity: 2026-10-05
-last_activity_desc: Phase 16 complete
-state_head: fb956bb3a7cf01cf1d96ebf73c248a98222a236d
+state_head: ef4d0c9fa7e098b02c204e0ee3af6b32bbe6ff42
 progress:
   total_phases: 4
   completed_phases: 6
@@ -32,8 +31,8 @@ then `/gsd-complete-milestone v0.3`
 
 Phase: 16
 Plan: Not started
-Status: All phases complete
-Last activity: 2026-10-05 — Phase 16 complete
+Status: Phase 16 shipped — PR #19
+Last activity: 2026-10-05
 
 ## Performance Metrics
 
