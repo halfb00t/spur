@@ -7,7 +7,7 @@ Resolved in: fac76f5
 Source: /gsd-ship 4 (PR #3) — observed on PR #2's history while shipping Phase 4
 Related files:
 - .github/workflows/ci.yml (`on: push: branches: [main]`, `pull_request`)
-- docs/HOW_TO_DEVELOP.md (§6 "PR", §8 "Влить" — squash-merge)
+- docs/HOW_TO_DEVELOP.md (§6 "PR", §8 "Land" — squash-merge)
 - ~/.claude/gsd-core/workflows/ship.md (`track_shipping`: the `[ci skip]` ship note)
 
 ## Context

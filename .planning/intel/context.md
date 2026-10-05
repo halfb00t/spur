@@ -33,11 +33,9 @@ and (in two cases) historical records superseded by the live decisions/SPECs. Se
 
 ## Development workflow
 - source: docs/HOW_TO_DEVELOP.md
-- Human-facing guide (in Russian) to the AI-agent collaboration cycle: обсуждение (discuss)
-  → план (plan) → проверка плана (review the plan) → выполнение в worktree (execute in an
-  isolated worktree) → ревью другим CLI (cross-CLI code review — Claude's work is reviewed
-  by Codex and vice versa) → влить (merge via `make worktree.land`) → приёмка (acceptance
-  as a user).
+- Human-facing guide to the AI-agent collaboration cycle: discussion → plan → plan review
+  → execution on the phase branch → acceptance as a user → PR → code review by the other
+  CLI (Claude's work is reviewed by Codex and vice versa) → merge via `make pr.land`.
 - Repo guarantees before any of that: `make verify` (ruff, mypy --strict, import-boundary
   contracts, unfinished-work scan, pytest, ~11s warm) runs in the developer's shell,
   pre-commit hook, and CI; `make check` adds the image build, in-container smoke test, and
