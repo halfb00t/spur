@@ -276,13 +276,13 @@ independent of the other v0.3 phases.
      kernel-level proof rows from Phase 12 stay green).
   3. `docs/tech_debt/active/2026-09-21-cadquery-shape-typing.md` retires with its sha and
      corrected stale line references.
-  4. `milestones/v0.2-phases/07-*/VALIDATION.md` and `08-*/VALIDATION.md` exist with the
-     Nyquist audit's `nyquist` field no longer `partial` for Phases 7 and 8, produced by
-     `/gsd-validate-phase 7` and `8` — or, if `validate-phase` cannot target an archived
-     phase directory (the flagged ASSUMPTION), the human's choice between a temporary copy
-     under `.planning/phases/` moved afterward, or dropping the requirement, is recorded in
-     this phase's record with the reason. Discovery only — any gap found becomes a debt
-     file with a trigger, not a scope expansion.
+  4. `.planning/milestones/v0.2-phases/07-foundation-generalized-edge-selection-regression-fixture/07-VALIDATION.md`
+     and `.planning/milestones/v0.2-phases/08-hex-bore/08-VALIDATION.md` exist at
+     `status: validated`, produced by `/gsd-validate-phase 7` and `8` (gsd resolves both
+     archived directories -- verified 2026-10-04, 16-CONTEXT.md D-08); `nyquist_compliant`
+     reads what the audit measured; a gap is a debt row; the v0.2 audit's `nyquist` block
+     records the measurement (D-11). Discovery only — any gap found becomes a debt file
+     with a trigger, not a scope expansion.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); both items are
 internal and one is process-only.

@@ -167,12 +167,14 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
 - [ ] **REQ-nyquist-phases-7-8**: Phases 7 and 8 — the two v0.2 phases that predate the
   Nyquist capability — have a `VALIDATION.md` in their archived directories under
   `milestones/v0.2-phases/`, produced by `/gsd-validate-phase 7` and `8`. Discovery only: a
-  gap it finds becomes a debt file with a trigger, not a scope expansion. ASSUMPTION
-  (unverified 2026-10-01): `validate-phase` resolves `phase_dir` from init and may not
-  target an archived phase; if it cannot, the human picks between running it against a
-  temporary copy under `.planning/phases/` and moving the output, or dropping this
-  requirement with the reason recorded in the roadmap. *Acceptance*: the two files exist
-  with the audit's `nyquist` field no longer `partial` for them, or the drop is recorded.
+  gap it finds becomes a debt file with a trigger, not a scope expansion. Verified
+  2026-10-04 (16-CONTEXT.md D-08): `gsd_run query init.phase-op 7` and `8` resolve
+  `phase_dir` to the archived directories under `.planning/milestones/v0.2-phases/`, so
+  `/gsd-validate-phase` runs on them in place -- no temporary copy. *Acceptance*:
+  `07-VALIDATION.md` and `08-VALIDATION.md` exist at `status: validated` under
+  `.planning/milestones/v0.2-phases/`; `nyquist_compliant` reads what the audit measured;
+  a gap is a debt row; the v0.2 audit's `nyquist` block records the measurement
+  (16-CONTEXT.md D-10, D-11).
 
 ## Future Requirements
 
