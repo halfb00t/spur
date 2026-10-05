@@ -41,7 +41,7 @@ a check that was run at HEAD `4a050c9` on 2026-10-05, not taken from a SUMMARY's
 
 | Threat ID | Category | Component | Severity | Disposition | Mitigation | Status |
 |-----------|----------|-----------|----------|-------------|------------|--------|
-| T-16-01 | Tampering | the gate (`make no-fake-done`, mypy) — a new suppression slips into `src/spur/` | medium | mitigate | `Makefile:74-77` greps `type: ignore` under `src/spur/*.py` and exits 1 on a hit, with the why-comment naming the two `tests/` carriers; `make no-fake-done` exits 0 at HEAD, the same grep at `085e5a6` prints 5 lines (seen red, then green); `strict = true` keeps `warn_unused_ignores`, which refuses a stale one; `4f7e8fe` carries exactly the eight planned paths (16-VERIFICATION truth 12) | closed |
+| T-16-01 | Tampering | the gate (`make no-fake-done`, mypy) — a new suppression slips into `src/spur/` | medium | mitigate | `Makefile:74-77` greps `type: ignore` under `src/spur/*.py` and exits 1 on a hit, with the why-comment naming the two `tests/` carriers; `make no-fake-done` exits 0 at HEAD, the same grep at `085e5a6` prints 5 lines (seen red, then green); `strict = true` keeps `warn_unused_ignores`, which refuses a stale one; `4f7e8fe` carries exactly the eight planned paths (16-VERIFICATION truth 12). Partial: review WR-02 (`16-REVIEW-DISPOSITION.md`, open) — the grep matches `type: ignore` with the space under `src/spur/*.py` only, while mypy also honours `# type:ignore` and other file types; a deliberate bypass is one missing space away | open — below high threshold (non-blocking) |
 | T-16-02 | Spoofing | `_body` / `_shape_of` — a type claim wrong at runtime (what a cast would allow) | medium | mitigate | `model.py:429` `isinstance(shape, cq.Solid \| cq.Compound)`, `:439` `isinstance(value, cq.Shape)`; `grep -nE 'cast\(\|typing\.cast\|TypeIs\|\bAny\b' src/spur/model.py` prints nothing; the two refusal tests (`tests/test_model.py:250`, `:264`) assert the full message with `==` and read `2 passed` at `a35432d`; the standing enforcement for a future `cast` is mypy strict + review, decided by the human (16-UAT test 2) | closed |
 | T-16-03 | Tampering | the built part (`tests/regression/pre_v0_2.json`, selectors, cuts) | medium | mitigate | `git diff --quiet 085e5a6 HEAD -- tests/regression/pre_v0_2.json` exits 0; `src`/`tests` diff against `085e5a6` is two files; `build(GearParams(tip_chamfer=0.5))` reads `('Solid', True, 4446.54642, 210, 604)` before and after and 18 untouched functions are AST-identical (16-VERIFICATION truth 8, re-run 2026-10-05); the 44-record replay runs in every `make verify` | closed |
 | T-16-04 | Information disclosure | the new `BuildError` text | low | mitigate | `_NOT_A_BODY` (`model.py:414-416`) is a fixed sentence with one `{}` filled by `type(x).__name__` — no parameter, path or traceback; asserted as the whole string by both tests; `records.build_failed` (`records.py:235`) logs a `BuildError` at WARNING with `exception = type(exc).__name__`, no traceback; the API returns it as `{"type": "build_error", "msg": str(exc)}` at 422 (`app.py:430-434`) | closed |
@@ -59,12 +59,14 @@ a check that was run at HEAD `4a050c9` on 2026-10-05, not taken from a SUMMARY's
 *Severity: critical > high > medium > low — only open threats at or above workflow.security_block_on count toward threats_open*
 *Disposition: mitigate (implementation required) · accept (documented risk) · transfer (third-party)*
 
-Residual, stated, not a threat in this register: nothing mechanical refuses a future
-`typing.cast` in `model.py` — the human chose mypy strict + review over a grep pin
-(16-UAT test 2, 2026-10-05). The verifier's observation that `_cell_cutters`
-(`model.py:355-357`) raises a bare `TypeError` on a non-`Solid` prototype, which
-`_build_checked` would relabel with the catch-all remedy, predates this phase and is
-unchanged by it; the human has not yet said whether it gets a debt file.
+Residual, stated: T-16-01's pin is open below the threshold because review WR-02 shows the
+grep can be stepped around by spelling (`# type:ignore`) — widening the pattern is a one-line
+change, untriaged at the time of this audit. Not threats in this register: nothing mechanical
+refuses a future `typing.cast` in `model.py` — the human chose mypy strict + review over a
+grep pin (16-UAT test 2, 2026-10-05); and `_cell_cutters` (`model.py:355-357`) raises a bare
+`TypeError` on a non-`Solid` prototype, which `_build_checked` would relabel with the
+catch-all remedy (review WR-01, open; the verifier's observation) — it predates this phase,
+is AST-identical to `085e5a6`, and the human has not yet said whether it gets a debt file.
 
 ---
 
@@ -83,7 +85,7 @@ unchanged by it; the human has not yet said whether it gets a debt file.
 
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
-| 2026-10-05 | 15 (12 numbered + T-16-SC declared ×3) | 15 | 0 | verify-work orchestrator — secure-phase (State B, from the three PLAN.md threat models and the three SUMMARY `## Threat Flags` sections, each reading "None"), ASVS L1, short-circuit (register authored at plan time, threats_open 0); every grep, `git diff`, `git show --stat` and file read above re-run at `4a050c9` on 2026-10-05 |
+| 2026-10-05 | 15 (12 numbered + T-16-SC declared ×3) | 14 | 1 (T-16-01, medium — below the `high` block threshold; `threats_open` 0) | verify-work orchestrator — secure-phase (State B, from the three PLAN.md threat models and the three SUMMARY `## Threat Flags` sections, each reading "None"), ASVS L1, short-circuit (register authored at plan time, threats_open 0); every grep, `git diff`, `git show --stat` and file read above re-run at `4a050c9` on 2026-10-05; T-16-01 reopened below threshold the same day after reading `16-REVIEW-DISPOSITION.md` WR-02 |
 
 ---
 
@@ -91,7 +93,7 @@ unchanged by it; the human has not yet said whether it gets a debt file.
 
 - [x] All threats have a disposition (mitigate / accept / transfer)
 - [x] Accepted risks documented in Accepted Risks Log
-- [x] `threats_open: 0` confirmed
+- [x] `threats_open: 0` confirmed — one medium threat (T-16-01) open below the `high` threshold, non-blocking
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-10-05
