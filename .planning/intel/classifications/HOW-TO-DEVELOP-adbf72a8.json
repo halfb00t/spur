@@ -3,7 +3,7 @@
   "type": "DOC",
   "confidence": "high",
   "manifest_override": true,
-  "title": "Как разрабатывать spur (гид для человека)",
+  "title": "How to develop spur (a guide for the human)",
   "summary": "Development workflow guide for spur, covering the AI-agent collaboration cycle from discussion through acceptance.",
   "scope": [
     "development workflow",
