@@ -26,9 +26,9 @@ reconstructed: true
 |----------|-------|
 | **Framework** | pytest 9.1.1 (pytest-xdist, pytest-cov) |
 | **Config file** | `pyproject.toml` `[tool.pytest.ini_options]` (`--strict-markers --strict-config`, `xfail_strict`, warnings are errors) |
-| **Quick run command** | `.venv/bin/python -m pytest tests/regression tests/test_calc.py tests/test_model.py -q -p no:cacheprovider` |
+| **Quick run command** | `.venv/bin/python -m pytest tests/regression "tests/test_calc.py::test_the_bore_rim_limit_is_the_bore_radius_for_round_and_d_flat_bores" "tests/test_model.py::test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bore" "tests/test_model.py::test_each_edge_selector_picks_exactly_its_own_edges" "tests/test_model.py::test_a_recess_fillet_that_selects_no_floor_edges_is_a_build_error" -q -p no:cacheprovider` (exactly the eight tests in the map below; the whole of `tests/test_calc.py tests/test_model.py` is 693 cases and took 182.35 s serial on 2026-10-05, not a quick run) |
 | **Full suite command** | `make verify` (ruff, mypy `--strict`, import-linter, no-fake-done scan, pytest) |
-| **Estimated runtime** | quick: ~35 s serial for the 119 phase-7 cases; full: ~65 s wall (929 passed in 63.71 s, 8 workers, 2026-10-05) |
+| **Estimated runtime** | quick: ~35 s serial for the 119 phase-7 cases (33.08 s and 34.38 s on two 2026-10-05 runs); full: ~65 s wall (929 passed in 63.71 s, 8 workers, 2026-10-05) |
 
 ---
 
@@ -106,6 +106,22 @@ weakens the phase's coverage:
 | Resolved | 0 |
 | Escalated | 0 |
 
+## Validation Audit 2026-10-05 (re-run, HEAD `8ae468e`)
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+
+Re-measured, not copied: all eight mapped tests exist (`grep -rl "def <name>" tests/`),
+`119 passed in 33.08s`; `tests/regression/pre_v0_2.json` is byte-identical to `540f1a0`;
+`## L26` present once; no commit touched `src/`, `tests/`, `Makefile` or `pyproject.toml`
+since the first audit's commit `655583f`. One correction: the quick-run command row
+previously listed all of `tests/test_calc.py tests/test_model.py` (693 cases, 182.35 s
+serial) while claiming the 119-case ~35 s figure; the row now names the eight tests
+that figure was measured on.
+
 ---
 
 ## Validation Sign-Off
@@ -117,4 +133,4 @@ weakens the phase's coverage:
 - [x] Feedback latency < 65s
 - [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** approved 2026-10-05 (`/gsd-validate-phase 7`, State B reconstruction; every status re-measured)
+**Approval:** approved 2026-10-05 (`/gsd-validate-phase 7`, State B reconstruction; every status re-measured). Re-audited 2026-10-05 (State A, HEAD `8ae468e`): 0 gaps, quick-run row corrected.
