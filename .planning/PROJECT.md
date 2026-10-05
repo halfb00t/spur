@@ -79,9 +79,17 @@ throughout.
   `make verify`.
   **Done — Phase 15 (L34):** baseline 96.99 %, `fail_under = 96`, `make test` runs `--cov`;
   the red run (90.24 %) recorded, not committed.
-- Shape typing — the five `type: ignore`s in `model.py` retired by narrowing at the
-  `.val()` boundary, as its own tested change.
+- Shape typing — the five `type: ignore`s in `model.py` retired by two `isinstance`
+  boundaries (`_body`, `_shape_of`) that raise `BuildError`, as its own tested change;
+  `make no-fake-done` refuses a new one.
+  **Done — Phase 16 (L35):** five suppressions retired (lines 213, 237, 239, 411, 420 at
+  `085e5a6`), tests 927 → 929, fixture byte-identical to `085e5a6`; `make no-fake-done`
+  pins zero under `src/spur/`.
 - Nyquist for Phases 7 and 8 — `VALIDATION.md` via `/gsd-validate-phase`.
+  **Done — Phase 16 (L35):** both files exist at `status: validated`, `nyquist_compliant:
+  true` as read for both; 3 gap rows for Phase 7 filed as one nice debt file
+  (`2026-10-05-phase-07-nyquist-gaps.md`), 0 for Phase 8; the v0.2 audit's `nyquist`
+  block amended to `missing_phases: []`, `overall: compliant`.
 
 **Rules this milestone lives by:**
 - No new `GearParams` field; the pre-v0.2 fixture stays byte-unchanged (L26) — every item
@@ -309,6 +317,21 @@ pytest — L13). Full list with sources and acceptance evidence:
   gap 2.79e-12), every "cannot exist" reworded to "not derived here", the debt narrowed to
   eleven rows; verified 8/8, `make verify` 927 tests; three review findings (WR-01, IN-01,
   IN-02) at disposition `open` — Phase 14
+- ✓ REQ-model-py-no-type-ignore + REQ-nyquist-phases-7-8 — `src/spur/model.py` carries
+  zero `# type: ignore` (five retired at lines 213, 237, 239, 411, 420 of `085e5a6`)
+  through two `isinstance` boundaries, `_body` at the three `fillet`/`chamfer` sites and
+  `_shape_of` at the two `.val()` sites, each raising `BuildError` with one message that
+  names a modelling defect, never a parameter; `make no-fake-done` refuses a new
+  suppression under `src/spur/` (seen red against the five lines); the mypy override names
+  `OCP.*` alone (cadquery ships `py.typed`); no geometry change — the five-site gear reads
+  `('Solid', True, 4446.54642, 210, 604)` before and after and the 44-record fixture is
+  byte-identical to `085e5a6`, `src`/`tests` differing only in `model.py` and
+  `test_model.py`; the `Shape`-typing debt retired in `4f7e8fe`. Phases 7 and 8 have
+  committed `VALIDATION.md`s at `status: validated`, `nyquist_compliant: true` as read
+  (`5ba02d2`, `8ae468e`); Phase 7's three Manual-Only rows are one `nice` debt file,
+  Phase 8 has none; the v0.2 audit's `nyquist` block amended in place and dated
+  (`missing_phases: []`, `overall: compliant`); verified 16/16, UAT 3/3, Nyquist 0 gaps,
+  security 15/15 closed, `make verify` 929 tests (L35) — Phase 16
 
 ### Active
 
@@ -318,8 +341,6 @@ Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance
 - [ ] CI installs the kernel pair the fixture pins; the choice logged against L12
 - [ ] `make verify`'s wall time is profiled and recorded; its bar set from the profile
 - [ ] A measured coverage floor gates `make verify`
-- [ ] `model.py` carries no `type: ignore`
-- [ ] Phases 7 and 8 have a `VALIDATION.md`
 
 ### Out of Scope
 
@@ -441,7 +462,7 @@ quick reference.
 | L18 | The `RLock` is per worker, not global; "concurrency buys latency, not throughput" retired. Single build within 2× idle p95 on every run; ten-concurrent accepted with caveat, not demonstrated (Runs 1–8: 1.31x–2.45x) (supersedes L06) | ✓ Caveat closed by L32 (Phase 13): demonstrated on `bar-3` (1.31×/1.42×), the debt retired in `6709953` |
 | L19 | Model bodies gzip-encoded at measured `compresslevel=1` (51.5 ms vs 788 ms at level 9 on a 9 MB STL), inside the admission slot, cached once per encoding | ✓ Good |
 | L20 | Structured JSON logging: stdlib `logging` + project-owned formatter, one object per line on stderr, `configure()` at both `cli.cmd_serve` and `app.lifespan()` (idempotent — uvicorn's spawn-based workers need the second site), parent process only, INFO default via `SPUR_LOG_LEVEL` | ✓ Good — post-review fix: records carrying `exc_info` render a `traceback` field (CR-01), `model()` catch-all logs `build.failed` (WR-01) |
-| L21 | `disallow_any_explicit` on globally, no per-module override; the published responses are typed models (`DerivedDimensions`, `HealthReport`/`PoolState`); the pydantic mypy plugin's `init_typed`/`init_forbid_extra` retire the six class-line errors instead of six per-class suppressions; `Any` is never written — `object` narrowed at use, a library's own alias keeps the library's `Any` (supersedes L14) | ✓ Good — `make verify` green under the rule (104 tests); `--mate-teeth 0` now exits 2 like the API's 422 |
+| L21 | `disallow_any_explicit` on globally, no per-module override; the published responses are typed models (`DerivedDimensions`, `HealthReport`/`PoolState`); the pydantic mypy plugin's `init_typed`/`init_forbid_extra` retire the six class-line errors instead of six per-class suppressions; `Any` is never written — `object` narrowed at use, a library's own alias keeps the library's `Any` (supersedes L14) | ✓ Good — `make verify` green under the rule (104 tests); `--mate-teeth 0` now exits 2 like the API's 422; amended by L35 (Phase 16) — CadQuery's `Shape` typing stops at two checked boundaries, no suppression in `src/spur/` |
 | L22 | CI is the merge gate: a ruleset on `main` requires `test (3.12)`, `vendor-bundle`, `image` green on an up-to-date head plus a pull request; a repo-owned `commit-msg` hook refuses the six skip tokens; the squash message is PR title + body; `main` is landed only via `make pr.land PR=N`, which refuses a red, stale, missing or token-carrying head and prints the squash commit's run URL | ✓ Good — ruleset read back live; gap plan 05-06 closed CR-01; the residual hand-typed cut line and the run-conclusion blind spot were retired in Phase 6 (L25 amends this entry); Phase 6 itself landed through the gate as PR #5 → `1173d21`, run 36145323487 |
 | L23 | Python 3.12 only — `requires-python`, ruff `target-version`, the CI matrix, the Makefile interpreter and the README agree (supersedes L01's 3.10 floor; `cadquery-ocp` publishes wheels for nothing newer) | ✓ Good — `make verify` green on 3.12 (183 tests); CI job is `test (3.12)` alone |
 | L24 | A cached solid never carries a mesh: STL export runs `exportStl` on `shape.copy()`, never on the process-global cached `cq.Solid` (`Clean_s` rejected: 4–13 % faster but leaves the mesh on the cached object for the whole export window); copy costs +1.4 to +17.6 ms per export and +3.2 to +7.7 MiB peak RSS on a 200-tooth fine export, measured; the autouse cache-reset fixture deleted | ✓ Good — `.BoundingBox()` exact after any export, a preview after a fine export is a preview (9,066 vs 46,278 triangles) |
@@ -455,6 +476,7 @@ quick reference.
 | L32 | The concurrent latency bar is demonstrated on the harness as it stands, not waived (amends L18): `bar-3` Runs 13–14 read 1.31× and 1.42× idle p95 on both concurrent runs of one decisive session behind the D-05 quiet gate, after two capped-out attempts recorded non-decisive; the two observations L18 left unexplained are ruled by a pre-registered twelve-run campaign — the second-run-worse effect not reproduced in this environment, the floor real; SC3 measured once: the composed worst row does not complete under ten concurrent builds (0/10 served; a same-slot timeout-cleanup race returns an undocumented 500, filed as debt, `src/` untouched); the Dockerfile `HEALTHCHECK` comment and the retired debt say what was measured | ✓ Good — verified 4/4; `make verify` 910 tests; `2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md` (must) open with a named trigger; review CR-01/WR-01 open |
 | L33 | The root lead-in is warned, not re-cut, and the filleted-spoke cutout is proved against a closed form (amends L09, L10 and L30): `derive()` appends one sentence when `round(spline_start(pr, root_fillet(p)) − pr.r, 3) > 0`, naming the height, instead of regenerating the pre-v0.2 fixture under a new entry (L05 keeps every shared link's part); the filleted-spoke removed volume is asserted against `_filleted_spoke_volume` at `abs=1e-9` (kernel agreement 2.73e-12 mm³), the pinned literal `2934.725405` demoted to a comment; the 15 composed cutout rows are named — four hole-through-web rows on the web formula (tip-chamfer rows at `abs=1e-8`, a bar the human set over measured gaps of ~6e-10 mm³ with 1.5× headroom at 1e-9; single-sided at `abs=1e-9`), eleven still at a 6 dp literal and `volume_rel=1e-6` because their closed form is not derived here | ✓ Good — verified 8/8, UAT 5/5 after gap plan 14-04, `make verify` 927 tests; `src/` untouched by 14-04 and the pre-v0.2 fixture byte-identical to `5d9e907`; review WR-01 (`volume_rel` shadows `volume_abs`), IN-01, IN-02 open; the prior platform-calibration finding (abs bars measured only on macOS arm64) is no longer in the ledger — see `8cfbc16`'s REVIEW.md |
 | L34 | The gate is measured, runs on eight workers under a coverage floor, and CI installs the pinned kernel (amends L12 and L13): the serial profile read 224.28 s (pytest 99.8 % of it, `tests/test_model.py` ~74 % of pytest); the xdist sweep's knee is N = 8 by a rule fixed before the read; the human set the bar at the profile checkpoint (`knee-headroom N=8 bar=66 cuts=none before=244.59`), read as mean(B) 63.555 s at `-n 8` with coverage — met with 2.445 s to spare, all 15 priced cuts refused by name, `tests/` untouched; `fail_under = 96` from C0's 96.99 % serial baseline (`precision = 2`; workers counted via `concurrency = ["multiprocessing", "thread"]`, `parallel`, `sigterm`), a red run at 90.24 % recorded and not committed; CI's `make verify` runs under `PIP_CONSTRAINT: requirements.txt` and prints `cadquery 2.8.0 cadquery-ocp 7.9.3.1.1` (run 37181871926), a conflicting pin fails closed (`ResolutionImpossible`) | ✓ Good — verified 15/16 with the one `backstop` truth accepted by the human, UAT 28/28, security 22/22 closed; `make verify` 927 tests at 97.21 %; two `must` debts retired (`2aadcea`, `839dfea`); the lost-worker-flush reading (96.99 %) filed as `nice` debt; the gsd commit-timeout debt stays active (hook ~64 s vs the helper's 30 s) |
+| L35 | Vendor shape typing stops at two checked boundaries, and Phases 7 and 8 carry a Nyquist record (amends L21): `_body(shape) -> cq.Solid or cq.Compound` at the three `fillet`/`chamfer` sites and `_shape_of(wp) -> cq.Shape` at the two `.val()` sites, each one `isinstance` check raising `BuildError` with one message naming a modelling defect — never `typing.cast` (it checks nothing and gives a test nothing to see) or `TypeIs`; the pipeline's annotations stay `cq.Shape`, `_gear_blank` included (`-> cq.Solid` gave five `[assignment]` errors); `cadquery.*` left the mypy override because it ships `py.typed`, `OCP.*` stays; `make no-fake-done` refuses a suppression under `src/spur/` and only there; the error surfaces as a 422 `build_error` like the three selector guards; Phases 7 and 8 read `nyquist_compliant: true` from their committed `VALIDATION.md`s, Phase 7's three Manual-Only rows filed as one `nice` debt file, the v0.2 audit's `nyquist` block amended in place and dated by a rule written beside the rows | ✓ Good — five suppressions retired in `4f7e8fe`, 927 → 929 tests, the five-site gear tuple and the fixture unchanged against `085e5a6`, cold-cache mypy byte-identical before and after (`37 source files`); verified 16/16, UAT 3/3, Nyquist 0 gaps, security 15/15 closed; the cast clause rests on mypy strict + review by the human's choice (16-UAT test 2), no pin |
 
 ## Success Metric (Milestone v0.1)
 
@@ -525,4 +547,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-04 after Phase 15 (The Gate, Measured and Pinned).*
+*Last updated: 2026-10-05 after Phase 16 (Typing & Validation Debt).*

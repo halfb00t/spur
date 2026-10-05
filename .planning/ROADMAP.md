@@ -67,7 +67,7 @@ byte-unchanged throughout.
 - [x] **Phase 15: The Gate, Measured and Pinned** - `make verify`'s wall time, its bar and (completed 2026-10-04)
       its coverage floor become measured numbers in `bench/RESULTS.md`, and CI installs the
       exact kernel pair the regression fixture pins
-- [ ] **Phase 16: Typing & Validation Debt** - `model.py` carries no `type: ignore`, and
+- [x] **Phase 16: Typing & Validation Debt** - `model.py` carries no `type: ignore`, and (completed 2026-10-05)
       Phases 7–8 get the Nyquist validation pass they predate
 
 ## Phase Details
@@ -286,7 +286,7 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); both items are
 internal and one is process-only.
-**Plans:** 3/3 plans executed (strictly serial: one working tree, the pre-commit `make verify` hook reads all of it, and 16-02's human runs need the tree idle)
+**Plans:** 3/3 plans complete (strictly serial: one working tree, the pre-commit `make verify` hook reads all of it, and 16-02's human runs need the tree idle)
 
 Plans:
 **Wave 1**
@@ -321,4 +321,4 @@ Plans:
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
 | 15. The Gate, Measured and Pinned | v0.3 | 6/6 | Complete    | 2026-10-04 |
-| 16. Typing & Validation Debt | v0.3 | 3/3 | In Progress|  |
+| 16. Typing & Validation Debt | v0.3 | 3/3 | Complete    | 2026-10-05 |
