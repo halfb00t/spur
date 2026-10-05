@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 16
 current_phase_name: Typing & Validation Debt
 status: executing
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-10-04T17:34:00.304Z"
+stopped_at: Completed 16-02-PLAN.md
+last_updated: "2026-10-05T03:36:21.181Z"
 last_activity: 2026-10-04
 last_activity_desc: Phase 16 execution started
-state_head: c11213eb00f133f385728812bfdda5f35cdff751
+state_head: 5ba02d25999df56de651ce50e95d313556a199b3
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 20
-  completed_plans: 17
-  percent: 85
+  completed_plans: 19
+  percent: 95
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 16 (Typing & Validation Debt) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-10-04 — Phase 16 execution started
 
@@ -186,6 +186,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 15 P05 | 10min | 3 tasks | 8 files |
 | Phase 15 P06 | 8 min | 3 tasks | 6 files |
 | Phase 16 P01 | 7 min | 3 tasks | 14 files |
+| Phase 16 P02 | 11min (continuation; Task 1 was the human's) | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -308,6 +309,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 16]: 16-01: the Shape narrowing is two isinstance helpers raising BuildError (_body at three fillet/chamfer sites, _shape_of at two .val() sites), never a cast; _gear_blank stays -> cq.Shape — Shape.cut returns Shape whatever goes in, so a cast at .val() reaches two of five; -> cq.Solid makes mypy flag five [assignment] errors in _build (16-RESEARCH Pitfall 1)
 - [Phase 16]: 16-01: mypy's override dropped cadquery.* (OCP.* stays); D-04's gate passed -- mypy output over src tests docker bench scripts byte-identical with the cache cleared before and after — cadquery ships py.typed, OCP ships no type information; cmp of the two captures, both 'Success: no issues found in 37 source files'
 - [Phase 16]: 16-01: make no-fake-done refuses a mypy suppression under src/spur/ (seen red against the five lines at 085e5a6); tests/ keeps its two deliberate ones — mypy's warn_unused_ignores refuses a stale suppression but nothing refused a new one (the fifth arrived unnoticed in 10-02)
+- [Phase 16]: 16-02: Phase 07 and 08 VALIDATION.md read back from committed state, both nyquist_compliant true; gap ledger 3 nice rows (Phase 07 Manual-Only), 0 for Phase 08, D-09 exception not reached — Counted by the Status-cell and Manual-Only rule, not the skill's own 0-gaps audit; row 2 (regeneration byte-stability, no test of the writer) classified nice because it has a named command and a committed measurement
 
 ### Pending Todos
 
@@ -447,8 +449,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T17:34:00.268Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-10-05T03:36:21.142Z
+Stopped at: Completed 16-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
