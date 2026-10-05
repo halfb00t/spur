@@ -26,10 +26,12 @@ from spur.model import (
     TESSELLATION,
     TOL,
     Quality,
+    _body,
     _bore_rim_edges,
     _build_checked,
     _fillet_corner,
     _groove_floor_edges,
+    _shape_of,
     _tip_edges,
     build,
     export,
@@ -243,6 +245,31 @@ def test_a_bore_chamfer_that_selects_no_rim_edges_is_a_build_error_not_a_bare_bo
         _build_checked(GearParams())
     # the catch-all must not relabel this defect as "try smaller fillets or chamfers"
     assert "try smaller" not in str(exc_info.value)
+
+
+def test_a_non_body_shape_in_the_build_pipeline_is_named_as_a_modelling_defect() -> None:
+    """The message names the invariant, not a field, so a user never reads the catch-all's
+    "try smaller fillets or chamfers" for a defect they did not cause (D-03). The whole
+    string is compared with ==, not match=: match is a regex search, and a prefix cannot
+    see a wrong suffix (10-REVIEW CR-01). A Face is a Shape without Mixin3D, so no kernel
+    solid is built.
+    """
+    with pytest.raises(BuildError) as exc_info:
+        _body(cq.Face.makePlane(1, 1))
+    assert str(exc_info.value) == (
+        "Geometry kernel returned a Face where a solid body was expected: "
+        "a modelling defect in the build pipeline, not a parameter problem.")
+
+
+def test_a_workplane_value_that_is_not_a_shape_is_named_as_a_modelling_defect() -> None:
+    """Same message and same reasons as the _body test. An empty Workplane's val() is the
+    plane's origin, a Vector, so no kernel solid is built to reach the refusal.
+    """
+    with pytest.raises(BuildError) as exc_info:
+        _shape_of(cq.Workplane("XY"))
+    assert str(exc_info.value) == (
+        "Geometry kernel returned a Vector where a solid body was expected: "
+        "a modelling defect in the build pipeline, not a parameter problem.")
 
 
 # Row sets used below (11-CONTEXT.md <interfaces>): the same links 11-03/11-04/11-05's

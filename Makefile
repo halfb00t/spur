@@ -60,10 +60,19 @@ lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
 
 # ':!.../vendor' keeps a future three.js release's own comments from failing our gate:
 # the bundle is a build artefact (L11), not code we wrote.
+#
+# The second block: mypy's warn_unused_ignores refuses a stale suppression, but nothing
+# refused a new one -- the fifth arrived unnoticed in 10-02. Scoped to src/spur/ because
+# tests/test_calc.py and tests/test_cli.py each carry one on purpose, on a deliberate
+# GearParams.model_construct(**kw) (Phase 16, D-05).
 no-fake-done: ## refuse unfinished work dressed up as finished
 	@if git grep -nE '\b(TODO|FIXME|XXX|HACK|NotImplementedError)\b' \
 	     -- '*.py' '*.js' '*.sh' ':!src/spur/static/vendor'; then \
 	  echo "make: unfinished-work markers above. Finish it, or file it in docs/tech_debt/."; \
+	  exit 1; \
+	fi
+	@if git grep -nE 'type: ignore' -- 'src/spur/*.py'; then \
+	  echo "make: a mypy suppression in src/spur above. Narrow the type, or file it in docs/tech_debt/."; \
 	  exit 1; \
 	fi
 

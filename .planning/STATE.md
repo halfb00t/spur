@@ -3,36 +3,36 @@ gsd_state_version: "1.0"
 milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 16
-current_phase_name: Typing & Validation Debt
-status: "Phase 15 shipped — PR #18"
-stopped_at: Phase 15 complete, ready to plan Phase 16
-last_updated: "2026-10-04T10:55:33.840Z"
-last_activity: 2026-10-04
-state_head: 9a773b061adf851f988450b8223040530fe3acd1
+status: "Phase 16 shipped — PR #19"
+stopped_at: Phase 16 complete — all phases complete
+last_updated: "2026-10-05T05:46:11.000Z"
+last_activity: 2026-10-05
+state_head: ef4d0c9fa7e098b02c204e0ee3af6b32bbe6ff42
 progress:
   total_phases: 4
-  completed_phases: 5
-  total_plans: 17
-  completed_plans: 17
-  percent: 83
+  completed_phases: 6
+  total_plans: 20
+  completed_plans: 20
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-04)
+See: .planning/PROJECT.md (updated 2026-10-05)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 16 — Typing & Validation Debt
+**Current focus:** Milestone v0.3 close — all four phases complete; ship Phase 16's branch,
+then `/gsd-complete-milestone v0.3`
 
 ## Current Position
 
-Phase: 16 — Typing & Validation Debt
+Phase: 16
 Plan: Not started
-Status: Phase 15 shipped — PR #18
-Last activity: 2026-10-04
+Status: Phase 16 shipped — PR #19
+Last activity: 2026-10-05
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Last activity: 2026-10-04
 | 13 | 7 | - | - |
 | 14 | 4 | - | - |
 | 15 | 6 | - | - |
+| 16 | 3 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -184,6 +185,9 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 15 P04 | 23 min | 2 tasks | 3 files |
 | Phase 15 P05 | 10min | 3 tasks | 8 files |
 | Phase 15 P06 | 8 min | 3 tasks | 6 files |
+| Phase 16 P01 | 7 min | 3 tasks | 14 files |
+| Phase 16 P02 | 11min (continuation; Task 1 was the human's) | 3 tasks | 3 files |
+| Phase 16 P03 | 11 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -303,6 +307,13 @@ pending; the next milestone starts this list fresh.
 - [Phase 15]: 15-05: CI's kernel pin is PIP_CONSTRAINT=requirements.txt as step-level env on make verify, plus an always-run step printing the resolved pair; run 37181871926 on draft PR #18 printed cadquery 2.8.0 cadquery-ocp 7.9.3.1.1 — D-13: one env line reaches pip's self-upgrade and the editable install inside the venv recipe; neither named REQ option was taken
 - [Phase 15]: 15-05: phase PR #18 is a draft; at ship update it with gh pr edit and gh pr ready, not gh pr create — gh pr create would refuse a second PR for the branch (D-16 addendum)
 - [Phase 15]: L34 appended after L33 amends L12 and L13: the gate is measured (mean(B) 63.555 s at -n 8 with coverage, bar 66 s met), floored (fail_under 96) and CI installs the pinned kernel; every '~11 s' site now states the measured figure — Phase 15 plan 06; the figure is the gate as committed on the 12-core dev host (bench/RESULTS.md Before and after); the commit-timeout debt stays active
+- [Phase 16]: 16-01: the Shape narrowing is two isinstance helpers raising BuildError (_body at three fillet/chamfer sites, _shape_of at two .val() sites), never a cast; _gear_blank stays -> cq.Shape — Shape.cut returns Shape whatever goes in, so a cast at .val() reaches two of five; -> cq.Solid makes mypy flag five [assignment] errors in _build (16-RESEARCH Pitfall 1)
+- [Phase 16]: 16-01: mypy's override dropped cadquery.* (OCP.* stays); D-04's gate passed -- mypy output over src tests docker bench scripts byte-identical with the cache cleared before and after — cadquery ships py.typed, OCP ships no type information; cmp of the two captures, both 'Success: no issues found in 37 source files'
+- [Phase 16]: 16-01: make no-fake-done refuses a mypy suppression under src/spur/ (seen red against the five lines at 085e5a6); tests/ keeps its two deliberate ones — mypy's warn_unused_ignores refuses a stale suppression but nothing refused a new one (the fifth arrived unnoticed in 10-02)
+- [Phase 16]: 16-02: Phase 07 and 08 VALIDATION.md read back from committed state, both nyquist_compliant true; gap ledger 3 nice rows (Phase 07 Manual-Only), 0 for Phase 08, D-09 exception not reached — Counted by the Status-cell and Manual-Only rule, not the skill's own 0-gaps audit; row 2 (regeneration byte-stability, no test of the writer) classified nice because it has a named command and a committed measurement
+- [Phase 16]: L35: vendor shape typing stops at two isinstance boundaries (_body, _shape_of); Phases 7 and 8 both nyquist_compliant true as read, 3 Phase 07 Manual-Only rows filed as one nice debt file, v0.2 audit amended in place (amends L21)
+- [Phase 16]: UAT test 2 (human, 2026-10-05): the cast clause of 16-01's prohibition has no standing gate — mypy strict + `disallow_any_explicit` and review of `[tool.mypy]` are the enforcement; no `cast(` pin in `no-fake-done`, no debt item. `git grep` for `cast(` / `typing.cast` / `Any` under `src/spur/` printed nothing at `a35432d`.
+- [Phase 16]: UAT test 3 (human, 2026-10-05): Phase 7's Nyquist record rests on the committed `07-VALIDATION.md` (`655583f`, `5ba02d2`; both audit sections `Gaps found 0`), not on the resume message the human did not save — accepted as a disclosed deviation from 16-02 truths 2 and 4; no third run.
 
 ### Pending Todos
 
@@ -310,6 +321,23 @@ None yet.
 
 ### Blockers/Concerns
 
+- ℹ️ [Phase 16] `_cell_cutters` (`src/spur/model.py:355-357`) raises a bare `TypeError` on a
+  non-`Solid` prototype, which `_build_checked` would relabel with the catch-all "try smaller
+  fillets" remedy. Pre-existing, untouched by Phase 16 (the function is AST-identical to
+  `085e5a6`); flagged by the verifier, the security file and review WR-01
+  (`16-REVIEW-DISPOSITION.md`), not filed as debt — the human decides whether it gets a
+  `docs/tech_debt/active/` file.
+- ℹ️ [Phase 16] Review WR-02: the `no-fake-done` pin greps `type: ignore` with the space under
+  `src/spur/*.py` only; mypy also honours `# type:ignore`. `16-SECURITY.md` carries T-16-01 as
+  open below the `high` threshold (`threats_open` 0) until the pattern is widened.
+- ℹ️ [Phase 16] Nothing mechanical refuses a future `typing.cast` in `model.py`; the human
+  chose mypy strict + review over a grep pin (16-UAT test 2). A one-line third block in
+  `no-fake-done` is the fix if that changes.
+- ℹ️ [Phase 16] 16-02 read 18 `**NO**` rows under `bench/RESULTS.md`'s Phase 12 section where
+  the text states 16; noted, not resolved, outside the phase.
+- ℹ️ [Phase 16] All four close-out commits this session (`a35432d` UAT, `4a050c9` validation,
+  `fb956bb` security, the transition commit) were plain `git commit` through the ~64 s
+  `make verify` hook, never `--no-verify`; the commit-timeout debt stands.
 - ℹ️ [Phase 14] Code review (`14-REVIEW-DISPOSITION.md`, 4 open): WR-01 — the shared cutout
   assertion's `volume_rel` silently wins over the new `volume_abs` when both are passed (no
   caller does; an at-most-one assert closes it); IN-01 — three `tests/test_model.py` comments
@@ -432,6 +460,8 @@ None yet.
 - Phase 15 edited: edited fields: depends_on, success_criteria SC2, research flag (per 15-CONTEXT.md D-01)
 - Phase 15 edited: edited fields: success_criteria SC3 (per 15-RESEARCH Open Question 2 and the 15-CONTEXT.md D-09 addendum, decided in 15-02)
 - Phase 15 edited: edited fields: success_criteria SC4 (per 15-CONTEXT.md D-13)
+- Phase 16 edited: edited fields: success_criteria SC1, SC2 (per 16-CONTEXT.md D-01, D-12 and 16-RESEARCH Finding 7)
+- Phase 16 edited: edited fields: success_criteria SC4 (per 16-CONTEXT.md D-08, D-10, D-12)
 
 ## Deferred Items
 
@@ -441,20 +471,19 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-04T10:52:00Z
-Stopped at: Phase 15 complete, ready to plan Phase 16
+Last session: 2026-10-05T05:26:09Z
+Stopped at: Phase 16 complete (UAT 3/3, verification passed, Nyquist 0 gaps, security 15/15 closed) — milestone v0.3 ready to close once Phase 16's branch lands
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-discuss-phase 16` then `/gsd-plan-phase 16` — Typing & Validation Debt.
-  Phase 15 is complete on `gsd/phase-15-the-gate-measured-and-pinned`; its PR #18 is still a
-  draft — at ship, `gh pr edit` + `gh pr ready` (never `gh pr create`, 15-05 D-16 addendum),
-  then `make pr.land PR=18` per ROADMAP.md's Process Notes before starting 16's branch.
-- `/gsd-validate-phase 15` — `15-VALIDATION.md` is still `draft` (`nyquist_compliant: false`;
-  14's is too, 13's is validated). Not dispatched at the Phase 15 transition: the Nyquist
-  auditor may add tests, and Phase 15's record pins `tests/` unchanged at 927 — run it as its
-  own change.
+- Next: ship Phase 16 — `gsd/phase-16-typing-validation-debt` is 24 commits ahead of
+  `origin/main` (Phase 15's #18 landed as `085e5a6`) and has no PR yet (`gh pr list --head`
+  empty, 2026-10-05): open one, then `make pr.land PR=N` per ROADMAP.md's Process Notes.
+  Then `/gsd-complete-milestone v0.3` — all four v0.3 phases are complete.
+- `14-VALIDATION.md` is still `draft` (`nyquist_compliant: false`); 13's, 15's and 16's are
+  validated. Not dispatched at the Phase 14 transition — run `/gsd-validate-phase 14` as its
+  own change (the auditor may add tests).
 - Triage `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4`
   baseline, WR-02 a false statement and two dangling links left by the two retirements, WR-03
   the commit-timeout debt contradicting its own trigger, WR-04 the "five runs" undercount,
@@ -464,8 +493,12 @@ Resume file: None
   for the `1e-8` bar), and decide whether the hole-link test's `rel=1e-6` row moves to the web
   formula. Re-file the macOS-only calibration finding if it is to stay tracked.
 - Fix CR-01 (one word in the Dockerfile comment) and triage WR-01 from `13-REVIEW-DISPOSITION.md`.
-- Phase 16's REQ-nyquist-phases-7-8 carries a flagged ASSUMPTION (`/gsd-validate-phase` may
-  not resolve `phase_dir` for an archived phase) — resolve at that phase's discuss-phase
+- Triage `16-REVIEW-DISPOSITION.md` (5 open: WR-01 the third `.val()` narrowing in
+  `_cell_cutters` raising a bare `TypeError` with a stale comment, WR-02 the `no-fake-done`
+  pin missing the spellings and files mypy accepts, IN-01 `_body`'s comment overstating its
+  assertion, IN-02 the D-04 mypy comparison covering only the pinned kernel while
+  `pyproject.toml` declares `cadquery>=2.5`, IN-03 the refusal tests proving the helpers in
+  isolation, not the call sites).
 - `/gsd-map-codebase` — `.planning/codebase/TESTING.md` still says "Warm run ~11 seconds"
   and predates coverage and xdist; `--paths bench` is also owed (Phase 13).
 - Expect `gsd_run query commit` to time out on every commit (hook ~64 s warm at 927 tests,

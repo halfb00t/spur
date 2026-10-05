@@ -31,13 +31,13 @@
     {
       "number": "16",
       "name": "Typing & Validation Debt",
-      "status": "pending"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step (plan phase 16)",
-    "reason": "Phase 16 of 4 — needs a plan"
+    "command": "/gsd:new-milestone",
+    "label": "Start a new milestone",
+    "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-10-04T10:50:39.918Z"
+  "updated_at": "2026-10-05T05:26:09.646Z"
 }

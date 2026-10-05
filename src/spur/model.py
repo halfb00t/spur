@@ -208,9 +208,7 @@ def _cut_face_recesses(solid: cq.Shape, p: GearParams, rf: float) -> cq.Shape:
         solid = solid.cut(_ring(r_in, r_out, p.face_width - p.recess_depth, p.recess_depth))
     fillet = recess_fillet(p, rf)
     if fillet > 0:
-        # Shape declares no fillet/chamfer: they are on Mixin3D, which every Solid and
-        # Compound carries. _build() re-checks we still have exactly one valid solid.
-        solid = solid.fillet(fillet, _groove_floor_edges(solid, (r_in, r_out), floor_z))  # type: ignore[attr-defined]
+        solid = _body(solid).fillet(fillet, _groove_floor_edges(solid, (r_in, r_out), floor_z))
     return solid
 
 
@@ -234,10 +232,9 @@ def _cut_bore(solid: cq.Shape, p: GearParams) -> cq.Shape:
             hole = hole.intersect(keep.extrude(p.face_width))
     else:
         return solid
-    solid = solid.cut(hole.val())  # type: ignore[arg-type]  # .val() is typed as a 4-way union
+    solid = solid.cut(_shape_of(hole))
     if p.bore_chamfer > 0:
-        solid = solid.chamfer(  # type: ignore[attr-defined]  # see _cut_face_recesses
-            p.bore_chamfer, None, _bore_rim_edges(solid, p))
+        solid = _body(solid).chamfer(p.bore_chamfer, None, _bore_rim_edges(solid, p))
     return solid
 
 
@@ -408,16 +405,45 @@ def _chamfer_tips(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
     c = tip_chamfer_effective(p)
     if c <= 0:
         return solid
-    solid = solid.chamfer(  # type: ignore[attr-defined]  # see _cut_face_recesses
-        c, None, _tip_edges(solid, pr.ra, p.face_width))
+    solid = _body(solid).chamfer(c, None, _tip_edges(solid, pr.ra, p.face_width))
     return solid
 
 
 # --- picking kernel geometry back out ------------------------------------------------
 
+_NOT_A_BODY = (
+    "Geometry kernel returned a {} where a solid body was expected: "
+    "a modelling defect in the build pipeline, not a parameter problem.")
+
+
+# CadQuery 2.8.0 types every boolean result as Shape (Shape.cut -> Shape), and Shape
+# declares neither fillet nor chamfer: they are Mixin3D's, which Solid and Compound
+# carry. Measured on the default gear 2026-10-04: _gear_blank returns a Solid, and
+# _cut_face_recesses and every later step a Compound; a step whose feature is off
+# returns its input unchanged. So the pipeline's static type stays cq.Shape and the
+# narrowing happens here, where Mixin3D is needed. It asserts the invariant _build()'s
+# end check asserts, cannot fire from any settable field, and is a modelling-defect
+# guard, never an answer (L26). A cast would claim the same and check nothing; this
+# replaces five mypy suppressions.
+def _body(shape: cq.Shape) -> cq.Solid | cq.Compound:
+    if not isinstance(shape, cq.Solid | cq.Compound):
+        raise BuildError(_NOT_A_BODY.format(type(shape).__name__))
+    return shape
+
+
+# Workplane.val() is typed Vector | Location | Shape | Sketch. Every Workplane this
+# module extrudes holds a Shape; an empty stack would hand back the plane's origin, a
+# Vector.
+def _shape_of(wp: cq.Workplane) -> cq.Shape:
+    value = wp.val()
+    if not isinstance(value, cq.Shape):
+        raise BuildError(_NOT_A_BODY.format(type(value).__name__))
+    return value
+
+
 def _ring(r_in: float, r_out: float, z0: float, height: float) -> cq.Shape:
-    return (cq.Workplane("XY").workplane(offset=z0)
-            .circle(r_out).circle(r_in).extrude(height).val())  # type: ignore[return-value]
+    return _shape_of(cq.Workplane("XY").workplane(offset=z0)
+                     .circle(r_out).circle(r_in).extrude(height))
 
 
 def _groove_floor_edges(solid: cq.Shape, radii: tuple[float, ...],

@@ -67,7 +67,7 @@ byte-unchanged throughout.
 - [x] **Phase 15: The Gate, Measured and Pinned** - `make verify`'s wall time, its bar and (completed 2026-10-04)
       its coverage floor become measured numbers in `bench/RESULTS.md`, and CI installs the
       exact kernel pair the regression fixture pins
-- [ ] **Phase 16: Typing & Validation Debt** - `model.py` carries no `type: ignore`, and
+- [x] **Phase 16: Typing & Validation Debt** - `model.py` carries no `type: ignore`, and (completed 2026-10-05)
       Phases 7–8 get the Nyquist validation pass they predate
 
 ## Phase Details
@@ -262,27 +262,41 @@ independent of the other v0.3 phases.
 **Requirements**: REQ-model-py-no-type-ignore, REQ-nyquist-phases-7-8
 **Success Criteria** (what must be TRUE):
 
-  1. `src/spur/model.py` carries zero `# type: ignore` (five retired: lines 212, 236, 238,
-     410, 419 — `attr-defined` ×3 on `fillet`/`chamfer`, `arg-type` and `return-value` on
-     `.val()`), achieved by narrowing the pipeline's annotations from `_gear_blank` →
-     `_cut_face_recesses` → `_cut_bore` onward and casting once at the `.val()` boundary —
-     its own tested change, in its own commit, never riding along with a geometry proof.
-  2. `make verify` is green under `--strict` + `disallow_any_explicit` with `RUF100` still
-     on; `tests/regression/pre_v0_2.json` stays byte-unchanged (annotations only — the 15
+  1. `src/spur/model.py` carries zero `# type: ignore` (five retired: lines 213, 237, 239,
+     411, 420 — `attr-defined` ×3 on `fillet`/`chamfer`, `arg-type` and `return-value` on
+     `.val()`), achieved by two `isinstance` narrowing helpers that raise `BuildError` —
+     `_body` at the three `fillet`/`chamfer` sites, `_shape_of` at the two `.val()` sites
+     (`Shape.cut` returns `Shape`, so a cast at `.val()` alone reaches two of the five;
+     16-CONTEXT.md D-01/D-02) — pinned by `make no-fake-done`; its own tested change, in
+     its own commit, never riding along with a geometry proof.
+  2. `make verify` is green under `--strict` + `disallow_any_explicit` (mypy's
+     `warn_unused_ignores` is what refuses a stale suppression; `RUF100` stays on and
+     governs `noqa`); `tests/regression/pre_v0_2.json` stays byte-unchanged (no geometry
+     change: two checks that cannot fire on a valid build, 16-CONTEXT.md D-01 — the 15
      kernel-level proof rows from Phase 12 stay green).
   3. `docs/tech_debt/active/2026-09-21-cadquery-shape-typing.md` retires with its sha and
      corrected stale line references.
-  4. `milestones/v0.2-phases/07-*/VALIDATION.md` and `08-*/VALIDATION.md` exist with the
-     Nyquist audit's `nyquist` field no longer `partial` for Phases 7 and 8, produced by
-     `/gsd-validate-phase 7` and `8` — or, if `validate-phase` cannot target an archived
-     phase directory (the flagged ASSUMPTION), the human's choice between a temporary copy
-     under `.planning/phases/` moved afterward, or dropping the requirement, is recorded in
-     this phase's record with the reason. Discovery only — any gap found becomes a debt
-     file with a trigger, not a scope expansion.
+  4. `.planning/milestones/v0.2-phases/07-foundation-generalized-edge-selection-regression-fixture/07-VALIDATION.md`
+     and `.planning/milestones/v0.2-phases/08-hex-bore/08-VALIDATION.md` exist at
+     `status: validated`, produced by `/gsd-validate-phase 7` and `8` (gsd resolves both
+     archived directories -- verified 2026-10-04, 16-CONTEXT.md D-08); `nyquist_compliant`
+     reads what the audit measured; a gap is a debt row; the v0.2 audit's `nyquist` block
+     records the measurement (D-11). Discovery only — any gap found becomes a debt file
+     with a trigger, not a scope expansion.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); both items are
 internal and one is process-only.
-**Plans**: TBD
+**Plans:** 3/3 plans complete (strictly serial: one working tree, the pre-commit `make verify` hook reads all of it, and 16-02's human runs need the tree idle)
+
+Plans:
+**Wave 1**
+- [x] 16-01-PLAN.md — the narrowing, tracer first: the `no-fake-done` pin seen red, `_body`/`_shape_of` at the five sites, two refusal tests; the override scoped to OCP, the implementation note and the debt retired in one code commit, its sha after; REQ, SC1 and SC2 corrected
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 16-02-PLAN.md — the human runs `/gsd-validate-phase 7` and `8` ("Skip — mark manual-only"); both values read back, the gap ledger with what proves each gap today; D-09's checkpoint only if a behaviour has no test
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 16-03-PLAN.md — the gaps filed as debt, the v0.2 audit amended in place and dated, REQ-nyquist-phases-7-8 and SC4 corrected, L35 (amends L21), the phase's end state against 085e5a6
 
 ## Process Notes (carried forward)
 
@@ -307,4 +321,4 @@ internal and one is process-only.
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
 | 15. The Gate, Measured and Pinned | v0.3 | 6/6 | Complete    | 2026-10-04 |
-| 16. Typing & Validation Debt | v0.3 | 0/TBD | Not started | - |
+| 16. Typing & Validation Debt | v0.3 | 3/3 | Complete    | 2026-10-05 |

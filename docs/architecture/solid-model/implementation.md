@@ -26,11 +26,13 @@ module should be called from outside.
   `TemporaryDirectory` and reads the bytes back, because CadQuery's exporters take a path.
   In the container `/tmp` is a size-capped tmpfs, so a huge STL fails there rather than
   eating the memory limit.
-- **`type: ignore` comments are load-bearing and explained.** CadQuery types every boolean
-  result as `Shape`, which declares neither `fillet` nor `chamfer` (they live on `Mixin3D`,
-  carried by `Solid` and `Compound`). The ignores are narrow, coded, and each says why.
-  Re-typing this pipeline properly is tracked in
-  `docs/tech_debt/active/2026-09-21-cadquery-shape-typing.md`.
+- **Vendor shape typing stops at two checked boundaries.** CadQuery types every boolean
+  result as `Shape` (`Shape.cut -> Shape`), which declares neither `fillet` nor `chamfer`
+  (they live on `Mixin3D`, carried by `Solid` and `Compound`), and `Workplane.val()` as a
+  four-way union. `_body()` and `_shape_of()` narrow both with `isinstance` and raise
+  `BuildError` on a shape the pipeline must never see. `src/spur/` carries no mypy
+  suppression and `make no-fake-done` refuses a new one; history in
+  `docs/tech_debt/resolved/2026-09-21-cadquery-shape-typing.md`.
 - **A single large build stalls the event loop** for a second or two, because OCCT holds
   the GIL. Known, bounded by L04, not fixed — see
   `docs/tech_debt/active/2026-09-21-cad-builds-block-the-event-loop.md`.

@@ -109,9 +109,12 @@ init_forbid_extra = true
 # unchanged.
 
 [[tool.mypy.overrides]]
-# The CAD kernel ships no type information. Scoped to the two packages that lack it --
-# never a global ignore_missing_imports, which would blind the whole project.
-module = ["cadquery.*", "OCP.*"]
+# OCP, the OpenCascade binding, ships no type information (no .pyi and no py.typed in
+# cadquery-ocp 7.9.3.1.1), so the entry is scoped to it -- never a global
+# ignore_missing_imports, which would blind the whole project. cadquery ships py.typed:
+# mypy reads its annotations (which is why Shape.cut -> Shape reached the gate), so it
+# needs no entry (Phase 16, D-04).
+module = ["OCP.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

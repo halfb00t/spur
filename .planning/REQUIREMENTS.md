@@ -149,26 +149,32 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   (recorded, not committed); the floor's own wall-time cost is measured against
   REQ-verify-profiled's baseline (so this lands after the profile);
   `2026-09-21-no-coverage-floor.md` retires with the sha.
-- [ ] **REQ-model-py-no-type-ignore**: `src/spur/model.py` carries zero `# type: ignore`
-  (five today: lines 212, 236, 238, 410, 419 — `attr-defined` ×3 on `fillet`/`chamfer`,
-  `arg-type` and `return-value` on `.val()`), achieved by narrowing the pipeline's
-  annotations from `_gear_blank` → `_cut_face_recesses` → `_cut_bore` onward to the type
-  the values have and casting **once** at the `.val()` boundary — not a `cast` at each
-  call site, not a mypy rule turned off, no new runtime dependency. Its own tested change,
+- [x] **REQ-model-py-no-type-ignore**: `src/spur/model.py` carries zero `# type: ignore`
+  (five at the phase's start: lines 213, 237, 239, 411, 420 — `attr-defined` ×3 on
+  `fillet`/`chamfer`, `arg-type` and `return-value` on `.val()`), achieved by two
+  `isinstance` narrowing helpers that raise `BuildError` on a shape the pipeline must never
+  see — `_body` at the three `fillet`/`chamfer` sites, `_shape_of` at the two `.val()`
+  sites (16-CONTEXT.md D-01/D-02). A cast once at the `.val()` boundary could not hold:
+  `Shape.cut` returns `Shape` whatever goes in, so it reaches two of the five. Not a
+  `cast`, not a mypy rule turned off, no new runtime dependency. Its own tested change,
   separate from anything else (the debt file's own condition). *Acceptance*: `make verify`
-  green under `--strict` + `disallow_any_explicit` with `RUF100` still on; the fixture
-  byte-unchanged (annotations only — the 15 kernel-level proof rows from Phase 12 stay
-  green); `2026-09-21-cadquery-shape-typing.md` retires with the sha, its stale line refs
-  corrected on the way out.
-- [ ] **REQ-nyquist-phases-7-8**: Phases 7 and 8 — the two v0.2 phases that predate the
+  green under `--strict` + `disallow_any_explicit` (mypy's `warn_unused_ignores` refuses a
+  stale suppression; `RUF100` stays on and governs `noqa`), with `make no-fake-done`
+  refusing a new one under `src/spur/`; the fixture byte-unchanged (no geometry change —
+  two checks that cannot fire on a valid build; the 15 kernel-level proof rows from
+  Phase 12 stay green); `2026-09-21-cadquery-shape-typing.md` retires with the sha, its
+  stale line refs corrected on the way out.
+- [x] **REQ-nyquist-phases-7-8**: Phases 7 and 8 — the two v0.2 phases that predate the
   Nyquist capability — have a `VALIDATION.md` in their archived directories under
   `milestones/v0.2-phases/`, produced by `/gsd-validate-phase 7` and `8`. Discovery only: a
-  gap it finds becomes a debt file with a trigger, not a scope expansion. ASSUMPTION
-  (unverified 2026-10-01): `validate-phase` resolves `phase_dir` from init and may not
-  target an archived phase; if it cannot, the human picks between running it against a
-  temporary copy under `.planning/phases/` and moving the output, or dropping this
-  requirement with the reason recorded in the roadmap. *Acceptance*: the two files exist
-  with the audit's `nyquist` field no longer `partial` for them, or the drop is recorded.
+  gap it finds becomes a debt file with a trigger, not a scope expansion. Verified
+  2026-10-04 (16-CONTEXT.md D-08): `gsd_run query init.phase-op 7` and `8` resolve
+  `phase_dir` to the archived directories under `.planning/milestones/v0.2-phases/`, so
+  `/gsd-validate-phase` runs on them in place -- no temporary copy. *Acceptance*:
+  `07-VALIDATION.md` and `08-VALIDATION.md` exist at `status: validated` under
+  `.planning/milestones/v0.2-phases/`; `nyquist_compliant` reads what the audit measured;
+  a gap is a debt row; the v0.2 audit's `nyquist` block records the measurement
+  (16-CONTEXT.md D-10, D-11).
 
 ## Future Requirements
 
@@ -223,8 +229,8 @@ Filled by the roadmap.
 | REQ-verify-at-the-bar | Phase 15 | Complete |
 | REQ-coverage-floor | Phase 15 | Complete |
 | REQ-ci-installs-the-pinned-kernel | Phase 15 | Complete |
-| REQ-model-py-no-type-ignore | Phase 16 | Pending |
-| REQ-nyquist-phases-7-8 | Phase 16 | Pending |
+| REQ-model-py-no-type-ignore | Phase 16 | Complete |
+| REQ-nyquist-phases-7-8 | Phase 16 | Complete |
 
 **Coverage:**
 - v0.3 requirements: 11 total
