@@ -286,7 +286,7 @@ independent of the other v0.3 phases.
 
 **Research flag**: No — v0.3 skipped research (REQUIREMENTS.md, 2026-10-01); both items are
 internal and one is process-only.
-**Plans:** 2/3 plans executed (strictly serial: one working tree, the pre-commit `make verify` hook reads all of it, and 16-02's human runs need the tree idle)
+**Plans:** 3/3 plans executed (strictly serial: one working tree, the pre-commit `make verify` hook reads all of it, and 16-02's human runs need the tree idle)
 
 Plans:
 **Wave 1**
@@ -296,7 +296,7 @@ Plans:
 - [x] 16-02-PLAN.md — the human runs `/gsd-validate-phase 7` and `8` ("Skip — mark manual-only"); both values read back, the gap ledger with what proves each gap today; D-09's checkpoint only if a behaviour has no test
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 16-03-PLAN.md — the gaps filed as debt, the v0.2 audit amended in place and dated, REQ-nyquist-phases-7-8 and SC4 corrected, L35 (amends L21), the phase's end state against 085e5a6
+- [x] 16-03-PLAN.md — the gaps filed as debt, the v0.2 audit amended in place and dated, REQ-nyquist-phases-7-8 and SC4 corrected, L35 (amends L21), the phase's end state against 085e5a6
 
 ## Process Notes (carried forward)
 
@@ -321,4 +321,4 @@ Plans:
 | 13. Latency Bar | v0.3 | 7/7 | Complete    | 2026-10-02 |
 | 14. Honest Record | v0.3 | 4/4 | Complete    | 2026-10-03 |
 | 15. The Gate, Measured and Pinned | v0.3 | 6/6 | Complete    | 2026-10-04 |
-| 16. Typing & Validation Debt | v0.3 | 2/3 | In Progress|  |
+| 16. Typing & Validation Debt | v0.3 | 3/3 | In Progress|  |

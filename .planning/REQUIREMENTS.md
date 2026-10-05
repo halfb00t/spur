@@ -164,7 +164,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.2-REQUIREME
   two checks that cannot fire on a valid build; the 15 kernel-level proof rows from
   Phase 12 stay green); `2026-09-21-cadquery-shape-typing.md` retires with the sha, its
   stale line refs corrected on the way out.
-- [ ] **REQ-nyquist-phases-7-8**: Phases 7 and 8 — the two v0.2 phases that predate the
+- [x] **REQ-nyquist-phases-7-8**: Phases 7 and 8 — the two v0.2 phases that predate the
   Nyquist capability — have a `VALIDATION.md` in their archived directories under
   `milestones/v0.2-phases/`, produced by `/gsd-validate-phase 7` and `8`. Discovery only: a
   gap it finds becomes a debt file with a trigger, not a scope expansion. Verified
@@ -230,7 +230,7 @@ Filled by the roadmap.
 | REQ-coverage-floor | Phase 15 | Complete |
 | REQ-ci-installs-the-pinned-kernel | Phase 15 | Complete |
 | REQ-model-py-no-type-ignore | Phase 16 | Complete |
-| REQ-nyquist-phases-7-8 | Phase 16 | Pending |
+| REQ-nyquist-phases-7-8 | Phase 16 | Complete |
 
 **Coverage:**
 - v0.3 requirements: 11 total

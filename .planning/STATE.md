@@ -4,18 +4,18 @@ milestone: v0.3
 milestone_name: Clean Ledger
 current_phase: 16
 current_phase_name: Typing & Validation Debt
-status: executing
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-10-05T03:43:44.121Z"
+status: verifying
+stopped_at: Completed 16-03-PLAN.md
+last_updated: "2026-10-05T03:50:15.066Z"
 last_activity: 2026-10-04
 last_activity_desc: Phase 16 execution started
-state_head: 4035b040b94528f5a82ceb32f8268413e6d19334
+state_head: 71f474d7b7ec72204449fa90e08d107b753929e6
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 20
-  completed_plans: 19
-  percent: 95
+  completed_plans: 20
+  percent: 100
 ---
 
 # Project State
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 16 (Typing & Validation Debt) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-04 — Phase 16 execution started
 
 ## Performance Metrics
@@ -187,6 +187,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 15 P06 | 8 min | 3 tasks | 6 files |
 | Phase 16 P01 | 7 min | 3 tasks | 14 files |
 | Phase 16 P02 | 11min (continuation; Task 1 was the human's) | 3 tasks | 3 files |
+| Phase 16 P03 | 11 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -310,6 +311,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 16]: 16-01: mypy's override dropped cadquery.* (OCP.* stays); D-04's gate passed -- mypy output over src tests docker bench scripts byte-identical with the cache cleared before and after — cadquery ships py.typed, OCP ships no type information; cmp of the two captures, both 'Success: no issues found in 37 source files'
 - [Phase 16]: 16-01: make no-fake-done refuses a mypy suppression under src/spur/ (seen red against the five lines at 085e5a6); tests/ keeps its two deliberate ones — mypy's warn_unused_ignores refuses a stale suppression but nothing refused a new one (the fifth arrived unnoticed in 10-02)
 - [Phase 16]: 16-02: Phase 07 and 08 VALIDATION.md read back from committed state, both nyquist_compliant true; gap ledger 3 nice rows (Phase 07 Manual-Only), 0 for Phase 08, D-09 exception not reached — Counted by the Status-cell and Manual-Only rule, not the skill's own 0-gaps audit; row 2 (regeneration byte-stability, no test of the writer) classified nice because it has a named command and a committed measurement
+- [Phase 16]: L35: vendor shape typing stops at two isinstance boundaries (_body, _shape_of); Phases 7 and 8 both nyquist_compliant true as read, 3 Phase 07 Manual-Only rows filed as one nice debt file, v0.2 audit amended in place (amends L21)
 
 ### Pending Todos
 
@@ -450,8 +452,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-05T03:36:21.142Z
-Stopped at: Completed 16-02-PLAN.md
+Last session: 2026-10-05T03:49:23.136Z
+Stopped at: Completed 16-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
