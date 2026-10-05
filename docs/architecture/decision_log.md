@@ -1757,3 +1757,83 @@ machine_facts; print(machine_facts())"`, read 2026-10-04), Apple M2 Max; macOS 2
 one `bench/RESULTS.md` § "Host state" dates 2026-10-03; the coverage, tolerance and
 before/after runs were taken on 2026-10-04, and CI run 37181871926 on the same day on
 GitHub's 4-vCPU `ubuntu-latest`.
+
+## L35 — Vendor shape typing stops at two checked boundaries, and Phases 7 and 8 carry a Nyquist record (amends L21)
+
+Date: 2026-10-05.
+
+L21 stays as written; this entry amends its house rule ("a value a library already names
+keeps the library's own alias") with where CadQuery's own `Shape` typing now stops in
+`model.py`, and records Phases 7 and 8's Nyquist pass. The five `type: ignore`s that L21's
+ratchet left standing in `model.py` are gone, and a sixth cannot arrive unseen.
+
+**The narrowing** (16-CONTEXT D-01 to D-07, D-14, D-16). `_body(shape: cq.Shape) ->
+cq.Solid | cq.Compound` stands at the three `fillet`/`chamfer` sites and `_shape_of(wp:
+cq.Workplane) -> cq.Shape` at the two `.val()` sites. Each is one `isinstance` check that
+raises `BuildError` with the same message, the class name filled in: "Geometry kernel
+returned a {} where a solid body was expected: a modelling defect in the build pipeline,
+not a parameter problem." The five suppressions it retired stood at lines 213, 237, 239,
+411 and 420 of `src/spur/model.py` at `085e5a6`. It is `isinstance` and not `typing.cast`
+because a cast can turn mypy green while the value is wrong and gives a test nothing to
+see; and not `TypeIs`, which is the same check behind more ceremony. The runtime types are
+the ones 16-CONTEXT's domain facts measured on 2026-10-04 (cadquery 2.8.0, cadquery-ocp
+7.9.3.1.1): a `Solid` after `_gear_blank`, a `Compound` after `_cut_face_recesses` and
+after every later step, a step whose feature is off returning its input unchanged, and
+`Solid.cut(Solid)` a `Compound`. `Shape.cut` is typed `-> Shape` whatever goes in, and
+`fillet` and `chamfer` belong to `Mixin3D`, which only `Solid` and `Compound` carry. That is
+why the debt file's plan, "cast once at `.val()`", could not hold: it reaches `_ring` and
+the bore's `hole.val()`, two of five, and the three `attr-defined` sites need `Mixin3D`
+after a `cut`. The pipeline's annotations stay at `cq.Shape`, `_gear_blank` included: the
+narrower `-> cq.Solid` made mypy infer `solid: Solid` in `_build` and gave five
+`[assignment]` errors there (16-RESEARCH Pitfall 1). `cadquery.*` left
+`[[tool.mypy.overrides]]`, which now names `OCP.*` alone: cadquery ships `py.typed` (mypy
+reads its annotations, which is why the errors existed) and OCP ships no type information.
+With the cache cleared, mypy's output over `src tests docker bench scripts` was
+byte-identical before and after, both "Success: no issues found in 37 source files"
+(16-01-SUMMARY, D-04's gate). `make no-fake-done` now refuses a mypy suppression under
+`src/spur/` and only there, because `tests/test_calc.py` and `tests/test_cli.py` each carry
+one on purpose; it was seen red against the five lines at `085e5a6` and green after.
+`RUF100` governs `noqa` and never mypy suppressions; mypy strict's `warn_unused_ignores` is
+what refuses a stale one, and until the pin nothing refused a new one. The error surfaces
+as a 422 `build_error` and a WARNING record, like the three selector guards
+(`_groove_floor_edges`, `_bore_rim_edges`, `_tip_edges`) that already say "a modelling
+defect"; no settable field can make it fire, so the status code is a known trade-off and
+no new exception class was added (16-RESEARCH Finding 14). The suite went from 927 to 929
+collected, the two refusal tests asserting the whole message with `==`. The five-site
+gear's (type, isValid, volume at 6 dp, faces, edges), `build(GearParams(tip_chamfer=0.5))`,
+reads `('Solid', True, 4446.54642, 210, 604)` before and after, and
+`tests/regression/pre_v0_2.json` is byte-identical to `085e5a6`. Commits: `4f7e8fe` (the
+code, the gate, the override, the implementation note and the debt retired) and `c11213e`
+(its sha recorded in the debt file).
+
+**The Nyquist pass** (D-08 to D-11). The human ran `/gsd-validate-phase 7` and `8` at
+16-02's checkpoint, against the archived directories in place under
+`.planning/milestones/v0.2-phases/`: `init.phase-op` resolves them, so no temporary copy was
+made. `07-VALIDATION.md` reads `nyquist_compliant: true` and `08-VALIDATION.md` reads
+`nyquist_compliant: true`, both at `status: validated`, as read from the committed
+frontmatter and not asserted. Phase 7 ran twice (`655583f`, then `5ba02d2`, which corrected
+one quick-run command); Phase 8 once (`8ae468e`). Both audits reported 0 gaps, so, as far
+as the record shows, the "Fix all gaps / Skip" gate was never reached; no D-09 question was
+asked. 16-02's gap
+ledger counts every Manual-Only data row, whatever the audit called it: three for Phase 7,
+none for Phase 8, all `nice`, none a behaviour without a test. The three are one debt file,
+`docs/tech_debt/active/2026-10-05-phase-07-nyquist-gaps.md` (`4035b04`); Phase 8 has no
+debt file. No test was written. The v0.2 audit's `nyquist` block was amended in place and
+dated (`3b9d977`): `missing_phases: []`, 07 and 08 in `compliant_phases`, `overall:
+compliant` by the rule written beside the new rows (a phase is COMPLIANT on
+`status: validated`, `nyquist_compliant: true` and every Status cell green or manual;
+`overall` reads `compliant` only when no phase is partial, not validated or missing). The
+original six rows and the original Overall line are byte-identical; audit-milestone §5.5
+defines the per-phase classes but not `overall`, so that rule is inferred from the original
+`partial` for 4 compliant and 2 missing.
+
+**Reversibility.** Reversible: two helpers and five call sites (D-01), one override entry
+(D-04), one Makefile block (D-05); the audit amendment is dated and additive.
+
+Reason: L21 ended with a ratchet that had a hole in it, five suppressions it could not see
+and nothing to stop a sixth, and the record said Phases 7 and 8 had no Nyquist file because
+nobody knew whether the skill could reach an archived directory. Phase 16 narrowed the
+types where a check is possible, pinned the result, and measured the second question
+instead of assuming it.
+Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, read 2026-10-04 (16-CONTEXT.md, domain
+facts); the five-site gear tuple and the mypy comparison were taken the same day (16-01).
