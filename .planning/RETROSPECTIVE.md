@@ -169,6 +169,99 @@
 
 ---
 
+## Milestone: v0.3 — Clean Ledger
+
+**Shipped:** 2026-10-05
+**Phases:** 4 (13–16) | **Plans:** 20 | **Sessions:** not tracked
+
+### What Was Built
+- The ten-concurrent latency bar demonstrated on the unmodified harness (`bar-3`:
+  1.31×/1.42×) after a pre-registered twelve-run campaign ruled both L18 observations; SC3
+  measured the composed worst row under ten concurrent builds as it read (0/10 served) and
+  filed the race it exposed (L32).
+- `derive()` warns when the root lead-in ends above the pitch circle and README states the
+  condition; the filleted-spoke removed volume checked against a polar closed form at
+  `abs=1e-9`, with tripwires proving the bar load-bearing; two UAT gaps closed by a
+  gap-closure plan (L33).
+- `make verify` profiled (224.28 s serial), then run on eight workers at 63.555 s against a
+  66 s bar the human set from the profile, under `fail_under = 96`; CI installs the fixture's
+  kernel pair through `PIP_CONSTRAINT` (L34).
+- `model.py` clean under mypy `--strict` with zero suppressions through two `isinstance`
+  boundaries; Phases 7 and 8 Nyquist-validated retroactively in their archived directories
+  (L35).
+- Ledger: six debt items retired in their fixing commits, five filed (one `must`); the v0.2
+  audit amended in place by a dated section.
+
+### What Worked
+- Pre-registration. 13-02 committed the method and predictions (`67eeefb`) before any run,
+  with the escape clause for a split pair written before Pair A split. Nothing was tuned
+  toward a pass (L08) — and the bar passed anyway on the harness as it stood.
+- The bar set from the profile, not before it. 15-01 measured, 15-03 priced fifteen cuts,
+  the human refused all of them by name and set 66 s, 15-04 read 63.555 s. No test was lost
+  to a round number.
+- Gap closure as a plan. 14's UAT found two real gaps (a tripwire that could not
+  discriminate; a "cannot exist" that was false for four rows); 14-04 closed them with a
+  control call and a re-measurement, then the phase was re-verified on the final code.
+- Retroactive capability runs on archived phases. `/gsd-validate-phase 7` and `8` resolved
+  the archived directories in place (16-CONTEXT D-08); the v0.2 record was completed without
+  copying anything.
+- Debt retired in the fixing commit, six times out of six — `Status: resolved`, sha,
+  `git mv`, INDEX row, same commit.
+
+### What Was Inefficient
+- The quiet-host gate (D-05: 1-min load under 1.5 for three consecutive samples) was reached
+  in 2 of 5 Phase 13 sessions; `bar-1`, `bar-2` and SC3 capped out at 900 s. A developer
+  machine with a Claude Code session active idles at ~2.0 and costs measurement sessions.
+- SC3 exposed a server defect (two same-slot timeouts racing cleanup → an undocumented 500)
+  that D-17 put out of scope; the milestone's "zero `must`" metric then failed on a row the
+  milestone itself wrote. The metric should have named the rows that existed at kickoff.
+- `gsd_run query commit`'s 30 s timeout vs the hook, third milestone running: every close-out
+  commit was a plain `git commit`; one UAT commit was killed mid-hook. L34 cut the hook from
+  ~3.5 min to ~64 s, still over 30 s.
+- 15-01 recorded 10 h 41 m wall across an overnight human checkpoint with active time not
+  measured; the per-plan table cannot be summed without a footnote.
+- Three review passes left 17 findings `open` (14: 4, 15: 8, 16: 5), all warning or info,
+  none triaged before the close; v0.2 had closed every finding in-phase.
+- Stale-by-fingerprint, third occurrence: Phases 13–15 read `stale` because L33/L34/L35 and
+  the retirements touched the shared files their reports cover. Recorded once more as an
+  override with the cause proven per phase.
+
+### Patterns Established
+- Pre-registered measurement: method, predictions and escape clause committed before the
+  first run; verdicts quoted from the committed run files, never re-rounded (E10).
+- A quiet-host gate with a cap, and a "non-decisive" outcome recorded rather than retried.
+- A measurement checkpoint where the human sets the number from the profile (15-03:
+  `knee-headroom N=8 bar=66 cuts=none before=244.59`), recorded verbatim as a dated CONTEXT
+  addendum.
+- A draft PR opened mid-phase to read CI (15-05), promoted with `gh pr edit` + `gh pr ready`
+  at ship — never a second PR for the branch.
+- Pure-math oracles beside the kernel proof (`_filleted_spoke_volume`, `_holes_volume`,
+  `_hex_cells_volume`), each sharing no code with the production path it checks, plus a
+  control call on the unpatched build before any monkeypatch.
+- A closed record is amended by a dated section, never rewritten (the v0.2 audit's `nyquist`
+  block, 16-03).
+
+### Key Lessons
+1. Write the success metric about the state at kickoff, or the milestone's own discoveries
+   fail it (metric 1).
+2. A pre-registered protocol turns "the bar is unreachable" into a pass or a logged reason;
+   the two observations behind v0.1's waiver were a restart loop and an instrument floor, not
+   the server.
+3. Set a performance bar from a profile the human has read, with every cut priced; "none" is
+   a legitimate answer.
+4. When a retroactive run's result is not saved, read it back from the committed artefact
+   and say so (16-02); a disclosed deviation is cheaper than a re-run.
+5. Triage review findings before the close or carry an explicit count forward — 17 open rows
+   is a backlog, not a ledger.
+
+### Cost Observations
+- Model mix: not recorded — this repo keeps no per-session model accounting.
+- Sessions: not tracked.
+- Notable: ~7 h 35 min of executor time where measured (15-01's 10 h 41 m wall excluded);
+  the pre-commit hook ran ~64 s per commit after 15-04 (L34) versus ~3.5 min before it.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -177,6 +270,7 @@
 |-----------|----------|--------|------------|
 | v0.1 | n/a | 5 | Phase branches + PR + `make pr.land` replaced direct pushes to `main`; ruleset on `main` |
 | v0.2 | n/a | 6 | Build-time gates as human checkpoints with probe-derived offers; cross-CLI (Codex) review lane on the last phase; Nyquist + security audits at verify:post |
+| v0.3 | n/a | 4 | Debt-only milestone scoped from the ledger and the v0.2 audit; pre-registered measurement campaigns; UAT gap-closure plan (14-04); a draft PR mid-phase to read CI (15-05); retroactive Nyquist on archived phases |
 
 ### Cumulative Quality
 
@@ -184,8 +278,10 @@
 |-----------|-------|----------|-------------------|
 | v0.1 | 191 | not measured (no coverage floor — `nice` debt) | 0 — `pyproject.toml` deps unchanged, `requirements.txt` 31 → 31 pins |
 | v0.2 | 907 | not measured | 0 — 31 → 31 pins; `bench/export_cost.py` stdlib only |
+| v0.3 | 929 | 97.24 % against `fail_under = 96` (L34) | 0 — 31 → 31 pins; `pytest-xdist`, `pytest-cov` in `[dev]` only |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Verifier digests go stale for reasons that are not unverified code (v0.1: STATE.md fingerprinted; v0.2: shared files changed by a later phase) — prove the cause from the artefact and record the override, do not re-stamp.
-2. Measurement before knobs held across both milestones: every runtime bound (`mem_limit`, timeout, gzip level, `le`s, `HEX_CELL_CAP`) cites the run that set it, and the two bounds that moved in v0.2 moved on a probe's number.
+1. Verifier digests go stale for reasons that are not unverified code (v0.1: STATE.md fingerprinted; v0.2 and v0.3: shared files changed by a later phase) — prove the cause from the artefact and record the override, do not re-stamp. Three closes, three overrides.
+2. Measurement before knobs held across all three milestones: every runtime bound (`mem_limit`, timeout, gzip level, `le`s, `HEX_CELL_CAP`) cites the run that set it, the two bounds that moved in v0.2 moved on a probe's number, and v0.3's gate bar and coverage floor were set from a profile the human read first.
+3. A bar the instrument cannot resolve is not a bar, and a bar it can resolve is demonstrable: v0.1 waived the ≤2.00× latency bar at a 0.1 ms floor; v0.3 ruled the floor real by a pre-registered campaign and then demonstrated the same bar on the same harness behind a quiet gate (L32). The fix was the measurement protocol, not the server.

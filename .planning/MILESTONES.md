@@ -1,5 +1,102 @@
 # Milestones
 
+## v0.3 Clean Ledger (Shipped: 2026-10-05)
+
+**Delivered:** The record made true and the gate measured — the ten-concurrent latency bar
+demonstrated on the harness as it stands instead of waived, the root lead-in warned where it
+rises above the pitch circle and README saying so, the filleted-spoke proof checked against a
+closed form, `make verify` profiled and running on eight workers under a measured coverage
+floor with CI installing the kernel pair the fixture pins, and `model.py` clean under mypy
+`--strict` with zero suppressions — no new `GearParams` field, the 44-record pre-v0.2 fixture
+byte-identical to the `v0.2` tag.
+
+**Phases completed:** 13–16 (20 plans, 50 tasks).
+
+**Key accomplishments:**
+- Latency bar (Phase 13): a pre-registered twelve-run campaign ruled both observations L18
+  left open (the second-run-worse effect not reproduced in this environment; the verdict
+  floor real), then `bar-3` read 1.31× and 1.42× idle p95 on both concurrent runs of one
+  decisive session — outcome (a), harness and bar unchanged. SC3 measured the composed worst
+  row under ten concurrent builds exactly as it read (0/10 served) and filed the same-slot
+  timeout race it exposed as `must` debt with no `src/` change (L32 amends L18).
+- Honest record (Phase 14): `derive()` warns when the root fillet's straight chord ends
+  above the pitch circle (default gear −1.188 mm, silent; `{1.0, 14.5°}` +0.562 mm, warns),
+  README and `_outline` state the real condition; the filleted-spoke removed volume matches
+  `_filleted_spoke_volume`, a polar closed form, to 2.73e-12 mm³ and all four plain cutout
+  rows assert at `abs=1e-9` with a tripwire proving the bar load-bearing. UAT found two gaps
+  and gap plan 14-04 closed them (L33 amends L09, L10, L30).
+- The gate measured (Phase 15): serial profile 224.28 s (99.8 % pytest, 74 % of it
+  `tests/test_model.py`); xdist knee N = 8 by a rule fixed before the read; the human set
+  the bar at 66 s and refused all 15 priced cuts by name; the gate reads mean(B) 63.555 s at
+  `-n 8` with coverage; `fail_under = 96` from a 96.99 % baseline with the red run recorded;
+  CI's `make verify` under `PIP_CONSTRAINT: requirements.txt` prints `cadquery 2.8.0
+  cadquery-ocp 7.9.3.1.1` (run 37181871926) and a conflicting pin fails closed (L34 amends
+  L12, L13).
+- Typing and validation (Phase 16): five `type: ignore`s in `model.py` replaced by two
+  `isinstance` boundaries (`_body`, `_shape_of`) raising `BuildError`, `make no-fake-done`
+  refusing a sixth, the mypy override scoped to `OCP.*`, no geometry change (fixture and the
+  five-site gear tuple identical to `085e5a6`); Phases 7 and 8 got their retroactive
+  `VALIDATION.md`s at `nyquist_compliant: true`, Phase 7's three Manual-Only rows filed as
+  one `nice` debt file, the v0.2 audit amended in place (L35 amends L21).
+- Ledger: six debt items retired in their fixing commits (`6709953`, `825095f`, `61e1bea`,
+  `2aadcea`, `839dfea`, `4f7e8fe`) — all four `must` rows the milestone was scoped on plus
+  two `nice`; five filed (one `must`, four `nice`, one of those by the close audit); active
+  10 → 9.
+
+**Stats:**
+- 254 files changed (+394,938 / −1,615) from the v0.2 tag to the last squash — 218 of them
+  under `.planning/`, mostly Phase 13's 123 committed run records; 36 outside it (+2,798 /
+  −228), 13 of them code, tests, bench or config (+1,757 / −86)
+- 3,170 lines of package Python, 8,315 of tests, 2,067 of bench, 370 of hand-written UI JS;
+  929 tests in `make verify` (907 at v0.2), 97.24 % coverage against the 96 % floor
+- 4 phases, 20 plans, 50 tasks; 4 PRs (#16–#19) through `make pr.land` after the start
+  PR #15
+- 4 days from the milestone start commit (2026-10-01) to the last squash (2026-10-05)
+- 0 runtime dependencies added (`requirements.txt` 31 → 31 pins); `pytest-xdist` and
+  `pytest-cov` added to the `[dev]` extra only
+- ~7 h 35 min of executor time where measured (STATE.md per-plan table); 15-01's recorded
+  10 h 41 m is wall time across an overnight human checkpoint with active time not measured,
+  and is excluded
+- `make verify` ~3.5 min → ~64 s warm (L34)
+
+**Git range:** `9f26052` (Milestone v0.3: Clean Ledger — start (#15)) → `7a491bf` (Phase 16:
+Typing & Validation Debt (#19))
+
+**Closeout:** `override_closeout` (human decision, 2026-10-05). Phases 13–15 read `stale` in
+`init.manager` because later phases legitimately changed files their reports fingerprint —
+Phase 13: `bench/RESULTS.md`, `docs/architecture/decision_log.md`, `docs/tech_debt/INDEX.md`;
+Phase 14: `README.md`, `decision_log.md`, `src/spur/model.py`, `tests/test_model.py`;
+Phase 15: `Makefile`, `decision_log.md`, `pyproject.toml`. No plan, summary or verified
+source of those phases changed; Phase 16 (`passed`, 16/16) ran `make verify` on the final
+tree (`929 passed in 62.60s`, 97.24 %). Known verification overrides: 0 newly acknowledged,
+0 carried forward (`audit-open` clear). Two verifier overrides accepted by the human on
+record — Phase 14's eleven composed rows at `rel=1e-6` (14-UAT Test 1) and Phase 15's
+`backstop` coverage-order truth (15-UAT item 1); human decisions on record: D-17 (SC3
+recorded as read, no `src/` change), 14-04 (`abs=1e-8` on the three tip-chamfer rows), 15-03
+(`N=8 bar=66 cuts=none`), 16-UAT test 2 (no `cast` pin).
+
+### Known Gaps
+
+- Success metric 1 ("`docs/tech_debt/INDEX.md` Active has zero `must` rows") is not met as
+  written. The four `must` rows that existed at the v0.2 close are retired; Phase 13's SC3
+  filed a new one — the same-slot timeout-cleanup race at `src/spur/pool.py:204` that returns
+  an undocumented 500 instead of a 503
+  (`docs/tech_debt/active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`),
+  kept out of scope by D-17. Accepted as a known gap by the human at the close; the trigger
+  is named in the file.
+
+**Audit:** `milestones/v0.3-MILESTONE-AUDIT.md` — status `tech_debt`; requirements 11/11,
+phases 4/4, integration 9/9, flows 5/5, security 4/4 with 0 open threats, Nyquist compliant
+(4/4; Phases 7–8 of v0.2 reconciled retroactively); 9 active debt items (1 `must`), each with
+a trigger; 17 open review findings (14: 4, 15: 8, 16: 5), all warning or info.
+
+**What's next:** v0.4 candidates carried from the v0.1 kickoff list and deferred at both the
+v0.2 and v0.3 scoping decisions — a gear family (helical first; internal/ring and rack later,
+one type per phase; bevel needs a product-scope decision first) or precision (the trochoidal
+root fillet, L10/L33). `/gsd-new-milestone` decides.
+
+---
+
 ## v0.2 Fit to Shaft (Shipped: 2026-10-01)
 
 **Delivered:** A generated gear mounts on a real shaft and prints light — hex and keyway

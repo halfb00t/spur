@@ -18,6 +18,22 @@ either computed honestly or reported as a warning, never guessed (L08). Everythi
 
 ## Current State
 
+**Shipped: v0.3 Clean Ledger (2026-10-05).** The record is true and the gate is measured:
+the ten-concurrent latency bar demonstrated on the unmodified harness (L32); the root lead-in
+warned where it rises above the pitch circle and the filleted-spoke proof checked against a
+closed form (L33); `make verify` profiled, on eight workers under `fail_under = 96`, CI
+installing the pinned kernel pair (L34); `model.py` clean under mypy `--strict` with zero
+suppressions and Phases 7–8 Nyquist-validated retroactively (L35). No new `GearParams`
+field; the 44-record fixture byte-identical to the `v0.2` tag. Six debt items retired, five
+filed; the one `must` left — the same-slot timeout race Phase 13 found and D-17 kept out of
+scope — is the milestone's one known gap. Record: `.planning/MILESTONES.md`,
+`milestones/v0.3-ROADMAP.md`, `milestones/v0.3-MILESTONE-AUDIT.md` (status `tech_debt`:
+11/11 requirements, 9/9 integration, 5/5 flows, 9 active debt items with triggers, 1 `must`).
+
+Codebase at `7a491bf`: 3,170 lines of package Python, 8,315 of tests, 2,067 of bench, 370
+lines of hand-written UI JS, 929 tests, 31 pinned runtime packages (unchanged since v0),
+`make verify` green (~64 s warm at `-n 8` with coverage, L34).
+
 **Shipped: v0.2 Fit to Shaft (2026-10-01).** A generated gear mounts on a real shaft and
 prints light: hex and keyway bores, a tooth-tip chamfer, and one body-cutout pattern per part
 (spokes, holes, honeycomb), all additive on the shipped pipeline (L26–L31). The pre-v0.2
@@ -44,7 +60,19 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Current Milestone: v0.3 Clean Ledger
+## Next Milestone
+
+Not yet defined — `/gsd-new-milestone`. Candidates carried since the v0.1 kickoff and
+deferred at both scoping decisions: the gear family (helical first — re-derives module, span
+and centre distance, the riskiest surface in the product; then internal/ring, then rack with
+a second parameter model; bevel needs a product-scope decision first) and precision (the
+trochoidal root fillet below the base circle, superseding L10; an outline change that keeps
+the lead-in below the active profile's start, the path L33 did not take). The `nice` debt
+with external triggers stays where it is until a trigger fires. Full list:
+`milestones/v0.3-REQUIREMENTS.md` "Future Requirements".
+
+<details>
+<summary>v0.3 Clean Ledger — scope as set at kickoff (shipped 2026-10-05)</summary>
 
 **Goal:** Every `must` debt item retired by measurement or a logged decision, every false
 claim in the record made true or warned, and the gate itself measured — no new user-facing
@@ -66,9 +94,14 @@ throughout.
 - Root lead-in — a warning when `spline_start` rises above the pitch radius, and README's
   "non-working root zone" sentence states the real limit. No outline change (the human's
   choice over an outline fix with fixture regeneration; L10's trochoidal root stays an idea).
+  **Done — Phase 14 (L33):** warns at `round(h, 3) > 0` (default gear −1.188 mm silent;
+  `{1.0, 14.5°}` +0.562 mm warns); README and `_outline` corrected; debt retired `825095f`.
 - Filleted-spoke proof — a closed-form removed volume (sector minus four circular-segment
   corrections) asserted at the 1e-9 mm³ bar the other three patterns meet; L30's "pinned,
   not derived" clause amended.
+  **Done — Phase 14 (L33):** `_filleted_spoke_volume` agrees with the kernel to 2.73e-12 mm³;
+  all four plain cutout rows at `abs=1e-9`; eleven composed rows stay at `rel=1e-6` as named
+  `nice` debt; debt retired `61e1bea`.
 - `make verify` profiled — per-file/per-marker timing recorded in `bench/RESULTS.md`, the
   heaviest contributors named, cuts proposed with their proof-value cost; the target number
   is set at discuss-phase from the profile, not before. First finding: pytest runs serially
@@ -106,6 +139,11 @@ in the product; then internal/ring, then rack with a second parameter model; bev
 product-scope decision first) and precision (the trochoidal root fillet, L10). Three of
 the four `must` items are retired pre-emptively — their triggers have not fired — on the
 human's call.
+
+Outcome at close (2026-10-05): all eight target features done (Phases 13–16, L32–L35);
+"Success Metric (Milestone v0.3)" below records the one metric not met as written.
+
+</details>
 
 <details>
 <summary>v0.2 Fit to Shaft — scope as set at kickoff (shipped 2026-10-01)</summary>
@@ -335,12 +373,8 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance live in
-`REQUIREMENTS.md`.
-
-- [ ] CI installs the kernel pair the fixture pins; the choice logged against L12
-- [ ] `make verify`'s wall time is profiled and recorded; its bar set from the profile
-- [ ] A measured coverage floor gates `make verify`
+None — v0.3's eleven requirements all shipped (Validated above). The next milestone's
+requirements come from `/gsd-new-milestone`; candidates under "Next Milestone".
 
 ### Out of Scope
 
@@ -351,14 +385,15 @@ Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance
   warned, not re-cut — an outline change would regenerate the fixture under its own `Lxx`).
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- Four of the ten `docs/tech_debt/active/` items at the v0.2 close stay deferred, each
-  with an external trigger that has not fired: server-side request cancellation (the queue
-  saturating), no built-in authentication (binding to anything but localhost), Enji Guard /
-  CVE alerting (the owner's call), the gsd commit-timeout vs the ~3.5 min hook (upstream
-  exposes a setting). The other six — four `must`, the coverage floor and the `Shape`
-  typing — are v0.3's scope (see Current Milestone). Resolved during v0.2: the round-bore
-  chamfer reach, the tip-chamfer timeout margin, the spoke arithmetic total, the cli.md
-  exit-contract claim.
+- Nine `docs/tech_debt/active/` items at the v0.3 close, each with a trigger that has not
+  fired. One `must`: the same-slot timeout-cleanup race (`pool.py:204`; D-17 kept `src/`
+  untouched in Phase 13). Eight `nice`: the four carried from v0.1 (server-side
+  cancellation, no authentication, Enji Guard, the gsd commit timeout vs the ~64 s hook) and
+  four filed in v0.3 (eleven composed cutout literals at `rel=1e-6`, the sometimes-lost
+  worker-coverage flush, Phase 7's three Manual-Only Nyquist rows, `Resolved in:` shas that
+  live only on squashed branches). Resolved during v0.3: the waived latency bar, the root
+  lead-in's false sentence, the filleted-spoke pinned proof, the missing coverage floor, the
+  CI kernel pin, the five `Shape` suppressions (`docs/tech_debt/INDEX.md`).
 - Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
   not a cut; keyway and hex cover the shafts a hobbyist actually has.
 - Helical, internal/ring and rack gears (v0.2 decision, deferred again at v0.3) —
@@ -369,7 +404,7 @@ Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance
 
 - **This product already ships.** `spur` is a working generator with a web UI, HTTP API,
   and CLI; `make verify` passes at the current commit. This PROJECT.md documents the
-  shipped baseline (v0, v0.1, v0.2) and the next milestone's candidates.
+  shipped baseline (v0, v0.1, v0.2, v0.3) and the next milestone's candidates.
 - The 2026-09-21 audit (`docs/review-2026-09-21.md`, findings F1–F8) is history: every
   finding — the unguarded Newton `centre_distance` solver, unbounded-by-bytes caches,
   infeasible absolute-mm defaults, no admission control, an under-pinned dependency
@@ -382,17 +417,20 @@ Milestone v0.3 Clean Ledger — hypotheses until shipped; REQ-IDs and acceptance
 - Ingest intel: `.planning/intel/SYNTHESIS.md` (entry point), `decisions.md`,
   `requirements.md`, `constraints.md`, `context.md`; conflict report at
   `.planning/INGEST-CONFLICTS.md` (0 blockers, 0 warnings, 5 info).
-- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 6 active after v0.1 — 1 `must`
-  (the waived ten-concurrent latency bar, `2026-09-23-concurrent-latency-bar-waived.md`,
-  L18) and 5 `nice` (coverage floor, CadQuery `Shape` typing, server-side cancellation,
-  no authentication, Enji Guard); 10 resolved, all during v0.1. Ideas backlog:
-  `docs/ideas/` — 3 items (trochoidal root fillet, browser test for the viewer, measure or
-  soften the Pi 5 claim).
-- v0.1 process: phases run on `gsd/phase-NN-*` branches cut from `origin/main` and land
-  only through `make pr.land PR=N` (L22/L25); `.planning/` rides the same PR as the code.
-  The GSD verifier fingerprints `.planning/STATE.md`, so every phase reads `stale` after
-  its own bookkeeping commit — v0.1 closed as an override on proven-identical trees (see
-  `MILESTONES.md`).
+- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 9 active after v0.3 — 1 `must`
+  (the same-slot timeout-cleanup race,
+  `2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`, D-17) and 8
+  `nice`; 20 resolved (10 in v0.1, 4 in v0.2, 6 in v0.3). Ideas backlog: `docs/ideas/` — 9
+  items (trochoidal root fillet, browser test for the viewer, the Pi 5 claim, a bore-shape
+  selector, a re-verification recipe, a cutout rotation field, a teeth-dependent honeycomb
+  cap, conditional form fields, constraining `make venv` to the closure).
+- Process since v0.1: phases run on `gsd/phase-NN-*` branches cut from `origin/main` and
+  land only through `make pr.land PR=N` (L22/L25); `.planning/` rides the same PR as the
+  code; the milestone close is its own PR and the tag sits on its squash. Every close so far
+  (v0.1, v0.2, v0.3) was an `override_closeout` on proven-identical trees — the verifier's
+  digests go stale when STATE.md is rewritten (v0.1) or when a later phase legitimately
+  changes a shared file an earlier report covers (v0.2, v0.3); the cause is recorded per
+  phase in `MILESTONES.md`.
 
 ## Constraints
 
@@ -451,7 +489,7 @@ quick reference.
 | L07 | Bounded caches (entries / bytes) + `malloc_trim(0)` after cache-missing export — measured 1.87 GiB → 1.5 GiB → 358 MiB | Superseded by L17 — ceiling re-swept on the N-worker topology |
 | L08 | `centre_distance()` returns `None` (bisection, not Newton) rather than a confidently wrong number | ✓ Good |
 | L09 | Root fillets solved analytically in the 2D outline, ~50× faster than OCCT's fillet operator | ✓ Good |
-| L10 | Radial (not trochoidal) root below the base circle, with an undercut warning | ⚠️ Revisit — trochoidal fillet is a tracked idea |
+| L10 | Radial (not trochoidal) root below the base circle, with an undercut warning | ⚠️ Revisit — trochoidal fillet is a tracked idea; L33 (Phase 14) warns when the straight lead-in ends above the pitch circle instead of re-cutting it |
 | L11 | three.js vendored as a committed, CI-byte-checked bundle; no Node at runtime | ✓ Good |
 | L12 | `requirements.txt` is a generated, full pinned closure installed `--no-deps` | ✓ Good — L34 (Phase 15) also makes it CI's pip constraints file (`PIP_CONSTRAINT`), so CI resolves the kernel pair the fixture pins |
 | L13 | `make verify` is the gate (dev shell, pre-commit, CI); `make check` adds container checks | ✓ Good — its "~11 s warm" was never measured; L34 (Phase 15) replaces it with 63.555 s at `-n 8` with coverage against a 66 s bar |
@@ -470,9 +508,9 @@ quick reference.
 | L26 | The pre-v0.2 part is pinned by a regression fixture (`tests/regression/pre_v0_2.json`, written only by `make fixture.regen`, 44 records / 85 cases, every later phase re-runs it unmodified), and an edge selector never silently selects nothing: `_bore_rim_edges` and `_groove_floor_edges` raise `BuildError` on an empty selection while their feature is on; the bore-rim bound lives in `calc.bore_rim_limit(p)` with a measured 0.01 mm slack in `model.py` | ✓ Good — fixture cost 16.27 s on `make verify`, accepted over the 15.0 s D-06 line (human decision); tripwire 32 red / 0 derive; `make verify` 289 tests |
 | L27 | A hex bore replaces the whole round profile and its limits are the chamfered corner's, measured: `bore_hex` (0–200 mm, step 0.05, default 0) cuts `polygon(6, A/F + bore_clearance, circumscribed=True)` in place of the round/D-flat hole; `bore_d` and `bore_flat` are ignored with one warning naming each non-zero field (never a 422 — supersedes the original REQ-hex-bore sentence; hex × keyway stays a 422 and is Phase 9's); `check()` refuses a hex whose corners, or whose chamfered mouth (`bore_mouth_limit = rim + 2c/√3`), come within MIN_WALL of the root circle — no side-length rule, because the kernel chamfers a 0.375 mm side at the 3 mm bound; `recess_radii()` clears the chamfered mouth for every bore shape; the replay compares recorded fields exactly and requires later fields null; `make bench.build` runs a committed sweep file so Phases 9–12 reuse it | ✓ Good — 30/30 must-haves; `make verify` 330 tests; heaviest sweep row 5.08 s of 30 s (teeth 200, m 1.75, hex 200, recess both, chamfer 0.4); fixture byte-unchanged; round bore's own chamfer reach filed as `must` debt |
 | L28 | A keyway is a slot cut after the bore's chamfer, its depth measured from the as-cut bore wall: `keyway_width`/`keyway_depth` (0–200 mm, step 0.05, default 0) cut a slot of width `keyway_width + bore_clearance` from the axis to a flat floor at `bore_radius(p) + keyway_depth` centred on +Y (a quarter turn from the D-flat), after `_cut_bore` so the rim selector's counts are the pre-keyway ones and the slot's edges are never chamfered; D-02/D-10/D-11 are the part's rules (arc wall to the D-flat's corner, floor corner vs the root, width < bore) and D-12 the kernel's measured contact; the recess yields to the keyway corner; no standard-table keyway size anywhere in help or docs | ✓ Good — 12/12 must-haves; `make verify` 396 tests; datum read back within 1e-6 mm; heaviest sweep row 4.85 s of 30 s (a 3 × 1.4 keyway that keeps its recess, lighter than the largest keyway); fixture byte-unchanged; Phase 8's round-chamfer debt resolved in `4b6a5b9` |
-| L29 | The tooth-tip chamfer is a 3D edge break on the end-face tip arcs (`solid.chamfer()`, symmetric 45°, the last build step, selector requires both endpoints on an end face), capped at the smallest of the tip land (`0.45 × face_width`), the addendum (`ra − r`) and the measured kernel boundary (`ra − spline_start`, D-04, bisected to ~2 µm); help text names no size because the research-era sizing figure has no source; heaviest allowed configuration 14.87 s of 30 s | ✓ Good — measured; the ~2× timeout margin it leaves is filed as must-debt for Phase 12's combined re-measurement |
-| L30 | Body cutouts are one pattern per part, cut in one boolean, and the honeycomb's cell count is capped at a measured constant: ten fields in three groups, `_cut_body` after the keyway and before the tip chamfer; spoke corners are analytic tangent arcs (`_fillet_corner(inside=)`); honeycomb whole cells only, `HEX_CELL_CAP = 120` written from the pre-implementation spike's row (7.15 s of D-11's 7.5 s share at 200 teeth, module 10; 150 cells read 7.95 s), raise-to-fit in the field's own 0.05 mm step; every `MIN_WALL` comparison goes through `_under_min_wall` (`round(wall, 6) < MIN_WALL` — float residue measured at 0.39999999999999947 at the tracer's hub boundary); `spoke_count`/`hole_count` `le` lowered from 200 to 40/60 after the build-time gate fired | ✓ Good — verified 7/7, UAT 5/5, `make verify` 621 tests; the cap and its 8.65 s row accepted as measured under a loaded host (UAT 2–3); the spokes' 33.39 s arithmetic total with the tip chamfer filed as must-debt for Phase 12's composed sweep (UAT 4); six review findings still `open` (UAT 5) |
-| L31 | v0.2 composes: the 18-row composed sweep measured across four runs (the four over-budget `spoke_count=40` rows load-independent, so D-02 superseded for that one gate by the human); `spoke_count` `le` 40 → 32 from a probe (32 inside at 29.41 s, 33 over at 30.11 s); every composed row inside 30 s on the re-run (heaviest 29.42 s); L19's rule re-applied on the 17.3 MB heaviest fine STL keeps `_GZIP_LEVEL = 1`, L24's copy cost recorded only; 96 + 138 calc rows and 15 kernel rows prove the matrix; one field walk, a byte-identical composed document and 23 identically routed refusals prove three-interface parity; the CLI's real 2/1/1 exit contract moved into `cli.md`; export bytes are explicitly not compared by the fixture replay (L26); the phase's +28.28 s gate cost accepted against D-10's 30 s line | ✓ Good — verified 5/5, UAT 4/4, `make verify` 907 tests; ten review findings (5 warning, 5 info) at disposition `open` |
+| L29 | The tooth-tip chamfer is a 3D edge break on the end-face tip arcs (`solid.chamfer()`, symmetric 45°, the last build step, selector requires both endpoints on an end face), capped at the smallest of the tip land (`0.45 × face_width`), the addendum (`ra − r`) and the measured kernel boundary (`ra − spline_start`, D-04, bisected to ~2 µm); help text names no size because the research-era sizing figure has no source; heaviest allowed configuration 14.87 s of 30 s | ✓ Good — measured; the ~2× timeout margin it left was filed as must-debt and resolved by Phase 12's composed sweep (`89304e2`) |
+| L30 | Body cutouts are one pattern per part, cut in one boolean, and the honeycomb's cell count is capped at a measured constant: ten fields in three groups, `_cut_body` after the keyway and before the tip chamfer; spoke corners are analytic tangent arcs (`_fillet_corner(inside=)`); honeycomb whole cells only, `HEX_CELL_CAP = 120` written from the pre-implementation spike's row (7.15 s of D-11's 7.5 s share at 200 teeth, module 10; 150 cells read 7.95 s), raise-to-fit in the field's own 0.05 mm step; every `MIN_WALL` comparison goes through `_under_min_wall` (`round(wall, 6) < MIN_WALL` — float residue measured at 0.39999999999999947 at the tracer's hub boundary); `spoke_count`/`hole_count` `le` lowered from 200 to 40/60 after the build-time gate fired | ✓ Good — verified 7/7, UAT 5/5, `make verify` 621 tests; the cap and its 8.65 s row accepted as measured under a loaded host (UAT 2–3); the spokes' 33.39 s arithmetic total with the tip chamfer filed as must-debt and resolved by Phase 12's composed sweep (`89304e2`); the six review findings fixed in `11-REVIEW-FIX.md` before landing; the filleted-spoke row's pinned literal replaced by a closed form in L33 (Phase 14) |
+| L31 | v0.2 composes: the 18-row composed sweep measured across four runs (the four over-budget `spoke_count=40` rows load-independent, so D-02 superseded for that one gate by the human); `spoke_count` `le` 40 → 32 from a probe (32 inside at 29.41 s, 33 over at 30.11 s); every composed row inside 30 s on the re-run (heaviest 29.42 s); L19's rule re-applied on the 17.3 MB heaviest fine STL keeps `_GZIP_LEVEL = 1`, L24's copy cost recorded only; 96 + 138 calc rows and 15 kernel rows prove the matrix; one field walk, a byte-identical composed document and 23 identically routed refusals prove three-interface parity; the CLI's real 2/1/1 exit contract moved into `cli.md`; export bytes are explicitly not compared by the fixture replay (L26); the phase's +28.28 s gate cost accepted against D-10's 30 s line | ✓ Good — verified 5/5, UAT 4/4, `make verify` 907 tests; all 14 review findings fixed before the v0.2 close (`12-REVIEW-DISPOSITION.md` 0 open, 2026-10-01) |
 | L32 | The concurrent latency bar is demonstrated on the harness as it stands, not waived (amends L18): `bar-3` Runs 13–14 read 1.31× and 1.42× idle p95 on both concurrent runs of one decisive session behind the D-05 quiet gate, after two capped-out attempts recorded non-decisive; the two observations L18 left unexplained are ruled by a pre-registered twelve-run campaign — the second-run-worse effect not reproduced in this environment, the floor real; SC3 measured once: the composed worst row does not complete under ten concurrent builds (0/10 served; a same-slot timeout-cleanup race returns an undocumented 500, filed as debt, `src/` untouched); the Dockerfile `HEALTHCHECK` comment and the retired debt say what was measured | ✓ Good — verified 4/4; `make verify` 910 tests; `2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md` (must) open with a named trigger; review CR-01/WR-01 open |
 | L33 | The root lead-in is warned, not re-cut, and the filleted-spoke cutout is proved against a closed form (amends L09, L10 and L30): `derive()` appends one sentence when `round(spline_start(pr, root_fillet(p)) − pr.r, 3) > 0`, naming the height, instead of regenerating the pre-v0.2 fixture under a new entry (L05 keeps every shared link's part); the filleted-spoke removed volume is asserted against `_filleted_spoke_volume` at `abs=1e-9` (kernel agreement 2.73e-12 mm³), the pinned literal `2934.725405` demoted to a comment; the 15 composed cutout rows are named — four hole-through-web rows on the web formula (tip-chamfer rows at `abs=1e-8`, a bar the human set over measured gaps of ~6e-10 mm³ with 1.5× headroom at 1e-9; single-sided at `abs=1e-9`), eleven still at a 6 dp literal and `volume_rel=1e-6` because their closed form is not derived here | ✓ Good — verified 8/8, UAT 5/5 after gap plan 14-04, `make verify` 927 tests; `src/` untouched by 14-04 and the pre-v0.2 fixture byte-identical to `5d9e907`; review WR-01 (`volume_rel` shadows `volume_abs`), IN-01, IN-02 open; the prior platform-calibration finding (abs bars measured only on macOS arm64) is no longer in the ledger — see `8cfbc16`'s REVIEW.md |
 | L34 | The gate is measured, runs on eight workers under a coverage floor, and CI installs the pinned kernel (amends L12 and L13): the serial profile read 224.28 s (pytest 99.8 % of it, `tests/test_model.py` ~74 % of pytest); the xdist sweep's knee is N = 8 by a rule fixed before the read; the human set the bar at the profile checkpoint (`knee-headroom N=8 bar=66 cuts=none before=244.59`), read as mean(B) 63.555 s at `-n 8` with coverage — met with 2.445 s to spare, all 15 priced cuts refused by name, `tests/` untouched; `fail_under = 96` from C0's 96.99 % serial baseline (`precision = 2`; workers counted via `concurrency = ["multiprocessing", "thread"]`, `parallel`, `sigterm`), a red run at 90.24 % recorded and not committed; CI's `make verify` runs under `PIP_CONSTRAINT: requirements.txt` and prints `cadquery 2.8.0 cadquery-ocp 7.9.3.1.1` (run 37181871926), a conflicting pin fails closed (`ResolutionImpossible`) | ✓ Good — verified 15/16 with the one `backstop` truth accepted by the human, UAT 28/28, security 22/22 closed; `make verify` 927 tests at 97.21 %; two `must` debts retired (`2aadcea`, `839dfea`); the lost-worker-flush reading (96.99 %) filed as `nice` debt; the gsd commit-timeout debt stays active (hook ~64 s vs the helper's 30 s) |
@@ -518,7 +556,13 @@ time per feature and for the composed sweep, every row inside 30 s after `spoke_
 
 ## Success Metric (Milestone v0.3)
 
-Derived from the kickoff summary the human confirmed 2026-10-01 — amend if it reads wrong:
+Derived from the kickoff summary the human confirmed 2026-10-01. Outcome at close
+(2026-10-05): 2 and 3 met; 1 not met as written — the four `must` rows the milestone was
+scoped on are retired (`6709953`, `825095f`, `61e1bea`, `839dfea`), and Phase 13 filed one
+new `must` (the same-slot timeout race, D-17) that stays active with its trigger. Accepted
+as a known gap by the human (`milestones/v0.3-MILESTONE-AUDIT.md`, `MILESTONES.md` Known
+Gaps). Lesson recorded in `RETROSPECTIVE.md`: write the metric about the rows that exist at
+kickoff.
 
 1. **No `must` row left.** `docs/tech_debt/INDEX.md` "Active" has zero `must` rows, each
    retired file carrying the sha of the commit that fixed it.
@@ -547,4 +591,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-05 after Phase 16 (Typing & Validation Debt).*
+*Last updated: 2026-10-05 after the v0.3 Clean Ledger milestone close.*
