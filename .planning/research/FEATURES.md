@@ -1,257 +1,253 @@
-# Feature Research: Fit to Shaft (v0.2)
+# Feature Research
 
-**Domain:** Parametric CAD gear generator — bore profiles, body cutouts, tip chamfer
-**Researched:** 2026-09-25
-**Confidence:** MEDIUM overall — keyway/ISO dimensional data is cross-source-consistent
-(MEDIUM); body-cutout proportions and tip-chamfer sizing have **no citable engineering
-standard** and are correctly graded LOW — this is the single most important finding for
-the requirements step: don't let a "sensible default" masquerade as a standard.
+**Domain:** parametric involute spur gear generator, milestone v0.4 "True Root" (trochoidal root fillet below the base circle)
+**Researched:** 2026-10-06 (every web source below was read on this date; publication dates quoted where the page gives one)
+**Confidence:** MEDIUM overall. Geometry and numbers: HIGH-ish (derived here and checked against an independent brute-force rack-cutting simulation, see "Verification method"). Standards text (ISO 53, ISO 21771, DIN 867, DIN 3960): MEDIUM at best, because the ISO PDFs behind the paywall samples were not text-extractable and every standards claim below is read from secondary pages that agree with each other. Tool-behaviour claims: MEDIUM (source code read for FreeCAD gears, BOSL2, cq_gears; marketing pages for GearGen and 3d-editor, LOW-MEDIUM).
+
+Scope: only what the NEW feature needs. Existing features (involute outline, backlash, analytic `root_fillet`, L33 lead-in warning, bores, recesses, chamfer, cutouts, measurement aids, shareable links) are not re-researched; they appear only as dependencies.
+
+## Findings the roadmap must know first
+
+1. **The hob root is not only an undercut matter.** The shipped outline is radial/chord below the base circle whenever `rb > rf`, not only when the gear is undercut. That is 28 of the 44 fixture records, including the default 19-tooth 25-degree gear (rb 15.067 mm, rf 14.438 mm). Only 5 of 44 are undercut by the shipped `derive()` test (teeth 6 at 14.5 degrees x4 records, teeth 8 at 25 degrees x1). So "undercut gears only" and "wherever the flank is radial" are two very different blast radii (see "Always-on vs opt-in").
+2. **ISO 53 profile A is defined at 20 degrees only, and this project runs 14.5 to 35 degrees with 25 as the default.** A hob with dedendum 1.25 m and tip radius 0.38 m physically fits only up to 23.16 degrees; above 32.14 degrees a 1.25 m deep hob tooth has no tip land at all. The cutter tip radius must be capped to the geometric maximum for the pressure angle (a trimmable dimension, L03), and above 32.14 degrees the trochoid is not computable honestly (L08).
+3. **`root_thickness` and `root_gap` cannot keep their meaning under a trochoidal root.** The true tooth thickness just above the root circle is a steep function of radius (default gear: 4.68 mm at rf+0.001 m falling to 3.51 mm at rf+0.3 m), the root land is 0 to 0.13 mm wide, and the printed 3.253 mm is a radial-flank extrapolation that is neither. The honest options are a stated redefinition or null plus warning (L08).
+4. **`root_d` (root diameter) keeps its meaning and its value.** The generated profile's lowest radius equals `r + x*m - 1.25*m` exactly (measured 3.75000007 against 3.75 in simulation), so every rule that reads `rf` (bore wall, recess, cutout rim wall, `check()`) is untouched.
+5. **The undercut waist is small compared with the fillet-shape difference.** Shipped-versus-true profile gap is up to 0.13 to 0.15 mm per module-1 gear in every `rb > rf` case, but the extra undercut removal beyond the shipped outline is only about 0.03 mm at 10 teeth, 20 degrees. The visible change is mostly the fillet, not the undercut.
+6. **Where the trochoid meets the involute:** tangentially (smooth hand-off at the cutter's flank end point) when the gear is not undercut; by a crossing with a corner, slightly above the base circle, when it is undercut. The form diameter is the hand-off or crossing radius.
+7. **When tools implement the hob root, it is on by default and not a style option; the one opt-in case is FreeCAD gears.** FreeCAD's `undercut` defaults to False, reads as a retrofit onto existing documents (ASSUMPTION: its reason is not stated in what was read). No surveyed tool exposes the dedendum; the pro calculators (MITCalc, the standardsapplied calculator) expose the cutter tip radius; the hobbyist generators do not.
+
+## Reference: the generating geometry (formulas, sources, verification status)
+
+Notation: module m, pressure angle a, pitch radius r = z m / 2, base radius rb = r cos a, profile shift x, hob dedendum coefficient hf* = 1.25, cutter tip radius rho = rho* m. All hold for the project's existing definitions (`rf = r - m(1.25 - x)`, tooth thickness `s = m(pi/2 + 2 x tan a) - backlash`).
+
+| # | Claim | Source | Status |
+|---|-------|--------|--------|
+| G1 | ISO 53 profiles share a = 20 degrees and ha* = 1.00; hf*/rho_fP*: A 1.25/0.38, B 1.25/0.30, C 1.25/0.25, D 1.40/0.39. Profile A is the general-purpose one. | drivetrainhub.com basic-rack chapter (table); engineersedge.com DIN 867 page ("only one pair of values, cp = 0,25 m and rho_fP = 0,38 m has been specified in ISO 53"); Gear Solutions, Akpolat et al., 2018-04-15 ("ISO 53:1998 and DIN 867 ... usually a cutter tip radius of 0.38") | MEDIUM: three independent secondary pages agree; ISO text itself not readable |
+| G2 | The 0.38 comes from the clearance: rho_max(c) = c/(1 - sin a) = 0.25/(1 - sin 20 deg) = 0.3799 | drivetrainhub equation `rho_F = h_fillet / (1 - sin a_n)`; arithmetic checked here | MEDIUM |
+| G3 | The cutter's straight flank ends at depth `d_T = (hf* - x) m - rho (1 - sin a)` below the gear's pitch circle (rack tip arc is tangent to the flank there). For ISO 53 A at 20 degrees, d_T = 0.99997 m. | derived; d_T read back from the simulation: 0.99997 | VERIFIED by simulation |
+| G4 | Undercut iff `z < 2 (hf* - x - rho* (1 - sin a)) / sin^2 a`; with ISO 53 A at 20 degrees this is exactly the textbook `2 (1 - x) / sin^2 a` (17.097 at x = 0). Minimum shift to avoid it: `x_min = hf* - rho* (1 - sin a) - z sin^2 a / 2` (= `1 - z/z_min` for ISO 53 A, 0.4151 at 10 teeth). | standardsapplied.com calculator states `z_min = 2 (hf* - x - rho*(1 - sin a)) / sin^2 a`; tec-science "Undercut of gears" (`z_min = 2/sin^2 a`, 17 at 20 degrees, 14 practical) and "Profile shift" (`x = 1 - z/z_min`); KHK technical reference (17 at 20 degrees, "gears with 16 teeth or less can be usable"); BOSL2 gears.scad (17 at 20 degrees, 32 at 14.5 degrees, `2/sin^2 a`) | VERIFIED: derivation plus simulation classification on both sides of the limit for 10 teeth/20 degrees (x_min 0.4151) and 8 teeth/25 degrees (x_min 0.352) |
+| G5 | The fillet is the envelope of the cutter's tip-arc circles as the rack rolls on the pitch circle ("trochoidal"). Strictly it is the parallel (equidistant) curve of the trochoid the arc centre traces, which is why one 2025 paper calls it a "transition curve". | standardsapplied.com; Gear Solutions "Transition Curve" (Gorniak, Zarebski, Marciniec, 2025-09-14); Gear Solutions "Analysis of Gear Root Forms" (Hyatt et al., 2014-02-14: trochoidal is "most commonly used as it is generated by a hob") | MEDIUM (secondary) plus reproduced in simulation |
+| G6 | Not undercut: trochoid and involute meet **tangentially** at the radius of the flank end point N: `r_N = sqrt(rb^2 + (r sin a - d_T / sin a)^2)`; form diameter d_Ff = 2 r_N. Undercut: the two curves **cross at a corner** a little above the base circle (10 teeth, 20 degrees: crossing at 4.7255 mm vs rb 4.6985 mm); form diameter is the crossing radius, found numerically. | Gear Solutions "Methods to determine form diameter on hobbed external involute gears" (Zhang, 2019-09-15: "in the simplest case ... tangent"; its equations are images and could not be read); formula derived here | VERIFIED by simulation: model vs brute force within 3e-4 mm on 5 non-undercut cases; steep undercut neck within the simulation's own resolution (0.024 mm worst, at 10 teeth). The standard's own d_Ff text (ISO 21771, DIN 3960) was not read. |
+| G7 | Root circle radius is unchanged: `r + x m - hf* m`. | derived; simulation minimum radius 3.75000007 vs 3.75 | VERIFIED |
+| G8 | Maximum tip radius for a hob with a tip land at depth hf* = 1.25 m: `rho_max* = (pi/2 - 2 hf* tan a) / (2 tan((90 deg - a)/2))`: 0.597 at 14.5, 0.472 at 20, 0.400 at 22.5, 0.318 at 25, 0.110 at 30, 0 at 32.14 degrees; 0.38 stops fitting above 23.16 degrees. The standardsapplied calculator's default rho* 0.471 "the largest full-round corner the rack tip carries" agrees with 0.472 at 20 degrees. | derived from rack tooth width `pi m/2` at the datum line; standardsapplied.com default | MEDIUM: derivation checked against one external number |
+| G9 | The 30-degree-tangent critical section of ISO 6336-3 assumes a root "generated by the radius on the tip of the gear hob", valid for tooth profiles per the ISO 53 basic rack. | Gear Solutions, Pinnekamp et al. (RENK), 2024-05-15 | MEDIUM |
+| G10 | Backlash by thickening the hob tooth by `backlash` at the datum line leaves the involute where the shipped model puts it (same base circle) and leaves rf unchanged. | derived, **not simulated** | ASSUMPTION: verify in the phase |
+
+The existing `derive()` undercut threshold `z_min = 2 (1 - x) / sin^2 a` (calc.py) equals G4 only for ISO 53 A at 20 degrees. With the cutter tip radius capped to the geometric maximum it is **conservative at 14.5 degrees** (31.9 vs 30.8 teeth) and **optimistic at 25 degrees** (11.2 vs 11.9 teeth, using rho* = 0.318). The warning text also says "this model uses a radial root instead", which stops being true under the new feature.
+
+### What changes on the real part, measured (simulation vs the shipped outline, backlash 0, fillet = cutter tip radius)
+
+Maximum same-radius arc gap between the shipped outline and the generated profile, in mm. Positive: shipped tooth is thinner than generated (generated fillet fills more). Negative: shipped tooth is thicker (undercut waist the shipped outline lacks).
+
+| Gear | rb > rf | Undercut | Max gap, positive | Max gap, negative |
+|------|---------|----------|-------------------|-------------------|
+| 19 teeth, m 1.75, 25 deg (default), cutter 0.318 m | yes | no | +0.295 | -0.0004 |
+| same, cutter 0.5 mm (the default `root_fillet`) | yes | no | +0.266 | -0.0004 |
+| 25 teeth, m 1, 20 deg | yes | no | +0.128 | -0.0003 |
+| 18 teeth, m 1, 20 deg | yes | no | +0.141 | -0.0003 |
+| 17 teeth, m 1, 20 deg | yes | barely (17 < 17.097) | +0.143 | -0.0003 |
+| 14 teeth, m 1, 20 deg | yes | yes | +0.146 | -0.005 |
+| 13 teeth, m 1, 20 deg | yes | yes | +0.145 | -0.008 |
+| 10 teeth, m 1, 20 deg | yes | yes | +0.134 | -0.030 |
+| 10 teeth, m 1, 20 deg, x +0.5 | yes | no | +0.077 | -0.0003 |
+
+Reading: the visible change is 0.13 to 0.30 mm of extra material near the root on every gear with `rb > rf`; the undercut waist itself is at most 0.03 mm at the sizes tested. For FDM prints these are around or below one nozzle width (ASSUMPTION: 0.4 mm nozzle, not project-sourced); for CNC, EDM, resin and for matching a hobbed gear they matter.
+
+New infeasibility class (undercut waist): at the corner of today's allowed range (6 teeth, 14.5 degrees, x = -0.6) the generated tooth waist is 0.021 m thick, i.e. nearly cut through; 6 teeth, 20 degrees, x = -0.6: 0.152 m; 6 teeth, 14.5 degrees, x = -0.3: 0.474 m; 6 teeth, 20 degrees, x = 0: 1.06 m (fine). `GearParams` allows all of these today (teeth 6 to 200, pressure angle 14.5 to 35, x -0.6 to 1.0, `params.py` lines 34 to 47).
 
 ## Feature Landscape
 
-### Table Stakes (Users Expect These)
+### Table Stakes (the hob root is wrong without these)
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Keyway bore (explicit width/depth/clearance) | The single most common shaft-mount feature outside a round/D-flat bore; every comparable tool (3d-editor.com, Eng Bench, GearWorkBench for FreeCAD) offers it | MEDIUM | Boolean-subtract a rectangular prism from the round bore cylinder, radially outward from the bore wall; composes with `bore_chamfer` on the round part only (chamfering a keyway corner is not conventional and is out of scope) |
-| Hex bore (across-flats + clearance) | Common for RC/robotics/DIY shafts (5 mm, 1/4", 3/8", 1/2" hex stock is a commodity item) and for printed parts that want a wrench-flat drive without a key | LOW-MEDIUM | A regular hexagon prism subtracted from (or replacing) the round bore; simpler than the keyway because it's one convex profile, no floor fillet to reason about |
-| Tooth-tip chamfer | Standard practice in both metal-cut and 3D-printed gears to break the sharp tip edge — reduces snagging/burrs and, for FDM, the tip is the most overhang-prone, defect-prone feature on the part | LOW-MEDIUM | Conical chamfer on the tip circle edges (top and/or bottom face), same shape as the existing `bore_chamfer` pattern in `params.py`/`model.py` — reuse that convention, not a new one |
-| Circular lightening holes on a bolt circle | The most common weight-reduction feature in flywheels, pulleys and large gears; visually and functionally simple, easy to reason about wall thickness (same `MIN_WALL` logic already used for bore/recess) | LOW-MEDIUM | N holes evenly spaced on a bolt circle between hub and rim; needs the same "capped, not refused, with a warning" fit logic as `recess_radii()` |
+| Feature | Why expected | Complexity | Notes and dependencies on the existing code |
+|---------|--------------|------------|---------------------------------------------|
+| Trochoidal fillet generated from the rack/hob tip arc, default ISO 53 A (hf* = 1.25 fixed, rho* = 0.38) | Every tool that implements the hob root uses it as the shape (GearGen, 3d-editor, BOSL2, standardsapplied, MITCalc, KISSsoft); users asking for it want "what a hob cuts" | MEDIUM | Replaces `_outline`'s radial/chord lead-in plus `_fillet_corner` arc when the mode applies. Closed-form parametric points (G5/G6), no kernel fillet operator, so L09's reason (speed) is not violated. `profile()` already fixes hf* = 1.25 via `rf`, so no dedendum field is needed. |
+| Cutter tip radius capped to the pressure angle's geometric maximum (G8) with a warning when trimmed | The default angle (25) and most of the allowed range are outside ISO 53's 20; an uncapped 0.38 m is a pointed hob that cannot exist | LOW | A trimmable dimension, so cap-and-warn (L03), same shape as `root_fillet()`'s cap. Pure function in `calc.py`, no kernel import. |
+| Tangent hand-off when not undercut; trimmed crossing when undercut; closed, non-self-intersecting outline | Without the crossing trim an undercut gear's outline self-intersects and the extrude fails | MEDIUM-HIGH | The crossing solve is the one genuinely numeric step (bisection, in the L08 spirit: no failure mode that returns a plausible wrong answer). Involute spline then starts at the form radius, not at `spline_start`. |
+| Not computed above 32.14 degrees, with a warning and the shipped analytic path as the explicit fallback | A number must be honest or absent (L08); `GearParams` permits 35 degrees | LOW | Under an opt-in mode this is a visible fallback with a warning; under always-on it silently changes nothing but must still say so. |
+| Root diameter printed unchanged (`root_d`) | G7: it is the same circle | LOW | No code change; add a test that asserts it equals `2*rf` in both modes. |
+| Undercut warning re-stated from the real onset (G4), naming `x_min`; no longer says "radial root" | The shipped text becomes false; users reading "undercut" want the shift that avoids it | LOW | `derive()` branch at calc.py `z_min`. With the mode on the sentence reports modelled undercut and the waist; with it off it keeps today's wording or is made conditional. |
+| `root_thickness` / `root_gap` made honest under the hob root | Printed numbers are cut to metal (L08); the real thickness at the root circle is ill-conditioned (finding 3) | MEDIUM | Options: (a) null both with a warning when the mode is on (`DerivedDimensions` precedent: null where it does not apply; but both fields are typed non-optional today, so the type widens), (b) redefine at the form circle and print that circle's diameter next to it. The L26 fixture pins all 19 existing fields exactly and requires post-fixture fields null on replay (L27 pattern), so mode off must stay byte-identical. |
+| Interaction rules with `root_fillet`, `tip_chamfer`, the L33 lead-in warning | A parameter the user did not set must never silently change the part (CLAUDE.md) | MEDIUM | `root_fillet` under the mode: ignored and warned (L27 D-01/D-02 precedent: hex bore ignores `bore_d`/`bore_flat` with one warning) or reinterpreted as the cutter tip radius (see Open decisions). `tip_chamfer_limit`'s third bound `ra - spline_start` (L29, bisected to about 2 um on the old spline boundary) must be re-measured on the new trochoid-to-involute junction. L33's "straight chord above the pitch circle" warning does not apply when there is no chord. |
+| New-behaviour proof against an independent profile | The milestone rule: a trochoid is proved against a known-good profile, plus a closed form where one exists, or the warning stays (L08) | MEDIUM | No published coordinate table was found. The oracle that exists is a brute-force rack-cutting simulation (see "Verification method"), independent of the analytic trochoid; the closed forms are G3, G4, G6 (tangent case), G7. A hob data sheet or KISSsoft export from the human would be a better oracle (ASSUMPTION: none in hand). |
+| Three-interface parity, schema, form, CLI | L02/L31: one `GearParams` model drives all three; one model-driven field walk proves it | LOW | A new field flows to UI and CLI by metadata (`group`, `unit`, `step`). |
+| Measured build time at the heaviest allowed configuration | L30/L31 rule; the composed worst row is already 29.42 s of 30 s alone (v0.4's other `must` item) | MEDIUM | Not measured here. Under "wherever `rb > rf`" the mode touches up to about 78 teeth at 14.5 degrees (`z < 2.5/(1 - cos a)`: 41 at 20, 27 at 25, 14 at 35 degrees); under "every gear" it reaches 200 teeth and the edge count per tooth changes (trochoid spline per flank instead of arc plus line). Flag for a spike. |
 
-### Differentiators (Competitive Advantage)
+### Differentiators (valued, not required for a correct root)
 
-| Feature | Value Proposition | Complexity | Notes |
+| Feature | Value proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Explicit-parameter keyway (no standard-table lookup) | Nearly every comparable tool that offers a keyway (Eng Bench: "cuts a standard parallel keyseat sized to DIN 6885-1 from the bore diameter") *derives* width/depth from bore Ø via a table lookup baked into the tool. `spur`'s decision — width, depth, clearance are all explicit fields the user reads off the actual shaft — is a genuine differentiator that matches the project's Core Value ("a number this tool prints is a number someone will cut metal to"): a wrong or superseded lookup table would silently produce a cut nobody asked for | LOW (once the geometry exists) | The differentiation is the *absence* of a lookup, not extra geometry — cheap to build, valuable to state clearly in the UI help text so users don't assume DIN sizing is happening for them |
-| Spoke-arm / hexagonal-honeycomb body cutouts | Not offered by any of the researched comparable tools (FreeCAD's FCGear/GearWorkBench, BOSL2 gears.scad, Fusion 360 add-ins, geargenerator.com family) beyond simple lightening holes; only BOSL2's `gears.scad` even mentions "lightening holes" as a named feature. A honeycomb-pattern web with a build-time cap is unusual for a gear generator and plays to the "prints light" goal | HIGH (honeycomb: cell tiling + per-cell fit-or-drop logic + timeout-aware count cap) | This is where v0.2 goes beyond table stakes; the honeycomb cell count is explicitly capped-and-warned per the milestone brief, so treat it as the feature most likely to need its own build-time budget research (flagged in PITFALLS) |
-| Composability (cutout + recess + bore, one part) | Comparable web generators (3d-editor.com, geargenerator.com family) offer bore + keyway + lightening holes as **alternatives**, not composed on the same part with face recesses; none of the researched tools advertise "recess floor stays filleted under a spoke cutout" as a guarantee | MEDIUM-HIGH (this is a geometry-ordering and edge-case problem, not new shapes) | The real cost is here, not in any single new cut — see Feature Dependencies below |
+| `x_min` (profile shift that avoids undercut) printed next to the warning | Tells the user the one number that fixes the part; BOSL2 offers `auto_profile_shift(get_min=true)`, 3d-editor suggests "+0.3 to +0.5" | LOW | Closed form G4, verified. Additive `DerivedDimensions` field, null when not undercut or when the mode is off (fixture replay). |
+| Root form diameter `d_Ff` printed (null when not applicable) | The ISO 21771 / DIN 3960 quantity; the one number that says where the usable involute starts; GearGen and standardsapplied print it | LOW once G6 exists | Not caliper-measurable; a drawing and inspection number. Honest only with the trochoid. |
+| User-settable cutter tip radius | MITCalc exposes cutting-tool `rf*`; standardsapplied exposes `rho*`; KISSsoft's root radius coefficient is the tool tip radius. Lets a shop match its actual hob. | LOW-MEDIUM | Either reuse `root_fillet` (mm) as the tip radius under the mode, or add one field. Default must stay absolute mm (L05) while ISO 53 scales with module: see Open decisions. |
+| Undercut waist thickness printed, warned below a floor | The only number that says whether an undercut tooth is still a tooth (0.021 m at the range corner) | LOW-MEDIUM | New refusal-or-cap decision: a waist thinner than `MIN_WALL`-style floor is a direct geometric conflict, not trimmable by this feature (L03: 422 naming `teeth`, `profile_shift`, `pressure_angle`) unless the human prefers a warning. |
+| Mate interference check against form diameter (mate's tip contact below this gear's `d_Ff`) | Closes the gap L10 left ("does not affect meshing at nominal centre distance" is only true without interference) | MEDIUM | Needs the mate's tip circle at the working distance; `centre_distance()` exists. Defer. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+### Anti-Features (look good, create problems)
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|------------------|-------------|
-| Standard-table keyway sizing (auto-fill width/depth from bore Ø per DIN 6885/ANSI B17.1) | Feels convenient — "just tell me the shaft size" — and is what Eng Bench and other online generators already do | A looked-up number is a number someone cuts metal to (Core Value); DIN 6885 and ANSI B17.1 give **different numbers under different conventions** for the same nominal shaft (see Pitfalls) — baking one in without disclosing the standard and its datum silently commits the user to a convention they didn't choose. Already rejected by the human for this exact reason (PROJECT.md) | Explicit width/depth/clearance fields, `help=` text citing DIN 6885/ANSI B17.1 **ranges only** as a sanity check ("typical width for a 12 mm shaft is 4 mm, DIN 6885") — never write the number into the default |
-| Spline bore (DIN 5480 etc.) | Looks like a natural sibling to keyway/hex once those exist | Already explicitly out of scope for v0.2 in PROJECT.md — "a standards surface (DIN 5480 and kin, many variants), not a cut"; multiple incompatible sub-standards, no single sane default | Keyway + hex cover the shafts a hobbyist actually has; leave spline as a v0.3+ candidate |
-| Auto-derived spoke count / arm width from gear size | Feels like it should follow a formula the way tooth geometry does | **No standard exists** to derive it from (see Pitfalls) — any formula the tool invents is an opinion presented as a fact, which breaks the same Core Value the keyway decision protects | Explicit arm count + arm width fields, capped to fit like `root_fillet`/`recess_width` already are, with a warning when capped |
-| Tip chamfer as a percentage of tooth height or an involute "tip relief" curve | Tip relief (a genuine gear-engineering technique — a slight profile modification near the tip to reduce impact loading at engagement) sounds more sophisticated than a flat chamfer | Tip relief is a *meshing* modification computed from load, speed and manufacturing tolerance (AGMA-class analysis) — an entirely different, much heavier feature than an edge-break chamfer, and not something `spur`'s stated feature ("Tooth-tip chamfer — the bore chamfer already ships") is asking for | A straight conical chamfer in mm, following the exact pattern `bore_chamfer` already uses — cosmetic/printability edge-break, not a meshing correction; don't conflate the two under one name |
+| Feature | Why requested | Why problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| Bending stress, safety factor, "Lewis strength" number | The trochoid is a strength feature (3d-editor: it "affects strength margins, not meshing") | Needs load, material, ISO 6336 factors the tool has no basis for; a printed strength number is a number someone relies on (L08) | Print geometry only: waist thickness, `d_Ff`. Defer ISO 6336-3 `s_Fn`/`h_Fe`/`rho_F` (30-degree tangent) as a geometry-only later item. |
+| Silent switch to the trochoid below `z_min` with no opt-in | "Just make low-tooth gears right" | Changes old links' parts (L05); and the root shape jumps by about 0.14 m between 17 and 18 teeth (shipped-vs-true gap table) because 18 teeth keeps the circular fillet | Opt-in field, or a mode that applies to every gear where the flank is radial, not a z threshold. |
+| Automatic profile shift to avoid undercut (BOSL2's default) | Never see an undercut | Changes the part from what the user set; violates "a parameter the user did not set must never silently change the part" | Print `x_min`, warn, let the user set `profile_shift`. |
+| Circular-arc approximation sold as the trochoid | 3d-editor.com calls its root "a close approximation of the true trochoid" | Fails the milestone rule that the trochoid is proved against a known-good profile; a "true root" label on an approximation is the L08 failure | If an approximation is ever shipped, name it and print its measured deviation; otherwise keep the analytic fillet. |
+| Editable dedendum / clearance coefficient | MITCalc and KISSsoft expose `hf*`/`c*` | Changes `root_d`, which the bore/recess/cutout rules and every link depend on (L05); no hobbyist input to set it from | Keep `hf* = 1.25` fixed; defer. |
+| Vendoring FreeCAD gears' undercut code | It exists and runs | GPL-3.0 (GitHub API licence field, 2026-10-06); and it is a sharp-corner (rho = 0) trochoid, so its onset is 21.4 teeth at 20 degrees, not 17.1 (derived, ASSUMPTION: read from the parametrisation, which uses only `df`, `dw`, `psi`) | Reference only, never a dependency; the oracle is the independent simulation. |
+| Protuberance, grinding stock, topping hob profiles (ISO 53 B to D) | Appear in the same standard | A different manufacturing process; nothing in the audience (print, hob, mill) uses it | Out of scope. |
+
+## Always-on vs opt-in: evidence and price
+
+### What the surveyed tools do
+
+| Tool | Hob root | On by default? | Cutter tip radius user-set? | Source |
+|------|----------|----------------|-----------------------------|--------|
+| FreeCAD gears (GPL-3.0, last push 2026-09-15) | Trochoid of a sharp rack corner at root depth, trimmed against the involute (`InvoluteTooth`, `undercut_function_x/y`) | **No**: `undercut=False` by default; separate circular `root_fillet` (mm, default 0) | No | github.com/looooo/freecad.gears `pygears/involute_tooth.py`, FreeCAD docs `FCGear_InvoluteGear.md`; maintainer on 2024-02-03: "undercut is (imo) only relevant for gears with a small number of teeth. For bigger gears a root-fillet can be used" |
+| BOSL2 `gears.scad` (last commit 2026-09-26) | Envelope of a sharp rack corner at depth 1.0 m (`_gear_tooth_profile`, `undercut` list) | **Yes** for any tooth count, but `profile_shift="auto"` removes the undercut for low counts by default | No | github.com/BelfrySCAD/BOSL2 |
+| cq_gears (CadQuery, last push 2024-12-27) | None: three-point root arc on the dedendum circle | n/a | No (`dedendum_coeff`, `clearance` instead) | github.com/meadiode/cq_gears `spur_gear.py` |
+| Fusion 360 Spur Gear add-in | Circular fillet, "root fillet radius" with a maximum, no trochoid | n/a | Radius is the fillet, not a tool tip | productdesignonline.com tutorial (LOW: secondary) |
+| GearGen.xyz | "Hobbed trochoid root in every DXF ... ISO 21771 with ISO 53-style hob roots" | **Yes** | No (module, pressure angle, shift, backlash) | geargen.xyz (marketing text, LOW-MEDIUM) |
+| 3d-editor.com Gear Generator | "Trochoid-approximated root fillet"; warns below about 17 teeth at 20 degrees | **Yes** | No | 3d-editor.com/tools/gear-generator (LOW-MEDIUM) |
+| standardsapplied.com calculator | True generated trochoid, prints form diameter, undercut onset formula G4 | **Yes** | **Yes** (`ha*` 1.00, `hf*` 1.25, `rho*` default 0.471) | standardsapplied.com/involute-gear-design.html |
+| MITCalc | Cutting-tool parameters `ha*`, `c*`, `rf*` as inputs; undercut check | **Yes** (pro tool) | **Yes** | mitcalc.com gear_theory help |
+| KISSsoft | Root radius coefficient = tool tip radius; root form circle checked | **Yes** (pro tool) | **Yes** | KISSsoft product descriptions (search results only, LOW) |
+
+Conclusion: where the hob root is implemented it is the geometry, not a style: always on, with the tip radius either fixed at the ISO 53 value (hobbyist tools) or exposed (pro tools). The only opt-in is FreeCAD's, and the only tool that dodges the part-change cost does so by changing the part another way (BOSL2's automatic shift). None of these tools had a frozen-link constraint like L05; they are not evidence about the cost of changing old parts, only about what users of such tools expect to see for a fresh gear.
+
+### What each choice costs here (priced against the repo, 2026-10-06)
+
+Counts come from the 44-record `tests/regression/pre_v0_2.json` fixture (39 built solids, 5 mate-only records that pin `derive()` only).
+
+| Option | Fixture records that change | L05 (links keep their part) | Behaviour at the threshold | User-visible cost | Notes |
+|--------|-----------------------------|-----------------------------|----------------------------|-------------------|-------|
+| O1. Always-on when undercut (`teeth < z_min`) | 5 of 44 (3 built, 2 mate-only): teeth 6 and 8 gears | broken for low-tooth links only | **Discontinuous**: 17 teeth gets the trochoid, 18 the circular fillet; the root shape jumps by about 0.14 m | Low-tooth links change shape and their printed `root_thickness` etc. | Needs its own `Lxx`, `make fixture.regen` in its own commit (L26 D-03) |
+| O2. Always-on wherever `rb > rf` (the region L10 actually names) | 28 of 44, including the default gear | broken for most links in the wild (default gear's root changes by up to 0.30 mm) | Continuous in z up to the `rb = rf` crossover (above it the shipped analytic path still differs by about 0.13 m, so a second edge remains) | Every common gear changes | Largest `Lxx` and fixture regen; closest to "what a hob cuts" |
+| O3. New default-off field | 0 of 44; L05 and L26 hold byte for byte | kept | The user chooses; no threshold | One more control; a user who never sets it keeps the radial root and the undercut warning | The L27 precedent (a new field that replaces a profile and names what it ignores) applies. The mode can then apply wherever the flank is radial (no discontinuity) without touching old links |
+| O4. O3 now, default flipped later under its own `Lxx` | 0 now | kept now | none | Decision deferred, not dodged | Lets the oracle and the build-time sweep land before any link changes part |
+
+Evidence-based reading (the human decides at discuss-phase): the tools' norm argues the hob root should eventually be the default; this repo's L05 and L26 argue it should land opt-in first; and O1 is the one option the evidence argues against on its own merits (a z-threshold produces a root-shape jump no real hob produces). If the human insists on always-on, O2 is the physically consistent version and the fixture regeneration is large and must be priced as such.
 
 ## Feature Dependencies
 
 ```
-Keyway bore ──requires──> round bore (bore_d > 0)
-Hex bore ──requires──> round bore (bore_d > 0), OR replaces it as an alternate bore profile
-Keyway bore ──conflicts──> Hex bore (one bore profile per part — pick one, refuse the combination as a 422)
+Cutter tip radius (cap to rho_max*(a), G8)
+    └──requires──> hf* = 1.25 fixed (already in calc.profile via rf)
+Trochoid points (G5)
+    └──requires──> Cutter tip radius
+    └──requires──> backlash handled as hob-tooth thickening (G10, to be verified)
+Form radius / crossing solve (G6)
+    └──requires──> Trochoid points
+    └──requires──> involute half_angle (calc.Profile.half_angle, exists)
+Outline with hob root (model._outline)
+    └──requires──> Form radius (involute spline start moves to it)
+    └──replaces──> spline_start() lead-in chord and _fillet_corner arc, in the new mode only
+tip_chamfer_limit re-measure (L29 D-04)
+    └──requires──> Outline with hob root
+root_thickness / root_gap honesty
+    └──requires──> Form radius (if redefined at the form circle)
+Undercut warning (G4) and x_min
+    └──requires──> Cutter tip radius
+x_min, d_Ff, waist thickness fields
+    └──enhances──> Undercut warning
+Build-time sweep (L30/L31 rule)
+    └──requires──> Outline with hob root
 
-Spoke-arm cutout ──requires──> a defined hub region (bore or bore_d=0 solid hub) and a defined rim (root diameter)
-Lightening-hole cutout ──requires──> a bolt circle that clears both hub wall and rim wall (same MIN_WALL logic as recess_radii())
-Hexagonal-pattern cutout ──requires──> a web area larger than a few cells, and a build-time budget (cell count must be capped)
-
-Spoke-arm / lightening-hole / hexagonal cutouts ──conflict with each other?──> NO in principle (arms and holes can coexist geometrically), but the milestone brief scopes them as three separate cutout *types*, not a composable set within one gear — treat "more than one cutout type on one part" as an open question for requirements, not assumed in scope
-
-Any body cutout ──composes with──> face recess (cuts through the recessed floor, floor fillet intact per PROJECT.md)
-Any body cutout ──composes with──> any bore profile (round / D-flat / keyway / hex)
-Tooth-tip chamfer ──independent of──> all of the above (acts on the tip circle edges only, never touches bore/body/root)
+Opt-in field ──conflicts──> silent z-threshold switch (O1)
+Hob root mode ──conflicts──> root_fillet meaning (ignore+warn, or reinterpret)
+Hob root mode ──conflicts──> L33 lead-in warning (no chord exists)
+Always-on (O1/O2) ──conflicts──> L05 and the L26 fixture (needs its own Lxx + make fixture.regen)
 ```
 
 ### Dependency Notes
 
-- **Keyway/hex bore conflicts with each other:** a bore is one profile. `bore_flat` (D-flat) already coexists with `bore_d` in the shipped model as a second cut on the same round bore — keyway and hex should follow the same shape (an addition to the round bore, not a replacement of it) *unless* the requirements step decides hex fully replaces the round profile the way D-flat does. This is a naming/composition decision the requirements step needs to make explicitly, not infer.
-- **Body cutouts require a defined hub and rim:** all three cutout types (spoke, lightening-hole, honeycomb) need to know where the "web" is — the annular region between the bore/hub wall and the tooth root, same region `recess_radii()` already reasons about. Reuse that boundary logic rather than re-deriving it.
-- **Body cutout composes with face recess:** PROJECT.md states this explicitly — "cutouts combine with face recesses (cut through the recessed floor, floor fillet intact)". This means cutout depth must be allowed to exceed `recess_depth` (cutting all the way through the part) while the recess's own floor fillet geometry stays intact where the cutout doesn't reach — a CAD boolean-ordering concern (cut the cutout through the full solid, including the recess floor, rather than cutting the recess into an already-cut cutout) more than a parameter concern.
-- **Honeycomb count depends on the build-time budget, not the user:** the milestone brief is explicit that cell count "follows from the web area and is capped and warned when the build cannot fit the timeout" — this is the one cutout whose *count* is not a first-class user parameter (cell size and wall thickness are; the resulting count is derived and can be trimmed). This is architecturally different from spoke arms and lightening holes, which get an explicit user-set count per PROJECT.md.
-- **Tip chamfer has no dependency on anything else** — it is the lowest-risk new feature in the milestone, both geometrically (identical pattern to the shipped `bore_chamfer`) and in scope (no standard to misapply, no composition ambiguity).
+- **Cutter tip radius needs G8's cap:** the project's default angle is outside ISO 53, so the standard's 0.38 m is not always buildable; the cap is a pure `calc.py` function (calc.py never imports the kernel).
+- **Outline needs the form radius:** the existing `spline_start()` is also read by `tip_chamfer_limit()`; both must read the same new radius or the L29 cap goes stale.
+- **`root_thickness` rework needs the `DerivedDimensions` rule:** every key always present, null where not applicable, additive fields required null on fixture replay (L21, L27, L28).
+- **Existing rules that read `rf` are untouched:** bore wall, recess radii, cutout rim wall, `check()`. This is what makes the feature local to `_outline`, `derive()` and one or two `calc.py` helpers.
+- **Not affected:** `caliper_over_tips`, span (Wildhaber), `centre_distance`: they read tip radius and the involute above the base circle, which G6 leaves unchanged.
 
-## MVP Definition — mapped to PROJECT.md's already-committed v0.2 scope
+## MVP Definition
 
-PROJECT.md has already fixed the v0.2 feature set (below); this section maps the
-researched risk/complexity onto that fixed list rather than re-deriving a new MVP, since
-the milestone scope is a locked decision (`.planning/PROJECT.md`, "Target features"), not
-an open question for this research.
+### Launch With (v0.4)
 
-### In v0.2 (already committed)
+- [ ] Hob-root trochoid, ISO 53 A default, tip radius capped to G8, tangent or crossing hand-off, closed outline; applied wherever the flank is radial under the chosen mode (O3/O4), or per the human's decision
+- [ ] Root diameter unchanged and asserted; undercut warning restated from G4 with `x_min`
+- [ ] `root_thickness` / `root_gap` honest under the mode (null+warning or stated redefinition)
+- [ ] Domain limits: no trochoid above 32.14 degrees (warning, explicit fallback); waist-thickness floor decided (422 vs warning)
+- [ ] Proof: independent brute-force simulation plus the closed forms G3, G4, G6 (tangent), G7; mode-off fixture byte-identical
+- [ ] `root_fillet`, `tip_chamfer_limit`, L33 interactions defined and tested; measured build time at the heaviest allowed configuration
 
-- [x] Keyway bore, explicit width/depth/clearance — LOW-MEDIUM complexity, the datum
-  ambiguity below is the main risk, not the geometry
-- [x] Hex bore, across-flats + clearance — LOW-MEDIUM complexity, simplest of the new bore
-  profiles
-- [x] Tooth-tip chamfer — LOW-MEDIUM complexity, reuses the `bore_chamfer` pattern exactly
-- [x] Spoke-arm cutout, explicit arm count — MEDIUM complexity, no standard proportions to
-  cite (engineering-judgment defaults only, sanity-capped like `root_fillet`)
-- [x] Circular lightening-hole cutout, explicit hole count on a bolt circle — LOW-MEDIUM
-  complexity, closest analogue to the shipped `recess_radii()` fit logic
-- [x] Hexagonal-pattern cutout, cell size + wall thickness, count derived and capped to the
-  build timeout — HIGH complexity, the one feature needing its own measured build-time
-  budget (recess + hex pattern is the milestone's named "unknown")
+### Add After Validation (v0.4.x)
 
-### Explicitly out of scope for v0.2 (per PROJECT.md, do not re-litigate)
+- [ ] `d_Ff` and waist thickness printed (cheap once the geometry exists)
+- [ ] User-settable cutter tip radius (trigger: someone asks to match a real hob)
+- [ ] Flip the default to the hob root under its own `Lxx` (trigger: oracle plus build-time sweep green, human decides)
 
-- [ ] Spline bores (DIN 5480 and kin) — deferred, "a standards surface... not a cut"
-- [ ] Standard-table keyway sizing — rejected on Core Value grounds, not deferred
-- [ ] Tip relief (meshing-load profile modification) — a different feature from tip
-  chamfer; not asked for, don't build it under this name
+### Future Consideration (v0.5+)
+
+- [ ] Mate interference check against form diameter
+- [ ] Geometry-only ISO 6336-3 critical section (30-degree tangent)
+- [ ] Editable dedendum/clearance (needs an L05 decision)
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
-|---------|------------|----------------------|----------|
-| Tooth-tip chamfer | MEDIUM | LOW | P1 |
-| Hex bore | HIGH | LOW-MEDIUM | P1 |
-| Keyway bore | HIGH | MEDIUM | P1 |
-| Lightening-hole cutout | MEDIUM | LOW-MEDIUM | P1 |
-| Spoke-arm cutout | MEDIUM | MEDIUM | P1 |
-| Hexagonal-pattern cutout | LOW-MEDIUM (niche, but a differentiator) | HIGH | P2 (build first, but plan for it to need its own build-time research spike) |
+|---------|------------|---------------------|----------|
+| Hob-root trochoid with cap and hand-off | HIGH | MEDIUM-HIGH | P1 |
+| Independent oracle + closed-form tests | HIGH (milestone rule) | MEDIUM | P1 |
+| Honest `root_thickness` / `root_gap` | HIGH (L08) | MEDIUM | P1 |
+| Undercut warning from G4, `x_min` | MEDIUM | LOW | P1 |
+| Domain limits (32.14 degrees, waist floor) | MEDIUM | LOW-MEDIUM | P1 |
+| Interaction rules (`root_fillet`, chamfer cap, L33) | HIGH | MEDIUM | P1 |
+| Build-time sweep | HIGH (rule) | MEDIUM | P1 |
+| `d_Ff` printed | MEDIUM | LOW | P2 |
+| User-settable tip radius | MEDIUM | LOW-MEDIUM | P2 |
+| Flip default (O4 step 2) | MEDIUM | LOW code, HIGH process | P2 |
+| Mate interference vs `d_Ff` | LOW-MEDIUM | MEDIUM | P3 |
+| ISO 6336-3 critical section | LOW | HIGH | P3 |
 
-All six are already committed in PROJECT.md; this matrix is for phase-ordering guidance
-(cheapest/lowest-risk first), not for cutting scope.
+## Competitor Feature Analysis
 
-## Standards Cited — Keyway (the datum ambiguity, in detail)
+| Feature | FreeCAD gears | BOSL2 | GearGen / 3d-editor | standardsapplied / MITCalc | Our approach |
+|---------|---------------|-------|---------------------|----------------------------|--------------|
+| Hob root | opt-in sharp-corner trochoid | always (sharp-corner envelope), auto shift hides it | always, tip radius fixed | always, tip radius set by user | mode decided at discuss-phase; ISO 53 A capped by angle |
+| Form diameter printed | no | no | GearGen: yes (marketing) | yes | P2, null when mode off |
+| Undercut warning | docs only | docs; `auto_profile_shift(get_min)` | 3d-editor warns (17 teeth rule) | formula G4 | G4, with `x_min` |
+| Dedendum exposed | `clearance` | `clearance` | no | yes | no (anti-feature) |
+| Auto profile shift | no | **yes** | no | no | no (anti-feature) |
 
-**DIN 6885-1 / ISO R773 / JIS B1301 / UNI 6604 — same numeric table, different document
-names.** Cross-checked across multiple independent sources (engineeringhardware.com,
-jwwinco.com technical PDF, ganternorm.com catalog, nexusseals.com's own citation of
-ISO/R773 — MEDIUM confidence, cross-source-consistent):
+## Verification method (so the phase can rebuild the oracle)
 
-| Shaft Ø range (mm) | Key b × h (mm) | t1 shaft depth (mm) | t2 hub depth (mm) |
-|---|---|---|---|
-| 6–8 | 2 × 2 | 1.2 | 1.0 |
-| 8–10 | 3 × 3 | 1.8 | 1.4 |
-| 10–12 | 4 × 4 | 2.5 | 1.8 |
-| 12–17 | 5 × 5 | 3.0 | 2.3 |
-| 17–22 | 6 × 6 | 3.5 | 2.8 |
-| 22–30 | 8 × 7 | 4.0 | 3.3 |
-| 30–38 | 10 × 8 | 5.0 | 3.3 |
-| 38–44 | 12 × 8 | 5.0 | 3.3 |
-| 44–50 | 14 × 9 | 5.5 | 3.8 |
-| 50–58 | 16 × 10 | 6.0 | 4.3 |
-| 58–65 | 18 × 11 | 7.0 | 4.4 |
-| 65–75 | 20 × 12 | 7.5 | 4.9 |
-| 75–85 | 22 × 14 | 9.0 | 5.4 |
-| 85–95 | 25 × 14 | 9.0 | 5.4 |
-| 95–110 | 28 × 16 | 10.0 | 6.4 |
+Prototyped in the session scratchpad (not committed; the repo was not modified). About 60 lines of numpy, independent of the analytic trochoid:
 
-Both t1 (shaft) and t2 (hub) are **radial cut depths, each measured from its own
-surface** (shaft OD, or bore ID) to the keyway floor. `t1 + t2 ≈ h` plus a small
-clearance. This is the sane, directly-cuttable convention — exactly what `spur`'s single
-`keyway_depth` field for the hub-side cut should mean, stated in the field's `help=` text
-so a user who read a DIN table off a shaft catalog knows the depth they're typing is the
-bore-wall-to-floor distance.
+1. Rack tooth boundary in rack coordinates `(xi, d)` (d = depth toward the gear): right flank `xi + d tan a = pi m/4 + d0 tan a` with `d0 = -x m`, tip arc of radius rho tangent to flank and flat, flat at `d_tip = d0 + hf* m`; mirror for the left flank.
+2. Gear rotation `theta` swept densely (9000 to 12000 steps); each boundary point mapped to the gear frame by `R(-theta) (xi + r theta, -r + d)`.
+3. Polar binning over one tooth space (4000 to 20000 bins); generated boundary radius at each angle = minimum radius over all swept boundary points.
+4. Compared against: root circle (G7), involute above the form radius (3e-4 mm non-undercut), analytic trochoid and the form radius G6, the shipped outline rebuilt from `calc.spline_start` and `model._fillet_corner` (gap table), tooth thickness versus radius.
 
-**ANSI B17.1-1967 (R1998) — a genuinely different convention, not just different
-numbers.** Cross-checked across engineersedge.com and amesweb.info (MEDIUM confidence,
-consistent across both): ANSI's control values **S** (shaft) and **T** (hub) are *not*
-radial cut depths at all — they are **diametral gauge/inspection dimensions**: "the
-distance from the bottom of the shaft keyseat to the opposite side of the shaft" (S), and
-"the distance from the bottom of the hub keyway to the opposite side of the hub bore" (T).
-These exist so a machinist can check keyway depth by dropping a pin or rod into the slot
-and measuring across the full diameter with calipers or a micrometer — not because the
-depth itself is defined that way. **This is the classic ambiguity the research question
-flags, confirmed real**: converting an ANSI S/T value to an actual radial cut depth
-requires `(shaft OD − S)` arithmetic, not using S directly. A tool that lets a user read
-a number off an ANSI table and type it into a "depth from bore wall" field cuts the wrong
-part.
+Reproduced external numbers: ISO 53 A flank-end depth 0.99997 m; `x_min` 0.4151 at 10 teeth (equals tec-science's `1 - z/z_min`); `rho_max*` 0.4719 at 20 degrees (standardsapplied's 0.471).
 
-**Implication for `spur`'s parameter design:** `keyway_depth` (and any sanity-range help
-text) must say explicitly **"measured radially from the bore wall to the keyway floor
-(the DIN 6885 / ISO R773 t2 convention)"** — and must not cite ANSI B17.1's S/T numbers
-as if they were directly usable in the same field, because they are not the same
-quantity. If ANSI-style ranges are also offered as a sanity check, they need their own
-clearly-labelled conversion, not a shared table.
+Limits of this verification: it checks my derivation against a numerically independent construction, not against a published coordinate table or the ISO 21771 d_Ff formula text. A KISSsoft or hob-sheet example from the human would close that.
 
-## Standards Cited — Hex Bore
+## Open decisions for discuss-phase (not mine to make)
 
-No single "hex bore for gears" standard was found; hex bores follow commodity hex-stock
-sizes rather than a dimensional standard the way keyways do (LOW confidence — no
-authoritative source located, only commercial size charts for hex shafting/robotics
-stock, e.g. REV Robotics' 5 mm and 1/2" hex shaft lines, and generic "wrench size" /
-width-across-flats references for hex fasteners, ISO 272, which is a different
-application). **Recommendation:** treat across-flats as a free mm field (matching the
-project's existing all-mm convention) with commodity sizes (5, 6, 8, 10, 12.7 mm / 1/4",
-3/8", 1/2") offered as UI presets or examples in help text, not as a cited standard —
-because there isn't one to cite for gear hex bores specifically. Say so in the parameter
-help text rather than inventing a standard's name.
-
-## Standards Cited — Body Cutouts (spoke, lightening-hole, honeycomb)
-
-**No DIN/ISO/AGMA standard governs spoke count, arm width, hub/rim wall proportions,
-lightening-hole count, or bolt-circle placement for a gear web** (LOW confidence by
-design — this is the honest finding, not a gap in the research). Dudley's *Handbook of
-Practical Gear Design and Manufacture* covers spoke/web stress analysis as an FEA/design
-problem, not a lookup table. A cited academic paper (Kaya & Ozturk or similar, "AIAC-2019-
-155: Optimization of Lightening Hole on a Spur Gear of an Aircraft Motor",
-aiac.ae.metu.edu.tr) treats hole radius, position and count as free optimization
-variables — confirming these are computed-per-application, not standardized. **Implication:**
-`spur` should treat spoke/lightening-hole/honeycomb dimensions exactly like `root_fillet`
-and `recess_width` already are — user-set values, capped silently to what fits (`MIN_WALL`),
-with a warning when capped — and should not claim a standard backs the defaults. This is
-consistent with, and reinforces, the milestone's own decision to reject standard-table
-keyway sizing.
-
-**Honeycomb infill cell size / wall thickness:** no gear-specific standard exists; the
-closest available convention is from 3D-printing infill literature (not a standard body,
-LOW confidence) — hexagonal honeycomb wall thickness of roughly 0.5–1.3 mm (0.020"–0.050")
-for cell pitches from a few mm up to ~25 mm is a commonly cited practical range for
-FDM-printed cellular structures, thicker walls trading weight savings for stiffness. This
-is design guidance from the additive-manufacturing literature, not a cross-reference
-standard the way DIN 6885 is for keyways — cite it as "typical practice," not "standard."
-
-## Standards Cited — Tooth-Tip Chamfer
-
-**No single named standard gives a chamfer-size-vs-module rule** (LOW confidence — the
-research question's own suggested range, 0.1–0.2 × module, was not independently found in
-any source located during this research; it should be treated as a plausible engineering
-guess worth validating with the human, not as a sourced convention). What *was* found,
-consistently, across 3D-printing-focused sources (sovol3d.com, sculpteo.com,
-engineerdog.com — LOW-MEDIUM, consistent with each other but all secondary/blog sources,
-not standards bodies): a **flat, small edge-break chamfer** (commonly cited as ~0.5 mm ×
-45° for FDM-scale gears) on the tip corners is standard practice to prevent snagging and
-reduce print-tip defects — explicitly *not* the same thing as **tip relief**, which is a
-load/meshing-driven profile modification (AGMA-class analysis, out of scope per the
-Anti-Features table above). KHK's technical literature separately documents
-"semitopping" — a chamfer cut into the tooth top corner during hobbing, primarily to
-prevent burrs — as an established manufacturing practice, supporting that a tip chamfer as
-an edge-break (not a meshing correction) is legitimate, conventional gear practice, just
-without a single numeric standard to cite. **Recommendation:** default the chamfer size as
-an absolute mm value (matching every other length in `GearParams`, per L05) with the
-`0.1–0.2 × module` range offered only as a *derived sanity suggestion* in help text or UI,
-explicitly labelled as project convention, not a cited standard — and confirm the exact
-default with the human before treating it as locked, since it could not be sourced.
-
-## Comparable Tools — What They Offer
-
-| Tool | Bore options | Body cutouts | Chamfer | Notes |
-|------|--------------|--------------|---------|-------|
-| **FreeCAD FCGear** (`looooo/freecad.gears`) | Round only, natively | None built in | Not found | Official/most-used FreeCAD gear workbench; keyway/hex explicitly requires exporting a round bore and post-processing in other CAD (per a tutorial found in research) — confirms round-only is the practical floor even for a mature open-source tool |
-| **FreeCAD GearWorkBench** (`iplayfast/GearWorkBench`, newer/less established) | Circular, square, hexagonal, DIN 6885 keyway | Not confirmed | Not confirmed | Directly comparable ambition to `spur`'s v0.2 bore scope; worth a closer look as a peer implementation if the team wants a second reference, but confidence on its actual behavior is LOW (README-level claims only, not verified against source) |
-| **BOSL2 `gears.scad`** (OpenSCAD library) | Round bore | "Lightening holes" named as a feature | Not found | The only researched library besides `spur`'s own plan that names lightening holes explicitly; no spoke or honeycomb equivalent found |
-| **Fusion 360 add-ins** (GF Gear Generator and similar) | Round bore | None found | Not found | Consumer/hobbyist add-ins stay minimal — module, teeth, pressure angle, thickness, bore; confirms round-bore-only is the median feature set among "quick gear" tools, not just open-source ones |
-| **3d-editor.com Gear Generator** | Round, DIN-style keyway | Lightening holes | Not confirmed | Closest online-tool analogue to `spur`'s v0.2 ambitions; also reports undercut/too-fine-teeth warnings, similar spirit to `spur`'s own warning contract |
-| **Eng Bench gear generator** | Round + keyway | Not found | Not found | Explicitly documents cutting "a standard parallel keyseat sized to DIN 6885-1 **from the bore diameter**" — i.e. auto-derives keyway size from bore Ø via table lookup. This is the anti-feature `spur` has already and explicitly rejected; cite it as the contrasting approach, not a pattern to follow |
-| **iLoveDXF Gear Generator** | Round, D-shaft, keyed | Not found | Not found | 2D/laser-cut focused (DXF/SVG + G-code output); confirms round/D-flat/keyway is the common floor across both 2D and 3D tools |
-
-**Takeaway for the requirements step:** no researched comparable tool composes bore +
-body cutout + face recess on one part the way v0.2 intends to. The differentiator isn't
-any single new cut — it's that `spur` already ships face recesses and measurement aids
-that no comparable tool offers, and v0.2 adds shaft-fit and weight-reduction features on
-top without breaking that composability. That composition (not any individual geometry)
-is where the real implementation risk sits, matching PROJECT.md's own framing ("Features
-compose... the only refusal is a direct dimensional conflict").
+1. Mode: O1, O2, O3 or O4 above, and whether the mode applies wherever the flank is radial or to every gear (200-tooth build time unmeasured).
+2. `root_fillet` under the mode: ignored and warned (L27 precedent), or reinterpreted as the cutter tip radius. Tension: ISO 53's 0.38 m scales with module, the shipped default 0.5 mm is absolute (L05); 0.5 mm is 0.29 m at m 1.75 but 0.5 m at m 1 (above the 0.472 cap at 20 degrees) and 0.05 m at m 10.
+3. `root_thickness` / `root_gap`: null+warning or redefined at the form circle.
+4. Waist floor: 422 (direct geometric conflict) or warning.
+5. ASSUMPTION to confirm: the dedendum stays fixed at 1.25 m; backlash realised as hob-tooth thickening (G10).
+6. A published or tool-generated reference profile to use as the oracle in addition to the simulation.
 
 ## Sources
 
-- DIN 6885 dimension table: [engineeringhardware.com — DIN 6885 Parallel Keys](https://engineeringhardware.com/guide/standard/din-6885-parallel-keys/), cross-checked against [JW Winco DIN 6885-2 PDF](https://www.jwwinco.com/fileadmin/user_upload_jwwinco/downloads/technical_section/6885-2_01.pdf) and [Ganter Norm DIN 6885 catalog PDF](https://live-katalog.ganternorm.com/pdf/ganter/en/6885_1.pdf)
-- ISO R773 = DIN 6885 equivalence: [nexusseals.com — Metric Key & Keyway Dimensions per ISO/R773](https://www.nexusseals.com/sitepad-data/uploads/2020/09/Depasco-Keyway-Information-compressed.pdf)
-- ANSI B17.1 S/T diametral-gauge convention: [engineersedge.com — Shaft Key Seat Depth Control Values S and T](https://www.engineersedge.com/gears/shaft_key_seat_depth_14412.htm), cross-checked against [amesweb.info — Depth Values for Shaft Keyseats/Hub Keyways](https://amesweb.info/Keys/Shaft-Keyseat-Hub-Keyway-Depth-Values.aspx)
-- ANSI B17.1 square-key sizing rule of thumb (width ≈ D/4 up to 6.5"): [keyseaters.com — Keyway Dimensions Size Chart](https://www.keyseaters.com/local/keyway-dimensions-size-chart-ansi-b17-1-metric-reference-national-machine-tool/), [ficientdesign.com — Keyway & Key Sizes](https://ficientdesign.com/keyway-key-sizes-chart/)
-- Hex shaft commodity sizes: [REV Robotics — 5mm and 1/2in Hex Shafts](https://www.revrobotics.com/5mm-Hex-Shafts/)
-- No standard for gear spoke/lightening-hole proportions: [AIAC-2019-155 — Optimization of Lightening Hole on a Spur Gear of an Aircraft Motor](http://aiac.ae.metu.edu.tr/paper.php/AIAC-2019-155), search results referencing Dudley's *Handbook of Practical Gear Design and Manufacture*
-- Honeycomb infill cell/wall conventions: general 3D-printing infill literature (e.g. [ncbi.nlm.nih.gov/pmc/articles/PMC11206172 — Mechanical Behavior of 3D-Printed Thickness Gradient Honeycomb Structures](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11206172/)) — practice, not a standard
-- Tip chamfer / semitopping practice: [KHK Gears — Practical Information on Gears / Involute Gear Profile](https://khkgears.net/new/gear_knowledge/gear_technical_reference/involute_gear_profile.html), [sovol3d.com — 3D Printing Gears That Actually Work](https://www.sovol3d.com/blogs/news/3d-printing-gears-that-actually-work-backlash-orientation-and-material-tips)
-- FreeCAD gear tooling: [FreeCAD Documentation — Gear Workbench](https://wiki.freecad.org/Gear_Workbench), [looooo/freecad.gears (GitHub)](https://github.com/looooo/freecad.gears), [iplayfast/GearWorkBench (GitHub)](https://github.com/iplayfast/GearWorkBench)
-- OpenSCAD gear libraries: [BOSL2/gears.scad (GitHub)](https://github.com/BelfrySCAD/BOSL2/blob/master/gears.scad), [BOSL2 gears.scad wiki](https://github.com/BelfrySCAD/BOSL2/wiki/gears.scad)
-- Fusion 360 add-ins: [Autodesk App Store — GF Gear Generator](https://apps.autodesk.com/FUSION/en/Detail/HelpDoc?appId=1236778940008086660&appLang=en&os=Win64)
-- Online gear generators comparison: [3d-editor.com — Gear Generator](https://www.3d-editor.com/tools/gear-generator), [Eng Bench — Gear Generator](https://engbench.com/geargen.php), [iLoveDXF — Gear Generator](https://ilovedxf.com/en/gear-generator), [geargenerator.com](https://geargenerator.com/)
-- Project source (required reading): `.planning/PROJECT.md`, `src/spur/params.py`, `src/spur/calc.py`
+Checked 2026-10-06 unless stated. Provider tier from the confidence seam: web search alone LOW, cross-checked MEDIUM; source-code reads and derivations verified by simulation are tagged separately above.
+
+- ISO 53:1998 basic rack, via secondary pages: https://drivetrainhub.com/notebooks/gears/tooling/Chapter%201%20-%20Basic%20Rack.html ; https://www.engineersedge.com/gears/basic_rack_tooth_gear_profiles_din_867_13217.htm ; Akpolat et al., Gear Solutions 2018-04-15 https://gearsolutions.com/features/effects-of-asymmetric-cutter-tip-radii-on-gear-tooth-root-bending-stress/ (MEDIUM; the ISO PDF sample https://cdn.standards.iteh.ai/samples/22643/1587e6ac15ea488b913773116bac2dad/ISO-53-1998.pdf was not text-extractable)
+- ISO 21771 scope only: https://standards.iteh.ai/catalog/standards/iso/d6596c53-21c4-45e0-bf25-726e03df042a/iso-21771-2007 (text not read; LOW)
+- Undercut and profile shift: https://www.tec-science.com/mechanical-power-transmission/involute-gear/undercut/ ; https://www.tec-science.com/mechanical-power-transmission/involute-gear/profile-shift/ ; https://khkgears.net/new/gear_knowledge/gear_technical_reference/involute_gear_profile.html (formulas are images there; the 17/16 statements are text)
+- Trochoid, form diameter, root forms: https://gearsolutions.com/features/methods-to-determine-form-diameter-on-hobbed-external-involute-gears/ (Zhang, 2019-09-15; equations are images) ; https://gearsolutions.com/features/analysis-of-gear-root-forms-a-review-of-designs-standards-and-manufacturing-methods-for-root-forms-in-cylindrical-gears/ (Hyatt et al., 2014-02-14) ; https://gearsolutions.com/features/transition-curve-much-more-than-a-radius-at-the-root-fillet-of-a-tooth/ (Gorniak et al., 2025-09-14) ; https://gearsolutions.com/features/numerical-approach-to-account-for-actual-tooth-root-geometry/ (Pinnekamp et al., 2024-05-15) ; https://www-mdp.eng.cam.ac.uk/web/library/enginfo/textbooks_dvd_only/DAN/gears/generation/generation.html (fillet radius 0.38 for the 20-degree full-depth system)
+- Tools: https://github.com/looooo/freecad.gears (commit 83ec154, 2026-09-15; `pygears/involute_tooth.py`; discussion #142, 2024-02-03/05) ; https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/FCGear_InvoluteGear.md ; https://github.com/BelfrySCAD/BOSL2 `gears.scad` (last commit 2026-09-26) ; https://github.com/meadiode/cq_gears `spur_gear.py` ; https://www.geargen.xyz/index ; https://www.3d-editor.com/tools/gear-generator ; https://www.standardsapplied.com/involute-gear-design.html ; https://www.mitcalc.com/doc/gear1/help/en/gear_theory.htm ; https://productdesignonline.com/fusion-360-tutorials/create-custom-3d-printable-gears-in-fusion-360/ (LOW) ; KISSsoft: search results only (LOW)
+- Repo, read in full: `.planning/PROJECT.md`; `docs/architecture/gear-maths/*.md`; `docs/ideas/2026-09-21-trochoidal-root-fillets.md`; `docs/architecture/decision_log.md` L03, L05, L08, L09, L10, L26, L33; `README.md`; `src/spur/calc.py` (`profile`, `_tooth`, `root_fillet`, `spline_start`, `derive`); `src/spur/model.py` (`_outline`, `_fillet_corner`); `src/spur/params.py` field ranges; `tests/regression/pre_v0_2.json` (44 records, counted here).
 
 ---
-*Feature research for: spur v0.2 "Fit to Shaft"*
-*Researched: 2026-09-25*
+*Feature research for: spur, v0.4 True Root (trochoidal root fillet)*
+*Researched: 2026-10-06*
