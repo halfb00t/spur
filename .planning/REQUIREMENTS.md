@@ -244,30 +244,44 @@ Deferred deliberately; recorded so they survive this session.
 
 ## Traceability
 
-Filled by the roadmap.
+Filled by the roadmap, 2026-10-06 (`ROADMAP.md`: Phases 17–20). Each requirement sits in
+the phase where its acceptance can be read.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-hook-and-commit-timeout-decided | — | Pending |
-| REQ-same-slot-timeout-race-reproduced | — | Pending |
-| REQ-same-slot-timeout-race-fixed | — | Pending |
-| REQ-worst-row-margin-decided | — | Pending |
-| REQ-cutter-defined-once | — | Pending |
-| REQ-trochoid-root-generated | — | Pending |
-| REQ-root-mode-single-predicate | — | Pending |
-| REQ-trochoid-proved-independently | — | Pending |
-| REQ-undercut-warning-restated | — | Pending |
-| REQ-root-mode-decided | — | Pending |
-| REQ-outline-consumes-root-curve | — | Pending |
-| REQ-derived-numbers-honest-under-trochoid | — | Pending |
-| REQ-cutter-tip-radius-settable | — | Pending |
-| REQ-trochoid-composes-and-is-priced | — | Pending |
+| REQ-hook-and-commit-timeout-decided | Phase 17 | Pending |
+| REQ-same-slot-timeout-race-reproduced | Phase 17 | Pending |
+| REQ-same-slot-timeout-race-fixed | Phase 17 | Pending |
+| REQ-worst-row-margin-decided | Phase 17 | Pending |
+| REQ-cutter-defined-once | Phase 18 | Pending |
+| REQ-trochoid-root-generated | Phase 18 | Pending |
+| REQ-root-mode-single-predicate | Phase 18 | Pending |
+| REQ-trochoid-proved-independently | Phase 18 | Pending |
+| REQ-undercut-warning-restated | Phase 19 | Pending |
+| REQ-root-mode-decided | Phase 19 | Pending |
+| REQ-outline-consumes-root-curve | Phase 19 | Pending |
+| REQ-derived-numbers-honest-under-trochoid | Phase 19 | Pending |
+| REQ-cutter-tip-radius-settable | Phase 19 | Pending |
+| REQ-trochoid-composes-and-is-priced | Phase 19 | Pending |
+
+**Placement notes** (where a requirement's phase is not the one its text first suggests):
+- REQ-root-mode-decided: the choice is *taken* at Phase 18's discuss-phase (it fixes the
+  predicate's body), but the requirement sits in Phase 19, where its `Lxx`, the field on the
+  form and CLI, and the fixture `git diff --exit-code` can be read. It is not in conditional
+  Phase 20, so skipping that phase orphans nothing; Phase 20 (the flip) carries only the flip
+  clause of this requirement and has none of its own.
+- REQ-undercut-warning-restated: Phase 18 supplies the closed-form onset and `x_min`; the
+  requirement sits in Phase 19 because the restated sentence applies only where the predicate
+  says the trochoid does, and nothing can ask for the trochoid before Phase 19.
+- REQ-root-mode-single-predicate: written and tested in Phase 18; its consumers (`_outline`,
+  `root_fillet`, `spline_start`, `tip_chamfer_limit`, `derive`) are wired to it in Phase 19.
 
 **Coverage:**
 - v0.4 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️ (filled by the roadmap)
+- Mapped to phases: 14 (Phase 17: 4, Phase 18: 4, Phase 19: 6, Phase 20: none of its own)
+- Unmapped: 0 ✓
+- Duplicates: 0 ✓ (each requirement appears in exactly one phase)
 
 ---
 *Requirements defined: 2026-10-06*
-*Last updated: 2026-10-06 after kickoff questioning and the research pass*
+*Last updated: 2026-10-06 after the roadmap filled the traceability table*

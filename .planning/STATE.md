@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v0.4
 milestone_name: True Root
 status: planning
-last_updated: "2026-10-06T03:56:57.421Z"
+last_updated: "2026-10-06T05:18:32.000Z"
 last_activity: 2026-10-06
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,15 +21,18 @@ See: .planning/PROJECT.md (updated 2026-10-06)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.4 True Root — defining requirements (started 2026-10-06 on
-`gsd/milestone-v0.4-start`; lands through a PR like #15)
+**Current focus:** v0.4 True Root — Phase 17 (Debt First — Commit Gate and Pool Race)
+ready to discuss (started 2026-10-06 on `gsd/milestone-v0.4-start`; lands through a PR like
+#15)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 17 of 20 (Debt First — Commit Gate and Pool Race); Phase 20 is conditional on the root-mode `Lxx`
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-06 — Milestone v0.4 started
+Status: Roadmap created — ready to discuss Phase 17
+Last activity: 2026-10-06 — v0.4 roadmap created (Phases 17–20, 14/14 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -468,6 +471,7 @@ None yet.
 - Phase 15 edited: edited fields: success_criteria SC4 (per 15-CONTEXT.md D-13)
 - Phase 16 edited: edited fields: success_criteria SC1, SC2 (per 16-CONTEXT.md D-01, D-12 and 16-RESEARCH Finding 7)
 - Phase 16 edited: edited fields: success_criteria SC4 (per 16-CONTEXT.md D-08, D-10, D-12)
+- v0.4 roadmap created: Phases 17–20 (Debt First — Commit Gate and Pool Race; Trochoid Maths, Proved; The Trochoid in the Part; The Flip, conditional) — 14/14 v0.4 requirements mapped, 0 orphans, numbering continues from Phase 16; Phase 20 is skipped, never deleted, if the root-mode `Lxx` is O3 or O4 with the flip deferred
 
 ## Deferred Items
 
@@ -477,16 +481,18 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-05T05:26:09Z
-Stopped at: Phase 16 complete (UAT 3/3, verification passed, Nyquist 0 gaps, security 15/15 closed) — milestone v0.3 ready to close once Phase 16's branch lands
+Last session: 2026-10-06
+Stopped at: v0.4 roadmap written (Phases 17–20), not yet committed — ready for `/gsd-discuss-phase 17`
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: land the milestone-close PR from `gsd/milestone-v0.3-close` with `make pr.land PR=N`,
-  tag `v0.3` on its squash and push the tag (the v0.1/v0.2 precedent); then `/clear` and
-  `/gsd-new-milestone`. Phase 16 landed as PR #19 (`7a491bf`); the four local
-  `gsd/phase-13…16` branches were deleted at the close (remotes kept).
+- Next: commit the v0.4 roadmap by hand (plain `git commit`, hook allowed to finish — the
+  SDK's 30 s commit timeout cannot outlive the ~64 s hook), then `/gsd-discuss-phase 17`: the
+  hook decision comes first, before any geometry commit; the race and the margin follow.
+  Phase 18 needs `/gsd-plan-phase --research-phase` and takes the root-mode decision at its
+  discuss-phase; Phase 19 needs a spike first; Phase 20 runs only if the root-mode `Lxx`
+  makes the hob root a default (otherwise recorded as skipped).
 - Carried from v0.3 (phase artefacts now under `milestones/v0.3-phases/`): triage
   `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4` baseline,
   WR-02 a false statement and two dangling links left by the two retirements, WR-03 the
