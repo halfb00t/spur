@@ -23,6 +23,14 @@ unsupported. The semaphore object '/mp-2ttnyn_k' might leak.` `filterwarnings = 
 turns the warning into a failure. The hook's output was truncated before the failing test
 id; an immediate `make test` rerun on the identical tree read `934 passed in 67.84s`.
 
+2026-10-06, second occurrence (17-04's second of three `make verify` proof runs, `-n 8 --cov`, host
+1-min load 17.54): worker `gw2`, test
+`tests/test_pool.py::test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`;
+its assertions had all passed and the `ExceptionGroup` of five reentrant-call warnings was
+collected at the end of its call phase. 1 of 43 proof runs (40 loops over tests/test_pool.py and
+tests/test_api.py at `-n 8`/`-n 4` with `--cov`, 3 full gates) printed it; the other 42 did not.
+Whole log: `.planning/phases/17-debt-first-commit-gate-and-pool-race/investigation/17-04-resource-tracker.log`.
+
 ## Why it matters
 L13/L34 make `make verify` the one definition of "passing". A gate that fails on a
 shutdown-order race in CPython's resource tracker, with no code change, costs a rerun per
