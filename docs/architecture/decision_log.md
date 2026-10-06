@@ -1859,3 +1859,9 @@ facts); the five-site gear tuple and the mypy comparison were taken the same day
 raising a bare `TypeError` that `_build_checked` relabelled as the catch-all remedy; it now
 goes through `_shape_of` and raises `BuildError` with the same message, so "two checked
 boundaries" reads as the two helpers plus that one call site, which reuses them.
+
+**Amendment (2026-10-06, 16-REVIEW WR-02).** "A sixth cannot arrive unseen" overstated the
+pin: it matched one spelling in tracked files. It now refuses `type: ignore` with any
+spacing and case and the whole-file `mypy: ignore-errors`, in `src/spur/*.py` tracked or
+untracked (`git grep -i --untracked`), each probed by `tests/test_no_fake_done.py`;
+`pyright: ignore` is not refused and nothing wider is claimed.

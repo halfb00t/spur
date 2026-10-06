@@ -52,14 +52,19 @@ def _clean_git_env() -> dict[str, str]:
     return env
 
 
-def _repo_with_staged_probe(tmp_path: Path, probe: str) -> Path:
+def _repo_with_staged_probe(
+    tmp_path: Path, probe: str, path: str = "probe.py", *, staged: bool = True,
+) -> Path:
     repo = tmp_path / "repo"
     repo.mkdir()
     shutil.copy(REPO_ROOT / "Makefile", repo / "Makefile")
-    (repo / "probe.py").write_text(probe, encoding="utf-8")
+    target = repo / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(probe, encoding="utf-8")
     env = _clean_git_env()
     subprocess.run(["git", "init", "-q"], cwd=repo, env=env, check=True)
-    subprocess.run(["git", "add", "probe.py"], cwd=repo, env=env, check=True)
+    if staged:
+        subprocess.run(["git", "add", path], cwd=repo, env=env, check=True)
     return repo
 
 
@@ -85,4 +90,38 @@ def test_a_staged_file_with_both_markers_is_refused_with_each_line_named(
 
 def test_markers_inside_longer_words_pass(tmp_path: Path) -> None:
     result = _run_no_fake_done(_repo_with_staged_probe(tmp_path, NEAR_MISS_PROBE))
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+# --- the second block: the mypy-suppression pin, scoped to src/spur/ (Phase 16, D-05) -----
+# 16-REVIEW WR-02: the pin matched the one spelling `type: ignore` in tracked files, while
+# mypy also honours `type:ignore` (no space) and the whole-file `mypy: ignore-errors`, and a
+# module not yet `git add`ed is invisible to a plain `git grep`.
+
+
+def test_a_no_space_type_ignore_under_src_spur_is_refused(tmp_path: Path) -> None:
+    repo = _repo_with_staged_probe(
+        tmp_path, "x = 1  # type:ignore[attr-defined]\n", "src/spur/probe.py",
+    )
+    result = _run_no_fake_done(repo)
+    assert result.returncode != 0
+    assert "src/spur/probe.py:1:" in result.stdout
+    assert "a mypy suppression in src/spur" in result.stdout
+
+
+def test_a_whole_file_ignore_errors_in_an_untracked_module_is_refused(tmp_path: Path) -> None:
+    repo = _repo_with_staged_probe(
+        tmp_path, "# mypy: ignore-errors\n", "src/spur/probe.py", staged=False,
+    )
+    result = _run_no_fake_done(repo)
+    assert result.returncode != 0
+    assert "src/spur/probe.py:1:" in result.stdout
+
+
+def test_a_deliberate_suppression_outside_src_spur_passes(tmp_path: Path) -> None:
+    """tests/test_calc.py and tests/test_cli.py each carry one on purpose (D-05)."""
+    repo = _repo_with_staged_probe(
+        tmp_path, "x = 1  # type: ignore[arg-type]\n", "tests/probe.py",
+    )
+    result = _run_no_fake_done(repo)
     assert result.returncode == 0, result.stdout + result.stderr

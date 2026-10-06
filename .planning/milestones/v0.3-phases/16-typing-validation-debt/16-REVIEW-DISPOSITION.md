@@ -9,7 +9,7 @@ findings:
     title: "A third `.val()` narrowing survives in `_cell_cutters`; it raises the wrong exception, carries a stale comment, and the docs say there are only two boundaries"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The `no-fake-done` pin misses the spellings and files mypy accepts"
   - id: IN-01
     severity: info
@@ -23,7 +23,7 @@ findings:
     severity: info
     disposition: skipped
     title: "The refusal tests prove the helpers in isolation, not that the call sites reach them"
-open: 1
+open: 0
 total: 5
 recorded: 2026-10-06T00:00:00Z  # triage by hand; the gate's own stamp was 2026-10-05T04:01:07.917Z
 ---
@@ -33,7 +33,7 @@ recorded: 2026-10-06T00:00:00Z  # triage by hand; the gate's own stamp was 2026-
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | WR-01 | warning | fixed | 12daf63 fix(model): shared guard in _cell_cutters; dated amendment to L35 (fix/review-findings-v0.3) |
-| WR-02 | warning | open | queued: same Makefile block as PR #23; lands after it |
+| WR-02 | warning | fixed | build(make): widen the mypy-suppression pin (fix/review-findings-v0.3, after #23 landed) |
 | IN-01 | info | fixed | 12daf63 (fix/review-findings-v0.3) |
 | IN-02 | info | fixed | 12daf63 (fix/review-findings-v0.3) |
 | IN-03 | info | skipped | D-06 stands; reviewer: no change needed; 2026-10-06 triage |

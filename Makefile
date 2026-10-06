@@ -71,14 +71,18 @@ lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
 # The second block: mypy's warn_unused_ignores refuses a stale suppression, but nothing
 # refused a new one -- the fifth arrived unnoticed in 10-02. Scoped to src/spur/ because
 # tests/test_calc.py and tests/test_cli.py each carry one on purpose, on a deliberate
-# GearParams.model_construct(**kw) (Phase 16, D-05).
+# GearParams.model_construct(**kw) (Phase 16, D-05). The spellings mypy also accepts --
+# no space, any case, and the whole-file `mypy: ignore-errors` -- are matched, and
+# --untracked reaches a module not yet `git add`ed (16-REVIEW WR-02); `pyright: ignore`
+# is not refused. tests/test_no_fake_done.py stages or drops each probe.
 no-fake-done: ## refuse unfinished work dressed up as finished
 	@if git grep -nwE '(TODO|FIXME|XXX|HACK|NotImplementedError)' \
 	     -- '*.py' '*.js' '*.sh' ':!src/spur/static/vendor'; then \
 	  echo "make: unfinished-work markers above. Finish it, or file it in docs/tech_debt/."; \
 	  exit 1; \
 	fi
-	@if git grep -nE 'type: ignore' -- 'src/spur/*.py'; then \
+	@if git grep -nEi --untracked 'type:[[:space:]]*ignore|mypy:[[:space:]]*ignore-errors' \
+	     -- 'src/spur/*.py'; then \
 	  echo "make: a mypy suppression in src/spur above. Narrow the type, or file it in docs/tech_debt/."; \
 	  exit 1; \
 	fi
