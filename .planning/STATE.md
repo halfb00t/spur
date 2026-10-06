@@ -4,12 +4,11 @@ milestone: v0.4
 milestone_name: True Root
 current_phase: 18
 current_phase_name: Trochoid Maths, Proved
-status: planning
+status: "Phase 17 shipped — PR #27"
 stopped_at: Phase 17 complete, ready to plan Phase 18
-last_updated: "2026-10-06T10:25:04.751Z"
+last_updated: "2026-10-06T12:00:39.978Z"
 last_activity: 2026-10-06
-last_activity_desc: Phase 17 complete, transitioned to Phase 18
-state_head: 2b412ff5beebc5cf7cdc76968e036f514b7154e1
+state_head: 930c74cea3e6ab4ce78fca8a677ea7e3f178c28c
 progress:
   total_phases: 4
   completed_phases: 4
@@ -34,8 +33,8 @@ to the transition; ships through a PR like #15 — A1/A3 are read from its first
 
 Phase: 18 — Trochoid Maths, Proved
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-06 — Phase 17 complete, transitioned to Phase 18
+Status: Phase 17 shipped — PR #27
+Last activity: 2026-10-06
 
 Progress: [██████░░░░] 57%
 
