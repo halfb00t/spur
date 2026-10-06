@@ -164,6 +164,15 @@ D-07's recovery never ran: no commit returned `committed: false`.
 
 The one check no plan could make: the phase's first CI run (at `/gsd-ship`) must show the `make verify` step's three `pre-commit installed at .git/hooks/...` lines and a green job (17-RESEARCH Assumptions A1 and A3). 17-02 proved the shallow-clone install on macOS only, not on GitHub's Linux runner. A red run there is read before anything else, and the wall (a red CI run cannot land, L22) holds meanwhile.
 
+**Read at ship, 2026-10-06 (PR #27):** CI run 37460451701 on head `7af318d` printed, in the
+`make verify` step at 12:03:19Z, `pre-commit installed at .git/hooks/pre-commit`, `.../commit-msg`
+and `.../pre-push`; no hook line (`make verify.fast …` / `reject GitHub Actions skip tokens`)
+appears anywhere in the job log — A1 and A3 hold on GitHub's Linux runner. The job itself was
+red on the resource-tracker flake (`tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced`,
+`1 failed, 943 passed in 210.98s`); the re-run of that job was green, and run 37460192883 on the
+identical code (`930c74c`) read `944 passed in 128.16s`, coverage 97.11 %. The flake's debt item
+was escalated to `must` by the human at ship.
+
 Also carried to the phase transition, from 17-02 and not edited here: the ROADMAP "Process Notes" sentence and STATE.md's "Operator Next Steps" line that say every commit must be a plain `git commit` are stale from `5a3332f` on; the SDK commit works under the hook, with D-07 as the only recovery.
 
 ## Files Created/Modified

@@ -338,12 +338,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 17] The resource-tracker flake (`docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`,
-  `nice`) failed `make verify` a second time during 17-04's stability runs (run 2 of 3, worker
-  `gw2`, load 17.54) — on `test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`,
-  a test this phase added; its revisit trigger fired (`b8ef84a`); the record now carries both occurrences, the fired
-  trigger and a new one (`daa954a`, review WR-05); severity stays `nice` pending your call. The human
-  accepted the 2/3 record (`proceed-as-known-flake`).
+- ⚠️ [Phase 17] The resource-tracker flake (`docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`)
+  is now `must`: three occurrences — 17-04's proof run 2 (`b8ef84a`), then CI run 37460451701 on
+  PR #27's head `7af318d` (`test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced`, a
+  pre-Phase-17 test; the re-run and the identical-code run 37460192883 were green). Escalated by the
+  human at ship; trigger: the next `make verify` failure or Phase 18 planning, whichever first.
 - ✓ [Phase 17] The earlier review's 12 findings (WR-01…WR-05, IN-01…IN-07;
   `17-REVIEW-DISPOSITION.md`) are fixed: `17-REVIEW-FIX.md`, commits `9927f3c`…`366d6d4`.
   WR-01's backwards "bigger host" clause (`README.md:97`, L37's decision paragraph and the
@@ -351,9 +350,8 @@ None yet.
   further items (a pool.py comment that mis-stated process-exit behaviour, an async
   comprehension the await tripwire missed, a `HOW_TO_DEVELOP.md` hooks sentence, these
   records), being fixed now in iteration 2 of `17-REVIEW-FIX.md`.
-- ℹ️ [Phase 17] L36 assumptions A1/A3 (GitHub's Linux runner installs the three hooks and fires
-  none in CI) were checked on macOS only; read the three `pre-commit installed at` lines from
-  the phase's first CI run at `/gsd-ship` (17-05-SUMMARY "For ship").
+- ✓ [Phase 17] L36 assumptions A1/A3 read at ship: CI run 37460451701 (PR #27) printed the three
+  `pre-commit installed at .git/hooks/…` lines and no hook fired in CI (17-05-SUMMARY "For ship").
 - ℹ️ [Phase 17] `.planning/codebase/*.md` is stale against 13 top-level paths (the
   `verify.codebase-drift` advisory fired on every wave, non-blocking); `/gsd-map-codebase` is owed.
 - ℹ️ [Phase 16] `_cell_cutters` (`src/spur/model.py:355-357`) raises a bare `TypeError` on a
