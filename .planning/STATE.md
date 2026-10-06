@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-10-06)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 17 — Debt First — Commit Gate and Pool Race
-ready to discuss (started 2026-10-06 on `gsd/milestone-v0.4-start`; lands through a PR like
-#15)
+**Current focus:** Phase 18 — Trochoid Maths, Proved — ready to discuss (Phase 17 landed
+2026-10-06 on `gsd/phase-17-debt-first-commit-gate-and-pool-race`, 20 commits from `c06749d`
+to the transition; ships through a PR like #15 — A1/A3 are read from its first CI run)
 
 ## Current Position
 
@@ -210,7 +210,7 @@ fillet — trochoidal is a tracked idea) and L18 (ten-concurrent latency bar acc
 caveat). L14 was superseded by L21 in Phase 4 — the ratchet is on, not deferred again. L24 (a cached
 solid never carries a mesh) and L25 (the merge gate reads the whole message and the run's own
 verdict, amending L22) were appended in Phase 6. L26 (the pre-v0.2 fixture as the standing
-L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11. L31 (v0.2 composes: the composed sweep measured, `spoke_count` `le` 32, the matrix and the three-interface parity proven, export bytes explicitly not compared) was appended in Phase 12. L33 (the root lead-in warned, not re-cut; the filleted-spoke cutout proved against a closed form at `abs=1e-9`; the 15 composed cutout rows named — four hole-through-web rows on the web formula, the three tip-chamfer rows at `abs=1e-8` by the human's 14-04 checkpoint answer over measured ~6e-10 mm³ gaps, eleven still at a 6 dp literal because their closed form is not derived here; amends L09, L10 and L30) was appended in Phase 14 and corrected in place by gap plan 14-04. L34 (the gate measured: 63.555 s at `-n 8` with coverage against the human's 66 s bar, `fail_under = 96` from a 96.99 % serial baseline, CI's `make verify` under `PIP_CONSTRAINT: requirements.txt` printing the fixture's kernel pair; amends L12 and L13) was appended in Phase 15.
+L05 proof; a selector never silently selects nothing) was appended in Phase 7. L27 (a hex bore replaces the whole round profile; its limits are the chamfered corner's against the root circle, measured; the replay requires post-fixture fields null) was appended in Phase 8. L30 (body cutouts: one pattern per part, cut in one boolean, the honeycomb's cell count capped at a measured constant) was appended in Phase 11. L31 (v0.2 composes: the composed sweep measured, `spoke_count` `le` 32, the matrix and the three-interface parity proven, export bytes explicitly not compared) was appended in Phase 12. L33 (the root lead-in warned, not re-cut; the filleted-spoke cutout proved against a closed form at `abs=1e-9`; the 15 composed cutout rows named — four hole-through-web rows on the web formula, the three tip-chamfer rows at `abs=1e-8` by the human's 14-04 checkpoint answer over measured ~6e-10 mm³ gaps, eleven still at a 6 dp literal because their closed form is not derived here; amends L09, L10 and L30) was appended in Phase 14 and corrected in place by gap plan 14-04. L34 (the gate measured: 63.555 s at `-n 8` with coverage against the human's 66 s bar, `fail_under = 96` from a 96.99 % serial baseline, CI's `make verify` under `PIP_CONSTRAINT: requirements.txt` printing the fixture's kernel pair; amends L12 and L13) was appended in Phase 15. L36 (the commit gate split: `make verify.fast` at pre-commit under 30 s, the whole `make verify` at pre-push, hooks installed by the gate from the main checkout only; amends L13 and L34) and L37 (the heaviest composed row's limit as documented behaviour, no default moved; the same-slot race fixed by the two-fact guard + `_closed`; amends L31 and L32) were appended in Phase 17.
 
 v0.1's roadmap-time and per-phase decisions (Phases 2–6) are archived with the milestone:
 `milestones/v0.1-ROADMAP.md`, the `key-decisions` blocks of
@@ -339,6 +339,23 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 17] The resource-tracker flake (`docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`,
+  `nice`) failed `make verify` a second time during 17-04's stability runs (run 2 of 3, worker
+  `gw2`, load 17.54) — on `test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`,
+  a test this phase added; its revisit trigger has fired (`b8ef84a`) but the file still reads
+  "One occurrence so far" and its severity/INDEX row are unchanged (review WR-05). The human
+  accepted the 2/3 record (`proceed-as-known-flake`).
+- ⚠️ [Phase 17] Review WR-01 (`17-REVIEW-DISPOSITION.md`, 12 open): `README.md:97`, L37's decision
+  paragraph and the resolved race debt say to raise `SPUR_BUILD_TIMEOUT` "on a bigger host" —
+  backwards (a slower or busier host needs it); fix all three in one commit before ship.
+  WR-02 (`test_hooks.py` does not pin the exact `--ignore` set), WR-03 (a failing
+  `pre-commit install` fails every gate run), WR-04 (`HOW_TO_DEVELOP.md` overstates what
+  pre-push guarantees) and IN-01…IN-07 open.
+- ℹ️ [Phase 17] L36 assumptions A1/A3 (GitHub's Linux runner installs the three hooks and fires
+  none in CI) were checked on macOS only; read the three `pre-commit installed at` lines from
+  the phase's first CI run at `/gsd-ship` (17-05-SUMMARY "For ship").
+- ℹ️ [Phase 17] `.planning/codebase/*.md` is stale against 13 top-level paths (the
+  `verify.codebase-drift` advisory fired on every wave, non-blocking); `/gsd-map-codebase` is owed.
 - ℹ️ [Phase 16] `_cell_cutters` (`src/spur/model.py:355-357`) raises a bare `TypeError` on a
   non-`Solid` prototype, which `_build_checked` would relabel with the catch-all "try smaller
   fillets" remedy. Pre-existing, untouched by Phase 16 (the function is AST-identical to
@@ -353,9 +370,6 @@ None yet.
   `no-fake-done` is the fix if that changes.
 - ℹ️ [Phase 16] 16-02 read 18 `**NO**` rows under `bench/RESULTS.md`'s Phase 12 section where
   the text states 16; noted, not resolved, outside the phase.
-- ℹ️ [Phase 16] All four close-out commits this session (`a35432d` UAT, `4a050c9` validation,
-  `fb956bb` security, the transition commit) were plain `git commit` through the ~64 s
-  `make verify` hook, never `--no-verify`; the commit-timeout debt stands.
 - ℹ️ [Phase 14] Code review (`14-REVIEW-DISPOSITION.md`, 4 open): WR-01 — the shared cutout
   assertion's `volume_rel` silently wins over the new `volume_abs` when both are passed (no
   caller does; an at-most-one assert closes it); IN-01 — three `tests/test_model.py` comments
@@ -369,13 +383,6 @@ None yet.
 - ℹ️ [Phase 14] `test_the_hole_link_cuts_six_holes_through_the_recessed_floor` asserts the same
   web formula at `rel=1e-6` on the default gear — outside G-14-5's four rows; 14-04 left the
   decision to the human. `14-SECURITY.md` exists (verified 2026-10-03, `threats_open: 0`).
-- ⚠️ [Phase 13] `src/spur/pool.py:204` (`_run_with_timeout`): two timed-out requests on one
-  worker slot race each other's cleanup — the second still holds the executor the first's
-  `recreate_for` already shut down, reads `executor._processes` as `None`, and the request
-  returns an undocumented 500 instead of a contracted 503. Found by SC3 (request ids
-  `912cd2d4`, `0fc30d53` in `investigation/sc3.server1.records.jsonl`). Filed
-  `docs/tech_debt/active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`
-  (must); no `src/` change in Phase 13 by D-17; trigger named in the file.
 - ⚠️ [Phase 13] D-05's quiet bar (1-min load under 1.5 for three consecutive 30 s samples,
   900 s cap) was reached in 2 of 5 measurement sessions on this host; `bar-1`, `bar-2` and
   SC3 capped out, and the idle floor with a Claude Code session active read ~2.0. Phase 15's
@@ -505,12 +512,11 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Next: commit the v0.4 roadmap by hand (plain `git commit`, hook allowed to finish — the
-  SDK's 30 s commit timeout cannot outlive the ~64 s hook), then `/gsd-discuss-phase 17`: the
-  hook decision comes first, before any geometry commit; the race and the margin follow.
-  Phase 18 needs `/gsd-plan-phase --research-phase` and takes the root-mode decision at its
-  discuss-phase; Phase 19 needs a spike first; Phase 20 runs only if the root-mode `Lxx`
-  makes the hob root a default (otherwise recorded as skipped).
+- Next: `/gsd-discuss-phase 18` — Phase 18 (Trochoid Maths, Proved) takes the root-mode
+  decision at its discuss-phase and needs `/gsd-plan-phase --research-phase`; Phase 19 needs a
+  spike first; Phase 20 runs only if the root-mode `Lxx` makes the hob root a default
+  (otherwise recorded as skipped). Before ship: fix review WR-01's backwards "bigger host"
+  clause at its three sites in one commit; read A1/A3 from the first CI run.
 - Carried from v0.3 (phase artefacts now under `milestones/v0.3-phases/`): triage
   `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4` baseline,
   WR-02 a false statement and two dangling links left by the two retirements, WR-03 the
@@ -525,7 +531,8 @@ Resume file: None
   and predates coverage and xdist; `--paths bench` is also owed (Phase 13).
 - Decide whether `_cell_cutters`' bare `TypeError` on a non-Solid prototype
   (`src/spur/model.py:355-357`, review 16 WR-01) gets a `docs/tech_debt/active/` file.
-- Expect `gsd_run query commit` to time out on every commit (hook ~64 s warm at 929 tests,
-  `-n 8` with coverage — L34); commit with plain `git commit` and wait for any orphaned
-  `pre_commit hook-impl` to exit before writing to the tree
-  (docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md).
+- SDK commits work again since `5a3332f` (L36): the pre-commit hook is `make verify.fast`
+  (~11 s warm, ~20 s cold-mypy), inside the SDK's 30 s band. If one ever returns
+  `committed: false` / `commit_timeout`, apply D-07 (docs/HOW_TO_DEVELOP.md §4): wait until
+  `pgrep -fl 'pre_commit hook-impl|pytest|mypy'` prints nothing, then exactly one plain
+  `git commit`. Run `make verify` before every push — the pre-push hook runs the whole gate.

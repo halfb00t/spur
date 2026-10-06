@@ -385,10 +385,10 @@ before the human at Phase 18's discuss-phase.
   separate planning-only commit. The milestone close is itself a PR.
 - `make verify` (ruff, mypy `--strict`, import-linter, unfinished-work scan, pytest on 8
   xdist workers under `fail_under = 96`) is the gate for every phase, no exceptions (L13,
-  L34). It runs as the pre-commit hook (~64 s warm at 929 tests); `gsd_run query commit`'s
-  30 s timeout cannot survive it, so until Phase 17's hook decision lands every commit is a
-  plain `git commit` with the hook allowed to finish — a killed SDK commit leaves the hook
-  running as an orphan, and a retry would overlap it.
+  L34). Since Phase 17 (L36) it runs as the pre-push hook (62–73 s warm at 943 tests); the
+  pre-commit hook runs `make verify.fast` (~11 s warm, under `gsd_run query commit`'s 30 s
+  timeout — proved by SDK commit `5a3332f`). A killed SDK commit still leaves the hook running
+  as an orphan: wait for it, then one plain `git commit`, never a blind retry (D-07).
 - Every phase that adds a decision logs it as a new `Lxx` in
   `docs/architecture/decision_log.md`, append-only.
 - New parameters default to off (L05); the pre-v0.2 regression fixture is the standing
