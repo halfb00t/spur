@@ -152,13 +152,19 @@ test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the t
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
 # whole gate is 63.555 s (L34). Every test file but the four heavy ones, named by
 # exclusion -- never inclusion, never a marker -- so a new test file runs at commit until
-# someone names it heavy (`--strict-markers` is on and no marker is registered). The four,
-# by share of pytest's seconds (L34, bench/RESULTS.md "Per-file share"): tests/test_model.py
-# 74.1 %, tests/test_pool.py 8.5 %, tests/test_api.py 4.8 %; tests/test_cli.py is the
-# fourth (D-02). --no-cov is mandatory: `fail_under = 96` reads a partial run as a failure.
+# someone names it heavy (`--strict-markers` is on and no marker is registered). The
+# first three, by share of pytest's seconds (L34, bench/RESULTS.md "Per-file share"):
+# tests/test_model.py 74.1 %, tests/test_pool.py 8.5 %, tests/test_api.py 4.8 %.
+# tests/test_cli.py (4.3 %) is the fourth by D-02, not by share: tests/regression/
+# test_pre_v0_2.py (7.8 %) ranks above it and stays in the slice on purpose, to keep the
+# fixture replay at the commit boundary (L36). --no-cov is mandatory: `fail_under = 96`
+# reads a partial run as a failure.
 # Re-priced 2026-10-06 on the 12-core M2 Max dev host (1-min load 3.0-5.5): `make
 # verify.fast` read 11.28, 11.30 and 11.28 s wall warm (620 passed in 10.75 s) and 19.94 s
 # with an empty mypy cache -- all under the 30.0 s kill, with 10 s or more of headroom.
+# That count is a snapshot: the slice collected 623 tests later the same day (`pytest
+# --collect-only` with the four `--ignore` flags below), and no check watches its 30 s
+# budget as it grows.
 # The OS-cold page cache is not priced: the slice imports the kernel (tests/test_bench.py
 # through bench.build_time, the regression replay's solids), so D-07 is the recovery if a
 # commit ever runs over.
