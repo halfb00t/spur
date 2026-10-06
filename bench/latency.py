@@ -164,7 +164,7 @@ def _composed_rows() -> list[dict[str, int | float | str]]:
 @dataclass(frozen=True)
 class RequestOutcome:
     params: str  # the `k=v` label `load_sweep` uses, from the row's own raw JSON dict
-    status: str  # "200", or "503 " + the server's own `detail[0]["type"]`
+    status: str  # "200", "503 " + the server's own `detail[0]["type"]`, or "500"
     wall_s: float
     sent: float  # time.monotonic() -- comparable across this process only
     done: float
@@ -178,14 +178,20 @@ class ComposedRun:
     workers_replaced_after: int
 
 
-def _fetch(base_url: str, client: httpx.Client,
-           row: dict[str, int | float | str]) -> RequestOutcome:
+def _fetch(base_url: str, client: httpx.Client, row: dict[str, int | float | str],
+           record_500: bool = False) -> RequestOutcome:
     """One `/api/model.stl` request for a composed row, at `quality=fine` like `_build`
     (timeout 120.0, same as `_build`): `"200"` on success; `"503 " + detail[0]["type"]`
     (`"busy"` | `"timeout"` | `"pool_broken"` -- `src/spur/app.py`'s own three 503
     `type` values) on refusal, read from the documented body; any other status still
     raises (`_build`'s own rule) -- and a 503 without that documented field raises
-    naming the body, never a guessed reason (L08)."""
+    naming the body, never a guessed reason (L08).
+
+    A 500 is not one of the service's three documented refusals. The scenario that
+    exists to observe one (the same-slot timeout race,
+    REQ-same-slot-timeout-race-reproduced) passes `record_500=True`, so the run
+    finishes and the 500 lands in its table; every other caller still raises on it
+    (SC3's rule, pinned in `tests/test_bench.py`)."""
     label = " ".join(f"{k}={v}" for k, v in row.items())
     sent = time.monotonic()
     response = client.get(f"{base_url}/api/model.stl",
@@ -197,6 +203,8 @@ def _fetch(base_url: str, client: httpx.Client,
             raise ValueError(
                 f"503 response body missing detail[0].type: {response.text!r}") from exc
         status = f"503 {reason}"
+    elif record_500 and response.status_code == 500:
+        status = "500"
     else:
         response.raise_for_status()
         status = "200"
@@ -216,7 +224,8 @@ def _pool_state(base_url: str, client: httpx.Client) -> tuple[int, int]:
     return pool["queue_available"], pool["workers_replaced"]
 
 
-def run_composed(base_url: str) -> ComposedRun:
+def run_composed(base_url: str, rows: list[dict[str, int | float | str]] | None = None,
+                 label: str = "composed", record_500: bool = False) -> ComposedRun:
     """SC3 (D-13, D-16): the composed sweep's worst row fired alone first, confirmed
     (via `/api/health`) to be holding a build slot before the other nine heaviest rows
     fire beside it -- ten concurrent builds total, admission control (`MAX_QUEUED_BUILDS`
@@ -225,13 +234,17 @@ def run_composed(base_url: str) -> ComposedRun:
     that replacement would pollute a bar reading taken afterwards on the same server.
     The admission-wait `/api/health` reads below are not samples -- they do not enter
     `idle` or `under_load`.
+
+    `rows` (default: the ten composed rows) and `label` (the result's name) let the
+    `identical` scenario reuse this firing rule; `record_500` is passed to every
+    `_fetch` (see there). The defaults reproduce SC3's composed run exactly.
     """
-    rows = _composed_rows()
+    rows = _composed_rows() if rows is None else rows
     with httpx.Client() as client:
         queue_available_before, workers_replaced_before = _pool_state(base_url, client)
         idle = _sample_for(base_url, client, SETTLE_SECONDS)
         with ThreadPoolExecutor(max_workers=10) as pool:
-            worst_future = pool.submit(_fetch, base_url, client, rows[0])
+            worst_future = pool.submit(_fetch, base_url, client, rows[0], record_500)
             deadline = time.monotonic() + 10.0
             held = False
             while True:
@@ -250,7 +263,8 @@ def run_composed(base_url: str) -> ComposedRun:
                 raise RuntimeError(
                     "the worst composed row never held a build slot within 10s -- "
                     "SC3 needs a fresh server")
-            rest_futures = [pool.submit(_fetch, base_url, client, row) for row in rows[1:]]
+            rest_futures = [pool.submit(_fetch, base_url, client, row, record_500)
+                            for row in rows[1:]]
             futures = [worst_future, *rest_futures]
             under_load = _sample_while_building(base_url, client, futures)
         requests = tuple(future.result() for future in futures)
@@ -260,7 +274,7 @@ def run_composed(base_url: str) -> ComposedRun:
     # the per-request table instead (A3).
     slowest = max((r.wall_s for r in requests if r.status == "200"), default=0.0)
     refused = sum(1 for r in requests if r.status == "503 busy")
-    result = ScenarioResult("composed", idle, under_load, slowest, 10, refused)
+    result = ScenarioResult(label, idle, under_load, slowest, 10, refused)
     return ComposedRun(result, requests, workers_replaced_before, workers_replaced_after)
 
 
@@ -268,7 +282,7 @@ def _composed_markdown(run: ComposedRun) -> str:
     """The per-request table and health delta SC3's write-up copies verbatim (E10). No
     `SPUR_BUILD_TIMEOUT` value is printed here: this client cannot know the server's
     setting -- `bench/RESULTS.md` names it from the server's own recorded environment."""
-    lines = ["### Per-request outcomes (composed)", "",
+    lines = [f"### Per-request outcomes ({run.result.name})", "",
              "| # | Parameters | Outcome | Wall time (s) |", "|---|---|---|---|"]
     for i, r in enumerate(run.requests, start=1):
         lines.append(f"| {i} | {r.params} | {r.status} | {r.wall_s:.2f} |")
@@ -288,6 +302,24 @@ def scenario_composed(base_url: str) -> ScenarioResult:
     replaced, and that replacement would pollute a bar reading taken afterwards on the
     same server."""
     run = run_composed(base_url)
+    print(_composed_markdown(run))
+    return run.result
+
+
+def _identical_rows() -> list[dict[str, int | float | str]]:
+    """Ten copies of the composed worst row. 29.42 s alone (composed.json row 4), they
+    are one cache key, so D-07's hash affinity routes every admitted copy to one worker
+    slot -- `MAX_QUEUED_BUILDS` (4) admits four: one building, three queued behind it.
+    That is the same-slot double timeout SC3 hit by affinity luck, isolated from
+    cross-slot contention (13-CONTEXT `<deferred>`; the race debt's Next step)."""
+    return [_composed_rows()[0]] * 10
+
+
+def scenario_identical(base_url: str) -> ScenarioResult:
+    """Phase 17, REQ-same-slot-timeout-race-reproduced: the worst composed row ten
+    times, recording a 500 instead of raising on it. Never on a server a bar session
+    will use -- it times out and replaces workers by design."""
+    run = run_composed(base_url, _identical_rows(), "identical", record_500=True)
     print(_composed_markdown(run))
     return run.result
 
@@ -322,13 +354,14 @@ _SCENARIOS: dict[str, Callable[[str], ScenarioResult]] = {
     "single": scenario_single,
     "concurrent": scenario_concurrent,
     "composed": scenario_composed,
+    "identical": scenario_identical,
 }
 
-# A third registered scenario would put `composed` first in `sorted(_SCENARIOS)` and
-# into every no-argument run -- where a worker it times out and replaces (D-10/D-12)
-# would pollute the bar (D-16). This tuple pins the order the no-argument run has
-# always had (D-07, D-15); `main()` reads it, never `sorted(_SCENARIOS)`, with no
-# scenario argument.
+# A fourth registered scenario changes nothing here: the no-argument run reads this
+# tuple, never `sorted(_SCENARIOS)` (which would put `composed` first), and neither
+# `composed` nor `identical` -- both time out and replace a worker (D-10/D-12) -- may
+# enter it, or that replacement would pollute the bar (D-16). The tuple pins the order
+# the no-argument run has always had (D-07, D-15).
 DEFAULT_SCENARIOS: tuple[str, ...] = ("concurrent", "single")
 
 
@@ -350,11 +383,11 @@ def _report_markdown(name: str, idle_p95: float, idle_n: int, load_p95: float,
                       refused: int) -> str:
     ratio = load_p95 / idle_p95 if idle_p95 > 0 else float("inf")
     # RECORDED_BASELINE is the debt file's single/concurrent numbers (D-17) -- printing
-    # it under a "composed" heading would invite a reader to compare the composed
+    # it under a "composed" or "identical" heading would invite a reader to compare that
     # ratio against numbers measured for a different scenario entirely. Omit it there.
     baseline_line = (
         f"- Recorded baseline (different machine, ratio-only comparison per D-17): "
-        f"{RECORDED_BASELINE}\n" if name != "composed" else ""
+        f"{RECORDED_BASELINE}\n" if name not in ("composed", "identical") else ""
     )
     return (
         f"## Latency: {name}\n\n"

@@ -48,6 +48,7 @@ from bench.latency import (
     RECORDED_BASELINE,
     _composed_rows,
     _fetch,
+    _identical_rows,
     _report_markdown,
 )
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
@@ -599,9 +600,11 @@ def test_the_no_argument_latency_run_is_still_concurrent_then_single() -> None:
     """D-07/D-15/D-16: registering `composed` in `_SCENARIOS` must not put it into the
     no-argument run (`sorted(_SCENARIOS)` would put it first), where a timed-out worker
     it replaces could pollute the bar's own reading -- `DEFAULT_SCENARIOS` pins the
-    order the no-argument run has always had."""
+    order the no-argument run has always had. Phase 17 registers a fourth, `identical`
+    (REQ-same-slot-timeout-race-reproduced), which times out and replaces workers by
+    design and so stays out of the tuple for the same reason."""
     assert DEFAULT_SCENARIOS == ("concurrent", "single")
-    assert set(_SCENARIOS) == {"concurrent", "single", "composed"}
+    assert set(_SCENARIOS) == {"concurrent", "single", "composed", "identical"}
 
 
 def test_a_503_is_recorded_by_the_reason_the_server_gave() -> None:
@@ -635,17 +638,60 @@ def test_a_503_is_recorded_by_the_reason_the_server_gave() -> None:
             _fetch("http://test", client, {"case": "500"})
 
 
+def test_a_500_is_recorded_only_when_the_caller_asks() -> None:
+    """REQ-same-slot-timeout-race-reproduced: a 500 is not one of the service's three
+    documented refusals, so `_fetch` raises on it by default (SC3's rule, pinned by
+    `test_a_503_is_recorded_by_the_reason_the_server_gave`). The `identical` scenario
+    exists to observe exactly that 500, so it passes `record_500=True` and the run
+    finishes with the 500 in its table. Only a 500 is recorded: any other status
+    still raises, with either value. No network: `httpx.MockTransport`."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        case = request.url.params["case"]
+        return httpx.Response(int(case), content=b"body")
+
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport) as client:
+        outcome = _fetch("http://test", client, {"case": "500"}, record_500=True)
+        assert outcome.status == "500"
+        assert outcome.params == "case=500"
+
+        with pytest.raises(httpx.HTTPStatusError):
+            _fetch("http://test", client, {"case": "500"})
+        with pytest.raises(httpx.HTTPStatusError):
+            _fetch("http://test", client, {"case": "500"}, record_500=False)
+        for record_500 in (False, True):
+            with pytest.raises(httpx.HTTPStatusError):
+                _fetch("http://test", client, {"case": "404"}, record_500=record_500)
+
+
+def test_the_identical_scenario_fires_the_worst_composed_row_ten_times() -> None:
+    """REQ-same-slot-timeout-race-reproduced (Phase 13's deferred queue-wait scenario):
+    ten copies of the composed worst row (29.42 s alone, `bench/sweeps/composed.json`
+    row 4) are one cache key, so D-07's hash affinity sends every admitted copy to one
+    worker slot -- the same-slot double timeout SC3 hit by affinity luck. The row is
+    the same one `_composed_rows()` fires first, and it validates to the sweep's own
+    reading of that row."""
+    rows = _identical_rows()
+    assert len(rows) == 10
+    assert all(row == _composed_rows()[0] for row in rows)
+    assert GearParams.model_validate(rows[0]) == load_sweep(
+        DEFAULT_SWEEP.parent / "composed.json")[3][1]
+
+
 def test_the_composed_report_omits_the_single_concurrent_baseline_line() -> None:
     """WR-01: `_report_markdown` is reused for all three scenarios via `_run_scenario`.
     `RECORDED_BASELINE` is the debt file's `single`/`concurrent` numbers (D-17) -- printed
     unconditionally, it would appear under a `"composed"` heading too, where it has
     nothing to do with the composed sweep's own numbers and would invite a reader to
     compare the composed ratio against a baseline measured for a different scenario
-    entirely. Omitted only for `name="composed"`; still printed for the two scenarios
-    it actually describes."""
-    composed_report = _report_markdown("composed", 0.001, 100, 0.002, 100, 1.0, 10, 0)
-    assert RECORDED_BASELINE not in composed_report
-    assert "Recorded baseline" not in composed_report
+    entirely. Omitted for `name="composed"` and, since Phase 17, `name="identical"`
+    (the same composed worst row, ten times); still printed for the two scenarios it
+    actually describes."""
+    for name in ("composed", "identical"):
+        omitted = _report_markdown(name, 0.001, 100, 0.002, 100, 1.0, 10, 0)
+        assert RECORDED_BASELINE not in omitted
+        assert "Recorded baseline" not in omitted
 
     for name in ("single", "concurrent"):
         report = _report_markdown(name, 0.001, 100, 0.002, 100, 1.0, 10, 0)
