@@ -145,8 +145,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # build ever approaches this value.
         # It has: the heaviest allowed composed row reads 29.42 s alone and does not
         # finish inside 30 s under concurrent load (SC3 `duration_ms` 30004,
-        # bench/RESULTS.md, Phase 17), and L37 keeps 30 s with `503 timeout` as the
-        # documented answer there.
+        # bench/RESULTS.md "Composed worst row under ten concurrent builds (Phase 13)";
+        # the `identical` scenario's 30003, "Same-slot timeout race (Phase 17)"), and
+        # L37 keeps 30 s with `503 timeout` as the documented answer there.
         int_env("SPUR_BUILD_TIMEOUT", 30),
     )
     try:
