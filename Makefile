@@ -61,12 +61,19 @@ lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
 # ':!.../vendor' keeps a future three.js release's own comments from failing our gate:
 # the bundle is a build artefact (L11), not code we wrote.
 #
+# -w, not \b: git grep -E hands the pattern to the system regex library, and macOS's does
+# not implement \b -- a staged file holding both TODO and NotImplementedError passed the
+# \b-anchored scan with exit 1 and no output (homebrew git 2.54.0, 2026-10-05). So on the
+# dev host, where the pre-commit hook runs, this check passed vacuously and only CI's
+# Linux git enforced it. -w is git's own whole-word match, the same on both;
+# tests/test_no_fake_done.py stages that probe against a copy of this file.
+#
 # The second block: mypy's warn_unused_ignores refuses a stale suppression, but nothing
 # refused a new one -- the fifth arrived unnoticed in 10-02. Scoped to src/spur/ because
 # tests/test_calc.py and tests/test_cli.py each carry one on purpose, on a deliberate
 # GearParams.model_construct(**kw) (Phase 16, D-05).
 no-fake-done: ## refuse unfinished work dressed up as finished
-	@if git grep -nE '\b(TODO|FIXME|XXX|HACK|NotImplementedError)\b' \
+	@if git grep -nwE '(TODO|FIXME|XXX|HACK|NotImplementedError)' \
 	     -- '*.py' '*.js' '*.sh' ':!src/spur/static/vendor'; then \
 	  echo "make: unfinished-work markers above. Finish it, or file it in docs/tech_debt/."; \
 	  exit 1; \
