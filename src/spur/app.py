@@ -143,6 +143,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # machine (the debt file's own concern: the stall is proportionally worse on
         # slower hardware). Re-measure and adjust if bench/RESULTS.md's worst observed
         # build ever approaches this value.
+        # It has: the heaviest allowed composed row reads 29.42 s alone and does not
+        # finish inside 30 s under concurrent load (SC3 `duration_ms` 30004,
+        # bench/RESULTS.md, Phase 17), and L37 keeps 30 s with `503 timeout` as the
+        # documented answer there.
         int_env("SPUR_BUILD_TIMEOUT", 30),
     )
     try:

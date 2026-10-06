@@ -23,7 +23,6 @@ Severity (grep-able `Severity:` field):
 | nice | [Eleven composed-solid cutout volumes are 6 dp literals asserted at rel=1e-6](active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md) | the CadQuery/OCP kernel pair is bumped, or a composed-solid cutout row is next re-pinned |
 | nice | [Phase 7's Nyquist audit lists 3 tasks with no named automated command](active/2026-10-05-phase-07-nyquist-gaps.md) | the covered file is next touched (`tests/regression/capture.py`, `tests/regression/test_pre_v0_2.py`, `src/spur/model.py` bore-rim selection, or `bench/RESULTS.md`'s fixture-cost section) |
 | nice | [`Resolved in:` shas in the debt ledger point at squash-merged branch commits, not at `main`](active/2026-10-05-resolved-in-shas-point-at-squashed-branch-commits.md) | a `Resolved in:` sha fails to resolve in a clone, a remote `gsd/phase-*` branch is deleted, or the retirement rule in CLAUDE.md is next edited |
-| must | [A same-slot timeout cleanup race produces an undocumented 500 instead of a 503](active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md) | the ten-identical-worst-row scenario is run, a 500 is observed in production, `_run_with_timeout`/`recreate_for` is next touched, or `SPUR_BUILD_TIMEOUT`'s default is reconsidered |
 | nice | [A reentrant `resource_tracker` cleanup warning sometimes fails `make verify`](active/2026-10-06-resource-tracker-flake-fails-the-gate.md) | the warning fails `make verify` a second time, or `tests/test_pool.py`'s shutdown path or coverage's `concurrency` is next touched |
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
 
@@ -31,6 +30,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [A same-slot timeout cleanup race produces an undocumented 500 instead of a 503](resolved/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md) | `0628182` and docs(17-05): record the worst row's margin as documented behaviour and retire the same-slot race debt (L37) — see the file's own `Resolved in:` field |
 | [gsd's 30 s commit timeout kills the pre-commit `make verify` hook, warm or cold](resolved/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md) | `c06749d` — see the file's own `Resolved in:` field |
 | [`.planning/intel/` still repeats two figures the live docs have since corrected](resolved/2026-10-05-intel-context-repeats-superseded-figures.md) | docs(intel): correct the Python floor and gate duration; index L17–L35 — see the file's own `Resolved in:` field |
 | [`make no-fake-done` matches nothing on macOS: `git grep -E` has no `\b`](resolved/2026-10-05-no-fake-done-scan-is-blind-on-macos.md) | fix(gate): match unfinished-work markers with -w so the scan runs on macOS — see the file's own `Resolved in:` field |

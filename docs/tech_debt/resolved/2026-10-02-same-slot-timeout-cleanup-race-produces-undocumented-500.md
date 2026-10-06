@@ -1,21 +1,21 @@
 # A same-slot timeout cleanup race produces an undocumented 500 instead of a 503
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-10-02
-Source: 13-06's SC3 measurement (`.planning/phases/13-latency-bar/investigation/sc3*`),
+Resolved in: 0628182 (the race); docs(17-05): record the worst row's margin as documented behaviour and retire the same-slot race debt (L37) (the margin)
+Source: 13-06's SC3 measurement (`.planning/milestones/v0.3-phases/13-latency-bar/investigation/sc3*`),
 the composed worst row under ten concurrent builds — the question
 `docs/tech_debt/resolved/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md` left
 open ("nothing here measures the chamfer under concurrent load"), re-homed into
 `docs/tech_debt/active/2026-09-23-concurrent-latency-bar-waived.md`'s trigger (12-CONTEXT.md
 D-04) and answered here (D-13..D-16).
 Related files:
-- `src/spur/pool.py` (`_run_with_timeout`'s `except TimeoutError` branch, lines 183-210,
-  specifically line 204; `recreate_for`, lines 99-155)
+- `src/spur/pool.py` (`_run_with_timeout`'s `except TimeoutError` branch; `recreate_for`)
 - `bench/latency.py` (`run_composed`, `_fetch`, `scenario_composed` — D-15's scenario that
   measured this)
 - `bench/RESULTS.md` ("### Composed worst row under ten concurrent builds (Phase 13)")
-- `.planning/phases/13-latency-bar/investigation/sc3.server1.records.jsonl`,
+- `.planning/milestones/v0.3-phases/13-latency-bar/investigation/sc3.server1.records.jsonl`,
   `sc3-run1.stderr.txt`
 
 ## Context
@@ -91,6 +91,38 @@ own replacement, before touching `executor._processes`) and skip straight to rai
 The ten-identical-worst-row scenario is run, a `500` (as opposed to the documented `503`
 types) is observed in production, `_run_with_timeout` or `recreate_for` is next touched, or
 `SPUR_BUILD_TIMEOUT`'s default is reconsidered (the margin finding above).
+
+## Resolution (2026-10-06)
+
+**The race** fixed in `0628182` (17-04). `_run_with_timeout`'s `except TimeoutError` branch now
+terminates and replaces the worker only when two facts hold: the slot still holds this request's
+own executor, and that executor's `_processes` is not `None`. The `raise BuildTimeout` after it is
+unconditional, so a same-slot sibling that lost the race gets the documented `503 timeout` where
+it used to get an `AttributeError` and a raw `500`. Identity alone was not enough: `shutdown()`
+leaves the slot holding the same executor object with `_processes` `None`, so `BuildPool._closed`
+(set first in `shutdown()`, honoured by `recreate_for`) stops a closed pool building a
+replacement nobody would shut down. Four tests: the stale executor
+(`test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error`), three same-tick
+siblings, the closed pool, and an ast check that the timeout branch never awaits. Red against
+the unfixed pool, `3 failed, 1 passed` (the passing one is the ast check, which is meant to pass
+on the old code and has a seeded await proving it can fail); green after, `74 passed` for
+`tests/test_pool.py` and `tests/test_api.py`. Loops: 20 of 20 at `-n 8 --cov`, 20 of 20 at
+`-n 4 --cov`, and 2 of 3 whole `make verify` runs, the third lost to the resource-tracker flake
+and accepted by the human (`investigation/17-04-stability.md` under
+`.planning/phases/17-debt-first-commit-gate-and-pool-race/`). The bench before and after:
+`identical` reproduced three `500`s with three `AttributeError` records on `814f4f3` (attempt 1),
+and on `0628182` four admitted requests all ended `503 timeout` with no `500` and no
+`AttributeError` (`bench/RESULTS.md` "## Same-slot timeout race (Phase 17)"). The deterministic
+test, not the bench, is the proof.
+
+**The margin** decided in L37: recorded as documented behaviour, no default moved.
+`SPUR_BUILD_TIMEOUT` stays 30 s and `spoke_count`'s `le` stays 32; the heaviest allowed composed
+row reads 29.42 s alone (0.58 s of margin) and under load ended `BuildTimeout` at `duration_ms`
+30004 with both workers busy (SC3) and `503 timeout` at 30003 ms with one worker busy and three
+queued (Phase 17, at loads 5.48 to 5.88 and 18.94 to 15.30). `503 timeout` is its contract, a
+bigger host raises the variable, and the limit is in `README.md`, in `src/spur/app.py`'s comment
+and as dated notes in `bench/RESULTS.md` and the resolved tip-chamfer debt. Revisit at Phase 19's
+composed re-measure or on any change to the default or an `le` cap.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

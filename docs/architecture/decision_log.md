@@ -1991,3 +1991,99 @@ The upstream request is filed: https://github.com/open-gsd/gsd-core/issues/5231,
 closed issues for `COMMIT_TIMEOUT_MS` found nothing and for "commit timeout" only #3886. This
 paragraph is committed by gsd's own SDK commit, the commit L36 exists to make possible; its JSON
 result is `.planning/phases/17-debt-first-commit-gate-and-pool-race/17-02-sdk-commit.json`.
+
+## L37 — The heaviest allowed composed row is a documented 503 timeout under concurrent load, and no default moves (amends L31 and L32)
+
+Date: 2026-10-06.
+
+L31 and L32 stay as written. L31's "every row inside 30 s" holds one build at a time; this
+entry records what happens past it under contention, and closes the margin finding that L32
+filed together with the same-slot timeout race. The race itself was fixed in 17-04 (`0628182`);
+the margin is decided here, by recording it, not by moving a number.
+
+**The row** (D-10). `bench/sweeps/composed.json` row 4 (1-based), the heaviest composed row the
+limits allow: `teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4
+spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3
+recess_sides=both`. A cold request for it is one build plus one export.
+
+**The numbers that set it** (D-11), each in the unit it was recorded in and cited to its section.
+No dedicated worst-row-under-N sweep was run; these are the readings that exist.
+
+- *Alone:* 29.42 s of 30 s, 0.58 s of margin, one build at a time, on the 12-core M2 Max, on
+  2026-09-30 at 1-minute load 1.65 before launch and 1.68 at the runner's own start reading
+  (`bench/RESULTS.md` "### Re-run after the gate (lower-le: spoke_count 32)", Phase 12; the
+  paragraph after its table carries a dated note since this entry).
+- *The threshold pair the cap rests on:* `spoke_count` 32 read 29.41 s and 33 read 30.11 s on this
+  row (`bench/RESULTS.md` "### Gate probe", Phase 12, build plus the slower export, host load
+  2.40 to 29.51 across the probe).
+- *SC3, both workers busy, ten distinct rows:* this row's request (`51e80f35`) ended
+  `BuildTimeout` at `duration_ms` 30004, as the server recorded it
+  (`.planning/milestones/v0.3-phases/13-latency-bar/investigation/sc3.server1.records.jsonl`;
+  `bench/RESULTS.md` "### Composed worst row under ten concurrent builds (Phase 13)"), on
+  2026-10-02 with the quiet-gate samples at 1.53 to 9.92 and the load after at 4.74. Four of the
+  ten requests were admitted, and all four exceeded `SPUR_BUILD_TIMEOUT`.
+- *`identical`, one worker busy, three requests queued behind it:* the same row ten times, one
+  cache key, one hash slot, on a fresh server with shipping defaults (`bench/RESULTS.md` "##
+  Same-slot timeout race (Phase 17)"). The slot-holding request (29.42 s alone) read `503
+  timeout` both times: at this load, 5.48 to 5.88 (1-minute), on 2026-10-06 at 09:17Z, 30.01 s
+  client wall and server `duration_ms` 30003 (17-03, request `cf3e6608`, commit `814f4f3`, before
+  the fix); and at this load, 18.94 at the server start to 15.30 after the client, on 2026-10-06
+  at 09:58Z, 30.01 s client wall and server `duration_ms` 30003 (17-05, request `d6cd9587`,
+  commit `0628182`, after the fix).
+
+The two contention shapes are kept apart: SC3 had both workers busy with ten different rows;
+`identical` had one worker busy and the other idle. Neither is a margin under N concurrent builds,
+and none of the four lines above is converted into a ratio here. A timeout reading records only
+that the build had not returned when the 30 s elapsed, not how long it would have taken: 30004
+and 30003 are the deadline firing, not the row's own time.
+
+**The decision** (D-10). The limit is recorded as documented behaviour. `SPUR_BUILD_TIMEOUT`
+stays 30 s and `spoke_count`'s `le` stays 32. `503 timeout` is the contract for this row under
+concurrent load, and a bigger host raises the variable. L05 holds (no default or cap moved, so
+every shared link that builds today still builds, and an unset parameter still never changes the
+part) and L08 holds (no figure was tuned toward a pass; each is a recorded reading with its
+section and its load). Rejected, with the reason: raising the default, because every deployment
+would wait longer on a wedged worker, the 4x-slower-hardware rationale in `app.py`'s comment would
+need restating, and there is no proven margin on slower hosts either; lowering `spoke_count`'s
+`le` a third time (200 to 40 in Phase 11, 40 to 32 in Phase 12), because it needs a new concurrent
+sweep to choose the number and every link at 32 spokes would start returning `422`.
+
+**The contract at the boundary.** A build that has not returned when `SPUR_BUILD_TIMEOUT` elapses
+gets `503 timeout` and its worker is terminated and replaced, whatever it takes alone; SC3's 30004
+ms is that boundary observed. Since 17-04's fix (`0628182`), a second same-slot timeout of the same
+incident gets the same documented 503 and never a raw 500: `_run_with_timeout` terminates and
+replaces the worker only when the slot still holds its own executor and that executor's
+`_processes` is not `None`, and `BuildPool._closed` stops a closed pool building a replacement.
+The proof is the deterministic stale-executor test, red before (`3 failed, 1 passed`, the passing
+one being the ast check that is meant to pass on the old code) and green after (`74 passed` for
+`tests/test_pool.py` and `tests/test_api.py`), plus the loops: 20 of 20 runs at `-n 8 --cov`, 20
+of 20 at `-n 4 --cov`, and 2 of 3 whole `make verify` runs, the third lost to the known
+resource-tracker flake and accepted by the human (`17-04-SUMMARY.md`, per run in
+`.planning/phases/17-debt-first-commit-gate-and-pool-race/investigation/17-04-stability.md`). The
+bench agrees but is not the proof: the same scenario showed three `500`s with three `AttributeError`
+`build.failed` records on `814f4f3`, and on `0628182` four admitted requests all ended `503 timeout`
+with no `500` and no `AttributeError` (`bench/RESULTS.md` "### Before the fix: verdict" and "###
+After the fix").
+
+**Where it reaches users** (D-12). One sentence in `README.md`'s paragraph on build workers; one
+sentence in the comment beside `int_env("SPUR_BUILD_TIMEOUT", 30)` in `src/spur/app.py`, whose own
+trigger ("re-measure and adjust if the worst observed build ever approaches this value") has
+fired and which this entry answers; and a dated note on the 0.58 s paragraph in `bench/RESULTS.md`
+and on the resolved tip-chamfer debt's 30 s over 29.42 s line. The earlier text of both is
+unedited.
+
+**Revisit when** (D-13). Phase 19's composed re-measure (REQ-trochoid-composes-and-is-priced
+measures the heaviest row against `SPUR_BUILD_TIMEOUT` anyway), or any change to
+`SPUR_BUILD_TIMEOUT`'s default or to an `le` cap.
+
+**Reversibility.** Reversible: no default, cap or code path moved by this entry. A later entry
+can raise the default or lower a cap with its own measurement; nothing here has to be undone first.
+
+Reason: the margin finding L32 filed was a single-build figure that did not survive contention,
+and the choice was between moving a number a shared link depends on and saying what the service
+does. L05 and L08 pick the second, so the limit is now stated where it is read, with the readings
+that set it and the load each was taken at.
+Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string
+hw.memsize`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); the
+two `identical` readings were taken on 2026-10-06, SC3 on 2026-10-02, the Phase 12 readings on
+2026-09-30.

@@ -92,7 +92,10 @@ in flight — `/api/health` measures in single-digit milliseconds under load
 (`bench/RESULTS.md`'s Latency section). A build past `SPUR_BUILD_TIMEOUT` is refused
 rather than waited on: the request gets `503` with `Retry-After`, and the worker behind
 it is terminated and replaced so the next request to that gear doesn't queue behind a
-wedged one. Past `SPUR_MAX_QUEUED_BUILDS` the API also answers `503` with `Retry-After`
+wedged one. Builds near the caps — the heaviest composed gear the limits allow reads 29.42 s
+alone on the 12-core dev host — can exceed `SPUR_BUILD_TIMEOUT` under concurrent load and
+return `503` `timeout`; raise the variable on a bigger host (L37). Past
+`SPUR_MAX_QUEUED_BUILDS` the API also answers `503` with `Retry-After`
 rather than piling work up.
 
 ### Without Docker

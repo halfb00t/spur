@@ -63,6 +63,12 @@ row of the composed sweep, including every tip-chamfer-bearing one, now reads in
 -- heaviest 29.42 s of 30 s, 0.58 s of margin (~1.02x), the same pattern that was over
 budget at `spoke_count=40`.
 
+**Note (2026-10-06, L37).** The ~1.02x above is 30 s over 29.42 s, one build at a time, and it did
+not hold under concurrent load: the same row ended `BuildTimeout` at `duration_ms` 30004 with both
+workers busy (SC3, Phase 13) and read `503 timeout` at 30003 ms with one worker busy and three
+requests queued behind it (Phase 17, `bench/RESULTS.md` "## Same-slot timeout race (Phase 17)").
+The limit is documented behaviour; see L37.
+
 Decision: a lowered `le` on the co-occurring feature (`spoke_count` 40 -> 32), not a
 raised `SPUR_BUILD_TIMEOUT` default or a teeth-dependent cap on the chamfer itself --
 D-03 rejected the latter twice (10 D-07, 11 D-12). This file's own "Next step" second

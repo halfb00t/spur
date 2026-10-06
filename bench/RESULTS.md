@@ -2011,6 +2011,14 @@ reading for `spoke_count=32` on the same row (29.41 s), one build/export apart. 
 over budget; per Task 3's own instruction this re-run does not trigger a further
 checkpoint.
 
+**Note (2026-10-06, L37).** The 0.58 s margin is a single-build reading. Under ten concurrent
+builds the same row ended `BuildTimeout` at `duration_ms` 30004 (SC3, Phase 13, "### Composed
+worst row under ten concurrent builds (Phase 13)"), and with one worker busy and three requests
+queued behind it the slot-holding request for it read `503 timeout` at 30.01 s client wall and
+30003 ms server `duration_ms`, at 1-minute load 5.48 to 5.88 on 2026-10-06 and again at 18.94 to
+15.30 later that day ("## Same-slot timeout race (Phase 17)", "### Attempt 1" and "### After the
+fix"). The limit is documented behaviour (L37); the text above is as it was written.
+
 ### Gate decision
 
 The human's verbatim answer to Task 2's checkpoint (4th ask, D-03's first offer): "lower-le:
