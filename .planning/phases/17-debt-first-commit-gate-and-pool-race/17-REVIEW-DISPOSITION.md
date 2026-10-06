@@ -5,23 +5,23 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "User-facing guidance says to raise `SPUR_BUILD_TIMEOUT` \"on a bigger host\", which is backwards"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`test_hooks.py` does not pin the exact `--ignore` set, so the commit slice can shrink silently"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A failing `pre-commit install` fails every gate run, including `make verify` and `make worktree.land`"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`HOW_TO_DEVELOP.md` says the push cannot be red; L36 says what pre-push does not guarantee"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The resource-tracker debt record contradicts itself, its revisit trigger has fired, and the phase's own new test is where it struck"
   - id: IN-01
     severity: info
@@ -51,20 +51,20 @@ findings:
     severity: info
     disposition: open
     title: "After `shutdown()`, a timed-out request raises `BuildTimeout` but never terminates its wedged worker"
-open: 12
+open: 7
 total: 12
-recorded: 2026-10-06T10:20:14.808Z
+recorded: 2026-10-06T11:05:15.090Z
 ---
 
 # Phase 17: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-05 | warning | open | - |
+| WR-01 | warning | fixed | 17-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 17-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 17-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 17-REVIEW-FIX.md |
+| WR-05 | warning | fixed | 17-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
