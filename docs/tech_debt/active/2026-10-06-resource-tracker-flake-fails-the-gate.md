@@ -34,8 +34,10 @@ Whole log: `.planning/phases/17-debt-first-commit-gate-and-pool-race/investigati
 ## Why it matters
 L13/L34 make `make verify` the one definition of "passing". A gate that fails on a
 shutdown-order race in CPython's resource tracker, with no code change, costs a rerun per
-occurrence and teaches people to retry — the habit the gate exists to prevent. One
-occurrence so far; cause unmeasured. It is the `Finalize` of a semaphore (a
+occurrence and teaches people to retry — the habit the gate exists to prevent. Two
+occurrences so far, the second inside a test Phase 17 added (17-04's `make verify` proof
+runs read 2 of 3 green); cause unmeasured, and the `-n 0` / no-`--cov` isolation under Next
+step has not been run. It is the `Finalize` of a semaphore (a
 `ProcessPoolExecutor` or a coverage `multiprocessing` hook) running while the tracker is
 already inside its own cleanup, which is an interpreter-shutdown ordering question, not a
 `spur` bug as far as this one log shows.
@@ -49,8 +51,13 @@ narrowest `filterwarnings` entry that names this message, never a blanket
 `ignore::pytest.PytestUnraisableExceptionWarning`.
 
 ## Revisit when
-The warning fails `make verify` a second time, or `tests/test_pool.py`'s shutdown path or
-`[tool.coverage.run] concurrency` is next touched.
+The "fails `make verify` a second time" trigger fired on 2026-10-06 (the second occurrence
+above, commit `b8ef84a`). New trigger: the warning fails `make verify` a third time, or
+`[tool.coverage.run] concurrency` is next touched, or the isolation runs under Next step are
+done, whichever comes first.
+
+Open for the human: the severity stays `nice`. A gate that failed 1 of 3 full proof runs
+may be worth `must` (fix now or stop and ask); that call is not made here.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
