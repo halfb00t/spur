@@ -1,27 +1,27 @@
-# The gate, at the commit boundary. `make verify` is the same command CI runs and the
-# same one `make worktree.land` runs before a merge -- one definition of "passing",
-# three places that enforce it.
+# The gate, at two git boundaries. At commit the stage runs `make verify.fast`: the gate's
+# static steps plus its own pytest recipe over every test file but tests/test_model.py,
+# tests/test_pool.py, tests/test_api.py and tests/test_cli.py, under 30 s, so gsd's SDK
+# commit fits inside its hard-coded 30 s (L36). At push the stage runs `make verify`, the
+# same command CI and `make worktree.land` run -- one definition of "passing", three
+# places that enforce it.
 #
-# Install once per clone:  .venv/bin/pre-commit install
-# A warm run measured 63.555 s (`-n 8` with coverage, mean of two runs) on the 12-core
-# M2 Max dev host: bench/RESULTS.md, "The gate, measured and pinned (Phase 15)", section
-# "Before and after", 2026-10-04. The CAD tests dominate it (tests/test_model.py is about
-# three quarters of pytest's seconds, section "Per-file share"). The first run after
-# `make clean` pages in ~1.4 GB of OpenCascade and takes a couple of minutes; that is the
-# page cache, not the tests.
+# Install by running `make venv` once in the main checkout: it installs all three hook
+# types, and the gate re-installs them when this file changes (the Makefile's $(HOOKS)
+# stamp). A warm `make verify` measured 63.555 s (`-n 8` with coverage, mean of two runs)
+# on the 12-core M2 Max dev host: bench/RESULTS.md, "The gate, measured and pinned
+# (Phase 15)", section "Before and after", 2026-10-04 -- that is the push stage's cost.
+# The CAD tests dominate it (tests/test_model.py is about three quarters of pytest's
+# seconds, section "Per-file share"). The first run after `make clean` pages in ~1.4 GB of
+# OpenCascade and takes a couple of minutes; that is the page cache, not the tests.
 #
 # There is deliberately no formatter hook: see L16 in docs/architecture/decision_log.md.
-#
-# `pre-commit install` now installs both git hook types below (default_install_hook_types
-# covers commit-msg too, D-02) -- a clone that installed before this change re-runs the
-# same documented command once to pick up the second hook.
-default_install_hook_types: [pre-commit, commit-msg]
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
 repos:
   - repo: local
     hooks:
-      - id: verify
-        name: make verify (ruff, mypy, import boundaries, unfinished-work scan, pytest)
-        entry: make verify
+      - id: verify-fast
+        name: make verify.fast (static checks + every test file but the four heavy ones, under 30 s)
+        entry: make verify.fast
         language: system
         pass_filenames: false
         always_run: true
@@ -30,9 +30,17 @@ repos:
         # ran twice per commit once commit-msg joined default_install_hook_types --
         # confirmed in a scratch repo during planning (2 runs unpinned, 1 pinned).
         stages: [pre-commit]
+      - id: verify
+        name: make verify (ruff, mypy, import boundaries, unfinished-work scan, pytest)
+        entry: make verify
+        language: system
+        pass_filenames: false
+        always_run: true
+        # Pinned for the same reason as verify-fast: unpinned it would also run at commit.
+        stages: [pre-push]
       - id: no-skip-token
         name: reject GitHub Actions skip tokens in the commit message
-        # .venv/bin/python, not a bare python3: the verify hook above already requires
+        # .venv/bin/python, not a bare python3: the verify-fast hook above already requires
         # the venv make venv builds, and pre-commit runs the pre-commit stage (which
         # builds it if missing) before the commit-msg stage -- a missing venv fails this
         # hook closed, refusing the commit, which is the safe direction.

@@ -44,7 +44,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
 
 ### Debt — the two `must` items (first)
 
-- [ ] **REQ-hook-and-commit-timeout-decided**: One logged `Lxx` settles how the pre-commit
+- [x] **REQ-hook-and-commit-timeout-decided**: One logged `Lxx` settles how the pre-commit
   `make verify` hook (~64 s warm, L34) coexists with gsd's hard-coded 30 s commit timeout
   (`COMMIT_TIMEOUT_MS` in `gsd-core` 1.16.0 `commands.cjs`; no knob, no open upstream
   request — STACK). The options the human picks from at discuss-phase, each priced:
@@ -63,14 +63,14 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   `docs/architecture/packaging.md`, the `ci.yml` comment, `scripts/pr_land.py`'s stale
   "~42 s" comment); `docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md`
   retires with the sha.
-- [ ] **REQ-same-slot-timeout-race-reproduced**: Phase 13's deferred ten-identical-worst-row
+- [x] **REQ-same-slot-timeout-race-reproduced**: Phase 13's deferred ten-identical-worst-row
   scenario lands in `bench/latency.py`'s `_SCENARIOS` (not the default set), reading the
   composed worst row, with a `record_500` keyword so the default `_fetch` and the test that
   pins its 500-raising stay as they are; `tests/test_bench.py`'s registry assertion updated.
   Run once against a fresh server with shipping defaults **before** the fix. *Acceptance*:
   `bench/RESULTS.md` records the per-request table (parameters, outcome, wall time) with the
   undocumented 500 visible, host state and load as every section has.
-- [ ] **REQ-same-slot-timeout-race-fixed**: `_run_with_timeout`'s `except TimeoutError`
+- [x] **REQ-same-slot-timeout-race-fixed**: `_run_with_timeout`'s `except TimeoutError`
   branch terminates and replaces an executor only when **both** hold: its `executor` local
   is still the live slot's (`self.executor_for(p) is executor`) **and** `_processes is not
   None`; `BuildPool.shutdown()` sets a `_closed` flag that `recreate_for` honours, closing
@@ -84,7 +84,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   the existing 0.5 s-gap test unchanged; both new tests run repeatedly under `-n 8 --cov`
   and `-n 4` with the counts recorded; the scenario re-run after the fix shows zero 500s;
   the debt file retires in the commit that also closes REQ-worst-row-margin-decided.
-- [ ] **REQ-worst-row-margin-decided**: The composed worst row (29.42 s alone, Phase 12)
+- [x] **REQ-worst-row-margin-decided**: The composed worst row (29.42 s alone, Phase 12)
   not finishing inside 30 s under ten concurrent builds gets a logged `Lxx`: raise
   `SPUR_BUILD_TIMEOUT`, lower a cap (`spoke_count`'s `le`, say), or record the limit as a
   documented behaviour — chosen from a measurement, never tuned toward a pass. *Acceptance*:
@@ -249,10 +249,10 @@ the phase where its acceptance can be read.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-hook-and-commit-timeout-decided | Phase 17 | Pending |
-| REQ-same-slot-timeout-race-reproduced | Phase 17 | Pending |
-| REQ-same-slot-timeout-race-fixed | Phase 17 | Pending |
-| REQ-worst-row-margin-decided | Phase 17 | Pending |
+| REQ-hook-and-commit-timeout-decided | Phase 17 | Complete |
+| REQ-same-slot-timeout-race-reproduced | Phase 17 | Complete |
+| REQ-same-slot-timeout-race-fixed | Phase 17 | Complete |
+| REQ-worst-row-margin-decided | Phase 17 | Complete |
 | REQ-cutter-defined-once | Phase 18 | Pending |
 | REQ-trochoid-root-generated | Phase 18 | Pending |
 | REQ-root-mode-single-predicate | Phase 18 | Pending |

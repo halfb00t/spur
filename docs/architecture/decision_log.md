@@ -1865,3 +1865,225 @@ pin: it matched one spelling in tracked files. It now refuses `type: ignore` wit
 spacing and case and the whole-file `mypy: ignore-errors`, in `src/spur/*.py` tracked or
 untracked (`git grep -i --untracked`), each probed by `tests/test_no_fake_done.py`;
 `pyright: ignore` is not refused and nothing wider is claimed.
+
+## L36 — The commit stage runs a named prefix of the gate under 30 s, and the whole gate moves to pre-push (amends L13 and L34)
+
+Date: 2026-10-06.
+
+L13 and L34 stay as written. This entry amends L13's "the pre-commit hook" (the same
+`make verify` still runs in three places, now the pre-push hook, CI and `make worktree.land`,
+and the commit stage runs `make verify.fast`, a named prefix of it) and L34's closing
+sentence that the commit-timeout debt stays active.
+
+**The conflict.** gsd-core 1.16.0 kills every SDK `git commit` at `COMMIT_TIMEOUT_MS = 30_000`
+(`bin/lib/commands.cjs`; the symbol, not a line, because lines drift) and has no config key
+for it. The pre-commit hook ran the whole gate, 63.555 s warm (L34), so every SDK commit
+returned `{committed: false, reason: 'commit_timeout'}`.
+
+**The decision** (D-01). Two moves together: a sub-30 s subset at the commit stage and the
+whole `make verify` at the push stage; CI, the `main` ruleset and `make pr.land` stay the wall
+(L22, L25). Rejected: raising the timeout upstream alone, because nothing ships and the next
+SDK commit is still killed; moving the gate to pre-push alone, because no check would run at
+the commit boundary during the trochoid phases, where the L26 fixture replay matters most;
+the subset alone, because the full gate would go unenforced locally until CI.
+
+**The subset** (D-02, D-04). The four static steps (`lint typecheck lint-imports no-fake-done`)
+plus pytest over every test file but tests/test_model.py, tests/test_pool.py, tests/test_api.py
+and tests/test_cli.py, chosen by `--ignore=` exclusion so a new test file runs at commit until
+someone names it heavy, at `-n 8 --no-cov`. `--no-cov` is mandatory: `fail_under = 96` reads a
+partial run as a failure. Re-priced on 2026-10-06 on the 12-CPU M2 Max, `make verify.fast` read
+11.28 s wall at 08:54:31Z (1-min load 2.99), 11.30 s at 08:54:42Z (load 4.40) and 11.28 s at
+08:54:54Z (load 5.51), each with `620 passed` in 10.75 to 10.76 s, and 19.94 s at 08:55:05Z
+(load 5.04) with an empty mypy cache (`620 passed in 10.77 s`). All four are under the 30.0 s
+kill with at least 10 s of headroom. The earlier baseline from 17-RESEARCH (2026-10-06, load
+3.75 to 4.07) was 617 passed in 11.98 s (12.18 s wall) and 8.68 s for mypy with an empty cache;
+the three extra tests are tests/test_hooks.py. The slice imports the kernel (tests/test_bench.py
+through `bench.build_time`, and the regression replay's solids), so an OS-cold page cache was
+not priced: D-07 is the recovery if a commit ever runs over.
+
+**The shape** (D-03). `verify: verify.static test` and `verify.fast: verify.static test.fast`,
+with `verify.static` the shared prefix and `test.fast` the gate's own pytest recipe with
+narrower arguments, so `make -n verify` lists the four static recipes before exactly one pytest
+line and the gate's cost is unchanged. `verify: verify.fast test` was rejected: it runs the
+slice twice, taking the gate from about 64 s to about 75 s, over L34's 66 s bar.
+tests/test_hooks.py pins the hook entries, their stages and the shared prefix, so the commit
+stage cannot become a second list of checks.
+
+**The hooks and what pre-push guarantees** (D-05). `default_install_hook_types` is
+`[pre-commit, commit-msg, pre-push]` and every hook is pinned to one stage: `verify-fast` at
+pre-commit, `verify` at pre-push, `no-skip-token` at commit-msg. Nine pre-push scenarios were
+run in a scratch repo with a bare remote (pre-commit 4.6.2, git 2.54.0, 2026-10-06; a hook
+that appends to a log, counted per push):
+
+| # | Scenario | `full` runs | Evidence |
+|---|----------|-------------|----------|
+| 1 | first push of `HEAD:main` | 1 | the log line |
+| 2 | the same push again | 0 | `Everything up-to-date` |
+| 3 | unstaged edit to a tracked file and an untracked file | 1 | log `tracked=base untracked=untracked.txt`; `Stashing unstaged files` |
+| 4 | two refs in one `git push` | 1 | once per push, not per ref |
+| 5 | tag-only push, tag on an already-pushed commit | 0 | `[new tag]`, no hook |
+| 6 | delete-only push | 0 | `[deleted]`, no hook |
+| 7 | `git push --no-verify` | 0 | no hook |
+| 8 | `SKIP=full git push` | 0 | `Skipped` |
+| 9 | fresh clone of the remote | no hook | `.git/hooks` holds no `pre-push`: hooks are per clone |
+
+Row 5 needs the remote added by name (`git remote add origin`): pre-commit's
+`hook_impl.py` selects the commits to check with `rev-list ... --not --remotes=<remote name>`,
+so a push to a bare URL matches no remote-tracking ref and ran the hook on the tag-only push
+(1 run in the first, URL-form run). The repository's own pushes go to `origin`. This settles
+the research's open question about unstaged changes: they are stashed, so the gate reads the
+committed content plus untracked files, which stay visible. What pre-push does not verify is
+an arbitrary sha pushed from another checkout (PITFALLS 13): the hook runs against whatever is
+checked out, and CI and the ruleset are what catch it.
+
+**Who installs** (D-06). The Makefile's `$(HOOKS)` stamp (`.venv/.hooks-installed`, newer than
+`.pre-commit-config.yaml` and `$(STAMP)`) runs `pre-commit install` from `verify.static` and
+`venv`, so "run `make venv` once in the main checkout" installs all three types and a config
+change re-installs on the next gate run. Only in the main checkout: pre-commit 4.6.2 writes into
+`git rev-parse --git-common-dir`, which every linked worktree shares, and bakes the installing
+venv's python into the shim, so an install from a worktree would point every checkout's hooks
+at a venv `make worktree.land` deletes. tests/test_hooks.py proves both branches. CI runs the
+same install against its own checkout and fires no hook (assumption A1: checked on a shallow
+clone locally in 17-02; the phase's first CI run is read at ship).
+
+**Which commits can now be red.** A local or phase-branch commit that fails only
+tests/test_model.py, tests/test_pool.py, tests/test_api.py or tests/test_cli.py, so
+`git bisect` can land on one. The push runs the whole gate, and `main` cannot receive one:
+L22's ruleset, `make pr.land` and CI refuse a red head.
+
+**A killed commit** (D-07). Measured in PITFALLS 15 (git 2.54.0, Node `spawnSync`, 2026-10-06):
+a killed `git commit` leaves nothing committed and no `index.lock`, and the hook keeps running
+to completion as an orphan with parent PID 1. The rule for this repository: wait until
+`pgrep -fl 'pre_commit hook-impl|pytest|mypy'` prints nothing, then make exactly one plain
+`git commit`, record it in the plan's SUMMARY, and never retry the SDK commit blind. It
+supersedes the `commit_timeout` bullet of `~/.claude/gsd-core/agents/gsd-executor.md`, whose
+remove-the-lock-and-retry recovery assumed a warm retry passes.
+
+**Before a push** (D-09). Run `make verify`, then push: the explicit run warms the page cache
+and shows the result, so the pre-push hook runs warm inside a shell tool's 120 s default.
+
+**Upstream** (D-08). A request for a configurable `COMMIT_TIMEOUT_MS` is filed on
+open-gsd/gsd-core, cited here and never depended on, with #3886 as prior art; `~/.claude/gsd-core`
+is not patched. Its URL and date are recorded below with this entry's commit sha (17-02).
+
+**Reversibility.** Costly (D-01): undoing touches `.pre-commit-config.yaml`, the Makefile,
+eight doc sites and needs a superseding entry.
+
+Reason: the gate outgrew the SDK's commit window. The commit stage keeps the fixture replay and
+the calc tests (where Phase 18's maths lands) at the commit boundary, and the whole gate still
+runs before anything leaves the machine.
+Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string
+hw.memsize`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); the
+four `make verify.fast` readings and the nine scratch rows were taken on 2026-10-06.
+
+**Recorded after this entry's commit (2026-10-06).** The hook commit is `c06749d`
+(`build(gate): run make verify.fast at commit and make verify at push (L36)`); it went through
+its own new commit stage in 12.33 s real (`make verify.fast ... Passed`). Two proofs a commit
+cannot carry about itself were taken afterwards, in 17-02. The pre-push stage: `make verify`
+first (D-09), exit 0, `937 passed in 61.19s`, 97.24% coverage, 61.97 s real; then a plain
+`git push` of HEAD to an empty scratch bare repository with this repository's own hooks, no
+`--no-verify` and no `SKIP=`, printed `make verify (ruff, mypy, import boundaries,
+unfinished-work scan, pytest).......................Passed`, created the branch and took 63.97 s
+real. The install: a `--depth 1` clone of the branch ran `pre-commit install` and
+`.git/hooks` held commit-msg, pre-commit and pre-push. That clone was macOS, not GitHub's
+Linux runner, so assumptions A1 and A3 stay open until the phase's first CI run is read at ship.
+The upstream request is filed: https://github.com/open-gsd/gsd-core/issues/5231, 2026-10-06, with #3886 as prior art; a search of open and
+closed issues for `COMMIT_TIMEOUT_MS` found nothing and for "commit timeout" only #3886. This
+paragraph is committed by gsd's own SDK commit, the commit L36 exists to make possible; its JSON
+result is `.planning/phases/17-debt-first-commit-gate-and-pool-race/17-02-sdk-commit.json`.
+
+## L37 — The heaviest allowed composed row is a documented 503 timeout under concurrent load, and no default moves (amends L31 and L32)
+
+Date: 2026-10-06.
+
+L31 and L32 stay as written. L31's "every row inside 30 s" holds one build at a time; this
+entry records what happens past it under contention, and closes the margin finding that L32
+filed together with the same-slot timeout race. The race itself was fixed in 17-04 (`0628182`);
+the margin is decided here, by recording it, not by moving a number.
+
+**The row** (D-10). `bench/sweeps/composed.json` row 4 (1-based), the heaviest composed row the
+limits allow: `teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4
+spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3
+recess_sides=both`. A cold request for it is one build plus one export.
+
+**The numbers that set it** (D-11), each in the unit it was recorded in and cited to its section.
+No dedicated worst-row-under-N sweep was run; these are the readings that exist.
+
+- *Alone:* 29.42 s of 30 s, 0.58 s of margin, one build at a time, on the 12-core M2 Max, on
+  2026-09-30 at 1-minute load 1.65 before launch and 1.68 at the runner's own start reading
+  (`bench/RESULTS.md` "### Re-run after the gate (lower-le: spoke_count 32)", Phase 12; the
+  paragraph after its table carries a dated note since this entry).
+- *The threshold pair the cap rests on:* `spoke_count` 32 read 29.41 s and 33 read 30.11 s on this
+  row (`bench/RESULTS.md` "### Gate probe", Phase 12, build plus the slower export, host load
+  2.40 to 29.51 across the probe).
+- *SC3, both workers busy, ten distinct rows:* this row's request (`51e80f35`) ended
+  `BuildTimeout` at `duration_ms` 30004, as the server recorded it
+  (`.planning/milestones/v0.3-phases/13-latency-bar/investigation/sc3.server1.records.jsonl`;
+  `bench/RESULTS.md` "### Composed worst row under ten concurrent builds (Phase 13)"), on
+  2026-10-02 with the quiet-gate samples at 1.53 to 9.92 and the load after at 4.74. Four of the
+  ten requests were admitted, and all four exceeded `SPUR_BUILD_TIMEOUT`.
+- *`identical`, one worker busy, three requests queued behind it:* the same row ten times, one
+  cache key, one hash slot, on a fresh server with shipping defaults (`bench/RESULTS.md` "##
+  Same-slot timeout race (Phase 17)"). The slot-holding request (29.42 s alone) read `503
+  timeout` both times: at this load, 5.48 to 5.88 (1-minute), on 2026-10-06 at 09:17Z, 30.01 s
+  client wall and server `duration_ms` 30003 (17-03, request `cf3e6608`, commit `814f4f3`, before
+  the fix); and at this load, 18.94 at the server start to 15.30 after the client, on 2026-10-06
+  at 09:58Z, 30.01 s client wall and server `duration_ms` 30003 (17-05, request `d6cd9587`,
+  commit `0628182`, after the fix).
+
+The two contention shapes are kept apart: SC3 had both workers busy with ten different rows;
+`identical` had one worker busy and the other idle. Neither is a margin under N concurrent builds,
+and none of the four lines above is converted into a ratio here. A timeout reading records only
+that the build had not returned when the 30 s elapsed, not how long it would have taken: 30004
+and 30003 are the deadline firing, not the row's own time.
+
+**The decision** (D-10). The limit is recorded as documented behaviour. `SPUR_BUILD_TIMEOUT`
+stays 30 s and `spoke_count`'s `le` stays 32. `503 timeout` is the contract for this row under
+concurrent load, and a slower or busier host raises the variable. L05 holds (no default or cap moved, so
+every shared link that builds today still builds, and an unset parameter still never changes the
+part) and L08 holds (no figure was tuned toward a pass; each is a recorded reading with its
+section and its load). Rejected, with the reason: raising the default, because every deployment
+would wait longer on a wedged worker, the 4x-slower-hardware rationale in `app.py`'s comment would
+need restating, and there is no proven margin on slower hosts either; lowering `spoke_count`'s
+`le` a third time (200 to 40 in Phase 11, 40 to 32 in Phase 12), because it needs a new concurrent
+sweep to choose the number and every link at 32 spokes would start returning `422`.
+
+**The contract at the boundary.** A build that has not returned when `SPUR_BUILD_TIMEOUT` elapses
+gets `503 timeout` and its worker is terminated and replaced, whatever it takes alone; SC3's 30004
+ms is that boundary observed. Since 17-04's fix (`0628182`), a second same-slot timeout of the same
+incident gets the same documented 503 and never a raw 500: `_run_with_timeout` terminates and
+replaces the worker only when the slot still holds its own executor and that executor's
+`_processes` is not `None`, and `BuildPool._closed` stops a closed pool building a replacement.
+The proof is the deterministic stale-executor test, red before (`3 failed, 1 passed`, the passing
+one being the ast check that is meant to pass on the old code) and green after (`74 passed` for
+`tests/test_pool.py` and `tests/test_api.py`), plus the loops: 20 of 20 runs at `-n 8 --cov`, 20
+of 20 at `-n 4 --cov`, and 2 of 3 whole `make verify` runs, the third lost to the known
+resource-tracker flake and accepted by the human (`17-04-SUMMARY.md`, per run in
+`.planning/phases/17-debt-first-commit-gate-and-pool-race/investigation/17-04-stability.md`). The
+bench agrees but is not the proof: the same scenario showed three `500`s with three `AttributeError`
+`build.failed` records on `814f4f3`, and on `0628182` four admitted requests all ended `503 timeout`
+with no `500` and no `AttributeError` (`bench/RESULTS.md` "### Before the fix: verdict" and "###
+After the fix").
+
+**Where it reaches users** (D-12). One sentence in `README.md`'s paragraph on build workers; one
+sentence in the comment beside `int_env("SPUR_BUILD_TIMEOUT", 30)` in `src/spur/app.py`, whose own
+trigger ("re-measure and adjust if the worst observed build ever approaches this value") has
+fired and which this entry answers; and a dated note on the 0.58 s paragraph in `bench/RESULTS.md`
+and on the resolved tip-chamfer debt's 30 s over 29.42 s line. The earlier text of both is
+unedited.
+
+**Revisit when** (D-13). Phase 19's composed re-measure (REQ-trochoid-composes-and-is-priced
+measures the heaviest row against `SPUR_BUILD_TIMEOUT` anyway), or any change to
+`SPUR_BUILD_TIMEOUT`'s default or to an `le` cap.
+
+**Reversibility.** Reversible: no default, cap or code path moved by this entry. A later entry
+can raise the default or lower a cap with its own measurement; nothing here has to be undone first.
+
+Reason: the margin finding L32 filed was a single-build figure that did not survive contention,
+and the choice was between moving a number a shared link depends on and saying what the service
+does. L05 and L08 pick the second, so the limit is now stated where it is read, with the readings
+that set it and the load each was taken at.
+Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string
+hw.memsize`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); the
+two `identical` readings were taken on 2026-10-06, SC3 on 2026-10-02, the Phase 12 readings on
+2026-09-30.

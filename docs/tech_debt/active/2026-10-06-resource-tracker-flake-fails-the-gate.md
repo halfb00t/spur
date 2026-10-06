@@ -1,6 +1,6 @@
 # A reentrant `resource_tracker` cleanup warning sometimes fails `make verify`
 
-Severity: nice
+Severity: must
 Status: active
 Date: 2026-10-06
 Source: the pre-commit hook on the v0.4 start commit (`gsd/milestone-v0.4-start`), a run
@@ -23,11 +23,31 @@ unsupported. The semaphore object '/mp-2ttnyn_k' might leak.` `filterwarnings = 
 turns the warning into a failure. The hook's output was truncated before the failing test
 id; an immediate `make test` rerun on the identical tree read `934 passed in 67.84s`.
 
+2026-10-06, second occurrence (17-04's second of three `make verify` proof runs, `-n 8 --cov`, host
+1-min load 17.54): worker `gw2`, test
+`tests/test_pool.py::test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`;
+its assertions had all passed and the `ExceptionGroup` of five reentrant-call warnings was
+collected at the end of its call phase. 1 of 43 proof runs (40 loops over tests/test_pool.py and
+tests/test_api.py at `-n 8`/`-n 4` with `--cov`, 3 full gates) printed it; the other 42 did not.
+Whole log: `.planning/phases/17-debt-first-commit-gate-and-pool-race/investigation/17-04-resource-tracker.log`.
+
+2026-10-06, third occurrence — the first on CI: GitHub Actions run 37460451701 (`ci`, job
+`test (3.12)`, ubuntu-latest, Python 3.12.14, `make verify` at `-n 8 --cov`) on PR #27's head
+`7af318d` failed `tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced`
+with `ExceptionGroup: multiple unraisable exception warnings (5 sub-exceptions)`, the same
+`ReentrantCallError` chain at the end of the call phase — `1 failed, 943 passed in 210.98s`.
+A re-run of the failed job on the same head was green, and run 37460192883 on the identical
+code (`930c74c`, one `.planning/` commit earlier) read `944 passed in 128.16s`. The struck test
+predates Phase 17.
+
 ## Why it matters
 L13/L34 make `make verify` the one definition of "passing". A gate that fails on a
 shutdown-order race in CPython's resource tracker, with no code change, costs a rerun per
-occurrence and teaches people to retry — the habit the gate exists to prevent. One
-occurrence so far; cause unmeasured. It is the `Finalize` of a semaphore (a
+occurrence and teaches people to retry — the habit the gate exists to prevent. Three
+occurrences so far — the second inside a test Phase 17 added (17-04's `make verify` proof
+runs read 2 of 3 green), the third on CI, where it turned PR #27's required `test (3.12)`
+check red with no code change; cause unmeasured, and the `-n 0` / no-`--cov` isolation under Next
+step has not been run. It is the `Finalize` of a semaphore (a
 `ProcessPoolExecutor` or a coverage `multiprocessing` hook) running while the tracker is
 already inside its own cleanup, which is an interpreter-shutdown ordering question, not a
 `spur` bug as far as this one log shows.
@@ -41,8 +61,12 @@ narrowest `filterwarnings` entry that names this message, never a blanket
 `ignore::pytest.PytestUnraisableExceptionWarning`.
 
 ## Revisit when
-The warning fails `make verify` a second time, or `tests/test_pool.py`'s shutdown path or
-`[tool.coverage.run] concurrency` is next touched.
+The "fails `make verify` a second time" trigger fired on 2026-10-06 (the second occurrence
+above, commit `b8ef84a`); the "third time" trigger fired the same day on CI (run
+37460451701). Escalated to `must` by the human on 2026-10-06 at the Phase 17 ship: a required
+check that fails on its own is a merge-gate defect, not hygiene. New trigger: the next
+`make verify` failure, or Phase 18 planning — whichever comes first — gets the isolation runs
+under Next step and a fix plan.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

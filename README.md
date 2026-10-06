@@ -92,7 +92,10 @@ in flight — `/api/health` measures in single-digit milliseconds under load
 (`bench/RESULTS.md`'s Latency section). A build past `SPUR_BUILD_TIMEOUT` is refused
 rather than waited on: the request gets `503` with `Retry-After`, and the worker behind
 it is terminated and replaced so the next request to that gear doesn't queue behind a
-wedged one. Past `SPUR_MAX_QUEUED_BUILDS` the API also answers `503` with `Retry-After`
+wedged one. Builds near the caps — the heaviest composed gear the limits allow reads 29.42 s
+alone on the 12-core dev host — can exceed `SPUR_BUILD_TIMEOUT` under concurrent load and
+return `503` `timeout`; on a slower or busier host, raise the variable (L37). Past
+`SPUR_MAX_QUEUED_BUILDS` the API also answers `503` with `Retry-After`
 rather than piling work up.
 
 ### Without Docker
@@ -285,8 +288,10 @@ make check       # verify + the image smoke test + the vendored-bundle check (ne
 ```
 
 `make verify` is the one command that decides whether a change is done. The same command
-runs in the pre-commit hook, in CI on Python 3.12, and inside
-`make worktree.land` before a merge, so "it passed" means the same thing everywhere.
+runs in the pre-push hook, in CI on Python 3.12, and inside
+`make worktree.land` before a merge, so "it passed" means the same thing everywhere; the
+pre-commit hook runs `make verify.fast`, its static steps and every test file but the four
+heaviest, in under 30 s (L36).
 There is deliberately no automatic formatter; see `L16`.
 
 `make test-image` runs the suite inside the container instead, which needs no local

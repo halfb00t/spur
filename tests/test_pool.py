@@ -9,6 +9,7 @@ test_a_real_worker_builds_and_downloads below for why, and don't "fix" it back.
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import logging
 import multiprocessing as mp
@@ -18,14 +19,17 @@ import threading
 import time
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
+from pathlib import Path
 from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
 
+import spur.pool
 from spur.app import ModelQuery, _gear, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
 from spur.params import GearParams
+from spur.pool import BuildPool
 
 
 def _sleep_past_timeout(seconds: float) -> bytes:
@@ -518,3 +522,217 @@ def test_two_same_slot_deaths_from_one_incident_replace_the_worker_once(
         assert isinstance(second_result, BrokenProcessPool)
         assert pool.replaced == replaced_before + 1
         assert len(_event_records(caplog, "worker.replaced")) == 1
+
+
+def test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """A request whose captured executor a same-slot sibling already replaced still ends
+    in the documented `503 timeout` (`BuildTimeout`), never a raw `AttributeError`.
+
+    The undocumented 500s of Phase 13's SC3 (requests `912cd2d4` and `0fc30d53`,
+    bench/RESULTS.md) were this: the sibling whose deadline fired first terminated and
+    replaced the slot, and `recreate_for`'s `shutdown(wait=False)` set the old
+    executor's `_processes` to None; the second request then read
+    `executor._processes.values()` on that stale executor. PITFALLS 9 measured the
+    window: a sibling whose deadline fires 0-5 ms after the first read `AttributeError`
+    4/4 times, at 20 ms 3/4, at 100 ms 0/4 -- so no sleep in a test can order it, and
+    this one uses none. The request task runs once to its first suspension (`executor`
+    captured, work submitted, awaiting `wait_for`), the test plays the sibling that
+    timed out first by calling `recreate_for` itself, then awaits the task.
+
+    The worker must not be terminated before the assertion: a dead worker fails the
+    future with `BrokenProcessPool` before the timer fires -- the wrong branch, which
+    would pass this test with or without the fix (17-RESEARCH Pitfall 2). It sleeps
+    past the timeout and is reaped afterwards, the manager-thread way of
+    test_a_wedged_build_is_terminated_and_its_worker_replaced.
+    """
+    caplog.set_level(logging.INFO)  # Pitfall 1: see the wedged-build test above
+    with TestClient(app):
+        pool = app.state.pool
+        params = GearParams(teeth=21)
+        live = pool.executor_for(params)
+        live.submit(os.getpid).result()  # spawn and `_warm` happen off the clock
+        [proc] = list(live._processes.values())  # captured before recreate_for drops them
+        manager = live._executor_manager_thread
+        assert isinstance(manager, threading.Thread)
+        replaced_before = pool.replaced
+
+        original_timeout = pool.timeout
+        pool.timeout = 0.5  # restored in `finally`; the worker sleeps 2.0 s, well past it
+
+        async def _drive() -> None:
+            task = asyncio.create_task(pool._run_with_timeout(params, _sleep_past_timeout, 2.0))
+            await asyncio.sleep(0)  # the task is now awaiting `wait_for` on `live`
+            pool.recreate_for(params, live, "timeout")  # the first caller already cleaned up
+            await task
+
+        try:
+            with pytest.raises(BuildTimeout):  # before the fix: AttributeError escapes
+                asyncio.run(_drive())
+        finally:
+            pool.timeout = original_timeout
+
+        assert pool.replaced == replaced_before + 1  # the stale branch replaced nothing more
+        assert len(_event_records(caplog, "worker.replaced")) == 1
+        assert pool.executor_for(params) is not live
+
+        proc.terminate()
+        manager.join(timeout=5)
+        assert not manager.is_alive(), "executor manager thread did not finish shutdown"
+        assert proc.exitcode == -signal.SIGTERM
+
+
+def test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal(
+        caplog: pytest.LogCaptureFixture) -> None:
+    """Three same-slot requests whose deadlines fall in one event-loop tick all end in a
+    documented 503 and replace the worker once.
+
+    The first caller times out and terminates the worker; each sibling is either a
+    `BuildTimeout` (its own deadline fired against the already-replaced slot) or a
+    `BrokenProcessPool` (the manager thread noticed the dead worker first) -- both are
+    503s app.py documents (`timeout`, `pool_broken`), so which one it is depends on a
+    race this test does not try to win. Never `AttributeError`: 17-RESEARCH measured
+    `['BuildTimeout', 'AttributeError', 'AttributeError']` here before the fix, and
+    three `BuildTimeout` after.
+
+    Honest limit: because a sibling may legitimately be a `BrokenProcessPool`, this
+    test would not catch an `await` inserted into the terminate-and-replace block (that
+    only widens a window the siblings are already allowed to lose). The ast test below
+    does.
+    """
+    caplog.set_level(logging.INFO)  # Pitfall 1: see the wedged-build test above
+    with TestClient(app):
+        pool = app.state.pool
+        params = GearParams(teeth=21)
+        live = pool.executor_for(params)
+        worker_pid_before = live.submit(os.getpid).result()  # spawn and `_warm` off the clock
+        [proc] = list(live._processes.values())
+        manager = live._executor_manager_thread
+        assert isinstance(manager, threading.Thread)
+        replaced_before = pool.replaced
+
+        original_timeout = pool.timeout
+        pool.timeout = 1.0  # restored in `finally`, as the other timeout tests do
+        try:
+            async def _drive() -> list[object]:
+                tasks = [
+                    asyncio.create_task(
+                        pool._run_with_timeout(params, _sleep_past_timeout, 10.0))
+                    for _ in range(3)
+                ]
+                return cast(list[object], await asyncio.gather(*tasks, return_exceptions=True))
+
+            first_result, *sibling_results = asyncio.run(_drive())
+        finally:
+            pool.timeout = original_timeout
+
+        assert isinstance(first_result, BuildTimeout)
+        for sibling_result in sibling_results:
+            assert isinstance(sibling_result, (BuildTimeout, BrokenProcessPool)), sibling_result
+        assert pool.replaced == replaced_before + 1
+        assert len(_event_records(caplog, "worker.replaced")) == 1
+
+        # The first caller's terminate stood and no worker was orphaned (PITFALLS 11):
+        # read from the process table and the exit code, not from psutil.
+        manager.join(timeout=5)
+        assert not manager.is_alive(), "executor manager thread did not finish shutdown"
+        assert proc.exitcode == -signal.SIGTERM
+        assert pool.executor_for(params).submit(os.getpid).result() != worker_pid_before
+
+
+def test_a_closed_pool_never_builds_a_replacement_worker() -> None:
+    """After `shutdown()`, `recreate_for` leaves the slot alone (PITFALLS 9's second route).
+
+    `shutdown()` leaves each slot holding the same executor object with its `_processes`
+    None, so the identity check alone passes for a late timeout and would build a fresh
+    executor that nobody shuts down. Whether uvicorn's graceful shutdown can reach that
+    route in production is unmeasured (17-RESEARCH A4); the direct call is what this
+    test measures. `BuildPool(workers=1, timeout=1)` starts no process until first use,
+    so it is cheap.
+    """
+    pool = BuildPool(workers=1, timeout=1)
+    params = GearParams(teeth=21)
+    executor = pool.executor_for(params)
+    try:
+        pool.shutdown()
+        pool.recreate_for(params, executor, "broken_pool")
+
+        assert pool.executor_for(params) is executor
+        assert pool.replaced == 0
+    finally:
+        # filterwarnings = error: an executor this test left running would be a failure
+        for each in pool._executors:
+            each.shutdown(wait=True)
+
+
+def _timeout_handler(source: str) -> ast.ExceptHandler:
+    """`_run_with_timeout`'s one `except TimeoutError` handler, found by AST."""
+    [func] = [
+        node for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "_run_with_timeout"
+    ]
+    handlers = [
+        node for node in ast.walk(func)
+        if isinstance(node, ast.ExceptHandler)
+        and isinstance(node.type, ast.Name) and node.type.id == "TimeoutError"
+    ]
+    assert len(handlers) == 1, "expected exactly one `except TimeoutError` handler"
+    return handlers[0]
+
+
+def _suspensions_in_timeout_handler(source: str) -> list[int]:
+    """Line numbers of every point inside `_run_with_timeout`'s `except TimeoutError` where
+    the event loop can run another task: `await`, `async with`, `async for` and an async
+    comprehension (`[x async for x in ...]`, which has no `Await` node) all yield."""
+    comprehensions = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+    return [
+        node.lineno for stmt in _timeout_handler(source).body for node in ast.walk(stmt)
+        if isinstance(node, (ast.Await, ast.AsyncWith, ast.AsyncFor))
+        or (
+            isinstance(node, comprehensions)
+            and any(each.is_async for each in node.generators)
+        )
+    ]
+
+
+def test_the_timeout_branch_never_awaits_before_it_raises() -> None:
+    """The terminate-and-replace block is atomic only because nothing in it yields.
+
+    `BuildPool` holds no lock: the check (`executor_for(p) is executor and
+    executor._processes is not None`) and the act (terminate, `recreate_for`) cannot be
+    interleaved with a same-slot sibling only because the one event-loop thread never
+    gets control back between them. An `await`, `async with`, `async for` or async
+    comprehension anywhere in the `except TimeoutError` branch reopens the race the fix
+    closed, and it is the one boundary no behavioural test can see (17-RESEARCH Open
+    Question 4): the siblings are allowed to end in `BrokenProcessPool`, so a wider
+    window still passes them. The same read pins the handler types, so a broad
+    `except AttributeError` or `except Exception` cannot hide a third defect (PITFALLS
+    9). The tripwire half seeds each of the four suspension forms before the handler's
+    `raise` (placed from that node's own line and column, not a source string) and
+    requires the helper to report it, so a passing check is one that can fail.
+    """
+    src = Path(spur.pool.__file__).read_text()
+    assert _suspensions_in_timeout_handler(src) == []
+
+    [func] = [
+        node for node in ast.walk(ast.parse(src))
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "_run_with_timeout"
+    ]
+    handler_types = {
+        ast.unparse(node.type) if node.type is not None else "<bare except>"
+        for node in ast.walk(func) if isinstance(node, ast.ExceptHandler)
+    }
+    assert handler_types == {"TimeoutError", "BrokenProcessPool"}
+
+    [raise_stmt] = [n for n in _timeout_handler(src).body if isinstance(n, ast.Raise)]
+    indent = " " * raise_stmt.col_offset
+    lines = src.splitlines(keepends=True)
+    for seed in (
+        "await asyncio.sleep(0)\n",
+        "async with asyncio.Lock():\n" + indent + "    pass\n",
+        "async for _ in aiter(()):\n" + indent + "    pass\n",
+        "_ = [x async for x in aiter(())]\n",
+    ):
+        at = raise_stmt.lineno - 1
+        seeded = "".join([*lines[:at], indent + seed, *lines[at:]])
+        assert _suspensions_in_timeout_handler(seeded) != [], seed

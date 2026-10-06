@@ -42,13 +42,16 @@ both halves of that sentence automatically.
 
 ```
 make verify   ruff + mypy --strict + import-linter + unfinished-work scan + pytest   (~64 s warm on the 12-core dev host, `-n 8` with coverage; no Docker)
+make verify.fast   the same static steps + every test file but test_model/test_pool/test_api/test_cli, `--no-cov`, under 30 s (the pre-commit hook)
 make check    verify + the in-image smoke test + the vendored-bundle byte check      (needs Docker)
 make bench    bench.latency (host) + bench.memory (Docker) -- NOT part of the gate
 ```
 
-The same `make verify` runs in three places: the pre-commit hook
+The same `make verify` runs in three places: the pre-push hook
 (`.pre-commit-config.yaml`), CI (`.github/workflows/ci.yml`, on Python 3.12),
-and `make worktree.land` before a merge. One definition of "passing".
+and `make worktree.land` before a merge. One definition of "passing". The commit stage
+runs `make verify.fast`, a named prefix of it: the same static steps and the gate's own
+pytest recipe over fewer files (L36).
 
 Merges to `main` go through `make pr.land PR=N`, which refuses a PR whose head lacks a
 green CI run of every job in `.github/workflows/required-jobs.txt` or is behind `main`,

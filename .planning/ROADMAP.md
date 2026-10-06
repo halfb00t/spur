@@ -86,7 +86,7 @@ replace the radial root below the base circle with the trochoid a hob cuts, prov
 an independent oracle, with the fixture rule (L26) honoured under its own `Lxx`, never
 bypassed.
 
-- [ ] **Phase 17: Debt First — Commit Gate and Pool Race** - The hook-versus-commit-timeout
+- [x] **Phase 17: Debt First — Commit Gate and Pool Race** - The hook-versus-commit-timeout (completed 2026-10-06)
       conflict gets a logged decision that a live SDK commit proves; the same-slot timeout
       race is reproduced, fixed and ends as a documented `503`; the worst composed row's
       margin gets a logged decision
@@ -172,7 +172,23 @@ the hook allowed to finish — a killed SDK commit leaves the hook running as an
 (ARCHITECTURE) with a measured window table (PITFALLS 9–10); the hook options are priced
 (STACK). One scratch-repo check of pre-push semantics (SUMMARY correction 11) is a plan task,
 not a research phase.
-**Plans**: TBD
+**Plans**: 5/5 plans complete
+
+Plans:
+**Wave 1**
+- [x] 17-01-PLAN.md — The hook decision in one commit: `verify.static`/`verify.fast`/`test.fast` and the gate-installed hooks (tracer), pre-push semantics measured, L36, eight sites corrected, the commit-timeout debt retired
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 17-02-PLAN.md — Proofs after the hook commit: the whole gate as a real pre-push hook, the upstream request after a human read, and the first live SDK commit (SC1) recording the sha
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 17-03-PLAN.md — The ten-identical-worst-row scenario (`identical`, `record_500`) and up to three fresh-server attempts before the fix, each recorded hit or miss
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 17-04-PLAN.md — The race fixed: stale-executor/same-tick/closed-pool/ast tests seen red, the D-17 checkpoint on three misses, the two-fact guard and `_closed`, 20 + 20 loops
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 17-05-PLAN.md — The scenario after the fix, L37 (the margin as documented behaviour, no default moved), and the race debt retired with both findings closed
 
 ### Phase 18: Trochoid Maths, Proved
 
@@ -369,10 +385,10 @@ before the human at Phase 18's discuss-phase.
   separate planning-only commit. The milestone close is itself a PR.
 - `make verify` (ruff, mypy `--strict`, import-linter, unfinished-work scan, pytest on 8
   xdist workers under `fail_under = 96`) is the gate for every phase, no exceptions (L13,
-  L34). It runs as the pre-commit hook (~64 s warm at 929 tests); `gsd_run query commit`'s
-  30 s timeout cannot survive it, so until Phase 17's hook decision lands every commit is a
-  plain `git commit` with the hook allowed to finish — a killed SDK commit leaves the hook
-  running as an orphan, and a retry would overlap it.
+  L34). Since Phase 17 (L36) it runs as the pre-push hook (62–73 s warm at 943 tests); the
+  pre-commit hook runs `make verify.fast` (~11 s warm, under `gsd_run query commit`'s 30 s
+  timeout — proved by SDK commit `5a3332f`). A killed SDK commit still leaves the hook running
+  as an orphan: wait for it, then one plain `git commit`, never a blind retry (D-07).
 - Every phase that adds a decision logs it as a new `Lxx` in
   `docs/architecture/decision_log.md`, append-only.
 - New parameters default to off (L05); the pre-v0.2 regression fixture is the standing
@@ -389,7 +405,7 @@ before the human at Phase 18's discuss-phase.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
-| 17. Debt First — Commit Gate and Pool Race | v0.4 | 0/TBD | Not started | - |
+| 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
 | 18. Trochoid Maths, Proved | v0.4 | 0/TBD | Not started | - |
 | 19. The Trochoid in the Part | v0.4 | 0/TBD | Not started | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |

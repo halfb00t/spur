@@ -24,7 +24,7 @@ after the Codex cross-review fix (`882dd76`). Each time the working recipe was: 
 goal, requirement IDs and — the part that makes the re-run cheap and honest — the exact
 delta since the last report (`git diff --stat <old-report-sha>..HEAD -- <covered files>`)
 and why it happened; tell it not to commit; commit the report by hand (`docs(NN): re-verify
-phase N after …`, the pre-commit hook runs `make verify`); then `/gsd-ship N`. Each run was
+phase N after …`, the pre-commit hook runs `make verify.fast`; before L36 it ran `make verify`); then `/gsd-ship N`. Each run was
 ~4 min of agent time and re-ran the full gate (397 → 407 tests).
 
 ## Why it matters

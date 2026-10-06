@@ -1,0 +1,303 @@
+load={ 17.54 13.00 10.93 } utc=2026-10-06T09:40:21Z
+.venv/bin/python -m ruff check .
+All checks passed!
+.venv/bin/python -m mypy src tests docker bench scripts
+Success: no issues found in 39 source files
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 40 files, 82 dependencies.
+-----------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+
+Contracts: 5 kept, 0 broken.
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term 
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/halfb00t/git/halfb00t/spur
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [943 items]
+
+........................................................................ [  7%]
+........................................................................ [ 15%]
+........................................................................ [ 22%]
+........................................................................ [ 30%]
+........................................................................ [ 38%]
+........................................................................ [ 45%]
+........................................................................ [ 53%]
+........................................................................ [ 61%]
+........................................................................ [ 68%]
+........................................................................ [ 76%]
+........................................................................ [ 83%]
+........................................................................ [ 91%]
+........................................................................ [ 99%]
+..F....                                                                  [100%]
+=================================== FAILURES ===================================
+___ test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal ___
+[gw2] darwin -- Python 3.12.13 /Users/halfb00t/git/halfb00t/spur/.venv/bin/python
+  + Exception Group Traceback (most recent call last):
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 361, in from_call
+  |     result: TResult | None = func()
+  |                              ^^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 250, in <lambda>
+  |     lambda: runtest_hook(item=item, **kwds),
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+  |     return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+  |     return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+  |     raise exception
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+  |     teardown.throw(exception)
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/logging.py", line 865, in pytest_runtest_call
+  |     yield
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+  |     teardown.throw(exception)
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 53, in run_old_style_hookwrapper
+  |     return result.get_result()
+  |            ^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_result.py", line 103, in get_result
+  |     raise exc.with_traceback(tb)
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 38, in run_old_style_hookwrapper
+  |     res = yield
+  |           ^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+  |     teardown.throw(exception)
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 900, in pytest_runtest_call
+  |     return (yield)
+  |             ^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+  |     teardown.throw(exception)
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/skipping.py", line 268, in pytest_runtest_call
+  |     return (yield)
+  |             ^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+  |     res = hook_impl.function(*args)
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 183, in pytest_runtest_call
+  |     collect_unraisable(item.config)
+  |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 81, in collect_unraisable
+  |     raise ExceptionGroup("multiple unraisable exception warnings", errors)
+  | ExceptionGroup: multiple unraisable exception warnings (5 sub-exceptions)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 207, in _send
+    |     self.ensure_running()
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 126, in ensure_running
+    |     return self._reentrant_call_error()
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 70, in _reentrant_call_error
+    |     raise ReentrantCallError(
+    | multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker
+    | 
+    | During handling of the above exception, another exception occurred:
+    | 
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    |     res = self._callback(*self._args, **self._kwargs)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/synchronize.py", line 88, in _cleanup
+    |     unregister(name, "semaphore")
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 203, in unregister
+    |     self._send('UNREGISTER', name, rtype)
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 213, in _send
+    |     warnings.warn(
+    | UserWarning: ResourceTracker called reentrantly for resource cleanup, which is unsupported. The semaphore object '/mp-vspojgt8' might leak.
+    | 
+    | The above exception was the direct cause of the following exception:
+    | 
+    | Traceback (most recent call last):
+    |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 67, in collect_unraisable
+    |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+    | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <Finalize object, dead>
+    | Enable tracemalloc to get traceback where the object was allocated.
+    | See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    +---------------- 2 ----------------
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 207, in _send
+    |     self.ensure_running()
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 126, in ensure_running
+    |     return self._reentrant_call_error()
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 70, in _reentrant_call_error
+    |     raise ReentrantCallError(
+    | multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker
+    | 
+    | During handling of the above exception, another exception occurred:
+    | 
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    |     res = self._callback(*self._args, **self._kwargs)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/synchronize.py", line 88, in _cleanup
+    |     unregister(name, "semaphore")
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 203, in unregister
+    |     self._send('UNREGISTER', name, rtype)
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 213, in _send
+    |     warnings.warn(
+    | UserWarning: ResourceTracker called reentrantly for resource cleanup, which is unsupported. The semaphore object '/mp-kz5_x93s' might leak.
+    | 
+    | The above exception was the direct cause of the following exception:
+    | 
+    | Traceback (most recent call last):
+    |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 67, in collect_unraisable
+    |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+    | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <Finalize object, dead>
+    | Enable tracemalloc to get traceback where the object was allocated.
+    | See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    +---------------- 3 ----------------
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 207, in _send
+    |     self.ensure_running()
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 126, in ensure_running
+    |     return self._reentrant_call_error()
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 70, in _reentrant_call_error
+    |     raise ReentrantCallError(
+    | multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker
+    | 
+    | During handling of the above exception, another exception occurred:
+    | 
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    |     res = self._callback(*self._args, **self._kwargs)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/synchronize.py", line 88, in _cleanup
+    |     unregister(name, "semaphore")
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 203, in unregister
+    |     self._send('UNREGISTER', name, rtype)
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 213, in _send
+    |     warnings.warn(
+    | UserWarning: ResourceTracker called reentrantly for resource cleanup, which is unsupported. The semaphore object '/mp-uvjkk5cm' might leak.
+    | 
+    | The above exception was the direct cause of the following exception:
+    | 
+    | Traceback (most recent call last):
+    |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 67, in collect_unraisable
+    |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+    | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <Finalize object, dead>
+    | Enable tracemalloc to get traceback where the object was allocated.
+    | See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    +---------------- 4 ----------------
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 207, in _send
+    |     self.ensure_running()
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 126, in ensure_running
+    |     return self._reentrant_call_error()
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 70, in _reentrant_call_error
+    |     raise ReentrantCallError(
+    | multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker
+    | 
+    | During handling of the above exception, another exception occurred:
+    | 
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    |     res = self._callback(*self._args, **self._kwargs)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/synchronize.py", line 88, in _cleanup
+    |     unregister(name, "semaphore")
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 203, in unregister
+    |     self._send('UNREGISTER', name, rtype)
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 213, in _send
+    |     warnings.warn(
+    | UserWarning: ResourceTracker called reentrantly for resource cleanup, which is unsupported. The semaphore object '/mp-e2zywww_' might leak.
+    | 
+    | The above exception was the direct cause of the following exception:
+    | 
+    | Traceback (most recent call last):
+    |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 67, in collect_unraisable
+    |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+    | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <Finalize object, dead>
+    | Enable tracemalloc to get traceback where the object was allocated.
+    | See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    +---------------- 5 ----------------
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 207, in _send
+    |     self.ensure_running()
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 126, in ensure_running
+    |     return self._reentrant_call_error()
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 70, in _reentrant_call_error
+    |     raise ReentrantCallError(
+    | multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker
+    | 
+    | During handling of the above exception, another exception occurred:
+    | 
+    | Traceback (most recent call last):
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+    |     res = self._callback(*self._args, **self._kwargs)
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/synchronize.py", line 88, in _cleanup
+    |     unregister(name, "semaphore")
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 203, in unregister
+    |     self._send('UNREGISTER', name, rtype)
+    |   File "/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 213, in _send
+    |     warnings.warn(
+    | UserWarning: ResourceTracker called reentrantly for resource cleanup, which is unsupported. The semaphore object '/mp-t85crrp0' might leak.
+    | 
+    | The above exception was the direct cause of the following exception:
+    | 
+    | Traceback (most recent call last):
+    |   File "/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 67, in collect_unraisable
+    |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+    | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <Finalize object, dead>
+    | Enable tracemalloc to get traceback where the object was allocated.
+    | See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    +------------------------------------
+----------------------------- Captured stderr call -----------------------------
+/Users/halfb00t/git/halfb00t/spur/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+{"ts": "2026-10-06T09:41:30.609389+00:00", "level": "ERROR", "logger": "spur.records", "event": "worker.replaced", "version": "0.1.0", "slot": 1, "cause": "timeout"}
+------------------------------ Captured log call -------------------------------
+ERROR    spur.records:records.py:208 worker.replaced
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.13-final-0 _______________
+
+Name                       Stmts   Miss Branch BrPart   Cover
+-------------------------------------------------------------
+src/spur/__init__.py           7      2      0      0  71.43%
+src/spur/__main__.py           2      2      0      0   0.00%
+src/spur/app.py              157      3     20      3  96.61%
+src/spur/build_errors.py       3      0      0      0 100.00%
+src/spur/calc.py             403      4    176      4  98.62%
+src/spur/cli.py               88      6     14      1  93.14%
+src/spur/model.py            258      4     66      4  97.53%
+src/spur/params.py            52      0      4      1  98.21%
+src/spur/pool.py              57      0      8      0 100.00%
+src/spur/records.py           55      2     12      2  94.03%
+-------------------------------------------------------------
+TOTAL                       1082     23    300     15  97.25%
+Required test coverage of 96.0% reached. Total coverage: 97.25%
+=========================== short test summary info ============================
+FAILED tests/test_pool.py::test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal
+=================== 1 failed, 942 passed in 76.50s (0:01:16) ===================
+make: *** [Makefile:143: test] Error 1
+real 77.34
+user 381.82
+sys 265.45
+exit=2
