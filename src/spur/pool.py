@@ -225,10 +225,12 @@ class BuildPool:
             # test_the_timeout_branch_never_awaits_before_it_raises). The raise below
             # stays unconditional: this request's own wait ended at the timeout either
             # way, and the documented `503 timeout` is its answer. After `shutdown()`
-            # that answer is all this path gives: the guard skips the terminate, so a
-            # wedged worker is left to process exit to reap (`shutdown(wait=False)`
-            # never kills a running task). Whether uvicorn's graceful shutdown can
-            # reach it is unmeasured (PITFALLS 9, A4).
+            # that answer is all this path gives: the guard skips the terminate, and
+            # `shutdown(wait=False)` never kills a running task, so a wedged worker is
+            # not reaped: the interpreter's exit joins the executor's manager thread and
+            # waits for the task (8 s task, `shutdown(wait=False)` at 1.5 s, interpreter
+            # exit at 8.10 s, Python 3.12.13, 2026-10-06). Whether uvicorn's graceful
+            # shutdown can reach this path is unmeasured (PITFALLS 9, A4).
             if self.executor_for(p) is executor and executor._processes is not None:
                 for proc in executor._processes.values():
                     proc.terminate()
