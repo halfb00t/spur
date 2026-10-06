@@ -1,13 +1,15 @@
 # gsd's 30 s commit timeout kills the pre-commit `make verify` hook, warm or cold
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-09-25
+Resolved in: build(gate): run make verify.fast at commit and make verify at push (L36)
 Source: `/gsd-new-milestone` session starting v0.2 (the first `gsd_run query commit` of the session)
 Related files:
-- `.pre-commit-config.yaml` (the `verify` hook: ~64 s warm, "a couple of minutes" cold)
-- `~/.claude/gsd-core/bin/lib/commands.cjs:3655` — `COMMIT_TIMEOUT_MS = 30_000`, hard-coded, outside this repo
-- `~/.claude/gsd-core/agents/gsd-executor.md:837` — the executor's `commit_timeout` retry rule
+- `.pre-commit-config.yaml` (the `verify` hook: ~64 s warm, "a couple of minutes" cold; now at pre-push, the commit stage runs `verify-fast`)
+- `Makefile` (`verify.static`, `verify.fast`, `test.fast`, `$(HOOKS)`)
+- `~/.claude/gsd-core/bin/lib/commands.cjs` — `COMMIT_TIMEOUT_MS = 30_000` (gsd-core 1.16.0; cite the symbol, lines drift), hard-coded, outside this repo
+- `~/.claude/gsd-core/agents/gsd-executor.md` — the `commit_timeout` bullet, the executor's retry rule
 
 File name kept (`bench/RESULTS.md` and `.planning/` link it) though the title no longer says
 "cold": retitled and raised to `must` on 2026-10-06, 15-REVIEW WR-03.
@@ -48,3 +50,21 @@ places" that needs its own entry; (c) a sub-30 s pre-commit subset (lint, types,
 scan; pytest left to pre-push and CI), priced from the Phase 15 profile. Revisit no later
 than the next milestone's first executor commit, or when gsd exposes a commit-timeout
 setting.
+
+## Resolution (2026-10-06)
+Option (b)+(c) taken, logged as L36: the commit stage runs `make verify.fast`, the whole
+`make verify` runs at pre-push, and CI, the `main` ruleset and `make pr.land` stay the wall.
+`verify` and `verify.fast` share one `verify.static` prefix, and `test.fast` is the gate's
+own pytest recipe over every test file but tests/test_model.py, tests/test_pool.py,
+tests/test_api.py and tests/test_cli.py at `-n 8 --no-cov`, so the commit stage is a named
+prefix of the gate and not a second list (tests/test_hooks.py pins it). The Makefile's
+`$(HOOKS)` stamp installs the three hook types from the main checkout. Re-priced on
+2026-10-06, `make verify.fast` read 11.28, 11.30 and 11.28 s warm and 19.94 s with an empty
+mypy cache, every one under the 30.0 s kill.
+
+"Unverified: whether the killed hook's `pytest` keeps running orphaned" is answered: it does
+(PITFALLS 15, git 2.54.0, Node `spawnSync`): the killed `git commit` leaves nothing committed
+and no `index.lock`, and the hook runs to completion with parent PID 1. The recovery that
+replaces the executor's retry is D-07: wait until `pgrep` finds no hook process, then make
+exactly one plain `git commit` (docs/HOW_TO_DEVELOP.md §4, L36). The live SDK-commit proof is
+17-02's; the upstream request for a configurable `COMMIT_TIMEOUT_MS` is D-08, also 17-02.

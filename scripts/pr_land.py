@@ -64,9 +64,9 @@ REQUIRED_JOBS_FILE = _WORKFLOWS_DIR / "required-jobs.txt"
 # D-05's own "~60 s". The observation behind the number (flagged assumption 6,
 # 05-02-PLAN.md): the recent runs read via `gh api .../actions/workflows/ci.yml/runs`
 # each showed the workflow run created 34-51 s after its head commit's own timestamp --
-# an upper bound on GitHub's lag, because that timestamp precedes the ~42 s pre-commit
-# hook and the push. The real lag from merge to run is measured at this phase's own
-# merge and recorded in STATE.md.
+# an upper bound on GitHub's lag, because that timestamp precedes the commit's own
+# pre-commit hook and the push. The real lag from merge to run is measured at this
+# phase's own merge and recorded in STATE.md.
 POLL_ATTEMPTS = 12
 POLL_INTERVAL_S = 5.0
 

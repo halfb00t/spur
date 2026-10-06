@@ -1865,3 +1865,113 @@ pin: it matched one spelling in tracked files. It now refuses `type: ignore` wit
 spacing and case and the whole-file `mypy: ignore-errors`, in `src/spur/*.py` tracked or
 untracked (`git grep -i --untracked`), each probed by `tests/test_no_fake_done.py`;
 `pyright: ignore` is not refused and nothing wider is claimed.
+
+## L36 — The commit stage runs a named prefix of the gate under 30 s, and the whole gate moves to pre-push (amends L13 and L34)
+
+Date: 2026-10-06.
+
+L13 and L34 stay as written. This entry amends L13's "the pre-commit hook" (the same
+`make verify` still runs in three places, now the pre-push hook, CI and `make worktree.land`,
+and the commit stage runs `make verify.fast`, a named prefix of it) and L34's closing
+sentence that the commit-timeout debt stays active.
+
+**The conflict.** gsd-core 1.16.0 kills every SDK `git commit` at `COMMIT_TIMEOUT_MS = 30_000`
+(`bin/lib/commands.cjs`; the symbol, not a line, because lines drift) and has no config key
+for it. The pre-commit hook ran the whole gate, 63.555 s warm (L34), so every SDK commit
+returned `{committed: false, reason: 'commit_timeout'}`.
+
+**The decision** (D-01). Two moves together: a sub-30 s subset at the commit stage and the
+whole `make verify` at the push stage; CI, the `main` ruleset and `make pr.land` stay the wall
+(L22, L25). Rejected: raising the timeout upstream alone, because nothing ships and the next
+SDK commit is still killed; moving the gate to pre-push alone, because no check would run at
+the commit boundary during the trochoid phases, where the L26 fixture replay matters most;
+the subset alone, because the full gate would go unenforced locally until CI.
+
+**The subset** (D-02, D-04). The four static steps (`lint typecheck lint-imports no-fake-done`)
+plus pytest over every test file but tests/test_model.py, tests/test_pool.py, tests/test_api.py
+and tests/test_cli.py, chosen by `--ignore=` exclusion so a new test file runs at commit until
+someone names it heavy, at `-n 8 --no-cov`. `--no-cov` is mandatory: `fail_under = 96` reads a
+partial run as a failure. Re-priced on 2026-10-06 on the 12-CPU M2 Max, `make verify.fast` read
+11.28 s wall at 08:54:31Z (1-min load 2.99), 11.30 s at 08:54:42Z (load 4.40) and 11.28 s at
+08:54:54Z (load 5.51), each with `620 passed` in 10.75 to 10.76 s, and 19.94 s at 08:55:05Z
+(load 5.04) with an empty mypy cache (`620 passed in 10.77 s`). All four are under the 30.0 s
+kill with at least 10 s of headroom. The earlier baseline from 17-RESEARCH (2026-10-06, load
+3.75 to 4.07) was 617 passed in 11.98 s (12.18 s wall) and 8.68 s for mypy with an empty cache;
+the three extra tests are tests/test_hooks.py. The slice imports the kernel (tests/test_bench.py
+through `bench.build_time`, and the regression replay's solids), so an OS-cold page cache was
+not priced: D-07 is the recovery if a commit ever runs over.
+
+**The shape** (D-03). `verify: verify.static test` and `verify.fast: verify.static test.fast`,
+with `verify.static` the shared prefix and `test.fast` the gate's own pytest recipe with
+narrower arguments, so `make -n verify` lists the four static recipes before exactly one pytest
+line and the gate's cost is unchanged. `verify: verify.fast test` was rejected: it runs the
+slice twice, taking the gate from about 64 s to about 75 s, over L34's 66 s bar.
+tests/test_hooks.py pins the hook entries, their stages and the shared prefix, so the commit
+stage cannot become a second list of checks.
+
+**The hooks and what pre-push guarantees** (D-05). `default_install_hook_types` is
+`[pre-commit, commit-msg, pre-push]` and every hook is pinned to one stage: `verify-fast` at
+pre-commit, `verify` at pre-push, `no-skip-token` at commit-msg. Nine pre-push scenarios were
+run in a scratch repo with a bare remote (pre-commit 4.6.2, git 2.54.0, 2026-10-06; a hook
+that appends to a log, counted per push):
+
+| # | Scenario | `full` runs | Evidence |
+|---|----------|-------------|----------|
+| 1 | first push of `HEAD:main` | 1 | the log line |
+| 2 | the same push again | 0 | `Everything up-to-date` |
+| 3 | unstaged edit to a tracked file and an untracked file | 1 | log `tracked=base untracked=untracked.txt`; `Stashing unstaged files` |
+| 4 | two refs in one `git push` | 1 | once per push, not per ref |
+| 5 | tag-only push, tag on an already-pushed commit | 0 | `[new tag]`, no hook |
+| 6 | delete-only push | 0 | `[deleted]`, no hook |
+| 7 | `git push --no-verify` | 0 | no hook |
+| 8 | `SKIP=full git push` | 0 | `Skipped` |
+| 9 | fresh clone of the remote | no hook | `.git/hooks` holds no `pre-push`: hooks are per clone |
+
+Row 5 needs the remote added by name (`git remote add origin`): pre-commit's
+`hook_impl.py` selects the commits to check with `rev-list ... --not --remotes=<remote name>`,
+so a push to a bare URL matches no remote-tracking ref and ran the hook on the tag-only push
+(1 run in the first, URL-form run). The repository's own pushes go to `origin`. This settles
+the research's open question about unstaged changes: they are stashed, so the gate reads the
+committed content plus untracked files, which stay visible. What pre-push does not verify is
+an arbitrary sha pushed from another checkout (PITFALLS 13): the hook runs against whatever is
+checked out, and CI and the ruleset are what catch it.
+
+**Who installs** (D-06). The Makefile's `$(HOOKS)` stamp (`.venv/.hooks-installed`, newer than
+`.pre-commit-config.yaml` and `$(STAMP)`) runs `pre-commit install` from `verify.static` and
+`venv`, so "run `make venv` once in the main checkout" installs all three types and a config
+change re-installs on the next gate run. Only in the main checkout: pre-commit 4.6.2 writes into
+`git rev-parse --git-common-dir`, which every linked worktree shares, and bakes the installing
+venv's python into the shim, so an install from a worktree would point every checkout's hooks
+at a venv `make worktree.land` deletes. tests/test_hooks.py proves both branches. CI runs the
+same install against its own checkout and fires no hook (assumption A1: checked on a shallow
+clone locally in 17-02; the phase's first CI run is read at ship).
+
+**Which commits can now be red.** A local or phase-branch commit that fails only
+tests/test_model.py, tests/test_pool.py, tests/test_api.py or tests/test_cli.py, so
+`git bisect` can land on one. The push runs the whole gate, and `main` cannot receive one:
+L22's ruleset, `make pr.land` and CI refuse a red head.
+
+**A killed commit** (D-07). Measured in PITFALLS 15 (git 2.54.0, Node `spawnSync`, 2026-10-06):
+a killed `git commit` leaves nothing committed and no `index.lock`, and the hook keeps running
+to completion as an orphan with parent PID 1. The rule for this repository: wait until
+`pgrep -fl 'pre_commit hook-impl|pytest|mypy'` prints nothing, then make exactly one plain
+`git commit`, record it in the plan's SUMMARY, and never retry the SDK commit blind. It
+supersedes the `commit_timeout` bullet of `~/.claude/gsd-core/agents/gsd-executor.md`, whose
+remove-the-lock-and-retry recovery assumed a warm retry passes.
+
+**Before a push** (D-09). Run `make verify`, then push: the explicit run warms the page cache
+and shows the result, so the pre-push hook runs warm inside a shell tool's 120 s default.
+
+**Upstream** (D-08). A request for a configurable `COMMIT_TIMEOUT_MS` is filed on
+open-gsd/gsd-core, cited here and never depended on, with #3886 as prior art; `~/.claude/gsd-core`
+is not patched. Its URL and date are recorded below with this entry's commit sha (17-02).
+
+**Reversibility.** Costly (D-01): undoing touches `.pre-commit-config.yaml`, the Makefile,
+eight doc sites and needs a superseding entry.
+
+Reason: the gate outgrew the SDK's commit window. The commit stage keeps the fixture replay and
+the calc tests (where Phase 18's maths lands) at the commit boundary, and the whole gate still
+runs before anything leaves the machine.
+Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string
+hw.memsize`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); the
+four `make verify.fast` readings and the nine scratch rows were taken on 2026-10-06.

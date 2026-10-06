@@ -6,8 +6,8 @@ Why a Makefile line gets a test: the scan used to anchor its pattern with `\\b`,
 `git grep -E` hands the pattern to the system regex library, which on macOS does not
 implement `\\b` -- a staged file holding both the to-do marker and the not-implemented
 exception name passed the scan with exit 1 and no output (homebrew git 2.54.0,
-2026-10-05). On the dev host, where the pre-commit hook and every agent's `make verify`
-run, the check had passed vacuously since it was written; only CI's Linux git enforced
+2026-10-05). On the dev host, where every agent's `make verify` and the pre-commit hook
+ran it, the check had passed vacuously since it was written; only CI's Linux git enforced
 it. `-w` is git's own whole-word match, the same on both, and this file is what keeps
 the next edit of the target from reopening the hole
 (docs/tech_debt/resolved/2026-10-05-no-fake-done-scan-is-blind-on-macos.md).
@@ -41,11 +41,12 @@ NEAR_MISS_PROBE = (
 
 
 def _clean_git_env() -> dict[str, str]:
-    """git in the throwaway repo must not see this repository. The pre-commit hook that
-    runs `make verify` inherits `GIT_INDEX_FILE` (measured: `.git/index`, a relative
-    path) and `GIT_PREFIX` from git; carried into the probe's `git add`, they could aim
-    it at this repository's own index. `GIT_CONFIG_GLOBAL`/`GIT_CONFIG_NOSYSTEM` keep a
-    host's `grep.patternType` or `core.hooksPath` from changing what the scan means."""
+    """git in the throwaway repo must not see this repository. A git hook running the
+    gate (`make verify.fast` at pre-commit, `make verify` at pre-push -- L36) inherits
+    `GIT_INDEX_FILE` (measured: `.git/index`, a relative path) and `GIT_PREFIX` from git;
+    carried into the probe's `git add`, they could aim it at this repository's own index.
+    `GIT_CONFIG_GLOBAL`/`GIT_CONFIG_NOSYSTEM` keep a host's `grep.patternType` or
+    `core.hooksPath` from changing what the scan means."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     env["GIT_CONFIG_GLOBAL"] = os.devnull
     env["GIT_CONFIG_NOSYSTEM"] = "1"

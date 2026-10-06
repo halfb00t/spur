@@ -15,12 +15,14 @@ PYTHON ?= $(shell for p in python3.12; do \
 
 PY    := $(VENV)/bin/python
 STAMP := $(VENV)/.installed
+HOOKS := $(VENV)/.hooks-installed
 # A DOCKER_DEFAULT_PLATFORM in your environment wins unless you set PLATFORM here;
 # PLATFORM=linux/arm64 gives a native, much faster image on Apple silicon.
 PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 
 .DEFAULT_GOAL := help
-.PHONY: help venv verify lint typecheck lint-imports no-fake-done test serve \
+.PHONY: help venv verify verify.static verify.fast lint typecheck lint-imports \
+        no-fake-done test test.fast serve \
         check image test-image smoke up down logs lock vendor vendor-check fixture.regen \
         bench bench.latency bench.memory bench.build bench.export \
         worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
@@ -41,13 +43,42 @@ $(STAMP): pyproject.toml
 	$(PY) -m pip install -e '.[dev]'
 	@touch $@
 
-venv: $(STAMP)  ## create .venv with the dev extras, ~1.4 GB (override with VENV=)
+# D-06: a clone that forgot `pre-commit install` pushed unverified until CI, silently, so
+# the gate installs the hooks itself. The stamp depends on .pre-commit-config.yaml, so a
+# config change re-installs on the next gate run; $(STAMP) alone (pyproject.toml only)
+# never would.
+#
+# Main checkout only. pre-commit 4.6.2 writes into `git rev-parse --git-common-dir`, which
+# every linked worktree shares, and bakes the installing venv's python into the shim
+# (pre_commit/commands/install_uninstall.py `_hook_paths`, pre_commit/resources/hook-tmpl;
+# read 2026-10-06). An install from a worktree would point every checkout's hooks at a
+# venv `make worktree.land` deletes, and every later commit would fail. tests/test_hooks.py
+# runs both branches. Re-running the install from inside a running hook leaves that hook
+# intact (17-RESEARCH Pitfall 6, scratch repo, 2026-10-06), so the stamp may go stale in
+# the middle of a commit. No `|| true`: a failing install fails the gate.
+$(HOOKS): .pre-commit-config.yaml $(STAMP)
+	@if [ "$$(git rev-parse --absolute-git-dir)" \
+	     = "$$(git rev-parse --path-format=absolute --git-common-dir)" ]; then \
+	  $(VENV)/bin/pre-commit install; \
+	else \
+	  echo "make: a linked worktree -- the hooks live in the main checkout's .git/hooks; run make venv there (L36)."; \
+	fi
+	@touch $@
+
+venv: $(STAMP) $(HOOKS)  ## create .venv with the dev extras, ~1.4 GB (override with VENV=)
 
 # --- the gate ----------------------------------------------------------------------
 
 # Nothing is done until this passes. Needs no Docker, so it is the one an agent runs
 # after every change; `make check` adds the container checks CI also runs.
-verify: lint typecheck lint-imports no-fake-done test  ## the gate: lint, types, import boundaries, tests
+#
+# The commit stage is a named prefix of the gate, never a second list of checks (L13, L36):
+# `verify` and `verify.fast` both start at `verify.static` and each ends in one pytest
+# recipe, `test` and `test.fast`. `verify: verify.fast test` was rejected: it runs the
+# slice twice, taking the gate from about 64 s to about 75 s, over L34's 66 s bar.
+verify.static: $(HOOKS) lint typecheck lint-imports no-fake-done  ## the gate's static steps: ruff, mypy, import boundaries, unfinished-work scan
+verify: verify.static test  ## the gate: lint, types, import boundaries, tests
+verify.fast: verify.static test.fast  ## the commit-time subset: the static steps + every test file but the four heavy ones, under 30 s (L36)
 
 lint: $(STAMP)  ## ruff: correctness rules only, no reformatting (L16)
 	$(PY) -m ruff check .
@@ -110,6 +141,24 @@ PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN 2>/dev/null); \
 
 test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the tests)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
+
+# The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
+# whole gate is 63.555 s (L34). Every test file but the four heavy ones, named by
+# exclusion -- never inclusion, never a marker -- so a new test file runs at commit until
+# someone names it heavy (`--strict-markers` is on and no marker is registered). The four,
+# by share of pytest's seconds (L34, bench/RESULTS.md "Per-file share"): tests/test_model.py
+# 74.1 %, tests/test_pool.py 8.5 %, tests/test_api.py 4.8 %; tests/test_cli.py is the
+# fourth (D-02). --no-cov is mandatory: `fail_under = 96` reads a partial run as a failure.
+# Re-priced 2026-10-06 on the 12-core M2 Max dev host (1-min load 3.0-5.5): `make
+# verify.fast` read 11.28, 11.30 and 11.28 s wall warm (620 passed in 10.75 s) and 19.94 s
+# with an empty mypy cache -- all under the 30.0 s kill, with 10 s or more of headroom.
+# The OS-cold page cache is not priced: the slice imports the kernel (tests/test_bench.py
+# through bench.build_time, the regression replay's solids), so D-07 is the recovery if a
+# commit ever runs over.
+test.fast: $(STAMP)  ## run every test file but the four heavy ones, no coverage (the commit-time slice)
+	$(PY) -m pytest -n $(PYTEST_WORKERS) --no-cov \
+	  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
+	  --ignore=tests/test_api.py --ignore=tests/test_cli.py $(PYTEST_ARGS)
 
 serve: $(STAMP)  ## run the dev server on http://127.0.0.1:8000
 	$(VENV)/bin/spur serve

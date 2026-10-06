@@ -21,9 +21,11 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-      # The same gate a developer runs locally and `make worktree.land` runs before a
+      # The same gate the pre-push hook runs and `make worktree.land` runs before a
       # merge: ruff, mypy --strict, the import-boundary contracts, the unfinished-work
-      # scan and the tests. One definition of "passing", enforced in three places.
+      # scan and the tests. One definition of "passing", enforced in three places (L13,
+      # L36). Here `make verify` also runs `pre-commit install` once, through the
+      # Makefile's `$(HOOKS)` stamp; no hook fires in CI.
       #
       # The kernel pair the regression fixture was captured on (cadquery 2.8.0 /
       # cadquery-ocp 7.9.3.1.1) is pinned here: requirements.txt, the L12 closure the

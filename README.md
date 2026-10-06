@@ -285,8 +285,10 @@ make check       # verify + the image smoke test + the vendored-bundle check (ne
 ```
 
 `make verify` is the one command that decides whether a change is done. The same command
-runs in the pre-commit hook, in CI on Python 3.12, and inside
-`make worktree.land` before a merge, so "it passed" means the same thing everywhere.
+runs in the pre-push hook, in CI on Python 3.12, and inside
+`make worktree.land` before a merge, so "it passed" means the same thing everywhere; the
+pre-commit hook runs `make verify.fast`, its static steps and every test file but the four
+heaviest, in under 30 s (L36).
 There is deliberately no automatic formatter; see `L16`.
 
 `make test-image` runs the suite inside the container instead, which needs no local

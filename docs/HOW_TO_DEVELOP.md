@@ -20,9 +20,13 @@ works, so that raw work does not slip through:
 - `make verify` — the single gate: ruff, mypy `--strict`, the import-boundary contracts,
   the unfinished-work scan (`TODO`/`FIXME`/`NotImplementedError`), pytest. ~64 s on a warm
   cache (12-core dev host, `bench/RESULTS.md`, Phase 15).
-- The same `make verify` runs in the pre-commit hook, in CI (on every push to `main` and
+- The same `make verify` runs in the pre-push hook, in CI (on every push to `main` and
   on every PR, Python 3.12) and inside `make worktree.land` before landing. One
-  definition of "passed" in three places.
+  definition of "passed" in three places. The pre-commit hook runs `make verify.fast`:
+  the gate's static steps plus every test file but `tests/test_model.py`,
+  `tests/test_pool.py`, `tests/test_api.py` and `tests/test_cli.py`, under 30 s (`L36`),
+  so a local commit can be red on those four while the push and `main` cannot. Run
+  `make venv` once in the main checkout and it installs all three hooks.
 - `gsd-ship` will not create a PR until the phase's verification is `passed`, the tree is
   clean, and the phase's `SECURITY.md` states `threats_open: 0`. A gate, not a reminder.
 - Three newer guarantees (`L22`): the `commit-msg` hook refuses a commit carrying any of
@@ -82,6 +86,12 @@ main checkout to it and puts every commit of the phase there — plans, code, ve
 `ROADMAP`/`STATE`. `main` stays what has already been landed. Throughout the work,
 `make verify` must stay green.
 
+gsd's SDK commit stops at 30 s. On `{committed: false, reason: 'commit_timeout'}` the hook
+keeps running as an orphan, so wait until `pgrep -fl 'pre_commit hook-impl|pytest|mypy'`
+prints nothing, then make exactly one plain `git commit` and record it in the plan's
+SUMMARY; never retry the SDK commit blind. This replaces the executor's
+remove-the-lock-and-retry recovery for this repository (`L36`).
+
 Inside a phase gsd may run the executors of parallel plans in agent worktrees
 (`.claude/worktrees/agent-*`). On a phase branch this almost never kicks in: Claude Code
 cuts such worktrees from `origin/HEAD`, and as soon as the branch has its first commit,
@@ -111,6 +121,9 @@ the PR: `gsd-secure-phase N` (produces `SECURITY.md`; without it ship will not p
 `gsd-validate-phase N`.
 
 ## 6. PR
+
+Run `make verify` before every push, then push: the pre-push hook runs the whole gate
+(about 64 s warm), and the explicit run warms the page cache and shows the result.
 
 ```sh
 /gsd-ship N
