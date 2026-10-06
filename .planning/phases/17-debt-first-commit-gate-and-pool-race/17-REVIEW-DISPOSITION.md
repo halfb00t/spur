@@ -25,35 +25,35 @@ findings:
     title: "The resource-tracker debt record contradicts itself, its revisit trigger has fired, and the phase's own new test is where it struck"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`app.py` cites SC3's 30004 ms to \"Phase 17\" in `bench/RESULTS.md`"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`_report_markdown` prints \"pass bar is <= 2.00x\" under the `composed` and `identical` headings"
   - id: IN-03
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`run_composed` generalised its `rows` but hard-codes `attempted=10`"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The `await`-tripwire test is anchored to exact source indentation and misses non-`await` yields"
   - id: IN-05
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`ci.yml` states \"no hook fires in CI\" as fact; L36 records it as an open assumption"
   - id: IN-06
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The Makefile's \"the four, by share\" sentence misstates the ranking, and its \"620 passed\" figure is already stale"
   - id: IN-07
     severity: info
-    disposition: open
+    disposition: fixed
     title: "After `shutdown()`, a timed-out request raises `BuildTimeout` but never terminates its wedged worker"
-open: 7
+open: 0
 total: 12
-recorded: 2026-10-06T11:05:15.090Z
+recorded: 2026-10-06T11:41:02.210Z
 ---
 
 # Phase 17: Code Review Disposition
@@ -65,13 +65,13 @@ recorded: 2026-10-06T11:05:15.090Z
 | WR-03 | warning | fixed | 17-REVIEW-FIX.md |
 | WR-04 | warning | fixed | 17-REVIEW-FIX.md |
 | WR-05 | warning | fixed | 17-REVIEW-FIX.md |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
-| IN-06 | info | open | - |
-| IN-07 | info | open | - |
+| IN-01 | info | fixed | 17-REVIEW-FIX.md |
+| IN-02 | info | fixed | 17-REVIEW-FIX.md |
+| IN-03 | info | fixed | 17-REVIEW-FIX.md |
+| IN-04 | info | fixed | 17-REVIEW-FIX.md |
+| IN-05 | info | fixed | 17-REVIEW-FIX.md |
+| IN-06 | info | fixed | 17-REVIEW-FIX.md |
+| IN-07 | info | fixed | 17-REVIEW-FIX.md |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
