@@ -243,7 +243,7 @@ def run_composed(base_url: str, rows: list[dict[str, int | float | str]] | None 
     with httpx.Client() as client:
         queue_available_before, workers_replaced_before = _pool_state(base_url, client)
         idle = _sample_for(base_url, client, SETTLE_SECONDS)
-        with ThreadPoolExecutor(max_workers=10) as pool:
+        with ThreadPoolExecutor(max_workers=len(rows)) as pool:
             worst_future = pool.submit(_fetch, base_url, client, rows[0], record_500)
             deadline = time.monotonic() + 10.0
             held = False
@@ -274,7 +274,7 @@ def run_composed(base_url: str, rows: list[dict[str, int | float | str]] | None 
     # the per-request table instead (A3).
     slowest = max((r.wall_s for r in requests if r.status == "200"), default=0.0)
     refused = sum(1 for r in requests if r.status == "503 busy")
-    result = ScenarioResult(label, idle, under_load, slowest, 10, refused)
+    result = ScenarioResult(label, idle, under_load, slowest, len(rows), refused)
     return ComposedRun(result, requests, workers_replaced_before, workers_replaced_after)
 
 
