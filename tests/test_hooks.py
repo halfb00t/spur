@@ -112,8 +112,13 @@ def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() 
     assert "--cov" in whole_pytest
     assert "--ignore=" not in whole_pytest
     assert "--no-cov" in fast_pytest
-    for name in HEAVY_TEST_FILES:
-        assert f"--ignore=tests/{name}.py" in fast_pytest, name
+    # The whole set, not membership: a fifth `--ignore` would quietly stop the commit
+    # stage running that file, and L36 sells the exclusion form because a new test file
+    # runs at commit until someone names it heavy.
+    ignored = {
+        w.removeprefix("--ignore=") for w in fast_pytest.split() if w.startswith("--ignore=")
+    }
+    assert ignored == {f"tests/{n}.py" for n in HEAVY_TEST_FILES}
 
 
 def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree(
