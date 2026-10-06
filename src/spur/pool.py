@@ -88,6 +88,10 @@ class BuildPool:
         # wipe the warm solid cache D-07 exists to keep, for a drift signal this sweep
         # did not actually find. Re-run the sweep and revisit if a future corpus or
         # workload shows growth the ascending-corpus explanation can't account for.
+        # Set by `shutdown()`; `recreate_for` refuses to build after it, because a
+        # replacement built then is one nobody shuts down (PITFALLS 9's second route;
+        # tests/test_pool.py::test_a_closed_pool_never_builds_a_replacement_worker).
+        self._closed = False
         self._executors = [
             ProcessPoolExecutor(max_workers=1, mp_context=_SPAWN, initializer=_warm)
             for _ in range(workers)
@@ -121,7 +125,10 @@ class BuildPool:
         prevent -- this time in the log, where nothing else would catch it.
         """
         i = hash(p) % self.workers
-        if self._executors[i] is not executor:
+        # `_closed`: after `shutdown()` the slot still holds the same executor object (with
+        # its `_processes` None), so the identity check alone would pass for a late
+        # timeout and build a replacement that nothing shuts down.
+        if self._closed or self._executors[i] is not executor:
             return  # someone else already replaced this slot for this incident
         # No `cancel_futures=True`. A single-worker executor's call queue holds
         # `max_workers + EXTRA_QUEUED_CALLS == 2` items (process.py, 3.12.13, line
@@ -201,9 +208,27 @@ class BuildPool:
             # tests/test_pool.py::test_executor_processes_attribute_still_exists fails
             # `make verify` loudly, rather than this path silently degrading into an
             # abandoned future that never gets killed.
-            for proc in executor._processes.values():
-                proc.terminate()
-            self.recreate_for(p, executor, "timeout")
+            #
+            # Two facts are checked before touching `_processes`, because this request's
+            # `executor` is a local captured when it started and may be stale by now. A
+            # same-slot sibling whose deadline fired first has already terminated and
+            # replaced this slot, and `recreate_for`'s `shutdown(wait=False)` set the old
+            # executor's `_processes` to None: reading it raised an `AttributeError` that
+            # app.py has no handler for, a raw 500 (Phase 13's SC3, requests `912cd2d4`
+            # and `0fc30d53`). PITFALLS 9 measured the window: a sibling whose deadline
+            # fires 0-5 ms after the first read `AttributeError` 4/4 times, at 20 ms 3/4,
+            # at 100 ms 0/4 (a clean `BrokenProcessPool`). Identity alone is not enough:
+            # after `shutdown()` the slot still holds this same object with `_processes`
+            # None. Nothing in this branch awaits -- `BuildPool` holds no lock, and the
+            # check-then-act is atomic only because nothing yields the one event-loop
+            # thread (tests/test_pool.py::
+            # test_the_timeout_branch_never_awaits_before_it_raises). The raise below
+            # stays unconditional: this request's own wait ended at the timeout either
+            # way, and the documented `503 timeout` is its answer.
+            if self.executor_for(p) is executor and executor._processes is not None:
+                for proc in executor._processes.values():
+                    proc.terminate()
+                self.recreate_for(p, executor, "timeout")
             raise BuildTimeout(
                 f"Build exceeded the {self.timeout}s per-build timeout. Try a coarser "
                 "quality or fewer teeth."
@@ -222,5 +247,6 @@ class BuildPool:
         return await self._run_with_timeout(p, build_export, p, fmt, quality)
 
     def shutdown(self) -> None:
+        self._closed = True
         for executor in self._executors:
             executor.shutdown(wait=False)
