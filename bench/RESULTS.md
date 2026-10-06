@@ -2936,3 +2936,90 @@ request whose timeout replaced the slot's worker, each backed by an `AttributeEr
 `build.failed` record in the server's own log. Attempts 2 and 3 were not run (stop at the first
 hit, D-15). 17-04's D-17 checkpoint is not reached: the fix is written against a failure someone
 saw.
+
+
+### After the fix
+
+Commit under test: `0628182` (`fix(17-04): a second same-slot timeout raises BuildTimeout, never
+AttributeError`), the last commit to touch `src/spur/pool.py`; HEAD at the run was `d30f32f`, whose
+only later commits are docs. Same scenario, same client command and same fresh-server protocol as
+"### Attempt 1 (before the fix)" (`identical`, composed.json row 4 ten times, shipping defaults,
+:8001); the only change under test is the fix. Raw records, uncut:
+`.planning/phases/17-debt-first-commit-gate-and-pool-race/investigation/after-1.server.log` (the server's stderr, 44,329
+lines, 7.6 MB, sha1 `55903d84c961b2f8d63bb9d30fbaf70efbf2542a`) and `after-1.client.txt`. One run was
+enough: it was decisive and held, so none of the three allowed runs was repeated.
+
+#### Run 1
+
+##### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); 12 CPUs, arm64, 32.0 GiB RAM
+  (the harness's own `machine_facts` line in `after-1.client.txt`)
+- Python 3.12.13 (`.venv`), HEAD `d30f32f`, branch `gsd/phase-17-debt-first-commit-gate-and-pool-race`
+- Server started 2026-10-06T09:57:57Z (PID 61223), client fired the ten requests about 09:58:03Z
+  (the server's first `build.started` is at 09:58:05.9496Z, after the client's settle sampling), the
+  server's last `build.failed` is at 09:58:35.9648Z, server stopped by PID, `lsof -nP
+  -iTCP:8001 -sTCP:LISTEN` printed nothing before the start and nothing after the stop
+- Load (1-minute, `sysctl -n vm.loadavg`): 20.33 at the preflight (09:57:51Z), 18.94 at the server
+  start, 15.30 right after the client finished (09:58:35Z), 13.49 after the stop (09:58:42Z). The
+  host was busier than at attempt 1 (5.48 to 5.88); no quiet bar was waited for (D-14), and every
+  reading below belongs to this load.
+- `docker ps` before and after: no containers running (header line only). `spur-spur-1` is not up
+  on this host today; nothing was started or stopped on it and :8000 was never touched.
+- SPUR_* environment: none set; the server's first `/api/health` read
+  `{"workers":2,"queue_available":4,"workers_replaced":0}`.
+- Client exit status: 0.
+
+##### Client table
+
+| # | Parameters | Outcome | Wall time (s) |
+|---|---|---|---|
+| 1 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 timeout | 30.01 |
+| 2 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 timeout | 30.00 |
+| 3 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 timeout | 30.01 |
+| 4 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 timeout | 30.01 |
+| 5 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 busy | 0.01 |
+| 6 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 busy | 0.01 |
+| 7 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 busy | 0.01 |
+| 8 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 busy | 0.01 |
+| 9 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 busy | 0.01 |
+| 10 | teeth=200 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both | 503 busy | 0.01 |
+
+503 timeout: 4, 503 busy: 6
+- /api/health workers_replaced: 0 -> 1
+
+##### Server readout
+
+Read from `after-1.server.log` (4 `build.started`, 6 `queue.refused`, 4 `build.failed`, 1
+`worker.replaced`; no "Exception in ASGI application" line and no `Traceback`). Rows are matched
+to request ids by outcome and start order, as in attempt 1.
+
+| Request | Server outcome | duration_ms |
+|---|---|---|
+| `d6cd9587` | `build.failed`, `BuildTimeout` (client: `503 timeout`) | 30003 |
+| `fd31a765` | `build.failed`, `BuildTimeout` (client: `503 timeout`) | 30000 |
+| `49f774bd` | `build.failed`, `BuildTimeout` (client: `503 timeout`) | 30000 |
+| `a45e9734` | `build.failed`, `BuildTimeout` (client: `503 timeout`) | 30000 |
+
+`worker.replaced`: one, slot 0, `cause: "timeout"`, at 09:58:35.9532Z, 0.06 ms before the first
+`build.failed` at 09:58:35.9533Z; the other three `build.failed` records land 2.6, 11.0 and 11.5 ms
+after it, in the same window in which attempt 1 logged its three `AttributeError` records. No
+`build.failed` carries `exception: AttributeError`, no `500` row exists in the client table, no
+`503 pool_broken` appears. `/api/health` `workers_replaced`: 0 -> 1.
+
+**Decisive:** yes. Four admitted requests ended in `build.failed` with `BuildTimeout` and
+`workers_replaced` rose from 0 to 1, so the same-slot double timeout actually happened: one
+timeout replaced the slot's worker and three same-slot siblings timed out within 11.5 ms of it
+(the order is read from the records' timestamps, not from a causal log). Each of them got the
+documented `503 timeout`.
+
+**The slot-holding request (D-11):** #1 (`d6cd9587`, 29.42 s alone) was not served: `503 timeout`,
+client wall 30.01 s, server `duration_ms` 30003, at this load (18.94 at the server start, 15.30
+after the client), with three same-key siblings queued behind it. One reading at one load, taken as
+measured; it is the second identical-row reading L37 cites beside attempt 1's (30.01 s,
+`duration_ms` 30003 at load 5.48 to 5.88).
+
+Zero 500s after the fix: run 1 of 1 (one decisive, none non-decisive) on `0628182` shows no `500`
+row and no `AttributeError` record, where the same scenario on `814f4f3` showed three and three.
+The bench is not the proof: the deterministic stale-executor test, red before and green after
+(17-04), is.
