@@ -26,31 +26,31 @@ status: all_fixed
 
 ## Fixed Issues
 
-### WR-01: "raise `SPUR_BUILD_TIMEOUT` on a bigger host" is backwards
+### WR-01: User-facing guidance says to raise `SPUR_BUILD_TIMEOUT` "on a bigger host", which is backwards
 
 **Files modified:** `README.md`, `docs/architecture/decision_log.md`, `docs/tech_debt/resolved/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`
 **Commit:** 9927f3c
 **Applied fix:** All three places now say a slower or busier host raises the variable. The `decision_log.md` edit is to L37's own paragraph, which this phase added and has not shipped. It is a wording correction, not a re-litigation of the decision; L36's text is untouched.
 
-### WR-02: `test_hooks.py` does not pin the exact `--ignore` set
+### WR-02: `test_hooks.py` does not pin the exact `--ignore` set, so the commit slice can shrink silently
 
 **Files modified:** `tests/test_hooks.py`
 **Commit:** b863105
 **Applied fix:** The per-name membership loop is replaced by a set-equality assertion over every `--ignore=` word in the `test.fast` pytest line. `make test PYTEST_ARGS="tests/test_hooks.py -q --no-cov -n0"` passed (3 passed) against the current recipe before the commit. Status: fixed. The assertion is a test change, not a logic change in shipped code.
 
-### WR-03: A failing `pre-commit install` fails every gate run
+### WR-03: A failing `pre-commit install` fails every gate run, including `make verify` and `make worktree.land`
 
 **Files modified:** `Makefile`, `tests/test_hooks.py`
 **Commit:** bc1318f
 **Applied fix:** The reviewer's first option, narrowed. When `git config --get core.hooksPath` is non-empty the `$(HOOKS)` recipe prints an actionable message and installs nothing. The main-checkout install and the linked-worktree skip are unchanged, so L36's "installs from the main checkout only" still holds, and I judged this a hardening, not a change to L36's contract. One deliberate detail: `touch $@` moved inside the install and worktree branches. In the `core.hooksPath` branch the stamp is not written, so the message repeats on every gate run until the key is unset, and the hooks get installed then. A failing `pre-commit install` in the main checkout still fails the gate (`install && touch`). New test `test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set` pins it: no install call, message present, no stamp. I confirmed it fails against the previous Makefile (1 failed, 3 passed) and passes against the new one (4 passed). Status: fixed, requires human verification (conditional logic in a recipe; the tests cover the three branches but only against a shim, not real `pre-commit` under a real `core.hooksPath`).
 
-### WR-04: `HOW_TO_DEVELOP.md` says the push cannot be red
+### WR-04: `HOW_TO_DEVELOP.md` says the push cannot be red; L36 says what pre-push does not guarantee
 
 **Files modified:** `docs/HOW_TO_DEVELOP.md`
 **Commit:** 15a3f51
 **Applied fix:** The sentence now reads "while `main` cannot: the push runs the whole gate, but `--no-verify`, `SKIP=` or pushing a ref other than the checked-out one skips it, so CI and the ruleset are the wall (`L36`)."
 
-### WR-05: Resource-tracker debt contradicts itself, trigger fired
+### WR-05: The resource-tracker debt record contradicts itself, its revisit trigger has fired, and the phase's own new test is where it struck
 
 **Files modified:** `docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`, `docs/tech_debt/active/2026-10-04-worker-coverage-flush-is-sometimes-lost.md`, `docs/tech_debt/INDEX.md`
 **Commit:** daa954a
