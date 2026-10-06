@@ -25,7 +25,9 @@ works, so that raw work does not slip through:
   definition of "passed" in three places. The pre-commit hook runs `make verify.fast`:
   the gate's static steps plus every test file but `tests/test_model.py`,
   `tests/test_pool.py`, `tests/test_api.py` and `tests/test_cli.py`, under 30 s (`L36`),
-  so a local commit can be red on those four while the push and `main` cannot. Run
+  so a local commit can be red on those four while `main` cannot: the push runs the whole
+  gate, but `--no-verify`, `SKIP=` or pushing a ref other than the checked-out one skips
+  it, so CI and the ruleset are the wall (`L36`). Run
   `make venv` once in the main checkout and it installs all three hooks.
 - `gsd-ship` will not create a PR until the phase's verification is `passed`, the tree is
   clean, and the phase's `SECURITY.md` states `threats_open: 0`. A gate, not a reminder.
