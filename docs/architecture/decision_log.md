@@ -1975,3 +1975,19 @@ runs before anything leaves the machine.
 Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string
 hw.memsize`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); the
 four `make verify.fast` readings and the nine scratch rows were taken on 2026-10-06.
+
+**Recorded after this entry's commit (2026-10-06).** The hook commit is `c06749d`
+(`build(gate): run make verify.fast at commit and make verify at push (L36)`); it went through
+its own new commit stage in 12.33 s real (`make verify.fast ... Passed`). Two proofs a commit
+cannot carry about itself were taken afterwards, in 17-02. The pre-push stage: `make verify`
+first (D-09), exit 0, `937 passed in 61.19s`, 97.24% coverage, 61.97 s real; then a plain
+`git push` of HEAD to an empty scratch bare repository with this repository's own hooks, no
+`--no-verify` and no `SKIP=`, printed `make verify (ruff, mypy, import boundaries,
+unfinished-work scan, pytest).......................Passed`, created the branch and took 63.97 s
+real. The install: a `--depth 1` clone of the branch ran `pre-commit install` and
+`.git/hooks` held commit-msg, pre-commit and pre-push. That clone was macOS, not GitHub's
+Linux runner, so assumptions A1 and A3 stay open until the phase's first CI run is read at ship.
+The upstream request is filed: https://github.com/open-gsd/gsd-core/issues/5231, 2026-10-06, with #3886 as prior art; a search of open and
+closed issues for `COMMIT_TIMEOUT_MS` found nothing and for "commit timeout" only #3886. This
+paragraph is committed by gsd's own SDK commit, the commit L36 exists to make possible; its JSON
+result is `.planning/phases/17-debt-first-commit-gate-and-pool-race/17-02-sdk-commit.json`.

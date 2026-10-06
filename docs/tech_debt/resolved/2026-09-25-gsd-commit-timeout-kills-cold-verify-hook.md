@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-09-25
-Resolved in: build(gate): run make verify.fast at commit and make verify at push (L36)
+Resolved in: c06749d
 Source: `/gsd-new-milestone` session starting v0.2 (the first `gsd_run query commit` of the session)
 Related files:
 - `.pre-commit-config.yaml` (the `verify` hook: ~64 s warm, "a couple of minutes" cold; now at pre-push, the commit stage runs `verify-fast`)
