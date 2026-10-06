@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-10-02
-Resolved in: 0628182 (the race); docs(17-05): record the worst row's margin as documented behaviour and retire the same-slot race debt (L37) (the margin)
+Resolved in: 0628182 (the race); 7af75af (the margin)
 Source: 13-06's SC3 measurement (`.planning/milestones/v0.3-phases/13-latency-bar/investigation/sc3*`),
 the composed worst row under ten concurrent builds — the question
 `docs/tech_debt/resolved/2026-09-28-tip-chamfer-narrows-the-build-timeout-margin.md` left
