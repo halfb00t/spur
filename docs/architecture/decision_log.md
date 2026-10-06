@@ -772,7 +772,8 @@ test_the_fixture_was_captured_on_the_kernel_this_run_uses` names the one excepti
 rule already anticipates — a resolved kernel drifting from the one the fixture was
 captured on — and CI resolving `cadquery`/`cadquery-ocp` from an unpinned range while
 the fixture pins one resolved kernel's exact topology is the `must`-severity debt item
-`docs/tech_debt/active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`.
+`docs/tech_debt/active/2026-09-26-ci-resolves-the-kernel-the-fixture-pins.md`
+[retired in Phase 15 under L34; the file now lives in `docs/tech_debt/resolved/`].
 
 **The selector rule** (D-15..D-18). `calc.bore_rim_limit(p)` is the exact geometric
 bound per bore shape, no slack — `bore_radius(p)` for round and D-flat bores (the
@@ -1625,6 +1626,12 @@ Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), P
 shift and the four hole-through-web gaps were measured on 2026-10-03, the first
 filleted-spoke measurement on 2026-09-29, all on this kernel pair.
 
+**Amendment (2026-10-06, 14-REVIEW IN-02).** The tip rows' gaps (5.85e-10 to 6.55e-10 mm3)
+sit below D-06's literal trigger of 1e-9 mm3, so at `abs=1e-9` they pass; they went to the
+human at 14-04 Task 2 because the headroom was about 1.5x, thinner than D-06 anticipated,
+not because the trigger fired. "The human set it, not the executor (D-06)" above credits
+the trigger; the cause was the headroom.
+
 ## L34 — The gate is measured, runs on eight workers under a coverage floor, and CI installs the pinned kernel (amends L12 and L13)
 
 Date: 2026-10-04.
@@ -1757,6 +1764,16 @@ machine_facts; print(machine_facts())"`, read 2026-10-04), Apple M2 Max; macOS 2
 one `bench/RESULTS.md` § "Host state" dates 2026-10-03; the coverage, tolerance and
 before/after runs were taken on 2026-10-04, and CI run 37181871926 on the same day on
 GitHub's 4-vCPU `ubuntu-latest`.
+
+**Amendment (2026-10-06, 15-REVIEW WR-01 and IN-03).** "Runs on eight workers" means up to
+eight: `PYTEST_WORKERS` is 8 clamped to the online CPUs, so GitHub's 4-vCPU runner runs
+`-n 4`, and there the gain is not reproduced — `927 passed in 193.21s` serial without
+coverage (run 37116412012) against `203.16s` at `-n 4` with coverage (run 37181871926), two
+single runs on different commits, set beside each other in `bench/RESULTS.md` § "CI run".
+The 3.60x above is against the re-measured serial A mean (228.99 s), taken in alternation
+with B in 15-04, not against C0's 244.59 s in the human's answer; C0 was taken before `-n 8`
+went in and is 15.6 s slower than the A mean, cause untested (against C0 the delta would
+read -181.0 s, 3.85x).
 
 ## L35 — Vendor shape typing stops at two checked boundaries, and Phases 7 and 8 carry a Nyquist record (amends L21)
 

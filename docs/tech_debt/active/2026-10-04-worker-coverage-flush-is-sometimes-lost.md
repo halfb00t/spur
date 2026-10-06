@@ -24,9 +24,10 @@ data written after the controller's combine (workers are shut down with
 
 Tally after 15-04's before/after (bench/RESULTS.md, "Before and after"): all three serial
 full `--cov` runs of the phase (C0, A1, A2) lost the three statements and read 96.99 %;
-none of the five `-n 8 --cov` runs that printed `pool.py` did (15-02's B1-B3, B1 and B2 of
-15-04), all 97.21 %. Eight runs, no cause; the one loss at `-n 4` in 15-RESEARCH says it is
-not serial-only.
+none of the six `-n 8 --cov` runs that printed `pool.py` did (15-02's B1-B3, B1 and B2 of
+15-04, all 97.21 %, and the 71-item deselect run in RESULTS.md § "Proposed cuts", `pool.py`
+100.00 %), nor did 15-05's CI run at `-n 4` (`pool.py` 100.00 %, run 37181871926). Ten
+runs, no cause; the one loss at `-n 4` in 15-RESEARCH says it is not serial-only.
 
 ## Why it matters
 

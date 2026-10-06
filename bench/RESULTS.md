@@ -2763,9 +2763,10 @@ Coverage on the four rows (`--cov`, floor `fail_under = 96`, "Required test cove
 `src/spur/pool.py` at 95.00% (lines 63-67 and 222 missing, the lost worker flush of C0),
 B1 and B2 read `TOTAL 1069 23 294 15 97.21%` with `pool.py` at 100.00%. Counting C0, all
 three serial full `--cov` runs of this phase lost those three statements, and none of the
-five `-n 8 --cov` runs that printed `pool.py` did (15-02's B1-B3, B1 and B2 here). 15-RESEARCH
-Pitfall 13 saw the same loss once at `-n 4`, so it is not specific to serial; the tally
-is a count of eight runs, not a cause.
+six `-n 8 --cov` runs that printed `pool.py` did (15-02's B1-B3, B1 and B2 here, and the
+71-item deselect run under "Proposed cuts" above), nor did the CI run at `-n 4` below.
+15-RESEARCH Pitfall 13 saw the same loss once at `-n 4`, so it is not specific to serial;
+the tally is a count of ten runs, not a cause.
 
 Largest peak RSS of the four rows: 6638 MiB (B1, 17 processes), an upper bound by the same
 rule as the sweep (shared-library pages count once per process); the serial A rows peak at
@@ -2803,6 +2804,15 @@ What the log printed, copied from `gh run view 37181871926 --log`:
   `TOTAL 1069 22 294 15 97.29%` against the floor `fail_under = 96`.
 - `test (3.12)` job: started 2026-10-04T06:07:19Z, completed 2026-10-04T06:11:46Z, 267 s
   (4 min 27 s) including checkout, setup-python and the venv install.
+
+Beside it, so a reader does not assume CI got no worse: the last CI run before the phase
+changed the gate, 37116412012 (2026-10-03, serial, no coverage), printed `927 passed in
+193.21s`; its `test (3.12)` job ran 240 s and its `make verify` step 231 s. This run reads
+203.16 s, 267 s and 259 s. Two single runs on different commits, no verdict drawn — but on
+the 4-vCPU runner `-n 4` with coverage and two more dev packages made pytest about 10 s
+slower and the job 27 s slower; the 3.6x gain is the dev host's, eight workers on twelve
+CPUs. The runner has not been A/B'd. (Both logs re-read with `gh run view --json jobs` and
+`--log` on 2026-10-06; 15-REVIEW WR-01.)
 
 The pair came out right on the first run, so the tripwire
 `test_the_fixture_was_captured_on_the_kernel_this_run_uses` passed in this run's 927. Whether the
