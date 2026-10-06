@@ -44,7 +44,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
 
 ### Debt — the two `must` items (first)
 
-- [ ] **REQ-hook-and-commit-timeout-decided**: One logged `Lxx` settles how the pre-commit
+- [x] **REQ-hook-and-commit-timeout-decided**: One logged `Lxx` settles how the pre-commit
   `make verify` hook (~64 s warm, L34) coexists with gsd's hard-coded 30 s commit timeout
   (`COMMIT_TIMEOUT_MS` in `gsd-core` 1.16.0 `commands.cjs`; no knob, no open upstream
   request — STACK). The options the human picks from at discuss-phase, each priced:
@@ -249,7 +249,7 @@ the phase where its acceptance can be read.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-hook-and-commit-timeout-decided | Phase 17 | Pending |
+| REQ-hook-and-commit-timeout-decided | Phase 17 | Complete |
 | REQ-same-slot-timeout-race-reproduced | Phase 17 | Pending |
 | REQ-same-slot-timeout-race-fixed | Phase 17 | Pending |
 | REQ-worst-row-margin-decided | Phase 17 | Pending |

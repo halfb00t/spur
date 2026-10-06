@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 17
 current_phase_name: Debt First — Commit Gate and Pool Race
 status: executing
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-10-06T09:01:47.461Z"
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-10-06T09:13:09.240Z"
 last_activity: 2026-10-06
 last_activity_desc: Phase 17 execution started
-state_head: c06749de0b2578361745561ebc2fe836f417fd7d
+state_head: 5a3332f15582bc891f7a28a7508eb884eb1bfc19
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 5
-  completed_plans: 1
-  percent: 20
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State
@@ -33,11 +33,11 @@ ready to discuss (started 2026-10-06 on `gsd/milestone-v0.4-start`; lands throug
 ## Current Position
 
 Phase: 17 (Debt First — Commit Gate and Pool Race) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-06 — Phase 17 execution started
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
@@ -194,6 +194,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 16 P02 | 11min (continuation; Task 1 was the human's) | 3 tasks | 3 files |
 | Phase 16 P03 | 11 min | 3 tasks | 8 files |
 | Phase 17 P01 | 11 min | 3 tasks | 14 files |
+| Phase 17 P02 | 10 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -322,6 +323,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 16]: UAT test 3 (human, 2026-10-05): Phase 7's Nyquist record rests on the committed `07-VALIDATION.md` (`655583f`, `5ba02d2`; both audit sections `Gaps found 0`), not on the resume message the human did not save — accepted as a disclosed deviation from 16-02 truths 2 and 4; no third run.
 - [Phase 17]: L36: pre-commit runs make verify.fast (under 30 s, 11.3 s warm); the whole make verify moves to pre-push; hooks installed by the gate from the main checkout only
 - [Phase 17]: A killed SDK commit is recovered by waiting for the orphaned hook (pgrep) and one plain git commit, never a blind SDK retry (D-07)
+- [Phase 17]: 17-02: upstream request filed as a new issue open-gsd/gsd-core#5231 (no open issue asked for a configurable commit timeout), posted from the human-approved text unchanged
+- [Phase 17]: 17-02: SC1 met by the first SDK commit 5a3332f, committed true in 13.57 s under the verify-fast hook; A1/A3 stay open until the first CI run is read at ship
 
 ### Pending Todos
 
@@ -489,8 +492,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-06T09:01:47.432Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-10-06T09:13:09.212Z
+Stopped at: Completed 17-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
