@@ -71,14 +71,18 @@ lint-imports: $(STAMP)  ## the module boundaries declared in pyproject.toml
 # The second block: mypy's warn_unused_ignores refuses a stale suppression, but nothing
 # refused a new one -- the fifth arrived unnoticed in 10-02. Scoped to src/spur/ because
 # tests/test_calc.py and tests/test_cli.py each carry one on purpose, on a deliberate
-# GearParams.model_construct(**kw) (Phase 16, D-05).
+# GearParams.model_construct(**kw) (Phase 16, D-05). The spellings mypy also accepts --
+# no space, any case, and the whole-file `mypy: ignore-errors` -- are matched, and
+# --untracked reaches a module not yet `git add`ed (16-REVIEW WR-02); `pyright: ignore`
+# is not refused. tests/test_no_fake_done.py stages or drops each probe.
 no-fake-done: ## refuse unfinished work dressed up as finished
 	@if git grep -nwE '(TODO|FIXME|XXX|HACK|NotImplementedError)' \
 	     -- '*.py' '*.js' '*.sh' ':!src/spur/static/vendor'; then \
 	  echo "make: unfinished-work markers above. Finish it, or file it in docs/tech_debt/."; \
 	  exit 1; \
 	fi
-	@if git grep -nE 'type: ignore' -- 'src/spur/*.py'; then \
+	@if git grep -nEi --untracked 'type:[[:space:]]*ignore|mypy:[[:space:]]*ignore-errors' \
+	     -- 'src/spur/*.py'; then \
 	  echo "make: a mypy suppression in src/spur above. Narrow the type, or file it in docs/tech_debt/."; \
 	  exit 1; \
 	fi
@@ -97,8 +101,12 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 # sweep and Gate decision; 12-CPU M2 Max, 2026-10-03/04). It is a measured choice, not
 # the host's CPU count: the sweep's N = 12 ran slower than N = 8. The clamp keeps it
 # from oversubscribing a smaller host: CI's runner has 4 vCPUs, and tests/test_pool.py's
-# injected 0.2 s and 1.0 s timeouts are what a starved runner would trip.
-PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN); echo $$(( n < w ? n : w )))
+# injected 0.2 s and 1.0 s timeouts are what a starved runner would trip. A missing or
+# non-numeric answer from getconf falls back to one worker: left alone, an empty n reads
+# as 0 in the arithmetic and the suite would run -n 0 (serial, 4x the cost) with no
+# message (15-REVIEW IN-02). The count is the host's online CPUs, not a cgroup quota.
+PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN 2>/dev/null); \
+                    [ "$$n" -ge 1 ] 2>/dev/null || n=1; echo $$(( n < w ? n : w )))
 
 test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the tests)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
@@ -223,8 +231,11 @@ pr.land: $(STAMP)  ## PR=<n> : squash-merge a PR only if its head is green and c
 
 # --- cleanup -----------------------------------------------------------------------
 
+# parallel = true leaves one .coverage.<host>.<pid>.* per process; a killed run's files
+# would otherwise outlive a clean and be combined into the next total (15-REVIEW IN-04).
 clean:  ## remove the venv, caches and exported models
 	rm -rf $(VENV) .pytest_cache .ruff_cache build dist
+	rm -f .coverage .coverage.*
 	find . -name '__pycache__' -type d -prune -exec rm -rf {} +
 	find . -name '*.egg-info' -type d -prune -exec rm -rf {} +
 	rm -f *.stl *.step *.stp

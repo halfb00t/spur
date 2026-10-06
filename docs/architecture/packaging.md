@@ -14,7 +14,10 @@ both halves of that sentence automatically.
   of 31 packages, installed with `--no-deps`. Regenerate with `make lock`
   (`docker/refresh-requirements.sh`); never hand-edit a line, because with `--no-deps`
   pip will not tell you when a bumped version breaks the closure. `pyproject.toml` keeps
-  loose ranges for developer environments.
+  loose ranges for developer environments. Since Phase 15 the same file is also pip's
+  constraint file for CI's `make verify` (`PIP_CONSTRAINT`, L34): a `make lock` that moves
+  `cadquery`/`cadquery-ocp` moves CI's kernel with it and needs `make fixture.regen` in the
+  same change.
 - **The image drops what it does not import.** ~440 MB of `trame*`, `matplotlib`,
   `scipy`, `numba`, `llvmlite`, `pillow` and friends are uninstalled in the same layer.
   `vtk` is *not* removable — `OCP` links `libvtkWrappingPythonCore` — and `casadi`,
@@ -38,7 +41,7 @@ both halves of that sentence automatically.
 ## The gate (L13)
 
 ```
-make verify   ruff + mypy --strict + import-linter + unfinished-work scan + pytest   (~64 s warm, no Docker)
+make verify   ruff + mypy --strict + import-linter + unfinished-work scan + pytest   (~64 s warm on the 12-core dev host, `-n 8` with coverage; no Docker)
 make check    verify + the in-image smoke test + the vendored-bundle byte check      (needs Docker)
 make bench    bench.latency (host) + bench.memory (Docker) -- NOT part of the gate
 ```

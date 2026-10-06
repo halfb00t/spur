@@ -1212,7 +1212,7 @@ def _holes_volume(p: GearParams, recesses: int) -> float:
 
     Exact only while every hole lies wholly inside the recess annulus, or there is no
     recess. The composed hex-holes row is the exception: its holes reach 12 mm, past the
-    hex-shifted recess outer wall at 11.994 mm (14-REVIEW WR-03), so it does not use this.
+    hex-shifted recess outer wall at 11.994 mm, so it does not use this.
 
     Measured 2026-10-03 against the built solid (cadquery 2.8.0 / cadquery-ocp
     7.9.3.1.1): HOLES with recess_sides "none" agrees to 2.39e-12 mm3 (14-02).
@@ -1306,6 +1306,7 @@ def _assert_the_cutout_is_what_derive_prints(
     they pass an absolute bar of their own, one the human chose as a multiple of that
     measured offset (L33), not one the executor tuned.
     """
+    assert volume_rel is None or volume_abs is None, "pass one volume bar, not both"
     faces_delta = (collections.Counter(f.geomType() for f in cut.Faces())
                   - collections.Counter(f.geomType() for f in plain.Faces()))
     assert faces_delta == d_faces
@@ -1451,7 +1452,7 @@ def test_the_cutout_proof_fails_when_the_cutout_step_is_skipped(
 
     The same call runs first on the unpatched build and passes, so the raise below can
     only come from the skipped cutout. Before 14-04 the holes and cells rows passed 6 dp
-    literals that sat +3.54e-7 and +4.02e-7 mm3 off their closed forms (14-REVIEW WR-02),
+    literals that sat +3.54e-7 and +4.02e-7 mm3 off their closed forms,
     so the abs=1e-9 volume line raised on a correct build too, and the raise could not
     tell the patched build from the unpatched one.
     """
@@ -1701,7 +1702,7 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
     its closed form is not derived here: the spokes and cells rows straddle the recess
     walls (a polar or polygon-versus-circle integral split at the recess radii), and on
     the hex bore the holes' 12 mm reach crosses the recess outer wall, pulled to
-    11.994 mm (14-REVIEW WR-03). See
+    11.994 mm. See
     docs/tech_debt/active/2026-10-03-composed-cutout-volume-literals-pinned-at-six-places.md.
 
     The keyed-spokes row sits at the phase's own tightest adjacency: SPOKES' 13.2 mm

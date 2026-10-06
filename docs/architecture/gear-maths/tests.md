@@ -25,8 +25,8 @@
 
 - No property-based test over the whole feasible parameter space; the centre-distance
   sweep is the closest thing and it is hand-rolled.
-- The module has no coverage floor in the gate yet (L14 note, and
-  `docs/tech_debt/active/2026-09-21-no-coverage-floor.md`).
+- The gate holds one coverage floor over the whole package, `fail_under = 96` (L34);
+  `calc.py` has no floor of its own.
 
 ## Run
 

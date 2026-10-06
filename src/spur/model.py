@@ -350,12 +350,15 @@ def _cell_cutters(p: GearParams, rf: float) -> list[cq.Solid]:
     calc.py enumerates, at exactly the size derive() prints, so the part and the
     printed number cannot disagree (L08)."""
     size, centres = hex_cells(p, rf)
-    proto = (cq.Workplane("XY").polygon(6, size, circumscribed=True)
-            .extrude(p.face_width).val())
-    # .val() is typed as a 4-way union; narrowed with isinstance for mypy only
-    # (cli.py's precedent) -- no new type-checker suppression added here.
+    proto = _shape_of(cq.Workplane("XY").polygon(6, size, circumscribed=True)
+                      .extrude(p.face_width))
+    # _shape_of narrows val() to a Shape; translate() below must return the Solid the
+    # extrude made, so the same modelling-defect guard narrows once more. Before
+    # 16-REVIEW WR-01 this raised a bare TypeError, which _build_checked relabelled as
+    # "try smaller fillets or chamfers" -- the catch-all a pipeline defect must never
+    # wear (L35).
     if not isinstance(proto, cq.Solid):
-        raise TypeError(f"honeycomb cell prototype is not a Solid: {type(proto)}")
+        raise BuildError(_NOT_A_BODY.format(type(proto).__name__))
     return [proto.translate(cq.Vector(x, y, 0)) for x, y in centres]
 
 
@@ -421,10 +424,11 @@ _NOT_A_BODY = (
 # carry. Measured on the default gear 2026-10-04: _gear_blank returns a Solid, and
 # _cut_face_recesses and every later step a Compound; a step whose feature is off
 # returns its input unchanged. So the pipeline's static type stays cq.Shape and the
-# narrowing happens here, where Mixin3D is needed. It asserts the invariant _build()'s
-# end check asserts, cannot fire from any settable field, and is a modelling-defect
-# guard, never an answer (L26). A cast would claim the same and check nothing; this
-# replaces five mypy suppressions.
+# narrowing happens here, where Mixin3D is needed. It asserts the type the pipeline
+# already guarantees (a Solid after _gear_blank, a Compound after every boolean), with
+# the 44-record fixture replay (tests/regression) as the evidence beyond the default
+# gear; a modelling-defect guard, never an answer (L26). A cast would claim the same and
+# check nothing; this replaces five mypy suppressions.
 def _body(shape: cq.Shape) -> cq.Solid | cq.Compound:
     if not isinstance(shape, cq.Solid | cq.Compound):
         raise BuildError(_NOT_A_BODY.format(type(shape).__name__))
