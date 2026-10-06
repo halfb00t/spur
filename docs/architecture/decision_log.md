@@ -1854,3 +1854,8 @@ types where a check is possible, pinned the result, and measured the second ques
 instead of assuming it.
 Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, read 2026-10-04 (16-CONTEXT.md, domain
 facts); the five-site gear tuple and the mypy comparison were taken the same day (16-01).
+
+**Amendment (2026-10-06, 16-REVIEW WR-01).** A third narrowing survived in `_cell_cutters`,
+raising a bare `TypeError` that `_build_checked` relabelled as the catch-all remedy; it now
+goes through `_shape_of` and raises `BuildError` with the same message, so "two checked
+boundaries" reads as the two helpers plus that one call site, which reuses them.

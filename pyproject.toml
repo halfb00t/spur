@@ -111,9 +111,10 @@ init_forbid_extra = true
 [[tool.mypy.overrides]]
 # OCP, the OpenCascade binding, ships no type information (no .pyi and no py.typed in
 # cadquery-ocp 7.9.3.1.1), so the entry is scoped to it -- never a global
-# ignore_missing_imports, which would blind the whole project. cadquery ships py.typed:
-# mypy reads its annotations (which is why Shape.cut -> Shape reached the gate), so it
-# needs no entry (Phase 16, D-04).
+# ignore_missing_imports, which would blind the whole project. cadquery 2.8.0, the pinned
+# version, ships py.typed (earlier releases in the declared >=2.5 range unchecked): mypy
+# reads its annotations (which is why Shape.cut -> Shape reached the gate), so it needs
+# no entry (Phase 16, D-04).
 module = ["OCP.*"]
 ignore_missing_imports = true
 

@@ -26,11 +26,12 @@ module should be called from outside.
   `TemporaryDirectory` and reads the bytes back, because CadQuery's exporters take a path.
   In the container `/tmp` is a size-capped tmpfs, so a huge STL fails there rather than
   eating the memory limit.
-- **Vendor shape typing stops at two checked boundaries.** CadQuery types every boolean
+- **Vendor shape typing stops at two checked helpers.** CadQuery types every boolean
   result as `Shape` (`Shape.cut -> Shape`), which declares neither `fillet` nor `chamfer`
   (they live on `Mixin3D`, carried by `Solid` and `Compound`), and `Workplane.val()` as a
   four-way union. `_body()` and `_shape_of()` narrow both with `isinstance` and raise
-  `BuildError` on a shape the pipeline must never see. `src/spur/` carries no mypy
+  `BuildError` on a shape the pipeline must never see; `_cell_cutters` narrows its
+  prototype to a `Solid` with the same guard. `src/spur/` carries no mypy
   suppression and `make no-fake-done` refuses a new one; history in
   `docs/tech_debt/resolved/2026-09-21-cadquery-shape-typing.md`.
 - **A single large build stalls the event loop** for a second or two, because OCCT holds
