@@ -4,17 +4,17 @@ milestone: v0.4
 milestone_name: True Root
 current_phase: 17
 current_phase_name: Debt First — Commit Gate and Pool Race
-status: executing
-stopped_at: Completed 17-04-PLAN.md
-last_updated: "2026-10-06T09:54:28.848Z"
+status: verifying
+stopped_at: Completed 17-05-PLAN.md
+last_updated: "2026-10-06T10:05:46.300Z"
 last_activity: 2026-10-06
 last_activity_desc: Phase 17 execution started
-state_head: c6f49487316b5f2efcdfcd9f24715c74dc35bb3a
+state_head: 991ba24418a56fe73c4c2db1630f2e6c85266204
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 75
 ---
 
@@ -34,7 +34,7 @@ ready to discuss (started 2026-10-06 on `gsd/milestone-v0.4-start`; lands throug
 
 Phase: 17 (Debt First — Commit Gate and Pool Race) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-06 — Phase 17 execution started
 
 Progress: [████████░░] 75%
@@ -197,6 +197,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 17 P02 | 10 min | 3 tasks | 5 files |
 | Phase 17 P03 | 4 min | 2 tasks | 5 files |
 | Phase 17 P04 | 31 min | 3 tasks | 5 files |
+| Phase 17 P05 | 7 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -329,6 +330,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 17]: 17-02: SC1 met by the first SDK commit 5a3332f, committed true in 13.57 s under the verify-fast hook; A1/A3 stay open until the first CI run is read at ship
 - [Phase 17]: 17-03: stopped at the first hit (D-15); verdict 'Reproduced in attempt 1.' so 17-04's D-17 checkpoint is not reached
 - [Phase 17]: 17-04: proceed-as-known-flake - the same-slot timeout fix ships with make verify at 2/3; run 2 was the resource-tracker flake (debt item, b8ef84a), not a new-test assertion. The fix commit is 0628182.
+- [Phase 17]: L37: the heaviest allowed composed row's limit is documented behaviour; SPUR_BUILD_TIMEOUT stays 30 s, spoke_count le stays 32, 503 timeout is the contract under concurrent load — L05 and L08: no default a shared link depends on moves and no figure is tuned toward a pass; revisit at Phase 19's composed re-measure
 
 ### Pending Todos
 
@@ -496,8 +498,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-06T09:54:28.817Z
-Stopped at: Completed 17-04-PLAN.md
+Last session: 2026-10-06T10:05:46.270Z
+Stopped at: Completed 17-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
