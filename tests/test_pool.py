@@ -665,8 +665,8 @@ def test_a_closed_pool_never_builds_a_replacement_worker() -> None:
             each.shutdown(wait=True)
 
 
-def _awaits_in_timeout_handler(source: str) -> list[int]:
-    """Line numbers of every `await` inside `_run_with_timeout`'s `except TimeoutError`."""
+def _timeout_handler(source: str) -> ast.ExceptHandler:
+    """`_run_with_timeout`'s one `except TimeoutError` handler, found by AST."""
     [func] = [
         node for node in ast.walk(ast.parse(source))
         if isinstance(node, ast.AsyncFunctionDef) and node.name == "_run_with_timeout"
@@ -677,9 +677,15 @@ def _awaits_in_timeout_handler(source: str) -> list[int]:
         and isinstance(node.type, ast.Name) and node.type.id == "TimeoutError"
     ]
     assert len(handlers) == 1, "expected exactly one `except TimeoutError` handler"
+    return handlers[0]
+
+
+def _suspensions_in_timeout_handler(source: str) -> list[int]:
+    """Line numbers of every point inside `_run_with_timeout`'s `except TimeoutError` where
+    the event loop can run another task: `await`, `async with` and `async for` all yield."""
     return [
-        node.lineno for stmt in handlers[0].body for node in ast.walk(stmt)
-        if isinstance(node, ast.Await)
+        node.lineno for stmt in _timeout_handler(source).body for node in ast.walk(stmt)
+        if isinstance(node, (ast.Await, ast.AsyncWith, ast.AsyncFor))
     ]
 
 
@@ -689,16 +695,18 @@ def test_the_timeout_branch_never_awaits_before_it_raises() -> None:
     `BuildPool` holds no lock: the check (`executor_for(p) is executor and
     executor._processes is not None`) and the act (terminate, `recreate_for`) cannot be
     interleaved with a same-slot sibling only because the one event-loop thread never
-    gets control back between them. An `await` anywhere in the `except TimeoutError`
-    branch reopens the race the fix closed, and it is the one boundary no behavioural
-    test can see (17-RESEARCH Open Question 4): the siblings are allowed to end in
-    `BrokenProcessPool`, so a wider window still passes them. The same read pins the
-    handler types, so a broad `except AttributeError` or `except Exception` cannot hide
-    a third defect (PITFALLS 9). The tripwire half seeds an `await` before the `raise`
-    and requires the helper to report it, so a passing check is one that can fail.
+    gets control back between them. An `await`, `async with` or `async for` anywhere in
+    the `except TimeoutError` branch reopens the race the fix closed, and it is the one
+    boundary no behavioural test can see (17-RESEARCH Open Question 4): the siblings are
+    allowed to end in `BrokenProcessPool`, so a wider window still passes them. The
+    same read pins the handler types, so a broad `except AttributeError` or
+    `except Exception` cannot hide a third defect (PITFALLS 9). The tripwire half seeds
+    each of the three suspension forms before the handler's `raise` (placed from that
+    node's own line and column, not a source string) and requires the helper to report
+    it, so a passing check is one that can fail.
     """
     src = Path(spur.pool.__file__).read_text()
-    assert _awaits_in_timeout_handler(src) == []
+    assert _suspensions_in_timeout_handler(src) == []
 
     [func] = [
         node for node in ast.walk(ast.parse(src))
@@ -710,7 +718,14 @@ def test_the_timeout_branch_never_awaits_before_it_raises() -> None:
     }
     assert handler_types == {"TimeoutError", "BrokenProcessPool"}
 
-    anchor = "            raise BuildTimeout("
-    assert src.count(anchor) == 1
-    seeded = src.replace(anchor, "            await asyncio.sleep(0)\n" + anchor)
-    assert _awaits_in_timeout_handler(seeded) != []
+    [raise_stmt] = [n for n in _timeout_handler(src).body if isinstance(n, ast.Raise)]
+    indent = " " * raise_stmt.col_offset
+    lines = src.splitlines(keepends=True)
+    for seed in (
+        "await asyncio.sleep(0)\n",
+        "async with asyncio.Lock():\n" + indent + "    pass\n",
+        "async for _ in aiter(()):\n" + indent + "    pass\n",
+    ):
+        at = raise_stmt.lineno - 1
+        seeded = "".join([*lines[:at], indent + seed, *lines[at:]])
+        assert _suspensions_in_timeout_handler(seeded) != [], seed
