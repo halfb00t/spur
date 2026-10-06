@@ -342,8 +342,8 @@ None yet.
 - ⚠️ [Phase 17] The resource-tracker flake (`docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`,
   `nice`) failed `make verify` a second time during 17-04's stability runs (run 2 of 3, worker
   `gw2`, load 17.54) — on `test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`,
-  a test this phase added; its revisit trigger has fired (`b8ef84a`) but the file still reads
-  "One occurrence so far" and its severity/INDEX row are unchanged (review WR-05). The human
+  a test this phase added; its revisit trigger fired (`b8ef84a`); the record now carries both occurrences, the fired
+  trigger and a new one (`daa954a`, review WR-05); severity stays `nice` pending your call. The human
   accepted the 2/3 record (`proceed-as-known-flake`).
 - ✓ [Phase 17] The earlier review's 12 findings (WR-01…WR-05, IN-01…IN-07;
   `17-REVIEW-DISPOSITION.md`) are fixed: `17-REVIEW-FIX.md`, commits `9927f3c`…`366d6d4`.
