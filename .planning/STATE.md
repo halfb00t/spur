@@ -4,18 +4,18 @@ milestone: v0.4
 milestone_name: True Root
 current_phase: 17
 current_phase_name: Debt First — Commit Gate and Pool Race
-status: planning
-stopped_at: Phase 17 context gathered
-last_updated: "2026-10-06T08:41:38.498Z"
+status: executing
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-10-06T09:01:47.461Z"
 last_activity: 2026-10-06
-last_activity_desc: v0.4 roadmap created (Phases 17–20, 14/14 requirements mapped)
-state_head: baf80b45e6c55ce595085fef63075e8858c7b34b
+last_activity_desc: Phase 17 execution started
+state_head: c06749de0b2578361745561ebc2fe836f417fd7d
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-10-06)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.4 True Root — Phase 17 (Debt First — Commit Gate and Pool Race)
+**Current focus:** Phase 17 — Debt First — Commit Gate and Pool Race
 ready to discuss (started 2026-10-06 on `gsd/milestone-v0.4-start`; lands through a PR like
 #15)
 
 ## Current Position
 
-Phase: 17 (Debt First — Commit Gate and Pool Race) — READY TO EXECUTE
-Plan: —
-Status: Roadmap created — ready to discuss Phase 17
-Last activity: 2026-10-06 — v0.4 roadmap created (Phases 17–20, 14/14 requirements mapped)
+Phase: 17 (Debt First — Commit Gate and Pool Race) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-10-06 — Phase 17 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -193,6 +193,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 16 P01 | 7 min | 3 tasks | 14 files |
 | Phase 16 P02 | 11min (continuation; Task 1 was the human's) | 3 tasks | 3 files |
 | Phase 16 P03 | 11 min | 3 tasks | 8 files |
+| Phase 17 P01 | 11 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -319,6 +320,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 16]: L35: vendor shape typing stops at two isinstance boundaries (_body, _shape_of); Phases 7 and 8 both nyquist_compliant true as read, 3 Phase 07 Manual-Only rows filed as one nice debt file, v0.2 audit amended in place (amends L21)
 - [Phase 16]: UAT test 2 (human, 2026-10-05): the cast clause of 16-01's prohibition has no standing gate — mypy strict + `disallow_any_explicit` and review of `[tool.mypy]` are the enforcement; no `cast(` pin in `no-fake-done`, no debt item. `git grep` for `cast(` / `typing.cast` / `Any` under `src/spur/` printed nothing at `a35432d`.
 - [Phase 16]: UAT test 3 (human, 2026-10-05): Phase 7's Nyquist record rests on the committed `07-VALIDATION.md` (`655583f`, `5ba02d2`; both audit sections `Gaps found 0`), not on the resume message the human did not save — accepted as a disclosed deviation from 16-02 truths 2 and 4; no third run.
+- [Phase 17]: L36: pre-commit runs make verify.fast (under 30 s, 11.3 s warm); the whole make verify moves to pre-push; hooks installed by the gate from the main checkout only
+- [Phase 17]: A killed SDK commit is recovered by waiting for the orphaned hook (pgrep) and one plain git commit, never a blind SDK retry (D-07)
 
 ### Pending Todos
 
@@ -486,9 +489,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-06T07:22:45.895Z
-Stopped at: Phase 17 context gathered
-Resume file: .planning/phases/17-debt-first-commit-gate-and-pool-race/17-CONTEXT.md
+Last session: 2026-10-06T09:01:47.432Z
+Stopped at: Completed 17-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
