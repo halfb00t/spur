@@ -18,8 +18,8 @@ and (in two cases) historical records superseded by the live decisions/SPECs. Se
   over k teeth (Wildhaber), centre distance to a mating gear"; "Shareable links: every
   parameter lives in the URL".
 - Deployment: Docker/compose (`http://localhost:8000`), remote host over SSH, or
-  without Docker via `pip install -e '.[dev]'` + `spur serve` (Python 3.10+ locally, but
-  `cadquery-ocp` wheels only exist for 3.10–3.12).
+  without Docker via `pip install -e '.[dev]'` + `spur serve` (Python 3.12 only, L23:
+  `cadquery-ocp` publishes wheels for nothing newer).
 - Full parameter table with defaults and units is in the README's "Parameters" section
   (teeth=19, module=1.75, pressure_angle=25, profile_shift=0, backlash=0.1,
   root_fillet=0.5, face_width=7.5, bore_d=9, bore_flat=8, bore_clearance=0.15,
@@ -37,7 +37,8 @@ and (in two cases) historical records superseded by the live decisions/SPECs. Se
   → execution on the phase branch → acceptance as a user → PR → code review by the other
   CLI (Claude's work is reviewed by Codex and vice versa) → merge via `make pr.land`.
 - Repo guarantees before any of that: `make verify` (ruff, mypy --strict, import-boundary
-  contracts, unfinished-work scan, pytest, ~11s warm) runs in the developer's shell,
+  contracts, unfinished-work scan, pytest, ~64 s warm — `bench/RESULTS.md`, Phase 15)
+  runs in the developer's shell,
   pre-commit hook, and CI; `make check` adds the image build, in-container smoke test, and
   the vendored three.js byte check (needs Docker).
 - Named project-specific trap: a worktree must not share the main checkout's `.venv` —

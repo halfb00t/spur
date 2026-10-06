@@ -87,7 +87,7 @@ ADR-vs-SPEC entries were needed.
 ## The verify/check gate
 - source: docs/architecture/packaging.md
 - type: protocol
-- content: `make verify` = ruff + mypy `--strict` + import-linter + unfinished-work scan + pytest (~11s warm, no Docker), run in the pre-commit hook, CI (Python 3.10 and 3.12), and `make worktree.land` before merge (L13). `make check` = verify + the in-image smoke test + the vendored-bundle byte check (needs Docker).
+- content: `make verify` = ruff + mypy `--strict` + import-linter + unfinished-work scan + pytest (~64 s warm on the 12-core dev host at `-n 8` with coverage, `bench/RESULTS.md`, Phase 15; no Docker), run in the pre-commit hook, CI (Python 3.12 only, L23; CI installs the pinned kernel pair, L34) and `make worktree.land` before merge (L13, amended by L34: eight xdist workers under a `fail_under = 96` coverage floor). `make check` = verify + the in-image smoke test + the vendored-bundle byte check (needs Docker).
 
 ## calc.py module boundary (no CAD kernel, no I/O/state)
 - source: docs/architecture/gear-maths/strategy.md
@@ -102,7 +102,7 @@ ADR-vs-SPEC entries were needed.
 ## calc.py output contract and rounding
 - source: docs/architecture/gear-maths/tactics.md
 - type: api-contract
-- content: `check(p) -> list[(message, fields)]`; `derive(p) -> dict[str, Any]` including `warnings: list[str]`, keys vary with parameters (recess fields `None` when there is no recess); `with_mate(info, p, z2)` adds `mate_teeth`/`centre_distance` or a warning plus `None`. Reported values are rounded to 3 decimals (µm) at the boundary in `derive()`; internal arithmetic is full double precision.
+- content: `check(p) -> list[(message, fields)]`; `derive(p, mate_teeth=None, mate_shift=0.0) -> DerivedDimensions`, a typed model (L21; this line read `dict[str, Any]` plus a separate `with_mate` at ingest) with `warnings: tuple[str, ...]`, the recess fields `None` when there is no recess, and `mate_teeth`/`centre_distance` set from the mate arguments or `None` plus a warning. Reported values are rounded to 3 decimals (µm) at the boundary in `derive()`; internal arithmetic is full double precision.
 
 ## centre_distance solver
 - source: docs/architecture/gear-maths/tactics.md
