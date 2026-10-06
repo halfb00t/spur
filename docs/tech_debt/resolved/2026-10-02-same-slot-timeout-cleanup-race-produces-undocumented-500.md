@@ -120,7 +120,7 @@ test, not the bench, is the proof.
 row reads 29.42 s alone (0.58 s of margin) and under load ended `BuildTimeout` at `duration_ms`
 30004 with both workers busy (SC3) and `503 timeout` at 30003 ms with one worker busy and three
 queued (Phase 17, at loads 5.48 to 5.88 and 18.94 to 15.30). `503 timeout` is its contract, a
-bigger host raises the variable, and the limit is in `README.md`, in `src/spur/app.py`'s comment
+slower or busier host raises the variable, and the limit is in `README.md`, in `src/spur/app.py`'s comment
 and as dated notes in `bench/RESULTS.md` and the resolved tip-chamfer debt. Revisit at Phase 19's
 composed re-measure or on any change to the default or an `le` cap.
 

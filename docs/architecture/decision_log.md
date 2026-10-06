@@ -2039,7 +2039,7 @@ and 30003 are the deadline firing, not the row's own time.
 
 **The decision** (D-10). The limit is recorded as documented behaviour. `SPUR_BUILD_TIMEOUT`
 stays 30 s and `spoke_count`'s `le` stays 32. `503 timeout` is the contract for this row under
-concurrent load, and a bigger host raises the variable. L05 holds (no default or cap moved, so
+concurrent load, and a slower or busier host raises the variable. L05 holds (no default or cap moved, so
 every shared link that builds today still builds, and an unset parameter still never changes the
 part) and L08 holds (no figure was tuned toward a pass; each is a recorded reading with its
 section and its load). Rejected, with the reason: raising the default, because every deployment
