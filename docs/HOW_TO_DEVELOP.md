@@ -28,7 +28,8 @@ works, so that raw work does not slip through:
   so a local commit can be red on those four while `main` cannot: the push runs the whole
   gate, but `--no-verify`, `SKIP=` or pushing a ref other than the checked-out one skips
   it, so CI and the ruleset are the wall (`L36`). Run
-  `make venv` once in the main checkout and it installs all three hooks.
+  `make venv` once in the main checkout and it installs all three hooks, unless
+  `core.hooksPath` is set: then the gate prints a message and installs nothing.
 - `gsd-ship` will not create a PR until the phase's verification is `passed`, the tree is
   clean, and the phase's `SECURITY.md` states `threats_open: 0`. A gate, not a reminder.
 - Three newer guarantees (`L22`): the `commit-msg` hook refuses a commit carrying any of
