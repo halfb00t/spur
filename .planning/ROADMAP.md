@@ -175,10 +175,19 @@ not a research phase.
 **Plans**: 5 plans
 
 Plans:
+**Wave 1**
 - [ ] 17-01-PLAN.md — The hook decision in one commit: `verify.static`/`verify.fast`/`test.fast` and the gate-installed hooks (tracer), pre-push semantics measured, L36, eight sites corrected, the commit-timeout debt retired
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 17-02-PLAN.md — Proofs after the hook commit: the whole gate as a real pre-push hook, the upstream request after a human read, and the first live SDK commit (SC1) recording the sha
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 17-03-PLAN.md — The ten-identical-worst-row scenario (`identical`, `record_500`) and up to three fresh-server attempts before the fix, each recorded hit or miss
+
+**Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 17-04-PLAN.md — The race fixed: stale-executor/same-tick/closed-pool/ast tests seen red, the D-17 checkpoint on three misses, the two-fact guard and `_closed`, 20 + 20 loops
+
+**Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 17-05-PLAN.md — The scenario after the fix, L37 (the margin as documented behaviour, no default moved), and the race debt retired with both findings closed
 
 ### Phase 18: Trochoid Maths, Proved
