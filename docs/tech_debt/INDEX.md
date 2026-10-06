@@ -25,6 +25,7 @@ Severity (grep-able `Severity:` field):
 | nice | [Phase 7's Nyquist audit lists 3 tasks with no named automated command](active/2026-10-05-phase-07-nyquist-gaps.md) | the covered file is next touched (`tests/regression/capture.py`, `tests/regression/test_pre_v0_2.py`, `src/spur/model.py` bore-rim selection, or `bench/RESULTS.md`'s fixture-cost section) |
 | nice | [`Resolved in:` shas in the debt ledger point at squash-merged branch commits, not at `main`](active/2026-10-05-resolved-in-shas-point-at-squashed-branch-commits.md) | a `Resolved in:` sha fails to resolve in a clone, a remote `gsd/phase-*` branch is deleted, or the retirement rule in CLAUDE.md is next edited |
 | must | [A same-slot timeout cleanup race produces an undocumented 500 instead of a 503](active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md) | the ten-identical-worst-row scenario is run, a 500 is observed in production, `_run_with_timeout`/`recreate_for` is next touched, or `SPUR_BUILD_TIMEOUT`'s default is reconsidered |
+| nice | [A reentrant `resource_tracker` cleanup warning sometimes fails `make verify`](active/2026-10-06-resource-tracker-flake-fails-the-gate.md) | the warning fails `make verify` a second time, or `tests/test_pool.py`'s shutdown path or coverage's `concurrency` is next touched |
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
 
 ## Resolved
