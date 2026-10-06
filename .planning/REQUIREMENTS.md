@@ -63,7 +63,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   `docs/architecture/packaging.md`, the `ci.yml` comment, `scripts/pr_land.py`'s stale
   "~42 s" comment); `docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md`
   retires with the sha.
-- [ ] **REQ-same-slot-timeout-race-reproduced**: Phase 13's deferred ten-identical-worst-row
+- [x] **REQ-same-slot-timeout-race-reproduced**: Phase 13's deferred ten-identical-worst-row
   scenario lands in `bench/latency.py`'s `_SCENARIOS` (not the default set), reading the
   composed worst row, with a `record_500` keyword so the default `_fetch` and the test that
   pins its 500-raising stay as they are; `tests/test_bench.py`'s registry assertion updated.
@@ -250,7 +250,7 @@ the phase where its acceptance can be read.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | REQ-hook-and-commit-timeout-decided | Phase 17 | Complete |
-| REQ-same-slot-timeout-race-reproduced | Phase 17 | Pending |
+| REQ-same-slot-timeout-race-reproduced | Phase 17 | Complete |
 | REQ-same-slot-timeout-race-fixed | Phase 17 | Pending |
 | REQ-worst-row-margin-decided | Phase 17 | Pending |
 | REQ-cutter-defined-once | Phase 18 | Pending |

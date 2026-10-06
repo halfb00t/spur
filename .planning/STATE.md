@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 17
 current_phase_name: Debt First — Commit Gate and Pool Race
 status: executing
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-10-06T09:13:09.240Z"
+stopped_at: Completed 17-03-PLAN.md
+last_updated: "2026-10-06T09:21:23.780Z"
 last_activity: 2026-10-06
 last_activity_desc: Phase 17 execution started
-state_head: 5a3332f15582bc891f7a28a7508eb884eb1bfc19
+state_head: fdf9c21f227d4ae3f51f81ef42ba0fd257b56093
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 5
-  completed_plans: 2
-  percent: 40
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
@@ -33,11 +33,11 @@ ready to discuss (started 2026-10-06 on `gsd/milestone-v0.4-start`; lands throug
 ## Current Position
 
 Phase: 17 (Debt First — Commit Gate and Pool Race) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-10-06 — Phase 17 execution started
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -195,6 +195,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 16 P03 | 11 min | 3 tasks | 8 files |
 | Phase 17 P01 | 11 min | 3 tasks | 14 files |
 | Phase 17 P02 | 10 min | 3 tasks | 5 files |
+| Phase 17 P03 | 4 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -325,6 +326,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 17]: A killed SDK commit is recovered by waiting for the orphaned hook (pgrep) and one plain git commit, never a blind SDK retry (D-07)
 - [Phase 17]: 17-02: upstream request filed as a new issue open-gsd/gsd-core#5231 (no open issue asked for a configurable commit timeout), posted from the human-approved text unchanged
 - [Phase 17]: 17-02: SC1 met by the first SDK commit 5a3332f, committed true in 13.57 s under the verify-fast hook; A1/A3 stay open until the first CI run is read at ship
+- [Phase 17]: 17-03: stopped at the first hit (D-15); verdict 'Reproduced in attempt 1.' so 17-04's D-17 checkpoint is not reached
 
 ### Pending Todos
 
@@ -492,8 +494,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-06T09:13:09.212Z
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-10-06T09:21:23.751Z
+Stopped at: Completed 17-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
