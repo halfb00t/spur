@@ -164,3 +164,36 @@ def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_
     assert "linked worktree" in worktree_run.stdout
     assert (main / ".venv" / ".hooks-installed").exists()
     assert (worktree / ".venv" / ".hooks-installed").exists()
+
+
+def test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set(tmp_path: Path) -> None:
+    """pre-commit refuses to install under `core.hooksPath`, which would turn the gate red
+    for a reason no code change fixes. The stamp is left untouched so the message repeats."""
+    env = _clean_git_env()
+    main = tmp_path / "main"
+    main.mkdir()
+    shutil.copy(REPO_ROOT / "Makefile", main / "Makefile")
+    (main / "pyproject.toml").write_text("", encoding="utf-8")
+    (main / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=main, env=env, check=True)
+    subprocess.run(["git", "config", "core.hooksPath", "elsewhere"], cwd=main, env=env, check=True)
+    os.utime(main / "pyproject.toml", (1_000_000_000, 1_000_000_000))
+    venv = main / ".venv"
+    (venv / "bin").mkdir(parents=True)
+    (venv / ".installed").write_text("", encoding="utf-8")
+    marker = tmp_path / "installs.txt"
+    shim = venv / "bin" / "pre-commit"
+    shim.write_text(f'#!/bin/sh\necho "install" >> "{marker}"\n', encoding="utf-8")
+    shim.chmod(0o755)
+
+    run = subprocess.run(
+        ["make", "-C", str(main), ".venv/.hooks-installed"],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    assert "core.hooksPath is set" in run.stdout
+    assert not marker.exists()
+    assert not (venv / ".hooks-installed").exists()

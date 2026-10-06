@@ -55,15 +55,22 @@ $(STAMP): pyproject.toml
 # venv `make worktree.land` deletes, and every later commit would fail. tests/test_hooks.py
 # runs both branches. Re-running the install from inside a running hook leaves that hook
 # intact (17-RESEARCH Pitfall 6, scratch repo, 2026-10-06), so the stamp may go stale in
-# the middle of a commit. No `|| true`: a failing install fails the gate.
+# the middle of a commit. No `|| true`: a failing install fails the gate -- except where
+# the install cannot succeed whatever the code does: pre-commit 4.6.2 refuses with
+# "Cowardly refusing to install hooks with `core.hooksPath` set" (read 2026-10-06,
+# install_uninstall.py), so with that key set the recipe says so loudly and installs nothing.
+# It does not touch the stamp then, so the message repeats on every run until the key is
+# unset and the hooks get installed.
 $(HOOKS): .pre-commit-config.yaml $(STAMP)
-	@if [ "$$(git rev-parse --absolute-git-dir)" \
+	@if [ -n "$$(git config --get core.hooksPath)" ]; then \
+	  echo "make: core.hooksPath is set, so pre-commit cannot install: no git hooks installed. Unset it or wire the hooks yourself (L36)."; \
+	elif [ "$$(git rev-parse --absolute-git-dir)" \
 	     = "$$(git rev-parse --path-format=absolute --git-common-dir)" ]; then \
-	  $(VENV)/bin/pre-commit install; \
+	  $(VENV)/bin/pre-commit install && touch $@; \
 	else \
 	  echo "make: a linked worktree -- the hooks live in the main checkout's .git/hooks; run make venv there (L36)."; \
+	  touch $@; \
 	fi
-	@touch $@
 
 venv: $(STAMP) $(HOOKS)  ## create .venv with the dev extras, ~1.4 GB (override with VENV=)
 
