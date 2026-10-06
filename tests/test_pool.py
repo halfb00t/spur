@@ -682,10 +682,16 @@ def _timeout_handler(source: str) -> ast.ExceptHandler:
 
 def _suspensions_in_timeout_handler(source: str) -> list[int]:
     """Line numbers of every point inside `_run_with_timeout`'s `except TimeoutError` where
-    the event loop can run another task: `await`, `async with` and `async for` all yield."""
+    the event loop can run another task: `await`, `async with`, `async for` and an async
+    comprehension (`[x async for x in ...]`, which has no `Await` node) all yield."""
+    comprehensions = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
     return [
         node.lineno for stmt in _timeout_handler(source).body for node in ast.walk(stmt)
         if isinstance(node, (ast.Await, ast.AsyncWith, ast.AsyncFor))
+        or (
+            isinstance(node, comprehensions)
+            and any(each.is_async for each in node.generators)
+        )
     ]
 
 
@@ -695,15 +701,15 @@ def test_the_timeout_branch_never_awaits_before_it_raises() -> None:
     `BuildPool` holds no lock: the check (`executor_for(p) is executor and
     executor._processes is not None`) and the act (terminate, `recreate_for`) cannot be
     interleaved with a same-slot sibling only because the one event-loop thread never
-    gets control back between them. An `await`, `async with` or `async for` anywhere in
-    the `except TimeoutError` branch reopens the race the fix closed, and it is the one
-    boundary no behavioural test can see (17-RESEARCH Open Question 4): the siblings are
-    allowed to end in `BrokenProcessPool`, so a wider window still passes them. The
-    same read pins the handler types, so a broad `except AttributeError` or
-    `except Exception` cannot hide a third defect (PITFALLS 9). The tripwire half seeds
-    each of the three suspension forms before the handler's `raise` (placed from that
-    node's own line and column, not a source string) and requires the helper to report
-    it, so a passing check is one that can fail.
+    gets control back between them. An `await`, `async with`, `async for` or async
+    comprehension anywhere in the `except TimeoutError` branch reopens the race the fix
+    closed, and it is the one boundary no behavioural test can see (17-RESEARCH Open
+    Question 4): the siblings are allowed to end in `BrokenProcessPool`, so a wider
+    window still passes them. The same read pins the handler types, so a broad
+    `except AttributeError` or `except Exception` cannot hide a third defect (PITFALLS
+    9). The tripwire half seeds each of the four suspension forms before the handler's
+    `raise` (placed from that node's own line and column, not a source string) and
+    requires the helper to report it, so a passing check is one that can fail.
     """
     src = Path(spur.pool.__file__).read_text()
     assert _suspensions_in_timeout_handler(src) == []
@@ -725,6 +731,7 @@ def test_the_timeout_branch_never_awaits_before_it_raises() -> None:
         "await asyncio.sleep(0)\n",
         "async with asyncio.Lock():\n" + indent + "    pass\n",
         "async for _ in aiter(()):\n" + indent + "    pass\n",
+        "_ = [x async for x in aiter(())]\n",
     ):
         at = raise_stmt.lineno - 1
         seeded = "".join([*lines[:at], indent + seed, *lines[at:]])
