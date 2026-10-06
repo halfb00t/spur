@@ -692,8 +692,10 @@ def test_the_composed_report_omits_the_single_concurrent_baseline_line() -> None
         omitted = _report_markdown(name, 0.001, 100, 0.002, 100, 1.0, 10, 0)
         assert RECORDED_BASELINE not in omitted
         assert "Recorded baseline" not in omitted
+        assert "pass bar" not in omitted  # IN-02: no bar applies to these two
 
     for name in ("single", "concurrent"):
         report = _report_markdown(name, 0.001, 100, 0.002, 100, 1.0, 10, 0)
         assert RECORDED_BASELINE in report
         assert "Recorded baseline" in report
+        assert "pass bar is <= 2.00x" in report

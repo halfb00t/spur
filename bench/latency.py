@@ -385,16 +385,21 @@ def _report_markdown(name: str, idle_p95: float, idle_n: int, load_p95: float,
     # RECORDED_BASELINE is the debt file's single/concurrent numbers (D-17) -- printing
     # it under a "composed" or "identical" heading would invite a reader to compare that
     # ratio against numbers measured for a different scenario entirely. Omit it there.
+    has_bar = name not in ("composed", "identical")
     baseline_line = (
         f"- Recorded baseline (different machine, ratio-only comparison per D-17): "
-        f"{RECORDED_BASELINE}\n" if name not in ("composed", "identical") else ""
+        f"{RECORDED_BASELINE}\n" if has_bar else ""
     )
+    # The 2.00x bar is the single/concurrent scenarios' criterion; RESULTS.md reads
+    # neither composed nor identical against it, so printing it beside their ratio
+    # would invite exactly that reading.
+    bar = " -- pass bar is <= 2.00x" if has_bar else ""
     return (
         f"## Latency: {name}\n\n"
         f"- Machine: {machine_facts()}\n"
         f"- Idle p95: {idle_p95 * 1000:.1f} ms (n={idle_n})\n"
         f"- Under-load p95: {load_p95 * 1000:.1f} ms (n={load_n})\n"
-        f"- Ratio (under-load / idle): {ratio:.2f}x -- pass bar is <= 2.00x\n"
+        f"- Ratio (under-load / idle): {ratio:.2f}x{bar}\n"
         f"- Slowest single build observed: {slowest_build:.2f} s\n"
         f"- Build requests: {attempted} attempted, {refused} refused by admission "
         f"control (`503`, D-09 -- expected once concurrency exceeds MAX_QUEUED_BUILDS, "
