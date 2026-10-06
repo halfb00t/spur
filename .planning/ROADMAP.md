@@ -86,7 +86,7 @@ replace the radial root below the base circle with the trochoid a hob cuts, prov
 an independent oracle, with the fixture rule (L26) honoured under its own `Lxx`, never
 bypassed.
 
-- [ ] **Phase 17: Debt First — Commit Gate and Pool Race** - The hook-versus-commit-timeout
+- [x] **Phase 17: Debt First — Commit Gate and Pool Race** - The hook-versus-commit-timeout (completed 2026-10-06)
       conflict gets a logged decision that a live SDK commit proves; the same-slot timeout
       race is reproduced, fixed and ends as a documented `503`; the worst composed row's
       margin gets a logged decision
@@ -172,7 +172,7 @@ the hook allowed to finish — a killed SDK commit leaves the hook running as an
 (ARCHITECTURE) with a measured window table (PITFALLS 9–10); the hook options are priced
 (STACK). One scratch-repo check of pre-push semantics (SUMMARY correction 11) is a plan task,
 not a research phase.
-**Plans**: 5/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -405,7 +405,7 @@ before the human at Phase 18's discuss-phase.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
-| 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | In Progress | - |
+| 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
 | 18. Trochoid Maths, Proved | v0.4 | 0/TBD | Not started | - |
 | 19. The Trochoid in the Part | v0.4 | 0/TBD | Not started | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |

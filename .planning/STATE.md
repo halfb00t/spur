@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.4
 milestone_name: True Root
-current_phase: 17
-current_phase_name: Debt First — Commit Gate and Pool Race
-status: verifying
-stopped_at: Completed 17-05-PLAN.md
-last_updated: "2026-10-06T10:05:46.300Z"
+current_phase: 18
+current_phase_name: Trochoid Maths, Proved
+status: planning
+stopped_at: Phase 17 complete, ready to plan Phase 18
+last_updated: "2026-10-06T10:25:04.751Z"
 last_activity: 2026-10-06
-last_activity_desc: Phase 17 execution started
-state_head: 991ba24418a56fe73c4c2db1630f2e6c85266204
+last_activity_desc: Phase 17 complete, transitioned to Phase 18
+state_head: 2b412ff5beebc5cf7cdc76968e036f514b7154e1
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 5
   completed_plans: 5
-  percent: 75
+  percent: 57
 ---
 
 # Project State
@@ -32,12 +32,12 @@ ready to discuss (started 2026-10-06 on `gsd/milestone-v0.4-start`; lands throug
 
 ## Current Position
 
-Phase: 17 (Debt First — Commit Gate and Pool Race) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-10-06 — Phase 17 execution started
+Phase: 18 — Trochoid Maths, Proved
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-06 — Phase 17 complete, transitioned to Phase 18
 
-Progress: [████████░░] 75%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [████████░░] 75%
 | 14 | 4 | - | - |
 | 15 | 6 | - | - |
 | 16 | 3 | - | - |
+| 17 | 5 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -499,7 +500,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-06T10:05:46.270Z
-Stopped at: Completed 17-05-PLAN.md
+Stopped at: Phase 17 complete, ready to plan Phase 18
 Resume file: None
 
 ## Operator Next Steps
