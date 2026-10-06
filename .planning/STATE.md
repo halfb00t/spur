@@ -345,12 +345,13 @@ None yet.
   a test this phase added; its revisit trigger has fired (`b8ef84a`) but the file still reads
   "One occurrence so far" and its severity/INDEX row are unchanged (review WR-05). The human
   accepted the 2/3 record (`proceed-as-known-flake`).
-- ⚠️ [Phase 17] Review WR-01 (`17-REVIEW-DISPOSITION.md`, 12 open): `README.md:97`, L37's decision
-  paragraph and the resolved race debt say to raise `SPUR_BUILD_TIMEOUT` "on a bigger host" —
-  backwards (a slower or busier host needs it); fix all three in one commit before ship.
-  WR-02 (`test_hooks.py` does not pin the exact `--ignore` set), WR-03 (a failing
-  `pre-commit install` fails every gate run), WR-04 (`HOW_TO_DEVELOP.md` overstates what
-  pre-push guarantees) and IN-01…IN-07 open.
+- ✓ [Phase 17] The earlier review's 12 findings (WR-01…WR-05, IN-01…IN-07;
+  `17-REVIEW-DISPOSITION.md`) are fixed: `17-REVIEW-FIX.md`, commits `9927f3c`…`366d6d4`.
+  WR-01's backwards "bigger host" clause (`README.md:97`, L37's decision paragraph and the
+  resolved race debt) was corrected in `9927f3c`. The incremental re-review raised four
+  further items (a pool.py comment that mis-stated process-exit behaviour, an async
+  comprehension the await tripwire missed, a `HOW_TO_DEVELOP.md` hooks sentence, these
+  records), being fixed now in iteration 2 of `17-REVIEW-FIX.md`.
 - ℹ️ [Phase 17] L36 assumptions A1/A3 (GitHub's Linux runner installs the three hooks and fires
   none in CI) were checked on macOS only; read the three `pre-commit installed at` lines from
   the phase's first CI run at `/gsd-ship` (17-05-SUMMARY "For ship").
@@ -515,8 +516,10 @@ Resume file: None
 - Next: `/gsd-discuss-phase 18` — Phase 18 (Trochoid Maths, Proved) takes the root-mode
   decision at its discuss-phase and needs `/gsd-plan-phase --research-phase`; Phase 19 needs a
   spike first; Phase 20 runs only if the root-mode `Lxx` makes the hob root a default
-  (otherwise recorded as skipped). Before ship: fix review WR-01's backwards "bigger host"
-  clause at its three sites in one commit; read A1/A3 from the first CI run.
+  (otherwise recorded as skipped). Before ship: the earlier 12 review findings are fixed
+  (`17-REVIEW-FIX.md`, `9927f3c`…`366d6d4`, WR-01's "bigger host" clause corrected in
+  `9927f3c`) and the incremental re-review's four further items are being fixed now; read
+  A1/A3 from the first CI run.
 - Carried from v0.3 (phase artefacts now under `milestones/v0.3-phases/`): triage
   `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4` baseline,
   WR-02 a false statement and two dangling links left by the two retirements, WR-03 the
