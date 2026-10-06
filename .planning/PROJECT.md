@@ -60,16 +60,45 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Next Milestone
+## Current Milestone: v0.4 True Root
 
-Not yet defined — `/gsd-new-milestone`. Candidates carried since the v0.1 kickoff and
-deferred at both scoping decisions: the gear family (helical first — re-derives module, span
-and centre distance, the riskiest surface in the product; then internal/ring, then rack with
-a second parameter model; bevel needs a product-scope decision first) and precision (the
-trochoidal root fillet below the base circle, superseding L10; an outline change that keeps
-the lead-in below the active profile's start, the path L33 did not take). The `nice` debt
-with external triggers stays where it is until a trigger fires. Full list:
-`milestones/v0.3-REQUIREMENTS.md` "Future Requirements".
+**Goal:** Retire the last two `must` items — the same-slot timeout race by a measured
+reproduction and a narrow fix, the commit-timeout gap by a logged decision — then replace
+the radial root below the base circle with the trochoid a hob cuts, proven against a
+known-good profile, with the fixture rule (L26) honoured under its own `Lxx`, never bypassed.
+
+**Target features:**
+- Same-slot timeout race — Phase 13's deferred ten-identical-worst-row scenario reproduces
+  the undocumented 500 without hash-affinity luck
+  (`docs/tech_debt/active/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`);
+  then `_run_with_timeout`'s `except TimeoutError` branch checks its `executor` local
+  against the live slot before touching `_processes`, so a second same-slot timeout raises
+  `BuildTimeout` (a documented `503`) instead of `AttributeError`. The margin finding — the
+  worst composed row at 29.42 s alone and over 30 s under contention — gets a decision
+  (`SPUR_BUILD_TIMEOUT`, a cap, or a recorded limit), not a silent pass.
+- Commit-timeout decision — one `Lxx` choosing between the upstream `COMMIT_TIMEOUT_MS`
+  knob, a pre-push hook, or a sub-30 s pre-commit subset priced from the Phase 15 profile;
+  L13's "one definition of passing in three places" amended, not ignored
+  (`docs/tech_debt/active/2026-09-25-gsd-commit-timeout-kills-cold-verify-hook.md`).
+- Trochoidal root fillet — the root below the base circle generated from the cutter's tip
+  path, the analytic fillet kept for the normal case (L09), superseding L10; a test against
+  a known-good undercut profile; `derive()`'s undercut warning re-stated or retired on
+  evidence. Always-on for undercut gears (the fixture regenerates under its own `Lxx`;
+  low-tooth-count links change part — L05 tension) vs a new default-off field (L05 and the
+  fixture hold byte-for-byte): decided at discuss-phase with both priced, the human's call.
+
+**Rules this milestone lives by:**
+- The fixture changes only via `make fixture.regen`, in its own commit, under its own `Lxx`
+  that says what moved and why (L26 D-03); a feature commit never touches it.
+- A number printed is a number cut: the trochoid is proved against a known-good profile,
+  and a closed form where one exists, or the warning stays (L08).
+- A debt item is retired only in the commit that fixes it (CLAUDE.md).
+- Phase 1 is the two `must` items, so every later commit of the milestone runs under the
+  hook decision.
+
+Picked 2026-10-06 over helical, now the v0.5 candidate (re-derives module, span and centre
+distance — the riskiest surface in the product, needing its own research pass; internal/ring
+and rack after it; bevel needs a product-scope decision first).
 
 <details>
 <summary>v0.3 Clean Ledger — scope as set at kickoff (shipped 2026-10-05)</summary>
@@ -373,31 +402,40 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-None — v0.3's eleven requirements all shipped (Validated above). The next milestone's
-requirements come from `/gsd-new-milestone`; candidates under "Next Milestone".
+Milestone v0.4 True Root — hypotheses until shipped; REQ-IDs and acceptance live in
+`REQUIREMENTS.md`.
+
+- [ ] Two same-slot timeouts in one incident both end as a documented `503 timeout`; the
+  ten-identical-worst-row scenario reproduces the old 500 before the fix and not after
+- [ ] The composed worst row's margin under contention has a logged decision
+- [ ] The pre-commit hook and gsd's 30 s commit timeout no longer conflict, by a logged `Lxx`
+- [ ] A gear below the undercut limit has a trochoidal root that matches a known-good profile
+- [ ] The root mode (always-on vs default-off field) is a logged decision, and the fixture
+  rule is honoured either way
 
 ### Out of Scope
 
 <!-- Not excluded as bad ideas — deferred, and already tracked under their own lifecycle per CLAUDE.md, not repeated here. -->
 
-- Trochoidal (vs. radial) root fillet below the base circle — `docs/ideas/` idea; L10 is
-  the documented, accepted approximation for now (v0.3 decision: the root lead-in is
-  warned, not re-cut — an outline change would regenerate the fixture under its own `Lxx`).
+- An outline change that keeps the root lead-in below the active profile's start — the
+  path L33 did not take (v0.3 decision: warned, not re-cut); revisit if the lead-in warning
+  fires on gears people actually cut. The trochoidal root below the base circle is v0.4's
+  scope (see Current Milestone), not this.
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- Nine `docs/tech_debt/active/` items at the v0.3 close, each with a trigger that has not
-  fired. One `must`: the same-slot timeout-cleanup race (`pool.py:204`; D-17 kept `src/`
-  untouched in Phase 13). Eight `nice`: the four carried from v0.1 (server-side
-  cancellation, no authentication, Enji Guard, the gsd commit timeout vs the ~64 s hook) and
-  four filed in v0.3 (eleven composed cutout literals at `rel=1e-6`, the sometimes-lost
-  worker-coverage flush, Phase 7's three Manual-Only Nyquist rows, `Resolved in:` shas that
-  live only on squashed branches). Resolved during v0.3: the waived latency bar, the root
-  lead-in's false sentence, the filleted-spoke pinned proof, the missing coverage floor, the
-  CI kernel pin, the five `Shape` suppressions (`docs/tech_debt/INDEX.md`).
+- Ten `docs/tech_debt/active/` items at the v0.4 start (after the 2026-10-06 ledger pass,
+  PRs #23–#25). The two `must` — the same-slot timeout-cleanup race (`pool.py:204`, D-17)
+  and gsd's 30 s commit timeout against the ~64 s hook (trigger fired at L34) — are v0.4's
+  scope (see Current Milestone). Eight `nice` stay deferred with their triggers: server-side
+  cancellation, no authentication, Enji Guard, the eleven composed cutout literals at
+  `rel=1e-6`, the sometimes-lost worker-coverage flush, Phase 7's three Manual-Only Nyquist
+  rows, `Resolved in:` shas that live only on squashed branches, the English-throughout rule
+  with no check in the gate. Resolved since the v0.3 close: `make no-fake-done` blind on
+  macOS (#23), the stale `.planning/intel/` figures (#24) (`docs/tech_debt/INDEX.md`).
 - Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
   not a cut; keyway and hex cover the shafts a hobbyist actually has.
-- Helical, internal/ring and rack gears (v0.2 decision, deferred again at v0.3) —
-  candidates for v0.4, one type per phase, helical first; bevel needs a product-scope
+- Helical, internal/ring and rack gears (v0.2 decision, deferred at v0.3 and again at v0.4)
+  — candidates for v0.5, one type per phase, helical first; bevel needs a product-scope
   decision before it is even a candidate (it contradicts "involute spur gear generator").
 
 ## Context
@@ -417,10 +455,9 @@ requirements come from `/gsd-new-milestone`; candidates under "Next Milestone".
 - Ingest intel: `.planning/intel/SYNTHESIS.md` (entry point), `decisions.md`,
   `requirements.md`, `constraints.md`, `context.md`; conflict report at
   `.planning/INGEST-CONFLICTS.md` (0 blockers, 0 warnings, 5 info).
-- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 9 active after v0.3 — 1 `must`
-  (the same-slot timeout-cleanup race,
-  `2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md`, D-17) and 8
-  `nice`; 20 resolved (10 in v0.1, 4 in v0.2, 6 in v0.3). Ideas backlog: `docs/ideas/` — 9
+- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 10 active at the v0.4 start — 2
+  `must` (the same-slot timeout-cleanup race, D-17; the commit timeout, raised in #25) and 8
+  `nice`; 22 resolved (10 in v0.1, 4 in v0.2, 6 in v0.3, 2 between v0.3 and v0.4). Ideas backlog: `docs/ideas/` — 9
   items (trochoidal root fillet, browser test for the viewer, the Pi 5 claim, a bore-shape
   selector, a re-verification recipe, a cutout rotation field, a teeth-dependent honeycomb
   cap, conditional form fields, constraining `make venv` to the closure).
@@ -591,4 +628,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-05 after the v0.3 Clean Ledger milestone close.*
+*Last updated: 2026-10-06 after the v0.4 True Root milestone start.*

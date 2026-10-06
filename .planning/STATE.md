@@ -1,39 +1,35 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.3
-milestone_name: Clean Ledger
-status: Awaiting next milestone
-stopped_at: Phase 16 complete — all phases complete
-last_updated: "2026-10-05T06:41:26.113Z"
-last_activity: 2026-10-05
-last_activity_desc: Milestone v0.3 completed and archived
-state_head: 1614d60ba80c116b9480e6fef6d31e9033cc56c8
+milestone: v0.4
+milestone_name: True Root
+status: planning
+last_updated: "2026-10-06T03:56:57.421Z"
+last_activity: 2026-10-06
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
-  percent: 100
-current_phase: 16
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-05)
+See: .planning/PROJECT.md (updated 2026-10-06)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.3 Clean Ledger shipped 2026-10-05 (close PR from
-`gsd/milestone-v0.3-close`, tag `v0.3` on its squash); next `/gsd-new-milestone`
+**Current focus:** v0.4 True Root — defining requirements (started 2026-10-06 on
+`gsd/milestone-v0.4-start`; lands through a PR like #15)
 
 ## Current Position
 
-Phase: Milestone v0.3 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-05 — Milestone v0.3 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-06 — Milestone v0.4 started
 
 ## Performance Metrics
 
