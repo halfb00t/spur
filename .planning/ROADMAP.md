@@ -172,7 +172,14 @@ the hook allowed to finish — a killed SDK commit leaves the hook running as an
 (ARCHITECTURE) with a measured window table (PITFALLS 9–10); the hook options are priced
 (STACK). One scratch-repo check of pre-push semantics (SUMMARY correction 11) is a plan task,
 not a research phase.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 17-01-PLAN.md — The hook decision in one commit: `verify.static`/`verify.fast`/`test.fast` and the gate-installed hooks (tracer), pre-push semantics measured, L36, eight sites corrected, the commit-timeout debt retired
+- [ ] 17-02-PLAN.md — Proofs after the hook commit: the whole gate as a real pre-push hook, the upstream request after a human read, and the first live SDK commit (SC1) recording the sha
+- [ ] 17-03-PLAN.md — The ten-identical-worst-row scenario (`identical`, `record_500`) and up to three fresh-server attempts before the fix, each recorded hit or miss
+- [ ] 17-04-PLAN.md — The race fixed: stale-executor/same-tick/closed-pool/ast tests seen red, the D-17 checkpoint on three misses, the two-fact guard and `_closed`, 20 + 20 loops
+- [ ] 17-05-PLAN.md — The scenario after the fix, L37 (the margin as documented behaviour, no default moved), and the race debt retired with both findings closed
 
 ### Phase 18: Trochoid Maths, Proved
 
@@ -389,7 +396,7 @@ before the human at Phase 18's discuss-phase.
 | 1–6 | v0.1 | 21/21 | Complete | 2026-09-25 |
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
-| 17. Debt First — Commit Gate and Pool Race | v0.4 | 0/TBD | Not started | - |
+| 17. Debt First — Commit Gate and Pool Race | v0.4 | 0/5 | Not started | - |
 | 18. Trochoid Maths, Proved | v0.4 | 0/TBD | Not started | - |
 | 19. The Trochoid in the Part | v0.4 | 0/TBD | Not started | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |
