@@ -261,7 +261,23 @@ maths is derived and cross-checked three ways, SUMMARY). Open items: ISO 21771 f
 parity (clause unread — STACK, PITFALLS), the oracle's external anchor (no published table
 found — STACK, LOW for the absence), the two-flank interaction at very low tooth counts or
 large ρ (STACK's 7,296 cases solved one flank only), and the `z_min` double root.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+- [ ] 18-01-PLAN.md — The cutter and its curve: one undercut gear end to end (tracer: the rack read from `profile()`'s own expressions, the contact-normal-angle envelope, the crossing solve, `root_mode`, the swept-cutter oracle with neighbouring teeth), then the cap reconciled as the first test, floored and warned, the tip-land limit and the junction bar pinned
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 18-02-PLAN.md — `root_mode`, the single predicate: `nothing radial to replace` and `tooth severed` on the refined waist, one fixed order, the 44 fixture records radial when nobody asks, one tooth/field step either side, the cutter's closed-form onset and `x_min`, T1
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 18-03-PLAN.md — The generator over the whole box: the join epsilon measured in-repo and the `z_min` double root pinned, every refusal arm reached, the explicit sweep at commit under D-13's measured budget, every refusal counted and listed (D-11 checkpoint if any is unnamed)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 18-04-PLAN.md — The independent proof: T2 at the gate and over the whole product with controls and a rho tripwire seen red, T3 freecad.gears literals with provenance, T4 KISSsoft (D-15), every bar's headroom (sub-10x checkpoint)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 18-05-PLAN.md — The records: the root-shape step at the threshold and the `rb = rf` crossover against a line written first, the per-call costs and `derive()`'s docstring, the human's two decisions (D-05, the resource-tracker debt), the layout rows, the final gate
 
 ### Phase 19: The Trochoid in the Part
 
