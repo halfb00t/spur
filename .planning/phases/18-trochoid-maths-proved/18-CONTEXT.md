@@ -217,6 +217,43 @@ Success criteria 1–5 of the ROADMAP entry are the acceptance; SC5's four check
 - The exact grid for the box corners in D-12 (one step either side of the tip-land limit
   uses `pressure_angle`'s field step).
 
+### Planning-time amendments (2026-10-07, from 18-RESEARCH.md)
+
+Three findings in `18-RESEARCH.md` contradicted or completed decisions above. Each was put
+to the human at `/gsd-plan-phase 18` with the research numbers and decided before the
+planner ran. The original entries stand as written; these amend them.
+
+- **D-15 (amends D-08):** **A fourth oracle tier, T4, is adopted** — Zhang, "Methods to
+  Determine Form Diameter on Hobbed External Involute Gears", AGMA 18FTM02, Table 7
+  example 7: Z 35, φ 22.5°, dedendum factor 1.3, no protuberance (δ0 = 0), ρ_a0 0.04,
+  KISSsoft form diameter 4.1530 (4 printed decimals). The closed-form tangent junction
+  gives 4.153036 at diametral pitch 8 — the pitch is inferred, the table prints no module,
+  and that inference is recorded beside the number. It anchors the tangent branch only.
+  Its bar is rounding-limited: half the last printed digit (5e-5 length units, about
+  1.3e-3 mm at DP 8) against an observed gap of 3.6e-5 — headroom 1.4×, under the ~10×
+  rule by construction, so the test records it as a known sub-10× bar with the human's
+  acceptance rather than escalating again. Sensitivity d(form diameter)/dρ = 0.742, so a
+  ρ tripwire of 1e-3 length units moves it 15× the bar. Recorded as constants with
+  attribution in the test; nothing fetched at test time. `root_form_d` keeps the label
+  "cutter-envelope junction" — one tool-generated point is not ISO 21771 parity (D-08's
+  STACK ASSUMPTION stays open; L08).
+- **D-16 (amends D-04):** **`root_mode` takes the cutter tip radius as a keyword-only
+  argument**: `root_mode(p, pr, *, requested="radial", rho=...)`. Reason: the severed-tooth
+  refusal (D-17) has no closed form — it needs the generated curve, which needs ρ — and
+  REQ-root-mode-single-predicate wants every refusal reason in one place. Phase 19 passes
+  the field's ρ; every present caller still gets `radial` / "not requested", so the fixture
+  cannot move. The default for `rho` is the planner's call (the shipped `root_fillet`
+  expression is the natural reading), named in the plan.
+- **D-17 (settles D-11's checkpoint):** **A tooth the trochoid cuts through is refused with
+  the named reason "tooth severed"** — `None` plus a warning, the analytic root as the
+  fallback (L08) — when the generated curve's minimum half-angle is ≤ 0. Research found the
+  class inside the allowed box: at ρ = 0, z 6–9, α ≤ 24°, x ≤ −0.4; at ρ 0.5 mm, 100 of
+  28,957 `rb > rf` gears; positive waists as thin as 2.4e-4·m survive. A waist floor
+  (refuse or 422 below a stated thickness) is **not** chosen here — it is Phase 19's
+  REQ-derived-numbers decision, as the roadmap already says. Rejected: allow-and-warn
+  (prints a number nobody can cut — L08). The sweep still counts and lists every severed
+  case by reason (D-11's accounting stands).
+
 </decisions>
 
 <canonical_refs>
