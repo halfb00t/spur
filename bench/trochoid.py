@@ -5,8 +5,12 @@ Scenarios, one subcommand each:
 - `epsilon` (18-03): how close to the z_min double root the junction bracket survives, so
   `calc.TROCHOID_JOIN_EPS` is a measurement made in this repo and not a number carried
   over from a prototype (D-09).
-- `sweep`, the full-grid swept-cutter oracle and the root-shape cost step arrive in the
-  later plans of the phase.
+- `sweep` (18-03): the generator over every gear the project allows, STACK's product with
+  the field's real limits plus the box corners, each case checked against closed forms
+  typed in this module (D-12); `--list` writes every refusal, `--stride K` runs the
+  sample the commit-time gate test runs (D-13).
+- The full-grid swept-cutter oracle and the root-shape cost step arrive in the later
+  plans of the phase.
 
 It is not part of `make verify`: the scans take seconds to minutes and their timings
 depend on the host, and a timing assertion on shared hardware would flap
@@ -20,19 +24,38 @@ function), so a test can import the grid without loading the kernel.
 from __future__ import annotations
 
 import argparse
+import csv
+import itertools
 import math
 import os
 import platform
 import random
 import statistics
 import sys
+import time
 from collections import Counter
+from collections.abc import Iterator
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from itertools import pairwise
+from pathlib import Path
 
 from pydantic import ValidationError
 
 from bench import machine_facts
-from spur.calc import _junction, cutter, profile
+from spur.calc import (
+    ROOT_CURVE_POINTS,
+    TROCHOID_JOIN_EPS,
+    Cutter,
+    RootCurve,
+    _junction,
+    _trochoid_point,
+    _waist,
+    cutter,
+    profile,
+    root_mode,
+    trochoid_root,
+)
 from spur.params import GearParams
 
 # --- the join epsilon (D-09) ---------------------------------------------------------
@@ -193,14 +216,314 @@ def run_epsilon() -> int:
     return 0
 
 
+# --- the generator sweep over the allowed box (D-12) ----------------------------------
+# Written out as literals, never computed from calc: a grid derived from the code under
+# test would move with it. 18-RESEARCH F5: STACK's "7,296" is the 7,980-case product
+# minus the 684 rows with w_c >= 0, counts 912 rows with a < 0 as solved and includes
+# x = -1, which GearParams rejects; so grid A is the whole 7,980 product with the field's
+# limit -0.6 in place of -1, and the x = 1 rows with rho >= d are kept.
+
+CAP_REQUEST_MM = 3.0  # the root_fillet field's maximum: every cutter trims it to its own cap
+
+# STACK's product, module 1. The tip radius is a multiple of the module.
+GRID_A: dict[str, tuple[float, ...]] = {
+    "module": (1.0,),
+    "teeth": (*range(6, 41), 60, 100, 200),
+    "pressure_angle": (14.5, 20.0, 25.0),
+    "profile_shift": (-0.6, -0.5, -0.2, 0.0, 0.2, 0.5, 1.0),
+    "backlash": (0.0, 0.10),
+    "rho_times_module": (0.0, 0.1, 0.25, 0.38, 0.5),
+}
+# The box corners: both module limits and the middle, the tooth counts around every
+# edge (undercut onset, rb = rf at 41-42 teeth at module 1, the 116/117 box limit), the
+# pressure angles one field step either side of the tip-land limit, backlash up to the
+# field's maximum. The tip radius is 0, 0.25 m, 0.5 m and 0.5 mm (each case's own
+# root_fillet default).
+GRID_B: dict[str, tuple[float, ...]] = {
+    "module": (0.2, 1.75, 10.0),
+    "teeth": (6, 7, 8, 9, 10, 12, 14, 17, 18, 20, 25, 30, 40, 60, 100, 116, 117, 200),
+    "pressure_angle": (14.5, 20.0, 25.0, 30.0, 32.0, 32.5, 33.0, 33.5, 35.0),
+    "profile_shift": (-0.6, 0.0, 1.0),
+    "backlash": (0.0, 0.10, 1.0),
+}
+GRID_B_RHO_TIMES_MODULE = (0.0, 0.25, 0.5)
+GRID_B_RHO_MM = 0.5
+
+# The generator's own consistency bar: the junction radius relative and the last
+# half-angle in rad, both against closed forms typed in this module. 18-01 measured the
+# same agreement at 4.2e-17 rad and 1.8e-15 mm (1 ulp at R 15 mm) on four rows; 1e-12 is
+# the cross-platform libm floor those bars sit on. If any case of the product exceeds it
+# the worst measured gap is recorded in bench/RESULTS.md and the bar is re-derived from it
+# with 10x headroom -- never widened silently (18-03 plan, SWEEP_BAR).
+SWEEP_BAR = 1e-12
+
+_FIXED: dict[str, object] = {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0,
+                             "recess_sides": "none"}
+
+
+def _gears(grid: dict[str, tuple[float, ...]]) -> Iterator[dict[str, object]]:
+    axes = ("module", "teeth", "pressure_angle", "profile_shift", "backlash")
+    for module, teeth, angle, shift, backlash in itertools.product(*(grid[a] for a in axes)):
+        yield {**_FIXED, "teeth": int(teeth), "module": module, "pressure_angle": angle,
+               "profile_shift": shift, "backlash": backlash}
+
+
+def sweep_cases() -> Iterator[tuple[str, dict[str, object], float]]:
+    """Every (grid, GearParams fields, tip radius requested in mm) of the whole product,
+    in a fixed order: gear by gear, each with its tip radii, the cap request last."""
+    for kwargs in _gears(GRID_A):
+        module = float(str(kwargs["module"]))
+        for times in GRID_A["rho_times_module"]:
+            yield "A", kwargs, times * module
+        yield "A", kwargs, CAP_REQUEST_MM
+    for kwargs in _gears(GRID_B):
+        module = float(str(kwargs["module"]))
+        for times in GRID_B_RHO_TIMES_MODULE:
+            yield "B", kwargs, times * module
+        yield "B", kwargs, GRID_B_RHO_MM
+        yield "B", kwargs, CAP_REQUEST_MM
+
+
+@dataclass(frozen=True)
+class Rack:
+    """The closed forms a curve is checked against, typed here from the textbook rack
+    (dedendum 1.25 m, flank angle alpha, cutter tooth width pi*m minus the tooth
+    thickness on the pitch circle), sharing no expression with `calc`."""
+    z: int
+    m: float
+    alpha: float
+    rb: float
+    rf: float
+    ra: float
+    psi_p: float    # half tooth-thickness angle on the pitch circle
+    a0: float       # sharp-corner tip-land half-width, mm
+    rho: float      # tip radius used: the request, or the cap floored to 3 dp
+    xi: float       # roll of the flank foot, mm; the gear is undercut where negative
+
+
+def rack(p: GearParams, rho_requested: float) -> Rack:
+    z, m, x, bl = p.teeth, p.module, p.profile_shift, p.backlash
+    alpha = math.radians(p.pressure_angle)
+    r = m * z / 2
+    s = m * (math.pi / 2 + 2 * x * math.tan(alpha)) - bl
+    d = m * (1.25 - x)
+    a0 = (math.pi * m - s) / 2 - d * math.tan(alpha)
+    cap = a0 / (1 / math.cos(alpha) - math.tan(alpha))
+    rho = rho_requested if rho_requested <= cap else max(0.0, math.floor(cap * 1000) / 1000)
+    xi = r * math.sin(alpha) - (d - rho * (1 - math.sin(alpha))) / math.sin(alpha)
+    return Rack(z=z, m=m, alpha=alpha, rb=r * math.cos(alpha), rf=r - d,
+                ra=r + m * (1 + x), psi_p=s / (2 * r), a0=a0, rho=rho, xi=xi)
+
+
+def _involute_half(rk: Rack, radius: float) -> float:
+    """The involute's half tooth-thickness angle at `radius`, written out again."""
+    phi = math.acos(min(1.0, rk.rb / radius))
+    return rk.psi_p + (math.tan(rk.alpha) - rk.alpha) - (math.tan(phi) - phi)
+
+
+def junction_gaps(curve: RootCurve, rk: Rack) -> tuple[float, float | None]:
+    """How far the curve's last point is from the involute: (the half-angle gap against
+    the involute at its radius, rad; and, on a tangent junction, the radius gap against
+    sqrt(rb^2 + xi^2) relative to the radius)."""
+    radius, half = curve.points[-1]
+    angle_gap = abs(half - _involute_half(rk, radius))
+    if curve.join == "crossing":
+        return angle_gap, None
+    return angle_gap, abs(radius - math.hypot(rk.rb, rk.xi)) / radius
+
+
+def check_curve(curve: RootCurve, rk: Rack) -> list[str]:
+    """The ways a generated curve disagrees with the closed forms; empty when none."""
+    problems: list[str] = []
+    points = curve.points
+    if len(points) != ROOT_CURVE_POINTS:
+        problems.append(f"{len(points)} points, not {ROOT_CURVE_POINTS}")
+    if not all(math.isfinite(v) for point in points for v in point):
+        problems.append("a point is not finite")
+        return problems
+    radii = [radius for radius, _ in points]
+    if radii[0] != rk.rf:
+        problems.append(f"first radius {radii[0]!r} is not the root circle {rk.rf!r}")
+    if not all(lo < hi for lo, hi in pairwise(radii)):
+        problems.append("radius does not strictly rise")
+    if max(radii) > rk.ra:
+        problems.append(f"radius {max(radii):.6g} above the tip circle {rk.ra:.6g}")
+    undercut = rk.xi < -TROCHOID_JOIN_EPS * rk.rb
+    if (curve.join == "crossing") != undercut:
+        problems.append(f"join {curve.join} but xi is {rk.xi:.3e} mm")
+    if curve.join == "crossing":
+        if not rk.rb > rk.rf:
+            problems.append("a crossing with rb <= rf (F9's nesting)")
+        outside = [(radius, half) for radius, half in points[:-1]
+                   if radius >= rk.rb and half >= _involute_half(rk, radius)]
+        if outside:
+            problems.append(f"{len(outside)} points before the junction are outside the involute")
+    angle_gap, radius_gap = junction_gaps(curve, rk)
+    # Inside the join band the flank join is the form point, not the involute's: the
+    # cutter's flank foot sits at negative roll, on the involute's continuation through
+    # the base circle, so its half-angle differs by 2*(tan(phi) - phi), tan(phi) =
+    # |xi|/rb. That is geometry, at most 6.7e-13 rad at the band's edge for eps = 1e-4
+    # (measured 2.4e-13 on the two gears of the product inside it), added to the bar.
+    phi = math.atan(max(-rk.xi, 0.0) / rk.rb)
+    if angle_gap > SWEEP_BAR + 2 * (math.tan(phi) - phi):
+        problems.append(f"last half-angle {angle_gap:.2e} rad off the involute")
+    if radius_gap is not None and radius_gap > SWEEP_BAR:
+        problems.append(f"last radius {radius_gap:.2e} (relative) off sqrt(rb^2 + xi^2)")
+    return problems
+
+
+_REFUSALS = ("nothing radial to replace", "tip land gone", "tooth severed")
+
+
+def check_case(kwargs: dict[str, object], rho: float,
+               *, worst: dict[str, float] | None = None) -> tuple[str, list[str]]:
+    """Build one gear, ask `root_mode` and `trochoid_root` about it and compare both with
+    the closed forms of `rack`: (the outcome label, the problems found).
+
+    The label is `not a gear` when GearParams refuses the fields, the refusal's reason, or
+    `trochoid/<join>` (with `/capped` when the cutter trimmed the tip radius). The
+    refusals `rb <= rf` and `a0 < 0` are predicted here from the rack and must be the
+    reason `root_mode` gives; for every other gear a curve or `tooth severed` is expected,
+    and `bracket degenerate` or `curve invalid` is a problem. `worst`, when given, keeps
+    the largest junction gaps seen per join.
+    """
+    try:
+        p = GearParams.model_validate(kwargs)
+    except ValidationError:
+        return "not a gear", []
+    rk = rack(p, rho)
+    rm = root_mode(p, profile(p), requested="trochoid", rho=rho)
+    problems: list[str] = []
+    if rk.rb <= rk.rf:
+        expected: str | None = "nothing radial to replace"
+    elif rk.a0 < 0:
+        expected = "tip land gone"
+    else:
+        expected = None
+    if expected is not None:
+        if rm.reason != expected:
+            problems.append(f"expected {expected}, root_mode says {rm.reason}")
+        return rm.reason or "trochoid", problems
+    if rm.cutter is None:
+        return "trochoid", ["no cutter although a trochoid was requested"]
+    c = rm.cutter
+    if abs(c.rho - rk.rho) > 1e-12 or abs(c.xi - rk.xi) > 1e-9 * max(1.0, rk.m):
+        problems.append(f"cutter rho {c.rho!r} xi {c.xi!r} against rack {rk.rho!r} {rk.xi!r}")
+    curve = trochoid_root(c)
+    if rm.reason is not None:
+        if rm.reason not in ("tooth severed", "bracket degenerate", "curve invalid"):
+            problems.append(f"root_mode says {rm.reason} where the rack predicts a curve")
+        if curve is not None:
+            problems.append(f"{rm.reason} but trochoid_root returned a curve")
+        return rm.reason, problems
+    if curve is None:
+        return "trochoid", ["root_mode says trochoid but trochoid_root returned none"]
+    problems += check_curve(curve, rk)
+    if worst is not None:
+        angle_gap, radius_gap = junction_gaps(curve, rk)
+        key = curve.join if rk.xi >= 0 or curve.join == "crossing" else "tangent in band"
+        worst[f"{key} rad"] = max(worst.get(f"{key} rad", 0.0), angle_gap)
+        if radius_gap is not None:
+            worst["tangent radius"] = max(worst.get("tangent radius", 0.0), radius_gap)
+    capped = "/capped" if c.rho < c.rho_requested else ""
+    return f"trochoid/{curve.join}{capped}", problems
+
+
+def _severed_waist(c: Cutter) -> float:
+    """The half-angle at the narrowest point of a severed tooth's curve, rad: the same
+    sampling `calc._root_curve` uses, repeated here only to list it in the refusals."""
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    if junction is None:
+        return math.nan
+    s_stop = math.tan(junction[0])
+    n = ROOT_CURVE_POINTS
+    betas = [math.atan(s_stop * i / (n - 1)) for i in range(n - 1)] + [junction[0]]
+    points = tuple(_trochoid_point(c, beta) for beta in betas)
+    return _waist(c, betas, points)[1]
+
+
+_LIST_HEADER = ("grid", "teeth", "module", "pressure_angle", "profile_shift", "backlash",
+                "rho_requested", "rho_used", "reason", "waist_half_angle")
+
+
+def _refusal_row(grid: str, kwargs: dict[str, object], rho: float, reason: str) -> list[str]:
+    c = cutter(GearParams.model_validate(kwargs), rho)
+    waist = f"{_severed_waist(c):.6g}" if reason == "tooth severed" else ""
+    return [grid, str(kwargs["teeth"]), f"{kwargs['module']:g}", f"{kwargs['pressure_angle']:g}",
+            f"{kwargs['profile_shift']:g}", f"{kwargs['backlash']:g}", f"{rho:g}",
+            f"{c.rho:g}", reason, waist]
+
+
+def run_sweep(list_path: Path | None, stride: int) -> int:
+    started = datetime.now(UTC)
+    load_before = _load()
+    cases = itertools.islice(sweep_cases(), 0, None, stride)
+    tally: Counter[str] = Counter()
+    by_module: Counter[tuple[float, str]] = Counter()
+    problems: list[tuple[str, dict[str, object], float, list[str]]] = []
+    worst: dict[str, float] = {}
+    rows: list[list[str]] = []
+    total = 0
+    t0 = time.perf_counter()
+    for grid, kwargs, rho in cases:
+        total += 1
+        outcome, found = check_case(kwargs, rho, worst=worst)
+        tally[outcome] += 1
+        by_module[(float(str(kwargs["module"])), outcome.split("/")[0])] += 1
+        if found:
+            problems.append((grid, kwargs, rho, found))
+        if outcome in _REFUSALS:
+            rows.append(_refusal_row(grid, kwargs, rho, outcome))
+    wall = time.perf_counter() - t0
+    load_after = _load()
+    if list_path is not None:
+        with list_path.open("w", newline="") as handle:
+            writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+            writer.writerow(_LIST_HEADER)
+            writer.writerows(rows)
+    print("## Generator sweep (`bench.trochoid sweep`)\n")
+    print("#### Host state\n")
+    print(f"- Machine: {machine_facts()}")
+    print(f"- Python {platform.python_version()}")
+    print(f"- Read {started:%Y-%m-%dT%H:%M:%SZ}; 1-minute load {load_before} before, "
+          f"{load_after} after")
+    print(f"- {total} cases (stride {stride}) in {wall:.2f} s wall\n")
+    print("| outcome | cases |")
+    print("|---|---|")
+    for outcome, count in sorted(tally.items()):
+        print(f"| {outcome} | {count} |")
+    print("\n| module | " + " | ".join(sorted({o for _, o in by_module})) + " |")
+    print("|---|" + "---|" * len({o for _, o in by_module}))
+    for module in sorted({m for m, _ in by_module}):
+        print(f"| {module:g} | " + " | ".join(
+            str(by_module[(module, o)]) for o in sorted({o for _, o in by_module})) + " |")
+    print(f"\nWorst junction gaps (bar {SWEEP_BAR:g}): "
+          + "; ".join(f"{k} {v:.2e}" for k, v in sorted(worst.items())))
+    numeric = tally["bracket degenerate"] + tally["curve invalid"]
+    print(f"\nproblems: {len(problems)}; bracket degenerate: {tally['bracket degenerate']}; "
+          f"curve invalid: {tally['curve invalid']}")
+    for grid, kwargs, rho, found in problems[:20]:
+        print(f"- {grid} {kwargs} rho {rho}: {'; '.join(found)}")
+    if problems or numeric:
+        print("\nverdict: FAIL")
+        return 1
+    print("\nverdict: ok")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.trochoid", description=__doc__)
     sub = parser.add_subparsers(dest="scenario", required=True)
     sub.add_parser("epsilon", help="measure TROCHOID_JOIN_EPS (D-09)")
+    sweep = sub.add_parser("sweep", help="the generator over the allowed box (D-12)")
+    sweep.add_argument("--list", type=Path, metavar="PATH",
+                       help="write every generator refusal as a tab-separated file")
+    sweep.add_argument("--stride", type=int, default=1,
+                       help="run every STRIDE-th case (the gate test's sample)")
     args = parser.parse_args(argv)
     if args.scenario == "epsilon":
         return run_epsilon()
-    return 2  # unreachable: argparse rejects an unknown scenario itself
+    return run_sweep(args.list, args.stride)
 
 
 if __name__ == "__main__":
