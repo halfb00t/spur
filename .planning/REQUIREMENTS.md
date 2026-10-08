@@ -93,7 +93,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
 
 ### Trochoid maths — `calc.py` only, no kernel, no field, no fixture contact
 
-- [ ] **REQ-cutter-defined-once**: One pure `calc` function defines the basic rack cutter —
+- [x] **REQ-cutter-defined-once**: One pure `calc` function defines the basic rack cutter —
   dedendum 1.25·m (what `rf = r − m(1.25 − x)` already encodes), tip radius ρ, backlash as
   cutter-tooth thickening, profile shift — and every other function reads it. ρ is capped
   to the pressure angle's geometric maximum **with backlash included** (ISO 53's 0.38·m fits
@@ -105,7 +105,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   cutter's junction with the involute equals `Profile.half_angle` at backlash 0 and 0.10
   (PITFALLS measured 4.9e-17 rad; the bar is re-measured in the phase); the cap and the
   domain limit each tested one step either side.
-- [ ] **REQ-trochoid-root-generated**: `calc.trochoid_root` returns an immutable `RootCurve`
+- [x] **REQ-trochoid-root-generated**: `calc.trochoid_root` returns an immutable `RootCurve`
   of `(radius, half_angle)` pairs — the envelope of the cutter tip arc, not its centre path —
   or `None` with a warning when it cannot be computed honestly. The junction with the
   involute is tangent when not undercut and a crossing when undercut, found by bisection on a
@@ -117,7 +117,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   bracket failures and monotone radius on every curve; `derive()`'s per-call cost is
   re-measured and its docstring figure corrected (PITFALLS: 73 µs with a 60-step bisection
   vs 20.4 µs today, host load ≈6.8; the 11.5 µs in the docstring is stale).
-- [ ] **REQ-root-mode-single-predicate**: One predicate, `calc.root_mode(p, pr)`, decides
+- [x] **REQ-root-mode-single-predicate**: One predicate, `calc.root_mode(p, pr)`, decides
   whether the trochoid applies to a given gear, and `_outline`, `root_fillet`,
   `spline_start`, `tip_chamfer_limit` and `derive` all read it — the three things called
   "undercut" today (`teeth < z_min`: 5 of 44 fixture records; `rb > rf`: 28 of 44, the
@@ -126,7 +126,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   step either side (the L33 pattern); the step discontinuity at the undercut threshold
   (FEATURES: ≈0.14·m of root shape between 17 and 18 teeth at 20°) is measured and shown to
   the human with the root-mode options.
-- [ ] **REQ-trochoid-proved-independently**: The proof lives in `tests/`, shares no code with
+- [x] **REQ-trochoid-proved-independently**: The proof lives in `tests/`, shares no code with
   the implementation (the L33 `_filleted_spoke_volume` precedent), and runs at the calc
   tier: T1 the closed-form undercut onset pins *when* the root is a trochoid; T2 a
   swept-cutter no-gouge oracle pins *where* it is — every surviving point clears the cutter
@@ -253,10 +253,10 @@ the phase where its acceptance can be read.
 | REQ-same-slot-timeout-race-reproduced | Phase 17 | Complete |
 | REQ-same-slot-timeout-race-fixed | Phase 17 | Complete |
 | REQ-worst-row-margin-decided | Phase 17 | Complete |
-| REQ-cutter-defined-once | Phase 18 | Pending |
-| REQ-trochoid-root-generated | Phase 18 | Pending |
-| REQ-root-mode-single-predicate | Phase 18 | Pending |
-| REQ-trochoid-proved-independently | Phase 18 | Pending |
+| REQ-cutter-defined-once | Phase 18 | Complete |
+| REQ-trochoid-root-generated | Phase 18 | Complete |
+| REQ-root-mode-single-predicate | Phase 18 | Complete |
+| REQ-trochoid-proved-independently | Phase 18 | Complete |
 | REQ-undercut-warning-restated | Phase 19 | Pending |
 | REQ-root-mode-decided | Phase 19 | Pending |
 | REQ-outline-consumes-root-curve | Phase 19 | Pending |

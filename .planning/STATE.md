@@ -2,41 +2,41 @@
 gsd_state_version: "1.0"
 milestone: v0.4
 milestone_name: True Root
-current_phase: 18
-current_phase_name: Trochoid Maths, Proved
-status: "Phase 17 shipped — PR #27"
-stopped_at: Phase 17 complete, ready to plan Phase 18
-last_updated: "2026-10-06T12:00:39.978Z"
-last_activity: 2026-10-06
-state_head: 930c74cea3e6ab4ce78fca8a677ea7e3f178c28c
+current_phase: 19
+current_phase_name: The Trochoid in the Part
+status: "Phase 18 shipped — PR #28"
+stopped_at: Phase 18 complete, ready to plan Phase 19
+last_updated: "2026-10-08T09:02:26.495Z"
+last_activity: 2026-10-08
+state_head: 35ee75e26fbd03fd3706d3006d9a5a08f7db0b6d
 progress:
   total_phases: 4
-  completed_phases: 4
-  total_plans: 5
-  completed_plans: 5
-  percent: 57
+  completed_phases: 5
+  total_plans: 11
+  completed_plans: 11
+  percent: 71
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-06)
+See: .planning/PROJECT.md (updated 2026-10-08)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 18 — Trochoid Maths, Proved — ready to discuss (Phase 17 landed
-2026-10-06 on `gsd/phase-17-debt-first-commit-gate-and-pool-race`, 20 commits from `c06749d`
-to the transition; ships through a PR like #15 — A1/A3 are read from its first CI run)
+**Current focus:** Phase 19 — The Trochoid in the Part — ready to discuss (Phase 18 landed
+2026-10-08 on `gsd/phase-18-trochoid-maths-proved`, 44 commits from `15174f9` to the
+transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like #27)
 
 ## Current Position
 
-Phase: 18 — Trochoid Maths, Proved
+Phase: 19 — The Trochoid in the Part
 Plan: Not started
-Status: Phase 17 shipped — PR #27
-Last activity: 2026-10-06
+Status: Phase 18 shipped — PR #28
+Last activity: 2026-10-08
 
-Progress: [██████░░░░] 57%
+Progress: [████████████████████] 11/11 plans ([███████░░░] 71%)
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Progress: [██████░░░░] 57%
 | 15 | 6 | - | - |
 | 16 | 3 | - | - |
 | 17 | 5 | - | - |
+| 18 | 6 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -198,6 +199,12 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 17 P03 | 4 min | 2 tasks | 5 files |
 | Phase 17 P04 | 31 min | 3 tasks | 5 files |
 | Phase 17 P05 | 7 min | 3 tasks | 9 files |
+| Phase 18 P01 | 19 min | 2 tasks | 4 files |
+| Phase 18 P02 | 11 min | 2 tasks | 3 files |
+| Phase 18 P03 | 20 min | 2 tasks | 7 files |
+| Phase 18 P04 | 28 min | 3 tasks | 5 files |
+| Phase 18 P05 | 19 min | 3 tasks | 7 files |
+| Phase 18 P06 | 9 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -331,6 +338,22 @@ pending; the next milestone starts this list fresh.
 - [Phase 17]: 17-03: stopped at the first hit (D-15); verdict 'Reproduced in attempt 1.' so 17-04's D-17 checkpoint is not reached
 - [Phase 17]: 17-04: proceed-as-known-flake - the same-slot timeout fix ships with make verify at 2/3; run 2 was the resource-tracker flake (debt item, b8ef84a), not a new-test assertion. The fix commit is 0628182.
 - [Phase 17]: L37: the heaviest allowed composed row's limit is documented behaviour; SPUR_BUILD_TIMEOUT stays 30 s, spoke_count le stays 32, 503 timeout is the contract under concurrent load — L05 and L08: no default a shared link depends on moves and no figure is tuned toward a pass; revisit at Phase 19's composed re-measure
+- [Phase 18]: Cutter tip radius cap floored to 3 dp, not rounded: the used and printed radius are one float and the tip land stays >= 0 (18-01, F3)
+- [Phase 18]: Tip-land refusal decided on the sharp-corner land a0 < 0, never a pressure-angle constant: 32.14 deg at backlash 0, 33.07 at the default gear (18-01, F2)
+- [Phase 18]: Junction bars JUNCTION_BAR_RAD/MM 1e-12 (headroom 2.4e4/562) and DIRECTION_BAR_RAD 1e-5 (headroom 72), re-measured 2026-10-08; none under 10x (18-01)
+- [Phase 18]: 18-02: rb <= rf is decided in root_mode before the generator runs (undercut implies rb > rf, F9)
+- [Phase 18]: 18-02: a thin positive waist survives as a curve; no waist floor is chosen in Phase 18 (D-17, Phase 19's call)
+- [Phase 18]: 18-02: the oracle's neighbouring teeth do not separate a severed tooth on the committed oracle; the severed rows are pinned as a gouge on the mirror flank (measured), not as neighbours on versus off
+- [Phase 18]: 18-03: TROCHOID_JOIN_EPS stays 1e-4, measured in the repo (bracket lost at most at xi = -5.6e-6 rb over 400 draws)
+- [Phase 18]: 18-03: the whole 31,446-case generator sweep runs in the commit gate (1.7 s call at -n 8, under D-13's 2.0 s); no stride sample
+- [Phase 18]: 18-03: a tangent join inside the band is checked against the involute with the closed-form 2(tan phi - phi) allowance, not a wider bar; D-11 checkpoint not reached (7,175 / 980 / 73 named refusals)
+- [Phase 18]: 18-04: the oracle's roll window is +-3 spans of 2 pi / z (was +-1): the contact roll reaches 2.13 spans over the sweep product and about 2.3 over the box; at +-1, 3,244 of 10,326 curves read up to 0.61 mm uncut, and the neighbouring teeth could not separate a severed tooth
+- [Phase 18]: 18-04: ORACLE_BAR_MM stays 1e-9 mm (335x over the product's worst, a join-band case; 1.0e5x on the gate rows), T3 bars 1e-12 (563x, 5.1e3x), T4 bar 5e-5 in at 1.39x as accepted at D-15; L33 D-06 checkpoint not reached, every other bar at or above 10x (smallest 72)
+- [Phase 18]: 18-04: freecad.gears 4cc4b1a (GPL-3.0) was run once outside the repository and only its 60 printed points enter, as literals with source, commit, licence and date; psi is the library's own sample parameter, not acos of the radius
+- [Phase 18]: 18-05 D-05 (human, 2026-10-08): d05-hold -- the measured root-shape step (0.1449-0.1463 mm at 17/18 teeth, premise holds) leaves D-01 and D-02 standing; Phase 19 is planned on them as decided
+- [Phase 18]: 18-05 debt (human, 2026-10-08): debt-redefer -- resource-tracker flake stays must/active, trigger is the next make verify failure or Phase 19 planning
+- [Phase 18]: 18-05 D-14: no derive() budget set; five per-call costs recorded with load and date (derive 14.7 usec at load 14.4)
+- [Phase 18]: 18-06: the fourth curve-invalid arm test moves the last pre-junction sample to rb + 0.01 mm (no early sample of the tracer gear is past rb); cutter() raises ValueError, not a RootReason, for a non-finite or negative tip radius until Phase 19's field validates it
 
 ### Pending Todos
 
@@ -338,11 +361,32 @@ None yet.
 
 ### Blockers/Concerns
 
+- ℹ️ [Phase 18] Code review (`18-REVIEW-DISPOSITION.md`): WR-01/WR-02 `fixed` by gap plan 18-06
+  (`8e96c2d`, `085aee7`); IN-01…IN-08 open — the cap sentence's "the largest" vs a 3-dp floored
+  value (`0.000 mm` under 1 µm), `trochoid_root` skipping the `rb <= rf` test `root_mode` applies,
+  the epsilon bench never comparing to the shipped `TROCHOID_JOIN_EPS`, bench hygiene,
+  `ROOT_CURVE_POINTS`'s unrepeatable kernel figure, the flake re-deferral's weak evidence, `root_mode`'s
+  docstring not naming the new `ValueError` (and `+inf` now refused where it was capped), `-0.0`
+  surviving into `Cutter.rho`.
+- ⚠️ [Phase 18] Phase 19 must validate the tip radius once at its `GearParams` field (finite, ≥ 0);
+  `cutter()`'s `ValueError` (`calc.py:1291`) is the interim guard, not the boundary.
+- ℹ️ [Phase 18] One figure unreconciled, recorded as `ASSUMPTION:` in `bench/RESULTS.md` and
+  18-05-SUMMARY: 18-RESEARCH's prototype quoted "rho 0 → −0.1885" at the `rb = rf` crossover; this
+  phase reads +0.1403 mm at 41 teeth. The D-05 verdict does not depend on it.
+- ℹ️ [Phase 18] 18-02's oracle finding ("neighbours make no difference") was the oracle's ±1-span
+  roll window; 18-04 widened it to ±3 spans (contact roll reaches 2.13 spans). The committed figures
+  are the widened oracle's.
+- ℹ️ [Phase 18] Not filed as debt (18-04 carried it): `_flank_samples` (`tests/test_trochoid.py`) and
+  `_flank_points` (`bench/trochoid.py`) are the same sampling written twice.
+- ℹ️ [Phase 18] Commit trailers on the branch are mixed: executors signed `Claude Sonnet 5.5`,
+  18-05's Task 3 commits `Claude Fable 5.1`, gsd-tools state commits none. Cosmetic; not rewritten.
 - ⚠️ [Phase 17] The resource-tracker flake (`docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`)
   is now `must`: three occurrences — 17-04's proof run 2 (`b8ef84a`), then CI run 37460451701 on
   PR #27's head `7af318d` (`test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced`, a
   pre-Phase-17 test; the re-run and the identical-code run 37460192883 were green). Escalated by the
-  human at ship; trigger: the next `make verify` failure or Phase 18 planning, whichever first.
+  human at ship; trigger re-deferred 2026-10-08 (18-05, `debt-redefer`): the next `make verify`
+  failure or Phase 19 planning, whichever first — Phase 18 ran the full gate green on every wave
+  and added no process-spawning test.
 - ✓ [Phase 17] The earlier review's 12 findings (WR-01…WR-05, IN-01…IN-07;
   `17-REVIEW-DISPOSITION.md`) are fixed: `17-REVIEW-FIX.md`, commits `9927f3c`…`366d6d4`.
   WR-01's backwards "bigger host" clause (`README.md:97`, L37's decision paragraph and the
@@ -353,7 +397,8 @@ None yet.
 - ✓ [Phase 17] L36 assumptions A1/A3 read at ship: CI run 37460451701 (PR #27) printed the three
   `pre-commit installed at .git/hooks/…` lines and no hook fired in CI (17-05-SUMMARY "For ship").
 - ℹ️ [Phase 17] `.planning/codebase/*.md` is stale against 13 top-level paths (the
-  `verify.codebase-drift` advisory fired on every wave, non-blocking); `/gsd-map-codebase` is owed.
+  `verify.codebase-drift` advisory fired on every wave of Phases 17 and 18, non-blocking);
+  `/gsd-map-codebase` is owed.
 - ℹ️ [Phase 16] `_cell_cutters` (`src/spur/model.py:355-357`) raises a bare `TypeError` on a
   non-`Solid` prototype, which `_build_checked` would relabel with the catch-all "try smaller
   fillets" remedy. Pre-existing, untouched by Phase 16 (the function is AST-identical to
@@ -504,19 +549,18 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-06T10:05:46.270Z
-Stopped at: Phase 17 complete, ready to plan Phase 18
+Last session: 2026-10-08T05:30:07Z
+Stopped at: Phase 18 complete, ready to plan Phase 19
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-discuss-phase 18` — Phase 18 (Trochoid Maths, Proved) takes the root-mode
-  decision at its discuss-phase and needs `/gsd-plan-phase --research-phase`; Phase 19 needs a
-  spike first; Phase 20 runs only if the root-mode `Lxx` makes the hob root a default
-  (otherwise recorded as skipped). Before ship: the earlier 12 review findings are fixed
-  (`17-REVIEW-FIX.md`, `9927f3c`…`366d6d4`, WR-01's "bigger host" clause corrected in
-  `9927f3c`) and the incremental re-review's four further items are being fixed now; read
-  A1/A3 from the first CI run.
+- Next: `/gsd-discuss-phase 19` — Phase 19 (The Trochoid in the Part) has no CONTEXT.md yet;
+  the roadmap says it needs a spike first and takes the root-mode `Lxx` (REQ-root-mode-decided);
+  Phase 20 runs only if that `Lxx` makes the hob root a default (otherwise recorded as skipped).
+  Phase 19 planning is also the resource-tracker debt's trigger (re-deferred at 18-05). Before
+  ship of Phase 18: open a PR from `gsd/phase-18-trochoid-maths-proved` like #27; triage
+  IN-01…IN-08 in `18-REVIEW-DISPOSITION.md`.
 - Carried from v0.3 (phase artefacts now under `milestones/v0.3-phases/`): triage
   `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4` baseline,
   WR-02 a false statement and two dangling links left by the two retirements, WR-03 the

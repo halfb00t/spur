@@ -3031,3 +3031,627 @@ Zero 500s after the fix: run 1 of 1 (one decisive, none non-decisive) on `062818
 row and no `AttributeError` record, where the same scenario on `814f4f3` showed three and three.
 The bench is not the proof: the deterministic stale-executor test, red before and green after
 (17-04), is.
+
+## Trochoid maths (Phase 18)
+
+What the hob's trochoid root costs to trust, in the order the phase builds it: the cutter's tip
+radius cap and the junction bar it is held to (18-01, this subsection), the join epsilon (18-03),
+the generator sweep over the allowed box (18-03), the oracle bars and their tripwires (18-04),
+the per-call costs and the root-shape step (18-05). Each subsection carries its own host state,
+because every number below belongs to the load it was read at. Nothing here is a kernel
+measurement: the maths is pure stdlib `math` in `calc.py`, so the kernel pair is recorded only
+because every section of this file records it.
+
+### Cutter cap and junction (18-01)
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (the pinned pair; this
+  measurement does not use the kernel)
+- HEAD: `8e75273` (the commit that carries the tests quoted below)
+- Read 2026-10-08T01:29:17Z to 01:29:19Z (the test run and the scratch table, two seconds)
+- Load (1-minute, `sysctl -n vm.loadavg`): 3.39 before, 3.39 after. The host carried
+  background load; no quiet bar was waited for. These are float-arithmetic residues, not
+  timings, so load does not move them; it is recorded because every section records it.
+
+#### The cap, reconciled
+
+`tests/test_trochoid.py::test_the_cap_formula_reconciles_0_318_m_and_0_363_m_as_one_cap_at_two_backlashes`
+is the phase's first test. PITFALLS gave the largest cutter tip radius at module 1.75, 25 degrees
+as 0.635 mm = 0.363 m; STACK and FEATURES gave 0.318 m. They are one formula,
+`(pi*m/4 + backlash/2 - 1.25*m*tan(alpha)) / (1/cos(alpha) - tan(alpha))`: the first is the
+default gear's 0.10 mm backlash entering the tip land as backlash/2, the second is the same gear
+at backlash 0 (SUMMARY's inference, now measured). It does not depend on the profile shift:
+x = -0.4, 0 and 0.6 agree to 2.2e-16 mm.
+
+| module | pressure angle | backlash | `rho_max` (mm) | `rho_max / m` | the figure it reconciles |
+|---|---|---|---|---|---|
+| 1.75 | 25 | 0.10 | 0.63478 | 0.36273 | PITFALLS' 0.635 mm = 0.363 m |
+| 1.75 | 25 | 0 | 0.55629 | 0.31788 | STACK / FEATURES' 0.318 m |
+| 1 | 20 | 0 | 0.47191 | 0.47191 | the tracer gear's cap |
+
+#### The cap, floored
+
+Module 0.5, 15 degrees, 12 teeth, backlash 0: the unrounded cap is 0.29353 mm (0.2935265).
+
+| request (mm) | used (mm) | tip land `a` (mm) | cap sentence |
+|---|---|---|---|
+| 0.293 | 0.293 | 4.04e-4 | none (under the cap) |
+| 0.294 | 0.293 | 4.04e-4 | "Cutter tip radius reduced to 0.293 mm, ..." |
+| 0.2935265 (the cap itself) | 0.2935265 | 0 | none (not trimmed) |
+| 0.294 if rounded to nearest | 0.294 | -3.63e-4 | would refuse a legal gear as having no tip land |
+
+The used radius and the printed one are the same float.
+
+#### The tip-land limit, one field step either side
+
+The sign of the sharp-corner land `a0` decides it, so it moves with backlash and module (the limit
+is tan(alpha) = (pi/4 + backlash/(2 m)) / 1.25: 32.14 degrees at backlash 0, 33.07 at the default
+gear).
+
+| gear | pressure angle | `a0` (mm) | tip land |
+|---|---|---|---|
+| 12 teeth, m 1, x 0, backlash 0 | 32.0 | +0.00431 | yes, a curve |
+| 12 teeth, m 1, x 0, backlash 0 | 32.5 | -0.01094 | none, `tip land gone` |
+| 19 teeth, m 1.75, x -0.4, backlash 0.10 | 33.0 | +0.00387 | yes, a curve |
+| 19 teeth, m 1.75, x -0.4, backlash 0.10 | 33.5 | -0.02343 | none, `tip land gone` |
+
+#### The junction bar
+
+The tangent junction needs no root-find: the curve ends at the cutter flank's foot and its last
+point is the involute's. Gaps of the last point against `Profile.half_angle` at its radius and
+against `sqrt(rb^2 + xi^2)`, and the angle between the two curves' directions there (unit
+chords over the last 1e-7 rad of contact-normal angle):
+
+| row | backlash | abs delta half-angle (rad) | abs delta R (mm) | direction angle (rad) |
+|---|---|---|---|---|
+| 19 teeth, m 1.75, 25 deg, rho 0.5 | 0 | 1.39e-17 | 1.78e-15 | 1.38e-7 |
+| 19 teeth, m 1.75, 25 deg, rho 0.5 | 0.10 | 1.39e-17 | 1.78e-15 | 1.38e-7 |
+| 30 teeth, m 1, 20 deg, rho 0.38 | 0 | 4.16e-17 | 0 | 1.10e-7 |
+| 30 teeth, m 1, 20 deg, rho 0.38 | 0.10 | 1.39e-17 | 0 | 1.11e-7 |
+
+Bars, each from the two recorded numbers (the model's gap and float64's own resolution at that
+magnitude: one ulp is 2.8e-17 rad near 0.2 rad and 1.78e-15 mm at R 15.3 mm):
+
+| bar | value | largest measured | headroom |
+|---|---|---|---|
+| `JUNCTION_BAR_RAD` | 1e-12 rad | 4.16e-17 rad | 2.4e4 (1e-12 is the cross-platform libm floor; 10x the gap would be 1e-15) |
+| `JUNCTION_BAR_MM` | 1e-12 mm | 1.78e-15 mm | 562 (same floor) |
+| `DIRECTION_BAR_RAD` | 1e-5 rad | 1.38e-7 rad | 72 (smallest power of ten above 10x the reading) |
+
+The direction angle is the chord's own error, not noise: it reads 1.39 * step and 1.16 * step at
+steps 1e-4, 1e-5 and 1e-6 (1.39e-4, 1.39e-5, 1.39e-6 rad on the first row), so the tangents
+agree and only the secant differs. At a step of 1e-8 float noise starts to show (1.1e-8 and
+3.6e-8 rad), which is why the test uses 1e-7.
+
+Tripwires (both seen red):
+
+- A cutter built with backlash 0 for the backlash-0.10 default gear ends 3.008e-3 rad from
+  that gear's involute, 0.0460 mm at its radius (PITFALLS 3's 0.046 mm step): 3.0e9 times
+  `JUNCTION_BAR_RAD`. Mutation check, 2026-10-08: with the cutter ignoring backlash the
+  junction test fails on both backlash-0.10 rows and passes on both backlash-0 rows.
+- Tangency holds only for z >= z_min. The 17-tooth, 20 degree, rho 0.38 gear (z_min 17.10, so
+  just undercut, join `crossing`) reads a direction angle of 3.08e-3 rad at its crossing:
+  308 times `DIRECTION_BAR_RAD`, 2.2e4 times the tangent rows' reading. (Read 4.13e-3 rad
+  until 2026-10-08, when the secant was taken at the cutter's flank foot, which is not where
+  that curve ends -- cross-review XR-02.)
+
+No headroom here is under 10x. 18-04 Task 3 (the phase's L33 D-06 checkpoint) collects every
+18-01 bar again.
+
+### Join epsilon (18-03)
+
+The question (D-09): how close to the z_min double root may `xi` (the roll of the cutter's flank
+foot, mm) get before the closed-form bracket for the junction with the involute is lost, so that
+inside that band the flank join is taken as the form point without a bracket? The band has to be
+relative to `rb`: STACK and 18-RESEARCH saw it scale with the base radius (1e-5 mm at module 0.2,
+1e-4 at module 1, 1e-3 at module 10). `calc.TROCHOID_JOIN_EPS` was the research value, 1e-4, from a
+prototype; this is the measurement made in the repo, with the repo's `_junction`.
+
+Command, from the repo root: `.venv/bin/python -m bench.trochoid epsilon` (about 0.7 s).
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`); stdlib maths only, no kernel in this measurement
+- HEAD: `39c00dd` (the commit that carries `bench/trochoid.py` and the constant's comment)
+- Read 2026-10-08T01:59:30Z (the table below); the run that wrote the constant's comment, a minute
+  earlier, printed the same figures
+- Load (1-minute, `os.getloadavg()`): 2.21 before, 2.21 after. These are float residues, not
+  timings, so load does not move them; it is recorded because every section records it.
+
+#### The scan
+
+`random.Random(18)`, 400 usable draws (1,163 attempts, 763 skipped): teeth 6 to 40, module from
+{0.2, 0.5, 1, 1.75, 4, 10}, pressure angle on the 0.5 degree grid 14.5 to 30, backlash from
+{0, 0.1, 0.25, 0.5}, tip radius a uniform fraction 0 to 0.5 of the module. For each draw the
+profile shift is tuned (xi is linear in it: `xi(x) = xi(x0) + (x - x0) * m / sin(alpha)`, and `rb`
+does not depend on it) so that `xi = -t * rb` for t from 1e-2 down to 1e-12 at 4 steps per decade
+(41 values), and `_junction(c, 0.0)` is called at each. A draw is skipped when its cutter has no tip
+land, its own z_min double root is outside the field's shift range -0.6 to 1.0, or the gear does not
+validate (763 of 1,163 attempts).
+
+| | value |
+|---|---|
+| draws used | 400 |
+| draws that lost the bracket at some t | 400 (never lost: 0) |
+| largest lost t | 5.62e-6 |
+| median of the draws' largest lost t | 3.16e-6 |
+| 18-RESEARCH F6 (361 prototype draws) | largest 1.0e-5, median 3.2e-6 |
+
+| decade of the largest lost t | draws |
+|---|---|
+| 1e-6 to 1e-5 | 399 |
+| 1e-7 to 1e-6 | 1 |
+
+STACK's two points, re-created on the 10-tooth, 20 degree, module 1, backlash 0, tip radius 0.38 mm
+gear (rb 4.6985 mm) with the epsilon at 0: the bracket is found at xi -2.9e-3 mm, as STACK
+measured, and also at -2.9e-5 mm, where the prototype lost it. That gear's own edge in this scan is
+t = 5.62e-6, xi = -2.64e-5 mm: the same place as STACK's loss point to within one scan step (a
+quarter decade is a factor 1.8, and 2.9e-5 / 2.64e-5 is 1.1). So the two points bracket the edge
+and the repo's solver does not move it.
+
+#### Decision
+
+Recommended constant: the smallest power of ten at least 10x the largest loss: 10 * 5.62e-6 =
+5.62e-5, so 1e-4. `TROCHOID_JOIN_EPS` stays 1e-4; its comment now quotes this run (date, load,
+draws, largest and median loss, STACK's two points as the bracket, the error bound). The scan's
+ceiling for a constant worth writing is 1e-3; 1e-4 is a decade under it.
+
+The flank-join error where the bracket would have worked is bounded by `(eps*rb)^2 / (2*rb)` =
+`eps^2/2 * rb` = 5e-9 * rb: 2.4e-8 mm at the 10-tooth gear's rb, and 4.8e-6 mm at the largest base
+radius the box allows (200 teeth, module 10, 14.5 degrees, rb 968 mm). That is the maths bound, not
+a kernel measurement; no kernel was run here.
+
+Pinned in `tests/test_trochoid.py`: 9 / 10 / 11 teeth (30 degrees, module 1, no shift) read crossing
+/ tangent / tangent, the 10-tooth `xi` is -8.9e-16; x -0.05 / 0.05 at the same gear read crossing /
+tangent; at xi = -10 * eps * rb the bracket is found and the last point is on `Profile.half_angle`
+to 1e-12 rad, at -eps * rb / 10 it is the flank join; STACK's -2.9e-3 mm is a crossing and -2.9e-5
+mm is a tangent join; with the constant patched to 0 at xi = -1e-9 * rb the bracket is lost and
+`root_mode` names `bracket degenerate`.
+
+### Generator sweep (18-03)
+
+The question (SC2, D-12, D-13): for every gear the project allows, does the generator give a curve
+or a named refusal, never a numerical failure and never a curve that loops, rises above the tip
+circle or fails to meet the involute? The grid is written out as literals in `bench/trochoid.py`
+(`GRID_A`, `GRID_B`) and pinned in `tests/test_bench.py`; every case is checked against closed
+forms typed in that module (rb, rf, ra, the tooth-thickness angle, xi and the involute half-angle
+written from the textbook rack, not read from calc's expressions).
+
+- **Grid A**, STACK's whole product at module 1: teeth 6 to 40, 60, 100, 200 (38); profile shift
+  -0.6 (the field's limit; STACK's -1 is rejected by `GearParams`), -0.5, -0.2, 0, 0.2, 0.5, 1.0;
+  14.5 / 20 / 25 degrees; backlash 0 and 0.10; tip radius 0, 0.1, 0.25, 0.38, 0.5 times the module
+  and the cap request (3.0 mm, the `root_fillet` maximum, which each cutter trims to its own cap):
+  1,596 gears, 9,576 cases, 1,489 gears accepted. The x = 1.0 rows with a tip radius at or over
+  the tip depth stay in (18-RESEARCH F5: STACK's 7,296 dropped them).
+- **Grid B**, the box corners: module 0.2 / 1.75 / 10; teeth 6, 7, 8, 9, 10, 12, 14, 17, 18, 20,
+  25, 30, 40, 60, 100, 116, 117, 200; 14.5 / 20 / 25 / 30 / 32.0 / 32.5 / 33.0 / 33.5 / 35
+  degrees; shift -0.6 / 0 / 1.0; backlash 0 / 0.10 / 1.0; tip radius 0, 0.25 m, 0.5 m, 0.5 mm
+  (each case's own `root_fillet` default) and the cap request: 4,374 gears, 21,870 cases, 1,924
+  gears accepted.
+
+Command, from the repo root:
+`.venv/bin/python -m bench.trochoid sweep --list .planning/phases/18-trochoid-maths-proved/investigation/18-03-refusals.tsv`
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`); stdlib maths only, no kernel in this measurement
+- HEAD: `32d7697` (the commit that carries the sweep, its gate test and its pins)
+- Bench run read 2026-10-08T02:03:37Z; load (1-minute, `os.getloadavg()`) 4.01 before and after
+- The host carried background load throughout (1-minute load 2 to 7); no quiet bar was waited for,
+  so every timing below is an upper bound for a quiet host and a fair one for the commit gate,
+  which runs on the same machine under the same kind of load.
+
+#### The bench run (the whole product)
+
+31,446 cases in 1.75 s wall (1.77 s on the first run, load 2.0). Zero problems, zero
+`bracket degenerate`, zero `curve invalid`.
+
+| outcome | cases |
+|---|---|
+| not a gear (`GearParams` refuses the fields) | 12,892 |
+| nothing radial to replace (`rb <= rf`) | 7,175 |
+| tip land gone (`a0 < 0`) | 980 |
+| tooth severed | 73 |
+| trochoid / crossing | 4,466 |
+| trochoid / crossing / capped | 1,557 |
+| trochoid / tangent | 2,657 |
+| trochoid / tangent / capped | 1,646 |
+
+18,554 cases are gears (1,489 x 6 + 1,924 x 5); 10,326 of them have a curve, 8,228 are a named
+refusal. By module:
+
+| module | not a gear | nothing radial to replace | tip land gone | tooth severed | trochoid |
+|---|---|---|---|---|---|
+| 0.2 | 6,185 | 420 | 65 | 4 | 616 |
+| 1 | 642 | 2,520 | 0 | 15 | 6,399 |
+| 1.75 | 3,710 | 1,730 | 345 | 36 | 1,469 |
+| 10 | 2,355 | 2,505 | 570 | 18 | 1,842 |
+
+Every refusal is one of the three the predicate names; the list is
+`.planning/phases/18-trochoid-maths-proved/investigation/18-03-refusals.tsv`, 8,228 rows and a
+header (7,175 nothing radial, 980 tip land gone, 73 tooth severed). The tip-land refusals are at
+32.5, 33, 33.5 and 35 degrees (260, 230, 240, 250); the severed teeth are 47 at 6 teeth, 13 at 7,
+8 at 8, 4 at 9 and 1 at 10, 53 at 14.5 degrees and 20 at 20 degrees, with a waist half-angle from
+-0.1426 to -0.00055 rad (the tsv's last column). F9's nesting holds over the product: no crossing
+has `rb <= rf`. D-11's accounting stands: nothing outside the three named reasons exists in the
+box, so the checkpoint was not reached.
+
+#### The worst junction gaps against `SWEEP_BAR`
+
+`SWEEP_BAR = 1e-12` (the junction radius relative, the half-angle in rad).
+
+| join | worst gap | headroom to the bar |
+|---|---|---|
+| crossing, half-angle against the involute | 6.9e-16 rad | 1.4e3 |
+| tangent, half-angle against the involute | 1.7e-16 rad | 6.0e3 |
+| tangent, radius against sqrt(rb^2 + xi^2), relative | 4.0e-16 | 2.5e3 |
+| tangent inside the join band (xi in [-eps*rb, 0)) | 2.44e-13 rad | see below |
+
+The band row is geometry, not noise. Inside the band the flank join is the form point, and the
+cutter's flank foot sits at negative roll, on the involute's continuation through the base circle,
+so its half-angle differs from the involute's by 2 (tan(phi) - phi) with tan(phi) = |xi| / rb: 6.7e-13
+rad at the band's edge for eps = 1e-4. `check_curve` allows that term on top of the bar. Two cases of
+the product are inside the band besides the five exactly on z_min (10 teeth, 30 degrees, no shift,
+sharp cutter; xi / rb about -2e-16): grid A, 26 teeth, module 1, 20 degrees, shift -0.6, backlash
+0.10, tip radius 0.5 mm, xi / rb = -7.16e-5, and grid A, 32 teeth, 14.5 degrees, shift -0.2, tip
+radius 3.0 mm (trimmed), xi / rb = -4.75e-5. The first reads 2.44e-13 rad against the closed form
+2 (tan(phi) - phi) = 2.44e-13: the model of the band's error is right to the last digit.
+
+Checker mutations, 2026-10-08, each run as a stride-7 sweep and each exiting 1: the join band in
+calc patched to 1e-2 (the bench's own rack disagrees on the join), every half-angle shifted by
+1e-6 sin(beta) (the last point leaves the involute), and the first radius moved 1e-9 off the root
+circle. The sweep can fail.
+
+#### The gate (D-13)
+
+`tests/test_calc.py::test_the_trochoid_sweep_over_the_allowed_box` runs the whole product with
+`check_case` and asserts the tally above as a literal dict.
+
+- Isolated, `make test PYTEST_ARGS="tests/test_calc.py -q -n 8 --no-cov --durations=5 -k
+  trochoid_sweep"`: call time 1.72, 1.71 and 1.68 s (1-minute load 2.2 after).
+- Inside the commit slice, `make verify.fast PYTEST_ARGS="--durations=3"`: 1.92 s call (load 2 to
+  3), the slowest test of the slice, running beside the other workers.
+
+**Decision: the whole product stays in the gate, no stride.** The plan's line is a call time over
+2.0 s at `-n 8`; the isolated reading is 1.7 s, which is 15 percent under it. The in-slice reading
+is 4 percent under it. The planning-time prototype costs (87 usec per crossing solve, 8.5 usec per tangent solve, plus
+the waist's 60 golden steps; load 1.5) suggested a price above the line; the measured whole is
+1.75 s over 18,554 gears, 94 usec per gear with the validation of the 12,892 refused field sets
+included. Not isolated further. Had it read over 2.0 s the gate would keep
+`itertools.islice(sweep_cases(), 0, None, k)` for the smallest k that fits and `bench/trochoid.py
+sweep --stride k` reproduces that sample's tally.
+
+`make verify.fast` wall (the pre-commit hook's own target, L36's 30 s): 14.37, 14.62 and 14.78 s,
+675 passed, at 1-minute loads of 6.9, 6.9 and 6.5 before each run; 14.2 s on the first reading at
+load 2.0 to 2.9 (673 passed, before the two bench pins). The slice was 11.3 s warm when L36 set
+the budget; the sweep is the slowest test but runs beside the rest: the same target with
+the test deselected read 14.35 and 14.63 s and with it 14.52 and 14.17 s (alternating runs at
+1-minute loads of 7.6 to 9.7), so its wall cost is inside the run-to-run noise. `make verify`: 996 passed in 78.25 s, coverage 97.48 percent (calc.py 99.20).
+
+### Oracle bars (18-04)
+
+The question (SC3, T2): does something that shares no code with the generator, a cutter built from
+the textbook rack definitions with its neighbouring teeth, read every curve the generator produces
+as the boundary the hob cuts, at a bar a millionth of a millimetre of tip radius breaks? The oracle
+is `tests/trochoid_oracle.py` (stdlib `math`, imports nothing from `spur`); a point reads about 0
+on the cut boundary, negative where the curve gouges, positive where it leaves material uncut.
+
+Commands, from the repo root: `make test PYTEST_ARGS="tests/test_trochoid.py -q -n0 --no-cov
+--durations=0 -k t2_"` for the gate rows; `.venv/bin/python -m bench.trochoid oracle` for the whole
+sweep product (about 4.3 minutes on 12 workers); `.venv/bin/python -m bench.trochoid oracle
+--serial-slice 200` for the worker-count check.
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`); stdlib maths only, no kernel in this measurement
+- HEAD: `16d82a4` (the commit that carries the tests and the `oracle` subcommand)
+- Read 2026-10-08T02:31:13Z to 02:36:28Z (the pooled run, then the serial slice); the gate rows
+  at about 02:37Z
+- Load (1-minute): 42.89 before and 32.78 after the pooled run, 25.72 before and 14.18 after the
+  serial slice, 8.61 before the gate rows. The host was loaded throughout (this session, other
+  users); these are float residues, not timings, so load does not move them. The wall times
+  below do move with it and are recorded as read.
+
+#### The roll window: the first whole-product run failed, and why
+
+The first pooled run, with the oracle as 18-01 committed it (roll searched over +-1 span of
+2 pi / z), judged 10,399 cases in 274.9 s and **failed**: 3,244 of 10,326 trochoid curves read
+beyond the 1e-9 mm bar, worst +0.6075 mm (14 teeth, module 10, 14.5 degrees, x -0.6, sharp
+cutter; points at radii 63.8, 65.7 and 67.7 mm read +0.198, +0.470 and +0.608 mm, uncut). The
+twelve gate rows were all clean at that window (worst 1.07e-14 mm), which is why the gate did not
+show it.
+
+The cause is the oracle's window, not the generator. The roll at which the cutter touches a
+trochoid point is (a + w_c tan(beta)) / r; for the first failing point of that gear it is -0.473
+rad against a window of +-0.449. Over the product the largest roll is **2.13 spans** (60 teeth,
+module 10, 14.5 degrees, x -0.6, sharp cutter); 3,729 of the 10,399 cases need more than one
+span; closed form (d cot(alpha) / (r * span), x -0.6, 14.5 degrees) bounds the box at about 2.3
+spans. With the window at +-2 spans (diagnostic) the same 16 points read 1e-15 mm.
+
+The window is now +-3 spans (1.3 times the box's bound). Grid check, 259 trochoid cases (every
+40th of the product), window +-3 spans: a grid of 2001 / 3001 / 4001 / 6001 rolls reads worst
+1.0e-13 / 1.1e-13 / 8.9e-14 / 9.2e-14 mm with none beyond the bar, so the grid stays 2001.
+
+The same window had hidden the severed-tooth separation. 18-02 recorded that the neighbouring
+teeth made no difference on a severed tooth; at +-3 spans the 6-tooth, 14.5 degree sharp-cutter
+gear at x -0.6 reads **-0.138979 mm** on its one flank with the neighbours on and -2.1e-15 mm with
+them off (x -0.5: -0.020103 against -8e-16; the 7-tooth, x -0.6 gear: -4.6e-16 either way), which
+is what 18-RESEARCH described (0.141 and 0.0201 on its 21-point sets). 18-02's test was updated to
+pin it.
+
+#### The twelve gate rows
+
+`tests/test_trochoid.py::test_t2_the_oracle_reads_every_gate_row_as_the_cut_boundary`, each row
+asserting 16 points before reading them and the same readings, reversed, with the points reversed.
+
+| row | join | tip radius used (mm) | worst reading (mm) | per module |
+|---|---|---|---|---|
+| tracer, 10 teeth | crossing | 0.38 | 9.99e-16 | 9.99e-16 |
+| default gear, 19 teeth, module 1.75 | tangent | 0.5 | 2.72e-15 | 1.55e-15 |
+| 17 teeth, just undercut | crossing | 0.38 | 1.50e-15 | 1.50e-15 |
+| 18 teeth, just not | tangent | 0.38 | 1.22e-15 | 1.22e-15 |
+| 7 teeth, x -0.6, sharp (thin positive waist) | crossing | 0 | 6.50e-16 | 6.50e-16 |
+| 6 teeth, x -0.6, cap request 3.0 | crossing | 0.596 | 9.99e-16 | 9.99e-16 |
+| 16 teeth, x 1.0, w_c = 0 | tangent | 0.25 | 7.22e-16 | 7.22e-16 |
+| 16 teeth, x 1.0, w_c > 0 | tangent | 0.5 | 1.22e-15 | 1.22e-15 |
+| 12 teeth, 32 degrees, cap request 3.0 (tip land nearly gone) | tangent | 0.007 | 1.18e-15 | 1.18e-15 |
+| tracer at module 0.2 | crossing | 0.05 | 1.94e-16 | 9.71e-16 |
+| 12 teeth, module 10, x 0.2, backlash 1.0 | tangent | 0.5 | 9.83e-15 | 9.83e-16 |
+| 30 teeth, backlash 0.10 | tangent | 0.38 | 2.61e-15 | 2.61e-15 |
+
+Worst over the twelve: **9.83e-15 mm** (module 10). Wall time at `-n0` (load 8.6): the twelve rows
+0.42 to 0.45 s each, 5.2 s together; the controls 0.61 s; the tripwire 0.21 s; the T2 tests 6.0 s.
+The commit that carried them, with the hook, took 15.0 s.
+
+#### The whole sweep product (D-13: the full grid only in bench)
+
+`bench.trochoid oracle`, 12 spawn workers, 257.4 s wall (load 42.9 before, 32.8 after):
+
+- 10,399 cases judged: 10,326 trochoid curves of 16 points each, 73 severed teeth. Beyond the bar:
+  **0**. Verdict ok, exit 0.
+- Worst reading **2.985e-12 mm** (26 teeth, module 1, 20 degrees, x -0.6, backlash 0.10, tip
+  radius 0.5 mm), 335 times under the bar. It is one of the two cases of the product inside the
+  join band (18-03): the curve ends at the cutter's flank foot, 2 (tan(phi) - phi) = 2.44e-13 rad
+  off the involute, times R = 12 mm: geometry, not noise. The other band case reads 1.106e-12 mm.
+  Every other curve reads **1.594e-13 mm or less** (116 teeth, module 10, 14.5 degrees, x -0.6,
+  tip radius 3 mm, trimmed), 6.3e3 times under the bar; 15 of 10,326 read above 1e-13 mm.
+- The 73 severed teeth: the oracle reads a gouge (one flank, neighbours on) on **73 of 73**,
+  shallowest -1.653e-03 mm, deepest -1.899 mm. The predicate and the oracle agree on every case.
+- Serial slice (the backstop for "the reading does not depend on the worker count"): the first
+  200 trochoid cases judged in-process, 42.7 s on one worker: worst 2.63897000341122582e-15 mm. The
+  pooled run's worst over the same first 200 trochoid cases: 2.63897000341122582e-15 mm. Equal to
+  every printed digit.
+
+#### The negative controls (tracer gear unless stated)
+
+| control | readings (mm) |
+|---|---|
+| involute between rb (4.6985) and the crossing radius (4.7256), at 0.25 / 0.5 / 0.75 of the way | -5.321e-03 / -3.695e-03 / -1.913e-03 |
+| the trochoid carried past the crossing, 0.25 / 0.5 / 1.0 of the way to the flank foot | -9.649e-03 / -2.152e-02 / -5.192e-02 (18-RESEARCH: 5.19e-2 at the foot) |
+| severed tooth (6 teeth, 14.5 degrees, x -0.6, sharp), one flank, neighbours on / off | -0.138979 / -2.07e-15 |
+| the same tooth's other flank (mirror), neighbours on | -0.138979 |
+
+Each is below -1e-4 mm (the severed ones below -1e-3), so an oracle that read 0 everywhere would
+fail all three.
+
+#### The tripwire and the T2 bar
+
+The tracer gear's curve generated at tip radius 0.38 mm + 1e-6 mm and judged against the cutter at
+0.38 mm reads **2.205e-07 mm**, 220 times the bar (unmoved: 1.0e-15 mm). The reading moves 0.2205
+per mm of tip radius (2.2e-10 at 1e-9, 2.2e-8 at 1e-7, 2.2e-7 at 1e-6, 2.2e-5 at 1e-4 mm), as
+18-RESEARCH predicted.
+
+| bar | value | the two numbers | headroom |
+|---|---|---|---|
+| `ORACLE_BAR_MM` | 1e-9 mm | the generator's worst gap over the product (2.99e-12 mm at the band case; 1.6e-13 mm elsewhere; 9.8e-15 mm on the gate rows) and the oracle's resolution after golden-section refinement (about 1e-15 mm) | 335 over the product's worst, 6.3e3 outside the band, 1.0e5 on the gate rows; tripwire 220 over the bar |
+
+No headroom is under 10x.
+
+#### T3 and T4
+
+**T3, freecad.gears at a sharp cutter (rho 0).** One-off run on 2026-10-08, never inside the
+repository:
+
+- Source: `https://github.com/looooo/freecad.gears`, `pygears/involute_tooth.py`
+  (`InvoluteTooth.undercut_points`) with `pygears/__init__.py` and `pygears/_functions.py`, at commit
+  `4cc4b1a233c232e15c3fdfb8a35909aa0d828796` (2026-09-15, "ruff refactoring", the last commit touching
+  the file); repository HEAD `83ec154b1925347622b61812f75d2ed51e956b9f`; package 1.4.0; licence
+  **GPL-3.0** (GitHub's licence API, `spdx_id`). The files were fetched with `gh api` into a scratch
+  directory under the session's scratchpad (`spur-18-04-freecad/pygears/`), the script
+  (`spur-18-04-t3/run.py`) kept in another, and run as `python -I run.py <dir>` with the repository's
+  `.venv` (numpy, never declared by the repository). The code is plain numpy geometry; it was read
+  before it was run.
+- Cases: teeth 8, 10, 14; shift 0 and 0.3; backlash 0 and 0.10; module 1, 20 degrees; clearance 0.25
+  (their root circle is this project's `r - (1.25 - x) m`, asserted to 1e-12 in the script). 200 samples
+  each; 119 to 200 of them lie on the cutter flank (contact-normal angle at most pi/2 - alpha); five,
+  evenly spread from the root circle to the flank foot, are recorded: **60 literals**, with their
+  source, commit, licence and date, in `FREECAD_T3_POINTS`.
+- Mapping, compared point for point through each row's own psi: `beta = atan((rf/d) tan(psi))`, the
+  point `_trochoid_point(cutter(p, 0.0), beta)`. The half-angle is minus the polar angle of the
+  library's returned point (at psi = 0 it equals this project's `pi/z - a/r`, checked by hand).
+  The sample parameter psi is the library's own (`linspace(0, undercut_end, 200)`); recovering it as
+  `acos((df/2)/R)` was tried first and turns a rounding error of 1e-16 in R into 1.5e-8 rad at the
+  first point, so it was not used.
+- Worst gaps: **1.776e-15 mm** in radius, **1.943e-16 rad** in half-angle (the prototype read
+  2.66e-15 and 3.05e-16 over 1,972 points). Float level, as 18-RESEARCH expected: the frame
+  conversion is right.
+- Bars `T3_BAR_MM` and `T3_BAR_RAD` = 1e-12 each: ten times the larger gap is 1.8e-14, under the
+  1e-12 cross-platform libm floor, so the floor is the bar. Headroom **563** (mm) and **5.1e3**
+  (rad). The reference prints no resolution (float64 closed-form arithmetic on both sides).
+- Tripwire: the same rows against a cutter of tip radius 1e-6 mm read **7.353e-07 mm** (7.4e5 times
+  the radius bar) and **1.751e-07 rad** (1.8e5 times the angle bar).
+- What it checks and does not: the rolling convention, the depth, the tip land and the backlash
+  entry for a sharp corner; not the crossing (the library trims polylines), not rho above 0.
+- No freecad.gears file entered the repository: no tracked path names `pygears` or `freecad`, and no
+  tracked Python file imports `pygears` (checked by the plan's verify command).
+
+**T4, KISSsoft's form diameter (D-15).** Zhang, "Methods to Determine Form Diameter on Hobbed
+External Involute Gears", AGMA 18FTM02 (September 2018), Table 7 example 7, via Gear Solutions: 35
+teeth, 22.5 degrees, dedendum factor 1.3 (x -0.05 on this project's 1.25 m rack), no protuberance, hob
+tip radius 0.04, form diameter **4.1530 in** (four printed decimals). Diametral pitch 8 (module
+3.175 mm, tip radius 1.016 mm) is **inferred**, not printed, and is recorded as inferred.
+
+| | value |
+|---|---|
+| printed (KISSsoft) | 4.1530 in |
+| the cutter-envelope junction here (`trochoid_root(cutter(p, 1.016))`, tangent join, xi 12.1 mm; `rb - rf` is -0.102 mm so `root_mode` would hand this gear back, hence the direct call) | 4.153036 in |
+| gap | 3.593e-05 in |
+| `T4_BAR_IN` (half the last printed digit) | 5e-05 in |
+| headroom | **1.39** (the gap is 0.72 of the bar) |
+
+The 1.39 is under the 10x line by construction, because the reference is rounded to four decimals,
+and the human accepted exactly that at planning (D-15); it is recorded here as a known sub-10x bar
+and was not escalated again. Tripwires: a tip radius 1e-3 in larger gives 4.153778 in, a gap of
+**7.782e-04 in, 15.6 times the bar**; the two pitches either side of the inferred 8 miss 4.1530 by
+5.514e-04 in (7.999, 11.0 times the bar) and 4.794e-04 in (8.001, 9.6 times), so the pitch that
+reproduces the number is 8 to within 1e-4. The number is the cutter-envelope junction, never an
+ISO 21771 form diameter: one tool-generated point is not parity (D-08, D-15, L08).
+
+The four T3 and T4 tests run in 0.13 s at `-n0`. `make verify` after the tests' commit: 1016 passed
+in 74.77 s, coverage 97.68 percent.
+
+### Root-shape step (18-05, D-05)
+
+The rule, written and committed before any table below existed (commit `8badc55`, `test(18-05): fix
+the D-05 comparison line before measuring the root-shape step`): D-01's premise, about 0.14 m of root
+shape between 17 and 18 teeth at 20 degrees, **holds when every 17- and 18-tooth row of the threshold
+table has a gap within 25 percent either side of 0.14 m**, nominally 0.105 to 0.175 mm at module 1.
+The figure is FEATURES' simulation as carried by 18-RESEARCH Pattern 8, which measured 0.145 m
+(3 percent off). `bench.trochoid.premise_holds` carries the line and
+`test_the_d05_premise_line_sits_25_percent_either_side_of_0_14_m` pins it at points 1e-4 m inside and
+outside the band, never at its float64 edges. A figure outside it reopens the root-mode choice before
+Phase 19 is planned.
+
+The step is the largest-magnitude same-radius arc gap `R * (h_trochoid(R) - h_shipped(R))`, h the
+half-angle from the tooth centre, between the trochoid outline (`trochoid_root(cutter(p, rho))`, the
+involute above its junction) and the shipped analytic root zone rebuilt the way `model._outline`
+builds it (the fillet arc `_fillet_corner` returns, the lead-in line, the involute from
+`calc.spline_start`), read at 2,001 radii from the root circle to the higher of the two junctions,
+sign kept (positive: the trochoid lies deeper into the tooth space). The maximum sits at the root
+circle in every row, so each row states the tip radius asked for (which is also the `root_fillet`
+requested), the shipped fillet actually used (rounded and capped to 0.45 of the root gap, so it is
+below the request in the last four rows), what `root_mode(p, pr, requested="trochoid", rho=rho)`
+answers and the join.
+
+#### Host state
+
+- Machine: Apple M2 Max (`bench.machine_facts()`: 12 CPUs, arm64, 32.0 GiB RAM)
+- Python 3.12.13, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (the pinned pair; the kernel is used only
+  for the `Vector` arithmetic of `_fillet_corner`, not for a solid)
+- HEAD `1db6fc6` (the commit that carries `bench.trochoid step`)
+- Read 2026-10-08T02:50:48Z; 1-minute load 17.01 before, 17.81 after (a first run a minute earlier,
+  2026-10-08T02:49:38Z, load 3.36 before, 4.85 after, printed the same figures to four decimals).
+  These are geometry, not timings, so load does not move them; it is recorded because every
+  section records it.
+
+Command: `.venv/bin/python -m bench.trochoid step` from the repo root (exit 0).
+
+Module 1, 20 degrees, no shift, no backlash, bore and recesses off.
+
+**Table 1, the undercut threshold (teeth 16-19).** The O1 counterfactual: under D-02 the trochoid applies on both sides of 17/18 and the join only changes kind.
+
+| teeth | tip radius rho | shipped fillet | root_mode | join | rb - rf | step (mm) | step / m | at R (mm) | trochoid junction R | spline start R |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 16 | 0.38 | 0.38 | trochoid | crossing | +0.7675 | +0.1479 | +0.1479 | 6.7500 | 7.5181 | 7.5175 |
+| 17 | 0.38 | 0.38 | trochoid | crossing | +0.7374 | +0.1463 | +0.1463 | 7.2500 | 7.9874 | 8.0100 |
+| 18 | 0.38 | 0.38 | trochoid | tangent | +0.7072 | +0.1449 | +0.1449 | 7.7500 | 8.4586 | 8.5100 |
+| 19 | 0.38 | 0.38 | trochoid | tangent | +0.6771 | +0.1433 | +0.1433 | 8.2500 | 8.9330 | 9.0100 |
+| 16 | 0.471 | 0.471 | trochoid | crossing | +0.7675 | +0.1323 | +0.1323 | 6.7500 | 7.5175 | 7.6920 |
+| 17 | 0.471 | 0.471 | trochoid | tangent | +0.7374 | +0.1328 | +0.1328 | 7.2500 | 7.9890 | 8.1920 |
+| 18 | 0.471 | 0.471 | trochoid | tangent | +0.7072 | +0.1329 | +0.1329 | 7.7500 | 8.4637 | 8.6920 |
+| 19 | 0.471 | 0.471 | trochoid | tangent | +0.6771 | +0.1325 | +0.1325 | 8.2500 | 8.9411 | 9.1920 |
+
+**Table 2, the `rb = rf` crossover (teeth 40-43).** What a user stepping `teeth` meets under D-02.
+
+| teeth | tip radius rho | shipped fillet | root_mode | join | rb - rf | step (mm) | step / m | at R (mm) | trochoid junction R | spline start R |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 40 | 0 | 0 | trochoid | tangent | +0.0439 | +0.1471 | +0.1471 | 18.7500 | 19.0619 | 18.7939 |
+| 41 | 0 | 0 | trochoid | tangent | +0.0137 | +0.1403 | +0.1403 | 19.2500 | 19.5540 | 19.2637 |
+| 42 | 0 | 0 | radial (nothing radial to replace) | tangent | -0.0165 | +0.1340 | +0.1340 | 19.7500 | 20.0464 | 19.7500 |
+| 43 | 0 | 0 | radial (nothing radial to replace) | tangent | -0.0466 | +0.1288 | +0.1288 | 20.2500 | 20.5392 | 20.2500 |
+| 40 | 0.38 | 0.38 | trochoid | tangent | +0.0439 | +0.0838 | +0.0838 | 18.7500 | 19.1976 | 19.5100 |
+| 41 | 0.38 | 0.38 | trochoid | tangent | +0.0137 | +0.0800 | +0.0800 | 19.2500 | 19.6926 | 20.0100 |
+| 42 | 0.38 | 0.38 | radial (nothing radial to replace) | tangent | -0.0165 | +0.0765 | +0.0765 | 19.7500 | 20.1879 | 20.5100 |
+| 43 | 0.38 | 0.38 | radial (nothing radial to replace) | tangent | -0.0466 | +0.0736 | +0.0736 | 20.2500 | 20.6833 | 21.0100 |
+| 40 | 0.471 | 0.411 | trochoid | tangent | +0.0439 | +0.1214 | +0.1214 | 18.7500 | 19.2341 | 19.5720 |
+| 41 | 0.471 | 0.406 | trochoid | tangent | +0.0137 | +0.1213 | +0.1213 | 19.2500 | 19.7297 | 20.0620 |
+| 42 | 0.471 | 0.4 | radial (nothing radial to replace) | tangent | -0.0165 | +0.1221 | +0.1221 | 19.7500 | 20.2255 | 20.5500 |
+| 43 | 0.471 | 0.396 | radial (nothing radial to replace) | tangent | -0.0466 | +0.1222 | +0.1222 | 20.2500 | 20.7215 | 21.0420 |
+
+Rule applied: D-01's premise holds when every 17- and 18-tooth row of the threshold table has a gap
+within 25 percent either side of 0.14 m (0.1050 to 0.1750 mm at module 1). The four rows are 0.1463
+and 0.1449 mm at tip radius 0.38 and 0.1328 and 0.1329 mm at 0.471.
+
+**D-01 premise holds**
+
+What the figures say beyond the verdict: the step barely moves across the threshold itself (16 to 19
+teeth: 0.1479 to 0.1433 mm at 0.38), so it is not a feature of the 17/18 edge. The crossover rows are
+the step a user meets under D-02: the request is ignored and warned at 42 teeth and above (`nothing
+radial to replace`), so stepping `teeth` from 41 to 42 turns the trochoid off and the part moves by
+the 41-tooth gap, **0.1403 mm at a sharp cutter and no fillet, 0.0800 mm at 0.38, 0.1213 mm at
+0.471** (0.1471, 0.0838 and 0.1214 at 40 teeth). The 42- and 43-tooth rows print the generator's
+curve anyway (`trochoid_root` has no `rb` test of its own) to show that the gap does not vanish at
+the edge; no user sees those curves.
+
+Human's reading (2026-10-08): **d05-hold**. The human was shown both tables and the verdict and
+answered "d05-hold": the premises hold, and Phase 19 is planned on D-01 (the root-mode option,
+default off) and D-02 (the trochoid only where `rb > rf`) as decided. The crossover step stays a
+visible discontinuity in the opt-in mode, on record above for Phase 19's Lxx: 0.1403 mm at a sharp
+cutter and no fillet, 0.0800 mm at 0.38, 0.1213 mm at 0.471, all at 41 teeth.
+
+Open note, not resolved here: one figure does not reconcile with 18-RESEARCH. Pattern 8's prototype
+quoted the sharp-cutter crossover as "rho 0 -> -0.1885"; this run reads **+0.1403 mm** at rho 0, 41
+teeth (and +0.1471 mm at 40 teeth), with the opposite sign. Its other crossover figures match to
+four decimals (0.0800 and 0.1213 at 41 teeth), so the difference is confined to the rho 0 row.
+ASSUMPTION: the prototype paired rho 0 with a non-zero shipped fillet (the trochoid of a sharp
+cutter against a filleted shipped root), where this table's rho 0 row sets the shipped fillet to 0
+too. Not checked, because the prototype's script is not in the repository and the verdict does not
+turn on it: the premise rule reads only the 17- and 18-tooth rows of the threshold table, and none
+of them uses rho 0. If Phase 19 prices the sharp-cutter crossover, it should re-derive this row
+rather than quote either figure.
+
+### Per-call cost (18-05, D-14)
+
+How long the maths takes per call, read the way `derive()`'s docstring reads it, so Phase 19 can
+price what enters the keystroke path. **No budget is set**; Phase 19 decides what enters the keystroke
+path from these numbers.
+
+#### Host state
+
+- Machine: Apple M2 Max (12 CPUs, arm64, 32.0 GiB RAM), Python 3.12.13
+- HEAD `1db6fc6`; five measurements one after another on 2026-10-08, UTC times below
+- The host was busy: macOS Spotlight indexing (`mdworker_shared`) held several cores, and the
+  1-minute load read 14.4 to 16.0 across the five measurements (3.4 a few minutes earlier, before the
+  commit hook's eight test workers ran). No quiet host was waited for (D-14 asks for the load beside
+  the figure, not for a quiet bar), so each figure is an upper bound for the same code on an idle
+  machine.
+
+Each: `.venv/bin/python -m timeit -r 5 -s "<setup>" "<statement>"`, best of 5 (the per-loop time of
+the fastest repeat). Default `GearParams()` (19 teeth, module 1.75, 25 degrees, backlash 0.1, bore as
+shipped) except the last row; `cutter` is built in the setup, so the `trochoid_root` rows are the
+solve alone. The tracer gear is 10 teeth, module 1, 20 degrees, no shift, no backlash, bore off, the
+crossing join.
+
+| call | read (UTC) | 1-minute load before -> after | best of 5 |
+|---|---|---|---|
+| `derive(p)` | 2026-10-08T02:50:24Z | 14.38 -> 14.75 | 14.7 usec |
+| `root_mode(p, pr)` (nothing requested: what every present caller pays) | 2026-10-08T02:50:27Z | 14.75 -> 14.75 | 362 nsec |
+| `root_mode(p, pr, requested="trochoid", rho=0.5)` (default gear, tangent) | 2026-10-08T02:50:29Z | 14.75 -> 15.49 | 33.7 usec |
+| `trochoid_root(c)`, default gear, tip radius 0.38 (tangent) | 2026-10-08T02:50:32Z | 15.49 -> 15.49 | 30.7 usec |
+| `trochoid_root(c)`, tracer gear, tip radius 0.38 (crossing) | 2026-10-08T02:50:34Z | 15.49 -> 16.01 | 88.9 usec |
+
+The crossing costs about three times the tangent solve (two 60-step bisections against none: 88.9
+against 30.7 usec here). Asking `root_mode` for a trochoid on the default gear costs 33.7 usec, and
+asking for nothing costs 0.362 usec. `derive(p)` read 14.7 usec against the 11.5 usec its docstring
+carried: 18-RESEARCH read 14.5 usec at load 14.33 (2026-10-07) and PITFALLS 20.4 at about 6.8, so the
+old figure moves with the host and nothing measured here separates a regression from load; the
+docstring now carries the number, the load and the date together.

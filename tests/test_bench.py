@@ -52,12 +52,23 @@ from bench.latency import (
     _report_markdown,
 )
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
+from bench.trochoid import (
+    ORACLE_BAR_MM,
+    _oracle,
+    check_curve,
+    premise_holds,
+    rack,
+    sweep_cases,
+)
 from spur.calc import (
     HEX_CELL_CAP,
+    RootCurve,
+    cutter,
     hex_cells,
     profile,
     tip_chamfer_effective,
     tip_chamfer_limit,
+    trochoid_root,
 )
 from spur.params import GearParams
 
@@ -699,3 +710,137 @@ def test_the_composed_report_omits_the_single_concurrent_baseline_line() -> None
         assert RECORDED_BASELINE in report
         assert "Recorded baseline" in report
         assert "pass bar is <= 2.00x" in report
+
+
+def test_the_trochoid_sweep_is_the_cross_product_the_plan_names() -> None:
+    """The committed Phase 18 sweep is 18-03-PLAN.md's two grids, written out as literals
+    here again so that a grid that quietly shrinks fails (18-RESEARCH Pitfall 1: STACK's
+    "7,296" was not a floor of anything).
+
+    Grid A is STACK's whole 7,980-case product: module 1; teeth 6 to 40, 60, 100, 200 (38);
+    profile shift -0.6 (the field's limit, in place of the -1 GearParams rejects), -0.5,
+    -0.2, 0, 0.2, 0.5, 1.0 (7); 14.5 / 20 / 25 degrees; backlash 0 and 0.10; tip radius
+    0, 0.1, 0.25, 0.38 and 0.5 times the module, plus the cap request: 1,596 gears,
+    9,576 cases, of which 1,489 are gears GearParams accepts. Grid B is the box corners:
+    module 0.2 / 1.75 / 10; 18 tooth counts around every edge; nine pressure angles, the
+    32.0 / 32.5 and 33.0 / 33.5 pairs either side of the tip-land limit among them;
+    profile shift -0.6 / 0 / 1.0; backlash 0 / 0.10 / 1.0; tip radius 0, 0.25 m, 0.5 m,
+    0.5 mm and the cap request: 4,374 gears, 21,870 cases, 1,924 accepted. The x = 1.0
+    rows with a tip radius at or over the tip depth are kept, not dropped."""
+    cases = list(sweep_cases())
+    assert len(cases) == 9576 + 21870
+    a = [(kwargs, rho) for grid, kwargs, rho in cases if grid == "A"]
+    b = [(kwargs, rho) for grid, kwargs, rho in cases if grid == "B"]
+    assert (len(a), len(b)) == (9576, 21870)
+
+    def gear_key(kwargs: dict[str, object]) -> tuple[object, ...]:
+        return tuple(kwargs[k] for k in
+                     ("module", "teeth", "pressure_angle", "profile_shift", "backlash"))
+
+    def axis(rows: list[tuple[dict[str, object], float]], name: str) -> set[object]:
+        return {kwargs[name] for kwargs, _ in rows}
+
+    assert len({gear_key(kwargs) for kwargs, _ in a}) == 1596
+    assert len({gear_key(kwargs) for kwargs, _ in b}) == 4374
+    assert axis(a, "module") == {1.0}
+    assert axis(a, "teeth") == {*range(6, 41), 60, 100, 200}
+    assert axis(a, "profile_shift") == {-0.6, -0.5, -0.2, 0.0, 0.2, 0.5, 1.0}
+    assert axis(a, "pressure_angle") == {14.5, 20.0, 25.0}
+    assert axis(a, "backlash") == {0.0, 0.10}
+    assert {rho for _, rho in a} == {0.0, 0.1, 0.25, 0.38, 0.5, 3.0}
+    assert axis(b, "module") == {0.2, 1.75, 10.0}
+    assert axis(b, "teeth") == {6, 7, 8, 9, 10, 12, 14, 17, 18, 20, 25, 30, 40, 60, 100,
+                                116, 117, 200}
+    assert axis(b, "pressure_angle") == {14.5, 20.0, 25.0, 30.0, 32.0, 32.5, 33.0, 33.5, 35.0}
+    assert axis(b, "profile_shift") == {-0.6, 0.0, 1.0}
+    assert axis(b, "backlash") == {0.0, 0.10, 1.0}
+    for module in (0.2, 1.75, 10.0):
+        assert {rho for kwargs, rho in b if kwargs["module"] == module} == {
+            0.0, 0.25 * module, 0.5 * module, 0.5, 3.0}
+    assert -1.0 not in axis(a, "profile_shift") | axis(b, "profile_shift")
+    assert all(kwargs["bore_d"] == 0 and kwargs["recess_sides"] == "none"
+               for _, kwargs, _ in cases)
+
+    def accepted(rows: list[tuple[dict[str, object], float]]) -> int:
+        gears = {gear_key(kwargs): kwargs for kwargs, _ in rows}.values()
+        count = 0
+        for kwargs in gears:
+            try:
+                GearParams.model_validate(kwargs)
+            except ValidationError:
+                continue
+            count += 1
+        return count
+
+    assert (accepted(a), accepted(b)) == (1489, 1924)
+
+
+def test_check_curve_reports_a_curve_that_does_not_rise() -> None:
+    """The sweep's per-curve checker has to be able to fail: a real curve (10 teeth,
+    module 1, 20 degrees, tip radius 0.38 mm) reads clean, and the same curve with its
+    second radius pulled under the first, a loop in the making, is reported."""
+    p = GearParams.model_validate({"teeth": 10, "module": 1, "pressure_angle": 20,
+                                   "profile_shift": 0, "backlash": 0, "bore_d": 0,
+                                   "bore_flat": 0, "bore_chamfer": 0,
+                                   "recess_sides": "none"})
+    curve = trochoid_root(cutter(p, 0.38))
+    assert curve is not None
+    rk = rack(p, 0.38)
+    assert check_curve(curve, rk) == []
+
+    points = list(curve.points)
+    points[1] = (points[0][0] - 0.01, points[1][1])
+    bent = RootCurve(points=tuple(points), join=curve.join, waist=curve.waist)
+    assert "radius does not strictly rise" in check_curve(bent, rk)
+
+
+def test_check_curve_reports_a_crossing_whose_end_leaves_the_involute() -> None:
+    """The join-band allowance is for tangent joins only (cross-review XR-01): the same
+    10-tooth gear is deeply undercut (xi -1.21 mm, join `crossing`), and with the
+    allowance applied to every negative xi its end point could sit 1.1e-2 rad off the
+    involute unreported. The end half-angle pushed 1e-2 rad out must be reported."""
+    p = GearParams.model_validate({"teeth": 10, "module": 1, "pressure_angle": 20,
+                                   "profile_shift": 0, "backlash": 0, "bore_d": 0,
+                                   "bore_flat": 0, "bore_chamfer": 0,
+                                   "recess_sides": "none"})
+    curve = trochoid_root(cutter(p, 0.38))
+    assert curve is not None
+    assert curve.join == "crossing"
+    rk = rack(p, 0.38)
+    assert check_curve(curve, rk) == []
+
+    points = list(curve.points)
+    radius, half = points[-1]
+    points[-1] = (radius, half + 0.01)
+    moved = RootCurve(points=tuple(points), join=curve.join, waist=curve.waist)
+    assert "last half-angle 1.00e-02 rad off the involute" in check_curve(moved, rk)
+
+
+def test_the_oracle_worker_reads_a_curve_clean_and_a_severed_tooth_as_a_gouge() -> None:
+    """`bench.trochoid oracle`'s worker, on the two kinds of case it judges: the tracer
+    gear's curve reads within the bar (about 1e-15 mm), and the 6-tooth, 14.5 degree,
+    x -0.6, sharp-cutter gear, whose tooth the neighbouring spaces cut through, reads a
+    gouge on its one flank with the neighbouring cutter teeth on (-0.139 mm, measured
+    2026-10-08). A worker that read 0 on both would pass the whole product vacuously."""
+    base = {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none",
+            "module": 1.0, "backlash": 0.0}
+    tracer = {**base, "teeth": 10, "pressure_angle": 20.0, "profile_shift": 0.0}
+    severed = {**base, "teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6}
+    assert 0 <= _oracle(("A", tracer, 0.38, "trochoid")) <= ORACLE_BAR_MM
+    assert _oracle(("A", severed, 0.0, "severed")) < -1e-3
+
+
+def test_the_d05_premise_line_sits_25_percent_either_side_of_0_14_m() -> None:
+    """D-05's comparison line, fixed before the step was measured: D-01's premise holds
+    within 25 % either side of 0.14*m. Pinned at points 1e-4*m inside and outside the
+    band, never at its float64 edges: (1 - 0.25) * 0.14 is 0.10500000000000001, so 0.105
+    itself falls a hair outside (checked at planning, 2026-10-07). The band scales with
+    the module, and the sign of the gap does not matter."""
+    for module, inside, outside in (
+        (1.0, (0.11, 0.17), (0.1049, 0.1751)),
+        (2.0, (0.22, 0.34), (0.2098, 0.3502)),
+    ):
+        assert all(premise_holds(g, module) for g in inside)
+        assert all(premise_holds(-g, module) for g in inside)
+        assert not any(premise_holds(g, module) for g in outside)
+        assert not any(premise_holds(-g, module) for g in outside)

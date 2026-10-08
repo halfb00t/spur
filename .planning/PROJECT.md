@@ -92,6 +92,13 @@ known-good profile, with the fixture rule (L26) honoured under its own `Lxx`, ne
   evidence. Always-on for undercut gears (the fixture regenerates under its own `Lxx`;
   low-tooth-count links change part — L05 tension) vs a new default-off field (L05 and the
   fixture hold byte-for-byte): decided at discuss-phase with both priced, the human's call.
+  **Done (the maths) — Phase 18 (2026-10-08):** the cutter defined once from `profile()`'s own
+  expressions, the envelope generated in contact-normal angle, `root_mode` the single predicate
+  with six named refusals, proven against a swept-cutter oracle sharing no code with `calc`
+  (T2, worst 2.985e-12 mm over 10,326 curves), freecad.gears at ρ = 0 (T3, 1.8e-15 mm) and
+  KISSsoft's form diameter (T4, 3.6e-5 in), a 31,446-case box sweep at commit (1.7 s), nothing a
+  user can see changed and the fixture byte-identical; the part, the field and the root-mode
+  `Lxx` are Phase 19's (the human read the measured step and held D-01/D-02: `d05-hold`).
 
 **Rules this milestone lives by:**
 - The fixture changes only via `make fixture.regen`, in its own commit, under its own `Lxx`
@@ -649,4 +656,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-06 after Phase 17 (Debt First — Commit Gate and Pool Race).*
+*Last updated: 2026-10-08 after Phase 18 (Trochoid Maths, Proved).*

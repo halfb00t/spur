@@ -5,11 +5,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from itertools import pairwise
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from .params import GearParams
 
 MIN_WALL = 0.4          # mm, thinnest wall allowed anywhere in the body
@@ -60,6 +63,25 @@ HEX_CELL_CAP = 120  # cells, the most whole honeycomb cells one part may have. M
 # a per-cell cost model (D-12): the same on every machine, conservative on smaller
 # gears -- a quieter host would only raise what this measured, never lower it.
 
+ROOT_CURVE_POINTS = 16  # points, how many the hob's trochoid root is sampled at. STACK's
+# N = 16 uniform in roll measured 3.6-4.0e-5 mm against cq.Edge.makeSpline at module 1,
+# z 8/10/14, tip radius 0.38 mm (re-run in the research with the pinned kernel pair:
+# 3.58e-5, 3.89e-5, 3.98e-5 mm); the shipped flank is 16 points too. Phase 19 sets the
+# kernel bar, not this phase.
+TROCHOID_JOIN_EPS = 1e-4  # relative to rb, never millimetres: how close to zero the
+# roll of the cutter's flank foot (Cutter.xi) may be before the junction with the
+# involute is taken as tangent without a bracket. Measured in the repo 2026-10-08 (Apple
+# M2 Max, Python 3.12.13, 1-minute load 1.7) by `bench/trochoid.py epsilon`: 400 seeded
+# random allowed gears (module 0.2-10, pressure angle 14.5-30, backlash 0-0.5, tip radius
+# 0-0.5 m), the shift tuned so xi = -t*rb for t from 1e-2 to 1e-12 at 4 steps per decade,
+# the bracket lost (`_junction(c, 0.0)` is None) at largest t = 5.6e-6 and median 3.2e-6,
+# so 1e-4 is the smallest power of ten above 10x the largest loss (5.6e-5). STACK's two
+# points are its bracket: found at xi -2.9e-3 mm and lost at -2.9e-5 mm on the 10-tooth,
+# 20 degree gear (rb 4.698 mm); here that gear's own edge is -2.64e-5 mm, the same place
+# within one scan step, and 1e-4*rb is 4.7e-4 mm there, 16x STACK's loss point. Inside the
+# band the flank join is the form point, off by at most (eps*rb)^2/(2*rb) = 5e-9*rb.
+# bench/RESULTS.md "Join epsilon (18-03)" carries the run.
+
 
 def inv(a: float) -> float:
     """Involute function."""
@@ -88,14 +110,28 @@ class Profile:
         return self.psi_p + inv(self.alpha) - inv(phi)
 
 
+def _dedendum(m: float, x: float) -> float:
+    """Depth of the root circle below the pitch circle, mm: the one definition both the
+    root circle (`profile`) and the hob's tip (`cutter`) read, so the two can never
+    disagree about `rf` (D-06, PITFALLS 22)."""
+    return m * (1.25 - x)
+
+
+def _pitch_thickness(m: float, alpha: float, x: float, bl: float) -> float:
+    """Tooth thickness on the pitch circle, mm, backlash taken off: the one definition
+    `profile` (half tooth-thickness angle) and `cutter` (cutter tooth width, backlash
+    thickening it) both read (D-06, PITFALLS 3 and 22)."""
+    return m * (math.pi / 2 + 2 * x * math.tan(alpha)) - bl
+
+
 def profile(p: GearParams, backlash: float | None = None) -> Profile:
     a = math.radians(p.pressure_angle)
     m, z, x = p.module, p.teeth, p.profile_shift
     bl = p.backlash if backlash is None else backlash
     r = m * z / 2
-    s = m * (math.pi / 2 + 2 * x * math.tan(a)) - bl
+    s = _pitch_thickness(m, a, x, bl)
     return Profile(z=z, m=m, alpha=a, r=r, rb=r * math.cos(a), ra=r + m * (1 + x),
-                   rf=r - m * (1.25 - x), psi_p=s / (2 * r))
+                   rf=r - _dedendum(m, x), psi_p=s / (2 * r))
 
 
 def bore_radius(p: GearParams) -> float:
@@ -952,9 +988,14 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     the API and the CLI separately: an impossible pair is a warning on an otherwise
     fine gear, not an error and not a number (L08).
 
-    Measured per call (`.venv/bin/python -m timeit`, best of 5, default GearParams,
-    arm64, Python 3.12.13): 9.19 usec before this model, 11.5 usec after --
-    validating the frozen model on construction costs about 2.3 usec, negligible next
+    Per-call cost, re-measured 2026-10-08 (`.venv/bin/python -m timeit -r 5 -s "from
+    spur.calc import derive; from spur.params import GearParams; p=GearParams()"
+    "derive(p)"`, best of 5, default GearParams, Apple M2 Max, Python 3.12.13): 14.7
+    usec at a 1-minute load of 14.4 (bench/RESULTS.md, "Trochoid maths (Phase 18)",
+    "Per-call cost"). The figure moves with the host: the same call read 14.5 usec at
+    load 14.3 on 2026-10-07 and 20.4 usec at about 6.8, so quote it with its load and
+    date. History, when first measured: 9.19 usec before this model, 11.5 usec after --
+    validating the frozen model on construction cost about 2.3 usec, negligible next
     to an HTTP round trip and well inside the module docstring's "fast enough to run
     on every keystroke" claim (measured, not assumed -- CLAUDE.md).
     """
@@ -1189,3 +1230,359 @@ def centre_distance(p: GearParams, mate_teeth: int,
         return None
     aw = _involute_angle(target)
     return p.module * (z1 + z2) / 2 * math.cos(a) / math.cos(aw)
+
+
+# --- The hob's trochoid root (Phase 18) -------------------------------------------------
+# Below the base circle a hobbed gear's root is not the radial lead-in plus fillet the
+# model builds today (L09, L10) but the envelope of the hob's rounded tip as the rack
+# rolls on the pitch circle. Everything here is pure maths over the rack; nothing in
+# production reads it until Phase 19, so no number a user sees moves.
+
+RootShape = Literal["radial", "trochoid"]
+RootReason = Literal["not requested", "nothing radial to replace", "tip land gone",
+                     "bracket degenerate", "curve invalid", "tooth severed"]
+_Join = Literal["tangent", "crossing"]
+
+
+@dataclass(frozen=True)
+class Cutter:
+    """The basic rack that cuts one gear, defined once (D-06): every function below reads
+    this record, never `1.25` or `rf = r - d` again."""
+    pr: Profile             # the gear it cuts
+    x: float                # profile shift, modules: the rack's displacement
+    d: float                # tip depth below the pitch circle, mm
+    e: float                # cutter tooth width on the rolling line, mm; backlash thickens it
+    a0: float               # tip-land half-width with a sharp corner, mm; negative: no land
+    rho_max: float          # largest tip radius that keeps a land, mm, unrounded
+    rho_requested: float    # tip radius asked for, mm
+    rho: float              # tip radius used, mm: the request, or the cap floored to 3 dp
+    w_c: float              # corner-centre height above the rolling line, mm; negative
+    # for an ordinary cutter, zero when the tip radius equals the tip depth
+    a: float                # tip-land half-width with the tip radius used, mm
+    xi: float               # roll of the flank foot along the line of action, mm;
+    # the gear is undercut where this is negative
+
+
+def cutter(p: GearParams, rho: float) -> Cutter:
+    """The basic rack for `p` with tip radius `rho` mm (D-06, D-07).
+
+    The dedendum comes from `_dedendum`, the same expression that sets `rf`; the tip
+    radius is an explicit millimetre argument (nothing here reads `p.root_fillet` as
+    rho); backlash thickens the cutter tooth (a cutter without it leaves a 0.046 mm
+    step against `Profile.half_angle` on the default gear, PITFALLS 3); profile shift
+    displaces the rack, which is why the cap below does not depend on it.
+
+    A tip radius above the largest that keeps a flat tip land is cut to that largest
+    value floored to 3 dp. Floored, never rounded to nearest: at module 0.5, 15 degrees,
+    12 teeth, backlash 0 the cap is 0.29353 mm, round() gives 0.294 and the land comes
+    out 3.6e-4 mm negative -- a legal gear refused as "no tip land" (18-RESEARCH F3).
+    Flooring also makes the used and the printed radius one number (L08).
+
+    A tip radius that is not a finite, non-negative millimetre value raises ValueError.
+    `rho` is not a `GearParams` field in this phase (D-07), so until Phase 19's field
+    validates it once at the boundary this is the one place that guards the internal
+    contract. It is a ValueError and not a new `RootReason`: no user can reach the state,
+    so there is no sentence to write for it.
+    """
+    # Before any arithmetic: a NaN fails `rho <= rho_max` below, so it would be trimmed to
+    # the cap, and `rho < rho_requested` in root_warnings reads False against NaN, so the
+    # part would change with no sentence (measured on 12 teeth, module 1, 20 degrees:
+    # mode "trochoid", reason None, no warning). L05, L08, 18-REVIEW WR-02.
+    if not math.isfinite(rho) or rho < 0:
+        raise ValueError(f"tip radius must be a finite, non-negative millimetre value, got {rho!r}")
+    pr = profile(p)
+    alpha, m, x = pr.alpha, p.module, p.profile_shift
+    d = _dedendum(m, x)
+    e = math.pi * m - _pitch_thickness(m, alpha, x, p.backlash)
+    a0 = e / 2 - d * math.tan(alpha)
+    rho_max = a0 / (1 / math.cos(alpha) - math.tan(alpha))
+    used = rho if rho <= rho_max else max(0.0, math.floor(rho_max * 1000) / 1000)
+    # The land half-width with the used radius is the same e/2 + w_c*tan(alpha) -
+    # rho/cos(alpha), written from a0 so that a request exactly at the cap reads zero
+    # and not -1e-17: the cap guarantees used <= rho_max, so the max only absorbs float
+    # residue.
+    land = max(0.0, a0 + used * (math.tan(alpha) - 1 / math.cos(alpha))) if a0 >= 0 else a0
+    xi = pr.r * math.sin(alpha) - (d - used * (1 - math.sin(alpha))) / math.sin(alpha)
+    return Cutter(pr=pr, x=x, d=d, e=e, a0=a0, rho_max=rho_max, rho_requested=rho,
+                  rho=used, w_c=used - d, a=land, xi=xi)
+
+
+def undercut_teeth(c: Cutter) -> float:
+    """The fewest teeth this cutter generates without undercut, read from the cutter
+    that actually cuts (a trimmed tip radius gives the onset of the trimmed cutter, not
+    of the one asked for: the number printed must be the number that applies, L08).
+
+    A gear is undercut where `c.xi < 0`, the same sign `_junction` tests first, and
+    solving that for the tooth count gives this. It is the cutter's own onset, and a
+    different number from the one `derive()` prints today, `2(1 - x)/sin^2(alpha)`: that
+    one is the sharp-cornered rack with the full tip depth at 20 degrees only. At module
+    1, tip radius 0.38 mm and no shift this reads 30.7909 / 17.0967 / 11.5404 teeth at
+    14.5 / 20 / 25 degrees (STACK's table, reproduced 2026-10-08) where the shipped
+    formula reads 31.9029 / 17.0973 / 11.1978. The shipped sentence is untouched until
+    Phase 19 restates it (REQ-undercut-warning-restated).
+    """
+    sin_a = math.sin(c.pr.alpha)
+    return 2 * (c.d - c.rho * (1 - sin_a)) / (c.pr.m * sin_a ** 2)
+
+
+def undercut_shift(c: Cutter) -> float:
+    """The smallest profile shift that avoids undercut at this cutter's tooth count: the
+    shift at which `c.xi` is zero, read from the cutter that cuts like `undercut_teeth`.
+    Reads 0.41508 at 10 teeth, module 1, 20 degrees, tip radius 0.38 mm (STACK,
+    reproduced 2026-10-08), so a shift of 0.40 is undercut and 0.45 is not.
+    """
+    return c.x - c.xi * math.sin(c.pr.alpha) / c.pr.m
+
+
+@dataclass(frozen=True)
+class RootCurve:
+    """The hob's root below the junction with the involute, root circle first."""
+    points: tuple[tuple[float, float], ...]  # (radius mm, half-angle from the tooth
+    # centre rad), strictly increasing radius, ROOT_CURVE_POINTS long
+    join: _Join  # "tangent": it meets the involute with its direction; "crossing":
+    # the gear is undercut and the curve is cut off where it meets the involute
+    waist: tuple[float, float]  # (radius mm, half-angle rad) where the half-angle is
+    # smallest, refined between the samples: the root's narrowest point, which is half
+    # the tooth thickness there, so it is always above zero on a curve that survives
+
+
+def _trochoid_point(c: Cutter, beta: float) -> tuple[float, float]:
+    """The envelope of the cutter's tip arc at contact-normal angle `beta`: the point of
+    the arc whose normal passes through the rolling pole, as (radius, half-angle from
+    the tooth centre). beta 0 is the root circle, pi/2 - alpha the flank's foot.
+
+    Parametrised by the angle itself, not by the centre path: the textbook
+    C + rho*(C - I)/|C - I| gouges 0.70 mm where rho exceeds the tip depth and divides
+    by zero where they are equal, and both cases lie inside the allowed box (393 of
+    28,957 gears at rho 0.5 mm, 18-RESEARCH F4). This form is one closed expression for
+    every rho. It reads `c.pr.rf` itself, never r - d, so the first point is the root
+    circle bit for bit.
+    """
+    phi = (c.a + c.w_c * math.tan(beta)) / c.pr.r
+    along_normal = c.pr.rf + c.rho * (1 - math.cos(beta))
+    along_line = c.rho * math.sin(beta) - c.w_c * math.tan(beta)
+    return (math.hypot(along_normal, along_line),
+            math.pi / c.pr.z - (phi + math.atan2(along_line, along_normal)))
+
+
+def _waist(c: Cutter, betas: list[float],
+           points: tuple[tuple[float, float], ...]) -> tuple[float, float]:
+    """The point of the curve where the half-angle from the tooth centre is smallest:
+    where the two neighbouring spaces' roots come closest to cutting the tooth through
+    (D-17), as (radius mm, half-angle rad).
+
+    The smallest sample is refined by 60 golden-section steps of the half-angle between
+    that sample's neighbours (clamped to the curve's ends), because 16 samples can miss
+    the dip: at 6 teeth, 14.5 degrees, shift -0.5, tip radius 0 the smallest sample reads
+    -0.0055 rad and the refined waist -0.0066 (18-RESEARCH). A fixed step count, no
+    data-dependent loop (T-18-02); whichever of the sample and the refined point is
+    smaller is returned, so refining can only lower the answer.
+    """
+    i = min(range(len(points)), key=lambda k: points[k][1])
+    lo, hi = betas[max(i - 1, 0)], betas[min(i + 1, len(betas) - 1)]
+    golden = (math.sqrt(5) - 1) / 2
+
+    def half(beta: float) -> float:
+        return _trochoid_point(c, beta)[1]
+
+    c1, c2 = hi - golden * (hi - lo), lo + golden * (hi - lo)
+    f1, f2 = half(c1), half(c2)
+    for _ in range(60):
+        if f1 < f2:
+            hi, c2, f2 = c2, c1, f1
+            c1 = hi - golden * (hi - lo)
+            f1 = half(c1)
+        else:
+            lo, c1, f1 = c1, c2, f2
+            c2 = lo + golden * (hi - lo)
+            f2 = half(c2)
+    refined = _trochoid_point(c, 0.5 * (lo + hi))
+    return min(points[i], refined, key=lambda point: point[1])
+
+
+def _bisect(f: Callable[[float], float], lo: float, hi: float) -> float:
+    """The root of `f` on [lo, hi], which must change sign there; the sign is taken
+    from f(lo).
+
+    Bisection, as in `_involute_angle`: `acos(min(1, rb/R))` has a square-root
+    singularity at R = rb, so Newton can be thrown out of the bracket from any starting
+    guess, while 60 halvings reach full double precision and cannot leave it (L08).
+    """
+    rising = f(lo) > 0
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        if (f(mid) > 0) == rising:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def _junction(c: Cutter, eps: float) -> tuple[float, _Join] | None:
+    """Where the trochoid hands over to the involute: (the last contact-normal angle,
+    how it joins), or None when a bracket the geometry promises cannot be found.
+
+    A gear that is not undercut (xi >= -eps*rb) joins tangent at the flank's foot:
+    no root-find at all, and the end point equals `Profile.half_angle` there to float.
+    An undercut gear's curve crosses the involute earlier: one bisection finds where
+    the curve reaches the base circle, a second where it meets the involute (positive
+    gap while the trochoid is inside it). `half_angle` is only ever called at R >= rb.
+    """
+    beta_end = math.pi / 2 - c.pr.alpha
+    if c.xi >= -eps * c.pr.rb:
+        return beta_end, "tangent"
+
+    def over_base(beta: float) -> float:
+        return _trochoid_point(c, beta)[0] - c.pr.rb
+
+    def inside_involute(beta: float) -> float:
+        radius, half = _trochoid_point(c, beta)
+        return c.pr.half_angle(radius) - half
+
+    if not over_base(0.0) < 0 < over_base(beta_end):
+        return None
+    beta_base = _bisect(over_base, 0.0, beta_end)
+    if not inside_involute(beta_base) > 0 > inside_involute(beta_end):
+        return None
+    return _bisect(inside_involute, beta_base, beta_end), "crossing"
+
+
+def _root_curve(c: Cutter) -> RootCurve | RootReason:
+    """The curve, or the named reason there is none; cheap checks first."""
+    if c.a0 < 0:
+        # Decided on the sharp-corner land, which moves with backlash and module
+        # (32.14 degrees at backlash 0, 33.07 at the default gear, 18-RESEARCH F2),
+        # never on a pressure-angle constant.
+        return "tip land gone"
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    if junction is None:
+        return "bracket degenerate"
+    beta_stop, join = junction
+    # Uniform in tan(beta): the roll angle phi is linear in it, which is STACK's
+    # "uniform in phi" and stays defined where w_c is zero. The last angle is beta_stop
+    # itself, not atan(tan(beta_stop)), so the end point comes from one call.
+    s_stop = math.tan(beta_stop)
+    n = ROOT_CURVE_POINTS
+    betas = [math.atan(s_stop * i / (n - 1)) for i in range(n - 1)] + [beta_stop]
+    points = tuple(_trochoid_point(c, beta) for beta in betas)
+    pr = c.pr
+    # One guard for four structural failures: a radius that stops rising (a loop), one
+    # above the tip circle, one past the space centreline, and (undercut only) a point
+    # that is not inside the involute before the junction (the bisection found a later
+    # root, or the curve runs past it). L08: a refused case is a reason, never a curve
+    # that was clipped or healed.
+    invalid = (
+        not all(lo < hi for (lo, _), (hi, _) in pairwise(points))
+        or max(radius for radius, _ in points) > pr.ra
+        or max(half for _, half in points) > math.pi / pr.z
+        or (join == "crossing" and any(
+            radius >= pr.rb and half >= pr.half_angle(radius)
+            for radius, half in points[:-1])))
+    if invalid:
+        return "curve invalid"
+    waist = _waist(c, betas, points)
+    # A half-angle at or below zero means the neighbouring spaces' roots meet on the
+    # tooth's centreline: the hob cuts the tooth through. The analytic root is the
+    # fallback and no waist floor is chosen here; a thin positive waist survives and
+    # Phase 19 decides how thin is too thin (D-17).
+    return "tooth severed" if waist[1] <= 0 else RootCurve(points, join, waist)
+
+
+def trochoid_root(c: Cutter) -> RootCurve | None:
+    """The hob's root for this cutter, or None when no honest curve exists for it.
+
+    None is a refusal, not a clipped or partly sampled curve (D-10, L08): `root_mode`
+    is the one place that says why.
+    """
+    curve = _root_curve(c)
+    return curve if isinstance(curve, RootCurve) else None
+
+
+@dataclass(frozen=True)
+class RootMode:
+    mode: RootShape                 # what the root is built as
+    reason: RootReason | None       # why it stayed radial; None exactly when trochoid
+    cutter: Cutter | None           # the cutter asked about; None only when nothing
+    # was requested
+
+
+def root_mode(p: GearParams, pr: Profile,
+              *, requested: RootShape = "radial", rho: float = 0.0) -> RootMode:
+    """The single answer to "does the trochoid root apply to this gear" (D-10).
+
+    `requested` is the user's choice (D-04, amended by D-16: keyword-only, with the
+    tip radius `rho` beside it). It owns every refusal and decides them in one fixed
+    order, cheapest first:
+
+    1. `not requested`: nothing asked, so not even the cutter is built.
+    2. `nothing radial to replace`: `pr.rb <= pr.rf` (D-02). The involute already
+       reaches the root circle, so there is no radial lead-in to replace; `<=` because
+       where they are equal `Profile.r_start` is the base circle either way. This is a
+       closed-form test and goes before the generator because undercut implies
+       `rb > rf` (18-RESEARCH F9: proved, and checked over 556,920 combinations), so
+       the edge of the trochoid region is never hidden behind a generator failure.
+    3. `tip land gone`: the cutter has no flat tip at this pressure angle.
+    4. `bracket degenerate`: the junction with the involute cannot be solved.
+    5. `curve invalid`: a loop, a point past the tip circle, past the space
+       centreline or past the junction.
+    6. `tooth severed`: the curve's narrowest half-angle is at or below zero (D-17).
+
+    Every sentence for these comes from `root_warnings`. Nothing in production calls
+    this until Phase 19, so the present callers get radial with "not requested" and the
+    pre-v0.2 fixture cannot move. The default `rho = 0.0` is the sharp cutter, legal,
+    and ignored whenever nothing is requested; D-07 forbids reading `p.root_fillet` as
+    the tip radius in this phase.
+    """
+    if requested != "trochoid":
+        return RootMode("radial", "not requested", None)
+    c = cutter(p, rho)
+    if pr.rb <= pr.rf:
+        return RootMode("radial", "nothing radial to replace", c)
+    curve = _root_curve(c)
+    if isinstance(curve, RootCurve):
+        return RootMode("trochoid", None, c)
+    return RootMode("radial", curve, c)
+
+
+# One sentence per refusal reason, plus the cap; all filled from the same keyword values
+# so the lookup in root_warnings has no branches. These are the sentences Phase 19's
+# derive() will carry; tests capture them from root_warnings, never type them (L33).
+_ROOT_SENTENCES: dict[str, str] = {
+    "nothing radial to replace":
+        "No radial root to replace on this gear (base circle {rb:.3f} mm, root circle "
+        "{rf:.3f} mm): the trochoid root request is ignored.",
+    "tip land gone":
+        "The cutter has no tip land at a {alpha:g} degree pressure angle with this module "
+        "and backlash: no trochoid root is computed and the analytic root is used.",
+    "bracket degenerate":
+        "The trochoid root's junction with the involute could not be solved for this "
+        "gear: the analytic root is used.",
+    "curve invalid":
+        "The trochoid root for this gear loops, leaves the tooth space or runs past its "
+        "junction with the involute: the analytic root is used.",
+    "tooth severed":
+        "The trochoid roots of the two neighbouring tooth spaces cut this tooth through: "
+        "the analytic root is used.",
+    "rho capped":
+        "Cutter tip radius reduced to {rho:.3f} mm, the largest that leaves the cutter a "
+        "tip land at this pressure angle and backlash.",
+}
+
+
+def root_warnings(rm: RootMode) -> tuple[str, ...]:
+    """The warning sentences for a root-mode answer, from the one place every trochoid
+    sentence comes from (D-10, L33): none when nothing was requested, the reason's
+    sentence for a refusal, the cap sentence when a requested tip radius was trimmed.
+
+    The cap sentence prints the radius the curve was generated with, which is already
+    floored to 3 dp, so the printed and the used number are one float (L08).
+    """
+    c = rm.cutter
+    if c is None:
+        return ()
+    values = {"rb": c.pr.rb, "rf": c.pr.rf, "alpha": math.degrees(c.pr.alpha), "rho": c.rho}
+    if rm.reason is not None:
+        return (_ROOT_SENTENCES[rm.reason].format(**values),)
+    if c.rho < c.rho_requested:
+        return (_ROOT_SENTENCES["rho capped"].format(**values),)
+    return ()

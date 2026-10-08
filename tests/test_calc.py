@@ -1,6 +1,7 @@
 import itertools
 import math
 import re
+from collections import Counter
 
 import pytest
 from composition import (
@@ -21,6 +22,7 @@ from composition import (
 )
 from pydantic import ValidationError
 
+from bench.trochoid import check_case, sweep_cases
 from spur.calc import (
     HEX_CELL_CAP,
     MIN_WALL,
@@ -1552,3 +1554,42 @@ def test_every_refusal_reads_the_same_with_each_other_family_switched_on(
             assert _masked(composed_sentence) == _masked(sentence)
         else:
             assert composed_sentence == sentence
+
+
+def test_the_trochoid_sweep_over_the_allowed_box() -> None:
+    """REQ-trochoid-root-generated, SC2, D-12: the generator over every gear the project
+    allows. The grid is written out in `bench/trochoid.py` (STACK's 7,980-case product with
+    the field's profile-shift limit -0.6 in place of -1, plus the box corners: both module
+    limits, the tooth counts around every edge, pressure angles one field step either side
+    of the tip-land limit, backlash up to 1 mm, each with its tip radii and the cap request)
+    and checked case by case against closed forms typed there: no `bracket degenerate`, no
+    `curve invalid`, 16 finite points from the root circle rising and never above the tip
+    circle, a crossing exactly where the rack's own xi is under the join band, every
+    crossing with rb > rf, every refusal the one the rack predicts. Nothing is clipped or
+    healed: a case that fails is a failure here.
+
+    The tally is the bench run's, captured 2026-10-08 (`.venv/bin/python -m bench.trochoid
+    sweep`): 31,446 cases, 12,892 of them not gears (GearParams refuses the fields), 7,175
+    with nothing radial to replace, 980 with no tip land, 73 severed teeth, and 10,326
+    curves. A change that moves one count is a change in what the project allows or what
+    the generator answers, and should be read, not re-captured."""
+    tally: Counter[str] = Counter()
+    problems: list[tuple[str, dict[str, object], float, str]] = []
+    for grid, kwargs, rho in sweep_cases():
+        outcome, found = check_case(kwargs, rho)
+        tally[outcome] += 1
+        problems += [(grid, kwargs, rho, f) for f in found]
+    assert problems == []
+    assert tally["bracket degenerate"] == 0
+    assert tally["curve invalid"] == 0
+    assert sum(tally.values()) == 31446
+    assert dict(tally) == {
+        "not a gear": 12892,
+        "nothing radial to replace": 7175,
+        "tip land gone": 980,
+        "tooth severed": 73,
+        "trochoid/crossing": 4466,
+        "trochoid/crossing/capped": 1557,
+        "trochoid/tangent": 2657,
+        "trochoid/tangent/capped": 1646,
+    }
