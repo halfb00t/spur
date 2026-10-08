@@ -354,12 +354,12 @@ build time on the heaviest allowed low-tooth row are spiked first, before any sc
 **Research flag**: Needs a spike, not a research phase — the chamfer junction (L29's boundary
 was bisected to ~2 µm on the old geometry) and the build time on the heaviest low-tooth row;
 STACK's assumption that the spline leaves `make bench.build` timings unaffected is unmeasured.
-**Plans**: 11 plans
+**Plans**: 1/11 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
-- [ ] 19-01-PLAN.md — Spike A, before any schema change: the gate's before-figure at the phase base, the bench's own trochoid outline, the tip chamfer's kernel limit re-bisected across the spline-to-spline junction (20 steps, 14 rows), the heaviest corner rows timed radial and trochoid against SPUR_BUILD_TIMEOUT
+- [x] 19-01-PLAN.md — Spike A, before any schema change: the gate's before-figure at the phase base, the bench's own trochoid outline, the tip chamfer's kernel limit re-bisected across the spline-to-spline junction (20 steps, 14 rows), the heaviest corner rows timed radial and trochoid against SPUR_BUILD_TIMEOUT
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 19-02-PLAN.md — Spike B: the two spline-deviation methods reconciled, the kernel tier on seven rows, the guard numbers and spline error over the whole product, the root-arc dead band, D-07's waist walk; the human sets the bar, the floor and the waist field's name and confirms D-02's door (checkpoint)
@@ -450,5 +450,5 @@ before the human at Phase 18's discuss-phase.
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
 | 18. Trochoid Maths, Proved | v0.4 | 6/6 | Complete    | 2026-10-08 |
-| 19. The Trochoid in the Part | v0.4 | 0/TBD | Not started | - |
+| 19. The Trochoid in the Part | v0.4 | 1/11 | In Progress | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |

@@ -4,18 +4,18 @@ milestone: v0.4
 milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
-status: "Phase 18 shipped — PR #28"
-stopped_at: Phase 19 context gathered
-last_updated: "2026-10-08T12:54:51.630Z"
+status: executing
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-10-08T16:37:05.000Z"
 last_activity: 2026-10-08
-last_activity_desc: Phase 19 planning complete
-state_head: fbfa415f6c431808f802069b460822dc792eb8e0
+last_activity_desc: Phase 19 execution started
+state_head: abe318e717075a6a1046805135e398701872687b
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 22
-  completed_plans: 11
-  percent: 50
+  completed_plans: 12
+  percent: 55
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 19 — The Trochoid in the Part — ready to discuss (Phase 18 landed
+**Current focus:** Phase 19 — The Trochoid in the Part
 2026-10-08 on `gsd/phase-18-trochoid-maths-proved`, 44 commits from `15174f9` to the
 transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like #27)
 
 ## Current Position
 
-Phase: 19 (The Trochoid in the Part) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 18 shipped — PR #28
-Last activity: 2026-10-08 — Phase 19 planning complete
+Phase: 19 (The Trochoid in the Part) — EXECUTING
+Plan: 2 of 11
+Status: Ready to execute
+Last activity: 2026-10-08 — Phase 19 execution started
 
-Progress: [████████████████████] 11/11 plans ([█████░░░░░] 50%)
+Progress: [████████████████████] 11/11 plans ([██████░░░░] 55%)
 
 ## Performance Metrics
 
@@ -206,6 +206,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 18 P04 | 28 min | 3 tasks | 5 files |
 | Phase 18 P05 | 19 min | 3 tasks | 7 files |
 | Phase 18 P06 | 9 min | 2 tasks | 4 files |
+| Phase 19 P01 | 27min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -355,6 +356,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 18]: 18-05 debt (human, 2026-10-08): debt-redefer -- resource-tracker flake stays must/active, trigger is the next make verify failure or Phase 19 planning
 - [Phase 18]: 18-05 D-14: no derive() budget set; five per-call costs recorded with load and date (derive 14.7 usec at load 14.4)
 - [Phase 18]: 18-06: the fourth curve-invalid arm test moves the last pre-junction sample to rb + 0.01 mm (no early sample of the tracer gear is past rb); cutter() raises ValueError, not a RootReason, for a non-finite or negative tip radius until Phase 19's field validates it
+- [Phase 19]: 19-01: TIP_CHAMFER_MARGIN (0.001 mm) stands under the trochoid; 14 rows bisected 20 steps, no optimistic row, ra - R_join binds only on the two 6-tooth rows
+- [Phase 19]: 19-01: heaviest trochoid request at the 116-tooth corner is 16.61 s of 30 s (1.45x its radial row); no limit moves
 
 ### Pending Todos
 
@@ -550,9 +553,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-08T11:17:26.884Z
-Stopped at: Phase 19 context gathered
-Resume file: .planning/phases/19-the-trochoid-in-the-part/19-CONTEXT.md
+Last session: 2026-10-08T16:37:04.968Z
+Stopped at: Completed 19-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
