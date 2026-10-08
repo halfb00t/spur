@@ -354,7 +354,7 @@ build time on the heaviest allowed low-tooth row are spiked first, before any sc
 **Research flag**: Needs a spike, not a research phase — the chamfer junction (L29's boundary
 was bisected to ~2 µm on the old geometry) and the build time on the heaviest low-tooth row;
 STACK's assumption that the spline leaves `make bench.build` timings unaffected is unmeasured.
-**Plans**: 10 plans
+**Plans**: 11 plans
 **UI hint**: yes
 
 Plans:
@@ -380,7 +380,8 @@ Plans:
 - [ ] 19-09-PLAN.md — The price on the real build: one outline definition, the chamfer law re-run, the corner rows through `make bench.build`, `make verify` against 66 s and `make verify.fast` against 30 s on the baseline's host, `derive()`'s per-call cost
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 19-10-PLAN.md — The record: L38 (supersedes L10, amends L09 and L33) with the deferred flip and D-09's trigger, README geometry notes, the strategy docs, the trochoid idea and the slug idea, Phase 20 recorded `Skipped (O4, flip deferred)`
+- [ ] 19-10-PLAN.md — The record: L38 (supersedes L10, amends L09 and L33) with the deferred flip, D-09's trigger and every number the phase measured, and the gear-maths and solid-model strategy docs pointing at it
+- [ ] 19-11-PLAN.md — The record, continued: README geometry notes, the trochoid idea and the slug idea, Phase 20 recorded `Skipped (O4, flip deferred)` under L38
 
 ### Phase 20: The Flip (conditional)
 
