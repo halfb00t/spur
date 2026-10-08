@@ -73,7 +73,7 @@ JUNCTION_BAR_MM = 1e-12
 # angle is 1.39 * step and 1.16 * step at steps of 1e-4 down to 1e-6, so the tangents
 # agree and only the chord differs. The bar is the smallest power of ten above 10x the
 # largest reading (1.4e-6): headroom 72. The crossing row (17 teeth, 20 degrees, tip
-# radius 0.38 mm, z_min 17.10) reads 4.1e-3 rad, 413 times the bar.
+# radius 0.38 mm, z_min 17.10) reads 3.1e-3 rad at its crossing, 308 times the bar.
 DIRECTION_BAR_RAD = 1e-5
 STEP = 1e-7  # rad, the contact-normal step the secants are taken over
 
@@ -292,8 +292,12 @@ def _involute_half_angle(p: GearParams, radius: float) -> float:
 def _direction_gap(p: GearParams, c: Cutter) -> float:
     """The angle, rad, between the trochoid's and the involute's direction where the
     trochoid ends, both as chords over the last STEP of contact-normal angle (the
-    involute's over the same two radii)."""
-    beta_end = math.pi / 2 - c.pr.alpha
+    involute's over the same two radii). The end is the junction `trochoid_root` stops
+    at: the flank's foot on a tangent join, the solved crossing on an undercut gear
+    (cross-review XR-02: the foot is 4.1e-3 rad off there, the crossing 3.1e-3)."""
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    assert junction is not None
+    beta_end = junction[0]
 
     def plane(radius: float, half: float) -> tuple[float, float]:
         theta = math.pi / c.pr.z - half
@@ -346,7 +350,8 @@ def test_a_cutter_without_backlash_misses_the_involute_and_a_crossing_is_not_tan
     the gear's involute: PITFALLS 3's step on the default gear, 3e9 times the bar.
     (2) Tangency is asserted only for z >= z_min: the 17-tooth, 20 degree, tip radius
     0.38 mm gear is just undercut (z_min 17.10), its curve is cut off where it crosses
-    the involute, and the directions differ by 4.1e-3 rad, 413 times the direction bar."""
+    the involute, and the directions differ by 3.1e-3 rad at that crossing, 308 times the
+    direction bar."""
     gear = _gear(teeth=19, module=1.75, pressure_angle=25, profile_shift=0, backlash=0.10)
     wrong = cutter(_gear(teeth=19, module=1.75, pressure_angle=25, profile_shift=0,
                          backlash=0.0), 0.5)

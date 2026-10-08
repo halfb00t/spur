@@ -3133,8 +3133,10 @@ Tripwires (both seen red):
   `JUNCTION_BAR_RAD`. Mutation check, 2026-10-08: with the cutter ignoring backlash the
   junction test fails on both backlash-0.10 rows and passes on both backlash-0 rows.
 - Tangency holds only for z >= z_min. The 17-tooth, 20 degree, rho 0.38 gear (z_min 17.10, so
-  just undercut, join `crossing`) reads a direction angle of 4.13e-3 rad: 413 times
-  `DIRECTION_BAR_RAD`, 3.0e4 times the tangent rows' reading.
+  just undercut, join `crossing`) reads a direction angle of 3.08e-3 rad at its crossing:
+  308 times `DIRECTION_BAR_RAD`, 2.2e4 times the tangent rows' reading. (Read 4.13e-3 rad
+  until 2026-10-08, when the secant was taken at the cutter's flank foot, which is not where
+  that curve ends -- cross-review XR-02.)
 
 No headroom here is under 10x. 18-04 Task 3 (the phase's L33 D-06 checkpoint) collects every
 18-01 bar again.
