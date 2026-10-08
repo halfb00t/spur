@@ -60,12 +60,14 @@ from bench.trochoid import (
     rack,
     sweep_cases,
 )
+from bench.trochoid_part import CHAMFER_ROWS, chamfer_verdict
 from spur.calc import (
     HEX_CELL_CAP,
     RootCurve,
     cutter,
     hex_cells,
     profile,
+    root_mode,
     tip_chamfer_effective,
     tip_chamfer_limit,
     trochoid_root,
@@ -844,3 +846,41 @@ def test_the_d05_premise_line_sits_25_percent_either_side_of_0_14_m() -> None:
         assert all(premise_holds(-g, module) for g in inside)
         assert not any(premise_holds(g, module) for g in outside)
         assert not any(premise_holds(-g, module) for g in outside)
+
+
+def test_the_chamfer_law_verdict_is_never_optimistic() -> None:
+    """19-01's verdict on one bisected row: a chamfer that last built more than
+    TIP_CHAMFER_MARGIN (0.001 mm) inside pred = ra - R_join is "optimistic" -- the only
+    failing reading, because the cap would let a user ask for a chamfer the kernel cannot
+    cut (L03, L08). One building past pred is "conservative", as L29's sixth row was. Pinned
+    at points clear of the margin's float edge."""
+    assert chamfer_verdict(1.0, 1.0) == "on the law"
+    assert chamfer_verdict(1.0005, 1.0) == "on the law"
+    assert chamfer_verdict(1.05, 1.0) == "conservative"
+    assert chamfer_verdict(0.998, 1.0) == "optimistic"
+
+
+def test_the_chamfer_rows_are_fourteen_trochoid_gears() -> None:
+    """The spike's rows are 18-RESEARCH-era scratch rows typed out, never generated from
+    calc: seven gears at tip radius 0 and 0.5 mm. Each is a trochoid gear, its junction
+    sits where the scratch run read it (pred = ra - R_join, four places), and only the two
+    6-tooth rows have the junction above the pitch circle -- the one place ra - R_join is
+    the binding cap (F6)."""
+    assert len(CHAMFER_ROWS) == 14
+    assert len({row.label for row in CHAMFER_ROWS}) == 7
+    assert {(row.label, row.rho) for row in CHAMFER_ROWS} == {
+        (row.label, rho) for row in CHAMFER_ROWS for rho in (0.0, 0.5)}
+
+    above_pitch = []
+    for row in CHAMFER_ROWS:
+        p = GearParams.model_validate(row.fields)
+        pr = profile(p)
+        rm = root_mode(p, pr, requested="trochoid", rho=row.rho)
+        assert rm.mode == "trochoid", row.label
+        assert rm.cutter is not None
+        curve = trochoid_root(rm.cutter)
+        assert curve is not None
+        assert pr.ra - curve.points[-1][0] == pytest.approx(row.scratch_pred, abs=1e-4)
+        if curve.points[-1][0] > pr.r:
+            above_pitch.append(row)
+    assert [(row.fields["teeth"], row.rho) for row in above_pitch] == [(6, 0.0), (6, 0.5)]

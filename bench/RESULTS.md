@@ -3655,3 +3655,125 @@ asking for nothing costs 0.362 usec. `derive(p)` read 14.7 usec against the 11.5
 carried: 18-RESEARCH read 14.5 usec at load 14.33 (2026-10-07) and PITFALLS 20.4 at about 6.8, so the
 old figure moves with the host and nothing measured here separates a regression from load; the
 docstring now carries the number, the load and the date together.
+
+## Trochoid in the part (Phase 19)
+
+What the hob's trochoid root costs once it is in the part, in the order the phase builds it: the
+gate's before-figure at the phase base (19-01, this subsection first), the tip chamfer's kernel
+limit across the spline-to-spline junction (19-01), and the heaviest low-tooth rows against
+`SPUR_BUILD_TIMEOUT` (19-01); the later plans (19-02, 19-09) append their own subsections below.
+Each subsection carries its own host state, because every number belongs to the load it was read
+at. The kernel subsections are measured on a trochoid outline `bench/trochoid_part.py` builds
+itself from the Phase 18 `RootCurve` and runs through the shipped pipeline steps (recesses, bore,
+keyway, body cutout), before any schema change: ROADMAP "Order inside the phase", PITFALLS 18, the
+`bench/tip_chamfer_spike.py` precedent (L29).
+
+### Gate baseline (19-01)
+
+The gate's before-figure for Phase 19, taken at the phase base before any edit: `make verify`
+four times in a row (three green readings were wanted, and one run failed), nothing else
+CPU-heavy started by this session. Each run was `/usr/bin/time -p make verify`, `uptime` read
+immediately before and after. The phase base is `df4749e`; HEAD for these runs was `29c742c`,
+which differs from it by planning documents only (no file under `src/`, `tests/` or `bench/`).
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  18 CPUs, arm64, 64.0 GiB RAM
+- Python 3.12.15 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (the pinned pair)
+- Read 2026-10-08, 22:10 to 22:14 local time (16:10 to 16:14 UTC), ten users logged in
+- The 1-minute load is dominated by the run itself (eight xdist workers plus the gate's
+  other steps): the "after" of one run is mostly the "before" of the next, so the loads below
+  are not independent readings. Before the first run, with nothing of this session running, the
+  1-minute load read 3.16.
+
+| Run | Result line | `real` (s) | 1-minute load before -> after |
+|---|---|---|---|
+| 1 | `1023 passed in 53.89s` | 54.60 | 3.16 -> 16.71 |
+| 2 | `1 failed, 1022 passed in 53.61s` (a flake, below) | 54.04 | 16.71 -> 22.09 |
+| 3 | `1023 passed in 52.10s` | 52.53 | 22.09 -> 24.94 |
+| 4 | `1023 passed in 51.09s` | 51.53 | 11.75 -> 24.80 (a 20 s pause preceded it) |
+
+Mean of the three green runs: `real` 52.89 s (54.60, 52.53, 51.53), pytest 52.36 s (53.89, 52.10,
+51.09).
+
+Run 2 failed `tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced`
+on worker `gw0`, with `multiprocessing.resource_tracker.ReentrantCallError` and the
+`UserWarning: ResourceTracker called reentrantly` it raises under `filterwarnings = ["error"]`,
+the known flake. The whole log is kept at
+`.planning/phases/19-the-trochoid-in-the-part/investigation/19-01-gate-flake.log` as evidence for
+19-03. Nothing was changed between runs 1, 2, 3 and 4.
+
+For the record, not for a conclusion: L34 read 63.555 s on an Apple M2 Max with 12 CPUs and set
+the bar at 66 s on that host; 19-RESEARCH F10 read 46.21 s wall (1023 passed in 45.59s) on this
+host at a 1-minute load of 6.12 before and 15.73 after. 19-09 measures the phase's delta against
+the readings above, on this host, in one session.
+
+### Chamfer across the junction (19-01)
+
+L29's kernel law on the hob root: the tip chamfer's footprint on the end face reaches inward
+from the tip circle, and the kernel cannot carry it from one spline onto another. On the radial
+outline that boundary was the spline start; on the trochoid outline it is the junction between
+the root spline and the involute spline, `R_join = RootCurve.points[-1][0]`. `python -m
+bench.trochoid_part chamfer` builds each of 14 rows (seven gears at tip radius 0 and 0.5 mm,
+typed out in `CHAMFER_ROWS`, every one a trochoid gear), bisects the chamfer size on the unchamfered
+part's tip arcs for 20 halvings between 0 and 0.45 x face_width (3.375 mm), and compares the
+largest size that built with `pred = ra - R_join`. The verdict is never optimistic: only a last
+building size more than `TIP_CHAMFER_MARGIN` (0.001 mm) inside `pred` fails. Every part is one
+valid solid, its tooth-0 root edges are selected by position with the count asserted equal to
+2 x teeth, and the Phase 18 oracle reads them with the tip radius the cutter used (no bar is
+applied here: 19-02 sets it). The script's output follows verbatim.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `29c742c`
+- Read 2026-10-08T16:18:28Z to 2026-10-08T16:23:12Z
+- Load averages at start: 8.92, 10.72, 9.15; at end: 9.61, 8.53, 8.48
+
+#### Bisection (20 halvings between 0 and 0.45 x face_width)
+
+| Gear | Tip radius (mm) | Join | R_join (mm) | pred = ra - R_join | last ok | first fail | last ok - pred | Verdict | Binding cap | Worst oracle (mm) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0 | tangent | 15.1805 | 3.1944892 | 3.1944884 | 3.1944916 | -7.71e-07 | on the law | ra - r | 1.35e-05 |
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0.5 | tangent | 15.2788 | 3.0961925 | 3.0961908 | 3.0961940 | -1.73e-06 | on the law | ra - r | 2.20e-05 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0 | tangent | 48.6785 | 1.7215252 | 1.7215244 | 1.7215276 | -8.65e-07 | on the law | ra - r | 5.91e-06 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | tangent | 48.8589 | 1.5410770 | 1.5410739 | 1.5410771 | -3.06e-06 | on the law | ra - r | 9.50e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0 | crossing | 14.5916 | 0.8084213 | 0.8233534 | 0.8233566 | +1.49e-02 | conservative | ra - r | 2.44e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | crossing | 14.5508 | 0.8492071 | 2.2499979 | 2.2500011 | +1.40e+00 | conservative | ra - r | 1.23e-04 |
+| 12 teeth, m 1, 20 deg, x 0 | 0 | crossing | 5.6756 | 1.3243676 | 1.3243654 | 1.3243686 | -2.23e-06 | on the law | ra - r | 1.97e-05 |
+| 12 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 5.6457 | 1.3542630 | 1.3542602 | 1.3542634 | -2.80e-06 | on the law | ra - r | 3.99e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0 | crossing | 4.7567 | 1.2433329 | 2.2499979 | 2.2500011 | +1.01e+00 | conservative | ra - r | 2.15e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 4.7174 | 1.2825685 | 1.2825680 | 1.2825712 | -5.13e-07 | on the law | ra - r | 3.94e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0 | crossing | 3.8448 | 1.1552447 | 1.2656250 | 1.2656282 | +1.10e-01 | conservative | ra - r | 2.29e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 3.7960 | 1.2039992 | 2.2499979 | 2.2500011 | +1.05e+00 | conservative | ra - r | 3.66e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0 | crossing | 3.0994 | 0.9006385 | 0.9006364 | 0.9006397 | -2.04e-06 | on the law | ra - R_join | 2.99e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0.5 | crossing | 3.0183 | 0.9816865 | 1.3320547 | 1.3320580 | +3.50e-01 | conservative | ra - R_join | 4.47e-05 |
+
+First-failure reasons: default 19 teeth, m 1.75, 25 deg, x 0 @ 0: Standard_Failure; default 19 teeth, m 1.75, 25 deg, x 0 @ 0.5: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0: invalid; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 12 teeth, m 1, 20 deg, x 0 @ 0: invalid; 12 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5: invalid
+
+Binding cap is ra - R_join on: 6 teeth, m 1, 14.5 deg, x 0 @ 0; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5.
+Verdict: law holds -- 8 rows on the law, 6 conservative (30 teeth, m 1, 14.5 deg, x -0.6 @ 0; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5; 10 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0.5; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5).
+
+The law holds across the junction, to the bisection's resolution. On the 8 rows on the law, the
+largest chamfer that built sits 0.5 to 3.1 microns inside `pred` and the first that failed
+sits 0.1 to 2.7 microns past it, a bracket 3.2e-6 mm wide on every row (3.375 mm / 2^20), so
+the kernel's boundary is `ra - R_join` to the last bisection step, the same "within about 2
+microns" L29 read at the spline start on five of six configurations (there the bracket was
+2.9e-6 mm). RESEARCH F5's 14 to 16 step scratch readings (3.19434 against 3.1945 on the default
+gear, 1.7215 on 100 teeth) resolved about 2e-4 mm; these are 20 steps on the same rows and agree.
+Six rows are conservative, as L29's sixth was: the same six F5 named (10 teeth at tip radius 0,
+8 teeth at both, 6 teeth at 0.5, 30 teeth at both) built past `pred`, by 0.015 mm (30 teeth, tip
+radius 0) up to 1.40 mm (30 teeth, tip radius 0.5). Three of them (30 teeth at 0.5, 10 teeth at
+0, 8 teeth at 0.5) stopped at 2.25 mm, which is the whole tooth depth `ra - rf` of a module-1 gear;
+ASSUMPTION: that is the footprint reaching the root circle, not isolated here. A conservative row
+costs a user nothing unless `ra - R_join - TIP_CHAMFER_MARGIN` is the cap in force: of the 14 rows
+that is only the two 6-tooth rows (`ra - R_join` against `ra - r` = 1.0 mm there, the junction
+above the pitch circle at R_join 3.0994 and 3.0183 mm against r 3.0), and the one of the two that
+is conservative (tip radius 0.5) is conservative by 0.35 mm. Everywhere else `ra - r` or
+0.45 x face_width binds first, so those rows prove the law is not optimistic, not that it
+binds. The worst oracle reading on an unchamfered root is 1.23e-04 mm (30 teeth, module 1,
+tip radius 0.5), against the 1.79e-4 mm per module RESEARCH F3 read as the worst of the 5,159
+swept gears; no bar is applied in this plan.
