@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 18
 current_phase_name: Trochoid Maths, Proved
 status: executing
-stopped_at: Completed 18-03-PLAN.md
-last_updated: "2026-10-08T02:10:37.101Z"
+stopped_at: Completed 18-04-PLAN.md
+last_updated: "2026-10-08T02:44:07.801Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 18 execution started
-state_head: afe72126174a14c8c899fc85c3caf82997c1a140
+state_head: ee8f9ccc8618e049a6f45244fbdfc3dd6c4ecb66
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -33,11 +33,11 @@ to the transition; ships through a PR like #15 — A1/A3 are read from its first
 ## Current Position
 
 Phase: 18 (Trochoid Maths, Proved) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 18 execution started
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -202,6 +202,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 18 P01 | 19 min | 2 tasks | 4 files |
 | Phase 18 P02 | 11 min | 2 tasks | 3 files |
 | Phase 18 P03 | 20 min | 2 tasks | 7 files |
+| Phase 18 P04 | 28 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -344,6 +345,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 18]: 18-03: TROCHOID_JOIN_EPS stays 1e-4, measured in the repo (bracket lost at most at xi = -5.6e-6 rb over 400 draws)
 - [Phase 18]: 18-03: the whole 31,446-case generator sweep runs in the commit gate (1.7 s call at -n 8, under D-13's 2.0 s); no stride sample
 - [Phase 18]: 18-03: a tangent join inside the band is checked against the involute with the closed-form 2(tan phi - phi) allowance, not a wider bar; D-11 checkpoint not reached (7,175 / 980 / 73 named refusals)
+- [Phase 18]: 18-04: the oracle's roll window is +-3 spans of 2 pi / z (was +-1): the contact roll reaches 2.13 spans over the sweep product and about 2.3 over the box; at +-1, 3,244 of 10,326 curves read up to 0.61 mm uncut, and the neighbouring teeth could not separate a severed tooth
+- [Phase 18]: 18-04: ORACLE_BAR_MM stays 1e-9 mm (335x over the product's worst, a join-band case; 1.0e5x on the gate rows), T3 bars 1e-12 (563x, 5.1e3x), T4 bar 5e-5 in at 1.39x as accepted at D-15; L33 D-06 checkpoint not reached, every other bar at or above 10x (smallest 72)
+- [Phase 18]: 18-04: freecad.gears 4cc4b1a (GPL-3.0) was run once outside the repository and only its 60 printed points enter, as literals with source, commit, licence and date; psi is the library's own sample parameter, not acos of the radius
 
 ### Pending Todos
 
@@ -517,8 +521,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-08T02:10:37.057Z
-Stopped at: Completed 18-03-PLAN.md
+Last session: 2026-10-08T02:44:07.760Z
+Stopped at: Completed 18-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
