@@ -126,7 +126,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   step either side (the L33 pattern); the step discontinuity at the undercut threshold
   (FEATURES: ≈0.14·m of root shape between 17 and 18 teeth at 20°) is measured and shown to
   the human with the root-mode options.
-- [ ] **REQ-trochoid-proved-independently**: The proof lives in `tests/`, shares no code with
+- [x] **REQ-trochoid-proved-independently**: The proof lives in `tests/`, shares no code with
   the implementation (the L33 `_filleted_spoke_volume` precedent), and runs at the calc
   tier: T1 the closed-form undercut onset pins *when* the root is a trochoid; T2 a
   swept-cutter no-gouge oracle pins *where* it is — every surviving point clears the cutter
@@ -256,7 +256,7 @@ the phase where its acceptance can be read.
 | REQ-cutter-defined-once | Phase 18 | Complete |
 | REQ-trochoid-root-generated | Phase 18 | Complete |
 | REQ-root-mode-single-predicate | Phase 18 | Complete |
-| REQ-trochoid-proved-independently | Phase 18 | Pending |
+| REQ-trochoid-proved-independently | Phase 18 | Complete |
 | REQ-undercut-warning-restated | Phase 19 | Pending |
 | REQ-root-mode-decided | Phase 19 | Pending |
 | REQ-outline-consumes-root-curve | Phase 19 | Pending |
