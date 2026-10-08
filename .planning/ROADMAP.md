@@ -90,7 +90,7 @@ bypassed.
       conflict gets a logged decision that a live SDK commit proves; the same-slot timeout
       race is reproduced, fixed and ends as a documented `503`; the worst composed row's
       margin gets a logged decision
-- [ ] **Phase 18: Trochoid Maths, Proved** - The hob's trochoid root exists as pure `calc.py`
+- [x] **Phase 18: Trochoid Maths, Proved** - The hob's trochoid root exists as pure `calc.py` (completed 2026-10-08)
       maths — the cutter defined once, the curve generated or honestly refused, one
       predicate, an independent oracle — with no kernel, no field and no fixture contact
 - [ ] **Phase 19: The Trochoid in the Part** - The outline consumes the proven curve, every
@@ -261,7 +261,7 @@ maths is derived and cross-checked three ways, SUMMARY). Open items: ISO 21771 f
 parity (clause unread — STACK, PITFALLS), the oracle's external anchor (no published table
 found — STACK, LOW for the absence), the two-flank interaction at very low tooth counts or
 large ρ (STACK's 7,296 cases solved one flank only), and the `z_min` double root.
-**Plans**: 6/6 plans executed
+**Plans**: 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -423,6 +423,6 @@ before the human at Phase 18's discuss-phase.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
-| 18. Trochoid Maths, Proved | v0.4 | 6/6 | In Progress | - |
+| 18. Trochoid Maths, Proved | v0.4 | 6/6 | Complete    | 2026-10-08 |
 | 19. The Trochoid in the Part | v0.4 | 0/TBD | Not started | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |
