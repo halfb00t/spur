@@ -4062,5 +4062,202 @@ the wrong remedy: the user set neither a fillet nor a chamfer, and the cause is 
 radius that happen to leave 1e-8 mm of tip land. 19-05's `ROOT_ARC_MIN` branch drops the arc below
 the constant and shares the junction vector instead. The proposal printed above is the smallest of
 1e-6, 2e-6, 5e-6 and 1e-5 mm that is at least 10 times the last failing chord, 2e-6 mm; whether
-it is below the smallest real chord in the product is read by `product` (19-02 Task 2), and that
-sentence is closed in the guard subsection below.
+it is below the smallest real chord in the product is read by `product`: the smallest real chord
+is 3.1644e-5 mm, so 2e-6 mm is 15.8 times below it (the guard subsection below).
+
+
+### Guard numbers over the product (19-02)
+
+19-RESEARCH measured the four structural guards on a 5,159-gear stride-2 sample of the Phase 18
+sweep product (A7). `python -m bench.trochoid_part product` runs **every** trochoid case of the
+31,446-case product, no stride: it builds each gear's blank through the spike's outline, reads the
+tooth-0 root splines against a 20,001-point reference (method B, 2,001 positions per edge), and
+measures the spacing ratio (max over min chord of the 16 root points), the annulus (81 positions
+per root edge against [rf, ra]), the closed-form area (the extruded face's area, volume over face
+width, against the shoelace area of the outline's own points), the junction gap
+(|half-angle of the last point - Profile.half_angle at its radius|, split by join) and the root
+arc's chord. It then resamples one gear's own curve with a growing chord ratio to find where the
+kernel fails, and proposes each bar from the maximum, with the headroom beside it. A second area
+measure, with the polygon taken through each arc's midpoint as well as its ends, is printed beside
+the plan's arcs-as-chords measure (see the area guard below).
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `01cd617`
+- Read 2026-10-08T17:12:56Z to 2026-10-08T17:15:28Z
+- Load averages at start: 19.93, 23.88, 15.18; at end: 68.90, 44.50, 25.06
+
+- Sweep cases: 31,446; trochoid gears (what `bench.trochoid._oracle_cases()` lists as `trochoid`): 10,326; built without a kernel exception: 10,326; kernel exceptions: 0.
+- 150 s wall on 18 spawn workers, one pass, no stride.
+
+#### Maxima over the whole product
+
+| Measure | Worst over the product | Gear |
+|---|---|---|
+| Spline error per module (method B, mm per mm of module) | 1.8431e-04 | grid B: 30 teeth, m 1.75, 14.5 deg, x -0.6, backlash 1.0, tip radius asked 3 mm |
+| Spacing ratio, max / min chord of the 16 root points | 13.325 (median 1.692) | grid A: 40 teeth, m 1.0, 14.5 deg, x 0.5, backlash 0.1, tip radius asked 3 mm |
+| Annulus, min(R - rf) over 162 positions | -1.137e-13 mm | grid B: 116 teeth, m 10.0, 14.5 deg, x -0.6, backlash 0.0, tip radius asked 3 mm |
+| Annulus, max(R - ra) | -4.405e-02 mm | grid B: 8 teeth, m 0.2, 14.5 deg, x -0.6, backlash 0.0, tip radius asked 0 mm |
+| Closed-form area, |face area / shoelace area - 1|, arcs as chords | 1.2162e-02 | grid A: 6 teeth, m 1.0, 14.5 deg, x -0.6, backlash 0.0, tip radius asked 0.38 mm |
+| Closed-form area, the polygon through each arc's midpoint too | 3.6791e-03 | grid B: 7 teeth, m 1.75, 14.5 deg, x -0.6, backlash 1.0, tip radius asked 3 mm |
+| Junction gap, tangent joins (4,303 gears), rad | 2.442e-13 | grid A: 26 teeth, m 1.0, 20.0 deg, x -0.6, backlash 0.1, tip radius asked 0.5 mm |
+| Junction gap, crossing joins (6,023 gears), rad | 6.939e-16 | grid A: 7 teeth, m 1.0, 14.5 deg, x -0.5, backlash 0.1, tip radius asked 0 mm |
+| Smallest root-arc chord | 3.1644e-05 mm | grid B: 6 teeth, m 1.75, 14.5 deg, x -0.6, backlash 0.1, tip radius asked 3 mm |
+| Thinnest waist per module (2 R h) | 2.5577e-03 mm | grid B: 7 teeth, m 10.0, 14.5 deg, x -0.6, backlash 0.1, tip radius asked 0 mm |
+
+#### Bunching: one gear resampled with a growing chord ratio (12 teeth, module 1, 20 degrees, tip radius 0.38 mm)
+
+| Nominal ratio | Chord ratio as built | Spline error, method B (mm) | Kernel |
+|---|---|---|---|
+| 10 | 7.849 | 6.0802e-05 | builds, 74 faces, valid |
+| 100 | 76.5 | 2.2007e-04 | builds, 74 faces, valid |
+| 1000 | 749.7 | 5.1756e-04 | builds, 74 faces, valid |
+| 10000 | 7393 | 3.6088e-03 | builds, 74 faces, valid |
+| 100000 | 7.327e+04 | 9.1444e-03 | builds, 74 faces, valid |
+| 1e+06 | 7.289e+05 | nan | Standard_Failure:  |
+| 1e+07 | 7.269e+06 | nan | Standard_Failure:  |
+
+#### Proposals (each from the maximum above)
+
+kernel bar proposal: 0.002 x module -- the worst spline error per module is 1.8431e-04 and the oracle's own resolution about 1e-15 per module; headroom 10.9x over the worst, 2e+12x over the resolution (at or over 10x: the planner's call)
+ROOT_SPACING_RATIO_MAX proposal: 1000 -- the maximum spacing ratio is 13.325, headroom 75.0x (at or over 10x: the planner's call); the first chord ratio the kernel failed at is 728888, 729x over the bar
+annulus proposal: [rf - TOL, ra + TOL] with TOL = 1e-06 mm -- the worst excursion outside [rf, ra] is 1.137e-13 mm, headroom 8.8e+06x (at or over 10x: the planner's call)
+ROOT_AREA_REL_MAX proposal (arcs as chords): NONE of (0.01, 0.02, 0.05, 0.1) has 10x headroom over 1.2162e-02; the largest listed value, 0.1, is 8.2x; goes to the human
+ROOT_AREA_REL_MAX proposal (arc midpoints in the polygon): 0.05 -- the maximum is 3.6791e-03, headroom 13.6x (at or over 10x: the planner's call)
+ROOT_JUNCTION_BAR_RAD proposal: 1e-11 rad -- the larger join maximum is 2.442e-13 rad (tangent 2.442e-13, crossing 6.939e-16), the libm floor 1e-12; headroom 40.9x (at or over 10x: the planner's call)
+ROOT_ARC_MIN check: proposal 2e-06 mm (from `arc`) against the smallest real root-arc chord 3.1644e-05 mm: the proposal is below it, which is 15.8x the proposal
+
+**Guard by guard.** 10,326 trochoid gears, the count `bench.trochoid._oracle_cases()` lists (and
+18-04's 10,326 curves), all built, **0 kernel exceptions**.
+
+- *Kernel bar.* The worst spline error is 1.8431e-4 per module (30 teeth, module 1.75, 14.5 degrees,
+  x -0.6, backlash 1.0, tip radius capped from 3.0), 3 % above the 1.79e-4 the stride-2 sample
+  read; the oracle's own resolution is about 1e-15 per module (18-04). The proposed bar is
+  2e-3 x module, **10.9x the worst**: at the 10x line, so it goes to the human with the tripwire
+  (11.0x over 1e-3 and 5.5x over 2e-3 on the module-1 10-tooth row; 0.66x of it on module 10).
+- *Spacing ratio.* Maximum 13.325 (40 teeth, module 1, 14.5 degrees, x 0.5, backlash 0.1, tip radius
+  capped from 3.0; the sample's 11.34 was another gear). Proposed `ROOT_SPACING_RATIO_MAX` 1000,
+  **75x**; the kernel first fails at a chord ratio of 7.29e5 (an empty `Standard_Failure`), 729x
+  above it, and the spline error on the bunching gear is 5.2e-4 mm at a ratio of 750 and 3.6e-3 mm at
+  7,393 (over a 2e-3 bar): at 1000 the guard stops a bunched curve before the proof would see it.
+- *Annulus.* The worst excursion outside [rf, ra] is 1.137e-13 mm (116 teeth, module 10, backlash 0:
+  a float residue below the root circle); the nearest approach to the tip circle is 0.044 mm.
+  Proposed [rf - TOL, ra + TOL] with `model.TOL` = 1e-6 mm, **8.8e6x**.
+- *Closed-form area.* With both arcs taken as chords, as the plan specifies, the maximum is
+  1.2162e-2 (6 teeth, module 1, 14.5 degrees, x -0.6, backlash 0, tip radius 0.38): none of 1e-2,
+  2e-2, 5e-2, 1e-1 is 10x over it (0.1 is **8.2x**), so this guard **joins the checkpoint**. With the
+  polygon through each arc's midpoint (which `model` has for nothing: `_polar(ra, c)` and
+  `_polar(rf, c + pi / z)` are the arcs' own middle points) the maximum is 3.6791e-3 (7 teeth,
+  module 1.75, x -0.6, backlash 1.0, tip radius capped from 3.0) and 5e-2 reads **13.6x**. 19-05
+  builds the polygon either way; the measure is the human's choice, with the bar following it.
+- *Junction gap.* Tangent joins (4,303 gears) 2.442e-13 rad (26 teeth, 20 degrees, x -0.6, backlash
+  0.1, tip radius 0.5), crossing joins (6,023 gears) 6.939e-16 rad. Proposed
+  `ROOT_JUNCTION_BAR_RAD` 1e-11 rad, **40.9x**. The 1e-12 rad of 18-01's `JUNCTION_BAR_RAD` was set on
+  rows reading 4e-17 and is only 4.1x over this product's tangent maximum, so 19-05 does not reuse
+  it.
+- *Root arc.* The smallest real chord in the product is 3.1644e-5 mm (6 teeth, module 1.75, 14.5
+  degrees, x -0.6, backlash 0.1, tip radius capped from 3.0); the `arc` proposal of 2e-6 mm is
+  **15.8x below it**, which closes the comparison the root-arc subsection left pending: the
+  guard cannot drop a real arc.
+
+
+### Waist walk (19-02, D-07)
+
+D-07 asked the bench to walk the low-tooth corner and find where the built waist stops being a
+tooth: the kernel refuses, or the spline-to-oracle gap leaves its bar. `python -m bench.trochoid_part
+waist --bar-per-module 2e-3` walks 6, 7 and 8 teeth, module 1, 14.5 degrees, profile shift -0.6 to 0
+in 0.01 steps, tip radius 0, 0.38 and 3.0 (capped), at the default backlash (0.10) and at 0 (the
+backlash 19-RESEARCH F8's scratch walk used), builds every trochoid gear's blank, reads its tooth-0
+root with the independent oracle at 401 positions per edge and takes the waist as `2 R h` of
+`RootCurve.waist`. The bar in use is 2e-3 x module, the proposal `product` made. Floor candidates
+are printed with the number of gears each would warn on, in the walk and in the whole product (the
+product's waists come from the curve alone, no kernel).
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `01cd617`
+- Read 2026-10-08T17:15:42Z to 2026-10-08T17:26:47Z
+- Load averages at start: 54.59, 42.53, 24.70; at end: 49.99, 64.10, 48.42
+
+D-07's walk: teeth (6, 7, 8), module 1, 14.5 degrees, backlash (0.1, 0.0) mm, profile shift -0.6 to 0 in 0.01 steps, tip radius (0.0, 0.38, 3.0) mm (3.0 is the field's maximum, capped by the cutter). 1098 gears in 663 s on 18 spawn workers; oracle at 401 positions per root edge; bar read as 0.002 x module.
+
+#### What `root_mode` answered
+
+| Answer | Gears |
+|---|---|
+| radial (tooth severed) | 37 |
+| trochoid | 1061 |
+
+#### The walk by series
+
+| Teeth | Backlash | Tip radius asked (used) | Severed at x up to | First trochoid x | Thinnest built waist (mm) | at x | Worst oracle reading (mm) |
+|---|---|---|---|---|---|---|---|
+| 6 | 0.1 | 0 (0) | -0.44 | -0.43 | 1.4861e-02 | -0.43 | 4.227e-05 |
+| 6 | 0.1 | 0.38 (0.38) | -0.58 | -0.57 | 3.2325e-03 | -0.57 | 4.447e-05 |
+| 6 | 0.1 | 3 (0.661) | -- | -0.6 | 1.0652e-01 | -0.6 | 5.017e-05 |
+| 6 | 0 | 0 (0) | -0.49 | -0.48 | 4.9794e-03 | -0.48 | 4.300e-05 |
+| 6 | 0 | 0.38 (0.38) | -- | -0.6 | 2.1992e-02 | -0.6 | 4.463e-05 |
+| 6 | 0 | 3 (0.596) | -- | -0.6 | 1.3753e-01 | -0.6 | 4.814e-05 |
+| 7 | 0.1 | 0 (0) | -0.56 | -0.55 | 1.2622e-02 | -0.55 | 4.685e-05 |
+| 7 | 0.1 | 0.38 (0.38) | -- | -0.6 | 1.3704e-01 | -0.6 | 5.023e-05 |
+| 7 | 0.1 | 3 (0.661) | -- | -0.6 | 2.8410e-01 | -0.6 | 5.983e-05 |
+| 7 | 0 | 0 (0) | -- | -0.6 | 9.4238e-03 | -0.6 | 4.764e-05 |
+| 7 | 0 | 0.38 (0.38) | -- | -0.6 | 2.0800e-01 | -0.6 | 5.023e-05 |
+| 7 | 0 | 3 (0.596) | -- | -0.6 | 3.2235e-01 | -0.6 | 5.681e-05 |
+| 8 | 0.1 | 0 (0) | -- | -0.6 | 9.0302e-02 | -0.6 | 5.001e-05 |
+| 8 | 0.1 | 0.38 (0.38) | -- | -0.6 | 2.8143e-01 | -0.6 | 5.541e-05 |
+| 8 | 0.1 | 3 (0.661) | -- | -0.6 | 4.2284e-01 | -0.6 | 6.900e-05 |
+| 8 | 0 | 0 (0) | -- | -0.6 | 1.6362e-01 | -0.6 | 5.001e-05 |
+| 8 | 0 | 0.38 (0.38) | -- | -0.6 | 3.5694e-01 | -0.6 | 5.541e-05 |
+| 8 | 0 | 3 (0.596) | -- | -0.6 | 4.6704e-01 | -0.6 | 6.502e-05 |
+
+The thinnest built waist, then the next four:
+
+- 3.2325e-03 mm: 6 teeth, x -0.57, backlash 0.1, tip radius asked 0.38 mm (used 0.38), crossing join
+- 4.9794e-03 mm: 6 teeth, x -0.48, backlash 0, tip radius asked 0 mm (used 0), crossing join
+- 9.4238e-03 mm: 7 teeth, x -0.6, backlash 0, tip radius asked 0 mm (used 0), crossing join
+- 1.2622e-02 mm: 7 teeth, x -0.55, backlash 0.1, tip radius asked 0 mm (used 0), crossing join
+- 1.4861e-02 mm: 6 teeth, x -0.43, backlash 0.1, tip radius asked 0 mm (used 0), crossing join
+
+**Thinnest built waist: 3.2325e-03 mm** (6 teeth, x -0.57, backlash 0.1, tip radius asked 0.38 mm (used 0.38)); 1061 trochoid gears built of 1098 walked.
+
+Kernel refusals: none (every trochoid gear built one valid solid).
+
+Worst oracle reading in the walk: 6.8995e-05 mm (8 teeth, x 0, backlash 0.1, tip radius asked 3 mm (used 0.661)).
+- readings over 0.001 x module (module 1): 0 of 1061
+- readings over 0.002 x module (module 1): 0 of 1061
+- readings over 0.005 x module (module 1): 0 of 1061
+- readings over 0.01 x module (module 1): 0 of 1061
+Oracle readings over the bar in use (0.002 mm): 0.
+
+#### Floor candidates
+
+| Candidate | Floor | Walk gears warned (of 1061 built) | Product gears warned (of 10,326) |
+|---|---|---|---|
+| measured: 10x the thickest waist where the kernel refused or the oracle left the bar | none: no failure signature in the walk | -- | -- |
+| spline scale: 10x the worst oracle reading in the walk | 6.8995e-04 mm per mm of module | 0 | 0 |
+| printability: MIN_TIP_FDM, the tip warning's own number | 4.0000e-01 mm, absolute | 294 | 771 |
+
+Thinnest waist per module over the whole product: 2.5577e-03 mm (grid B: 7 teeth, m 10.0, 14.5 deg, x -0.6, backlash 0.1, tip radius asked 0 mm).
+
+**What the walk found.** Nothing refuses. Of 1,098 gears, 37 are `tooth severed` (waist at or below
+zero, refused by `root_mode` before the kernel sees them) and 1,061 are trochoid gears, **all
+1,061 built one valid solid**; the worst oracle reading is 6.9e-5 mm (8 teeth, x 0, tip radius
+capped from 3.0), and **0 readings are over even the smallest listed bar**, 1e-3 mm. So there is no
+failure signature above the spline-error scale, as 19-RESEARCH F8 expected: the kernel builds a
+valid tooth at a waist of 3.2e-3 mm and the oracle accepts it, and the floor is a choice the human
+makes on these numbers. The walk reproduces F8 (4.9794e-3 mm at 6 teeth, x -0.48, backlash 0, sharp
+cutter; next 9.4238e-3 mm, F8's 4.98e-3 and 9.4e-3) and finds a thinner waist F8 did not: **3.2325e-3
+mm** at 6 teeth, x -0.57, backlash 0.1, tip radius 0.38. The waist grows by about 0.015 mm per 0.01
+of profile shift, so any positive thickness is reachable from user input. The three candidates:
+**(measured)** none, because no gear failed; **(spline scale)** 10x the worst oracle reading,
+6.8995e-4 mm per mm of module, warns on 0 of 1,061 walk gears and 0 of the 10,326 product gears
+(the product's thinnest waist per module is 2.5577e-3 mm, 3.7x above it); **(printability)**
+`MIN_TIP_FDM`, 0.4 mm, the number the tip warning already uses, warns on 294 of the 1,061 walk gears
+and 771 of the 10,326 product gears.

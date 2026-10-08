@@ -17,6 +17,7 @@ and exits 1 when the verdict fails.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import os
@@ -25,13 +26,17 @@ import subprocess
 import sys
 import time
 from bisect import bisect_right
+from collections import Counter
 from collections.abc import Callable, Sequence
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import partial
 from importlib import metadata
 from itertools import pairwise
+from multiprocessing import get_context
 from pathlib import Path
+from statistics import median
 
 import cadquery as cq
 from pydantic import ValidationError
@@ -39,9 +44,11 @@ from pydantic import ValidationError
 from bench import machine_facts
 from bench.build_time import DEFAULT_SWEEP, Timing, stl_size
 from bench.tip_chamfer_spike import chamfered, tip_arcs
+from bench.trochoid import OracleCase, _oracle_cases, sweep_cases
 from spur import int_env, model
 from spur.build_errors import BuildError
 from spur.calc import (
+    MIN_TIP_FDM,
     TIP_CHAMFER_MARGIN,
     TROCHOID_JOIN_EPS,
     Cutter,
@@ -132,11 +139,16 @@ def trochoid_curve(p: GearParams, rho: float) -> tuple[Cutter, RootCurve]:
     return rm.cutter, curve
 
 
+def extrude_outline(p: GearParams, curve: RootCurve) -> cq.Solid:
+    """The outline of `curve` as a face, extruded over the face width."""
+    face = cq.Face.makeFromWires(trochoid_outline(profile(p), curve))
+    return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.face_width))
+
+
 def trochoid_blank(p: GearParams, rho: float) -> tuple[cq.Shape, Cutter, RootCurve]:
     """The toothed disc with the trochoid root, before the recesses and the bore."""
     cut, curve = trochoid_curve(p, rho)
-    face = cq.Face.makeFromWires(trochoid_outline(profile(p), curve))
-    return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.face_width)), cut, curve
+    return extrude_outline(p, curve), cut, curve
 
 
 def trochoid_cap(p: GearParams, curve: RootCurve) -> float:
@@ -895,8 +907,7 @@ def arc_outcome(p: GearParams, curve: RootCurve, half_width: float) -> ArcOutcom
     teeth = outline_teeth(pr, variant)
     chord = (teeth[0][2][-1] - teeth[1][1][0]).Length
     try:
-        face = cq.Face.makeFromWires(trochoid_outline(pr, variant))
-        solid = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.face_width))
+        solid = extrude_outline(p, variant)
     except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
         return ArcOutcome(half_width, chord, f"{type(exc).__name__}: {exc}", False)
     faces, valid = len(solid.Faces()), solid.isValid()
@@ -931,13 +942,26 @@ def tuned_backlash(fields: dict[str, object], rho_request: float) -> float:
     return hi
 
 
+def dead_band() -> tuple[GearParams, list[ArcOutcome]]:
+    """The gear of ARC_FIELDS and what the kernel did at each ARC_HALF_WIDTHS_MM."""
+    p = GearParams.model_validate(ARC_FIELDS)
+    _, curve = trochoid_curve(p, ARC_RHO_MM)
+    return p, [arc_outcome(p, curve, a) for a in ARC_HALF_WIDTHS_MM]
+
+
+def arc_min_proposal(last_failing: float) -> float | None:
+    """The smallest of ARC_MIN_CANDIDATES_MM at least 10x the last failing chord, None when
+    there is none. A chord is read to about 1e-15 mm (two vectors of length rf subtracted),
+    which is 5e-9 of 2e-7, so "10x" is compared to a part in a million and not to the last
+    float."""
+    return next((c for c in ARC_MIN_CANDIDATES_MM if c / last_failing >= 10 - 1e-6), None)
+
+
 def run_arc() -> int:
     """The dead band of the root arc (19-RESEARCH F4), the tuned-backlash gear that
     reaches it from user input, and the ROOT_ARC_MIN proposal."""
     start, load_before = datetime.now(UTC), os.getloadavg()
-    p = GearParams.model_validate(ARC_FIELDS)
-    _, curve = trochoid_curve(p, ARC_RHO_MM)
-    outcomes = [arc_outcome(p, curve, a) for a in ARC_HALF_WIDTHS_MM]
+    p, outcomes = dead_band()
 
     fields = {**ARC_FIELDS, "root_fillet": 3.0}
     backlash = tuned_backlash(fields, 3.0)
@@ -986,18 +1010,511 @@ def run_arc() -> int:
           f"a = {tuned_cut.a:.3e} mm (target {ARC_TARGET_HALF_WIDTH_MM:g}), root-arc chord "
           f"{tuned_outcome.chord:.3e} mm. The bench outline {bench_outline}.")
     print()
-    # A chord is read to about 1e-15 mm (two vectors of length rf subtracted), which is 5e-9
-    # of 2e-7, so "10x" is compared to a part in a million and not to the last float.
-    candidates = [c for c in ARC_MIN_CANDIDATES_MM if c / last_failing >= 10 - 1e-6]
-    if not candidates:
+    proposal = arc_min_proposal(last_failing)
+    if proposal is None:
         print(f"ROOT_ARC_MIN proposal: none of {ARC_MIN_CANDIDATES_MM} has 10x headroom over "
               f"the last failing chord {last_failing:.3e} mm")
         return 1
-    proposal = candidates[0]
     print(f"ROOT_ARC_MIN proposal: {proposal:g} mm ({proposal / last_failing:.1f}x the last "
           f"failing chord); against the smallest real chord the product shows: pending "
           "(`product` reads it)")
     return 0 if tuned_cut.a < 2 * ARC_TARGET_HALF_WIDTH_MM else 1
+
+
+# --- the whole product: spline error and the four guards (19-02, A7) -------------------
+
+# The oracle's own resolution, per module: 18-04's twelve gate rows read 1.9e-16 to 2.6e-15
+# (bench/RESULTS.md "Oracle bars (18-04)"), and its whole-product maximum was 1e-13 mm.
+ORACLE_RESOLUTION_PER_MODULE = 1e-15
+ANNULUS_POSITIONS = 80                 # 81 positions on each tooth-0 root edge
+SPACING_CANDIDATES = (100.0, 1000.0, 10000.0)
+AREA_CANDIDATES = (1e-2, 2e-2, 5e-2, 1e-1)
+LIBM_FLOOR_RAD = 1e-12                 # 18-01's cross-platform libm floor (JUNCTION_BAR_RAD)
+BUNCHING_RATIOS = (10.0, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7)
+
+
+def case_label(case: OracleCase) -> str:
+    grid, fields, rho, _ = case
+    return (f"grid {grid}: {fields['teeth']} teeth, m {fields['module']}, "
+            f"{fields['pressure_angle']} deg, x {fields['profile_shift']}, "
+            f"backlash {fields['backlash']}, tip radius asked {rho:g} mm")
+
+
+@dataclass(frozen=True)
+class ProductRow:
+    gear: str
+    module: float
+    join: str
+    spline_per_module: float   # method B, tooth-0 root splines, mm per mm of module
+    spacing_ratio: float       # max / min chord of the 16 root points
+    below_root: float          # min(R - rf) over the annulus positions, mm
+    above_tip: float           # max(R - ra), mm
+    area_rel: float            # |face area / shoelace area - 1|, both arcs taken as chords
+    area_rel_arcs: float       # the same, the polygon through each arc's midpoint as well
+    junction_gap: float        # |h_last - Profile.half_angle(R_last)|, rad
+    arc_chord: float           # the root arc between neighbours, mm
+    waist: float               # 2 R h at the narrowest point, mm
+    error: str = ""            # the kernel exception, class and message; "" when none
+
+
+def outline_polygon(pr: Profile, teeth: Sequence[Tooth], *,
+                    arc_midpoints: bool) -> list[cq.Vector]:
+    """The outline's own points in order: each tooth's root spline, flank, tip arc, mirror
+    flank and root spline, then the root arc to the next tooth. The two arcs are taken as
+    chords, or (`arc_midpoints`) through the midpoint the outline gives each three-point
+    arc, which is what `model` can compute for free."""
+    points: list[cq.Vector] = []
+    for c, root_l, root_r, flank_l, flank_r in teeth:
+        points += [*root_l, *flank_l[1:]]
+        if arc_midpoints:
+            points.append(model._polar(pr.ra, c))
+        points += [*flank_r, *root_r[1:]]
+        if arc_midpoints:
+            points.append(model._polar(pr.rf, c + math.pi / pr.z))
+    return points
+
+
+def shoelace_area(points: Sequence[cq.Vector]) -> float:
+    """Area of the closed polygon through `points`, mm^2."""
+    return abs(0.5 * sum(a.x * b.y - b.x * a.y
+                         for a, b in zip(points, [*points[1:], points[0]], strict=True)))
+
+
+def _measure(case: OracleCase) -> ProductRow:
+    _, fields, rho, _ = case
+    p = GearParams.model_validate(fields)
+    pr = profile(p)
+    solid, cut, curve = trochoid_blank(p, rho)
+    teeth = outline_teeth(pr, curve)
+    edges = tooth0_root_edges(solid, p)
+    radii = [math.hypot(v.x, v.y) for e in edges
+             for v in (e.positionAt(i / ANNULUS_POSITIONS) for i in range(ANNULUS_POSITIONS + 1))]
+    cartesian = [(r * math.cos(h), r * math.sin(h)) for r, h in curve.points]
+    chords = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in pairwise(cartesian)]
+    r_last, h_last = curve.points[-1]
+    face_area = solid.Volume() / p.face_width
+    return ProductRow(
+        case_label(case), p.module, curve.join,
+        spline_deviation(edges, dense_root(cut)) / p.module,
+        max(chords) / min(chords),
+        min(radii) - pr.rf, max(radii) - pr.ra,
+        abs(face_area / shoelace_area(outline_polygon(pr, teeth, arc_midpoints=False)) - 1),
+        abs(face_area / shoelace_area(outline_polygon(pr, teeth, arc_midpoints=True)) - 1),
+        abs(h_last - pr.half_angle(r_last)),
+        (teeth[0][2][-1] - teeth[1][1][0]).Length,
+        2 * curve.waist[0] * curve.waist[1])
+
+
+def product_row(case: OracleCase) -> ProductRow:
+    """One trochoid case of the sweep product through the kernel and the four guards (a
+    module-level function: spawn workers import it by name). A kernel exception is a row
+    with its class and message, never a dropped case."""
+    try:
+        row = _measure(case)
+    except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+        return ProductRow(case_label(case), 0.0, "", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                          0.0, f"{type(exc).__name__}: {exc}")
+    return row
+
+
+@dataclass(frozen=True)
+class BunchingRow:
+    nominal: float        # largest / smallest step of the sampling parameter
+    chord_ratio: float    # max / min chord of the 16 points as built
+    deviation: float      # method B of the tooth-0 root splines, mm; nan when not built
+    outcome: str
+    builds: bool
+
+
+def bunched_points(cut: Cutter, steps: int, ratio: float) -> tuple[tuple[float, float], ...]:
+    """`steps` + 1 points of the cutter's own trochoid whose parameter steps grow
+    geometrically, the largest `ratio` times the smallest, from the root circle to the
+    junction."""
+    junction = _junction(cut, TROCHOID_JOIN_EPS)
+    if junction is None:
+        raise ValueError("no junction for this cutter")
+    q = ratio ** (1 / (steps - 1))
+    weights = [q ** j for j in range(steps)]
+    cumulative = [0.0]
+    for w in weights:
+        cumulative.append(cumulative[-1] + w / sum(weights))
+    s_stop = math.tan(junction[0])
+    betas = [math.atan(s_stop * u) for u in cumulative[:-1]] + [junction[0]]
+    return tuple(_trochoid_point(cut, beta) for beta in betas)
+
+
+def bunching_table() -> list[BunchingRow]:
+    """The kernel and the spline error on one gear (ARC_FIELDS) as its 16 root points are
+    resampled with a growing chord ratio, to put the spacing guard below a measured failure."""
+    p = GearParams.model_validate(ARC_FIELDS)
+    cut, curve = trochoid_curve(p, ARC_RHO_MM)
+    reference = dense_root(cut)
+    rows = []
+    for ratio in BUNCHING_RATIOS:
+        points = bunched_points(cut, len(curve.points) - 1, ratio)
+        cartesian = [(r * math.cos(h), r * math.sin(h)) for r, h in points]
+        chords = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in pairwise(cartesian)]
+        try:
+            solid = extrude_outline(p, replace(curve, points=points))
+            faces, valid = len(solid.Faces()), solid.isValid()
+            deviation = spline_deviation(tooth0_root_edges(solid, p), reference)
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+            rows.append(BunchingRow(ratio, max(chords) / min(chords), math.nan,
+                                    f"{type(exc).__name__}: {exc}", False))
+            continue
+        builds = valid and faces == 6 * p.teeth + 2
+        rows.append(BunchingRow(ratio, max(chords) / min(chords), deviation,
+                                f"builds, {faces} faces, {'valid' if valid else 'INVALID'}",
+                                builds))
+    return rows
+
+
+def smallest_power_of_ten(at_least: float, floor: float) -> float:
+    """The smallest 10 ** e (integer e) that is at least `at_least` and at least `floor`."""
+    exponent = math.floor(math.log10(floor))
+    while 10.0 ** exponent < at_least or 10.0 ** exponent < floor:
+        exponent += 1
+    return 10.0 ** exponent
+
+
+def smallest_listed(candidates: Sequence[float], at_least: float) -> float | None:
+    return next((c for c in candidates if c >= at_least), None)
+
+
+def _where(row: ProductRow) -> str:
+    return row.gear
+
+
+def run_product() -> int:
+    """Every trochoid case of the Phase 18 sweep product (no stride, A7) through the
+    kernel, the spline-error measure and the four structural guards; the bars proposed
+    from the whole-product maxima. Everything is computed before anything is judged."""
+    start, load_before = datetime.now(UTC), os.getloadavg()
+    cases = [c for c in _oracle_cases() if c[3] == "trochoid"]
+    total = sum(1 for _ in sweep_cases())
+    workers = os.cpu_count() or 1
+    t0 = time.perf_counter()
+    with ProcessPoolExecutor(workers, mp_context=get_context("spawn")) as pool:
+        rows = list(pool.map(product_row, cases, chunksize=8))
+    wall = time.perf_counter() - t0
+    bunching = bunching_table()
+    _, band = dead_band()
+    end, load_after = datetime.now(UTC), os.getloadavg()
+
+    good = [r for r in rows if not r.error]
+    errors = [r for r in rows if r.error]
+    print("\n".join(_host_state(start, end, load_before, load_after)))
+    print(f"- Sweep cases: {total:,}; trochoid gears (what `bench.trochoid._oracle_cases()` "
+          f"lists as `trochoid`): {len(cases):,}; built without a kernel exception: "
+          f"{len(good):,}; kernel exceptions: {len(errors)}.")
+    print(f"- {wall:.0f} s wall on {workers} spawn workers, one pass, no stride.")
+    for r in errors[:10]:
+        print(f"- EXCEPTION on {r.gear}: {r.error}")
+    print()
+    if not good:
+        print("Verdict: FAIL, no gear built")
+        return 1
+
+    worst_spline = max(good, key=lambda r: r.spline_per_module)
+    worst_spacing = max(good, key=lambda r: r.spacing_ratio)
+    low_root = min(good, key=lambda r: r.below_root)
+    high_tip = max(good, key=lambda r: r.above_tip)
+    worst_area = max(good, key=lambda r: r.area_rel)
+    worst_area_arcs = max(good, key=lambda r: r.area_rel_arcs)
+    tangent = [r for r in good if r.join == "tangent"]
+    crossing = [r for r in good if r.join == "crossing"]
+    worst_tangent = max(tangent, key=lambda r: r.junction_gap) if tangent else None
+    worst_crossing = max(crossing, key=lambda r: r.junction_gap) if crossing else None
+    shortest = min(good, key=lambda r: r.arc_chord)
+    thinnest = min(good, key=lambda r: r.waist / r.module)
+
+    print("#### Maxima over the whole product")
+    print()
+    print("| Measure | Worst over the product | Gear |")
+    print("|---|---|---|")
+    print(f"| Spline error per module (method B, mm per mm of module) "
+          f"| {worst_spline.spline_per_module:.4e} | {_where(worst_spline)} |")
+    print(f"| Spacing ratio, max / min chord of the 16 root points "
+          f"| {worst_spacing.spacing_ratio:.3f} (median "
+          f"{median(r.spacing_ratio for r in good):.3f}) | {_where(worst_spacing)} |")
+    print(f"| Annulus, min(R - rf) over {2 * (ANNULUS_POSITIONS + 1)} positions "
+          f"| {low_root.below_root:+.3e} mm | {_where(low_root)} |")
+    print(f"| Annulus, max(R - ra) | {high_tip.above_tip:+.3e} mm | {_where(high_tip)} |")
+    print(f"| Closed-form area, |face area / shoelace area - 1|, arcs as chords "
+          f"| {worst_area.area_rel:.4e} | {_where(worst_area)} |")
+    print(f"| Closed-form area, the polygon through each arc's midpoint too "
+          f"| {worst_area_arcs.area_rel_arcs:.4e} | {_where(worst_area_arcs)} |")
+    for label, row in (("tangent", worst_tangent), ("crossing", worst_crossing)):
+        if row is not None:
+            print(f"| Junction gap, {label} joins ({sum(r.join == label for r in good):,} "
+                  f"gears), rad | {row.junction_gap:.3e} | {_where(row)} |")
+    print(f"| Smallest root-arc chord | {shortest.arc_chord:.4e} mm | {_where(shortest)} |")
+    print(f"| Thinnest waist per module (2 R h) | {thinnest.waist / thinnest.module:.4e} mm "
+          f"| {_where(thinnest)} |")
+    print()
+    print("#### Bunching: one gear resampled with a growing chord ratio "
+          f"({ARC_FIELDS['teeth']} teeth, module {ARC_FIELDS['module']}, "
+          f"{ARC_FIELDS['pressure_angle']} degrees, tip radius {ARC_RHO_MM:g} mm)")
+    print()
+    print("| Nominal ratio | Chord ratio as built | Spline error, method B (mm) | Kernel |")
+    print("|---|---|---|---|")
+    for b in bunching:
+        print(f"| {b.nominal:g} | {b.chord_ratio:.4g} | {b.deviation:.4e} | {b.outcome} |")
+    print()
+
+    # --- the proposals, each from the maximum above with its headroom beside it ---------
+    def verdict(headroom: float) -> str:
+        return ("at or over 10x: the planner's call" if headroom >= 10
+                else "UNDER 10x: joins the checkpoint")
+
+    print("#### Proposals (each from the maximum above)")
+    print()
+    worst = worst_spline.spline_per_module
+    try:
+        bar = proposed_bar(worst)
+    except ValueError as exc:
+        print(f"kernel bar proposal: NONE ({exc}); goes to the human")
+    else:
+        print(f"kernel bar proposal: {bar:g} x module -- the worst spline error per module is "
+              f"{worst:.4e} and the oracle's own resolution about "
+              f"{ORACLE_RESOLUTION_PER_MODULE:g} per module; headroom {bar / worst:.1f}x over "
+              f"the worst, {bar / ORACLE_RESOLUTION_PER_MODULE:.3g}x over the resolution "
+              f"({verdict(bar / worst)})")
+    failing = [b.chord_ratio for b in bunching if not b.builds]
+    ceiling = min(failing) if failing else math.inf
+    spacing = smallest_listed(SPACING_CANDIDATES, 10 * worst_spacing.spacing_ratio)
+    if spacing is None or spacing >= ceiling:
+        print(f"ROOT_SPACING_RATIO_MAX proposal: NONE below the first bunching failure "
+              f"({ceiling:g}) at 10x the maximum {worst_spacing.spacing_ratio:.3f}; goes to "
+              "the human")
+    else:
+        room = spacing / worst_spacing.spacing_ratio
+        print(f"ROOT_SPACING_RATIO_MAX proposal: {spacing:g} -- the maximum spacing ratio is "
+              f"{worst_spacing.spacing_ratio:.3f}, headroom {room:.1f}x ({verdict(room)}); "
+              f"the first chord ratio the kernel failed at is {ceiling:g}, "
+              f"{ceiling / spacing:.3g}x over the bar")
+    excursion = max(0.0, -low_root.below_root, high_tip.above_tip)
+    headroom = model.TOL / excursion if excursion > 0 else math.inf
+    print(f"annulus proposal: [rf - TOL, ra + TOL] with TOL = {model.TOL:g} mm -- the worst "
+          f"excursion outside [rf, ra] is {excursion:.3e} mm, headroom {headroom:.3g}x "
+          f"({verdict(headroom)})")
+    for label, measured in (("arcs as chords", worst_area.area_rel),
+                            ("arc midpoints in the polygon", worst_area_arcs.area_rel_arcs)):
+        area = smallest_listed(AREA_CANDIDATES, 10 * measured)
+        if area is None:
+            print(f"ROOT_AREA_REL_MAX proposal ({label}): NONE of {AREA_CANDIDATES} has 10x "
+                  f"headroom over {measured:.4e}; the largest listed value, "
+                  f"{AREA_CANDIDATES[-1]:g}, is {AREA_CANDIDATES[-1] / measured:.1f}x; goes "
+                  "to the human")
+        else:
+            print(f"ROOT_AREA_REL_MAX proposal ({label}): {area:g} -- the maximum is "
+                  f"{measured:.4e}, headroom {area / measured:.1f}x ({verdict(area / measured)})")
+    gap = max((r.junction_gap for r in good), default=0.0)
+    junction = smallest_power_of_ten(10 * gap, LIBM_FLOOR_RAD)
+    print(f"ROOT_JUNCTION_BAR_RAD proposal: {junction:g} rad -- the larger join maximum is "
+          f"{gap:.3e} rad (tangent {worst_tangent.junction_gap if worst_tangent else 0:.3e}, "
+          f"crossing {worst_crossing.junction_gap if worst_crossing else 0:.3e}), the libm "
+          f"floor {LIBM_FLOOR_RAD:g}; headroom {junction / gap if gap else math.inf:.3g}x "
+          f"({verdict(junction / gap if gap else math.inf)})")
+    last_failing = max(o.chord for o in band if not o.builds)
+    arc_min = arc_min_proposal(last_failing)
+    if arc_min is None:
+        print("ROOT_ARC_MIN check: no candidate")
+    else:
+        side = "below" if arc_min < shortest.arc_chord else "ABOVE"
+        print(f"ROOT_ARC_MIN check: proposal {arc_min:g} mm (from `arc`) against the smallest "
+              f"real root-arc chord {shortest.arc_chord:.4e} mm: the proposal is {side} it, "
+              f"which is {shortest.arc_chord / arc_min:.3g}x the proposal")
+    return 1 if errors else 0
+
+
+# --- D-07's waist walk (19-02) ---------------------------------------------------------
+
+WALK_TEETH = (6, 7, 8)
+WALK_SHIFTS = tuple(round(-0.6 + 0.01 * k, 2) for k in range(61))     # -0.60 .. 0.00
+WALK_RHO_MM = (0.0, 0.38, 3.0)     # sharp, 0.38 m, and the field's maximum (capped)
+WALK_PRESSURE_ANGLE = 14.5
+# 0.10 is the default backlash; 0.0 is what 19-RESEARCH F8's scratch walk used (it reads the
+# 4.98e-3 mm waist at 6 teeth, x -0.48, sharp cutter that only backlash 0 builds), and
+# backlash thins the waist, so the walk takes both.
+WALK_BACKLASH = (0.10, 0.0)
+
+
+@dataclass(frozen=True)
+class WalkRow:
+    teeth: int
+    shift: float
+    rho: float               # asked, mm
+    backlash: float
+    mode: str                # what root_mode answered
+    reason: str              # why it stayed radial, "" when trochoid
+    rho_used: float
+    join: str
+    waist: float | None      # 2 R h, mm; None unless the curve exists
+    kernel: str              # the kernel's refusal, "" when it built one valid solid
+    oracle: float | None     # the oracle's worst reading of tooth 0, mm
+
+
+def walk_row(case: tuple[int, float, float, float]) -> WalkRow:
+    """One gear of D-07's walk (a module-level function: spawn workers import it by name):
+    the predicate's answer, and for a trochoid gear the waist, the blank and the oracle."""
+    teeth, shift, rho, backlash = case
+    try:
+        p = GearParams.model_validate({**_M1, "teeth": teeth,
+                                       "pressure_angle": WALK_PRESSURE_ANGLE,
+                                       "profile_shift": shift, "backlash": backlash})
+    except ValidationError as exc:
+        return WalkRow(teeth, shift, rho, backlash, "refused", str(exc.errors()[0]["msg"]),
+                       0.0, "", None, "", None)
+    rm = root_mode(p, profile(p), requested="trochoid", rho=rho)
+    cut = rm.cutter
+    if cut is None:
+        raise ValueError("a requested root mode always carries its cutter")
+    curve = trochoid_root(cut) if rm.mode == "trochoid" else None
+    if curve is None:
+        return WalkRow(teeth, shift, rho, backlash, rm.mode, str(rm.reason), cut.rho, "", None,
+                       "", None)
+    waist = 2 * curve.waist[0] * curve.waist[1]
+    try:
+        solid = _one_solid(extrude_outline(p, curve))
+        reading = oracle_reading(solid, p, cut.rho, KERNEL_SAMPLES)
+    except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+        return WalkRow(teeth, shift, rho, backlash, "trochoid", "", cut.rho, curve.join, waist,
+                       f"{type(exc).__name__}: {exc}", None)
+    return WalkRow(teeth, shift, rho, backlash, "trochoid", "", cut.rho, curve.join, waist, "",
+                   reading)
+
+
+def product_waists() -> list[tuple[float, float, str]]:
+    """(waist mm, module, label) of every trochoid gear of the sweep product, from the
+    curve alone: no kernel."""
+    out = []
+    for case in _oracle_cases():
+        if case[3] != "trochoid":
+            continue
+        p = GearParams.model_validate(case[1])
+        _, curve = trochoid_curve(p, case[2])
+        out.append((2 * curve.waist[0] * curve.waist[1], p.module, case_label(case)))
+    return out
+
+
+def _walk_label(r: WalkRow) -> str:
+    return (f"{r.teeth} teeth, x {r.shift:g}, backlash {r.backlash:g}, tip radius asked "
+            f"{r.rho:g} mm (used {r.rho_used:g})")
+
+
+def run_waist(bar_per_module: float) -> int:
+    """D-07's walk as written, the thinnest built waist, every kernel refusal and every
+    oracle reading over the bar, and three floor candidates with the number of gears each
+    would warn on in the walk and in the whole product."""
+    start, load_before = datetime.now(UTC), os.getloadavg()
+    cases = [(z, x, rho, bl) for z in WALK_TEETH for bl in WALK_BACKLASH
+             for rho in WALK_RHO_MM for x in WALK_SHIFTS]
+    workers = os.cpu_count() or 1
+    t0 = time.perf_counter()
+    with ProcessPoolExecutor(workers, mp_context=get_context("spawn")) as pool:
+        rows = list(pool.map(walk_row, cases, chunksize=4))
+    wall = time.perf_counter() - t0
+    in_product = product_waists()
+    end, load_after = datetime.now(UTC), os.getloadavg()
+
+    built = [r for r in rows if r.mode == "trochoid" and not r.kernel]
+    refused_by_kernel = [r for r in rows if r.mode == "trochoid" and r.kernel]
+    print("\n".join(_host_state(start, end, load_before, load_after)))
+    print(f"D-07's walk: teeth {WALK_TEETH}, module 1, {WALK_PRESSURE_ANGLE} degrees, "
+          f"backlash {WALK_BACKLASH} mm, profile shift {WALK_SHIFTS[0]:g} to "
+          f"{WALK_SHIFTS[-1]:g} in 0.01 steps, tip radius {WALK_RHO_MM} mm (3.0 is the "
+          f"field's maximum, capped by the cutter). {len(rows)} gears in {wall:.0f} s on "
+          f"{workers} spawn workers; oracle at {KERNEL_SAMPLES + 1} positions per root edge; "
+          f"bar read as {bar_per_module:g} x module.")
+    print()
+    print("#### What `root_mode` answered")
+    print()
+    print("| Answer | Gears |")
+    print("|---|---|")
+    for label, count in sorted(Counter(
+            f"{r.mode}" + (f" ({r.reason})" if r.reason else "") for r in rows).items()):
+        print(f"| {label} | {count} |")
+    print()
+    print("#### The walk by series")
+    print()
+    print("| Teeth | Backlash | Tip radius asked (used) | Severed at x up to "
+          "| First trochoid x | Thinnest built waist (mm) | at x | Worst oracle reading (mm) |")
+    print("|---|---|---|---|---|---|---|---|")
+    for z, bl, rho in itertools.product(WALK_TEETH, WALK_BACKLASH, WALK_RHO_MM):
+        series = [r for r in rows if r.teeth == z and r.rho == rho and r.backlash == bl]
+        severed = [r.shift for r in series if r.reason == "tooth severed"]
+        trochoid = [r for r in series if r.mode == "trochoid"]
+        ok = [r for r in trochoid if r.waist is not None and not r.kernel]
+        used = sorted({r.rho_used for r in series})
+        thin = min(ok, key=lambda r: r.waist or math.inf) if ok else None
+        readings = [r.oracle for r in ok if r.oracle is not None]
+        print(f"| {z} | {bl:g} | {rho:g} ({', '.join(f'{u:g}' for u in used)}) "
+              f"| {max(severed) if severed else '--'} "
+              f"| {min(r.shift for r in trochoid) if trochoid else '--'} "
+              f"| {f'{thin.waist:.4e}' if thin and thin.waist is not None else '--'} "
+              f"| {thin.shift if thin else '--'} "
+              f"| {f'{max(readings):.3e}' if readings else '--'} |")
+    print()
+    if not built:
+        print("Verdict: FAIL, no trochoid gear built in the walk")
+        return 1
+
+    ranked = sorted(built, key=lambda r: r.waist or math.inf)
+    print("The thinnest built waist, then the next four:")
+    print()
+    for r in ranked[:5]:
+        print(f"- {r.waist:.4e} mm: {_walk_label(r)}, {r.join} join")
+    print()
+    print(f"**Thinnest built waist: {ranked[0].waist:.4e} mm** ({_walk_label(ranked[0])}); "
+          f"{len(built)} trochoid gears built of {len(rows)} walked.")
+    print()
+    if refused_by_kernel:
+        print(f"Kernel refusals ({len(refused_by_kernel)}):")
+        for r in refused_by_kernel:
+            print(f"- {_walk_label(r)}, waist {r.waist:.4e} mm: {r.kernel}")
+    else:
+        print("Kernel refusals: none (every trochoid gear built one valid solid).")
+    print()
+    walk_readings = [(r.oracle, r) for r in built if r.oracle is not None]
+    top_reading, top = max(walk_readings, key=lambda t: t[0])
+    print(f"Worst oracle reading in the walk: {top_reading:.4e} mm ({_walk_label(top)}).")
+    for bar in LISTED_BARS:
+        print(f"- readings over {bar:g} x module (module 1): "
+              f"{sum(v > bar for v, _ in walk_readings)} of {len(walk_readings)}")
+    over = [(v, r) for v, r in walk_readings if v > bar_per_module]
+    print(f"Oracle readings over the bar in use ({bar_per_module:g} mm): {len(over)}"
+          + "".join(f"\n- {v:.4e} mm: {_walk_label(r)}" for v, r in over) + ".")
+    print()
+
+    failures = [r for r in built if r.oracle is not None and r.oracle > bar_per_module]
+    failures += refused_by_kernel
+    measured = 10 * max((r.waist or 0.0 for r in failures), default=0.0) or None
+    candidates: list[tuple[str, float | None, bool]] = [
+        ("measured: 10x the thickest waist where the kernel refused or the oracle left the "
+         "bar", measured, True),
+        ("spline scale: 10x the worst oracle reading in the walk", 10 * top_reading, True),
+        ("printability: MIN_TIP_FDM, the tip warning's own number", MIN_TIP_FDM, False),
+    ]
+    print("#### Floor candidates")
+    print()
+    print("| Candidate | Floor | Walk gears warned (of "
+          f"{len(built)} built) | Product gears warned (of {len(in_product):,}) |")
+    print("|---|---|---|---|")
+    for name, floor, per_module in candidates:
+        if floor is None:
+            print(f"| {name} | none: no failure signature in the walk | -- | -- |")
+            continue
+        walk_hits = sum(1 for r in built if r.waist is not None and r.waist < floor)
+        product_hits = sum(1 for w, m, _ in in_product
+                           if w < (floor * m if per_module else floor))
+        unit = "mm per mm of module" if per_module else "mm, absolute"
+        print(f"| {name} | {floor:.4e} {unit} | {walk_hits} | {product_hits:,} |")
+    thinnest_product = min(in_product, key=lambda t: t[0] / t[1])
+    print()
+    print(f"Thinnest waist per module over the whole product: "
+          f"{thinnest_product[0] / thinnest_product[1]:.4e} mm ({thinnest_product[2]}).")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1008,10 +1525,18 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("heaviest", help="the heaviest low-tooth rows against the build timeout")
     sub.add_parser("spline", help="reconcile the deviation methods; read the kernel tier")
     sub.add_parser("arc", help="the root arc's dead band and ROOT_ARC_MIN")
+    sub.add_parser("product", help="the whole product's spline error and guard numbers")
+    waist = sub.add_parser("waist", help="D-07's waist walk and the floor candidates")
+    waist.add_argument("--bar-per-module", type=float, default=LISTED_BARS[1],
+                       help="the kernel bar the walk judges the oracle by, mm per mm of "
+                            "module (default 2e-3, 19-RESEARCH A2's proposal; pass the one "
+                            "`product` proposes)")
     args = parser.parse_args(argv)
+    if args.scenario == "waist":
+        return run_waist(args.bar_per_module)
     scenarios: dict[str, Callable[[], int]] = {
         "chamfer": run_chamfer, "heaviest": run_heaviest, "spline": run_spline,
-        "arc": run_arc}
+        "arc": run_arc, "product": run_product}
     return scenarios[args.scenario]()
 
 

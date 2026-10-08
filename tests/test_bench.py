@@ -37,6 +37,7 @@ import json
 import math
 from pathlib import Path
 
+import cadquery as cq
 import httpx
 import pytest
 from pydantic import ValidationError
@@ -66,11 +67,18 @@ from bench.trochoid_part import (
     KERNEL_ROWS,
     STACK_TROCHOID_MM,
     STACK_TROCHOID_ROWS,
+    WALK_BACKLASH,
+    WALK_RHO_MM,
+    WALK_SHIFTS,
+    WALK_TEETH,
     chamfer_verdict,
     corner_rows,
     deviation_a,
     deviation_b,
     proposed_bar,
+    shoelace_area,
+    smallest_listed,
+    smallest_power_of_ten,
 )
 from spur.calc import (
     HEX_CELL_CAP,
@@ -984,3 +992,43 @@ def test_the_kernel_tier_rows_are_seven_trochoid_gears_and_three_carry_stacks_fi
     assert {(row.fields["module"], row.fields["pressure_angle"], row.rho) for row in stack} == {
         (1, 20, 0.38)}
     assert STACK_TROCHOID_MM == (3.58e-5, 3.89e-5, 3.99e-5)
+
+
+def test_the_junction_bar_is_the_smallest_power_of_ten_over_the_gap_and_the_libm_floor() -> None:
+    """19-02's ROOT_JUNCTION_BAR_RAD rule (18-01's JUNCTION_BAR_RAD reasoning): the smallest
+    power of ten that is at least 10x the larger join maximum and at least 1e-12, the
+    cross-platform libm floor. The whole product's tangent maximum, 2.442e-13 rad, needs
+    2.4e-12 and so reads 1e-11; a maximum at float noise leaves the floor binding."""
+    assert smallest_power_of_ten(10 * 2.442e-13, 1e-12) == 1e-11
+    assert smallest_power_of_ten(10 * 6.939e-16, 1e-12) == 1e-12
+    assert smallest_power_of_ten(10 * 1.0e-12, 1e-12) == 1e-11
+    assert smallest_power_of_ten(0.0, 1e-12) == 1e-12
+
+
+def test_a_listed_bar_is_chosen_from_the_front_and_none_is_none() -> None:
+    """The spacing and area proposals take the first listed value at 10x or more; a maximum
+    with no such value over it yields None, which `product` prints as a question for the
+    human and not as the largest value."""
+    assert smallest_listed((100.0, 1000.0, 10000.0), 133.25) == 1000.0
+    assert smallest_listed((1e-2, 2e-2, 5e-2, 1e-1), 0.12162) is None
+
+
+def test_the_shoelace_area_of_a_unit_square_is_one_whichever_way_it_is_walked() -> None:
+    """The closed-form area guard divides the kernel's face area by this: it must not
+    depend on the orientation of the outline."""
+    square = [cq.Vector(0, 0, 0), cq.Vector(1, 0, 0), cq.Vector(1, 1, 0), cq.Vector(0, 1, 0)]
+    assert shoelace_area(square) == pytest.approx(1.0)
+    assert shoelace_area(square[::-1]) == pytest.approx(1.0)
+
+
+def test_the_waist_walk_is_d07s_grid_at_both_backlashes() -> None:
+    """D-07's walk: 6, 7 and 8 teeth, shift -0.6 to 0 in 0.01 steps (61 values, none lost
+    to float drift), tip radius 0, 0.38 and the field's maximum 3.0, at the default
+    backlash and at 0 -- the one 19-RESEARCH F8's scratch walk used."""
+    assert WALK_TEETH == (6, 7, 8)
+    assert len(WALK_SHIFTS) == 61
+    assert WALK_SHIFTS[0] == -0.6
+    assert WALK_SHIFTS[-1] == 0.0
+    assert all(round(b - a, 2) == 0.01 for a, b in itertools.pairwise(WALK_SHIFTS))
+    assert WALK_RHO_MM == (0.0, 0.38, 3.0)
+    assert set(WALK_BACKLASH) == {0.0, GearParams().backlash}
