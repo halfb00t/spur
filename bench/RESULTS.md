@@ -3031,3 +3031,110 @@ Zero 500s after the fix: run 1 of 1 (one decisive, none non-decisive) on `062818
 row and no `AttributeError` record, where the same scenario on `814f4f3` showed three and three.
 The bench is not the proof: the deterministic stale-executor test, red before and green after
 (17-04), is.
+
+## Trochoid maths (Phase 18)
+
+What the hob's trochoid root costs to trust, in the order the phase builds it: the cutter's tip
+radius cap and the junction bar it is held to (18-01, this subsection), the join epsilon (18-03),
+the generator sweep over the allowed box (18-03), the oracle bars and their tripwires (18-04),
+the per-call costs and the root-shape step (18-05). Each subsection carries its own host state,
+because every number below belongs to the load it was read at. Nothing here is a kernel
+measurement: the maths is pure stdlib `math` in `calc.py`, so the kernel pair is recorded only
+because every section of this file records it.
+
+### Cutter cap and junction (18-01)
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (the pinned pair; this
+  measurement does not use the kernel)
+- HEAD: `8e75273` (the commit that carries the tests quoted below)
+- Read 2026-10-08T01:29:17Z to 01:29:19Z (the test run and the scratch table, two seconds)
+- Load (1-minute, `sysctl -n vm.loadavg`): 3.39 before, 3.39 after. The host carried
+  background load; no quiet bar was waited for. These are float-arithmetic residues, not
+  timings, so load does not move them; it is recorded because every section records it.
+
+#### The cap, reconciled
+
+`tests/test_trochoid.py::test_the_cap_formula_reconciles_0_318_m_and_0_363_m_as_one_cap_at_two_backlashes`
+is the phase's first test. PITFALLS gave the largest cutter tip radius at module 1.75, 25 degrees
+as 0.635 mm = 0.363 m; STACK and FEATURES gave 0.318 m. They are one formula,
+`(pi*m/4 + backlash/2 - 1.25*m*tan(alpha)) / (1/cos(alpha) - tan(alpha))`: the first is the
+default gear's 0.10 mm backlash entering the tip land as backlash/2, the second is the same gear
+at backlash 0 (SUMMARY's inference, now measured). It does not depend on the profile shift:
+x = -0.4, 0 and 0.6 agree to 2.2e-16 mm.
+
+| module | pressure angle | backlash | `rho_max` (mm) | `rho_max / m` | the figure it reconciles |
+|---|---|---|---|---|---|
+| 1.75 | 25 | 0.10 | 0.63478 | 0.36273 | PITFALLS' 0.635 mm = 0.363 m |
+| 1.75 | 25 | 0 | 0.55629 | 0.31788 | STACK / FEATURES' 0.318 m |
+| 1 | 20 | 0 | 0.47191 | 0.47191 | the tracer gear's cap |
+
+#### The cap, floored
+
+Module 0.5, 15 degrees, 12 teeth, backlash 0: the unrounded cap is 0.29353 mm (0.2935265).
+
+| request (mm) | used (mm) | tip land `a` (mm) | cap sentence |
+|---|---|---|---|
+| 0.293 | 0.293 | 4.04e-4 | none (under the cap) |
+| 0.294 | 0.293 | 4.04e-4 | "Cutter tip radius reduced to 0.293 mm, ..." |
+| 0.2935265 (the cap itself) | 0.2935265 | 0 | none (not trimmed) |
+| 0.294 if rounded to nearest | 0.294 | -3.63e-4 | would refuse a legal gear as having no tip land |
+
+The used radius and the printed one are the same float.
+
+#### The tip-land limit, one field step either side
+
+The sign of the sharp-corner land `a0` decides it, so it moves with backlash and module (the limit
+is tan(alpha) = (pi/4 + backlash/(2 m)) / 1.25: 32.14 degrees at backlash 0, 33.07 at the default
+gear).
+
+| gear | pressure angle | `a0` (mm) | tip land |
+|---|---|---|---|
+| 12 teeth, m 1, x 0, backlash 0 | 32.0 | +0.00431 | yes, a curve |
+| 12 teeth, m 1, x 0, backlash 0 | 32.5 | -0.01094 | none, `tip land gone` |
+| 19 teeth, m 1.75, x -0.4, backlash 0.10 | 33.0 | +0.00387 | yes, a curve |
+| 19 teeth, m 1.75, x -0.4, backlash 0.10 | 33.5 | -0.02343 | none, `tip land gone` |
+
+#### The junction bar
+
+The tangent junction needs no root-find: the curve ends at the cutter flank's foot and its last
+point is the involute's. Gaps of the last point against `Profile.half_angle` at its radius and
+against `sqrt(rb^2 + xi^2)`, and the angle between the two curves' directions there (unit
+chords over the last 1e-7 rad of contact-normal angle):
+
+| row | backlash | abs delta half-angle (rad) | abs delta R (mm) | direction angle (rad) |
+|---|---|---|---|---|
+| 19 teeth, m 1.75, 25 deg, rho 0.5 | 0 | 1.39e-17 | 1.78e-15 | 1.38e-7 |
+| 19 teeth, m 1.75, 25 deg, rho 0.5 | 0.10 | 1.39e-17 | 1.78e-15 | 1.38e-7 |
+| 30 teeth, m 1, 20 deg, rho 0.38 | 0 | 4.16e-17 | 0 | 1.10e-7 |
+| 30 teeth, m 1, 20 deg, rho 0.38 | 0.10 | 1.39e-17 | 0 | 1.11e-7 |
+
+Bars, each from the two recorded numbers (the model's gap and float64's own resolution at that
+magnitude: one ulp is 2.8e-17 rad near 0.2 rad and 1.78e-15 mm at R 15.3 mm):
+
+| bar | value | largest measured | headroom |
+|---|---|---|---|
+| `JUNCTION_BAR_RAD` | 1e-12 rad | 4.16e-17 rad | 2.4e4 (1e-12 is the cross-platform libm floor; 10x the gap would be 1e-15) |
+| `JUNCTION_BAR_MM` | 1e-12 mm | 1.78e-15 mm | 562 (same floor) |
+| `DIRECTION_BAR_RAD` | 1e-5 rad | 1.38e-7 rad | 72 (smallest power of ten above 10x the reading) |
+
+The direction angle is the chord's own error, not noise: it reads 1.39 * step and 1.16 * step at
+steps 1e-4, 1e-5 and 1e-6 (1.39e-4, 1.39e-5, 1.39e-6 rad on the first row), so the tangents
+agree and only the secant differs. At a step of 1e-8 float noise starts to show (1.1e-8 and
+3.6e-8 rad), which is why the test uses 1e-7.
+
+Tripwires (both seen red):
+
+- A cutter built with backlash 0 for the backlash-0.10 default gear ends 3.008e-3 rad from
+  that gear's involute, 0.0460 mm at its radius (PITFALLS 3's 0.046 mm step): 3.0e9 times
+  `JUNCTION_BAR_RAD`. Mutation check, 2026-10-08: with the cutter ignoring backlash the
+  junction test fails on both backlash-0.10 rows and passes on both backlash-0 rows.
+- Tangency holds only for z >= z_min. The 17-tooth, 20 degree, rho 0.38 gear (z_min 17.10, so
+  just undercut, join `crossing`) reads a direction angle of 4.13e-3 rad: 413 times
+  `DIRECTION_BAR_RAD`, 3.0e4 times the tangent rows' reading.
+
+No headroom here is under 10x. 18-04 Task 3 (the phase's L33 D-06 checkpoint) collects every
+18-01 bar again.
