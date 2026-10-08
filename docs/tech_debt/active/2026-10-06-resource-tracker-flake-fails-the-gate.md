@@ -64,9 +64,22 @@ narrowest `filterwarnings` entry that names this message, never a blanket
 The "fails `make verify` a second time" trigger fired on 2026-10-06 (the second occurrence
 above, commit `b8ef84a`); the "third time" trigger fired the same day on CI (run
 37460451701). Escalated to `must` by the human on 2026-10-06 at the Phase 17 ship: a required
-check that fails on its own is a merge-gate defect, not hygiene. New trigger: the next
+check that fails on its own is a merge-gate defect, not hygiene. Trigger set then: the next
 `make verify` failure, or Phase 18 planning — whichever comes first — gets the isolation runs
 under Next step and a fix plan.
+
+Phase 18 planning trigger read on 2026-10-08, at the close of Phase 18 (plan 18-05): the phase
+made four full `make verify` runs (18-01: 963 passed; 18-02: 981; 18-03: 996; 18-04: 1016), all
+green, none printing the `ReentrantCallError` chain; `make verify.fast`, the pre-commit hook, runs
+on every commit and excludes the process-spawning test files. Phase 18 added no process-spawning
+test to the gate (`grep -nE 'multiprocessing|ProcessPool|subprocess' tests/test_trochoid.py
+tests/trochoid_oracle.py` prints nothing; the pooled oracle lives in `bench/` and is not in the
+gate). Nothing new was observed to isolate, and at about 1 in 43 runs the isolation loops would
+most likely see nothing. Re-deferred by the human, who chose this over running the isolation or
+adding a filter; Severity stays `must`, Status stays `active`.
+
+New trigger: the next `make verify` failure, or Phase 19 planning — whichever comes first — gets
+the isolation runs under Next step and a fix plan.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
