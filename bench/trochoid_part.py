@@ -24,11 +24,13 @@ import platform
 import subprocess
 import sys
 import time
-from collections.abc import Callable
-from dataclasses import dataclass
+from bisect import bisect_right
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import partial
 from importlib import metadata
+from itertools import pairwise
 from pathlib import Path
 
 import cadquery as cq
@@ -41,11 +43,17 @@ from spur import int_env, model
 from spur.build_errors import BuildError
 from spur.calc import (
     TIP_CHAMFER_MARGIN,
+    TROCHOID_JOIN_EPS,
     Cutter,
     Profile,
     RootCurve,
+    _junction,
+    _trochoid_point,
+    cutter,
     profile,
+    root_fillet,
     root_mode,
+    spline_start,
     trochoid_root,
 )
 from spur.params import GearParams
@@ -56,14 +64,12 @@ _TESTS = Path(__file__).resolve().parents[1] / "tests"
 
 # --- the part -----------------------------------------------------------------------
 
-def trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
-    """Closed gear outline whose root is the hob's trochoid, six edges per tooth (the
-    radial path's `model._outline` has eight): the root spline up to the junction, the
-    involute spline from it to the tip, the tip arc, the mirror involute and root splines,
-    and the root arc to the next tooth.
+Tooth = tuple[float, list[cq.Vector], list[cq.Vector], list[cq.Vector], list[cq.Vector]]
 
-    This is the spike's copy; 19-04 moves the builder into `model.py` and 19-09 replaces
-    this one with it, so there is one definition by the phase's end (the 11-05 precedent).
+
+def outline_teeth(pr: Profile, curve: RootCurve) -> list[Tooth]:
+    """Every tooth's points as (centre angle, root_l, root_r, flank_l, flank_r): the root
+    spline up to the junction, the involute spline from it to the tip and their mirrors.
 
     The left involute spline starts with the SAME `Vector` object the root spline ends on,
     never a recomputed one: a gap of 1e-6 mm silently opens the wire (PITFALLS 7), and a
@@ -73,7 +79,7 @@ def trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
     r0 = curve.points[-1][0]
     radii = [r0 + (pr.ra - r0) * (i / (model.FLANK_POINTS - 1)) ** 1.5
              for i in range(model.FLANK_POINTS)]
-    teeth = []
+    teeth: list[Tooth] = []
     for k in range(pr.z):
         c = k * pitch
         root_l = [model._polar(r, c - h) for r, h in curve.points]
@@ -82,7 +88,20 @@ def trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
         flank_r = [model._polar(r, c + pr.half_angle(r)) for r in reversed(radii[1:])]
         flank_r.append(root_r[0])
         teeth.append((c, root_l, root_r, flank_l, flank_r))
+    return teeth
 
+
+def trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
+    """Closed gear outline whose root is the hob's trochoid, six edges per tooth (the
+    radial path's `model._outline` has eight): the root spline up to the junction, the
+    involute spline from it to the tip, the tip arc, the mirror involute and root splines,
+    and the root arc to the next tooth.
+
+    This is the spike's copy; 19-04 moves the builder into `model.py` and 19-09 replaces
+    this one with it, so there is one definition by the phase's end (the 11-05 precedent).
+    """
+    pitch = 2 * math.pi / pr.z
+    teeth = outline_teeth(pr, curve)
     edges: list[cq.Edge] = []
     for k, (c, root_l, root_r, flank_l, flank_r) in enumerate(teeth):
         edges += [
@@ -181,24 +200,28 @@ def root_edges(solid: cq.Shape, pr: Profile, teeth: int) -> list[cq.Edge]:
     return edges
 
 
-def oracle_reading(solid: cq.Shape, p: GearParams, rho_used: float) -> float:
+def tooth0_root_edges(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
+    """The two root splines of the tooth whose centre lies on the x axis."""
+    edges = [e for e in root_edges(solid, profile(p), p.teeth)
+             if abs(math.atan2(e.positionAt(0.5).y, e.positionAt(0.5).x)) < math.pi / p.teeth]
+    if len(edges) != 2:
+        raise ValueError(f"tooth 0 has {len(edges)} root edges, expected 2")
+    return edges
+
+
+def oracle_reading(solid: cq.Shape, p: GearParams, rho_used: float, samples: int = 40) -> float:
     """The largest |reading| in mm of the Phase 18 swept-cutter oracle over the two root
-    edges of tooth 0, 41 samples each, with the tip radius the cutter actually used. The
-    oracle shares no code with `spur`, so this is the part's root judged independently of
-    the maths that drew it."""
+    edges of tooth 0, `samples` + 1 positions on each (41 by default), with the tip radius
+    the cutter actually used. The oracle shares no code with `spur`, so this is the part's
+    root judged independently of the maths that drew it."""
     if str(_TESTS) not in sys.path:
         sys.path.insert(0, str(_TESTS))
     from trochoid_oracle import clearance  # the tests/ root, put on the path just above
 
-    pr = profile(p)
-    tooth0 = [e for e in root_edges(solid, pr, p.teeth)
-              if abs(math.atan2(e.positionAt(0.5).y, e.positionAt(0.5).x)) < math.pi / p.teeth]
-    if len(tooth0) != 2:
-        raise ValueError(f"tooth 0 has {len(tooth0)} root edges, expected 2")
     worst = 0.0
-    for e in tooth0:
+    for e in tooth0_root_edges(solid, p):
         points = tuple((math.hypot(v.x, v.y), abs(math.atan2(v.y, v.x)))
-                       for v in (e.positionAt(i / 40) for i in range(41)))
+                       for v in (e.positionAt(i / samples) for i in range(samples + 1)))
         readings = clearance(points, teeth=p.teeth, module=p.module,
                              pressure_angle=p.pressure_angle,
                              profile_shift=p.profile_shift, backlash=p.backlash,
@@ -511,14 +534,485 @@ def run_heaviest() -> int:
     return 1 if failed else 0
 
 
+# --- the two spline-deviation methods and the kernel bar (19-02) ----------------------
+
+def _rising_radii(reference: Sequence[tuple[float, float]]) -> list[float]:
+    radii = [math.hypot(x, y) for x, y in reference]
+    if len(radii) < 2 or any(lo >= hi for lo, hi in pairwise(radii)):
+        raise ValueError("the reference's distance from the origin must strictly rise "
+                         "from vertex to vertex (every root curve and flank does)")
+    return radii
+
+
+def _worst_distance(samples: Sequence[tuple[float, float]],
+                    reference: Sequence[tuple[float, float]], *, to_segments: bool) -> float:
+    """The largest, over `samples`, of the distance to the nearest reference vertex or
+    (`to_segments`) the nearest point of the reference polyline.
+
+    The search starts at the item whose radius range holds the sample's radius and walks
+    outward while an item's radius gap is still below the best distance found: the
+    distance from the origin changes by at most the distance between two points, so no
+    item with a larger gap can be nearer. That makes it exact and linear where a scan of
+    the 20,001-point reference per sample would cost 4 million distances a gear, and it
+    is why the reference must rise in radius.
+    """
+    radii = _rising_radii(reference)
+    last = len(reference) - (2 if to_segments else 1)
+
+    def distance(px: float, py: float, i: int) -> float:
+        ax, ay = reference[i]
+        if not to_segments:
+            return math.hypot(px - ax, py - ay)
+        ex, ey = reference[i + 1][0] - ax, reference[i + 1][1] - ay
+        t = max(0.0, min(1.0, ((px - ax) * ex + (py - ay) * ey) / (ex * ex + ey * ey)))
+        return math.hypot(px - (ax + t * ex), py - (ay + t * ey))
+
+    worst = 0.0
+    for px, py in samples:
+        r = math.hypot(px, py)
+        start = min(max(bisect_right(radii, r) - 1, 0), last)
+        best = distance(px, py, start)
+        for step in (-1, 1):
+            i = start + step
+            while 0 <= i <= last and max(radii[i] - r, r - radii[i + int(to_segments)], 0.0) < best:
+                best = min(best, distance(px, py, i))
+                i += step
+        worst = max(worst, best)
+    return worst
+
+
+def deviation_a(samples: Sequence[tuple[float, float]],
+                reference: Sequence[tuple[float, float]]) -> float:
+    """Method A: the largest distance from a sample to the NEAREST VERTEX of the reference.
+    STACK's shipped-flank figures (6.0e-5 and 1.0e-4 mm) are this, so they carry half the
+    reference's own vertex spacing as a floor and are not a deviation (19-RESEARCH F2)."""
+    return _worst_distance(samples, reference, to_segments=False)
+
+
+def deviation_b(samples: Sequence[tuple[float, float]],
+                reference: Sequence[tuple[float, float]]) -> float:
+    """Method B: the largest distance from a sample to the reference POLYLINE (segment-wise,
+    projection clamped). STACK's trochoid figures (3.6 to 4.0e-5 mm) are this, and it is
+    the one a bar rests on: it has no floor from the reference's spacing beyond the
+    polyline's own sagitta (about 1e-10 mm at 20,001 points)."""
+    return _worst_distance(samples, reference, to_segments=True)
+
+
+# The bars L33 D-06 allows the kernel tier, as multiples of the module (mm per mm of module).
+LISTED_BARS = (1e-3, 2e-3, 5e-3, 1e-2)
+
+
+def proposed_bar(worst_per_module: float) -> float:
+    """The smallest listed bar (per module) that is at least 10x `worst_per_module`, the
+    worst spline error per module: the L33 D-06 rule, "put to the human if under about
+    10x". None qualifying is a question for the human and not a default, so it raises."""
+    for bar in LISTED_BARS:
+        if bar >= 10 * worst_per_module:
+            return bar
+    raise ValueError(f"no listed bar {LISTED_BARS} has 10x headroom over the worst spline "
+                     f"error per module {worst_per_module:g}")
+
+
+def third_digit_units(value: float, quoted: float) -> float:
+    """|value - quoted| in units of the third significant digit of `quoted`: 1.0 means the
+    two differ by one in the third digit (3.98e-5 against a quoted 3.99e-5)."""
+    return abs(value - quoted) / 10.0 ** (math.floor(math.log10(quoted)) - 2)
+
+
+SPLINE_SAMPLES = 2000     # positionAt(i / 2000): `spline` prints the 14-tooth row at 200, 2,000
+# and 20,000 positions; 200 under-reads and 2,000 has converged
+KERNEL_SAMPLES = 400      # per root edge for the independent oracle: 41 positions read 0.72
+# of the converged figure on the module-10 row (`spline`'s kernel table); 401 read it to 4
+# digits, and the whole seven-row `spline` run takes about 70 s
+REFERENCE_POINTS = 20_001  # STACK's dense reference
+CONVERGENCE_POSITIONS = (200, 2000, 20000)
+
+
+def dense_root(cut: Cutter) -> list[tuple[float, float]]:
+    """The hob's trochoid at 20,001 contact-normal angles, uniform in tan(beta) like the
+    16 points of `RootCurve` (the roll angle is linear in it), from the root circle to the
+    junction, as folded Cartesian points: x = R cos h, y = R sin h with h the half-angle
+    from the tooth centre, so a sample taken from either flank folds onto it."""
+    junction = _junction(cut, TROCHOID_JOIN_EPS)
+    if junction is None:
+        raise ValueError("no junction for this cutter")
+    beta_stop = junction[0]
+    s_stop = math.tan(beta_stop)
+    n = REFERENCE_POINTS
+    betas = [math.atan(s_stop * i / (n - 1)) for i in range(n - 1)] + [beta_stop]
+    points = [_trochoid_point(cut, beta) for beta in betas]
+    return [(r * math.cos(h), r * math.sin(h)) for r, h in points]
+
+
+def edge_samples(e: cq.Edge, n: int) -> list[tuple[float, float]]:
+    """n + 1 positions along an edge on the z = 0 face, folded onto y >= 0 (the right
+    flank's mirror image) so left and right root splines read against one reference."""
+    return [(v.x, abs(v.y)) for v in (e.positionAt(i / n) for i in range(n + 1))]
+
+
+def spline_deviation(edges: Sequence[cq.Edge], reference: Sequence[tuple[float, float]],
+                     n: int = SPLINE_SAMPLES) -> float:
+    """Method B over the given root edges: the kernel spline's own error against the
+    dense curve it interpolates, mm."""
+    return max(deviation_b(edge_samples(e, n), reference) for e in edges)
+
+
+def vertex_gap(reference: Sequence[tuple[float, float]]) -> float:
+    """The largest distance between neighbouring reference vertices: method A cannot read
+    below half of it."""
+    return max(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in pairwise(reference))
+
+
+@dataclass(frozen=True)
+class KernelRow:
+    label: str
+    fields: dict[str, object]
+    rho: float                 # tip radius asked for, mm
+
+
+# Typed out, never generated from calc. 19-RESEARCH F3's seven rows; the module-0.2 row is
+# the worst per module that research saw, the module-10 row the worst in mm. Default
+# backlash 0.10 throughout: the deviation does not move with it (0.0 and 0.1 read the
+# same to 1e-12 on rows 2 to 4, 19-02 exploration).
+KERNEL_ROWS: list[KernelRow] = [
+    KernelRow("default 19 teeth, m 1.75, 25 deg, x 0", {}, 0.5),
+    KernelRow("8 teeth, m 1, 20 deg, x 0",
+              {**_M1, "teeth": 8, "pressure_angle": 20, "profile_shift": 0}, 0.38),
+    KernelRow("10 teeth, m 1, 20 deg, x 0",
+              {**_M1, "teeth": 10, "pressure_angle": 20, "profile_shift": 0}, 0.38),
+    KernelRow("14 teeth, m 1, 20 deg, x 0",
+              {**_M1, "teeth": 14, "pressure_angle": 20, "profile_shift": 0}, 0.38),
+    KernelRow("6 teeth, m 1, 14.5 deg, x 0",
+              {**_M1, "teeth": 6, "pressure_angle": 14.5, "profile_shift": 0}, 0.0),
+    KernelRow("30 teeth, m 0.2, 14.5 deg, x -0.6",
+              {**_M1, "module": 0.2, "teeth": 30, "pressure_angle": 14.5,
+               "profile_shift": -0.6}, 0.5),
+    KernelRow("30 teeth, m 10, 14.5 deg, x -0.6",
+              {**_M1, "module": 10, "teeth": 30, "pressure_angle": 14.5,
+               "profile_shift": -0.6}, 0.5),
+]
+STACK_TROCHOID_ROWS = (1, 2, 3)         # KERNEL_ROWS the three STACK figures belong to
+STACK_TROCHOID_MM = (3.58e-5, 3.89e-5, 3.99e-5)   # 19-RESEARCH F2 quoting STACK, module 1
+# Where the tripwire sits: a module-1 row (a 0.05 mm shift reads 0.011 mm, which a bar
+# scaling with the module passes at module 10) and the module-10 row to show it.
+TRIPWIRE_ROWS = (2, 6)
+TRIPWIRE_SHIFT_MM = 0.05
+
+
+@dataclass(frozen=True)
+class KernelReading:
+    row: KernelRow
+    module: float
+    rho_used: float
+    join: str
+    oracle_41: float       # the 19-01 reading: 41 positions per edge
+    oracle: float          # KERNEL_SAMPLES + 1 positions per edge
+    b_same: float          # method B on those same positions
+    b_converged: float     # method B at SPLINE_SAMPLES + 1 positions
+    a_converged: float     # method A at SPLINE_SAMPLES + 1 positions
+    spacing_floor: float   # half the reference's largest vertex gap, mm
+    tripwire: float | None
+
+
+def read_kernel_row(index: int) -> KernelReading:
+    row = KERNEL_ROWS[index]
+    p = GearParams.model_validate(row.fields)
+    solid, cut, curve = trochoid_blank(p, row.rho)
+    reference = dense_root(cut)
+    edges = tooth0_root_edges(solid, p)
+    return KernelReading(
+        row, p.module, cut.rho, curve.join,
+        oracle_reading(solid, p, cut.rho),
+        oracle_reading(solid, p, cut.rho, KERNEL_SAMPLES),
+        spline_deviation(edges, reference, KERNEL_SAMPLES),
+        spline_deviation(edges, reference),
+        max(deviation_a(edge_samples(e, SPLINE_SAMPLES), reference) for e in edges),
+        vertex_gap(reference) / 2,
+        oracle_reading(solid, p, cut.rho + TRIPWIRE_SHIFT_MM, KERNEL_SAMPLES)
+        if index in TRIPWIRE_ROWS else None)
+
+
+# (teeth, module, STACK's quoted figure in mm); STACK does not state the pressure angle
+def convergence(index: int) -> list[tuple[int, float]]:
+    """Method B on one kernel row at CONVERGENCE_POSITIONS positions per root edge."""
+    row = KERNEL_ROWS[index]
+    p = GearParams.model_validate(row.fields)
+    solid, cut, _ = trochoid_blank(p, row.rho)
+    reference, edges = dense_root(cut), tooth0_root_edges(solid, p)
+    return [(n, spline_deviation(edges, reference, n)) for n in CONVERGENCE_POSITIONS]
+
+
+STACK_FLANK_MM = ((12, 1.0, 6.0e-5), (19, 1.75, 1.0e-4))
+
+
+def flank_deviation(p: GearParams, exponent: float) -> tuple[float, float, float]:
+    """(method A, method B, half the reference's largest vertex gap) for the radial path's
+    tooth-0 left involute spline against a 20,001-point reference whose radii are
+    r0 + (ra - r0) (i / 20,000) ** exponent. 1.5 is the shipped spline's own spacing, 1.0
+    is uniform in radius: STACK does not say which its reference used."""
+    pr = profile(p)
+    r0 = spline_start(pr, root_fillet(p))
+    radii = [r0 + (pr.ra - r0) * (i / (model.FLANK_POINTS - 1)) ** 1.5
+             for i in range(model.FLANK_POINTS)]
+    spline = cq.Edge.makeSpline([model._polar(r, -pr.half_angle(r)) for r in radii])
+    reference = [(r * math.cos(pr.half_angle(r)), r * math.sin(pr.half_angle(r)))
+                 for r in (r0 + (pr.ra - r0) * (i / (REFERENCE_POINTS - 1)) ** exponent
+                           for i in range(REFERENCE_POINTS))]
+    samples = edge_samples(spline, SPLINE_SAMPLES)
+    return (deviation_a(samples, reference), deviation_b(samples, reference),
+            vertex_gap(reference) / 2)
+
+
+def run_spline() -> int:
+    """Reconcile the two research files' methods, then read the kernel tier on seven rows
+    and the tripwire. Everything is computed before the verdict reads any of it."""
+    start, load_before = datetime.now(UTC), os.getloadavg()
+    readings = [read_kernel_row(i) for i in range(len(KERNEL_ROWS))]
+    flank_gears = [GearParams.model_validate({**_M1, "teeth": 12, "pressure_angle": 20}),
+                   GearParams.model_validate({**_M1, "teeth": 12, "pressure_angle": 25}),
+                   GearParams.model_validate({**_M1, "teeth": 8, "pressure_angle": 25}),
+                   GearParams()]
+    flanks = [(p, exponent, flank_deviation(p, exponent))
+              for p in flank_gears for exponent in (1.5, 1.0)]
+    steps = convergence(STACK_TROCHOID_ROWS[-1])
+    end, load_after = datetime.now(UTC), os.getloadavg()
+
+    print("\n".join(_host_state(start, end, load_before, load_after)))
+    print(f"Positions per spline: {SPLINE_SAMPLES + 1} for the deviation figures (method "
+          f"B converges there, see the table below), {KERNEL_SAMPLES + 1} per root edge for the "
+          "oracle against method B on the same positions, 41 for the 19-01 oracle reading. "
+          f"Reference: {REFERENCE_POINTS:,} points.")
+    print()
+    print("#### Reconciliation: STACK's trochoid figures (module 1, mm)")
+    print()
+    print("| Gear | Join | STACK | Method B | B off by (units of the 3rd digit) "
+          "| Method A | Half the reference's largest vertex gap |")
+    print("|---|---|---|---|---|---|---|")
+    misses = []
+    for index, quoted in zip(STACK_TROCHOID_ROWS, STACK_TROCHOID_MM, strict=True):
+        r = readings[index]
+        units = third_digit_units(r.b_converged, quoted)
+        if units > 1:
+            misses.append(r.row.label)
+        print(f"| {r.row.label}, tip radius {r.rho_used:g} | {r.join} | {quoted:.2e} "
+              f"| {r.b_converged:.4e} | {units:.2f} | {r.a_converged:.4e} "
+              f"| {r.spacing_floor:.2e} |")
+    print()
+    print("#### Reconciliation: STACK's shipped-flank figures (mm)")
+    print()
+    print("| Gear | STACK | Reference spacing | Method A | Half the largest vertex gap "
+          "| Method B |")
+    print("|---|---|---|---|---|---|")
+    for p, exponent, (a, b, floor) in flanks:
+        label = (f"z={p.teeth}, m={p.module:g}, {p.pressure_angle:g} deg"
+                 + (" (default gear)" if p == GearParams() else ""))
+        stack_mm = next((q for z, m, q in STACK_FLANK_MM if (z, m) == (p.teeth, p.module)),
+                        None)
+        spacing = "i^1.5 (the shipped spline's)" if exponent == 1.5 else "uniform in radius"
+        print(f"| {label} | {f'{stack_mm:.1e}' if stack_mm else '--'} | {spacing} | {a:.3e} "
+              f"| {floor:.3e} | {b:.3e} |")
+    print()
+    last_stack = KERNEL_ROWS[STACK_TROCHOID_ROWS[-1]].label
+    print(f"#### Method B against the number of positions ({last_stack})")
+    print()
+    print("| Positions per root edge | Method B (mm) |")
+    print("|---|---|")
+    for n, value in steps:
+        print(f"| {n + 1} | {value:.4e} |")
+    print()
+    print("#### Kernel tier on seven rows (mm unless stated)")
+    print()
+    print("| Row | Tip radius used | Join | Oracle, 41 positions | Oracle | Method B, same "
+          "positions | Oracle vs B (units of the 3rd digit) | Method B, converged "
+          "| Converged per module | 41-position reading / converged |")
+    print("|---|---|---|---|---|---|---|---|---|---|")
+    disagreements = []
+    for r in readings:
+        units = third_digit_units(r.oracle, r.b_same)
+        if units > 1:
+            disagreements.append(r.row.label)
+        print(f"| {r.row.label} | {r.rho_used:g} | {r.join} | {r.oracle_41:.4e} "
+              f"| {r.oracle:.4e} | {r.b_same:.4e} | {units:.2f} | {r.b_converged:.4e} "
+              f"| {r.b_converged / r.module:.4e} | {r.oracle_41 / r.b_converged:.2f} |")
+    print()
+    print(f"#### Tripwire: the tip radius read {TRIPWIRE_SHIFT_MM:g} mm above the one used")
+    print()
+    print("| Row | Reading (mm) | Reading per module | "
+          + " | ".join(f"vs {bar:g} x module" for bar in LISTED_BARS) + " |")
+    print("|---|---|---|" + "---|" * len(LISTED_BARS))
+    for r in readings:
+        if r.tripwire is None:
+            continue
+        cells = " | ".join(
+            f"{r.tripwire / (bar * r.module):.2f}x, "
+            f"{'over' if r.tripwire > bar * r.module else 'UNDER'}" for bar in LISTED_BARS)
+        print(f"| {r.row.label} | {r.tripwire:.4e} | {r.tripwire / r.module:.4e} | {cells} |")
+    print()
+    for r in readings:
+        if r.tripwire is not None:
+            print(f"tripwire, {r.row.label}: {r.tripwire:.4e} mm, "
+                  f"{r.tripwire / r.module:.4e} per module")
+    print()
+    if misses:
+        print(f"Verdict: method B misses STACK's figure by more than one in the third "
+              f"digit on {'; '.join(misses)}")
+    if disagreements:
+        print(f"Verdict: the kernel tier and method B disagree on {'; '.join(disagreements)}")
+    if misses or disagreements:
+        return 1
+    print("Verdict: reconciled -- method B reproduces STACK's three trochoid figures to one "
+          "in the third digit, and the oracle agrees with method B on all seven rows.")
+    return 0
+
+
+# --- the root arc's dead band (19-02) -------------------------------------------------
+
+ARC_HALF_WIDTHS_MM = (0.0, 1e-12, 1e-10, 1e-9, 1e-8, 1e-7, 2e-7, 3e-7, 6e-7, 1e-6, 2e-6)
+ARC_FIELDS: dict[str, object] = {**_M1, "teeth": 12, "pressure_angle": 20, "profile_shift": 0}
+ARC_RHO_MM = 0.38
+ARC_MIN_CANDIDATES_MM = (1e-6, 2e-6, 5e-6, 1e-5)
+ARC_TARGET_HALF_WIDTH_MM = 1e-8
+# GearParams refuses this gear above about 0.49 mm of backlash ("Teeth come to a point"), so
+# the bisection runs over [0, 0.4] and not the plan's [0, 1]: rho_max spans 0.472 to 0.758
+# mm there, which holds about 285 multiples of 0.001.
+ARC_BACKLASH_CEILING = 0.4
+
+
+@dataclass(frozen=True)
+class ArcOutcome:
+    half_width: float      # a, mm
+    chord: float           # between root_r[-1] and the next tooth's root_l[0], mm
+    outcome: str           # exception class and message, or what built
+    builds: bool           # the arc is there: valid, 6 z + 2 faces
+
+
+def arc_outcome(p: GearParams, curve: RootCurve, half_width: float) -> ArcOutcome:
+    """Build the blank with the curve's first point moved along the root circle so the
+    root arc between neighbours spans 2 x half_width, and say what the kernel did."""
+    pr = profile(p)
+    first = (curve.points[0][0], math.pi / p.teeth - half_width / pr.rf)
+    variant = replace(curve, points=(first, *curve.points[1:]))
+    teeth = outline_teeth(pr, variant)
+    chord = (teeth[0][2][-1] - teeth[1][1][0]).Length
+    try:
+        face = cq.Face.makeFromWires(trochoid_outline(pr, variant))
+        solid = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.face_width))
+    except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+        return ArcOutcome(half_width, chord, f"{type(exc).__name__}: {exc}", False)
+    faces, valid = len(solid.Faces()), solid.isValid()
+    builds = valid and faces == 6 * p.teeth + 2
+    return ArcOutcome(half_width, chord,
+                      f"builds, {faces} faces (expected {6 * p.teeth + 2}), "
+                      f"{'valid' if valid else 'INVALID'}"
+                      + ("" if builds else ", the arc was silently dropped" if valid else ""),
+                      builds)
+
+
+def tuned_backlash(fields: dict[str, object], rho_request: float) -> float:
+    """The backlash at which the cutter's tip-land half-width `a` lands just above
+    ARC_TARGET_HALF_WIDTH_MM, by 40 halvings over [0, ARC_BACKLASH_CEILING] (the
+    `bench.trochoid.tuned_shift` precedent). rho_max rises with backlash and the used radius
+    is rho_max floored to 3 dp, so a = (rho_max - used) (sec - tan) is a sawtooth that is
+    tiny just above each multiple of 0.001: bisect rho_max to a point just above one."""
+    def rho_max(backlash: float) -> float:
+        return cutter(GearParams.model_validate({**fields, "backlash": backlash}),
+                      rho_request).rho_max
+
+    alpha = math.radians(float(str(fields["pressure_angle"])))
+    delta = ARC_TARGET_HALF_WIDTH_MM / (1 / math.cos(alpha) - math.tan(alpha))
+    target = math.floor(rho_max(ARC_BACKLASH_CEILING / 2) * 1000) / 1000 + delta
+    lo, hi = 0.0, ARC_BACKLASH_CEILING
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if rho_max(mid) < target:
+            lo = mid
+        else:
+            hi = mid
+    return hi
+
+
+def run_arc() -> int:
+    """The dead band of the root arc (19-RESEARCH F4), the tuned-backlash gear that
+    reaches it from user input, and the ROOT_ARC_MIN proposal."""
+    start, load_before = datetime.now(UTC), os.getloadavg()
+    p = GearParams.model_validate(ARC_FIELDS)
+    _, curve = trochoid_curve(p, ARC_RHO_MM)
+    outcomes = [arc_outcome(p, curve, a) for a in ARC_HALF_WIDTHS_MM]
+
+    fields = {**ARC_FIELDS, "root_fillet": 3.0}
+    backlash = tuned_backlash(fields, 3.0)
+    tuned = GearParams.model_validate({**fields, "backlash": backlash})
+    tuned_cut, tuned_curve = trochoid_curve(tuned, tuned.root_fillet)
+    tuned_outcome = arc_outcome(tuned, tuned_curve, tuned_cut.a)
+    try:
+        trochoid_blank(tuned, tuned.root_fillet)
+        bench_outline = "builds"
+    except Exception as exc:  # the bench outline as 19-04 would ship it, unguarded
+        bench_outline = f"raises {type(exc).__name__}: {exc}"
+    end, load_after = datetime.now(UTC), os.getloadavg()
+
+    print("\n".join(_host_state(start, end, load_before, load_after)))
+    print(f"Gear: {p.teeth} teeth, module {p.module:g}, {p.pressure_angle:g} degrees, shift "
+          f"{p.profile_shift:g}, tip radius {ARC_RHO_MM:g} mm; the first point of the root "
+          "curve moved along the root circle to half-angle pi / z - a / rf, so the root arc "
+          "between neighbours spans about 2a. A build counts only if it is valid and has "
+          f"6 z + 2 = {6 * p.teeth + 2} faces.")
+    print()
+    print("#### Dead band")
+    print()
+    print("| a (mm) | chord, root_r[-1] to the next root_l[0] (mm) | result |")
+    print("|---|---|---|")
+    for o in outcomes:
+        print(f"| {o.half_width:g} | {o.chord:.3e} | {o.outcome} |")
+    print()
+    failing = [o for o in outcomes if not o.builds]
+    last_failing = max(o.chord for o in failing)
+    building = [o for o in outcomes if o.builds and o.chord > last_failing]
+    first_building = min(o.chord for o in building)
+    below = [o for o in outcomes if o.builds and o.chord <= last_failing]
+    print(f"Last failing chord: {last_failing:.3e} mm (a = "
+          f"{next(o.half_width for o in failing if o.chord == last_failing):g}); first "
+          f"building chord above it: {first_building:.3e} mm (a = "
+          f"{next(o.half_width for o in building if o.chord == first_building):g}); "
+          f"monotone (no building row at or below the last failing chord): "
+          f"{'yes' if not below else 'NO'}.")
+    print()
+    print("#### Reachable from user input: the tuned-backlash gear")
+    print()
+    print(f"`GearParams` as above with root_fillet 3.0 (the cap applies) and backlash "
+          f"bisected over [0, {ARC_BACKLASH_CEILING:g}] in 40 halvings: backlash "
+          f"{backlash!r}, tip radius used "
+          f"{tuned_cut.rho:g} mm of rho_max {tuned_cut.rho_max:.9f} mm, tip-land half-width "
+          f"a = {tuned_cut.a:.3e} mm (target {ARC_TARGET_HALF_WIDTH_MM:g}), root-arc chord "
+          f"{tuned_outcome.chord:.3e} mm. The bench outline {bench_outline}.")
+    print()
+    # A chord is read to about 1e-15 mm (two vectors of length rf subtracted), which is 5e-9
+    # of 2e-7, so "10x" is compared to a part in a million and not to the last float.
+    candidates = [c for c in ARC_MIN_CANDIDATES_MM if c / last_failing >= 10 - 1e-6]
+    if not candidates:
+        print(f"ROOT_ARC_MIN proposal: none of {ARC_MIN_CANDIDATES_MM} has 10x headroom over "
+              f"the last failing chord {last_failing:.3e} mm")
+        return 1
+    proposal = candidates[0]
+    print(f"ROOT_ARC_MIN proposal: {proposal:g} mm ({proposal / last_failing:.1f}x the last "
+          f"failing chord); against the smallest real chord the product shows: pending "
+          "(`product` reads it)")
+    return 0 if tuned_cut.a < 2 * ARC_TARGET_HALF_WIDTH_MM else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.trochoid_part",
                                      description=__doc__)
     sub = parser.add_subparsers(dest="scenario", required=True)
     sub.add_parser("chamfer", help="the tip chamfer's kernel limit across the junction")
     sub.add_parser("heaviest", help="the heaviest low-tooth rows against the build timeout")
+    sub.add_parser("spline", help="reconcile the deviation methods; read the kernel tier")
+    sub.add_parser("arc", help="the root arc's dead band and ROOT_ARC_MIN")
     args = parser.parse_args(argv)
-    return run_chamfer() if args.scenario == "chamfer" else run_heaviest()
+    scenarios: dict[str, Callable[[], int]] = {
+        "chamfer": run_chamfer, "heaviest": run_heaviest, "spline": run_spline,
+        "arc": run_arc}
+    return scenarios[args.scenario]()
 
 
 if __name__ == "__main__":

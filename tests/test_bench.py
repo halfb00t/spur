@@ -61,7 +61,17 @@ from bench.trochoid import (
     rack,
     sweep_cases,
 )
-from bench.trochoid_part import CHAMFER_ROWS, chamfer_verdict, corner_rows
+from bench.trochoid_part import (
+    CHAMFER_ROWS,
+    KERNEL_ROWS,
+    STACK_TROCHOID_MM,
+    STACK_TROCHOID_ROWS,
+    chamfer_verdict,
+    corner_rows,
+    deviation_a,
+    deviation_b,
+    proposed_bar,
+)
 from spur.calc import (
     HEX_CELL_CAP,
     RootCurve,
@@ -901,3 +911,76 @@ def test_the_corner_rows_are_the_composed_sweep_at_the_trochoid_corner() -> None
         assert row == {**original, "teeth": 116, "pressure_angle": 14.5,
                        "profile_shift": -0.6}
         assert list(row)[:len(original)] == list(original)
+
+
+def test_the_proposed_bar_is_the_smallest_listed_value_ten_times_over_the_worst() -> None:
+    """19-02's kernel bar rule (L33 D-06): the smallest of 1e-3, 2e-3, 5e-3, 1e-2 (times the
+    module) that is at least 10x the worst spline error per module. 1.79e-4 is the worst
+    19-RESEARCH read on its sample (11.2x under 2e-3); the rows either side pin the step to
+    the next listed value, and 1.1e-3 is the case with no listed value left -- a question for
+    the human, not a default, so it raises and names the worst."""
+    assert proposed_bar(1.79e-4) == 2e-3
+    assert proposed_bar(0.99e-4) == 1e-3
+    assert proposed_bar(2.1e-4) == 5e-3
+    assert proposed_bar(9.9e-4) == 1e-2
+    with pytest.raises(ValueError, match=r"0\.0011"):
+        proposed_bar(1.1e-3)
+
+
+def test_deviation_b_reads_the_distance_to_the_polyline_not_to_its_vertices() -> None:
+    """Method B (STACK's trochoid figures) is the distance to the reference polyline; method
+    A (STACK's shipped-flank figures) is the distance to its nearest vertex, so it carries the
+    reference's own vertex spacing as a floor. A sample on a vertex reads 0 under B; one
+    1e-5 above the middle of a segment reads 1e-5 under B and the half-segment under A. The
+    radius-bracketed search B uses must equal a brute-force scan on a curved reference."""
+    straight = [(1.0, 0.0), (2.0, 0.0), (3.0, 0.0), (4.0, 0.0)]
+    assert deviation_b([(2.0, 0.0)], straight) == 0.0
+    assert deviation_b([(2.5, 1e-5)], straight) == pytest.approx(1e-5, abs=1e-15)
+    assert deviation_a([(2.5, 1e-5)], straight) == pytest.approx(0.5, abs=1e-6)
+    assert deviation_a([(2.5, 1e-5)], straight) > deviation_b([(2.5, 1e-5)], straight)
+
+    spiral = [(r * math.cos(0.1 * r), r * math.sin(0.1 * r))
+              for r in (1.0 + 2.0 * i / 199 for i in range(200))]
+    samples = [(x + 0.003 * math.sin(7 * i), y + 0.002 * math.cos(3 * i))
+               for i, (x, y) in enumerate(spiral[::13])] + [(0.0, 0.5), (9.0, 9.0)]
+
+    def segment_distance(px: float, py: float, a: tuple[float, float],
+                         b: tuple[float, float]) -> float:
+        ex, ey = b[0] - a[0], b[1] - a[1]
+        t = max(0.0, min(1.0, ((px - a[0]) * ex + (py - a[1]) * ey) / (ex * ex + ey * ey)))
+        return math.hypot(px - (a[0] + t * ex), py - (a[1] + t * ey))
+
+    brute_b = max(min(segment_distance(x, y, a, b) for a, b in itertools.pairwise(spiral))
+                  for x, y in samples)
+    brute_a = max(min(math.hypot(x - a, y - b) for a, b in spiral) for x, y in samples)
+    assert deviation_b(samples, spiral) == pytest.approx(brute_b, abs=1e-15)
+    assert deviation_a(samples, spiral) == pytest.approx(brute_a, abs=1e-15)
+
+
+def test_a_reference_that_does_not_move_outward_is_refused_by_both_methods() -> None:
+    """The radius-bracketed search is exact only for a reference whose distance from the
+    origin strictly rises (every RootCurve and every flank does). A reference that is not
+    one is refused by name, never searched wrongly and read as a small number (L08)."""
+    for bad in ([(2.0, 0.0), (1.0, 0.0)], [(1.0, 0.0), (1.0, 0.0), (2.0, 0.0)]):
+        with pytest.raises(ValueError, match="strictly rise"):
+            deviation_a([(1.5, 0.0)], bad)
+        with pytest.raises(ValueError, match="strictly rise"):
+            deviation_b([(1.5, 0.0)], bad)
+
+
+def test_the_kernel_tier_rows_are_seven_trochoid_gears_and_three_carry_stacks_figures() -> None:
+    """19-02's rows are 19-RESEARCH F3's, typed out. Each is a trochoid gear at its tip
+    radius (a row that fell back to radial would be read against a curve it does not
+    have), the first is the default gear, and the three STACK quoted are the 8, 10 and 14
+    tooth rows at module 1 and 20 degrees, in the order of their figures."""
+    assert len(KERNEL_ROWS) == 7
+    assert KERNEL_ROWS[0].fields == {}
+    for row in KERNEL_ROWS:
+        p = GearParams.model_validate(row.fields)
+        assert root_mode(p, profile(p), requested="trochoid", rho=row.rho).mode == "trochoid", \
+            row.label
+    stack = [KERNEL_ROWS[i] for i in STACK_TROCHOID_ROWS]
+    assert [row.fields["teeth"] for row in stack] == [8, 10, 14]
+    assert {(row.fields["module"], row.fields["pressure_angle"], row.rho) for row in stack} == {
+        (1, 20, 0.38)}
+    assert STACK_TROCHOID_MM == (3.58e-5, 3.89e-5, 3.99e-5)

@@ -3887,3 +3887,180 @@ refusals, not trochoid ones, and honeycomb, hex bore and keyed bore are all time
 The oracle reads every trochoid row's root at 1.12e-04 mm (module 1.75, 6.4e-5 per module) or
 2.79e-04 mm (module 10, 2.79e-5 per module), inside the 1.3e-5 to 1.8e-4 per module RESEARCH F3 read
 over the swept gears; no bar is applied in this plan.
+
+
+### Spline deviation and the kernel bar (19-02)
+
+Two research files measured the shipped involute flank's spline deviation a factor of hundreds
+apart (SUMMARY correction 16: STACK 6.0e-5 and 1.0e-4 mm, PITFALLS 0.13 and 0.004 micrometres), so
+neither number could be a bar. `python -m bench.trochoid_part spline` reconciles them. **Method A**
+is the distance from a sample of the kernel spline to the nearest *vertex* of a 20,001-point
+reference; **method B** is the distance to the reference *polyline*, segment-wise. The reference
+for the hob root is `_trochoid_point` at 20,001 contact-normal angles, uniform in tan(beta) like
+the 16 points of `RootCurve`, from the root circle to the junction. The kernel tier is the Phase
+18 oracle (`tests/trochoid_oracle.clearance`) on `Edge.positionAt` positions of the built solid's
+tooth-0 root edges, read beside method B on the very same positions. Exit 0 means method B
+reproduced STACK's three trochoid figures to within one in the third digit and the oracle agreed
+with method B on all seven rows to the same standard.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `88c5ec5`
+- Read 2026-10-08T16:56:53Z to 2026-10-08T16:58:05Z
+- Load averages at start: 6.89, 6.37, 7.89; at end: 3.96, 5.57, 7.46
+
+Positions per spline: 2001 for the deviation figures (method B converges there, see the table below), 401 per root edge for the oracle against method B on the same positions, 41 for the 19-01 oracle reading. Reference: 20,001 points.
+
+#### Reconciliation: STACK's trochoid figures (module 1, mm)
+
+| Gear | Join | STACK | Method B | B off by (units of the 3rd digit) | Method A | Half the reference's largest vertex gap |
+|---|---|---|---|---|---|---|
+| 8 teeth, m 1, 20 deg, x 0, tip radius 0.38 | crossing | 3.58e-05 | 3.5807e-05 | 0.07 | 5.1845e-05 | 3.78e-05 |
+| 10 teeth, m 1, 20 deg, x 0, tip radius 0.38 | crossing | 3.89e-05 | 3.8933e-05 | 0.33 | 5.2097e-05 | 3.74e-05 |
+| 14 teeth, m 1, 20 deg, x 0, tip radius 0.38 | crossing | 3.99e-05 | 3.9847e-05 | 0.53 | 5.2250e-05 | 3.62e-05 |
+
+#### Reconciliation: STACK's shipped-flank figures (mm)
+
+| Gear | STACK | Reference spacing | Method A | Half the largest vertex gap | Method B |
+|---|---|---|---|---|---|
+| z=12, m=1, 20 deg | 6.0e-05 | i^1.5 (the shipped spline's) | 5.722e-05 | 5.820e-05 | 1.701e-06 |
+| z=12, m=1, 20 deg | 6.0e-05 | uniform in radius | 3.824e-05 | 3.880e-05 | 1.701e-06 |
+| z=12, m=1, 25 deg | 6.0e-05 | i^1.5 (the shipped spline's) | 6.221e-05 | 6.353e-05 | 1.536e-06 |
+| z=12, m=1, 25 deg | 6.0e-05 | uniform in radius | 4.192e-05 | 4.235e-05 | 1.536e-06 |
+| z=8, m=1, 25 deg | -- | i^1.5 (the shipped spline's) | 6.903e-05 | 7.055e-05 | 2.373e-05 |
+| z=8, m=1, 25 deg | -- | uniform in radius | 4.639e-05 | 4.703e-05 | 2.373e-05 |
+| z=19, m=1.75, 25 deg (default gear) | 1.0e-04 | i^1.5 (the shipped spline's) | 1.310e-04 | 1.343e-04 | 3.343e-06 |
+| z=19, m=1.75, 25 deg (default gear) | 1.0e-04 | uniform in radius | 8.854e-05 | 8.956e-05 | 3.343e-06 |
+
+#### Method B against the number of positions (14 teeth, m 1, 20 deg, x 0)
+
+| Positions per root edge | Method B (mm) |
+|---|---|
+| 201 | 3.9675e-05 |
+| 2001 | 3.9847e-05 |
+| 20001 | 3.9847e-05 |
+
+#### Kernel tier on seven rows (mm unless stated)
+
+| Row | Tip radius used | Join | Oracle, 41 positions | Oracle | Method B, same positions | Oracle vs B (units of the 3rd digit) | Method B, converged | Converged per module | 41-position reading / converged |
+|---|---|---|---|---|---|---|---|---|---|
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0.5 | tangent | 2.1967e-05 | 2.2595e-05 | 2.2596e-05 | 0.01 | 2.2610e-05 | 1.2920e-05 | 0.97 |
+| 8 teeth, m 1, 20 deg, x 0 | 0.38 | crossing | 3.5473e-05 | 3.5794e-05 | 3.5795e-05 | 0.01 | 3.5807e-05 | 3.5807e-05 | 0.99 |
+| 10 teeth, m 1, 20 deg, x 0 | 0.38 | crossing | 3.8193e-05 | 3.8929e-05 | 3.8929e-05 | 0.01 | 3.8933e-05 | 3.8933e-05 | 0.98 |
+| 14 teeth, m 1, 20 deg, x 0 | 0.38 | crossing | 3.8167e-05 | 3.9846e-05 | 3.9847e-05 | 0.01 | 3.9847e-05 | 3.9847e-05 | 0.96 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0 | crossing | 2.9877e-05 | 3.4905e-05 | 3.4906e-05 | 0.01 | 3.4941e-05 | 3.4941e-05 | 0.86 |
+| 30 teeth, m 0.2, 14.5 deg, x -0.6 | 0.183 | crossing | 3.5795e-05 | 3.5795e-05 | 3.5796e-05 | 0.01 | 3.5796e-05 | 1.7898e-04 | 1.00 |
+| 30 teeth, m 10, 14.5 deg, x -0.6 | 0.5 | crossing | 4.4785e-04 | 6.2097e-04 | 6.2097e-04 | 0.00 | 6.2097e-04 | 6.2097e-05 | 0.72 |
+
+#### Tripwire: the tip radius read 0.05 mm above the one used
+
+| Row | Reading (mm) | Reading per module | vs 0.001 x module | vs 0.002 x module | vs 0.005 x module | vs 0.01 x module |
+|---|---|---|---|---|---|---|
+| 10 teeth, m 1, 20 deg, x 0 | 1.1039e-02 | 1.1039e-02 | 11.04x, over | 5.52x, over | 2.21x, over | 1.10x, over |
+| 30 teeth, m 10, 14.5 deg, x -0.6 | 1.3233e-02 | 1.3233e-03 | 1.32x, over | 0.66x, UNDER | 0.26x, UNDER | 0.13x, UNDER |
+
+tripwire, 10 teeth, m 1, 20 deg, x 0: 1.1039e-02 mm, 1.1039e-02 per module
+tripwire, 30 teeth, m 10, 14.5 deg, x -0.6: 1.3233e-02 mm, 1.3233e-03 per module
+
+Verdict: reconciled -- method B reproduces STACK's three trochoid figures to one in the third digit, and the oracle agrees with method B on all seven rows.
+
+**Reading the tables.** STACK's trochoid figures are method B: 3.5807, 3.8933 and 3.9847e-5 mm
+against the quoted 3.58, 3.89 and 3.99e-5, off by 0.07, 0.33 and 0.53 of a unit of the third digit
+(the 14-tooth row reads 3.98e-5 where STACK printed 3.99e-5). Method A reads 5.18 to 5.23e-5 on the
+same splines, because it adds the reference's own vertex spacing to the deviation. STACK's
+shipped-flank figures are method A: every A reading sits within 2.5 % of half the largest vertex
+gap of its own reference (5.72 against 5.82e-5, 6.22 against 6.35e-5, 1.310 against 1.343e-4, and
+so on), so they are a measurement floor of the 20,001-point curve and not a deviation; method B on
+the same splines reads 1.5 to 3.3e-6 mm on z=12 and the default gear, 30 to 40 times below what
+STACK quoted. STACK does not record its flank's pressure angle or reference spacing, so its 6.0e-5
+and 1.0e-4 are bracketed (5.7 to 6.2e-5 with the shipped i^1.5 spacing at 20 and 25 degrees; 8.9e-5
+uniform to 1.31e-4 i^1.5 on the default gear) and not reproduced to three digits. PITFALLS' 0.13
+micrometre (1.3e-4 mm, z=8, 25 degrees) is not reproduced by either method (B reads 2.37e-5 mm, A
+6.9e-5 mm); its 0.004 micrometre on the default gear is within 20 % of B's 3.34e-6 mm (0.0033
+micrometre) and is not claimed as a reproduction, since the other of the pair is not. SUMMARY
+correction 16 is closed: **method B is the deviation, and the one a bar rests on.**
+
+**Sampling.** The plan read the kernel spline at 201 positions; the 14-tooth row shows that is too
+few (3.9675e-5 at 201, 3.9847e-5 at 2,001 and at 20,001: 2.2 units off STACK's third digit at
+201, 0.5 at 2,001), so the deviation figures here and in `product` use 2,001 positions. The oracle
+reads 401 positions per root edge (the whole run takes about 70 s for the seven rows, most of it
+the oracle) and agrees with method B on the same positions to 0.01 of a unit on all seven rows; the
+19-01 reading at 41 positions reads 0.72 to 1.00 of the converged figure (the module-10 row 28 %
+low, 4.4785e-4 against 6.2097e-4 mm). A correct root read at 41 positions can therefore sit 28 %
+below its true spline error, so the bar rests on the converged method-B maximum and not on a
+41-position reading, and 19-04 chooses its position count knowing that.
+
+**Bar arithmetic on the seven rows** (the whole product is `product`'s): the worst per module is
+the 30-tooth module-0.2 row at 1.7898e-4 (3.5796e-5 mm, matching 19-RESEARCH F3's 1.79e-4); 2e-3
+times the module is 11.2 times that. **Tripwire** (the tip radius read 0.05 mm above the one the
+cutter used): the module-1 10-tooth row reads 1.1039e-2 mm, over every listed bar (11.0x over
+1e-3, 5.5x over 2e-3, 2.2x over 5e-3, 1.10x over 1e-2). The shift does not scale with the module, so
+the module-10 row reads 1.3233e-2 mm = 1.32e-3 per module: over 1e-3 times the module, **under**
+2e-3 times it (0.66x). The tripwire therefore sits on a module-1 row.
+
+
+### Root arc dead band (19-02)
+
+The hob root leaves the root circle at half-angle pi / z - a / rf, where `a` is the cutter's flat
+tip land, so the root arc between neighbouring teeth spans about 2a, and
+`cq.Edge.makeThreePointArc` fails or silently drops it when that chord is tiny (19-RESEARCH F4).
+`python -m bench.trochoid_part arc` moves the first point of one gear's root curve along the root
+circle by each `a` below, builds the blank through the spike's outline and reads what the kernel
+did; then it tunes `backlash` by bisection until the real cutter's `a` lands near 1e-8 mm, to show
+the band is reachable from user input.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `88c5ec5`
+- Read 2026-10-08T16:58:06Z to 2026-10-08T16:58:06Z
+- Load averages at start: 3.96, 5.57, 7.46; at end: 3.96, 5.57, 7.46
+
+Gear: 12 teeth, module 1, 20 degrees, shift 0, tip radius 0.38 mm; the first point of the root curve moved along the root circle to half-angle pi / z - a / rf, so the root arc between neighbours spans about 2a. A build counts only if it is valid and has 6 z + 2 = 74 faces.
+
+#### Dead band
+
+| a (mm) | chord, root_r[-1] to the next root_l[0] (mm) | result |
+|---|---|---|
+| 0 | 0.000e+00 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 1e-12 | 2.000e-12 | builds, 62 faces (expected 74), valid, the arc was silently dropped |
+| 1e-10 | 2.000e-10 | builds, 62 faces (expected 74), valid, the arc was silently dropped |
+| 1e-09 | 2.000e-09 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 1e-08 | 2.000e-08 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 1e-07 | 2.000e-07 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 2e-07 | 4.000e-07 | builds, 74 faces (expected 74), valid |
+| 3e-07 | 6.000e-07 | builds, 74 faces (expected 74), valid |
+| 6e-07 | 1.200e-06 | builds, 74 faces (expected 74), valid |
+| 1e-06 | 2.000e-06 | builds, 74 faces (expected 74), valid |
+| 2e-06 | 4.000e-06 | builds, 74 faces (expected 74), valid |
+
+Last failing chord: 2.000e-07 mm (a = 1e-07); first building chord above it: 4.000e-07 mm (a = 2e-07); monotone (no building row at or below the last failing chord): yes.
+
+#### Reachable from user input: the tuned-backlash gear
+
+`GearParams` as above with root_fillet 3.0 (the cap applies) and backlash bisected over [0, 0.4] in 40 halvings: backlash 0.19898413579248878, tip radius used 0.614 mm of rho_max 0.614000014 mm, tip-land half-width a = 1.000e-08 mm (target 1e-08), root-arc chord 2.000e-08 mm. The bench outline raises Standard_Failure: GC_MakeArcOfCircle::Value() - no result.
+
+ROOT_ARC_MIN proposal: 2e-06 mm (10.0x the last failing chord); against the smallest real chord the product shows: pending (`product` reads it)
+
+**Reading the table.** The dead band has two edges. At chords of 2e-12 and 2e-10 mm (a = 1e-12 and
+1e-10) the arc is silently dropped: the blank builds, is valid, and has 62 faces where 74 are
+expected, which is the worse failure for being quiet. From 2e-9 mm up to **2.0e-7 mm (the last
+failing chord, a = 1e-7)**, and at a chord of exactly 0, the kernel raises `Standard_Failure:
+GC_MakeArcOfCircle::Value() - no result`. **4.0e-7 mm (a = 2e-7)
+is the first chord that builds** with all 74 faces, valid; every larger row builds, and no row at
+or below the last failing chord builds (monotone). 19-RESEARCH had 3e-7 as the first building row
+because it did not try 2e-7. The band is reachable: at backlash 0.19898413579248878 the cutter's
+`a` is 1.0e-8 mm with the tip radius capped to 0.614 mm of a rho_max of 0.614000014, and the bench
+outline raises the same exception. `model._build_checked` catches any non-`BuildError` and
+re-labels it "Geometry kernel failed (Standard_Failure); try smaller fillets or chamfers." which is
+the wrong remedy: the user set neither a fillet nor a chamfer, and the cause is a backlash and tip
+radius that happen to leave 1e-8 mm of tip land. 19-05's `ROOT_ARC_MIN` branch drops the arc below
+the constant and shares the junction vector instead. The proposal printed above is the smallest of
+1e-6, 2e-6, 5e-6 and 1e-5 mm that is at least 10 times the last failing chord, 2e-6 mm; whether
+it is below the smallest real chord in the product is read by `product` (19-02 Task 2), and that
+sentence is closed in the guard subsection below.
