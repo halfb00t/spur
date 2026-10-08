@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 18
 current_phase_name: Trochoid Maths, Proved
 status: executing
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-10-08T01:49:57.407Z"
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-10-08T02:10:37.101Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 18 execution started
-state_head: 1902d5214630c6429a8f3bff7edf9e74a8533653
+state_head: afe72126174a14c8c899fc85c3caf82997c1a140
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 10
-  completed_plans: 7
-  percent: 70
+  completed_plans: 8
+  percent: 80
 ---
 
 # Project State
@@ -33,11 +33,11 @@ to the transition; ships through a PR like #15 — A1/A3 are read from its first
 ## Current Position
 
 Phase: 18 (Trochoid Maths, Proved) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 18 execution started
 
-Progress: [███████░░░] 70%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -201,6 +201,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 17 P05 | 7 min | 3 tasks | 9 files |
 | Phase 18 P01 | 19 min | 2 tasks | 4 files |
 | Phase 18 P02 | 11 min | 2 tasks | 3 files |
+| Phase 18 P03 | 20 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -340,6 +341,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 18]: 18-02: rb <= rf is decided in root_mode before the generator runs (undercut implies rb > rf, F9)
 - [Phase 18]: 18-02: a thin positive waist survives as a curve; no waist floor is chosen in Phase 18 (D-17, Phase 19's call)
 - [Phase 18]: 18-02: the oracle's neighbouring teeth do not separate a severed tooth on the committed oracle; the severed rows are pinned as a gouge on the mirror flank (measured), not as neighbours on versus off
+- [Phase 18]: 18-03: TROCHOID_JOIN_EPS stays 1e-4, measured in the repo (bracket lost at most at xi = -5.6e-6 rb over 400 draws)
+- [Phase 18]: 18-03: the whole 31,446-case generator sweep runs in the commit gate (1.7 s call at -n 8, under D-13's 2.0 s); no stride sample
+- [Phase 18]: 18-03: a tangent join inside the band is checked against the involute with the closed-form 2(tan phi - phi) allowance, not a wider bar; D-11 checkpoint not reached (7,175 / 980 / 73 named refusals)
 
 ### Pending Todos
 
@@ -513,8 +517,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-08T01:49:57.367Z
-Stopped at: Completed 18-02-PLAN.md
+Last session: 2026-10-08T02:10:37.057Z
+Stopped at: Completed 18-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
