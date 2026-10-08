@@ -7,11 +7,13 @@ no code with spur.calc.
 
 import json
 import math
+import time
 from dataclasses import replace
 from functools import cache
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 from trochoid_oracle import clearance
 
 from spur.calc import (
@@ -23,10 +25,13 @@ from spur.calc import (
     _trochoid_point,
     _waist,
     cutter,
+    derive,
     profile,
     root_mode,
     root_warnings,
     trochoid_root,
+    undercut_shift,
+    undercut_teeth,
 )
 from spur.params import GearParams
 
@@ -622,3 +627,165 @@ def test_a_severed_tooth_is_refused_and_the_oracle_with_neighbours_agrees(
         assert min(other[0]) == pytest.approx(gouge, abs=5e-7)
         assert min(other[0]) < -1e-3
         assert min(other[1]) < -1e-3
+
+
+def _onset_teeth(module: float, alpha_deg: float, shift: float, rho: float) -> float:
+    """The cutter's undercut onset, tooth count, written out here from the textbook rack
+    (tip depth 1.25 m - x m, tip radius rho): STACK's z_min = 2(1.25 - x - rho*(1 -
+    sin(alpha)))/sin^2(alpha), with rho in modules."""
+    sin_a = math.sin(math.radians(alpha_deg))
+    return 2 * (1.25 - shift - (rho / module) * (1 - sin_a)) / sin_a ** 2
+
+
+def _onset_shift(module: float, alpha_deg: float, teeth: int, rho: float) -> float:
+    """The profile shift at which that onset equals `teeth`, again written out here:
+    x_min = 1.25 - rho*(1 - sin(alpha)) - z*sin^2(alpha)/2, with rho in modules."""
+    sin_a = math.sin(math.radians(alpha_deg))
+    return 1.25 - (rho / module) * (1 - sin_a) - teeth * sin_a ** 2 / 2
+
+
+def test_the_undercut_onset_closed_forms_match_the_published_tables() -> None:
+    """REQ-undercut-warning-restated's inputs, from the cutter that cuts (18-RESEARCH
+    Pitfall 7): at module 1, backlash 0.10, no shift and tip radius 0.38 mm the onset is
+    30.7909 / 17.0967 / 11.5404 teeth at 14.5 / 20 / 25 degrees (STACK's table, 4 dp)
+    where the shipped `2(1 - x)/sin^2(alpha)`, typed here from its own formula, reads
+    31.9029 / 17.0973 / 11.1978: close at 20 degrees only, which is the rack it was
+    written for. Backlash 0.10 keeps 0.38 mm untrimmed at 25 degrees (the cap is 0.396
+    mm there; at backlash 0 it would be 0.318 and the onset would be a trimmed cutter's),
+    and the onset does not depend on backlash. At 10 teeth, 20 degrees the smallest
+    shift that avoids undercut is 0.41508 (5 dp). Both equal the test's own closed forms
+    to 1e-12 relative over a grid of angle, shift and tip radius, including a row whose
+    tip radius is trimmed, where the onset is the trimmed cutter's and not the
+    requested one's. Reproduced 2026-10-08."""
+    for alpha, onset, shipped in [(14.5, 30.7909, 31.9029), (20.0, 17.0967, 17.0973),
+                                  (25.0, 11.5404, 11.1978)]:
+        p = _gear(teeth=19, module=1, pressure_angle=alpha, profile_shift=0, backlash=0.10)
+        c = cutter(p, 0.38)
+        assert c.rho == 0.38
+        assert undercut_teeth(c) == pytest.approx(onset, abs=5e-5)
+        assert 2 * (1 - 0) / math.sin(math.radians(alpha)) ** 2 == pytest.approx(shipped, abs=5e-5)
+
+    p = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=0, backlash=0.10)
+    assert undercut_shift(cutter(p, 0.38)) == pytest.approx(0.41508, abs=5e-6)
+
+    trimmed = 0
+    for alpha in (14.5, 20.0, 25.0, 30.0):
+        for shift in (-0.4, 0.0, 0.5):
+            for rho in (0.0, 0.25, 0.38):
+                p = _gear(teeth=25, module=1, pressure_angle=alpha, profile_shift=shift,
+                          backlash=0.10)
+                c = cutter(p, rho)
+                trimmed += c.rho < rho
+                assert undercut_teeth(c) == pytest.approx(
+                    _onset_teeth(1, alpha, shift, c.rho), rel=1e-12)
+                assert undercut_shift(c) == pytest.approx(
+                    _onset_shift(1, alpha, 25, c.rho), rel=1e-12, abs=1e-12)
+    assert trimmed == 6     # 30 degrees, cap 0.197 mm: 0.25 and 0.38 mm, three shifts each
+    p = _gear(teeth=25, module=1, pressure_angle=30, profile_shift=0, backlash=0.10)
+    c = cutter(p, 0.38)
+    assert c.rho < 0.38
+    assert undercut_teeth(c) != pytest.approx(_onset_teeth(1, 30, 0, 0.38), rel=1e-6)
+
+
+@pytest.mark.parametrize(("teeth", "rho", "join", "onset"), [
+    pytest.param(17, 0.38, "crossing", 17.0967, id="17T-rho-0.38"),
+    pytest.param(18, 0.38, "tangent", 17.0967, id="18T-rho-0.38"),
+    pytest.param(17, 0.0, "crossing", 21.3716, id="17T-rho-0"),
+    pytest.param(18, 0.0, "crossing", 21.3716, id="18T-rho-0"),
+])
+def test_the_cutter_s_undercut_is_not_the_shipped_warning_s_undercut(
+        teeth: int, rho: float, join: str, onset: float) -> None:
+    """REQ-root-mode-single-predicate, adjacency (PITFALLS 1): one tooth step either side
+    of the shipped undercut line at module 1, 20 degrees, shift 0, backlash 0. The
+    shipped warning, `2(1 - x)/sin^2(alpha)` = 17.097, calls 17 teeth undercut and 18
+    clear, and derive() says so for 17 only (it is untouched here). The cutter at tip
+    radius 0.38 mm agrees (17 crosses the involute, 18 is tangent; its own onset is
+    17.0967) but the cutter with a sharp tip does not: its onset is 21.3716, so 17 AND 18
+    teeth cross while the shipped line calls 18 clear. All four rows read mode trochoid,
+    because rb > rf on each: the three undercuts touch but never merge, and none of them
+    decides the mode. Measured 2026-10-08: xi at 0.38 mm is -0.01654 / +0.15447, at 0
+    mm -0.7476 / -0.5766."""
+    p = _gear(teeth=teeth, module=1, pressure_angle=20, profile_shift=0, backlash=0)
+    pr = profile(p)
+    rm = root_mode(p, pr, requested="trochoid", rho=rho)
+    assert pr.rb > pr.rf
+    assert (rm.mode, rm.reason) == ("trochoid", None)
+    assert rm.cutter is not None
+    curve = trochoid_root(rm.cutter)
+    assert curve is not None
+    assert curve.join == join
+    assert undercut_teeth(rm.cutter) == pytest.approx(onset, abs=5e-5)
+    assert (teeth < undercut_teeth(rm.cutter)) == (join == "crossing")
+    shipped = [w for w in derive(p).warnings if "undercut" in w]
+    assert bool(shipped) == (teeth == 17)
+
+
+def test_the_undercut_onset_flips_one_field_step_either_side_of_a_tuned_shift() -> None:
+    """REQ-root-mode-single-predicate, boundary: at 10 teeth, module 1, 20 degrees,
+    backlash 0 and tip radius 0.38 mm the smallest shift that avoids undercut is
+    0.41508, so the profile-shift field's step (0.05) puts 0.40 on the undercut side
+    (the join is a crossing, xi -0.04409) and 0.45 on the other (tangent, xi +0.10210).
+    The onset is the same number from either gear. Measured 2026-10-08."""
+    joins = []
+    for shift in (0.40, 0.45):
+        p = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=shift, backlash=0)
+        c = cutter(p, 0.38)
+        curve = trochoid_root(c)
+        assert curve is not None
+        joins.append(curve.join)
+        assert 0.40 < undercut_shift(c) < 0.45
+        assert undercut_shift(c) == pytest.approx(0.41508, abs=5e-6)
+    assert joins == ["crossing", "tangent"]
+
+
+def test_t1_the_closed_form_onset_pins_when_the_root_is_a_crossing() -> None:
+    """SC3, the T1 tier: a closed form typed in this test, independent of calc's
+    expressions, pins *when* the root is a crossing over a grid of gears. Module 1; teeth
+    6-40; 14.5 / 20 / 25 / 30 degrees; shift -0.6 / -0.2 / 0 / 0.4 / 1.0; tip radius 0 /
+    0.25 / 0.38 mm; backlash 0 / 0.10 -- 4,200 combinations. For every curve the join is
+    a crossing exactly when the test's xi, (m/sin(alpha))((z/2)sin^2(alpha) - (1.25 - x -
+    rho*(1 - sin(alpha)))), is below -TROCHOID_JOIN_EPS * rb; outside that band
+    `teeth < undercut_teeth(c)` says the same, and undercut_teeth equals the test's own
+    onset to 1e-12 relative on every curve.
+
+    Captured 2026-10-08 (Apple M2 Max, Python 3.12.13, 1-minute load 5 to 8): 3,657 valid
+    gears, 543 refused by GearParams and skipped, 8 valid gears without a curve, 1,318
+    crossings, 2,331 tangents, of which 2 sit inside the band (undercut by the closed
+    form but too close to the double root to bracket, joined tangent by D-09), 0.23 s."""
+    started = time.perf_counter()
+    invalid = refused = crossing = tangent = in_band = 0
+    for teeth in range(6, 41):
+        for alpha in (14.5, 20.0, 25.0, 30.0):
+            for shift in (-0.6, -0.2, 0.0, 0.4, 1.0):
+                for rho in (0.0, 0.25, 0.38):
+                    for backlash in (0.0, 0.10):
+                        try:
+                            p = _gear(teeth=teeth, module=1, pressure_angle=alpha,
+                                      profile_shift=shift, backlash=backlash)
+                        except ValidationError:
+                            invalid += 1
+                            continue
+                        c = cutter(p, rho)
+                        curve = trochoid_root(c)
+                        if curve is None:
+                            refused += 1
+                            continue
+                        sin_a = math.sin(math.radians(alpha))
+                        xi = (1 / sin_a) * ((teeth / 2) * sin_a ** 2
+                                            - (1.25 - shift - c.rho * (1 - sin_a)))
+                        rb = teeth * math.cos(math.radians(alpha)) / 2
+                        is_crossing = xi < -TROCHOID_JOIN_EPS * rb
+                        assert (curve.join == "crossing") == is_crossing, (teeth, alpha, shift)
+                        assert undercut_teeth(c) == pytest.approx(
+                            _onset_teeth(1, alpha, shift, c.rho), rel=1e-12)
+                        if xi < 0 and not is_crossing:
+                            in_band += 1
+                        else:
+                            assert (teeth < undercut_teeth(c)) == is_crossing, (teeth, alpha)
+                        crossing += is_crossing
+                        tangent += not is_crossing
+    elapsed = time.perf_counter() - started
+    print(f"T1: {crossing + tangent + refused} gears, {invalid} refused by GearParams, "
+          f"{refused} without a curve, {crossing} crossing, {tangent} tangent, "
+          f"{in_band} inside the band, {elapsed:.2f} s")
+    assert (invalid, refused, crossing, tangent, in_band) == (543, 8, 1318, 2331, 2)

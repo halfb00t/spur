@@ -1284,6 +1284,33 @@ def cutter(p: GearParams, rho: float) -> Cutter:
                   rho=used, w_c=used - d, a=land, xi=xi)
 
 
+def undercut_teeth(c: Cutter) -> float:
+    """The fewest teeth this cutter generates without undercut, read from the cutter
+    that actually cuts (a trimmed tip radius gives the onset of the trimmed cutter, not
+    of the one asked for: the number printed must be the number that applies, L08).
+
+    A gear is undercut where `c.xi < 0`, the same sign `_junction` tests first, and
+    solving that for the tooth count gives this. It is the cutter's own onset, and a
+    different number from the one `derive()` prints today, `2(1 - x)/sin^2(alpha)`: that
+    one is the sharp-cornered rack with the full tip depth at 20 degrees only. At module
+    1, tip radius 0.38 mm and no shift this reads 30.7909 / 17.0967 / 11.5404 teeth at
+    14.5 / 20 / 25 degrees (STACK's table, reproduced 2026-10-08) where the shipped
+    formula reads 31.9029 / 17.0973 / 11.1978. The shipped sentence is untouched until
+    Phase 19 restates it (REQ-undercut-warning-restated).
+    """
+    sin_a = math.sin(c.pr.alpha)
+    return 2 * (c.d - c.rho * (1 - sin_a)) / (c.pr.m * sin_a ** 2)
+
+
+def undercut_shift(c: Cutter) -> float:
+    """The smallest profile shift that avoids undercut at this cutter's tooth count: the
+    shift at which `c.xi` is zero, read from the cutter that cuts like `undercut_teeth`.
+    Reads 0.41508 at 10 teeth, module 1, 20 degrees, tip radius 0.38 mm (STACK,
+    reproduced 2026-10-08), so a shift of 0.40 is undercut and 0.45 is not.
+    """
+    return c.x - c.xi * math.sin(c.pr.alpha) / c.pr.m
+
+
 @dataclass(frozen=True)
 class RootCurve:
     """The hob's root below the junction with the involute, root circle first."""
