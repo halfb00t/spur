@@ -4181,11 +4181,11 @@ product's waists come from the curve alone, no kernel).
 - Machine: 18 CPUs, arm64, 64.0 GiB RAM
 - Python: 3.12.15
 - Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
-- HEAD: `01cd617`
-- Read 2026-10-08T17:15:42Z to 2026-10-08T17:26:47Z
-- Load averages at start: 54.59, 42.53, 24.70; at end: 49.99, 64.10, 48.42
+- HEAD: `2dbf6f3`
+- Read 2026-10-08T17:50:55Z to 2026-10-08T18:02:50Z
+- Load averages at start: 8.47, 23.43, 36.47; at end: 49.56, 54.38, 49.19
 
-D-07's walk: teeth (6, 7, 8), module 1, 14.5 degrees, backlash (0.1, 0.0) mm, profile shift -0.6 to 0 in 0.01 steps, tip radius (0.0, 0.38, 3.0) mm (3.0 is the field's maximum, capped by the cutter). 1098 gears in 663 s on 18 spawn workers; oracle at 401 positions per root edge; bar read as 0.002 x module.
+D-07's walk: teeth (6, 7, 8), module 1, 14.5 degrees, backlash (0.1, 0.0) mm, profile shift -0.6 to 0 in 0.01 steps, tip radius (0.0, 0.38, 3.0) mm (3.0 is the field's maximum, capped by the cutter). 1098 gears in 713 s on 18 spawn workers; oracle at 401 positions per root edge; bar read as 0.002 x module.
 
 #### What `root_mode` answered
 
@@ -4244,6 +4244,11 @@ Oracle readings over the bar in use (0.002 mm): 0.
 | spline scale: 10x the worst oracle reading in the walk | 6.8995e-04 mm per mm of module | 0 | 0 |
 | printability: MIN_TIP_FDM, the tip warning's own number | 4.0000e-01 mm, absolute | 294 | 771 |
 
+Product gears warned, by module:
+
+- spline scale: module 0.2: 0 of 616 (0 on a tangent join); module 1: 0 of 6,399 (0 on a tangent join); module 1.75: 0 of 1,469 (0 on a tangent join); module 10: 0 of 1,842 (0 on a tangent join)
+- printability: module 0.2: 595 of 616 (195 on a tangent join); module 1: 125 of 6,399 (0 on a tangent join); module 1.75: 43 of 1,469 (0 on a tangent join); module 10: 8 of 1,842 (0 on a tangent join)
+
 Thinnest waist per module over the whole product: 2.5577e-03 mm (grid B: 7 teeth, m 10.0, 14.5 deg, x -0.6, backlash 0.1, tip radius asked 0 mm).
 
 **What the walk found.** Nothing refuses. Of 1,098 gears, 37 are `tooth severed` (waist at or below
@@ -4260,4 +4265,7 @@ of profile shift, so any positive thickness is reachable from user input. The th
 6.8995e-4 mm per mm of module, warns on 0 of 1,061 walk gears and 0 of the 10,326 product gears
 (the product's thinnest waist per module is 2.5577e-3 mm, 3.7x above it); **(printability)**
 `MIN_TIP_FDM`, 0.4 mm, the number the tip warning already uses, warns on 294 of the 1,061 walk gears
-and 771 of the 10,326 product gears.
+and 771 of the 10,326 product gears. By module the 771 are mostly a small-module warning: 595 of
+the 616 module-0.2 gears (195 of them on tangent joins, with no undercut at all) against 176 of the
+9,710 gears of module 1 and above (125 at module 1, 43 at 1.75, 8 at 10), because an absolute
+0.4 mm floor sits above the whole tooth base of a module-0.2 gear.

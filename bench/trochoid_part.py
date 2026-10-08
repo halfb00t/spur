@@ -1385,16 +1385,25 @@ def walk_row(case: tuple[int, float, float, float]) -> WalkRow:
                    reading)
 
 
-def product_waists() -> list[tuple[float, float, str]]:
-    """(waist mm, module, label) of every trochoid gear of the sweep product, from the
-    curve alone: no kernel."""
+@dataclass(frozen=True)
+class ProductWaist:
+    waist: float     # 2 R h, mm
+    module: float
+    join: str
+    label: str
+
+
+def product_waists() -> list[ProductWaist]:
+    """The waist of every trochoid gear of the sweep product, from the curve alone: no
+    kernel."""
     out = []
     for case in _oracle_cases():
         if case[3] != "trochoid":
             continue
         p = GearParams.model_validate(case[1])
         _, curve = trochoid_curve(p, case[2])
-        out.append((2 * curve.waist[0] * curve.waist[1], p.module, case_label(case)))
+        out.append(ProductWaist(2 * curve.waist[0] * curve.waist[1], p.module, curve.join,
+                                case_label(case)))
     return out
 
 
@@ -1501,19 +1510,31 @@ def run_waist(bar_per_module: float) -> int:
     print("| Candidate | Floor | Walk gears warned (of "
           f"{len(built)} built) | Product gears warned (of {len(in_product):,}) |")
     print("|---|---|---|---|")
+    by_module: list[str] = []
+    totals = Counter(g.module for g in in_product)
     for name, floor, per_module in candidates:
         if floor is None:
             print(f"| {name} | none: no failure signature in the walk | -- | -- |")
             continue
+        warned = [g for g in in_product
+                  if g.waist < (floor * g.module if per_module else floor)]
         walk_hits = sum(1 for r in built if r.waist is not None and r.waist < floor)
-        product_hits = sum(1 for w, m, _ in in_product
-                           if w < (floor * m if per_module else floor))
         unit = "mm per mm of module" if per_module else "mm, absolute"
-        print(f"| {name} | {floor:.4e} {unit} | {walk_hits} | {product_hits:,} |")
-    thinnest_product = min(in_product, key=lambda t: t[0] / t[1])
+        print(f"| {name} | {floor:.4e} {unit} | {walk_hits} | {len(warned):,} |")
+        hits = Counter(g.module for g in warned)
+        tangent = Counter(g.module for g in warned if g.join == "tangent")
+        by_module.append(f"- {name.split(':')[0]}: " + "; ".join(
+            f"module {m:g}: {hits[m]:,} of {totals[m]:,} ({tangent[m]:,} on a tangent join)"
+            for m in sorted(totals)))
+    print()
+    print("Product gears warned, by module:")
+    print()
+    print("\n".join(by_module))
+    thinnest_product = min(in_product, key=lambda g: g.waist / g.module)
     print()
     print(f"Thinnest waist per module over the whole product: "
-          f"{thinnest_product[0] / thinnest_product[1]:.4e} mm ({thinnest_product[2]}).")
+          f"{thinnest_product.waist / thinnest_product.module:.4e} mm "
+          f"({thinnest_product.label}).")
     return 0
 
 
