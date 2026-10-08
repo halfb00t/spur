@@ -70,11 +70,17 @@ ROOT_CURVE_POINTS = 16  # points, how many the hob's trochoid root is sampled at
 # kernel bar, not this phase.
 TROCHOID_JOIN_EPS = 1e-4  # relative to rb, never millimetres: how close to zero the
 # roll of the cutter's flank foot (Cutter.xi) may be before the junction with the
-# involute is taken as tangent without a bracket. 18-RESEARCH F6 lost the crossing
-# bracket at |xi|/rb up to 1.0e-5 over 361 prototype cases (rb 0.66 to 58 mm), so 1e-4
-# is 10x the largest loss; inside the band the flank join is the form point, off by at
-# most (eps*rb)^2/(2*rb). 18-03 re-measures it in the repo with
-# `bench/trochoid.py epsilon` and rewrites this comment from that run.
+# involute is taken as tangent without a bracket. Measured in the repo 2026-10-08 (Apple
+# M2 Max, Python 3.12.13, 1-minute load 1.7) by `bench/trochoid.py epsilon`: 400 seeded
+# random allowed gears (module 0.2-10, pressure angle 14.5-30, backlash 0-0.5, tip radius
+# 0-0.5 m), the shift tuned so xi = -t*rb for t from 1e-2 to 1e-12 at 4 steps per decade,
+# the bracket lost (`_junction(c, 0.0)` is None) at largest t = 5.6e-6 and median 3.2e-6,
+# so 1e-4 is the smallest power of ten above 10x the largest loss (5.6e-5). STACK's two
+# points are its bracket: found at xi -2.9e-3 mm and lost at -2.9e-5 mm on the 10-tooth,
+# 20 degree gear (rb 4.698 mm); here that gear's own edge is -2.64e-5 mm, the same place
+# within one scan step, and 1e-4*rb is 4.7e-4 mm there, 16x STACK's loss point. Inside the
+# band the flank join is the form point, off by at most (eps*rb)^2/(2*rb) = 5e-9*rb.
+# bench/RESULTS.md "Join epsilon (18-03)" carries the run.
 
 
 def inv(a: float) -> float:

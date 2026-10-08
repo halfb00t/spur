@@ -8,18 +8,21 @@ no code with spur.calc.
 import json
 import math
 import time
-from dataclasses import replace
+from dataclasses import FrozenInstanceError, replace
 from functools import cache
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 from trochoid_oracle import clearance
 
+from bench.trochoid import tuned_shift
 from spur.calc import (
     ROOT_CURVE_POINTS,
     TROCHOID_JOIN_EPS,
     Cutter,
+    Profile,
     _junction,
     _root_curve,
     _trochoid_point,
@@ -789,3 +792,223 @@ def test_t1_the_closed_form_onset_pins_when_the_root_is_a_crossing() -> None:
           f"{refused} without a curve, {crossing} crossing, {tangent} tangent, "
           f"{in_band} inside the band, {elapsed:.2f} s")
     assert (invalid, refused, crossing, tangent, in_band) == (543, 8, 1318, 2331, 2)
+
+
+def _on_the_double_root(xi_over_rb: float | None = None, *, xi_mm: float | None = None,
+                        rho: float = 0.38) -> GearParams:
+    """The 10-tooth, 20 degree, module 1, backlash 0 gear with its profile shift tuned so
+    the cutter's xi reads `xi_over_rb * rb` (or `xi_mm`): xi is linear in the shift, so
+    one cutter at shift 0 places the gear on its own z_min double root (STACK's gear)."""
+    fields = {"teeth": 10, "module": 1, "pressure_angle": 20, "backlash": 0}
+    base = _gear(profile_shift=0, **fields)
+    target = xi_mm if xi_mm is not None else (xi_over_rb or 0.0) * profile(base).rb
+    return _gear(profile_shift=tuned_shift(base, rho, target), **fields)
+
+
+def test_the_double_root_at_z_min_is_a_tangent_join_one_tooth_step_either_side() -> None:
+    """REQ-trochoid-root-generated, adjacency (D-09): 10 teeth, module 1, 30 degrees, no
+    shift, no backlash, sharp cutter is exactly on z_min, 2 * 1.25 / sin^2(30) = 10, with
+    a float xi of -8.9e-16 (measured 2026-10-08). The double root is a tangent join, not a
+    refusal and not a failed bracket, and the oracle reads the curve as the cut boundary.
+    One tooth step either side: 9 teeth are undercut by 0.25 mm of roll and cross; 11 are
+    not and join tangent."""
+    xi: dict[int, float] = {}
+    joins: dict[int, str] = {}
+    for teeth in (9, 10, 11):
+        p = _gear(teeth=teeth, module=1, pressure_angle=30, profile_shift=0, backlash=0)
+        c = cutter(p, 0.0)
+        curve = trochoid_root(c)
+        assert curve is not None
+        assert root_mode(p, profile(p), requested="trochoid", rho=0.0).mode == "trochoid"
+        xi[teeth], joins[teeth] = c.xi, curve.join
+        if teeth == 10:
+            assert abs(c.xi) < 1e-12
+            swept = _swept(curve.points, p, c.rho)
+            assert all(abs(v) <= ORACLE_BAR_MM for v in swept), max(swept)
+    assert [joins[z] for z in (9, 10, 11)] == ["crossing", "tangent", "tangent"]
+    assert xi[9] == pytest.approx(-0.25, abs=1e-12)
+    assert xi[11] == pytest.approx(0.25, abs=1e-12)
+
+
+def test_the_double_root_flips_one_field_step_either_side_of_a_tuned_shift() -> None:
+    """D-09, boundary: the 10-tooth, 30 degree, sharp-cutter gear has x_min = 0 exactly
+    (undercut_shift reads 0 to 1e-12), so the profile-shift field's own step (0.05) puts
+    x -0.05 on the undercut side, xi -0.10 mm, a crossing, and x 0.05 on the other, xi
+    +0.10 mm, a tangent join: the L33 pattern, one field step either side."""
+    for x, join in ((-0.05, "crossing"), (0.05, "tangent")):
+        p = _gear(teeth=10, module=1, pressure_angle=30, profile_shift=x, backlash=0)
+        c = cutter(p, 0.0)
+        assert abs(undercut_shift(c)) < 1e-12
+        assert c.xi == pytest.approx(2 * x, abs=1e-12)
+        curve = trochoid_root(c)
+        assert curve is not None
+        assert curve.join == join
+
+
+def test_the_join_epsilon_separates_a_found_bracket_from_a_degenerate_one(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-09, D-10: where the bracket works the answer is a crossing, inside the band the
+    flank join is the form point, and where the bracket is lost outside the band the
+    answer is a named refusal, never a number.
+
+    STACK's two points on the 10-tooth, 20 degree gear (rb 4.698 mm): xi -2.9e-3 mm
+    (bracket found) is a crossing, xi -2.9e-5 mm (bracket lost in the prototype) is inside
+    the band (eps * rb = 4.7e-4 mm) and joins tangent. At xi = -10 * eps * rb the bracket
+    is found and the last point is on Profile.half_angle to the junction bar; at xi =
+    -eps * rb / 10 it is the flank join, sqrt(rb^2 + xi^2). Patching the constant to 0
+    at xi = -1e-9 * rb loses the bracket (measured 2026-10-08, the scan of
+    `bench/trochoid.py epsilon` loses it up to 5.6e-6 * rb), and root_mode names it. The
+    sentence was captured from root_warnings on 2026-10-08, never typed (L33)."""
+    for xi_mm, join in ((-2.9e-3, "crossing"), (-2.9e-5, "tangent")):
+        p = _on_the_double_root(xi_mm=xi_mm)
+        curve = trochoid_root(cutter(p, 0.38))
+        assert curve is not None
+        assert curve.join == join, xi_mm
+
+    p = _on_the_double_root(-10 * TROCHOID_JOIN_EPS)
+    c = cutter(p, 0.38)
+    curve = trochoid_root(c)
+    assert curve is not None
+    assert curve.join == "crossing"
+    radius, half = curve.points[-1]
+    assert abs(half - c.pr.half_angle(radius)) <= JUNCTION_BAR_RAD
+
+    p = _on_the_double_root(-TROCHOID_JOIN_EPS / 10)
+    c = cutter(p, 0.38)
+    curve = trochoid_root(c)
+    assert curve is not None
+    assert curve.join == "tangent"
+    assert curve.points[-1][0] == pytest.approx(math.hypot(c.pr.rb, c.xi),
+                                                abs=JUNCTION_BAR_MM)
+
+    monkeypatch.setattr("spur.calc.TROCHOID_JOIN_EPS", 0.0)
+    p = _on_the_double_root(-1e-9)
+    c = cutter(p, 0.38)
+    assert -1e-9 * 1.001 < c.xi / c.pr.rb < -1e-9 * 0.999
+    assert trochoid_root(c) is None
+    rm = root_mode(p, profile(p), requested="trochoid", rho=0.38)
+    assert (rm.mode, rm.reason) == ("radial", "bracket degenerate")
+    assert root_warnings(rm) == (
+        "The trochoid root's junction with the involute could not be solved for this "
+        "gear: the analytic root is used.",)
+
+
+def test_every_structural_failure_is_refused_as_curve_invalid(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-10, D-11, L08: a curve that is not a single honest graph over the radius is
+    refused as `curve invalid`, with no points and no clipping to the centreline. Two
+    ways in. (1) A gear outside the allowed box, built with `model_construct` (profile
+    shift -1.0, which GearParams rejects): 6 teeth, 14.5 degrees, sharp cutter. Measured
+    2026-10-08 it reaches the tip-circle arm: its radius rises and its half-angle stays
+    inside the tooth space, but its last radius is 1.128 * ra, the 1.13 * ra 18-RESEARCH
+    saw on the x = -1 rows. (2) A tangent gear whose point function is patched to a
+    falling radius, the arm no gear reaches. The sentence was captured from
+    root_warnings on 2026-10-08, never typed (L33)."""
+    sentence = ("The trochoid root for this gear loops, leaves the tooth space or runs past "
+                "its junction with the involute: the analytic root is used.")
+    outside = GearParams.model_construct(teeth=6, module=1.0, pressure_angle=14.5,
+                                         profile_shift=-1.0, backlash=0.0)
+    c = cutter(outside, 0.0)
+    assert c.pr.rb > c.pr.rf  # past F9's nesting: the closed-form tests do not refuse it
+    assert _root_curve(c) == "curve invalid"
+    assert trochoid_root(c) is None
+    rm = root_mode(outside, profile(outside), requested="trochoid", rho=0.0)
+    assert (rm.mode, rm.reason) == ("radial", "curve invalid")
+    assert root_warnings(rm) == (sentence,)
+
+    tangent = _gear(teeth=30, module=1, pressure_angle=20, profile_shift=0, backlash=0)
+    monkeypatch.setattr("spur.calc._trochoid_point",
+                        lambda c, beta: (c.pr.ra - beta, 0.1))
+    falling = cutter(tangent, 0.38)
+    assert _root_curve(falling) == "curve invalid"
+    rm = root_mode(tangent, profile(tangent), requested="trochoid", rho=0.38)
+    assert (rm.mode, rm.reason) == ("radial", "curve invalid")
+    assert root_warnings(rm) == (sentence,)
+
+
+@pytest.mark.parametrize(("fields", "rho"), [
+    pytest.param({"teeth": 10, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0}, 0.38, id="crossing-10T"),
+    pytest.param({"teeth": 30, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0.10}, 0.38, id="tangent-30T"),
+])
+def test_a_root_curve_is_immutable_and_its_points_rise_from_the_root_circle(
+        fields: dict[str, object], rho: float) -> None:
+    """REQ-trochoid-root-generated, ordering and empty: a RootCurve is frozen with its
+    points a tuple of tuples, exactly ROOT_CURVE_POINTS of them (never an empty curve),
+    the first on the root circle bit for bit, the radius strictly rising so no two
+    points share one. The mirrored flank and the other teeth are the consumer's
+    (Phase 19). A refused cutter gives None, never an empty curve."""
+    p = _gear(**fields)
+    c = cutter(p, rho)
+    curve = trochoid_root(c)
+    assert curve is not None
+    with pytest.raises(FrozenInstanceError):
+        curve.points = ()  # type: ignore[misc]
+    assert isinstance(curve.points, tuple)
+    assert all(type(point) is tuple and len(point) == 2 for point in curve.points)
+    assert len(curve.points) == ROOT_CURVE_POINTS
+    assert curve.points[0][0] == c.pr.rf
+    radii = [radius for radius, _ in curve.points]
+    assert all(lo < hi for lo, hi in pairwise(radii))
+    assert len(set(radii)) == ROOT_CURVE_POINTS
+
+    no_land = cutter(_gear(teeth=12, module=1, pressure_angle=33.5, profile_shift=0,
+                           backlash=0), 0.0)
+    assert trochoid_root(no_land) is None
+
+
+@pytest.mark.parametrize(("fields", "rho"), [
+    pytest.param({"teeth": 10, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0}, 0.38, id="tracer"),
+    pytest.param({"teeth": 17, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0}, 0.38, id="just-undercut-17T"),
+    pytest.param({"teeth": 6, "module": 1, "pressure_angle": 14.5, "profile_shift": -0.6,
+                  "backlash": 0}, 3.0, id="6T-14.5-x-0.6-cap-request"),
+])
+def test_profile_half_angle_is_never_asked_below_the_base_circle(
+        monkeypatch: pytest.MonkeyPatch, fields: dict[str, object], rho: float) -> None:
+    """The junction code calls Profile.half_angle only at R >= rb: below the base circle
+    `min(1.0, rb/R)` would clamp and quietly return the wrong involute (18-RESEARCH). A
+    spy over three crossing gears, the 6-tooth one asked for the cap (3.0 mm, trimmed),
+    records every radius it is asked and none is under rb * (1 - 1e-15), the last-ulp
+    excursion the clamp is there to absorb. The assertion is the smallest radius, not a
+    call count."""
+    asked: list[float] = []
+    original = Profile.half_angle
+
+    def spy(self: Profile, radius: float) -> float:
+        asked.append(radius / self.rb)
+        return original(self, radius)
+
+    monkeypatch.setattr(Profile, "half_angle", spy)
+    p = _gear(**fields)
+    c = cutter(p, rho)
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    assert junction is not None
+    assert junction[1] == "crossing"
+    _root_curve(c)
+    assert asked
+    assert min(asked) >= 1 - 1e-15
+
+
+@pytest.mark.parametrize("teeth", [
+    pytest.param(10, id="crossing-10T"),
+    pytest.param(8, id="crossing-8T"),
+    pytest.param(35, id="tangent-35T"),
+])
+def test_the_form_radius_does_not_depend_on_backlash(teeth: int) -> None:
+    """The radius where the root hands over to the involute depends on the rack and the
+    tooth count, not on how thick the tooth is cut: Zhang, "Tooth thickness is not needed
+    in either method A or B", and 18-RESEARCH's measured spread over backlash 0, 0.05,
+    0.1 and 0.3 at fixed x of 1.8e-15 mm (10 teeth), 0 (8) and 0 (35). The cutter widens
+    by the backlash (D-07) but its flank foot does not move. Re-measured 2026-10-08 at
+    1.8e-15, 0 and 0 mm on 20 degrees and tip radius 0.38 mm."""
+    last = []
+    for backlash in (0.0, 0.05, 0.10, 0.30):
+        p = _gear(teeth=teeth, module=1, pressure_angle=20, profile_shift=0,
+                  backlash=backlash)
+        curve = trochoid_root(cutter(p, 0.38))
+        assert curve is not None
+        last.append(curve.points[-1][0])
+    assert max(last) - min(last) <= 1e-12
