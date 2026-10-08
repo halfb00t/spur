@@ -110,7 +110,7 @@ def test_the_cap_is_floored_and_warned_one_print_step_either_side() -> None:
     backlash 0 the unrounded cap is 0.29353 mm. 0.293 is under it and is used unchanged,
     silently; 0.294 is over it and is cut to the cap floored to 3 dp, 0.293, with the cap
     sentence naming 0.293 mm; a request exactly equal to the unrounded cap is not
-    trimmed. round(cap, 3) would have given 0.294, a tip land of -4.0e-4 mm: a legal gear
+    trimmed. round(cap, 3) would have given 0.294, a tip land of -3.6e-4 mm: a legal gear
     refused as having none. The used and the printed radius are one float. The expected
     sentence was captured from root_warnings on 2026-10-08, never typed (L33)."""
     p = _gear(teeth=12, module=0.5, pressure_angle=15, profile_shift=0, backlash=0)
