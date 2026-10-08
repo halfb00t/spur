@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
 **Current focus:** Phase 19 — The Trochoid in the Part — ready to discuss (Phase 18 landed
-2026-10-08 on `gsd/phase-18-trochoid-maths-proved`, 46 commits from `15174f9` to the
+2026-10-08 on `gsd/phase-18-trochoid-maths-proved`, 44 commits from `15174f9` to the
 transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like #27)
 
 ## Current Position
