@@ -7,6 +7,7 @@ no code with spur.calc.
 
 import json
 import math
+import re
 import time
 from dataclasses import FrozenInstanceError, replace
 from functools import cache
@@ -228,6 +229,36 @@ def test_a_sharp_cutter_and_a_corner_centre_on_the_rolling_line_are_both_legal()
         if label == "land-of-zero":
             assert c.a == 0.0
             assert curve.points[0][1] == pytest.approx(math.pi / 10, abs=1e-15)
+
+
+@pytest.mark.parametrize("rho", [
+    pytest.param(math.nan, id="nan"),
+    pytest.param(math.inf, id="inf"),
+    pytest.param(-math.inf, id="minus-inf"),
+    pytest.param(-0.1, id="negative"),
+])
+def test_a_tip_radius_that_is_not_a_finite_millimetre_value_is_refused_before_any_cap(
+        rho: float) -> None:
+    """L05, L08, 18-REVIEW WR-02: `rho` is not a GearParams field in this phase (D-07), so
+    nothing validates it once at the boundary and `cutter()` is the one guard. Measured on
+    the 12-tooth, module 1, 20 degree gear before the guard: a NaN failed `rho <=
+    rho_max`, so it was trimmed to the cap, and `rho < rho_requested` read `0.471 < nan`,
+    False, so `root_mode` answered `trochoid` with no reason and no sentence: a part
+    changed that nobody asked to change. A negative radius was used as it stood: -0.1
+    answered `trochoid` with no sentence, -0.5 was refused as `curve invalid` and -inf as
+    `bracket degenerate`, each blaming the geometry for an input. All four now raise a
+    ValueError naming the value, through `root_mode` too; it is not a `RootReason`
+    because no user can reach the state, and a sentence for it would be one nobody
+    reads. Zero, either sign, is the legal sharp cutter."""
+    p = _gear(teeth=12, module=1, pressure_angle=20, profile_shift=0, backlash=0)
+    with pytest.raises(ValueError, match=re.escape(repr(rho))):
+        cutter(p, rho)
+    with pytest.raises(ValueError, match=re.escape(repr(rho))):
+        root_mode(p, profile(p), requested="trochoid", rho=rho)
+    for sharp in (0.0, -0.0):
+        c = cutter(p, sharp)
+        assert c.rho == 0.0
+        assert c.rho_requested == 0.0
 
 
 @pytest.mark.parametrize("fields", [

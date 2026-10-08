@@ -1277,7 +1277,19 @@ def cutter(p: GearParams, rho: float) -> Cutter:
     12 teeth, backlash 0 the cap is 0.29353 mm, round() gives 0.294 and the land comes
     out 3.6e-4 mm negative -- a legal gear refused as "no tip land" (18-RESEARCH F3).
     Flooring also makes the used and the printed radius one number (L08).
+
+    A tip radius that is not a finite, non-negative millimetre value raises ValueError.
+    `rho` is not a `GearParams` field in this phase (D-07), so until Phase 19's field
+    validates it once at the boundary this is the one place that guards the internal
+    contract. It is a ValueError and not a new `RootReason`: no user can reach the state,
+    so there is no sentence to write for it.
     """
+    # Before any arithmetic: a NaN fails `rho <= rho_max` below, so it would be trimmed to
+    # the cap, and `rho < rho_requested` in root_warnings reads False against NaN, so the
+    # part would change with no sentence (measured on 12 teeth, module 1, 20 degrees:
+    # mode "trochoid", reason None, no warning). L05, L08, 18-REVIEW WR-02.
+    if not math.isfinite(rho) or rho < 0:
+        raise ValueError(f"tip radius must be a finite, non-negative millimetre value, got {rho!r}")
     pr = profile(p)
     alpha, m, x = pr.alpha, p.module, p.profile_shift
     d = _dedendum(m, x)
