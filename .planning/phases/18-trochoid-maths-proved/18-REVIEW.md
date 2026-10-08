@@ -85,7 +85,7 @@ Checks I ran, so the verdict rests on commands and not on reading:
 `codex exec` 0.161.0, read-only sandbox, over the PR diff without `.planning/`
 (`git diff origin/main...58aac4f -- src tests bench docs Makefile`, 3,880 lines). Verdict
 REVISE on two findings; both were reproduced here before the fix and both are fixed on the
-branch. `make verify` after the fixes: 1024 passed.
+branch. `make verify` after the fixes: 1023 passed, coverage 97.68 %.
 
 - **XR-01** (warning, `bench/trochoid.py` `check_curve`): the join-band allowance
   2(tan(phi) - phi) was added for every negative xi, so on a crossing it masked the junction
