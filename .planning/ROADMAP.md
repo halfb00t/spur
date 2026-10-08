@@ -354,8 +354,33 @@ build time on the heaviest allowed low-tooth row are spiked first, before any sc
 **Research flag**: Needs a spike, not a research phase — the chamfer junction (L29's boundary
 was bisected to ~2 µm on the old geometry) and the build time on the heaviest low-tooth row;
 STACK's assumption that the spline leaves `make bench.build` timings unaffected is unmeasured.
-**Plans**: TBD
+**Plans**: 10 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+- [ ] 19-01-PLAN.md — Spike A, before any schema change: the gate's before-figure at the phase base, the bench's own trochoid outline, the tip chamfer's kernel limit re-bisected across the spline-to-spline junction (20 steps, 14 rows), the heaviest corner rows timed radial and trochoid against SPUR_BUILD_TIMEOUT
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 19-02-PLAN.md — Spike B: the two spline-deviation methods reconciled, the kernel tier on seven rows, the guard numbers and spline error over the whole product, the root-arc dead band, D-07's waist walk; the human sets the bar, the floor and the waist field's name and confirms D-02's door (checkpoint)
+- [ ] 19-03-PLAN.md — The resource-tracker debt's "Phase 19 planning" trigger: 60 isolation loops, the human's fix-or-defer answer (checkpoint), the ledger updated
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 19-04-PLAN.md — Tracer: `root_shape` end to end on the default gear (field, `RootMode.curve`, the junction from one float, the trochoid outline in `model.py`, `derive()` printing only what is true), then the kernel-tier proof at the human's bar, `root_d == 2 rf` in both modes and the generator kept out of `model.py`
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 19-05-PLAN.md — The outline hardened: `ROOT_ARC_MIN` closes the dead band a typed backlash reaches, four structural guards that do not rest on `isValid()`, the solid-model docs
+- [ ] 19-06-PLAN.md — The numbers: `root_form_d`, the root waist and its pinned floor, the undercut sentence restated from the cutter used with `x_min` rounded up, the cap sentence reworded, the gear-maths docs
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 19-07-PLAN.md — Three-interface parity: the human settles SC5's exit 2 against the documented CLI contract (checkpoint), the trochoid documents byte-identical, refusals routed identically, README rows and example
+- [ ] 19-08-PLAN.md — Composition: the calc-tier (192 rows) and kernel-tier matrices in both root modes, the chamfer cap one step either side of the hob root's junction, the selector twins, a bare build
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 19-09-PLAN.md — The price on the real build: one outline definition, the chamfer law re-run, the corner rows through `make bench.build`, `make verify` against 66 s and `make verify.fast` against 30 s on the baseline's host, `derive()`'s per-call cost
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 19-10-PLAN.md — The record: L38 (supersedes L10, amends L09 and L33) with the deferred flip and D-09's trigger, README geometry notes, the strategy docs, the trochoid idea and the slug idea, Phase 20 recorded `Skipped (O4, flip deferred)`
 
 ### Phase 20: The Flip (conditional)
 
