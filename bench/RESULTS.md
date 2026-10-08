@@ -3453,3 +3453,66 @@ per mm of tip radius (2.2e-10 at 1e-9, 2.2e-8 at 1e-7, 2.2e-7 at 1e-6, 2.2e-5 at
 | `ORACLE_BAR_MM` | 1e-9 mm | the generator's worst gap over the product (2.99e-12 mm at the band case; 1.6e-13 mm elsewhere; 9.8e-15 mm on the gate rows) and the oracle's resolution after golden-section refinement (about 1e-15 mm) | 335 over the product's worst, 6.3e3 outside the band, 1.0e5 on the gate rows; tripwire 220 over the bar |
 
 No headroom is under 10x.
+
+#### T3 and T4
+
+**T3, freecad.gears at a sharp cutter (rho 0).** One-off run on 2026-10-08, never inside the
+repository:
+
+- Source: `https://github.com/looooo/freecad.gears`, `pygears/involute_tooth.py`
+  (`InvoluteTooth.undercut_points`) with `pygears/__init__.py` and `pygears/_functions.py`, at commit
+  `4cc4b1a233c232e15c3fdfb8a35909aa0d828796` (2026-09-15, "ruff refactoring", the last commit touching
+  the file); repository HEAD `83ec154b1925347622b61812f75d2ed51e956b9f`; package 1.4.0; licence
+  **GPL-3.0** (GitHub's licence API, `spdx_id`). The files were fetched with `gh api` into a scratch
+  directory under the session's scratchpad (`spur-18-04-freecad/pygears/`), the script
+  (`spur-18-04-t3/run.py`) kept in another, and run as `python -I run.py <dir>` with the repository's
+  `.venv` (numpy, never declared by the repository). The code is plain numpy geometry; it was read
+  before it was run.
+- Cases: teeth 8, 10, 14; shift 0 and 0.3; backlash 0 and 0.10; module 1, 20 degrees; clearance 0.25
+  (their root circle is this project's `r - (1.25 - x) m`, asserted to 1e-12 in the script). 200 samples
+  each; 119 to 200 of them lie on the cutter flank (contact-normal angle at most pi/2 - alpha); five,
+  evenly spread from the root circle to the flank foot, are recorded: **60 literals**, with their
+  source, commit, licence and date, in `FREECAD_T3_POINTS`.
+- Mapping, compared point for point through each row's own psi: `beta = atan((rf/d) tan(psi))`, the
+  point `_trochoid_point(cutter(p, 0.0), beta)`. The half-angle is minus the polar angle of the
+  library's returned point (at psi = 0 it equals this project's `pi/z - a/r`, checked by hand).
+  The sample parameter psi is the library's own (`linspace(0, undercut_end, 200)`); recovering it as
+  `acos((df/2)/R)` was tried first and turns a rounding error of 1e-16 in R into 1.5e-8 rad at the
+  first point, so it was not used.
+- Worst gaps: **1.776e-15 mm** in radius, **1.943e-16 rad** in half-angle (the prototype read
+  2.66e-15 and 3.05e-16 over 1,972 points). Float level, as 18-RESEARCH expected: the frame
+  conversion is right.
+- Bars `T3_BAR_MM` and `T3_BAR_RAD` = 1e-12 each: ten times the larger gap is 1.8e-14, under the
+  1e-12 cross-platform libm floor, so the floor is the bar. Headroom **563** (mm) and **5.1e3**
+  (rad). The reference prints no resolution (float64 closed-form arithmetic on both sides).
+- Tripwire: the same rows against a cutter of tip radius 1e-6 mm read **7.353e-07 mm** (7.4e5 times
+  the radius bar) and **1.751e-07 rad** (1.8e5 times the angle bar).
+- What it checks and does not: the rolling convention, the depth, the tip land and the backlash
+  entry for a sharp corner; not the crossing (the library trims polylines), not rho above 0.
+- No freecad.gears file entered the repository: no tracked path names `pygears` or `freecad`, and no
+  tracked Python file imports `pygears` (checked by the plan's verify command).
+
+**T4, KISSsoft's form diameter (D-15).** Zhang, "Methods to Determine Form Diameter on Hobbed
+External Involute Gears", AGMA 18FTM02 (September 2018), Table 7 example 7, via Gear Solutions: 35
+teeth, 22.5 degrees, dedendum factor 1.3 (x -0.05 on this project's 1.25 m rack), no protuberance, hob
+tip radius 0.04, form diameter **4.1530 in** (four printed decimals). Diametral pitch 8 (module
+3.175 mm, tip radius 1.016 mm) is **inferred**, not printed, and is recorded as inferred.
+
+| | value |
+|---|---|
+| printed (KISSsoft) | 4.1530 in |
+| the cutter-envelope junction here (`trochoid_root(cutter(p, 1.016))`, tangent join, xi 12.1 mm; `rb - rf` is -0.102 mm so `root_mode` would hand this gear back, hence the direct call) | 4.153036 in |
+| gap | 3.593e-05 in |
+| `T4_BAR_IN` (half the last printed digit) | 5e-05 in |
+| headroom | **1.39** (the gap is 0.72 of the bar) |
+
+The 1.39 is under the 10x line by construction, because the reference is rounded to four decimals,
+and the human accepted exactly that at planning (D-15); it is recorded here as a known sub-10x bar
+and was not escalated again. Tripwires: a tip radius 1e-3 in larger gives 4.153778 in, a gap of
+**7.782e-04 in, 15.6 times the bar**; the two pitches either side of the inferred 8 miss 4.1530 by
+5.514e-04 in (7.999, 11.0 times the bar) and 4.794e-04 in (8.001, 9.6 times), so the pitch that
+reproduces the number is 8 to within 1e-4. The number is the cutter-envelope junction, never an
+ISO 21771 form diameter: one tool-generated point is not parity (D-08, D-15, L08).
+
+The four T3 and T4 tests run in 0.13 s at `-n0`. `make verify` after the tests' commit: 1016 passed
+in 74.77 s, coverage 97.68 percent.
