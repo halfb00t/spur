@@ -17,6 +17,7 @@ import pytest
 from pydantic import ValidationError
 from trochoid_oracle import clearance
 
+from bench.trochoid import ORACLE_BAR_MM as BENCH_ORACLE_BAR_MM
 from bench.trochoid import tuned_shift
 from spur.calc import (
     ROOT_CURVE_POINTS,
@@ -38,12 +39,21 @@ from spur.calc import (
 )
 from spur.params import GearParams
 
-# mm, how far from zero the swept-cutter oracle may read a point of a correct curve.
-# Two numbers set it: 18-RESEARCH's prototype noise floor, 6.7e-15 * module over 500
-# allowed-box cases (so at most 6.7e-14 mm at module 10), and the oracle's own
-# resolution after golden-section refinement, about 1e-15 mm. 1e-9 mm is at least
-# 1.5e4 times the noise floor at module <= 10; 18-04 re-measures it over the gate rows
-# and restates the headroom.
+# mm, how far from zero the swept-cutter oracle may read a point of a correct curve. Two
+# numbers set it, measured 2026-10-08 (Apple M2 Max, Python 3.12.13): the generator's worst
+# gap from the oracle's reading, and the oracle's own resolution after golden-section
+# refinement (about 1e-15 mm; 2e-16 to 2.7e-15 on the twelve gate rows).
+#   - Over the twelve gate rows the worst reading is 9.8e-15 mm (module 10, 9.8e-16 per
+#     module). Over all 10,326 curves of the sweep product (bench/trochoid.py oracle) it
+#     is 2.99e-12 mm, at the one case of 26 teeth in the join band, where the curve ends at
+#     the cutter's flank foot, 2*(tan(phi) - phi) = 2.44e-13 rad off the involute (18-03):
+#     geometry, not noise; the next, 1.1e-12 mm, is the other band case; every other curve
+#     reads 1.6e-13 mm or less (module 10, 116 teeth) and 15 read above 1e-13.
+#   - Headroom of 1e-9 mm: 1.0e5 over the gate rows, 335 over the product's worst (the band
+#     case) and 6.3e3 over its worst outside the band. The tripwire, the tracer curve
+#     generated at tip radius + 1e-6 mm, reads 2.2e-7 mm: 220 times the bar.
+# The oracle searches the roll over +-3 spans of 2 pi / z (tests/trochoid_oracle.py): at
+# +-1 span, 3,244 curves of the product read up to 0.61 mm uncut.
 ORACLE_BAR_MM = 1e-9
 
 # rad, how far the cutter's last half-angle may sit from Profile.half_angle at its radius
@@ -573,21 +583,20 @@ def test_a_severed_tooth_is_refused_and_the_oracle_with_neighbours_agrees(
     -0.006559 (and +0.002042 against +0.001961 on the third). The refined waist is within
     2.3e-10 rad below a 20,001-point scan (measured 2026-10-08), so the bar is 1e-8 (43x).
 
-    The oracle is the independent check, and it is fed both flanks. The one-flank curve
-    itself reads 1e-15 mm on all three rows: one flank is a cut boundary even on a tooth
-    the other flank cuts away, so a one-flank check cannot see severance. The tooth's
-    other flank is the mirror (radius, -half-angle); on the severed rows it lies inside
-    the cutter and the oracle reads a gouge of -0.138979 and -0.020103 mm (18-RESEARCH
-    read 0.141 and 0.0201 on its 21-point sets; here the deepest point is the mirrored
-    waist), on the 7-tooth row nothing below -4e-16 mm. Measured 2026-10-08, and the
-    research's account of the neighbouring teeth is NOT reproduced on the committed
-    oracle: it described 0 with them off and the gouge with them on, but the mirror flank
-    reads the same gouge with them off, because that point lies inside the cutter's own
-    sweep, and the neighbours (rack teeth k = -1, +1 within the roll window) change
-    readings only deeper into the next space. On the whole 7-tooth gear they leave the
-    mirror flank reading between 0 and +0.35 mm uncut, +0.94 with them off, never a
-    gouge. So the agreement pinned here is the sign: a gouge exactly where the closed
-    predicate says severed."""
+    The oracle is the independent check. Fed the one-flank curve with the neighbouring
+    cutter teeth on, it reads the gouge the closed predicate predicts: -0.138979 and
+    -0.020103 mm at the waist on the two severed rows (18-RESEARCH read 0.141 and 0.0201 on
+    its 21-point sets), and nothing below -5e-16 mm on the 7-tooth row; with the neighbours
+    off it reads 2e-15 mm on all three, because one flank is a cut boundary even on a tooth
+    the next space cuts through -- a single-tooth oracle cannot see severance, the tooth
+    k = -1 or +1 does. The tooth's other flank, the mirror (radius, -half-angle), reads the
+    same gouge with the neighbours on or off, being inside the cutter's own sweep.
+    Measured 2026-10-08. 18-02 recorded the neighbours as making no difference on a
+    committed oracle whose roll window was +-1 span; the window was too narrow (a trochoid
+    point's contact roll reaches 2.13 spans over the sweep product) and 18-04 widened it
+    to +-3 spans, which restores the separation the research described: a gouge exactly
+    where the closed predicate says severed, found only with the neighbours."""
+
     p = _gear(teeth=teeth, module=1, pressure_angle=14.5, profile_shift=shift, backlash=0)
     pr = profile(p)
     c = cutter(p, 0.0)
@@ -611,9 +620,10 @@ def test_a_severed_tooth_is_refused_and_the_oracle_with_neighbours_agrees(
     other = [_swept(mirror, p, 0.0), _swept(mirror, p, 0.0, neighbours=False)]
     print(f"  one flank, neighbours on / off: {min(flank[0]):.3e} / {min(flank[1]):.3e} mm; "
           f"mirror flank on / off: {min(other[0]):.6f} / {min(other[1]):.6f} mm")
-    assert all(abs(v) <= ORACLE_BAR_MM for readings in flank for v in readings)
+    assert all(abs(v) <= ORACLE_BAR_MM for v in flank[1])
 
     if gouge is None:
+        assert all(abs(v) <= ORACLE_BAR_MM for v in flank[0])
         assert (rm.mode, rm.reason) == ("trochoid", None)
         assert curve is not None
         assert curve.waist == refined
@@ -627,8 +637,9 @@ def test_a_severed_tooth_is_refused_and_the_oracle_with_neighbours_agrees(
         assert root_warnings(rm) == (
             "The trochoid roots of the two neighbouring tooth spaces cut this tooth through: "
             "the analytic root is used.",)
+        assert min(flank[0]) == pytest.approx(gouge, abs=5e-7)
+        assert min(flank[0]) < -1e-3
         assert min(other[0]) == pytest.approx(gouge, abs=5e-7)
-        assert min(other[0]) < -1e-3
         assert min(other[1]) < -1e-3
 
 
@@ -1012,3 +1023,138 @@ def test_the_form_radius_does_not_depend_on_backlash(teeth: int) -> None:
         assert curve is not None
         last.append(curve.points[-1][0])
     assert max(last) - min(last) <= 1e-12
+
+
+# --- T2: the swept-cutter oracle at the gate (18-04) ---------------------------------------
+# (fields, tip radius requested in mm, the join, whether the cutter trims it). Twelve
+# gears: crossing and tangent; tip radius 0, w_c == 0 (tip radius = tip depth), w_c > 0 and
+# a tip land nearly gone; module 0.2, 1, 1.75 and 10; backlash 0 to 1.0. The bore is off.
+GATE_ROWS = [
+    pytest.param({"teeth": 10, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0}, 0.38, "crossing", False, id="tracer-crossing"),
+    pytest.param({"teeth": 19, "module": 1.75, "pressure_angle": 25, "profile_shift": 0,
+                  "backlash": 0.10}, 0.5, "tangent", False, id="default-gear-tangent"),
+    pytest.param({"teeth": 17, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0}, 0.38, "crossing", False, id="17-teeth-just-undercut"),
+    pytest.param({"teeth": 18, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0}, 0.38, "tangent", False, id="18-teeth-just-not-undercut"),
+    pytest.param({"teeth": 7, "module": 1, "pressure_angle": 14.5, "profile_shift": -0.6,
+                  "backlash": 0}, 0.0, "crossing", False, id="thin-positive-waist-sharp"),
+    pytest.param({"teeth": 6, "module": 1, "pressure_angle": 14.5, "profile_shift": -0.6,
+                  "backlash": 0}, 3.0, "crossing", True, id="6-teeth-cap-request-3.0"),
+    pytest.param({"teeth": 16, "module": 1, "pressure_angle": 14.5, "profile_shift": 1.0,
+                  "backlash": 0}, 0.25, "tangent", False, id="w_c-equals-zero"),
+    pytest.param({"teeth": 16, "module": 1, "pressure_angle": 14.5, "profile_shift": 1.0,
+                  "backlash": 0}, 0.5, "tangent", False, id="w_c-above-zero"),
+    pytest.param({"teeth": 12, "module": 1, "pressure_angle": 32.0, "profile_shift": 0,
+                  "backlash": 0}, 3.0, "tangent", True, id="tip-land-nearly-gone"),
+    pytest.param({"teeth": 10, "module": 0.2, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0}, 0.05, "crossing", False, id="tracer-at-module-0.2"),
+    pytest.param({"teeth": 12, "module": 10, "pressure_angle": 25, "profile_shift": 0.2,
+                  "backlash": 1.0}, 0.5, "tangent", False, id="module-10-backlash-1.0"),
+    pytest.param({"teeth": 30, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0.10}, 0.38, "tangent", False, id="30-teeth-tangent"),
+]
+
+
+@pytest.mark.parametrize(("fields", "rho", "join", "trimmed"), GATE_ROWS)
+def test_t2_the_oracle_reads_every_gate_row_as_the_cut_boundary(
+        fields: dict[str, object], rho: float, join: str, trimmed: bool) -> None:
+    """REQ-trochoid-proved-independently, T2 (SC3): the stdlib swept-cutter oracle, with
+    its neighbouring cutter teeth and no code shared with calc, reads every point of the
+    generator's curve as the boundary the hob cuts, within ORACLE_BAR_MM, on twelve gears
+    chosen to cover crossing and tangent, rho 0 / w_c == 0 / w_c > 0 / a tip land nearly
+    gone, module 0.2 to 10 and backlash 0 to 1.0. Measured 2026-10-08 (Apple M2 Max,
+    Python 3.12.13): the worst reading over the twelve rows is 9.8e-15 mm (module 10,
+    9.8e-16 per module), 1.0e5 times under the bar; the other eleven read 1.9e-16 to
+    2.7e-15 mm. The row asserts its curve has 16 points before it reads one, and the
+    oracle judges each point on its own, so the reversed curve reads the reversed
+    readings, exactly."""
+    p = _gear(**fields)
+    c = cutter(p, rho)
+    curve = trochoid_root(c)
+    assert curve is not None
+    assert len(curve.points) == ROOT_CURVE_POINTS == 16
+    assert curve.join == join
+    assert (c.rho < c.rho_requested) is trimmed
+    readings = _swept(curve.points, p, c.rho)
+    worst = max(abs(v) for v in readings)
+    print(f"worst oracle reading: {worst:.3e} mm = {worst / p.module:.3e} per module")
+    assert worst <= ORACLE_BAR_MM
+    assert _swept(curve.points[::-1], p, c.rho) == readings[::-1]
+
+
+def test_t2_the_oracle_sees_a_gouge_where_one_exists() -> None:
+    """REQ-trochoid-proved-independently, T2's negative controls: an oracle that reads
+    zero everywhere proves nothing, so three curves that must not read zero. Measured
+    2026-10-08, module 1, backlash 0:
+
+    1. The tracer gear's involute between the base circle (4.6985 mm) and the crossing
+       radius (4.7256 mm), a quarter, half and three quarters of the way: -5.3e-3,
+       -3.7e-3 and -1.9e-3 mm. The involute runs through material the hob removes there.
+    2. The tracer's trochoid carried past its crossing, to a quarter, half and all of the
+       way to the flank foot: -9.6e-3, -2.2e-2 and -5.19e-2 mm (18-RESEARCH: 5.19e-2 at
+       the foot), the penetration a curve left running past the form point would have.
+    3. A severed tooth (6 teeth, 14.5 degrees, x -0.6, sharp cutter): trochoid_root is
+       None, and its one-flank points read -0.138979 mm at the waist with the neighbouring
+       cutter teeth on and 2e-15 mm with them off -- the next space's cutter is what cuts
+       this tooth through, so a single-tooth oracle cannot see it. This is the separation
+       18-RESEARCH described (0.141 mm on its 21-point set); 18-02 could not reproduce it on
+       an oracle whose roll window was +-1 span, and 18-04 widened the window to +-3 spans
+       (see tests/trochoid_oracle.py). The tooth's mirror flank reads -0.138979 mm either way.
+    """
+    p = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=0, backlash=0)
+    c = cutter(p, 0.38)
+    curve = trochoid_root(c)
+    assert curve is not None
+    for share in (0.25, 0.5, 0.75):
+        radius = c.pr.rb + share * (curve.points[-1][0] - c.pr.rb)
+        reading = _swept(((radius, _involute_half_angle(p, radius)),), p, c.rho)[0]
+        print(f"involute at {share} of the way to the crossing: {reading:.3e} mm")
+        assert reading < -1e-4
+
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    assert junction is not None
+    beta_end = math.pi / 2 - c.pr.alpha
+    for share in (0.25, 0.5, 1.0):
+        point = _trochoid_point(c, junction[0] + share * (beta_end - junction[0]))
+        reading = _swept((point,), p, c.rho)[0]
+        print(f"trochoid {share} of the way from the crossing to the foot: {reading:.3e} mm")
+        assert reading < -1e-4
+
+    severed = _gear(teeth=6, module=1, pressure_angle=14.5, profile_shift=-0.6, backlash=0)
+    sc = cutter(severed, 0.0)
+    assert trochoid_root(sc) is None
+    betas, samples = _flank_samples(sc)
+    both = (*samples, _waist(sc, betas, samples))
+    mirror = tuple((radius, -half) for radius, half in both)
+    on = _swept(both, severed, 0.0)
+    off = _swept(both, severed, 0.0, neighbours=False)
+    other = _swept(mirror, severed, 0.0)
+    print(f"severed, one flank: neighbours on {min(on):.6f}, off {min(off):.3e} mm; "
+          f"mirror flank on {min(other):.6f} mm")
+    assert min(on) < -1e-3
+    assert all(abs(v) <= ORACLE_BAR_MM for v in off)
+    assert min(other) < -1e-3
+
+
+def test_t2_moving_rho_by_1e_6_mm_breaks_the_oracle_bar() -> None:
+    """REQ-trochoid-proved-independently, T2's tripwire (SC3): the tracer gear's curve
+    generated at tip radius 0.38 mm + 1e-6 mm and judged against the cutter at 0.38 mm
+    must read beyond the bar, or the bar would pass a generator that mis-sets rho by a
+    millionth of a millimetre. Measured 2026-10-08: the worst reading moves 0.2205 per mm
+    of rho (2.2e-10 at 1e-9, 2.2e-8 at 1e-7, 2.2e-7 at 1e-6, 2.2e-5 at 1e-4 mm), so 1e-6
+    reads 2.20e-7 mm, 220 times ORACLE_BAR_MM, against 1.0e-15 mm unmoved. 18-RESEARCH
+    predicted 2.2e-7 and 220x."""
+    p = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=0, backlash=0)
+    moved = trochoid_root(cutter(p, 0.38 + 1e-6))
+    assert moved is not None
+    reading = max(abs(v) for v in _swept(moved.points, p, 0.38))
+    print(f"tripwire reading: {reading:.3e} mm = {reading / ORACLE_BAR_MM:.0f} x the bar")
+    assert reading > 10 * ORACLE_BAR_MM
+
+
+def test_t2_the_bench_oracle_uses_the_gate_s_bar() -> None:
+    """The whole-product run in bench/trochoid.py judges against its own copy of the bar
+    (the bench cannot import this module); one number, pinned equal here."""
+    assert ORACLE_BAR_MM == BENCH_ORACLE_BAR_MM

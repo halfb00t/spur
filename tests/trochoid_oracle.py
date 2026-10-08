@@ -15,16 +15,23 @@ cutter (negative inside the cutter): about 0 on the cut boundary, negative where
 curve gouges, positive where it leaves material uncut.
 
 It carries the neighbouring cutter teeth (k = -1 and +1 beside the tooth that cuts this
-space) because the next space's cutter can cut a tooth through. What they do, measured
-2026-10-08 on 6 teeth, 14.5 degrees, x -0.6, rho 0 (18-02): fed the one-flank curve the
-oracle reads 2e-15 mm with them on or off, so a one-flank curve cannot show a severed
-tooth; fed the tooth's other flank, the mirror (radius, -half-angle), it reads -0.139 mm
-with them on or off, because that point lies inside the cutter's own sweep. The
-neighbours change readings only deeper into the next space, and only within the roll
-window of +-2 pi / z, so they reproduce the next space's cut partly: the mirror flank of
-a whole 7-tooth gear reads 0 to +0.35 mm uncut with them on, never a gouge.
-18-RESEARCH Pattern 6 described the single-tooth reading on a severed tooth as 0 and the
-reading with neighbours as 0.141 mm; that separation is not reproduced here.
+space) because the next space's cutter can cut a tooth through, and it searches the roll
+over +-3 spans of 2 pi / z. The window matters as much as the neighbours: the roll at
+which the cutter touches a trochoid point is (a + w_c tan(beta)) / r, and for a deep
+rack on a low-tooth-count gear it runs past one span -- up to 2.13 spans over the sweep
+product (60 teeth, module 10, 14.5 degrees, x -0.6, sharp cutter), about 2.3 spans over
+the allowed box (d cot(alpha) / (r * span) at x -0.6, 14.5 degrees). A window of +-1 span,
+which this file had until 18-04, read those points as uncut: 3,244 of the 10,326 curves of
+the sweep product read up to +0.61 mm, and the severed-tooth separation 18-RESEARCH
+described (below) went missing with it. Three spans is the next whole number, 1.3 times the
+box's bound; a grid of 2001 rolls at that width reads the same as 6001 on a 259-case
+sample of the product (worst 9e-14 to 1e-13 mm at both).
+
+What the neighbours do, measured 2026-10-08 on 6 teeth, 14.5 degrees, x -0.6, rho 0: the
+one-flank points of the curve read -0.139 mm with the neighbours on and 2e-15 mm with them
+off, because the next space's cutter cuts this tooth through and only the tooth k = -1 or
++1 sees it; the same on x -0.5 (-0.0201 mm against 8e-16), and on the whole 7-tooth gear
+nothing below -5e-16 mm either way. A single-tooth oracle reads zero on a severed tooth.
 """
 
 from __future__ import annotations
@@ -83,7 +90,7 @@ def clearance(points: tuple[tuple[float, float], ...], *, teeth: int, module: fl
     for radius, half in points:
         theta = math.pi / z - half
         px, py = radius * math.sin(theta), radius * math.cos(theta)
-        span = 2 * math.pi / z
+        span = 3 * 2 * math.pi / z   # +-3 spans of 2 pi / z, see the docstring
         step = 2 * span / (_GRID - 1)
         rolls = [-span + i * step for i in range(_GRID)]
         values = [reading(px, py, roll) for roll in rolls]

@@ -52,7 +52,7 @@ from bench.latency import (
     _report_markdown,
 )
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
-from bench.trochoid import check_curve, rack, sweep_cases
+from bench.trochoid import ORACLE_BAR_MM, _oracle, check_curve, rack, sweep_cases
 from spur.calc import (
     HEX_CELL_CAP,
     RootCurve,
@@ -785,3 +785,17 @@ def test_check_curve_reports_a_curve_that_does_not_rise() -> None:
     points[1] = (points[0][0] - 0.01, points[1][1])
     bent = RootCurve(points=tuple(points), join=curve.join, waist=curve.waist)
     assert "radius does not strictly rise" in check_curve(bent, rk)
+
+
+def test_the_oracle_worker_reads_a_curve_clean_and_a_severed_tooth_as_a_gouge() -> None:
+    """`bench.trochoid oracle`'s worker, on the two kinds of case it judges: the tracer
+    gear's curve reads within the bar (about 1e-15 mm), and the 6-tooth, 14.5 degree,
+    x -0.6, sharp-cutter gear, whose tooth the neighbouring spaces cut through, reads a
+    gouge on its one flank with the neighbouring cutter teeth on (-0.139 mm, measured
+    2026-10-08). A worker that read 0 on both would pass the whole product vacuously."""
+    base = {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none",
+            "module": 1.0, "backlash": 0.0}
+    tracer = {**base, "teeth": 10, "pressure_angle": 20.0, "profile_shift": 0.0}
+    severed = {**base, "teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6}
+    assert 0 <= _oracle(("A", tracer, 0.38, "trochoid")) <= ORACLE_BAR_MM
+    assert _oracle(("A", severed, 0.0, "severed")) < -1e-3

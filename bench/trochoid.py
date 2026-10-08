@@ -9,8 +9,10 @@ Scenarios, one subcommand each:
   the field's real limits plus the box corners, each case checked against closed forms
   typed in this module (D-12); `--list` writes every refusal, `--stride K` runs the
   sample the commit-time gate test runs (D-13).
-- The full-grid swept-cutter oracle and the root-shape cost step arrive in the later
-  plans of the phase.
+- `oracle` (18-04): the swept-cutter oracle over every trochoid curve of the sweep
+  product, and over the one flank of every severed tooth, which must read a gouge (D-13:
+  the full grid only here); `--serial-slice N` judges the first N in-process.
+- The root-shape cost step arrives in the last plan of the phase.
 
 It is not part of `make verify`: the scans take seconds to minutes and their timings
 depend on the host, and a timing assertion on shared hardware would flap
@@ -27,6 +29,7 @@ import argparse
 import csv
 import itertools
 import math
+import multiprocessing
 import os
 import platform
 import random
@@ -429,17 +432,24 @@ def check_case(kwargs: dict[str, object], rho: float,
     return f"trochoid/{curve.join}{capped}", problems
 
 
-def _severed_waist(c: Cutter) -> float:
-    """The half-angle at the narrowest point of a severed tooth's curve, rad: the same
-    sampling `calc._root_curve` uses, repeated here only to list it in the refusals."""
+def _flank_points(c: Cutter) -> tuple[list[float], tuple[tuple[float, float], ...]] | None:
+    """The 16 samples `calc._root_curve` takes along a cutter's flank (uniform in
+    tan(beta), the last at the junction) with their contact-normal angles, rebuilt here
+    because `trochoid_root` returns None for a severed tooth; None when no junction."""
     junction = _junction(c, TROCHOID_JOIN_EPS)
     if junction is None:
-        return math.nan
+        return None
     s_stop = math.tan(junction[0])
     n = ROOT_CURVE_POINTS
     betas = [math.atan(s_stop * i / (n - 1)) for i in range(n - 1)] + [junction[0]]
-    points = tuple(_trochoid_point(c, beta) for beta in betas)
-    return _waist(c, betas, points)[1]
+    return betas, tuple(_trochoid_point(c, beta) for beta in betas)
+
+
+def _severed_waist(c: Cutter) -> float:
+    """The half-angle at the narrowest point of a severed tooth's curve, rad, to list it
+    in the refusals."""
+    flank = _flank_points(c)
+    return math.nan if flank is None else _waist(c, *flank)[1]
 
 
 _LIST_HEADER = ("grid", "teeth", "module", "pressure_angle", "profile_shift", "backlash",
@@ -511,10 +521,147 @@ def run_sweep(list_path: Path | None, stride: int) -> int:
     return 0
 
 
+# --- the swept-cutter oracle over the whole product (D-13, 18-04) -------------------------
+# The gate reads twelve rows (tests/test_trochoid.py); here every trochoid curve of the
+# sweep product is read the same way, and every severed tooth must read a gouge.
+
+# mm, the same number as tests/test_trochoid.py's ORACLE_BAR_MM, which carries the two
+# measured numbers it rests on; a test pins the two equal (this module cannot import that
+# one: it imports this).
+ORACLE_BAR_MM = 1e-9
+# The pooled run also prints the worst reading over its first SERIAL_SLICE trochoid cases,
+# which `--serial-slice` judges in-process, so the two are comparable.
+SERIAL_SLICE = 200
+_TESTS = Path(__file__).resolve().parents[1] / "tests"
+
+OracleCase = tuple[str, dict[str, object], float, str]
+_GEAR_FIELDS = ("teeth", "module", "pressure_angle", "profile_shift", "backlash")
+
+
+def _oracle_cases() -> list[OracleCase]:
+    """The cases of `sweep_cases()` the oracle can judge, in order: (grid, fields, tip
+    radius requested, `trochoid` where a curve exists, `severed` where the tooth is cut
+    through). Every other case is a refusal the sweep already lists."""
+    cases: list[OracleCase] = []
+    for grid, kwargs, rho in sweep_cases():
+        try:
+            p = GearParams.model_validate(kwargs)
+        except ValidationError:
+            continue
+        reason = root_mode(p, profile(p), requested="trochoid", rho=rho)
+        if reason.mode == "trochoid":
+            cases.append((grid, kwargs, rho, "trochoid"))
+        elif reason.reason == "tooth severed":
+            cases.append((grid, kwargs, rho, "severed"))
+    return cases
+
+
+def _oracle(case: OracleCase) -> float:
+    """One case through the swept-cutter oracle (a module-level function: spawn workers
+    import it by name). A trochoid case returns the largest |reading| over its 16 points,
+    mm. A severed case returns the lowest reading over the 16 samples and the refined
+    waist of its one flank, with the neighbouring cutter teeth on, mm: the oracle agrees
+    with the refusal when that is a gouge (the next space's cutter is what cuts the
+    tooth through, so the neighbours are what see it)."""
+    sys.path.insert(0, str(_TESTS))
+    from trochoid_oracle import clearance  # the tests/ root, put on the path just above
+
+    _, kwargs, rho, kind = case
+    p = GearParams.model_validate(kwargs)
+    c = root_mode(p, profile(p), requested="trochoid", rho=rho).cutter
+    if c is None:
+        raise ValueError(f"no cutter for {kwargs} at tip radius {rho}")
+
+    def read(points: tuple[tuple[float, float], ...]) -> list[float]:
+        return clearance(points, teeth=p.teeth, module=p.module,
+                         pressure_angle=p.pressure_angle, profile_shift=p.profile_shift,
+                         backlash=p.backlash, rho=c.rho)
+
+    if kind == "trochoid":
+        curve = trochoid_root(c)
+        if curve is None:
+            raise ValueError(f"no curve for {kwargs} at tip radius {rho}")
+        return max(abs(v) for v in read(curve.points))
+    flank = _flank_points(c)
+    if flank is None:
+        raise ValueError(f"no junction for {kwargs} at tip radius {rho}")
+    return min(read((*flank[1], _waist(c, *flank))))
+
+
+def run_oracle(serial_slice: int) -> int:
+    started = datetime.now(UTC)
+    load_before = _load()
+    cases = _oracle_cases()
+    trochoid_idx = [i for i, case in enumerate(cases) if case[3] == "trochoid"]
+    workers = 1 if serial_slice else (os.cpu_count() or 1)
+    t0 = time.perf_counter()
+    if serial_slice:
+        picked = trochoid_idx[:serial_slice]
+        readings = {i: _oracle(cases[i]) for i in picked}
+    else:
+        with multiprocessing.get_context("spawn").Pool(workers) as pool:
+            readings = dict(enumerate(pool.imap(_oracle, cases, chunksize=8)))
+    wall = time.perf_counter() - t0
+    load_after = _load()
+
+    judged = [i for i in trochoid_idx if i in readings]
+    severed = [i for i, case in enumerate(cases) if case[3] == "severed" and i in readings]
+    first = [i for i in trochoid_idx[:SERIAL_SLICE] if i in readings]
+    print("## Swept-cutter oracle over the sweep product (`bench.trochoid oracle`)\n")
+    print("#### Host state\n")
+    print(f"- Machine: {machine_facts()}")
+    print(f"- Python {platform.python_version()}")
+    print(f"- Read {started:%Y-%m-%dT%H:%M:%SZ}; 1-minute load {load_before} before, "
+          f"{load_after} after")
+    print(f"- {len(readings)} cases judged in {wall:.1f} s wall on {workers} "
+          f"worker{'s' if workers != 1 else ''} "
+          f"({'serial slice, in this process' if serial_slice else 'spawn pool'})\n")
+    bad = 0
+    if judged:
+        ranked = sorted(judged, key=lambda i: readings[i], reverse=True)
+        per_m_i = max(judged, key=lambda i: readings[i] / float(str(cases[i][1]["module"])))
+        for label, i in (("worst |reading|", ranked[0]), ("worst per module", per_m_i)):
+            grid, kwargs, rho, _ = cases[i]
+            module = float(str(kwargs["module"]))
+            gear = {k: kwargs[k] for k in _GEAR_FIELDS}
+            print(f"- {label}: {readings[i]:.3e} mm = {readings[i] / module:.3e} per module, "
+                  f"grid {grid} {gear} at tip radius {rho:g} mm")
+        print(f"- headroom of the bar over the worst reading: "
+              f"{ORACLE_BAR_MM / max(readings[ranked[0]], 1e-300):.3g}x")
+        print("- the five largest readings:")
+        for i in ranked[:5]:
+            grid, kwargs, rho, _ = cases[i]
+            print(f"  - {readings[i]:.3e} mm: grid {grid} "
+                  f"{ {k: kwargs[k] for k in _GEAR_FIELDS} } at tip radius {rho:g} mm")
+        print(f"- readings above 1e-13 mm: {sum(readings[i] > 1e-13 for i in judged)} of "
+              f"{len(judged)}")
+        print(f"- trochoid cases judged: {len(judged)}; beyond the bar "
+              f"({ORACLE_BAR_MM:g} mm): {sum(readings[i] > ORACLE_BAR_MM for i in judged)}")
+        bad += sum(readings[i] > ORACLE_BAR_MM for i in judged)
+        print(f"- worst |reading| over the first {len(first)} trochoid cases: "
+              f"{max(readings[i] for i in first):.17e} mm")
+    if severed:
+        agreed = [i for i in severed if readings[i] < -ORACLE_BAR_MM]
+        shallowest = max(readings[i] for i in severed)
+        print(f"- tooth severed cases: {len(severed)}; the oracle reads a gouge (below "
+              f"-{ORACLE_BAR_MM:g} mm) on {len(agreed)}; shallowest "
+              f"{shallowest:.3e} mm, deepest {min(readings[i] for i in severed):.3e} mm")
+        bad += len(severed) - len(agreed)
+    if not judged and not severed:
+        print("verdict: FAIL, no case judged")
+        return 1
+    print(f"\nverdict: {'FAIL' if bad else 'ok'}")
+    return 1 if bad else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.trochoid", description=__doc__)
     sub = parser.add_subparsers(dest="scenario", required=True)
     sub.add_parser("epsilon", help="measure TROCHOID_JOIN_EPS (D-09)")
+    oracle = sub.add_parser("oracle", help="the swept-cutter oracle over the whole product")
+    oracle.add_argument("--serial-slice", type=int, default=0, metavar="N",
+                        help="judge the first N trochoid cases in this process instead of "
+                             f"the pool (the pooled run prints the first {SERIAL_SLICE})")
     sweep = sub.add_parser("sweep", help="the generator over the allowed box (D-12)")
     sweep.add_argument("--list", type=Path, metavar="PATH",
                        help="write every generator refusal as a tab-separated file")
@@ -523,6 +670,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.scenario == "epsilon":
         return run_epsilon()
+    if args.scenario == "oracle":
+        return run_oracle(args.serial_slice)
     return run_sweep(args.list, args.stride)
 
 
