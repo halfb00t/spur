@@ -654,6 +654,22 @@ def run_oracle(serial_slice: int) -> int:
     return 1 if bad else 0
 
 
+# --- the root-shape step at both boundaries (D-05, 18-05) --------------------------------
+# The line a figure is judged by, written and pinned before any table is produced, so a
+# contradiction is decided by a stated line and not afterwards (T-18-15).
+
+PREMISE_STEP_PER_M = 0.14  # D-01's premise: about 0.14*m of root shape between 17 and 18
+# teeth at 20 degrees (FEATURES' simulation, 18-RESEARCH Pattern 8)
+PREMISE_TOLERANCE = 0.25   # either side: 18-RESEARCH measured 0.145*m, 3 % off the premise
+
+
+def premise_holds(gap_mm: float, module: float) -> bool:
+    """Whether a root-shape gap is within PREMISE_TOLERANCE either side of D-01's figure
+    for this module; the sign of the gap does not matter, its size does."""
+    nominal = PREMISE_STEP_PER_M * module
+    return (1 - PREMISE_TOLERANCE) * nominal <= abs(gap_mm) <= (1 + PREMISE_TOLERANCE) * nominal
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.trochoid", description=__doc__)
     sub = parser.add_subparsers(dest="scenario", required=True)

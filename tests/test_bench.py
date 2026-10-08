@@ -52,7 +52,14 @@ from bench.latency import (
     _report_markdown,
 )
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
-from bench.trochoid import ORACLE_BAR_MM, _oracle, check_curve, rack, sweep_cases
+from bench.trochoid import (
+    ORACLE_BAR_MM,
+    _oracle,
+    check_curve,
+    premise_holds,
+    rack,
+    sweep_cases,
+)
 from spur.calc import (
     HEX_CELL_CAP,
     RootCurve,
@@ -799,3 +806,19 @@ def test_the_oracle_worker_reads_a_curve_clean_and_a_severed_tooth_as_a_gouge() 
     severed = {**base, "teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6}
     assert 0 <= _oracle(("A", tracer, 0.38, "trochoid")) <= ORACLE_BAR_MM
     assert _oracle(("A", severed, 0.0, "severed")) < -1e-3
+
+
+def test_the_d05_premise_line_sits_25_percent_either_side_of_0_14_m() -> None:
+    """D-05's comparison line, fixed before the step was measured: D-01's premise holds
+    within 25 % either side of 0.14*m. Pinned at points 1e-4*m inside and outside the
+    band, never at its float64 edges: (1 - 0.25) * 0.14 is 0.10500000000000001, so 0.105
+    itself falls a hair outside (checked at planning, 2026-10-07). The band scales with
+    the module, and the sign of the gap does not matter."""
+    for module, inside, outside in (
+        (1.0, (0.11, 0.17), (0.1049, 0.1751)),
+        (2.0, (0.22, 0.34), (0.2098, 0.3502)),
+    ):
+        assert all(premise_holds(g, module) for g in inside)
+        assert all(premise_holds(-g, module) for g in inside)
+        assert not any(premise_holds(g, module) for g in outside)
+        assert not any(premise_holds(-g, module) for g in outside)
