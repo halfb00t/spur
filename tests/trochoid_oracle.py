@@ -15,9 +15,16 @@ cutter (negative inside the cutter): about 0 on the cut boundary, negative where
 curve gouges, positive where it leaves material uncut.
 
 It carries the neighbouring cutter teeth (k = -1 and +1 beside the tooth that cuts this
-space) because the next space's cutter can cut a tooth through: a single-tooth oracle
-reads 0 on such a tooth and cannot see it (18-RESEARCH Pattern 6, measured: 0 without
-the neighbours, 0.141 mm with them at 6 teeth, 14.5 degrees, x -0.6, rho 0).
+space) because the next space's cutter can cut a tooth through. What they do, measured
+2026-10-08 on 6 teeth, 14.5 degrees, x -0.6, rho 0 (18-02): fed the one-flank curve the
+oracle reads 2e-15 mm with them on or off, so a one-flank curve cannot show a severed
+tooth; fed the tooth's other flank, the mirror (radius, -half-angle), it reads -0.139 mm
+with them on or off, because that point lies inside the cutter's own sweep. The
+neighbours change readings only deeper into the next space, and only within the roll
+window of +-2 pi / z, so they reproduce the next space's cut partly: the mirror flank of
+a whole 7-tooth gear reads 0 to +0.35 mm uncut with them on, never a gouge.
+18-RESEARCH Pattern 6 described the single-tooth reading on a severed tooth as 0 and the
+reading with neighbours as 0.141 mm; that separation is not reproduced here.
 """
 
 from __future__ import annotations

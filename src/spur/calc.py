@@ -1291,6 +1291,9 @@ class RootCurve:
     # centre rad), strictly increasing radius, ROOT_CURVE_POINTS long
     join: _Join  # "tangent": it meets the involute with its direction; "crossing":
     # the gear is undercut and the curve is cut off where it meets the involute
+    waist: tuple[float, float]  # (radius mm, half-angle rad) where the half-angle is
+    # smallest, refined between the samples: the root's narrowest point, which is half
+    # the tooth thickness there, so it is always above zero on a curve that survives
 
 
 def _trochoid_point(c: Cutter, beta: float) -> tuple[float, float]:
@@ -1310,6 +1313,41 @@ def _trochoid_point(c: Cutter, beta: float) -> tuple[float, float]:
     along_line = c.rho * math.sin(beta) - c.w_c * math.tan(beta)
     return (math.hypot(along_normal, along_line),
             math.pi / c.pr.z - (phi + math.atan2(along_line, along_normal)))
+
+
+def _waist(c: Cutter, betas: list[float],
+           points: tuple[tuple[float, float], ...]) -> tuple[float, float]:
+    """The point of the curve where the half-angle from the tooth centre is smallest:
+    where the two neighbouring spaces' roots come closest to cutting the tooth through
+    (D-17), as (radius mm, half-angle rad).
+
+    The smallest sample is refined by 60 golden-section steps of the half-angle between
+    that sample's neighbours (clamped to the curve's ends), because 16 samples can miss
+    the dip: at 6 teeth, 14.5 degrees, shift -0.5, tip radius 0 the smallest sample reads
+    -0.0055 rad and the refined waist -0.0066 (18-RESEARCH). A fixed step count, no
+    data-dependent loop (T-18-02); whichever of the sample and the refined point is
+    smaller is returned, so refining can only lower the answer.
+    """
+    i = min(range(len(points)), key=lambda k: points[k][1])
+    lo, hi = betas[max(i - 1, 0)], betas[min(i + 1, len(betas) - 1)]
+    golden = (math.sqrt(5) - 1) / 2
+
+    def half(beta: float) -> float:
+        return _trochoid_point(c, beta)[1]
+
+    c1, c2 = hi - golden * (hi - lo), lo + golden * (hi - lo)
+    f1, f2 = half(c1), half(c2)
+    for _ in range(60):
+        if f1 < f2:
+            hi, c2, f2 = c2, c1, f1
+            c1 = hi - golden * (hi - lo)
+            f1 = half(c1)
+        else:
+            lo, c1, f1 = c1, c2, f2
+            c2 = lo + golden * (hi - lo)
+            f2 = half(c2)
+    refined = _trochoid_point(c, 0.5 * (lo + hi))
+    return min(points[i], refined, key=lambda point: point[1])
 
 
 def _bisect(f: Callable[[float], float], lo: float, hi: float) -> float:
@@ -1390,7 +1428,14 @@ def _root_curve(c: Cutter) -> RootCurve | RootReason:
         or (join == "crossing" and any(
             radius >= pr.rb and half >= pr.half_angle(radius)
             for radius, half in points[:-1])))
-    return "curve invalid" if invalid else RootCurve(points=points, join=join)
+    if invalid:
+        return "curve invalid"
+    waist = _waist(c, betas, points)
+    # A half-angle at or below zero means the neighbouring spaces' roots meet on the
+    # tooth's centreline: the hob cuts the tooth through. The analytic root is the
+    # fallback and no waist floor is chosen here; a thin positive waist survives and
+    # Phase 19 decides how thin is too thin (D-17).
+    return "tooth severed" if waist[1] <= 0 else RootCurve(points, join, waist)
 
 
 def trochoid_root(c: Cutter) -> RootCurve | None:
@@ -1411,21 +1456,38 @@ class RootMode:
     # was requested
 
 
-def root_mode(p: GearParams,
-              pr: Profile,  # noqa: ARG001 (D-04's signature; 18-02's rb <= rf check reads it)
+def root_mode(p: GearParams, pr: Profile,
               *, requested: RootShape = "radial", rho: float = 0.0) -> RootMode:
     """The single answer to "does the trochoid root apply to this gear" (D-10).
 
     `requested` is the user's choice (D-04, amended by D-16: keyword-only, with the
-    tip radius `rho` beside it); the reasons are decided cheap to expensive. Nothing in
-    production calls this until Phase 19, so the present callers get radial with
-    "not requested" and the pre-v0.2 fixture cannot move. The default `rho = 0.0` is the
-    sharp cutter, legal, and ignored whenever nothing is requested; D-07 forbids reading
-    `p.root_fillet` as the tip radius in this phase.
+    tip radius `rho` beside it). It owns every refusal and decides them in one fixed
+    order, cheapest first:
+
+    1. `not requested`: nothing asked, so not even the cutter is built.
+    2. `nothing radial to replace`: `pr.rb <= pr.rf` (D-02). The involute already
+       reaches the root circle, so there is no radial lead-in to replace; `<=` because
+       where they are equal `Profile.r_start` is the base circle either way. This is a
+       closed-form test and goes before the generator because undercut implies
+       `rb > rf` (18-RESEARCH F9: proved, and checked over 556,920 combinations), so
+       the edge of the trochoid region is never hidden behind a generator failure.
+    3. `tip land gone`: the cutter has no flat tip at this pressure angle.
+    4. `bracket degenerate`: the junction with the involute cannot be solved.
+    5. `curve invalid`: a loop, a point past the tip circle, past the space
+       centreline or past the junction.
+    6. `tooth severed`: the curve's narrowest half-angle is at or below zero (D-17).
+
+    Every sentence for these comes from `root_warnings`. Nothing in production calls
+    this until Phase 19, so the present callers get radial with "not requested" and the
+    pre-v0.2 fixture cannot move. The default `rho = 0.0` is the sharp cutter, legal,
+    and ignored whenever nothing is requested; D-07 forbids reading `p.root_fillet` as
+    the tip radius in this phase.
     """
     if requested != "trochoid":
         return RootMode("radial", "not requested", None)
     c = cutter(p, rho)
+    if pr.rb <= pr.rf:
+        return RootMode("radial", "nothing radial to replace", c)
     curve = _root_curve(c)
     if isinstance(curve, RootCurve):
         return RootMode("trochoid", None, c)

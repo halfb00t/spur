@@ -5,16 +5,23 @@ tests/test_calc.py (D-13); the oracle itself is tests/trochoid_oracle.py, which 
 no code with spur.calc.
 """
 
+import json
 import math
 from dataclasses import replace
+from functools import cache
+from pathlib import Path
 
 import pytest
 from trochoid_oracle import clearance
 
 from spur.calc import (
+    ROOT_CURVE_POINTS,
+    TROCHOID_JOIN_EPS,
     Cutter,
+    _junction,
     _root_curve,
     _trochoid_point,
+    _waist,
     cutter,
     profile,
     root_mode,
@@ -378,3 +385,240 @@ def test_the_tracer_gear_is_cut_by_its_cutter_and_nothing_else() -> None:
     control = _swept(((radius, _involute_half_angle(p, radius)),), p, c.rho)[0]
     print(f"involute control (a gouge): {control:.3e} mm")
     assert control < -1e-4
+
+
+@cache
+def _fixture_gears() -> tuple[tuple[str, GearParams], ...]:
+    """The 44 pre-v0.2 regression records as gears, read-only: the fixture is Phase 20's
+    to move, never this phase's (SC5), and its modules import siblings by bare name, so
+    only the JSON is read."""
+    path = Path(__file__).parent / "regression" / "pre_v0_2.json"
+    records: dict[str, dict[str, object]] = json.loads(path.read_text())["records"]
+    return tuple((name, GearParams.model_validate(record["params"]))
+                 for name, record in records.items())
+
+
+def test_every_pre_v0_2_record_reads_radial_because_nobody_asked() -> None:
+    """REQ-root-mode-single-predicate, empty (D-04): the call every present consumer would
+    make, root_mode(p, profile(p)), reads radial / "not requested" with no cutter and no
+    warning on all 44 records of the pre-v0.2 fixture, whatever the gear and whatever rho
+    is passed beside it, so wiring it in later cannot move a record that nobody asked to
+    move."""
+    gears = _fixture_gears()
+    assert len(gears) == 44
+    for name, p in gears:
+        pr = profile(p)
+        for rm in (root_mode(p, pr), root_mode(p, pr, rho=0.38)):
+            assert (rm.mode, rm.reason, rm.cutter) == ("radial", "not requested", None), name
+            assert root_warnings(rm) == (), name
+
+
+def test_the_fixture_straddles_the_three_undercuts_without_mixing_them() -> None:
+    """REQ-root-mode-single-predicate, adjacency (PITFALLS 1): three different things are
+    called undercut. S is the shipped warning's `teeth < 2(1 - x)/sin^2(alpha)`, typed
+    here from its own formula; B is the trochoid's region, `rb > rf`; U is the cutter's
+    own, `c.xi < 0`. They nest (S in B, U in B: 18-RESEARCH F9) but are not the same set,
+    so root_mode must decide from B and the generator and never read S.
+
+    Captured 2026-10-08 on the 44 records: S 5, B 28, and U 8 with a sharp cutter (3
+    records the shipped line calls clear, which the 1.25 m rack does undercut) or 5 with
+    each record's own root fillet as the tip radius, where it coincides with S. With the
+    trochoid requested the 16 records with rb <= rf read `nothing radial to replace` at
+    either radius; the other 28, among them all 5 of S, split trochoid 24 / tooth severed 4
+    at rho 0 and trochoid 26 / tooth severed 2 at the record's own root fillet (the
+    severed ones are the 6-tooth, 14.5 degree, shift -0.6 and -0.5 gears of the API and
+    calc tests)."""
+    shipped, region = set(), set()
+    cutter_undercut: dict[str, set[str]] = {"sharp": set(), "own": set()}
+    tally: dict[str, dict[tuple[str, str | None], int]] = {"sharp": {}, "own": {}}
+    for name, p in _fixture_gears():
+        pr = profile(p)
+        if p.teeth < 2 * (1 - p.profile_shift) / math.sin(math.radians(p.pressure_angle)) ** 2:
+            shipped.add(name)
+        if pr.rb > pr.rf:
+            region.add(name)
+        for label, rho in (("sharp", 0.0), ("own", p.root_fillet)):
+            if cutter(p, rho).xi < 0:
+                cutter_undercut[label].add(name)
+            rm = root_mode(p, pr, requested="trochoid", rho=rho)
+            key = (rm.mode, rm.reason)
+            tally[label][key] = tally[label].get(key, 0) + 1
+            if name in shipped:
+                assert pr.rb > pr.rf
+                assert rm.reason != "nothing radial to replace", name
+    assert (len(shipped), len(region)) == (5, 28)
+    assert shipped <= region
+    assert {k: len(v) for k, v in cutter_undercut.items()} == {"sharp": 8, "own": 5}
+    assert all(v <= region for v in cutter_undercut.values())
+    assert cutter_undercut["sharp"] > shipped      # the cutter undercuts more than the line
+    assert cutter_undercut["own"] == shipped       # and here, by coincidence, no more
+    assert tally["sharp"] == {("trochoid", None): 24, ("radial", "nothing radial to replace"): 16,
+                              ("radial", "tooth severed"): 4}
+    assert tally["own"] == {("trochoid", None): 26, ("radial", "nothing radial to replace"): 16,
+                            ("radial", "tooth severed"): 2}
+
+
+def test_root_mode_hands_back_where_the_involute_reaches_the_root_circle() -> None:
+    """REQ-root-mode-single-predicate, boundary (D-02): one tooth step either side of
+    rb = rf at module 1, 20 degrees, shift 0, backlash 0, tip radius 0.38 mm. 41 teeth
+    have rb - rf = +0.0137 mm and read trochoid; 42 have -0.0165 mm and read `nothing
+    radial to replace`, with a sentence that prints both radii at 3 dp. rb == rf itself
+    cannot be built from step values (the crossover is irrational in the parameters), so
+    the `<=` in root_mode is pinned by these two rows and by its docstring. The sentence
+    was captured from root_warnings on 2026-10-08, never typed (L33)."""
+    sentence = ("No radial root to replace on this gear (base circle 19.734 mm, root circle "
+                "19.750 mm): the trochoid root request is ignored.")
+    for teeth, gap, mode, reason, warns in [
+            (41, 0.0137, "trochoid", None, ()),
+            (42, -0.0165, "radial", "nothing radial to replace", (sentence,))]:
+        p = _gear(teeth=teeth, module=1, pressure_angle=20, profile_shift=0, backlash=0)
+        pr = profile(p)
+        assert pr.rb - pr.rf == pytest.approx(gap, abs=5e-5)
+        rm = root_mode(p, pr, requested="trochoid", rho=0.38)
+        assert (rm.mode, rm.reason) == (mode, reason)
+        assert rm.cutter is not None
+        assert rm.cutter.rho == 0.38
+        assert root_warnings(rm) == warns
+
+
+@pytest.mark.parametrize(("fields", "mode", "reason", "sentence"), [
+    pytest.param({"teeth": 12, "module": 1, "profile_shift": 0, "backlash": 0,
+                  "pressure_angle": 32.0}, "trochoid", None, None, id="backlash-0-32.0"),
+    pytest.param({"teeth": 12, "module": 1, "profile_shift": 0, "backlash": 0,
+                  "pressure_angle": 32.5}, "radial", "tip land gone",
+                 "The cutter has no tip land at a 32.5 degree pressure angle with this module "
+                 "and backlash: no trochoid root is computed and the analytic root is used.",
+                 id="backlash-0-32.5"),
+    pytest.param({"teeth": 19, "module": 1.75, "profile_shift": -0.4, "backlash": 0.10,
+                  "pressure_angle": 33.0}, "trochoid", None, None, id="default-backlash-33.0"),
+    pytest.param({"teeth": 19, "module": 1.75, "profile_shift": -0.4, "backlash": 0.10,
+                  "pressure_angle": 33.5}, "radial", "tip land gone",
+                 "The cutter has no tip land at a 33.5 degree pressure angle with this module "
+                 "and backlash: no trochoid root is computed and the analytic root is used.",
+                 id="default-backlash-33.5"),
+])
+def test_root_mode_refuses_where_the_cutter_has_no_tip_land(
+        fields: dict[str, object], mode: str, reason: str | None, sentence: str | None) -> None:
+    """REQ-root-mode-single-predicate, boundary: one pressure-angle field step either side
+    of the tip-land limit, asked through root_mode (the cutter-level pin of the same rows
+    is in the tip-land test above): 32.0 / 32.5 degrees at backlash 0 and 33.0 / 33.5 at
+    the default gear's backlash. All four rows have rb > rf, which is what makes them
+    reach this refusal and not the earlier `nothing radial to replace`. The sentences were
+    captured from root_warnings on 2026-10-08, never typed (L33)."""
+    p = _gear(**fields)
+    pr = profile(p)
+    assert pr.rb > pr.rf
+    rm = root_mode(p, pr, requested="trochoid", rho=0.0)
+    assert (rm.mode, rm.reason) == (mode, reason)
+    assert root_warnings(rm) == (() if sentence is None else (sentence,))
+
+
+def test_a_gear_failing_two_tests_reports_the_first() -> None:
+    """REQ-root-mode-single-predicate, ordering (D-10): 20 teeth, module 1, shift 0,
+    33.0 degrees, backlash 0 has no radial root to replace (rb - rf = -0.3633 mm) and its
+    cutter has no tip land (sharp-corner land -0.0264 mm). root_mode names the first in
+    its fixed order, `nothing radial to replace`; the same gear at 12 teeth, which does
+    have something to replace, names the second. The sentence was captured from
+    root_warnings on 2026-10-08, never typed (L33)."""
+    both = _gear(teeth=20, module=1, pressure_angle=33.0, profile_shift=0, backlash=0)
+    pr = profile(both)
+    rm = root_mode(both, pr, requested="trochoid", rho=0.38)
+    assert rm.cutter is not None
+    assert pr.rb - pr.rf == pytest.approx(-0.3633, abs=5e-5)
+    assert rm.cutter.a0 == pytest.approx(-0.0264, abs=5e-5)
+    assert (rm.mode, rm.reason) == ("radial", "nothing radial to replace")
+    assert root_warnings(rm) == (
+        "No radial root to replace on this gear (base circle 8.387 mm, root circle "
+        "8.750 mm): the trochoid root request is ignored.",)
+
+    second = _gear(teeth=12, module=1, pressure_angle=33.0, profile_shift=0, backlash=0)
+    assert root_mode(second, profile(second), requested="trochoid",
+                     rho=0.38).reason == "tip land gone"
+
+
+def _flank_samples(c: Cutter) -> tuple[list[float], tuple[tuple[float, float], ...]]:
+    """The 16 samples `_root_curve` takes, rebuilt from the generator's own pieces
+    (uniform in tan(beta), the last at the junction), because `trochoid_root` rightly
+    returns None for the gears this is used on."""
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    assert junction is not None
+    beta_stop = junction[0]
+    s_stop = math.tan(beta_stop)
+    n = ROOT_CURVE_POINTS
+    betas = [math.atan(s_stop * i / (n - 1)) for i in range(n - 1)] + [beta_stop]
+    return betas, tuple(_trochoid_point(c, beta) for beta in betas)
+
+
+@pytest.mark.parametrize(("teeth", "shift", "waist", "sample", "gouge"), [
+    pytest.param(6, -0.6, -0.047395, -0.047235, -0.138979, id="6T-x-0.6-severed"),
+    pytest.param(6, -0.5, -0.006559, -0.005537, -0.020103, id="6T-x-0.5-severed"),
+    pytest.param(7, -0.6, 0.001961, 0.002042, None, id="7T-x-0.6-thin-but-whole"),
+])
+def test_a_severed_tooth_is_refused_and_the_oracle_with_neighbours_agrees(
+        teeth: int, shift: float, waist: float, sample: float, gouge: float | None) -> None:
+    """REQ-root-mode-single-predicate and REQ-trochoid-proved-independently, adjacency
+    (D-17, 18-RESEARCH Pitfall 3): 14.5 degrees, module 1, backlash 0, sharp cutter. A
+    curve whose refined waist (smallest half-angle) is at or below zero is `tooth
+    severed`: trochoid_root is None and root_mode names it; a thin positive waist (7
+    teeth, +0.0020 rad) survives as a curve that carries it. Refinement matters: the
+    smallest of the 16 samples reads -0.005537 rad on the second row, the refined waist
+    -0.006559 (and +0.002042 against +0.001961 on the third). The refined waist is within
+    2.3e-10 rad below a 20,001-point scan (measured 2026-10-08), so the bar is 1e-8 (43x).
+
+    The oracle is the independent check, and it is fed both flanks. The one-flank curve
+    itself reads 1e-15 mm on all three rows: one flank is a cut boundary even on a tooth
+    the other flank cuts away, so a one-flank check cannot see severance. The tooth's
+    other flank is the mirror (radius, -half-angle); on the severed rows it lies inside
+    the cutter and the oracle reads a gouge of -0.138979 and -0.020103 mm (18-RESEARCH
+    read 0.141 and 0.0201 on its 21-point sets; here the deepest point is the mirrored
+    waist), on the 7-tooth row nothing below -4e-16 mm. Measured 2026-10-08, and the
+    research's account of the neighbouring teeth is NOT reproduced on the committed
+    oracle: it described 0 with them off and the gouge with them on, but the mirror flank
+    reads the same gouge with them off, because that point lies inside the cutter's own
+    sweep, and the neighbours (rack teeth k = -1, +1 within the roll window) change
+    readings only deeper into the next space. On the whole 7-tooth gear they leave the
+    mirror flank reading between 0 and +0.35 mm uncut, +0.94 with them off, never a
+    gouge. So the agreement pinned here is the sign: a gouge exactly where the closed
+    predicate says severed."""
+    p = _gear(teeth=teeth, module=1, pressure_angle=14.5, profile_shift=shift, backlash=0)
+    pr = profile(p)
+    c = cutter(p, 0.0)
+    betas, samples = _flank_samples(c)
+    refined = _waist(c, betas, samples)
+    smallest = min(half for _, half in samples)
+    dense = min(_trochoid_point(c, betas[-1] * i / 20000)[1] for i in range(20001))
+    print(f"{teeth}T x {shift}: smallest sample {smallest:.6f}, waist {refined[1]:.6f} "
+          f"at R {refined[0]:.4f}, dense scan {dense:.9f} rad")
+    assert smallest == pytest.approx(sample, abs=5e-7)
+    assert refined[1] == pytest.approx(waist, abs=5e-7)
+    assert refined[1] <= smallest
+    assert refined[1] <= dense
+    assert dense - refined[1] < 1e-8
+
+    rm = root_mode(p, pr, requested="trochoid", rho=0.0)
+    curve = trochoid_root(c)
+    both = (*samples, refined)
+    mirror = tuple((radius, -half) for radius, half in both)
+    flank = [_swept(both, p, 0.0), _swept(both, p, 0.0, neighbours=False)]
+    other = [_swept(mirror, p, 0.0), _swept(mirror, p, 0.0, neighbours=False)]
+    print(f"  one flank, neighbours on / off: {min(flank[0]):.3e} / {min(flank[1]):.3e} mm; "
+          f"mirror flank on / off: {min(other[0]):.6f} / {min(other[1]):.6f} mm")
+    assert all(abs(v) <= ORACLE_BAR_MM for readings in flank for v in readings)
+
+    if gouge is None:
+        assert (rm.mode, rm.reason) == ("trochoid", None)
+        assert curve is not None
+        assert curve.waist == refined
+        assert curve.waist[1] > 0
+        assert root_warnings(rm) == ()
+        assert min(other[0]) >= -ORACLE_BAR_MM
+        assert min(other[1]) >= -ORACLE_BAR_MM
+    else:
+        assert (rm.mode, rm.reason) == ("radial", "tooth severed")
+        assert curve is None
+        assert root_warnings(rm) == (
+            "The trochoid roots of the two neighbouring tooth spaces cut this tooth through: "
+            "the analytic root is used.",)
+        assert min(other[0]) == pytest.approx(gouge, abs=5e-7)
+        assert min(other[0]) < -1e-3
+        assert min(other[1]) < -1e-3
