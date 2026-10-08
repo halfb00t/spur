@@ -278,6 +278,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [x] 18-05-PLAN.md — The records: the root-shape step at the threshold and the `rb = rf` crossover against a line written first, the per-call costs and `derive()`'s docstring, the human's two decisions (D-05, the resource-tracker debt), the layout rows, the final gate
+- [ ] 18-06-PLAN.md — Gap closure: the fourth `curve invalid` guard arm tested and seen red under mutation; `cutter()` refuses a non-finite or negative tip radius (18-VERIFICATION item 1, 18-REVIEW WR-01/WR-02; human decision 2026-10-08)
 
 ### Phase 19: The Trochoid in the Part
 
