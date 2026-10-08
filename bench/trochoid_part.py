@@ -17,21 +17,28 @@ and exits 1 when the verdict fails.
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
 import platform
 import subprocess
 import sys
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import partial
 from importlib import metadata
 from pathlib import Path
 
 import cadquery as cq
+from pydantic import ValidationError
 
 from bench import machine_facts
+from bench.build_time import DEFAULT_SWEEP, Timing, stl_size
 from bench.tip_chamfer_spike import chamfered, tip_arcs
-from spur import model
+from spur import int_env, model
+from spur.build_errors import BuildError
 from spur.calc import (
     TIP_CHAMFER_MARGIN,
     Cutter,
@@ -381,13 +388,137 @@ def run_chamfer() -> int:
     return 0
 
 
+# --- the heaviest allowed low-tooth rows ----------------------------------------------
+
+# The largest gear the trochoid can apply to at the field's most extreme pressure angle and
+# shift: it needs rb > rf (`root_mode` ignores the request otherwise, 18 D-02), and with
+# rb = r cos(alpha) and rf = r - m (1.25 - x) that reads z < 2 (1.25 - x) / (1 - cos(alpha)),
+# which is 116.1 at 14.5 degrees and x -0.6. So 116 teeth is the heaviest part a
+# `root_shape="trochoid"` request can change; the 200-tooth rows of the composed sweep are
+# ignored-and-warned under a request, and L37's 29.42 s row is untouched by construction.
+CORNER: dict[str, object] = {"teeth": 116, "pressure_angle": 14.5, "profile_shift": -0.6}
+
+
+def corner_rows() -> list[dict[str, object]]:
+    """Every row of `bench/sweeps/composed.json`, in file order, moved to CORNER."""
+    raw: list[dict[str, object]] = json.loads(
+        (DEFAULT_SWEEP.parent / "composed.json").read_text())
+    return [{**row, **CORNER} for row in raw]
+
+
+def _label(fields: dict[str, object]) -> str:
+    return " ".join(f"{k}={v}" for k, v in fields.items())
+
+
+@dataclass(frozen=True)
+class TimedRow:
+    label: str
+    mode: str                  # "radial" or "trochoid"
+    timing: Timing | None      # None: the build failed, see `error`
+    error: str
+    oracle: float | None       # trochoid only: the Phase 18 oracle's worst reading, mm
+
+
+def _time_row(label: str, mode: str, p: GearParams,
+              build: Callable[[], cq.Solid]) -> tuple[TimedRow, cq.Solid | None]:
+    """One request as a worker pays it: a cold build (no cache), then the fine STL and the
+    STEP export, each timed with `time.perf_counter()`. A build the kernel or the outline
+    refuses is a row with its reason, never a dropped row."""
+    t0 = time.perf_counter()
+    try:
+        solid = build()
+    except (BuildError, ValueError) as exc:
+        return TimedRow(label, mode, None, f"{type(exc).__name__}: {exc}", None), None
+    build_s = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    stl = model._write_export(solid, p, "stl", "fine")
+    stl_s = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    model._write_export(solid, p, "step", "fine")
+    step_s = time.perf_counter() - t0
+    timing = Timing(label, build_s, stl_s, step_s, *stl_size(stl))
+    return TimedRow(label, mode, timing, "", None), solid
+
+
+def run_heaviest() -> int:
+    """Time every corner row radial and trochoid, print them all, then judge. A row
+    `GearParams` refuses is printed with its sentence, never silently dropped; nothing is
+    trimmed, re-run or re-picked until it passes."""
+    timeout = int_env("SPUR_BUILD_TIMEOUT", 30)
+    lighter = [{**CORNER, "module": 10},
+               {**CORNER, "module": 10, "tip_chamfer": 3, "recess_sides": "both"}]
+    start, load_before = datetime.now(UTC), os.getloadavg()
+
+    refused: list[tuple[str, str]] = []
+    timed: list[TimedRow] = []
+    for fields in [*corner_rows(), *lighter]:
+        label = _label(fields)
+        try:
+            p = GearParams.model_validate(fields)
+        except ValidationError as exc:
+            refused.append((label, str(exc.errors()[0]["msg"]).replace("\n", " ")))
+            continue
+        radial, _ = _time_row(label, "radial", p, partial(model._build_checked, p))
+        timed.append(radial)
+        trochoid, solid = _time_row(label, "trochoid", p,
+                                    partial(trochoid_part, p, p.root_fillet))
+        if solid is not None:
+            rho_used = trochoid_curve(p, p.root_fillet)[0].rho
+            trochoid = TimedRow(label, "trochoid", trochoid.timing, "",
+                                oracle_reading(solid, p, rho_used))
+        timed.append(trochoid)
+    end, load_after = datetime.now(UTC), os.getloadavg()
+
+    print("\n".join(_host_state(start, end, load_before, load_after)))
+    print(f"SPUR_BUILD_TIMEOUT: {timeout} s; a cold request is one build plus the slower "
+          "of the fine STL and the STEP export.")
+    print()
+    print("#### Timings")
+    print()
+    print("| Parameter set | Mode | Build (s) | Fine STL (s) | STEP (s) "
+          f"| Build + slower export (s) | Trochoid / radial | Inside {timeout} s "
+          "| Oracle, tooth 0 (mm) |")
+    print("|---|---|---|---|---|---|---|---|---|")
+    radial_of: dict[str, Timing] = {
+        r.label: r.timing for r in timed if r.mode == "radial" and r.timing is not None}
+    for r in timed:
+        if r.timing is None:
+            print(f"| {r.label} | {r.mode} | **FAILED** | | | | | **NO** | {r.error} |")
+            continue
+        t = r.timing
+        base = radial_of.get(r.label)
+        ratio = (f"{t.worst_request / base.worst_request:.2f}"
+                 if r.mode == "trochoid" and base is not None else "--")
+        oracle = f"{r.oracle:.2e}" if r.oracle is not None else "--"
+        print(f"| {r.label} | {r.mode} | {t.build:.2f} | {t.stl:.2f} | {t.step:.2f} "
+              f"| {t.worst_request:.2f} | {ratio} | "
+              f"{'yes' if t.inside(timeout) else '**NO**'} | {oracle} |")
+    print()
+    if refused:
+        print("Refused by `GearParams` at the corner, not timed:")
+        print()
+        for label, sentence in refused:
+            print(f"- `{label}`: {sentence}")
+        print()
+    measured = [(r, r.timing) for r in timed if r.timing is not None]
+    trochoid_only = [m for m in measured if m[0].mode == "trochoid"]
+    for name, pool in (("Heaviest", measured), ("Heaviest trochoid", trochoid_only)):
+        if pool:
+            row, t = max(pool, key=lambda m: m[1].worst_request)  # first on a tie: file order
+            print(f"**{name}:** {row.label} ({row.mode}) -- {t.worst_request:.2f} s "
+                  f"of {timeout} s.")
+    failed = [r for r in timed if r.timing is None or not r.timing.inside(timeout)]
+    return 1 if failed else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.trochoid_part",
                                      description=__doc__)
     sub = parser.add_subparsers(dest="scenario", required=True)
     sub.add_parser("chamfer", help="the tip chamfer's kernel limit across the junction")
-    parser.parse_args(argv)
-    return run_chamfer()
+    sub.add_parser("heaviest", help="the heaviest low-tooth rows against the build timeout")
+    args = parser.parse_args(argv)
+    return run_chamfer() if args.scenario == "chamfer" else run_heaviest()
 
 
 if __name__ == "__main__":

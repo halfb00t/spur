@@ -33,6 +33,7 @@ A bare `.venv/bin/pytest` would not find `bench` (hard_fact_4, 260924-bv5-PLAN.m
 from __future__ import annotations
 
 import itertools
+import json
 import math
 from pathlib import Path
 
@@ -60,7 +61,7 @@ from bench.trochoid import (
     rack,
     sweep_cases,
 )
-from bench.trochoid_part import CHAMFER_ROWS, chamfer_verdict
+from bench.trochoid_part import CHAMFER_ROWS, chamfer_verdict, corner_rows
 from spur.calc import (
     HEX_CELL_CAP,
     RootCurve,
@@ -884,3 +885,19 @@ def test_the_chamfer_rows_are_fourteen_trochoid_gears() -> None:
         if curve.points[-1][0] > pr.r:
             above_pitch.append(row)
     assert [(row.fields["teeth"], row.rho) for row in above_pitch] == [(6, 0.0), (6, 0.5)]
+
+
+def test_the_corner_rows_are_the_composed_sweep_at_the_trochoid_corner() -> None:
+    """19-01's heaviest-row spike takes every row of the composed sweep to the largest gear
+    the trochoid can apply to: 116 teeth at 14.5 degrees and profile shift -0.6, where rb >
+    rf still holds (z < 2 (1.25 - x) / (1 - cos(alpha)) = 116.1). Read against the JSON in
+    the test, not a typed copy: a row dropped from the spike must fail here, and every other
+    key of every row must arrive unchanged and in the file's order."""
+    path = Path(__file__).resolve().parents[1] / "bench" / "sweeps" / "composed.json"
+    raw: list[dict[str, object]] = json.loads(path.read_text())
+    rows = corner_rows()
+    assert len(rows) == len(raw)
+    for row, original in zip(rows, raw, strict=True):
+        assert row == {**original, "teeth": 116, "pressure_angle": 14.5,
+                       "profile_shift": -0.6}
+        assert list(row)[:len(original)] == list(original)

@@ -3777,3 +3777,113 @@ is conservative (tip radius 0.5) is conservative by 0.35 mm. Everywhere else `ra
 binds. The worst oracle reading on an unchamfered root is 1.23e-04 mm (30 teeth, module 1,
 tip radius 0.5), against the 1.79e-4 mm per module RESEARCH F3 read as the worst of the 5,159
 swept gears; no bar is applied in this plan.
+
+
+### Heaviest low-tooth rows (19-01)
+
+ROADMAP success criterion 4: what the hob root costs at the heaviest gear a `root_shape="trochoid"`
+request can still change, before the field exists. The trochoid applies only where `rb > rf`
+(`root_mode` ignores the request otherwise, 18 D-02), and with `rb = r cos(alpha)` and
+`rf = r - m (1.25 - x)` that reads `z < 2 (1.25 - x) / (1 - cos(alpha))`, which is 116.1 at
+14.5 degrees and profile shift -0.6, the field's extremes. So `CORNER` is 116 teeth, 14.5 degrees,
+profile shift -0.6, and every row of `bench/sweeps/composed.json` (18 rows: 200 teeth, modules 1.75
+and 10, every cutout family, hex and keyed bores, the tip chamfer at each module's largest, both
+recesses) is moved to it, keeping its other keys. Two lighter module-10 rows are added: the bare
+corner gear and the corner gear with `tip_chamfer=3` and both recesses. Each row is built and
+exported twice, as a worker pays it (a cold build with no cache, then the fine STL and the STEP
+export, each timed with `time.perf_counter()`): radial through `model._build_checked`, trochoid
+through `trochoid_part` with the cutter's tip radius at `root_fillet` (the cap applied by the cutter,
+as 19-04 will pass it). A cold request is the build plus the slower of the two exports, the rule of
+`bench.build_time.Timing.worst_request`, against `SPUR_BUILD_TIMEOUT` = 30 s. The last column is the
+Phase 18 oracle's worst reading over the built trochoid part's tooth-0 root edges, so the timed part
+is shown to be the oracle's root. 20 rows were tried: 17 validated and are timed as a pair, three are
+refused by `GearParams` at the corner and are printed with their sentences below the table. The
+RESEARCH A12 plan to replace refused hole rows did not arise: all five 60-hole rows validate at the
+corner and are timed. The script's output follows verbatim.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `7a0268f`
+- Read 2026-10-08T16:28:04Z to 2026-10-08T16:33:04Z
+- Load averages at start: 4.86, 7.00, 7.87; at end: 9.48, 10.47, 9.41
+
+SPUR_BUILD_TIMEOUT: 30 s; a cold request is one build plus the slower of the fine STL and the STEP export.
+
+#### Timings
+
+| Parameter set | Mode | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Trochoid / radial | Inside 30 s | Oracle, tooth 0 (mm) |
+|---|---|---|---|---|---|---|---|---|
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 10.03 | 0.36 | 0.33 | 10.40 | -- | yes | -- |
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 11.04 | 0.41 | 0.30 | 11.45 | 1.10 | yes | 1.12e-04 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 9.14 | 0.42 | 0.38 | 9.56 | -- | yes | -- |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 10.71 | 0.69 | 0.66 | 11.41 | 1.19 | yes | 1.12e-04 |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 12.21 | 0.63 | 0.43 | 12.85 | -- | yes | -- |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 13.97 | 0.69 | 0.43 | 14.66 | 1.14 | yes | 2.79e-04 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 13.16 | 0.66 | 0.46 | 13.82 | -- | yes | -- |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 14.28 | 0.70 | 0.43 | 14.98 | 1.08 | yes | 2.79e-04 |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 11.10 | 0.38 | 0.30 | 11.48 | -- | yes | -- |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 16.20 | 0.41 | 0.27 | 16.61 | 1.45 | yes | 1.12e-04 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.95 | 1.04 | 0.30 | 5.99 | -- | yes | -- |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 6.07 | 1.06 | 0.20 | 7.13 | 1.19 | yes | 1.12e-04 |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.21 | 0.70 | 0.23 | 4.91 | -- | yes | -- |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 5.53 | 0.75 | 0.19 | 6.28 | 1.28 | yes | 2.79e-04 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.33 | 0.72 | 0.21 | 5.05 | -- | yes | -- |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 5.94 | 0.80 | 0.18 | 6.74 | 1.34 | yes | 2.79e-04 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 7.37 | 0.54 | 0.42 | 7.91 | -- | yes | -- |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.23 | 0.61 | 0.39 | 9.85 | 1.24 | yes | 1.12e-04 |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 9.33 | 0.71 | 0.47 | 10.03 | -- | yes | -- |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.88 | 0.76 | 0.48 | 10.64 | 1.06 | yes | 2.79e-04 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 8.02 | 0.76 | 0.79 | 8.81 | -- | yes | -- |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.51 | 0.79 | 0.44 | 10.30 | 1.17 | yes | 2.79e-04 |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.50 | 0.64 | 0.29 | 5.13 | -- | yes | -- |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 4.04 | 0.51 | 0.19 | 4.54 | 0.88 | yes | 1.12e-04 |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 1.33 | 1.34 | 0.25 | 2.67 | -- | yes | -- |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 1.39 | 1.08 | 0.16 | 2.47 | 0.93 | yes | 1.12e-04 |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 8.12 | 0.60 | 0.39 | 8.72 | -- | yes | -- |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.41 | 0.63 | 0.37 | 10.04 | 1.15 | yes | 2.79e-04 |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 2.85 | 0.53 | 0.37 | 3.37 | -- | yes | -- |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 4.06 | 0.64 | 0.37 | 4.69 | 1.39 | yes | 1.12e-04 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 | radial | 0.76 | 0.68 | 0.16 | 1.44 | -- | yes | -- |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 | trochoid | 0.82 | 0.79 | 0.14 | 1.60 | 1.11 | yes | 2.79e-04 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both | radial | 4.66 | 0.69 | 0.21 | 5.36 | -- | yes | -- |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both | trochoid | 3.68 | 0.75 | 0.18 | 4.43 | 0.83 | yes | 2.79e-04 |
+
+Refused by `GearParams` at the corner, not timed:
+
+- `teeth=116 module=1.75 bore_hex=200 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6`: Hex bore is too large for the root diameter: its corners (231.11 mm across) must stay 0.4 mm inside the root circle (196.53 mm); reduce bore_hex. No whole honeycomb cell fits between 116.42 and 97.86 mm from the axis (hex_wall outside the bore mouth and inside the root circle): a 3 mm cell reaches 1.73 mm from its centre; reduce hex_cell or hex_wall.
+- `teeth=116 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 pressure_angle=14.5 profile_shift=-0.6`: Hex bore is too large for the root diameter: its corners (231.11 mm across) must stay 0.4 mm inside the root circle (196.53 mm); reduce bore_hex.
+- `teeth=116 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 pressure_angle=14.5 profile_shift=-0.6`: Bore is too large for the root diameter. Keyway is too deep for the root diameter: its floor corners reach 202.97 mm across, which must stay 0.4 mm inside the root circle (196.53 mm); reduce keyway_depth or keyway_width.
+
+**Heaviest:** teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 (trochoid) -- 16.61 s of 30 s.
+**Heaviest trochoid:** teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 (trochoid) -- 16.61 s of 30 s.
+
+
+`uptime` read 4.86 7.00 7.87 at 22:28 local time and 9.48 10.47 9.41 at 22:33, the same figures the
+script printed. The 1-minute load was above 1.5 for the whole run (the host carried other work, and
+the run itself adds its own build and export threads), so each figure is an upper bound for this host.
+
+Every one of the 17 pairs is inside 30 s, on both paths. The heaviest trochoid row is the 116-tooth,
+module-1.75 gear with a 156.3 mm hex bore, 60 holes of 1 mm on a 183.4 mm circle, the tip chamfer at
+1.75 mm and both recesses: 16.20 s to build plus 0.41 s (STL) and 0.27 s (STEP), 16.61 s for the
+request, 13.39 s of margin to 30 s, and 1.45 times its own radial row (11.48 s); it is also the heaviest
+row overall, radial rows included, which the keyed 32-spoke module-10 row (13.82 s radial, 14.98 s
+trochoid, 1.08 times) and the hex-bore 32-spoke module-10 row (12.85 s, 14.66 s, 1.14 times) follow.
+RESEARCH F7's scratch run read the keyed 32-spoke module-10 row at 11.12 s radial and 12.24 s
+trochoid (host load 6.5 to 11); this run reads 13.82 s and 14.98 s, 24 % and 22 % higher at a
+1-minute load of 4.9 to 9.5, with no cause isolated, and the same ratio to two digits (1.10 there,
+1.08 here). The trochoid path costs more than the radial on 14 of the 17 pairs and less on three (0.83, 0.88 and
+0.93 times: the module-10 and module-1.75 chamfer-and-recess rows and the module-1.75 60-hole row
+without a bore, each a 2.5 to 5.4 s request); the ratio ranges from 0.83 to 1.45, and the five largest
+(1.45, 1.39, 1.34, 1.28, 1.24) are all hole or honeycomb rows. This names the trochoid's share of each
+row and does not extrapolate to concurrent load: L37 owns that contract. L37's 29.42 s row (the
+200-tooth, module-10 keyed 32-spoke composition, read on the 12-CPU M2 Max) is untouched by
+construction: at 200 teeth `rb <= rf`, so a trochoid request is ignored and warned (18 D-02) and its
+cold request stays as L37 records it. The three refusals are the rows whose 200 mm hex bore or 200 mm
+round bore reaches the 196.53 mm root circle of a 116-tooth module-1.75 gear; they are `GearParams`
+refusals, not trochoid ones, and honeycomb, hex bore and keyed bore are all timed on the other rows.
+The oracle reads every trochoid row's root at 1.12e-04 mm (module 1.75, 6.4e-5 per module) or
+2.79e-04 mm (module 10, 2.79e-5 per module), inside the 1.3e-5 to 1.8e-4 per module RESEARCH F3 read
+over the swept gears; no bar is applied in this plan.
