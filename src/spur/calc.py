@@ -1430,3 +1430,47 @@ def root_mode(p: GearParams,
     if isinstance(curve, RootCurve):
         return RootMode("trochoid", None, c)
     return RootMode("radial", curve, c)
+
+
+# One sentence per refusal reason, plus the cap; all filled from the same keyword values
+# so the lookup in root_warnings has no branches. These are the sentences Phase 19's
+# derive() will carry; tests capture them from root_warnings, never type them (L33).
+_ROOT_SENTENCES: dict[str, str] = {
+    "nothing radial to replace":
+        "No radial root to replace on this gear (base circle {rb:.3f} mm, root circle "
+        "{rf:.3f} mm): the trochoid root request is ignored.",
+    "tip land gone":
+        "The cutter has no tip land at a {alpha:g} degree pressure angle with this module "
+        "and backlash: no trochoid root is computed and the analytic root is used.",
+    "bracket degenerate":
+        "The trochoid root's junction with the involute could not be solved for this "
+        "gear: the analytic root is used.",
+    "curve invalid":
+        "The trochoid root for this gear loops, leaves the tooth space or runs past its "
+        "junction with the involute: the analytic root is used.",
+    "tooth severed":
+        "The trochoid roots of the two neighbouring tooth spaces cut this tooth through: "
+        "the analytic root is used.",
+    "rho capped":
+        "Cutter tip radius reduced to {rho:.3f} mm, the largest that leaves the cutter a "
+        "tip land at this pressure angle and backlash.",
+}
+
+
+def root_warnings(rm: RootMode) -> tuple[str, ...]:
+    """The warning sentences for a root-mode answer, from the one place every trochoid
+    sentence comes from (D-10, L33): none when nothing was requested, the reason's
+    sentence for a refusal, the cap sentence when a requested tip radius was trimmed.
+
+    The cap sentence prints the radius the curve was generated with, which is already
+    floored to 3 dp, so the printed and the used number are one float (L08).
+    """
+    c = rm.cutter
+    if c is None:
+        return ()
+    values = {"rb": c.pr.rb, "rf": c.pr.rf, "alpha": math.degrees(c.pr.alpha), "rho": c.rho}
+    if rm.reason is not None:
+        return (_ROOT_SENTENCES[rm.reason].format(**values),)
+    if c.rho < c.rho_requested:
+        return (_ROOT_SENTENCES["rho capped"].format(**values),)
+    return ()
