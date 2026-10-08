@@ -12,7 +12,9 @@ Scenarios, one subcommand each:
 - `oracle` (18-04): the swept-cutter oracle over every trochoid curve of the sweep
   product, and over the one flank of every severed tooth, which must read a gouge (D-13:
   the full grid only here); `--serial-slice N` judges the first N in-process.
-- The root-shape cost step arrives in the last plan of the phase.
+- `step` (18-05): the root-shape step between the hob's trochoid and the shipped analytic
+  root (fillet arc plus lead-in line) at the undercut threshold and at the `rb = rf`
+  crossover, judged against the comparison line `premise_holds` carries (D-05).
 
 It is not part of `make verify`: the scans take seconds to minutes and their timings
 depend on the host, and a timing assertion on shared hardware would flap
@@ -37,9 +39,10 @@ import statistics
 import sys
 import time
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from importlib import metadata
 from itertools import pairwise
 from pathlib import Path
 
@@ -56,7 +59,9 @@ from spur.calc import (
     _waist,
     cutter,
     profile,
+    root_fillet,
     root_mode,
+    spline_start,
     trochoid_root,
 )
 from spur.params import GearParams
@@ -670,6 +675,191 @@ def premise_holds(gap_mm: float, module: float) -> bool:
     return (1 - PREMISE_TOLERANCE) * nominal <= abs(gap_mm) <= (1 + PREMISE_TOLERANCE) * nominal
 
 
+STEP_RADII = 2001  # radii the gap is read at, from the root circle to the higher junction
+# 18-RESEARCH Pattern 8's two tables: (teeth, tip radius = root_fillet requested, mm).
+# Module 1, 20 degrees, no shift, no backlash, so the figures per module read directly.
+THRESHOLD_ROWS = [(z, rho) for rho in (0.38, 0.471) for z in range(16, 20)]
+CROSSOVER_ROWS = [(z, rho) for rho in (0.0, 0.38, 0.471) for z in range(40, 44)]
+
+
+@dataclass(frozen=True)
+class StepRow:
+    teeth: int
+    rho: float          # tip radius asked for, mm: also the root_fillet requested
+    fillet: float       # the shipped fillet actually used, mm (rounded, capped to the gap)
+    mode: str           # root_mode's answer for this request
+    reason: str         # and why it stayed radial, "-" when it did not
+    join: str           # the curve's join, "-" when no curve exists
+    rb_minus_rf: float  # mm
+    step: float         # largest-magnitude same-radius arc gap, mm, sign kept
+    radius: float       # where it sits, mm
+    junction: float     # radius of the trochoid's own junction with the involute, mm
+    spline: float       # radius where the shipped involute spline starts, mm
+
+
+def _bisect_radius(radius_at: Callable[[float], float], target: float,
+                   lo: float, hi: float) -> float:
+    """The parameter in [lo, hi] at which a radius that rises with it reads `target`."""
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        if radius_at(mid) < target:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def step_row(teeth: int, rho: float) -> StepRow:
+    """One row of a step table: the shipped root zone of one flank, rebuilt the way
+    `model._outline` builds it, against the trochoid, at 2,001 radii from the root circle
+    to the higher of the two outlines' junctions with the involute. The gap is
+    `R * (h_trochoid(R) - h_shipped(R))`, h the half-angle from the tooth centre, so it is
+    the arc length between the two outlines at one radius; positive where the trochoid
+    lies deeper into the tooth space. The half-angle of the shipped outline comes from
+    the fillet arc, the lead-in line or the involute, whichever holds that radius."""
+    from spur.model import _fillet_corner, _polar  # loads the kernel: here only (18-05)
+
+    p = _gear(teeth=teeth, module=1.0, pressure_angle=20.0, profile_shift=0.0,
+              backlash=0.0, root_fillet=rho)
+    pr = profile(p)
+    fillet = root_fillet(p)
+    rm = root_mode(p, pr, requested="trochoid", rho=rho)
+    c = cutter(p, rho)
+    curve = trochoid_root(c)
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    if curve is None or junction is None:
+        return StepRow(teeth, rho, fillet, rm.mode, rm.reason or "-", "-", pr.rb - pr.rf,
+                       math.nan, math.nan, math.nan, spline_start(pr, fillet))
+    beta_stop = junction[0]
+    r_junction = curve.points[-1][0]
+
+    # The shipped root zone of the left flank of the tooth at angle 0, as _outline builds it.
+    r0 = spline_start(pr, fillet)
+    straight = r0 > pr.rf + 1e-6
+    first = _polar(r0, -pr.half_angle(r0))
+    pieces: list[tuple[float, float, Callable[[float], float]]] = []  # (r_lo, r_hi, h(R))
+    if straight:
+        root_l = _polar(pr.rf, -pr.half_angle(pr.r_start))
+        if fillet > 0:
+            on_root, mid, on_line = _fillet_corner(root_l, first, pr.rf, fillet, -1)
+            # The arc through the three points, as a circle: centre from the perpendicular
+            # bisectors, swept from on_root to on_line through mid.
+            ax, ay, bx, by, cx, cy = (on_root.x, on_root.y, mid.x, mid.y, on_line.x,
+                                      on_line.y)
+            det = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+            ux = ((ax**2 + ay**2) * (by - cy) + (bx**2 + by**2) * (cy - ay)
+                  + (cx**2 + cy**2) * (ay - by)) / det
+            uy = ((ax**2 + ay**2) * (cx - bx) + (bx**2 + by**2) * (ax - cx)
+                  + (cx**2 + cy**2) * (bx - ax)) / det
+            t0, t1, t2 = (math.atan2(q.y - uy, q.x - ux) for q in (on_root, mid, on_line))
+            sweep = (t2 - t0 + math.pi) % (2 * math.pi) - math.pi
+            if ((t1 - t0 + math.pi) % (2 * math.pi) - math.pi) * sweep < 0:
+                sweep -= math.copysign(2 * math.pi, sweep)
+
+            def arc_point(u: float) -> tuple[float, float]:
+                return (ux + fillet * math.cos(t0 + sweep * u),
+                        uy + fillet * math.sin(t0 + sweep * u))
+
+            def arc_radius(u: float) -> float:
+                return math.hypot(*arc_point(u))
+
+            def arc_half(radius: float) -> float:
+                x, y = arc_point(_bisect_radius(arc_radius, radius, 0.0, 1.0))
+                return -math.atan2(y, x)
+
+            pieces.append((pr.rf, on_line.Length, arc_half))
+            line_from = on_line
+        else:
+            line_from = root_l
+
+        def line_point(u: float) -> tuple[float, float]:
+            return (line_from.x + (first.x - line_from.x) * u,
+                    line_from.y + (first.y - line_from.y) * u)
+
+        def line_radius(u: float) -> float:
+            return math.hypot(*line_point(u))
+
+        def line_half(radius: float) -> float:
+            x, y = line_point(_bisect_radius(line_radius, radius, 0.0, 1.0))
+            return -math.atan2(y, x)
+
+        pieces.append((line_from.Length, first.Length, line_half))
+    pieces.append((r0, math.inf, pr.half_angle))  # the involute spline
+    for lo, hi, _ in pieces:
+        if not lo <= hi:
+            raise ValueError(f"radius does not rise along a piece of the shipped root: "
+                             f"{lo} to {hi} at {teeth} teeth, tip radius {rho}")
+
+    def shipped(radius: float) -> float:
+        for lo, hi, half in pieces:
+            if lo <= radius <= hi:
+                return half(radius)
+        return pieces[-1][2](radius)
+
+    def trochoid(radius: float) -> float:
+        if radius >= r_junction:
+            return pr.half_angle(radius)  # the involute above the junction
+        beta = _bisect_radius(lambda b: _trochoid_point(c, b)[0], radius, 0.0, beta_stop)
+        return _trochoid_point(c, beta)[1]
+
+    top = max(r0, r_junction)
+    radii = [pr.rf + (top - pr.rf) * i / (STEP_RADII - 1) for i in range(STEP_RADII)]
+    gaps = [(r * (trochoid(r) - shipped(r)), r) for r in radii]
+    step, radius = max(gaps, key=lambda g: abs(g[0]))
+    return StepRow(teeth, rho, fillet, rm.mode, rm.reason or "-", curve.join, pr.rb - pr.rf,
+                   step, radius, r_junction, r0)
+
+
+def _step_table(title: str, rows: list[StepRow]) -> None:
+    print(f"{title}\n")
+    print("| teeth | tip radius rho | shipped fillet | root_mode | join | rb - rf | step "
+          "(mm) | step / m | at R (mm) | trochoid junction R | spline start R |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|")
+    for r in rows:
+        mode = r.mode if r.reason == "-" else f"{r.mode} ({r.reason})"
+        print(f"| {r.teeth} | {r.rho:g} | {r.fillet:g} | {mode} | {r.join} | "
+              f"{r.rb_minus_rf:+.4f} | {r.step:+.4f} | {r.step:+.4f} | {r.radius:.4f} | "
+              f"{r.junction:.4f} | {r.spline:.4f} |")
+    print()
+
+
+def run_step() -> int:
+    started = datetime.now(UTC)
+    load_before = _load()
+    threshold = [step_row(z, rho) for z, rho in THRESHOLD_ROWS]
+    crossover = [step_row(z, rho) for z, rho in CROSSOVER_ROWS]
+    load_after = _load()
+    print("## Root-shape step (`bench.trochoid step`)\n")
+    print("#### Host state\n")
+    print(f"- Machine: {machine_facts()}")
+    print(f"- Python {platform.python_version()}, "
+          + ", ".join(f"{d} {metadata.version(d)}" for d in ("cadquery", "cadquery-ocp")))
+    print(f"- Read {started:%Y-%m-%dT%H:%M:%SZ}; 1-minute load {load_before} before, "
+          f"{load_after} after\n")
+    print("Module 1, 20 degrees, no shift, no backlash, bore and recesses off; the tip "
+          "radius asked for is also the root fillet requested. The step is the "
+          "largest-magnitude same-radius arc gap `R * (h_trochoid(R) - h_shipped(R))`, sign "
+          "kept, from the root circle to the higher of the two junctions "
+          f"({STEP_RADII} radii); `step / m` is the same figure per module.\n")
+    _step_table("### Undercut threshold (teeth 16-19)", threshold)
+    _step_table("### rb = rf crossover (teeth 40-43)", crossover)
+    judged = [r for r in threshold if r.teeth in (17, 18)]
+    offending = [r for r in judged
+                 if not (math.isfinite(r.step) and premise_holds(r.step, 1.0))]
+    low = (1 - PREMISE_TOLERANCE) * PREMISE_STEP_PER_M
+    high = (1 + PREMISE_TOLERANCE) * PREMISE_STEP_PER_M
+    print(f"Rule: D-01's premise holds when every 17- and 18-tooth row of the threshold "
+          f"table has a gap within {PREMISE_TOLERANCE:.0%} either side of "
+          f"{PREMISE_STEP_PER_M} m ({low:.4f} to {high:.4f} mm at module 1).\n")
+    if offending:
+        print("D-01 premise contradicted by: "
+              + "; ".join(f"{r.teeth} teeth at tip radius {r.rho:g} ({r.step:+.4f} mm)"
+                          for r in offending))
+        return 1
+    print("D-01 premise holds")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.trochoid", description=__doc__)
     sub = parser.add_subparsers(dest="scenario", required=True)
@@ -678,6 +868,7 @@ def main(argv: list[str] | None = None) -> int:
     oracle.add_argument("--serial-slice", type=int, default=0, metavar="N",
                         help="judge the first N trochoid cases in this process instead of "
                              f"the pool (the pooled run prints the first {SERIAL_SLICE})")
+    sub.add_parser("step", help="the root-shape step at both boundaries (D-05)")
     sweep = sub.add_parser("sweep", help="the generator over the allowed box (D-12)")
     sweep.add_argument("--list", type=Path, metavar="PATH",
                        help="write every generator refusal as a tab-separated file")
@@ -688,6 +879,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_epsilon()
     if args.scenario == "oracle":
         return run_oracle(args.serial_slice)
+    if args.scenario == "step":
+        return run_step()
     return run_sweep(args.list, args.stride)
 
 
