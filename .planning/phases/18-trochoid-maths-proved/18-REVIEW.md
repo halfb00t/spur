@@ -16,8 +16,8 @@ files_reviewed_list:
   - tests/trochoid_oracle.py
 findings:
   critical: 0
-  warning: 2
-  info: 6
+  warning: 0
+  info: 8
   total: 8
 status: issues_found
 ---
@@ -25,104 +25,60 @@ status: issues_found
 # Phase 18: Code Review Report
 
 **Reviewed:** 2026-10-08
-**Depth:** standard
-**Files Reviewed:** 10
+**Depth:** standard (incremental re-review of gap plan 18-06, diff base `2f6e1e7`)
+**Files Reviewed:** 10 (the phase scope; this pass re-read only `src/spur/calc.py` and
+`tests/test_trochoid.py` for the `2f6e1e7..HEAD` hunks)
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the trochoid cutter / generator / predicate in `src/spur/calc.py` (about lines 60-140
-and 1230-1576), the oracle and the proofs in `tests/`, the bench driver and its recorded results,
-and the doc and debt-ledger edits.
+This pass judged the two gap-closure commits: `8e96c2d` (a test that makes the fourth `curve
+invalid` guard arm in `_root_curve` fire, plus a docstring correction) and `085aee7` (a
+`ValueError` guard in `cutter()` for a non-finite or negative tip radius, with its test). Both
+hunks are correct. No critical issue and no warning; the verdict on the two earlier warnings is
+below. The six info findings from the first review are carried forward unchanged, and two new
+info items on the gap hunks are added.
 
 Checks I ran, so the verdict rests on commands and not on reading:
 
-- `make verify` on the current tree: ruff, mypy `--strict`, import contracts and pytest all pass,
-  `1017 passed in 92.62s`, coverage 97.68 % (floor 96 %).
-- A 40,000-case fuzz of `bench.trochoid.check_case` over random allowed gears off the committed
-  grids (odd modules such as 3.47, pressure angles to 0.1 degree, shifts to 0.01, backlash to
-  0.01, tip radius 0 to 3 mm): zero exceptions, zero checker problems. Outcomes: 29,158 nothing
-  radial, 7,180 not a gear, 3,607 curves, 52 tip land gone, 3 severed.
-- Mutation probes on a scratch copy of `calc.py` (the working tree was not touched). Killed:
-  dropping the centreline arm, the tip-circle arm, the waist refinement, the `max(0, ...)` land
-  floor, floor-to-round on the cap, the cap warning, 60 to 20 bisections, 60 to 5 golden steps.
-  Surviving: `<=` to `<` on `waist[1]`, `>=` to `>` on the tangent test and `<=` to `<` on
-  `rb <= rf`. All three are equality boundaries that cannot be built from field values, so
-  they are not findings. One non-equivalent mutation survived: WR-01.
-- `derive()` timed on the pre-phase and current `calc.py`, alternating, three pairs: 19/15/14.4 usec
-  old against 15/14.7/17.8 usec new. No regression separable from load, so the docstring's
-  "moves with the host" claim holds.
-- The recorded tallies in `bench/RESULTS.md` cross-add (31,446 = 12,892 + 18,554;
-  10,326 + 8,228 = 18,554; 10,399 = 10,326 + 73; the by-module rows sum to the grid sizes).
-  F9's "undercut implies rb > rf" also follows by hand: xi < 0 gives d > (zm/2)sin^2(alpha), and
-  sin^2 = (1 - cos)(1 + cos) >= (1 - cos), which is rb > rf.
+- `ruff check` and `mypy --strict` on `src/spur/calc.py` and `tests/test_trochoid.py`: clean.
+  `pytest tests/test_trochoid.py tests/test_calc.py`: `478 passed`. (The full `make verify` was
+  not re-run; this pass covers the two files.)
+- Pre-guard behaviour, measured on a scratch `git archive` of `2f6e1e7` (12 teeth, module 1,
+  20 degrees, backlash 0, bore off): `nan` gave `trochoid`, no reason, no sentence, radius
+  0.471; `-0.1` gave `trochoid`, no sentence; `-0.5` gave `radial` / `curve invalid`; `-inf` gave
+  `radial` / `bracket degenerate`; `inf` gave `trochoid` with the cap sentence. Every claim in
+  the new test's docstring matches. On HEAD, `nan`, `+-inf`, `-0.1` and `-0.5` all raise
+  `ValueError` ("... got nan" etc., through `root_mode` too), and `0.0` / `-0.0` answer
+  `trochoid` with no warning.
+- Mutation probes on scratch copies of HEAD (working tree untouched). The new arm test is killed
+  by replacing the whole fourth arm with `False` and by `any` -> `all`. It survives a tolerance
+  of 5e-4 on the half-angle compare, which is correct: the bend is 1e-3. The rho test is killed
+  by `rho < 0` -> `rho <= 0` (the `0.0` rows) and by dropping the NaN clause.
+- Patch isolation: the wrapper `junction_then_arm` calls the real `_junction` (bound in the test
+  module at import) while `calc._trochoid_point` is already patched, but `state["calls"]` is -1
+  during that call, so the bent function returns the real point. Arming happens only after the
+  junction solve returns. The bent sample is the fifteenth call after arming, i.e. `points[-2]`
+  (`tuple(...)` in `_root_curve` samples in order and nothing else calls the point function
+  before it). Measured: `points[-2]` is radius 4.6401, half-angle 0.1686; `rb` 4.6985;
+  junction radius 4.7256. The bent point is radius `rb + 0.01` = 4.7085, strictly between its
+  neighbours, so the rising-radius arm stays quiet; its half-angle is about 0.17 against
+  `pi/10` = 0.314 and `ra`, so the tip-circle and centreline arms stay quiet. Only the fourth
+  arm can fire, and `state["bent"]` proves the sample was reached.
+- The guard sits before `profile(p)` and every other arithmetic line in `cutter()`; its message
+  names the offending value with `{rho!r}`, so "nan" and "-0.1" are what the user reads, and it
+  claims nothing beyond "finite, non-negative millimetre value".
 
-No critical issues. The maths is correct on every case I could construct. Both warnings are about
-proof strength and an unguarded public input, not about a wrong number reaching a user today
-(nothing in `model.py`, `app.py` or `cli.py` reads any of this yet; `profile()` is bit-identical
-after the `_dedendum` / `_pitch_thickness` extraction).
+## Resolved since last review
 
-## Warnings
-
-### WR-01: One of the four `curve invalid` guard arms is untested, and the test claims all of them
-
-**File:** `src/spur/calc.py:1462-1469`, `tests/test_trochoid.py:907`
-**Issue:** `_root_curve` documents "one guard for four structural failures". The fourth arm
-(`join == "crossing" and any(radius >= pr.rb and half >= pr.half_angle(radius) ...)`, a point
-before the junction that is not inside the involute) is never exercised. I replaced the whole
-arm with `or False` in a scratch copy and `tests/test_trochoid.py`, `tests/test_calc.py` and
-`tests/test_bench.py` stayed green (503 passed). Line coverage cannot see it because the four
-arms are a single boolean expression. `test_every_structural_failure_is_refused_as_curve_invalid`
-(name and docstring) covers the tip-circle arm, the falling-radius arm and, in
-`test_a_curve_that_cannot_be_trusted_is_refused_with_a_reason_and_no_points`, the centreline arm,
-but not this one. The `thick` fixture in the latter ends in `bracket degenerate` and never
-reaches it. The only other cover is `bench.trochoid.check_curve`'s own `outside` check, which
-runs in the sweep test and can only report, not prove the generator refuses. The arm guards
-the case the bisection finds a later root, which is exactly the "healed curve" L08 forbids, so it
-should be pinned like the others.
-**Fix:** Add a fourth row built the way the monkeypatch row is: a crossing cutter (the tracer
-gear, 10 teeth, tip radius 0.38) with `_trochoid_point` patched so one early point has
-`half = pr.half_angle(radius) + 1e-3` at `radius > pr.rb`, then assert `_root_curve(c) ==
-"curve invalid"`. Rename the test to what it covers, or keep the name once all four arms are in.
-
-```python
-def test_a_crossing_curve_with_an_early_point_outside_the_involute_is_refused(monkeypatch):
-    c = cutter(tracer_gear, 0.38)
-    real = calc._trochoid_point
-    def bent(cc, beta):
-        r, h = real(cc, beta)
-        return (r, cc.pr.half_angle(r) + 1e-3) if cc.pr.rb < r and beta < 0.5 * math.pi / 2 else (r, h)
-    monkeypatch.setattr("spur.calc._trochoid_point", bent)
-    assert _root_curve(c) == "curve invalid"
-```
-
-### WR-02: `cutter()` and `root_mode()` take an unvalidated tip radius; NaN is silently capped, negative gets the wrong reason
-
-**File:** `src/spur/calc.py:1266-1296`, `src/spur/calc.py:1560-1576`
-**Issue:** `rho` is not a `GearParams` field in this phase (D-07), so the "validate once at the
-boundary" rule has nothing to rely on, and `cutter` does not check it. Measured on the 12-tooth,
-module 1, 20 degree gear:
-
-- `rho = nan`: `rho <= rho_max` is False, so the cap is used; `c.rho < c.rho_requested` is
-  `0.471 < nan`, False. Result: `mode == "trochoid"`, `reason is None`, `root_warnings == ()`. A
-  request that cannot be honoured is trimmed to a different part with no sentence, the exact
-  "silent change" L03 and the project's second standing rule forbid.
-- `rho = -0.5`: used as is (`w_c` shifts, the curve is built for a cutter of negative radius), then
-  refused as `curve invalid` with the sentence "loops, leaves the tooth space or runs past its
-  junction". The cause is the input, and the sentence blames the geometry.
-
-Neither is reachable from the form today (the field is 0 to 3 and pydantic rejects NaN against
-bounds), so this is a robustness gap in a public function, not a live wrong number. It becomes
-live the first time Phase 19 or a test feeds `rho` from anything other than that field.
-**Fix:** Reject at `cutter()`, the one place the tip radius enters:
-
-```python
-if not (rho >= 0 and math.isfinite(rho)):
-    raise ValueError(f"tip radius must be a finite number of mm >= 0, got {rho!r}")
-```
-
-`inf` is currently handled (it caps with a sentence), so `math.isfinite` can be dropped if that is
-wanted. Add one test row each for NaN and -0.5.
+- **WR-01** (fourth `curve invalid` arm untested): resolved by `8e96c2d`. The new test
+  `test_a_crossing_curve_with_an_early_point_outside_the_involute_is_refused` reaches the arm
+  and fails when the arm is removed; the older test's docstring now says it covers two of four
+  arms and names where the others are covered.
+- **WR-02** (`cutter()` / `root_mode()` take an unvalidated tip radius): resolved by `085aee7`.
+  `cutter()` raises `ValueError` for NaN, +-inf and negative values before any arithmetic;
+  parametrised rows cover `nan`, `inf`, `-inf` and `-0.1`, and `0.0` / `-0.0` are accepted.
+  Code comments cite "18-REVIEW WR-01 / WR-02"; those ids now live only in this section.
 
 ## Info
 
@@ -217,6 +173,38 @@ out; `bench.trochoid` imports `multiprocessing` but only `run_oracle` uses it, a
 calls that.
 **Fix:** Pin the trigger to something that cannot roll: a date, or "the next CI run that fails
 with `ReentrantCallError`", and note in the entry that the green-run count is not evidence.
+
+### IN-07: The new `ValueError` is documented on `cutter()` only; `root_mode()` can now raise and does not say so, and `+inf` went from an honest cap to a refusal
+
+**File:** `src/spur/calc.py:1509-1530` (`root_mode` docstring), `src/spur/calc.py:1277-1285`
+**Issue:** `root_mode(..., requested="trochoid")` calls `cutter(p, rho)` first, so it now raises
+`ValueError` for a bad `rho`, yet its docstring lists six ordered refusals and ends with "decides
+them in one fixed order" without saying that a non-finite or negative `rho` is a raise, not a
+`RootReason`. Phase 19's caller reads `root_mode`, not `cutter`. The test pins the behaviour
+(`root_mode` raises the same message) but the contract text does not. Separately, `rho = +inf`
+used to be capped to 0.471 mm with the "reduced to" sentence (measured on `2f6e1e7`), an honest
+and warned outcome; it is now refused, which the cutter docstring covers ("not a finite ...
+value") but neither the test docstring ("All four now raise", where one of the four was already
+handled honestly) nor the 18-06 notes call out as a deliberate narrowing of the earlier fix
+suggestion, which said `isfinite` could be dropped. Not a wrong number: a request for an infinite
+tip radius is not a legal input and refusing it is defensible.
+**Fix:** Add one line to `root_mode`'s docstring: "A `rho` that is not a finite, non-negative
+millimetre value raises `ValueError` from `cutter` before any reason is decided; with nothing
+requested it is not read." Optionally reword the test docstring to say that `+inf` was capped
+before and is refused now on purpose.
+
+### IN-08: The `-0.0` row cannot tell `-0.0` from `0.0`, and the sign is carried into `Cutter`
+
+**File:** `tests/test_trochoid.py:260-262`, `src/spur/calc.py:1292`
+**Issue:** The guard `rho < 0` is False for `-0.0`, so `cutter(p, -0.0)` keeps `used = -0.0` and
+stores `rho_requested = -0.0`. The test asserts `c.rho == 0.0`, which is True for either sign, so
+it proves acceptance but not that a negative-signed zero is harmless downstream. Today it is:
+`w_c = used - d`, the land arithmetic and `xi` are the same to float, and the only printed `rho`
+is on the cap path, which uses `max(0.0, ...)`. If a later phase serialises `Cutter.rho` or
+`rho_requested` (a number someone reads, L08) the output would read `-0.0`.
+**Fix:** Either accept it as is, or normalise at the guard (`rho = abs(rho)` after the check, or
+`rho + 0.0`, which maps `-0.0` to `0.0`), and assert `math.copysign(1.0, c.rho) == 1.0` in the
+test.
 
 ---
 
