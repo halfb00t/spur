@@ -80,6 +80,27 @@ Checks I ran, so the verdict rests on commands and not on reading:
   parametrised rows cover `nan`, `inf`, `-inf` and `-0.1`, and `0.0` / `-0.0` are accepted.
   Code comments cite "18-REVIEW WR-01 / WR-02"; those ids now live only in this section.
 
+## Cross-CLI review (Codex, 2026-10-08)
+
+`codex exec` 0.161.0, read-only sandbox, over the PR diff without `.planning/`
+(`git diff origin/main...58aac4f -- src tests bench docs Makefile`, 3,880 lines). Verdict
+REVISE on two findings; both were reproduced here before the fix and both are fixed on the
+branch. `make verify` after the fixes: 1024 passed.
+
+- **XR-01** (warning, `bench/trochoid.py` `check_curve`): the join-band allowance
+  2(tan(phi) - phi) was added for every negative xi, so on a crossing it masked the junction
+  check: the 10-tooth, 20 degree gear (xi -1.21 mm) accepted an end point 1.1e-2 rad off the
+  involute. Fixed by `398d1e2`: tangent joins only. The sweep still reads zero problems (worst
+  crossing gap 6.94e-16 rad against the 1e-12 bar), and
+  `test_check_curve_reports_a_crossing_whose_end_leaves_the_involute` is red with the old
+  checker (1 failed, 1 passed on the `check_curve` selection).
+- **XR-02** (info, `tests/test_trochoid.py` `_direction_gap`): the crossing tripwire's secant
+  was taken at the cutter's flank foot, not at the solved crossing where that curve ends.
+  Fixed by `13df7d5`: the secant is taken at `_junction`'s angle; the 17-tooth row reads
+  3.08e-3 rad (308 times the bar; 4.13e-3 at the foot), the four tangent rows are unchanged
+  because there the junction is the foot. The recorded numbers in `tests/test_trochoid.py`
+  and `bench/RESULTS.md` follow.
+
 ## Info
 
 ### IN-01: The cap sentence says "the largest", but prints a value floored to 3 dp, and prints `0.000` for a cap under 1 micrometre

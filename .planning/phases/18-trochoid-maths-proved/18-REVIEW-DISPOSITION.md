@@ -43,8 +43,16 @@ findings:
     severity: warning
     disposition: fixed
     title: "`cutter()` and `root_mode()` take an unvalidated tip radius; NaN is silently capped, negative gets the wrong reason"
+  - id: XR-01
+    severity: warning
+    disposition: fixed
+    title: "`check_curve` applies the join-band allowance to every undercut crossing, masking junction errors"
+  - id: XR-02
+    severity: info
+    disposition: fixed
+    title: "The crossing-direction tripwire samples the cutter's flank foot instead of the solved crossing"
 open: 8
-total: 10
+total: 12
 recorded: 2026-10-08T05:22:23.839Z
 ---
 
@@ -62,6 +70,8 @@ recorded: 2026-10-08T05:22:23.839Z
 | IN-08 | info | open | - |
 | WR-01 | warning | fixed | 8e96c2d (18-06) (not in the current review) |
 | WR-02 | warning | fixed | 085aee7 (18-06) (not in the current review) |
+| XR-01 | warning | fixed | 398d1e2 (external: codex, cross-CLI review of PR #28) |
+| XR-02 | info | fixed | 13df7d5 (external: codex, cross-CLI review of PR #28) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
