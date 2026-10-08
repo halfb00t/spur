@@ -3516,3 +3516,123 @@ ISO 21771 form diameter: one tool-generated point is not parity (D-08, D-15, L08
 
 The four T3 and T4 tests run in 0.13 s at `-n0`. `make verify` after the tests' commit: 1016 passed
 in 74.77 s, coverage 97.68 percent.
+
+### Root-shape step (18-05, D-05)
+
+The rule, written and committed before any table below existed (commit `8badc55`, `test(18-05): fix
+the D-05 comparison line before measuring the root-shape step`): D-01's premise, about 0.14 m of root
+shape between 17 and 18 teeth at 20 degrees, **holds when every 17- and 18-tooth row of the threshold
+table has a gap within 25 percent either side of 0.14 m**, nominally 0.105 to 0.175 mm at module 1.
+The figure is FEATURES' simulation as carried by 18-RESEARCH Pattern 8, which measured 0.145 m
+(3 percent off). `bench.trochoid.premise_holds` carries the line and
+`test_the_d05_premise_line_sits_25_percent_either_side_of_0_14_m` pins it at points 1e-4 m inside and
+outside the band, never at its float64 edges. A figure outside it reopens the root-mode choice before
+Phase 19 is planned.
+
+The step is the largest-magnitude same-radius arc gap `R * (h_trochoid(R) - h_shipped(R))`, h the
+half-angle from the tooth centre, between the trochoid outline (`trochoid_root(cutter(p, rho))`, the
+involute above its junction) and the shipped analytic root zone rebuilt the way `model._outline`
+builds it (the fillet arc `_fillet_corner` returns, the lead-in line, the involute from
+`calc.spline_start`), read at 2,001 radii from the root circle to the higher of the two junctions,
+sign kept (positive: the trochoid lies deeper into the tooth space). The maximum sits at the root
+circle in every row, so each row states the tip radius asked for (which is also the `root_fillet`
+requested), the shipped fillet actually used (rounded and capped to 0.45 of the root gap, so it is
+below the request in the last four rows), what `root_mode(p, pr, requested="trochoid", rho=rho)`
+answers and the join.
+
+#### Host state
+
+- Machine: Apple M2 Max (`bench.machine_facts()`: 12 CPUs, arm64, 32.0 GiB RAM)
+- Python 3.12.13, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (the pinned pair; the kernel is used only
+  for the `Vector` arithmetic of `_fillet_corner`, not for a solid)
+- HEAD `1db6fc6` (the commit that carries `bench.trochoid step`)
+- Read 2026-10-08T02:50:48Z; 1-minute load 17.01 before, 17.81 after (a first run a minute earlier,
+  2026-10-08T02:49:38Z, load 3.36 before, 4.85 after, printed the same figures to four decimals).
+  These are geometry, not timings, so load does not move them; it is recorded because every
+  section records it.
+
+Command: `.venv/bin/python -m bench.trochoid step` from the repo root (exit 0).
+
+Module 1, 20 degrees, no shift, no backlash, bore and recesses off.
+
+**Table 1, the undercut threshold (teeth 16-19).** The O1 counterfactual: under D-02 the trochoid applies on both sides of 17/18 and the join only changes kind.
+
+| teeth | tip radius rho | shipped fillet | root_mode | join | rb - rf | step (mm) | step / m | at R (mm) | trochoid junction R | spline start R |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 16 | 0.38 | 0.38 | trochoid | crossing | +0.7675 | +0.1479 | +0.1479 | 6.7500 | 7.5181 | 7.5175 |
+| 17 | 0.38 | 0.38 | trochoid | crossing | +0.7374 | +0.1463 | +0.1463 | 7.2500 | 7.9874 | 8.0100 |
+| 18 | 0.38 | 0.38 | trochoid | tangent | +0.7072 | +0.1449 | +0.1449 | 7.7500 | 8.4586 | 8.5100 |
+| 19 | 0.38 | 0.38 | trochoid | tangent | +0.6771 | +0.1433 | +0.1433 | 8.2500 | 8.9330 | 9.0100 |
+| 16 | 0.471 | 0.471 | trochoid | crossing | +0.7675 | +0.1323 | +0.1323 | 6.7500 | 7.5175 | 7.6920 |
+| 17 | 0.471 | 0.471 | trochoid | tangent | +0.7374 | +0.1328 | +0.1328 | 7.2500 | 7.9890 | 8.1920 |
+| 18 | 0.471 | 0.471 | trochoid | tangent | +0.7072 | +0.1329 | +0.1329 | 7.7500 | 8.4637 | 8.6920 |
+| 19 | 0.471 | 0.471 | trochoid | tangent | +0.6771 | +0.1325 | +0.1325 | 8.2500 | 8.9411 | 9.1920 |
+
+**Table 2, the `rb = rf` crossover (teeth 40-43).** What a user stepping `teeth` meets under D-02.
+
+| teeth | tip radius rho | shipped fillet | root_mode | join | rb - rf | step (mm) | step / m | at R (mm) | trochoid junction R | spline start R |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 40 | 0 | 0 | trochoid | tangent | +0.0439 | +0.1471 | +0.1471 | 18.7500 | 19.0619 | 18.7939 |
+| 41 | 0 | 0 | trochoid | tangent | +0.0137 | +0.1403 | +0.1403 | 19.2500 | 19.5540 | 19.2637 |
+| 42 | 0 | 0 | radial (nothing radial to replace) | tangent | -0.0165 | +0.1340 | +0.1340 | 19.7500 | 20.0464 | 19.7500 |
+| 43 | 0 | 0 | radial (nothing radial to replace) | tangent | -0.0466 | +0.1288 | +0.1288 | 20.2500 | 20.5392 | 20.2500 |
+| 40 | 0.38 | 0.38 | trochoid | tangent | +0.0439 | +0.0838 | +0.0838 | 18.7500 | 19.1976 | 19.5100 |
+| 41 | 0.38 | 0.38 | trochoid | tangent | +0.0137 | +0.0800 | +0.0800 | 19.2500 | 19.6926 | 20.0100 |
+| 42 | 0.38 | 0.38 | radial (nothing radial to replace) | tangent | -0.0165 | +0.0765 | +0.0765 | 19.7500 | 20.1879 | 20.5100 |
+| 43 | 0.38 | 0.38 | radial (nothing radial to replace) | tangent | -0.0466 | +0.0736 | +0.0736 | 20.2500 | 20.6833 | 21.0100 |
+| 40 | 0.471 | 0.411 | trochoid | tangent | +0.0439 | +0.1214 | +0.1214 | 18.7500 | 19.2341 | 19.5720 |
+| 41 | 0.471 | 0.406 | trochoid | tangent | +0.0137 | +0.1213 | +0.1213 | 19.2500 | 19.7297 | 20.0620 |
+| 42 | 0.471 | 0.4 | radial (nothing radial to replace) | tangent | -0.0165 | +0.1221 | +0.1221 | 19.7500 | 20.2255 | 20.5500 |
+| 43 | 0.471 | 0.396 | radial (nothing radial to replace) | tangent | -0.0466 | +0.1222 | +0.1222 | 20.2500 | 20.7215 | 21.0420 |
+
+Rule applied: D-01's premise holds when every 17- and 18-tooth row of the threshold table has a gap
+within 25 percent either side of 0.14 m (0.1050 to 0.1750 mm at module 1). The four rows are 0.1463
+and 0.1449 mm at tip radius 0.38 and 0.1328 and 0.1329 mm at 0.471.
+
+**D-01 premise holds**
+
+What the figures say beyond the verdict: the step barely moves across the threshold itself (16 to 19
+teeth: 0.1479 to 0.1433 mm at 0.38), so it is not a feature of the 17/18 edge. The crossover rows are
+the step a user meets under D-02: the request is ignored and warned at 42 teeth and above (`nothing
+radial to replace`), so stepping `teeth` from 41 to 42 turns the trochoid off and the part moves by
+the 41-tooth gap, **0.1403 mm at a sharp cutter and no fillet, 0.0800 mm at 0.38, 0.1213 mm at
+0.471** (0.1471, 0.0838 and 0.1214 at 40 teeth). The 42- and 43-tooth rows print the generator's
+curve anyway (`trochoid_root` has no `rb` test of its own) to show that the gap does not vanish at
+the edge; no user sees those curves.
+
+### Per-call cost (18-05, D-14)
+
+How long the maths takes per call, read the way `derive()`'s docstring reads it, so Phase 19 can
+price what enters the keystroke path. **No budget is set**; Phase 19 decides what enters the keystroke
+path from these numbers.
+
+#### Host state
+
+- Machine: Apple M2 Max (12 CPUs, arm64, 32.0 GiB RAM), Python 3.12.13
+- HEAD `1db6fc6`; five measurements one after another on 2026-10-08, UTC times below
+- The host was busy: macOS Spotlight indexing (`mdworker_shared`) held several cores, and the
+  1-minute load read 14.4 to 16.0 across the five measurements (3.4 a few minutes earlier, before the
+  commit hook's eight test workers ran). No quiet host was waited for (D-14 asks for the load beside
+  the figure, not for a quiet bar), so each figure is an upper bound for the same code on an idle
+  machine.
+
+Each: `.venv/bin/python -m timeit -r 5 -s "<setup>" "<statement>"`, best of 5 (the per-loop time of
+the fastest repeat). Default `GearParams()` (19 teeth, module 1.75, 25 degrees, backlash 0.1, bore as
+shipped) except the last row; `cutter` is built in the setup, so the `trochoid_root` rows are the
+solve alone. The tracer gear is 10 teeth, module 1, 20 degrees, no shift, no backlash, bore off, the
+crossing join.
+
+| call | read (UTC) | 1-minute load before -> after | best of 5 |
+|---|---|---|---|
+| `derive(p)` | 2026-10-08T02:50:24Z | 14.38 -> 14.75 | 14.7 usec |
+| `root_mode(p, pr)` (nothing requested: what every present caller pays) | 2026-10-08T02:50:27Z | 14.75 -> 14.75 | 362 nsec |
+| `root_mode(p, pr, requested="trochoid", rho=0.5)` (default gear, tangent) | 2026-10-08T02:50:29Z | 14.75 -> 15.49 | 33.7 usec |
+| `trochoid_root(c)`, default gear, tip radius 0.38 (tangent) | 2026-10-08T02:50:32Z | 15.49 -> 15.49 | 30.7 usec |
+| `trochoid_root(c)`, tracer gear, tip radius 0.38 (crossing) | 2026-10-08T02:50:34Z | 15.49 -> 16.01 | 88.9 usec |
+
+The crossing costs about three times the tangent solve (two 60-step bisections against none: 88.9
+against 30.7 usec here). Asking `root_mode` for a trochoid on the default gear costs 33.7 usec, and
+asking for nothing costs 0.362 usec. `derive(p)` read 14.7 usec against the 11.5 usec its docstring
+carried: 18-RESEARCH read 14.5 usec at load 14.33 (2026-10-07) and PITFALLS 20.4 at about 6.8, so the
+old figure moves with the host and nothing measured here separates a regression from load; the
+docstring now carries the number, the load and the date together.

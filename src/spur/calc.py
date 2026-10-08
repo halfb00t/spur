@@ -988,9 +988,14 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     the API and the CLI separately: an impossible pair is a warning on an otherwise
     fine gear, not an error and not a number (L08).
 
-    Measured per call (`.venv/bin/python -m timeit`, best of 5, default GearParams,
-    arm64, Python 3.12.13): 9.19 usec before this model, 11.5 usec after --
-    validating the frozen model on construction costs about 2.3 usec, negligible next
+    Per-call cost, re-measured 2026-10-08 (`.venv/bin/python -m timeit -r 5 -s "from
+    spur.calc import derive; from spur.params import GearParams; p=GearParams()"
+    "derive(p)"`, best of 5, default GearParams, Apple M2 Max, Python 3.12.13): 14.7
+    usec at a 1-minute load of 14.4 (bench/RESULTS.md, "Trochoid maths (Phase 18)",
+    "Per-call cost"). The figure moves with the host: the same call read 14.5 usec at
+    load 14.3 on 2026-10-07 and 20.4 usec at about 6.8, so quote it with its load and
+    date. History, when first measured: 9.19 usec before this model, 11.5 usec after --
+    validating the frozen model on construction cost about 2.3 usec, negligible next
     to an HTTP round trip and well inside the module docstring's "fast enough to run
     on every keystroke" claim (measured, not assumed -- CLAUDE.md).
     """
