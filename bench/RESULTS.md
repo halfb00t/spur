@@ -3332,3 +3332,124 @@ load 2.0 to 2.9 (673 passed, before the two bench pins). The slice was 11.3 s wa
 the budget; the sweep is the slowest test but runs beside the rest: the same target with
 the test deselected read 14.35 and 14.63 s and with it 14.52 and 14.17 s (alternating runs at
 1-minute loads of 7.6 to 9.7), so its wall cost is inside the run-to-run noise. `make verify`: 996 passed in 78.25 s, coverage 97.48 percent (calc.py 99.20).
+
+### Oracle bars (18-04)
+
+The question (SC3, T2): does something that shares no code with the generator, a cutter built from
+the textbook rack definitions with its neighbouring teeth, read every curve the generator produces
+as the boundary the hob cuts, at a bar a millionth of a millimetre of tip radius breaks? The oracle
+is `tests/trochoid_oracle.py` (stdlib `math`, imports nothing from `spur`); a point reads about 0
+on the cut boundary, negative where the curve gouges, positive where it leaves material uncut.
+
+Commands, from the repo root: `make test PYTEST_ARGS="tests/test_trochoid.py -q -n0 --no-cov
+--durations=0 -k t2_"` for the gate rows; `.venv/bin/python -m bench.trochoid oracle` for the whole
+sweep product (about 4.3 minutes on 12 workers); `.venv/bin/python -m bench.trochoid oracle
+--serial-slice 200` for the worker-count check.
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`); stdlib maths only, no kernel in this measurement
+- HEAD: `16d82a4` (the commit that carries the tests and the `oracle` subcommand)
+- Read 2026-10-08T02:31:13Z to 02:36:28Z (the pooled run, then the serial slice); the gate rows
+  at about 02:37Z
+- Load (1-minute): 42.89 before and 32.78 after the pooled run, 25.72 before and 14.18 after the
+  serial slice, 8.61 before the gate rows. The host was loaded throughout (this session, other
+  users); these are float residues, not timings, so load does not move them. The wall times
+  below do move with it and are recorded as read.
+
+#### The roll window: the first whole-product run failed, and why
+
+The first pooled run, with the oracle as 18-01 committed it (roll searched over +-1 span of
+2 pi / z), judged 10,399 cases in 274.9 s and **failed**: 3,244 of 10,326 trochoid curves read
+beyond the 1e-9 mm bar, worst +0.6075 mm (14 teeth, module 10, 14.5 degrees, x -0.6, sharp
+cutter; points at radii 63.8, 65.7 and 67.7 mm read +0.198, +0.470 and +0.608 mm, uncut). The
+twelve gate rows were all clean at that window (worst 1.07e-14 mm), which is why the gate did not
+show it.
+
+The cause is the oracle's window, not the generator. The roll at which the cutter touches a
+trochoid point is (a + w_c tan(beta)) / r; for the first failing point of that gear it is -0.473
+rad against a window of +-0.449. Over the product the largest roll is **2.13 spans** (60 teeth,
+module 10, 14.5 degrees, x -0.6, sharp cutter); 3,729 of the 10,399 cases need more than one
+span; closed form (d cot(alpha) / (r * span), x -0.6, 14.5 degrees) bounds the box at about 2.3
+spans. With the window at +-2 spans (diagnostic) the same 16 points read 1e-15 mm.
+
+The window is now +-3 spans (1.3 times the box's bound). Grid check, 259 trochoid cases (every
+40th of the product), window +-3 spans: a grid of 2001 / 3001 / 4001 / 6001 rolls reads worst
+1.0e-13 / 1.1e-13 / 8.9e-14 / 9.2e-14 mm with none beyond the bar, so the grid stays 2001.
+
+The same window had hidden the severed-tooth separation. 18-02 recorded that the neighbouring
+teeth made no difference on a severed tooth; at +-3 spans the 6-tooth, 14.5 degree sharp-cutter
+gear at x -0.6 reads **-0.138979 mm** on its one flank with the neighbours on and -2.1e-15 mm with
+them off (x -0.5: -0.020103 against -8e-16; the 7-tooth, x -0.6 gear: -4.6e-16 either way), which
+is what 18-RESEARCH described (0.141 and 0.0201 on its 21-point sets). 18-02's test was updated to
+pin it.
+
+#### The twelve gate rows
+
+`tests/test_trochoid.py::test_t2_the_oracle_reads_every_gate_row_as_the_cut_boundary`, each row
+asserting 16 points before reading them and the same readings, reversed, with the points reversed.
+
+| row | join | tip radius used (mm) | worst reading (mm) | per module |
+|---|---|---|---|---|
+| tracer, 10 teeth | crossing | 0.38 | 9.99e-16 | 9.99e-16 |
+| default gear, 19 teeth, module 1.75 | tangent | 0.5 | 2.72e-15 | 1.55e-15 |
+| 17 teeth, just undercut | crossing | 0.38 | 1.50e-15 | 1.50e-15 |
+| 18 teeth, just not | tangent | 0.38 | 1.22e-15 | 1.22e-15 |
+| 7 teeth, x -0.6, sharp (thin positive waist) | crossing | 0 | 6.50e-16 | 6.50e-16 |
+| 6 teeth, x -0.6, cap request 3.0 | crossing | 0.596 | 9.99e-16 | 9.99e-16 |
+| 16 teeth, x 1.0, w_c = 0 | tangent | 0.25 | 7.22e-16 | 7.22e-16 |
+| 16 teeth, x 1.0, w_c > 0 | tangent | 0.5 | 1.22e-15 | 1.22e-15 |
+| 12 teeth, 32 degrees, cap request 3.0 (tip land nearly gone) | tangent | 0.007 | 1.18e-15 | 1.18e-15 |
+| tracer at module 0.2 | crossing | 0.05 | 1.94e-16 | 9.71e-16 |
+| 12 teeth, module 10, x 0.2, backlash 1.0 | tangent | 0.5 | 9.83e-15 | 9.83e-16 |
+| 30 teeth, backlash 0.10 | tangent | 0.38 | 2.61e-15 | 2.61e-15 |
+
+Worst over the twelve: **9.83e-15 mm** (module 10). Wall time at `-n0` (load 8.6): the twelve rows
+0.42 to 0.45 s each, 5.2 s together; the controls 0.61 s; the tripwire 0.21 s; the T2 tests 6.0 s.
+The commit that carried them, with the hook, took 15.0 s.
+
+#### The whole sweep product (D-13: the full grid only in bench)
+
+`bench.trochoid oracle`, 12 spawn workers, 257.4 s wall (load 42.9 before, 32.8 after):
+
+- 10,399 cases judged: 10,326 trochoid curves of 16 points each, 73 severed teeth. Beyond the bar:
+  **0**. Verdict ok, exit 0.
+- Worst reading **2.985e-12 mm** (26 teeth, module 1, 20 degrees, x -0.6, backlash 0.10, tip
+  radius 0.5 mm), 335 times under the bar. It is one of the two cases of the product inside the
+  join band (18-03): the curve ends at the cutter's flank foot, 2 (tan(phi) - phi) = 2.44e-13 rad
+  off the involute, times R = 12 mm: geometry, not noise. The other band case reads 1.106e-12 mm.
+  Every other curve reads **1.594e-13 mm or less** (116 teeth, module 10, 14.5 degrees, x -0.6,
+  tip radius 3 mm, trimmed), 6.3e3 times under the bar; 15 of 10,326 read above 1e-13 mm.
+- The 73 severed teeth: the oracle reads a gouge (one flank, neighbours on) on **73 of 73**,
+  shallowest -1.653e-03 mm, deepest -1.899 mm. The predicate and the oracle agree on every case.
+- Serial slice (the backstop for "the reading does not depend on the worker count"): the first
+  200 trochoid cases judged in-process, 42.7 s on one worker: worst 2.63897000341122582e-15 mm. The
+  pooled run's worst over the same first 200 trochoid cases: 2.63897000341122582e-15 mm. Equal to
+  every printed digit.
+
+#### The negative controls (tracer gear unless stated)
+
+| control | readings (mm) |
+|---|---|
+| involute between rb (4.6985) and the crossing radius (4.7256), at 0.25 / 0.5 / 0.75 of the way | -5.321e-03 / -3.695e-03 / -1.913e-03 |
+| the trochoid carried past the crossing, 0.25 / 0.5 / 1.0 of the way to the flank foot | -9.649e-03 / -2.152e-02 / -5.192e-02 (18-RESEARCH: 5.19e-2 at the foot) |
+| severed tooth (6 teeth, 14.5 degrees, x -0.6, sharp), one flank, neighbours on / off | -0.138979 / -2.07e-15 |
+| the same tooth's other flank (mirror), neighbours on | -0.138979 |
+
+Each is below -1e-4 mm (the severed ones below -1e-3), so an oracle that read 0 everywhere would
+fail all three.
+
+#### The tripwire and the T2 bar
+
+The tracer gear's curve generated at tip radius 0.38 mm + 1e-6 mm and judged against the cutter at
+0.38 mm reads **2.205e-07 mm**, 220 times the bar (unmoved: 1.0e-15 mm). The reading moves 0.2205
+per mm of tip radius (2.2e-10 at 1e-9, 2.2e-8 at 1e-7, 2.2e-7 at 1e-6, 2.2e-5 at 1e-4 mm), as
+18-RESEARCH predicted.
+
+| bar | value | the two numbers | headroom |
+|---|---|---|---|
+| `ORACLE_BAR_MM` | 1e-9 mm | the generator's worst gap over the product (2.99e-12 mm at the band case; 1.6e-13 mm elsewhere; 9.8e-15 mm on the gate rows) and the oracle's resolution after golden-section refinement (about 1e-15 mm) | 335 over the product's worst, 6.3e3 outside the band, 1.0e5 on the gate rows; tripwire 220 over the bar |
+
+No headroom is under 10x.
