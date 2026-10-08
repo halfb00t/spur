@@ -1158,3 +1158,235 @@ def test_t2_the_bench_oracle_uses_the_gate_s_bar() -> None:
     """The whole-product run in bench/trochoid.py judges against its own copy of the bar
     (the bench cannot import this module); one number, pinned equal here."""
     assert ORACLE_BAR_MM == BENCH_ORACLE_BAR_MM
+
+
+# --- T3: freecad.gears at a sharp cutter, recorded once (18-04) -----------------------------
+# PROVENANCE. Source: https://github.com/looooo/freecad.gears, file pygears/involute_tooth.py,
+# class InvoluteTooth, method undercut_points (with pygears/__init__.py and
+# pygears/_functions.py, which it imports), at commit 4cc4b1a233c232e15c3fdfb8a35909aa0d828796
+# (2026-09-15, "ruff refactoring", the last commit touching involute_tooth.py); the
+# repository HEAD that day was 83ec154b1925347622b61812f75d2ed51e956b9f; package version
+# 1.4.0; licence GPL-3.0 (GitHub's licence API says spdx_id GPL-3.0, the file header carries
+# the GPL v3 notice). The code is NEVER imported, vendored or copied into this repository: the
+# three files were fetched with `gh api` into a scratch directory outside it, run once on
+# 2026-10-08 by a script that imports nothing from spur (`python -I run.py <dir>`, numpy only,
+# from this project's .venv), and what is recorded below is the numbers it printed.
+#
+# What was printed. InvoluteTooth(m=1, num_teeth=z, pressure_angle=radians(20),
+# clearance=0.25, shift=x, backlash=bl, undercut=True).undercut_points(num=200), for teeth
+# 8, 10, 14, shift 0 and 0.3, backlash 0 and 0.10. Their clearance 0.25 and shift x give the
+# root circle r - (1.25 - x) m, this project's; their curve is R = (df/2) / cos(psi) at
+# polar angle psi - (df/dw) tan(psi) rotated by -undercut_rot - pi/z + backlash/(2 r). Each
+# row is (teeth, shift, backlash, psi, radius, half-angle from the tooth centre): psi is the
+# sample parameter the library itself steps (numpy.linspace(0, undercut_end, 200)), radius
+# is the hypot of its returned point and the half-angle is minus the polar angle of that
+# point (checked by hand: at psi = 0 it equals this project's pi/z - a/r). Five points per
+# case, evenly spread over the samples that lie on the cutter flank (contact-normal angle
+# at most pi/2 - alpha), root circle to flank foot. psi is not recovered from the radius as
+# acos((df/2)/R): that inverse turns a rounding error of 1e-16 in R into 1.5e-8 rad at the
+# first point.
+#
+# The mapping to this project is tan(psi) = (d/rf) * tan(beta) with d the cutter's tip depth
+# and rf the root radius, so beta = atan((rf/d) * tan(psi)) and the point is
+# _trochoid_point(cutter(p, 0.0), beta), compared row by row through its own psi, never by
+# list index or sorted order.
+#
+# What T3 checks: the rolling convention, the depth, the tip land and the way backlash
+# enters, for a sharp corner, against someone else's code. What it does not: the crossing
+# (the library trims polylines), the junction, or a tip radius above zero (T2 and T4 do).
+# The reference prints no resolution (float64 closed-form arithmetic on both sides), so
+# the bars below rest on the measured gap and the cross-platform libm floor.
+FREECAD_T3_POINTS: tuple[tuple[int, float, float, float, float, float], ...] = (
+    (8, 0.0, 0.0, 0.0, 2.75, 0.3100902390575503),
+    (8, 0.0, 0.0, 0.2098403654332923, 2.8116764289774343, 0.246670573421815),
+    (8, 0.0, 0.0, 0.4196807308665846, 3.0113256095251284, 0.19716490001214956),
+    (8, 0.0, 0.0, 0.6253242889912111, 3.391823432030306, 0.1811255849374326),
+    (8, 0.0, 0.0, 0.8351646544245034, 4.0980209914101735, 0.2345009613254471),
+    (8, 0.0, 0.1, 0.0, 2.7500000000000004, 0.2975902390575503),
+    (8, 0.0, 0.1, 0.2098403654332923, 2.811676428977435, 0.2341705734218149),
+    (8, 0.0, 0.1, 0.4196807308665846, 3.011325609525129, 0.1846649000121495),
+    (8, 0.0, 0.1, 0.6253242889912111, 3.391823432030306, 0.16862558493743257),
+    (8, 0.0, 0.1, 0.8351646544245034, 4.098020991410174, 0.22200096132544703),
+    (8, 0.3, 0.0, 0.0, 3.0499999999999994, 0.31009023905755034),
+    (8, 0.3, 0.0, 0.1767152406093852, 3.09825075327098, 0.2695407361871882),
+    (8, 0.3, 0.0, 0.3534304812187704, 3.250937580256842, 0.23796199195786447),
+    (8, 0.3, 0.0, 0.5301457218281557, 3.535275231974632, 0.22685550989273337),
+    (8, 0.3, 0.0, 0.7068609624375408, 4.011024309287729, 0.2544692482173224),
+    (8, 0.3, 0.1, 0.0, 3.05, 0.2975902390575503),
+    (8, 0.3, 0.1, 0.1767152406093852, 3.09825075327098, 0.2570407361871882),
+    (8, 0.3, 0.1, 0.3534304812187704, 3.2509375802568417, 0.22546199195786448),
+    (8, 0.3, 0.1, 0.5301457218281557, 3.5352752319746323, 0.21435550989273333),
+    (8, 0.3, 0.1, 0.7068609624375408, 4.011024309287729, 0.24196924821732238),
+    (10, 0.0, 0.0, 0.0, 3.75, 0.24807219124604024),
+    (10, 0.0, 0.0, 0.1843686595004552, 3.814649972004874, 0.20356838207143169),
+    (10, 0.0, 0.0, 0.3687373190009104, 4.020226748415705, 0.16914329922247723),
+    (10, 0.0, 0.0, 0.5570287159375454, 4.417847438515955, 0.15815699427372432),
+    (10, 0.0, 0.0, 0.7413973754380007, 5.084569235553447, 0.1934162318049653),
+    (10, 0.0, 0.1, 0.0, 3.7500000000000004, 0.2380721912460402),
+    (10, 0.0, 0.1, 0.1843686595004552, 3.8146499720048745, 0.1935683820714316),
+    (10, 0.0, 0.1, 0.3687373190009104, 4.020226748415704, 0.15914329922247722),
+    (10, 0.0, 0.1, 0.5570287159375454, 4.417847438515956, 0.14815699427372428),
+    (10, 0.0, 0.1, 0.7413973754380007, 5.084569235553446, 0.1834162318049653),
+    (10, 0.3, 0.0, 0.0, 4.05, 0.24807219124604024),
+    (10, 0.3, 0.0, 0.14241952473304145, 4.091423741949353, 0.22179882205623688),
+    (10, 0.3, 0.0, 0.2848390494660829, 4.220038462719063, 0.200401826629224),
+    (10, 0.3, 0.0, 0.4272585741991244, 4.450035236794679, 0.1896124027669495),
+    (10, 0.3, 0.0, 0.5696780989321658, 4.809549901149882, 0.19721083266255793),
+    (10, 0.3, 0.1, 0.0, 4.05, 0.23807219124604023),
+    (10, 0.3, 0.1, 0.14241952473304145, 4.091423741949353, 0.2117988220562369),
+    (10, 0.3, 0.1, 0.2848390494660829, 4.220038462719063, 0.190401826629224),
+    (10, 0.3, 0.1, 0.4272585741991244, 4.45003523679468, 0.1796124027669494),
+    (10, 0.3, 0.1, 0.5696780989321658, 4.809549901149882, 0.18721083266255792),
+    (14, 0.0, 0.0, 0.0, 5.75, 0.17719442231860014),
+    (14, 0.0, 0.0, 0.1327648598506447, 5.801051082864395, 0.15413172567492733),
+    (14, 0.0, 0.0, 0.2690235318026222, 5.964539155334789, 0.13464462803571756),
+    (14, 0.0, 0.0, 0.40528220375459967, 6.256861008576025, 0.124332702594173),
+    (14, 0.0, 0.0, 0.5380470636052443, 6.69608191415659, 0.1293579132482911),
+    (14, 0.0, 0.1, 0.0, 5.75, 0.170051565175743),
+    (14, 0.0, 0.1, 0.1327648598506447, 5.801051082864395, 0.14698886853207016),
+    (14, 0.0, 0.1, 0.2690235318026222, 5.96453915533479, 0.12750177089286044),
+    (14, 0.0, 0.1, 0.40528220375459967, 6.256861008576025, 0.11718984545131583),
+    (14, 0.0, 0.1, 0.5380470636052443, 6.69608191415659, 0.12221505610543397),
+    (14, 0.3, 0.0, 0.0, 6.05, 0.17719442231860016),
+    (14, 0.3, 0.0, 0.10320655828775342, 6.082364695383163, 0.1635058804187843),
+    (14, 0.3, 0.0, 0.20297289796591506, 6.176799665447667, 0.15209754785279694),
+    (14, 0.3, 0.0, 0.30273923764407673, 6.338241642358868, 0.1444063184585221),
+    (14, 0.3, 0.0, 0.4059457959318301, 6.585182204048351, 0.14273556302404264),
+    (14, 0.3, 0.1, 0.0, 6.05, 0.17005156517574302),
+    (14, 0.3, 0.1, 0.10320655828775342, 6.082364695383163, 0.1563630232759271),
+    (14, 0.3, 0.1, 0.20297289796591506, 6.176799665447667, 0.1449546907099398),
+    (14, 0.3, 0.1, 0.30273923764407673, 6.338241642358869, 0.13726346131566494),
+    (14, 0.3, 0.1, 0.4059457959318301, 6.585182204048351, 0.13559270588118552),
+)
+
+# mm and rad. Measured 2026-10-08 (Apple M2 Max, Python 3.12.13) over the 60 rows below:
+# the largest radius gap is 1.78e-15 mm and the largest half-angle gap 1.94e-16 rad (the
+# first prototype read 2.66e-15 and 3.05e-16 over 1,972 points). Ten times the larger is
+# 1.8e-14, under the 1e-12 floor this phase uses for libm differences between this host
+# (macOS arm64) and CI (ubuntu), so both bars are 1e-12: headroom 560 on the radius and
+# 5.1e3 on the angle. The reference prints no resolution; both sides are float64.
+T3_BAR_MM = 1e-12
+T3_BAR_RAD = 1e-12
+
+
+def _t3_gaps(rho: float) -> tuple[float, float]:
+    """The largest radius gap (mm) and half-angle gap (rad) between the recorded freecad.gears
+    points and this project's cutter of tip radius `rho`, each row matched through its psi."""
+    worst_radius = worst_angle = 0.0
+    for teeth, shift, backlash, psi, radius, half in FREECAD_T3_POINTS:
+        p = _gear(teeth=teeth, module=1, pressure_angle=20, profile_shift=shift,
+                  backlash=backlash)
+        c = cutter(p, rho)
+        beta = math.atan((c.pr.rf / c.d) * math.tan(psi))
+        ours = _trochoid_point(c, beta)
+        worst_radius = max(worst_radius, abs(ours[0] - radius))
+        worst_angle = max(worst_angle, abs(ours[1] - half))
+    return worst_radius, worst_angle
+
+
+def test_t3_the_sharp_cutter_matches_freecad_gears_point_for_point() -> None:
+    """REQ-trochoid-proved-independently, T3 (SC3): at a tip radius of 0, the generator's
+    envelope is the freecad.gears undercut curve, point for point, on twelve gears (teeth 8,
+    10, 14; shift 0, 0.3; backlash 0, 0.10; module 1, 20 degrees), five points each. This
+    is the empty-tip-radius case: no rounded corner, so the whole curve is the sharp
+    corner's trochoid. Measured 2026-10-08: 1.78e-15 mm and 1.94e-16 rad, bars 1e-12."""
+    assert len(FREECAD_T3_POINTS) == 60
+    cases = {row[:3] for row in FREECAD_T3_POINTS}
+    assert len(cases) == 12
+    assert all(sum(row[:3] == case for row in FREECAD_T3_POINTS) == 5 for case in cases)
+    gap_mm, gap_rad = _t3_gaps(0.0)
+    print(f"T3 gaps: {gap_mm:.3e} mm, {gap_rad:.3e} rad")
+    assert gap_mm <= T3_BAR_MM
+    assert gap_rad <= T3_BAR_RAD
+
+
+def test_t3_a_1e_6_mm_tip_radius_breaks_the_freecad_bar() -> None:
+    """The T3 tripwire: the same rows against a cutter of tip radius 1e-6 mm, a millionth
+    of a millimetre of rounding, must read above both bars -- or the bars would pass a
+    generator that rounds the corner. Measured 2026-10-08: the radius gap moves from 1.8e-15 to
+    7.35e-7 mm (7.4e5 times the bar) and the half-angle gap from 1.9e-16 to 1.75e-7 rad (1.8e5
+    times)."""
+    gap_mm, gap_rad = _t3_gaps(1e-6)
+    print(f"T3 tripwire gaps: {gap_mm:.3e} mm = {gap_mm / T3_BAR_MM:.1e} x the bar, "
+          f"{gap_rad:.3e} rad = {gap_rad / T3_BAR_RAD:.1e} x the bar")
+    assert gap_mm > T3_BAR_MM
+    assert gap_rad > T3_BAR_RAD
+
+
+# --- T4: the KISSsoft form diameter, one published number (D-15, 18-04) ---------------------
+# Zhang, S., "Methods to Determine Form Diameter on Hobbed External Involute Gears", AGMA
+# 18FTM02 (September 2018), Table 7 example 7, reproduced by Gear Solutions
+# (https://gearsolutions.com/features/methods-to-determine-form-diameter-on-hobbed-external-involute-gears/)
+# "with AGMA's permission"; one number is recorded here as a fact, with attribution, and
+# nothing is fetched at test time. The example: 35 teeth, pressure angle 22.5 degrees, dedendum
+# factor 1.3, hob without protuberance (delta0 = 0), hob tip radius 0.04, and the form diameter
+# KISSsoft prints, 4.1530, to four decimals.
+#
+# INFERRED, not printed: the table gives no module or diametral pitch. The printed tooth
+# count, angle, dedendum factor and tip radius reproduce 4.1530 +- 5e-5 only at a diametral
+# pitch of 8 (module 25.4/8 = 3.175 mm) to within 1e-4, a relative 1.2e-5 -- and 8 is the
+# round number in that window (18-RESEARCH A1; the last test below checks that 7.999 and
+# 8.001 miss). The dedendum factor 1.3 is read as (r - rf)/m, so with this project's
+# 1.25 m rack the profile shift is 1.25 - 1.3 = -0.05 (A2). Both readings are of a table
+# image, and D-15 adopted the number knowing it.
+#
+# The junction compared is the cutter-envelope junction: where the generated root curve hands
+# over to the involute (Zhang's definition, "the diameter of a circle at which the root fillet
+# curve intersects or joins the involute"). One tool-generated number is not ISO 21771
+# parity and is never called that (D-08, D-15, L08).
+ZHANG_T4 = {
+    "teeth": 35.0, "pressure_angle": 22.5, "dedendum_factor": 1.3, "protuberance": 0.0,
+    "tip_radius_in": 0.04, "kisssoft_form_diameter_in": 4.1530, "diametral_pitch": 8.0,
+}
+# inches. Half of the last printed digit of 4.1530. The observed gap is 3.59e-5 in
+# (4.153036 against 4.1530), so the headroom is 1.39: under the 10x rule by construction,
+# because the reference is rounded to 4 decimals, not because the bar was tuned. The human
+# accepted exactly this at planning (D-15); it is not escalated again. The tripwire below is
+# what keeps it from passing anything.
+T4_BAR_IN = 5e-5
+
+
+def _zhang_form_diameter_in(diametral_pitch: float, tip_radius_in: float) -> float:
+    """The tangent junction's diameter, inches, for the Table 7 example 7 gear. The curve
+    comes from trochoid_root(cutter(p, rho)) directly: this gear has rb - rf of -0.102 mm,
+    so root_mode would hand it back as `nothing radial to replace`; the junction is still
+    tangent (xi 12.1 mm)."""
+    module = 25.4 / diametral_pitch
+    p = _gear(teeth=int(ZHANG_T4["teeth"]), module=module,
+              pressure_angle=ZHANG_T4["pressure_angle"],
+              profile_shift=round(1.25 - ZHANG_T4["dedendum_factor"], 6), backlash=0)
+    curve = trochoid_root(cutter(p, tip_radius_in * 25.4))
+    assert curve is not None
+    assert curve.join == "tangent"
+    return 2 * curve.points[-1][0] / 25.4
+
+
+def test_t4_the_tangent_junction_matches_kisssoft_s_form_diameter() -> None:
+    """REQ-trochoid-proved-independently, T4 (D-15): the cutter-envelope junction of the
+    Zhang Table 7 example 7 gear, module 3.175 mm, tip radius 1.016 mm, backlash 0, is
+    4.153036 in against KISSsoft's 4.1530: a gap of 3.59e-5 in, 0.72 of the bar of half the
+    last printed digit, headroom 1.39 (accepted, D-15). It anchors the tangent branch only,
+    and it is the cutter-envelope junction, not an ISO 21771 form diameter."""
+    ours = _zhang_form_diameter_in(ZHANG_T4["diametral_pitch"], ZHANG_T4["tip_radius_in"])
+    gap = abs(ours - ZHANG_T4["kisssoft_form_diameter_in"])
+    print(f"T4: {ours:.6f} in against {ZHANG_T4['kisssoft_form_diameter_in']}: gap {gap:.3e} in "
+          f"= {gap / T4_BAR_IN:.2f} of the bar, headroom {T4_BAR_IN / gap:.2f}x")
+    assert gap <= T4_BAR_IN
+
+
+def test_t4_a_1e_3_in_tip_radius_moves_the_form_diameter_past_the_bar() -> None:
+    """The T4 tripwire and the inference check. A tip radius 1e-3 in larger moves the form
+    diameter by 7.78e-4 in (0.78 per unit of tip radius over that step; 18-RESEARCH's
+    derivative at the point is 0.742), 15.6 times the bar; and the two pitches either side
+    of the inferred 8 (7.999 and 8.001) miss 4.1530 by 5.5e-4 and 4.8e-4 in, 11.0 and 9.6
+    times the bar, so the pitch that reproduces it is 8 to within 1e-4. Measured
+    2026-10-08."""
+    pitch, rho = ZHANG_T4["diametral_pitch"], ZHANG_T4["tip_radius_in"]
+    moved = abs(_zhang_form_diameter_in(pitch, rho + 1e-3)
+                - ZHANG_T4["kisssoft_form_diameter_in"])
+    print(f"T4 tripwire: {moved:.3e} in = {moved / T4_BAR_IN:.1f} x the bar")
+    assert moved > 10 * T4_BAR_IN
+    for neighbour in (pitch - 0.001, pitch + 0.001):
+        miss = abs(_zhang_form_diameter_in(neighbour, rho) - ZHANG_T4["kisssoft_form_diameter_in"])
+        print(f"T4 pitch {neighbour}: misses by {miss:.3e} in = {miss / T4_BAR_IN:.1f} x the bar")
+        assert miss > T4_BAR_IN
