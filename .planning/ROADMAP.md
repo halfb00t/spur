@@ -261,11 +261,11 @@ maths is derived and cross-checked three ways, SUMMARY). Open items: ISO 21771 f
 parity (clause unread — STACK, PITFALLS), the oracle's external anchor (no published table
 found — STACK, LOW for the absence), the two-flank interaction at very low tooth counts or
 large ρ (STACK's 7,296 cases solved one flank only), and the `z_min` double root.
-**Plans**: 5 plans
+**Plans**: 1/5 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 18-01-PLAN.md — The cutter and its curve: one undercut gear end to end (tracer: the rack read from `profile()`'s own expressions, the contact-normal-angle envelope, the crossing solve, `root_mode`, the swept-cutter oracle with neighbouring teeth), then the cap reconciled as the first test, floored and warned, the tip-land limit and the junction bar pinned
+- [x] 18-01-PLAN.md — The cutter and its curve: one undercut gear end to end (tracer: the rack read from `profile()`'s own expressions, the contact-normal-angle envelope, the crossing solve, `root_mode`, the swept-cutter oracle with neighbouring teeth), then the cap reconciled as the first test, floored and warned, the tip-land limit and the junction bar pinned
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 18-02-PLAN.md — `root_mode`, the single predicate: `nothing radial to replace` and `tooth severed` on the refined waist, one fixed order, the 44 fixture records radial when nobody asks, one tooth/field step either side, the cutter's closed-form onset and `x_min`, T1
@@ -422,6 +422,6 @@ before the human at Phase 18's discuss-phase.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
-| 18. Trochoid Maths, Proved | v0.4 | 0/TBD | Not started | - |
+| 18. Trochoid Maths, Proved | v0.4 | 1/5 | In Progress | - |
 | 19. The Trochoid in the Part | v0.4 | 0/TBD | Not started | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |

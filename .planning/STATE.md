@@ -4,18 +4,18 @@ milestone: v0.4
 milestone_name: True Root
 current_phase: 18
 current_phase_name: Trochoid Maths, Proved
-status: "Phase 17 shipped — PR #27"
-stopped_at: Phase 18 context gathered
-last_updated: "2026-10-07T17:15:54.038Z"
-last_activity: 2026-10-07
-last_activity_desc: Phase 18 planning complete
-state_head: d4ea83b6b1c4306509cd9970495d2c1193d49002
+status: executing
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-10-08T01:34:04.086Z"
+last_activity: 2026-10-08
+last_activity_desc: Phase 18 execution started
+state_head: 7c350ad98378488eeb27d90f5eae0d09ef40476c
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 10
-  completed_plans: 5
-  percent: 50
+  completed_plans: 6
+  percent: 60
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-10-06)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 18 — Trochoid Maths, Proved — ready to discuss (Phase 17 landed
+**Current focus:** Phase 18 — Trochoid Maths, Proved
 2026-10-06 on `gsd/phase-17-debt-first-commit-gate-and-pool-race`, 20 commits from `c06749d`
 to the transition; ships through a PR like #15 — A1/A3 are read from its first CI run)
 
 ## Current Position
 
-Phase: 18 (Trochoid Maths, Proved) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 17 shipped — PR #27
-Last activity: 2026-10-07 — Phase 18 planning complete
+Phase: 18 (Trochoid Maths, Proved) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-10-08 — Phase 18 execution started
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -199,6 +199,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 17 P03 | 4 min | 2 tasks | 5 files |
 | Phase 17 P04 | 31 min | 3 tasks | 5 files |
 | Phase 17 P05 | 7 min | 3 tasks | 9 files |
+| Phase 18 P01 | 19 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -332,6 +333,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 17]: 17-03: stopped at the first hit (D-15); verdict 'Reproduced in attempt 1.' so 17-04's D-17 checkpoint is not reached
 - [Phase 17]: 17-04: proceed-as-known-flake - the same-slot timeout fix ships with make verify at 2/3; run 2 was the resource-tracker flake (debt item, b8ef84a), not a new-test assertion. The fix commit is 0628182.
 - [Phase 17]: L37: the heaviest allowed composed row's limit is documented behaviour; SPUR_BUILD_TIMEOUT stays 30 s, spoke_count le stays 32, 503 timeout is the contract under concurrent load — L05 and L08: no default a shared link depends on moves and no figure is tuned toward a pass; revisit at Phase 19's composed re-measure
+- [Phase 18]: Cutter tip radius cap floored to 3 dp, not rounded: the used and printed radius are one float and the tip land stays >= 0 (18-01, F3)
+- [Phase 18]: Tip-land refusal decided on the sharp-corner land a0 < 0, never a pressure-angle constant: 32.14 deg at backlash 0, 33.07 at the default gear (18-01, F2)
+- [Phase 18]: Junction bars JUNCTION_BAR_RAD/MM 1e-12 (headroom 2.4e4/562) and DIRECTION_BAR_RAD 1e-5 (headroom 72), re-measured 2026-10-08; none under 10x (18-01)
 
 ### Pending Todos
 
@@ -505,9 +509,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-06T14:51:37.402Z
-Stopped at: Phase 18 context gathered
-Resume file: .planning/phases/18-trochoid-maths-proved/18-CONTEXT.md
+Last session: 2026-10-08T01:34:04.045Z
+Stopped at: Completed 18-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

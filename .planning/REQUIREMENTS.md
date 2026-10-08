@@ -93,7 +93,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
 
 ### Trochoid maths — `calc.py` only, no kernel, no field, no fixture contact
 
-- [ ] **REQ-cutter-defined-once**: One pure `calc` function defines the basic rack cutter —
+- [x] **REQ-cutter-defined-once**: One pure `calc` function defines the basic rack cutter —
   dedendum 1.25·m (what `rf = r − m(1.25 − x)` already encodes), tip radius ρ, backlash as
   cutter-tooth thickening, profile shift — and every other function reads it. ρ is capped
   to the pressure angle's geometric maximum **with backlash included** (ISO 53's 0.38·m fits
@@ -253,7 +253,7 @@ the phase where its acceptance can be read.
 | REQ-same-slot-timeout-race-reproduced | Phase 17 | Complete |
 | REQ-same-slot-timeout-race-fixed | Phase 17 | Complete |
 | REQ-worst-row-margin-decided | Phase 17 | Complete |
-| REQ-cutter-defined-once | Phase 18 | Pending |
+| REQ-cutter-defined-once | Phase 18 | Complete |
 | REQ-trochoid-root-generated | Phase 18 | Pending |
 | REQ-root-mode-single-predicate | Phase 18 | Pending |
 | REQ-trochoid-proved-independently | Phase 18 | Pending |
