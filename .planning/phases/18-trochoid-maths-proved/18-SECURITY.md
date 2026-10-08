@@ -13,7 +13,7 @@ verified: "2026-10-08"
 
 > Per-phase security contract: threat register, accepted risks, and audit trail.
 
-Register origin: authored at plan time (every PLAN.md carries a `<threat_model>` block; IDs T-18-01..T-18-16 each used once across the five plans, plus the reserved per-plan supply-chain row T-18-SC). Verification depth: ASVS L1 (grep-level evidence against the implementation and the plan SUMMARYs), run by the secure-phase step of the execute-phase verification sequence on 2026-10-08.
+Register origin: authored at plan time (every PLAN.md carries a `<threat_model>` block; IDs T-18-01..T-18-16 each used once across the five plans, T-18-17..T-18-18 added by gap plan 18-06, plus the reserved per-plan supply-chain row T-18-SC). Verification depth: ASVS L1 (grep-level evidence against the implementation and the plan SUMMARYs), run by the secure-phase step of the execute-phase verification sequence on 2026-10-08.
 
 ---
 
@@ -53,7 +53,9 @@ Register origin: authored at plan time (every PLAN.md carries a `<threat_model>`
 | T-18-14 | Repudiation | cost figures without their load becoming stale claims | low | mitigate | every figure recorded with 1-minute load before/after and the date in `bench/RESULTS.md` and in `derive()`'s docstring (14.7 µs at load 14.4, 2026-10-08; 9.19 / 11.5 kept as history) | closed |
 | T-18-15 | Tampering | the D-05 step line chosen after the numbers | medium | mitigate | `premise_holds` and its pin committed in `8badc55` (08:47:54) before the tables in `383d04b` (08:51:56); the plan's verify checks the commit order; both tables and the verdict went to the human with no default (`d05-hold`, 2026-10-08) | closed |
 | T-18-16 | Tampering | `pyproject.toml filterwarnings` widened enough to hide a real failure | medium | mitigate | human chose `debt-redefer`; no `filterwarnings` change on the phase branch (`git diff 26b9505..HEAD -- pyproject.toml` empty for it) | closed |
-| T-18-SC | Tampering | npm/pip/cargo installs (all five plans) | low | accept | nothing installed; stdlib `math`, `dataclasses`, `typing`, `random`, `statistics`, `csv`, `multiprocessing` only; `requirements.txt` stays at 31 pins; freecad.gears' numpy need met by the existing `.venv` for the one-off run and never declared | closed (accepted risk R-18-01) |
+| T-18-17 | Tampering | `cutter()` — a NaN or negative tip radius reaching the cap and becoming a silently trimmed part (18-REVIEW WR-02; gap plan 18-06) | medium | mitigate | `if not math.isfinite(rho) or rho < 0: raise ValueError(...)` before any arithmetic (`calc.py:1291`, commit `085aee7`); nan / ±inf / −0.1 raise, 0.0 and −0.0 accepted; `root_mode` propagates (`test_a_tip_radius_that_is_not_a_finite_millimetre_value_is_refused_before_any_cap`) | closed |
+| T-18-18 | Tampering | `_root_curve` fourth guard arm — a later-root bisection result shipping as a healed curve, with the arm silently removable (18-VERIFICATION item 1, 18-REVIEW WR-01; gap plan 18-06) | high | mitigate | `test_a_crossing_curve_with_an_early_point_outside_the_involute_is_refused` makes the arm fire on the tracer gear (commit `8e96c2d`); `False` mutant on a scratch copy read `1 failed, 503 passed` against a `504 passed` control | closed |
+| T-18-SC | Tampering | npm/pip/cargo installs (all six plans) | low | accept | nothing installed; stdlib `math`, `dataclasses`, `typing`, `random`, `statistics`, `csv`, `multiprocessing` only; `requirements.txt` stays at 31 pins; freecad.gears' numpy need met by the existing `.venv` for the one-off run and never declared | closed (accepted risk R-18-01) |
 
 *Status: open · closed · open — below high threshold (non-blocking)*
 *Severity: critical > high > medium > low — only open threats at or above workflow.security_block_on count toward threats_open*
@@ -87,3 +89,11 @@ Register origin: authored at plan time (every PLAN.md carries a `<threat_model>`
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-10-08
+
+## Security Audit 2026-10-08
+
+| Metric | Count |
+|---|---|
+| Threats found | 19 |
+| Closed | 19 |
+| Open | 0 |
