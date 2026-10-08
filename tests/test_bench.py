@@ -794,6 +794,28 @@ def test_check_curve_reports_a_curve_that_does_not_rise() -> None:
     assert "radius does not strictly rise" in check_curve(bent, rk)
 
 
+def test_check_curve_reports_a_crossing_whose_end_leaves_the_involute() -> None:
+    """The join-band allowance is for tangent joins only (cross-review XR-01): the same
+    10-tooth gear is deeply undercut (xi -1.21 mm, join `crossing`), and with the
+    allowance applied to every negative xi its end point could sit 1.1e-2 rad off the
+    involute unreported. The end half-angle pushed 1e-2 rad out must be reported."""
+    p = GearParams.model_validate({"teeth": 10, "module": 1, "pressure_angle": 20,
+                                   "profile_shift": 0, "backlash": 0, "bore_d": 0,
+                                   "bore_flat": 0, "bore_chamfer": 0,
+                                   "recess_sides": "none"})
+    curve = trochoid_root(cutter(p, 0.38))
+    assert curve is not None
+    assert curve.join == "crossing"
+    rk = rack(p, 0.38)
+    assert check_curve(curve, rk) == []
+
+    points = list(curve.points)
+    radius, half = points[-1]
+    points[-1] = (radius, half + 0.01)
+    moved = RootCurve(points=tuple(points), join=curve.join, waist=curve.waist)
+    assert "last half-angle 1.00e-02 rad off the involute" in check_curve(moved, rk)
+
+
 def test_the_oracle_worker_reads_a_curve_clean_and_a_severed_tooth_as_a_gouge() -> None:
     """`bench.trochoid oracle`'s worker, on the two kinds of case it judges: the tracer
     gear's curve reads within the bar (about 1e-15 mm), and the 6-tooth, 14.5 degree,

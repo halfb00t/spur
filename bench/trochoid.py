@@ -372,7 +372,11 @@ def check_curve(curve: RootCurve, rk: Rack) -> list[str]:
     # the base circle, so its half-angle differs by 2*(tan(phi) - phi), tan(phi) =
     # |xi|/rb. That is geometry, at most 6.7e-13 rad at the band's edge for eps = 1e-4
     # (measured 2.4e-13 on the two gears of the product inside it), added to the bar.
-    phi = math.atan(max(-rk.xi, 0.0) / rk.rb)
+    # Only on a tangent join: a crossing's end is the root the bisection put on the
+    # involute itself, so it gets the bare bar. With the term applied to every negative
+    # xi the 10-tooth, 20 degree gear (xi -1.21 mm) accepted a 1.1e-2 rad miss
+    # (cross-review XR-01, 2026-10-08).
+    phi = math.atan(max(-rk.xi, 0.0) / rk.rb) if curve.join == "tangent" else 0.0
     if angle_gap > SWEEP_BAR + 2 * (math.tan(phi) - phi):
         problems.append(f"last half-angle {angle_gap:.2e} rad off the involute")
     if radius_gap is not None and radius_gap > SWEEP_BAR:
