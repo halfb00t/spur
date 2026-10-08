@@ -3210,3 +3210,125 @@ tangent; at xi = -10 * eps * rb the bracket is found and the last point is on `P
 to 1e-12 rad, at -eps * rb / 10 it is the flank join; STACK's -2.9e-3 mm is a crossing and -2.9e-5
 mm is a tangent join; with the constant patched to 0 at xi = -1e-9 * rb the bracket is lost and
 `root_mode` names `bracket degenerate`.
+
+### Generator sweep (18-03)
+
+The question (SC2, D-12, D-13): for every gear the project allows, does the generator give a curve
+or a named refusal, never a numerical failure and never a curve that loops, rises above the tip
+circle or fails to meet the involute? The grid is written out as literals in `bench/trochoid.py`
+(`GRID_A`, `GRID_B`) and pinned in `tests/test_bench.py`; every case is checked against closed
+forms typed in that module (rb, rf, ra, the tooth-thickness angle, xi and the involute half-angle
+written from the textbook rack, not read from calc's expressions).
+
+- **Grid A**, STACK's whole product at module 1: teeth 6 to 40, 60, 100, 200 (38); profile shift
+  -0.6 (the field's limit; STACK's -1 is rejected by `GearParams`), -0.5, -0.2, 0, 0.2, 0.5, 1.0;
+  14.5 / 20 / 25 degrees; backlash 0 and 0.10; tip radius 0, 0.1, 0.25, 0.38, 0.5 times the module
+  and the cap request (3.0 mm, the `root_fillet` maximum, which each cutter trims to its own cap):
+  1,596 gears, 9,576 cases, 1,489 gears accepted. The x = 1.0 rows with a tip radius at or over
+  the tip depth stay in (18-RESEARCH F5: STACK's 7,296 dropped them).
+- **Grid B**, the box corners: module 0.2 / 1.75 / 10; teeth 6, 7, 8, 9, 10, 12, 14, 17, 18, 20,
+  25, 30, 40, 60, 100, 116, 117, 200; 14.5 / 20 / 25 / 30 / 32.0 / 32.5 / 33.0 / 33.5 / 35
+  degrees; shift -0.6 / 0 / 1.0; backlash 0 / 0.10 / 1.0; tip radius 0, 0.25 m, 0.5 m, 0.5 mm
+  (each case's own `root_fillet` default) and the cap request: 4,374 gears, 21,870 cases, 1,924
+  gears accepted.
+
+Command, from the repo root:
+`.venv/bin/python -m bench.trochoid sweep --list .planning/phases/18-trochoid-maths-proved/investigation/18-03-refusals.tsv`
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`); stdlib maths only, no kernel in this measurement
+- HEAD: `32d7697` (the commit that carries the sweep, its gate test and its pins)
+- Bench run read 2026-10-08T02:03:37Z; load (1-minute, `os.getloadavg()`) 4.01 before and after
+- The host carried background load throughout (1-minute load 2 to 7); no quiet bar was waited for,
+  so every timing below is an upper bound for a quiet host and a fair one for the commit gate,
+  which runs on the same machine under the same kind of load.
+
+#### The bench run (the whole product)
+
+31,446 cases in 1.75 s wall (1.77 s on the first run, load 2.0). Zero problems, zero
+`bracket degenerate`, zero `curve invalid`.
+
+| outcome | cases |
+|---|---|
+| not a gear (`GearParams` refuses the fields) | 12,892 |
+| nothing radial to replace (`rb <= rf`) | 7,175 |
+| tip land gone (`a0 < 0`) | 980 |
+| tooth severed | 73 |
+| trochoid / crossing | 4,466 |
+| trochoid / crossing / capped | 1,557 |
+| trochoid / tangent | 2,657 |
+| trochoid / tangent / capped | 1,646 |
+
+18,554 cases are gears (1,489 x 6 + 1,924 x 5); 10,326 of them have a curve, 8,228 are a named
+refusal. By module:
+
+| module | not a gear | nothing radial to replace | tip land gone | tooth severed | trochoid |
+|---|---|---|---|---|---|
+| 0.2 | 6,185 | 420 | 65 | 4 | 616 |
+| 1 | 642 | 2,520 | 0 | 15 | 6,399 |
+| 1.75 | 3,710 | 1,730 | 345 | 36 | 1,469 |
+| 10 | 2,355 | 2,505 | 570 | 18 | 1,842 |
+
+Every refusal is one of the three the predicate names; the list is
+`.planning/phases/18-trochoid-maths-proved/investigation/18-03-refusals.tsv`, 8,228 rows and a
+header (7,175 nothing radial, 980 tip land gone, 73 tooth severed). The tip-land refusals are at
+32.5, 33, 33.5 and 35 degrees (260, 230, 240, 250); the severed teeth are 47 at 6 teeth, 13 at 7,
+8 at 8, 4 at 9 and 1 at 10, 53 at 14.5 degrees and 20 at 20 degrees, with a waist half-angle from
+-0.1426 to -0.00055 rad (the tsv's last column). F9's nesting holds over the product: no crossing
+has `rb <= rf`. D-11's accounting stands: nothing outside the three named reasons exists in the
+box, so the checkpoint was not reached.
+
+#### The worst junction gaps against `SWEEP_BAR`
+
+`SWEEP_BAR = 1e-12` (the junction radius relative, the half-angle in rad).
+
+| join | worst gap | headroom to the bar |
+|---|---|---|
+| crossing, half-angle against the involute | 6.9e-16 rad | 1.4e3 |
+| tangent, half-angle against the involute | 1.7e-16 rad | 6.0e3 |
+| tangent, radius against sqrt(rb^2 + xi^2), relative | 4.0e-16 | 2.5e3 |
+| tangent inside the join band (xi in [-eps*rb, 0)) | 2.44e-13 rad | see below |
+
+The band row is geometry, not noise. Inside the band the flank join is the form point, and the
+cutter's flank foot sits at negative roll, on the involute's continuation through the base circle,
+so its half-angle differs from the involute's by 2 (tan(phi) - phi) with tan(phi) = |xi| / rb: 6.7e-13
+rad at the band's edge for eps = 1e-4. `check_curve` allows that term on top of the bar. Two cases of
+the product are inside the band besides the five exactly on z_min (10 teeth, 30 degrees, no shift,
+sharp cutter; xi / rb about -2e-16): grid A, 26 teeth, module 1, 20 degrees, shift -0.6, backlash
+0.10, tip radius 0.5 mm, xi / rb = -7.16e-5, and grid A, 32 teeth, 14.5 degrees, shift -0.2, tip
+radius 3.0 mm (trimmed), xi / rb = -4.75e-5. The first reads 2.44e-13 rad against the closed form
+2 (tan(phi) - phi) = 2.44e-13: the model of the band's error is right to the last digit.
+
+Checker mutations, 2026-10-08, each run as a stride-7 sweep and each exiting 1: the join band in
+calc patched to 1e-2 (the bench's own rack disagrees on the join), every half-angle shifted by
+1e-6 sin(beta) (the last point leaves the involute), and the first radius moved 1e-9 off the root
+circle. The sweep can fail.
+
+#### The gate (D-13)
+
+`tests/test_calc.py::test_the_trochoid_sweep_over_the_allowed_box` runs the whole product with
+`check_case` and asserts the tally above as a literal dict.
+
+- Isolated, `make test PYTEST_ARGS="tests/test_calc.py -q -n 8 --no-cov --durations=5 -k
+  trochoid_sweep"`: call time 1.72, 1.71 and 1.68 s (1-minute load 2.2 after).
+- Inside the commit slice, `make verify.fast PYTEST_ARGS="--durations=3"`: 1.92 s call (load 2 to
+  3), the slowest test of the slice, running beside the other workers.
+
+**Decision: the whole product stays in the gate, no stride.** The plan's line is a call time over
+2.0 s at `-n 8`; the isolated reading is 1.7 s, which is 15 percent under it. The in-slice reading
+is 4 percent under it. The planning-time prototype costs (87 usec per crossing solve, 8.5 usec per tangent solve, plus
+the waist's 60 golden steps; load 1.5) suggested a price above the line; the measured whole is
+1.75 s over 18,554 gears, 94 usec per gear with the validation of the 12,892 refused field sets
+included. Not isolated further. Had it read over 2.0 s the gate would keep
+`itertools.islice(sweep_cases(), 0, None, k)` for the smallest k that fits and `bench/trochoid.py
+sweep --stride k` reproduces that sample's tally.
+
+`make verify.fast` wall (the pre-commit hook's own target, L36's 30 s): 14.37, 14.62 and 14.78 s,
+675 passed, at 1-minute loads of 6.9, 6.9 and 6.5 before each run; 14.2 s on the first reading at
+load 2.0 to 2.9 (673 passed, before the two bench pins). The slice was 11.3 s warm when L36 set
+the budget; the sweep is the slowest test but runs beside the rest: the same target with
+the test deselected read 14.35 and 14.63 s and with it 14.52 and 14.17 s (alternating runs at
+1-minute loads of 7.6 to 9.7), so its wall cost is inside the run-to-run noise. `make verify`: 996 passed in 78.25 s, coverage 97.48 percent (calc.py 99.20).
