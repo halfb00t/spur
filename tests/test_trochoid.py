@@ -913,8 +913,10 @@ def test_every_structural_failure_is_refused_as_curve_invalid(
     2026-10-08 it reaches the tip-circle arm: its radius rises and its half-angle stays
     inside the tooth space, but its last radius is 1.128 * ra, the 1.13 * ra 18-RESEARCH
     saw on the x = -1 rows. (2) A tangent gear whose point function is patched to a
-    falling radius, the arm no gear reaches. The sentence was captured from
-    root_warnings on 2026-10-08, never typed (L33)."""
+    falling radius, the arm no gear reaches. That is two of the guard's four arms; the
+    centreline arm is reached in `test_a_curve_that_cannot_be_trusted_is_refused_...` and
+    the fourth, a point that is not inside the involute, in the next test. The sentence
+    was captured from root_warnings on 2026-10-08, never typed (L33)."""
     sentence = ("The trochoid root for this gear loops, leaves the tooth space or runs past "
                 "its junction with the involute: the analytic root is used.")
     outside = GearParams.model_construct(teeth=6, module=1.0, pressure_angle=14.5,
@@ -933,6 +935,68 @@ def test_every_structural_failure_is_refused_as_curve_invalid(
     falling = cutter(tangent, 0.38)
     assert _root_curve(falling) == "curve invalid"
     rm = root_mode(tangent, profile(tangent), requested="trochoid", rho=0.38)
+    assert (rm.mode, rm.reason) == ("radial", "curve invalid")
+    assert root_warnings(rm) == (sentence,)
+
+
+def test_a_crossing_curve_with_an_early_point_outside_the_involute_is_refused(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """L08, 18-REVIEW WR-01: the fourth arm of the `curve invalid` guard is what stops a
+    bisection that landed on a later root from shipping as a healed curve, and it is the
+    one arm no gear reaches. On the tracer gear (10 teeth, crossing join, tip radius 0.38
+    mm) every sample before the junction is under the base circle (the last one reads
+    4.640 mm against rb 4.698 mm, measured 2026-10-08), so the arm cannot be reached by
+    bending a half-angle alone. The last sample before the junction is moved to rb + 0.01
+    mm, between its neighbours' radii so the radius still rises, with a half-angle 1e-3
+    rad above the involute's at that radius: past the base circle and not inside the
+    involute, a curve that has already crossed it and runs on.
+
+    The patch must leave the junction solve alone, because `_junction` calls the same
+    point function. So the real `_junction` is read first, and wrapped rather than
+    replaced: it runs against the real point function and only then arms the bend, and
+    the wrapper asserts it found the junction read beforehand. Exactly one sample is bent
+    (the fifteenth call after arming, `_root_curve` samples in order), so an `all(...)` in
+    place of the guard's `any(...)` is seen too. The other three arms stay quiet: the
+    radius still rises and stays under the tip circle, and the half-angle (0.17 rad) is
+    far inside the tooth space (pi/z = 0.31 rad). The sentence is the one captured above
+    from root_warnings (L33). Seen red with the arm replaced by `False`: 18-06-SUMMARY."""
+    sentence = ("The trochoid root for this gear loops, leaves the tooth space or runs past "
+                "its junction with the involute: the analytic root is used.")
+    p = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=0, backlash=0)
+    c = cutter(p, 0.38)
+    found = _junction(c, TROCHOID_JOIN_EPS)
+    assert found is not None
+    assert found[1] == "crossing"
+    honest = trochoid_root(c)
+    assert honest is not None
+    assert honest.points[-2][0] < c.pr.rb  # the premise: no early sample is past rb
+
+    state = {"calls": -1, "bent": False}  # -1: not armed, the junction solve is running
+
+    def junction_then_arm(cc: Cutter, eps: float) -> tuple[float, str] | None:
+        state["calls"] = -1
+        assert _junction(cc, eps) == found
+        state["calls"], state["bent"] = 0, False
+        return found
+
+    def bent_last_early_sample(cc: Cutter, beta: float) -> tuple[float, float]:
+        point = _trochoid_point(cc, beta)
+        if state["calls"] < 0:
+            return point
+        state["calls"] += 1
+        if state["calls"] != ROOT_CURVE_POINTS - 1:
+            return point
+        state["bent"] = True
+        radius = cc.pr.rb + 0.01
+        assert honest.points[-2][0] < radius < honest.points[-1][0]  # still rising
+        return radius, cc.pr.half_angle(radius) + 1e-3
+
+    monkeypatch.setattr("spur.calc._junction", junction_then_arm)
+    monkeypatch.setattr("spur.calc._trochoid_point", bent_last_early_sample)
+    assert _root_curve(c) == "curve invalid"
+    assert state["bent"]  # the sample the arm refuses was reached, not skipped
+    assert trochoid_root(c) is None
+    rm = root_mode(p, profile(p), requested="trochoid", rho=0.38)
     assert (rm.mode, rm.reason) == ("radial", "curve invalid")
     assert root_warnings(rm) == (sentence,)
 
