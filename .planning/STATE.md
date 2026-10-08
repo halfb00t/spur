@@ -22,13 +22,13 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-06)
+See: .planning/PROJECT.md (updated 2026-10-08)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 18 — Trochoid Maths, Proved
-2026-10-06 on `gsd/phase-17-debt-first-commit-gate-and-pool-race`, 20 commits from `c06749d`
-to the transition; ships through a PR like #15 — A1/A3 are read from its first CI run)
+**Current focus:** Phase 19 — The Trochoid in the Part — ready to discuss (Phase 18 landed
+2026-10-08 on `gsd/phase-18-trochoid-maths-proved`, 46 commits from `15174f9` to the
+transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like #27)
 
 ## Current Position
 
@@ -37,7 +37,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-08 — Phase 18 complete, transitioned to Phase 19
 
-Progress: [███████░░░] 71%
+Progress: [████████████████████] 11/11 plans (100%)
 
 ## Performance Metrics
 
@@ -362,11 +362,32 @@ None yet.
 
 ### Blockers/Concerns
 
+- ℹ️ [Phase 18] Code review (`18-REVIEW-DISPOSITION.md`): WR-01/WR-02 `fixed` by gap plan 18-06
+  (`8e96c2d`, `085aee7`); IN-01…IN-08 open — the cap sentence's "the largest" vs a 3-dp floored
+  value (`0.000 mm` under 1 µm), `trochoid_root` skipping the `rb <= rf` test `root_mode` applies,
+  the epsilon bench never comparing to the shipped `TROCHOID_JOIN_EPS`, bench hygiene,
+  `ROOT_CURVE_POINTS`'s unrepeatable kernel figure, the flake re-deferral's weak evidence, `root_mode`'s
+  docstring not naming the new `ValueError` (and `+inf` now refused where it was capped), `-0.0`
+  surviving into `Cutter.rho`.
+- ⚠️ [Phase 18] Phase 19 must validate the tip radius once at its `GearParams` field (finite, ≥ 0);
+  `cutter()`'s `ValueError` (`calc.py:1291`) is the interim guard, not the boundary.
+- ℹ️ [Phase 18] One figure unreconciled, recorded as `ASSUMPTION:` in `bench/RESULTS.md` and
+  18-05-SUMMARY: 18-RESEARCH's prototype quoted "rho 0 → −0.1885" at the `rb = rf` crossover; this
+  phase reads +0.1403 mm at 41 teeth. The D-05 verdict does not depend on it.
+- ℹ️ [Phase 18] 18-02's oracle finding ("neighbours make no difference") was the oracle's ±1-span
+  roll window; 18-04 widened it to ±3 spans (contact roll reaches 2.13 spans). The committed figures
+  are the widened oracle's.
+- ℹ️ [Phase 18] Not filed as debt (18-04 carried it): `_flank_samples` (`tests/test_trochoid.py`) and
+  `_flank_points` (`bench/trochoid.py`) are the same sampling written twice.
+- ℹ️ [Phase 18] Commit trailers on the branch are mixed: executors signed `Claude Sonnet 5.5`,
+  18-05's Task 3 commits `Claude Fable 5.1`, gsd-tools state commits none. Cosmetic; not rewritten.
 - ⚠️ [Phase 17] The resource-tracker flake (`docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`)
   is now `must`: three occurrences — 17-04's proof run 2 (`b8ef84a`), then CI run 37460451701 on
   PR #27's head `7af318d` (`test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced`, a
   pre-Phase-17 test; the re-run and the identical-code run 37460192883 were green). Escalated by the
-  human at ship; trigger: the next `make verify` failure or Phase 18 planning, whichever first.
+  human at ship; trigger re-deferred 2026-10-08 (18-05, `debt-redefer`): the next `make verify`
+  failure or Phase 19 planning, whichever first — Phase 18 ran the full gate green on every wave
+  and added no process-spawning test.
 - ✓ [Phase 17] The earlier review's 12 findings (WR-01…WR-05, IN-01…IN-07;
   `17-REVIEW-DISPOSITION.md`) are fixed: `17-REVIEW-FIX.md`, commits `9927f3c`…`366d6d4`.
   WR-01's backwards "bigger host" clause (`README.md:97`, L37's decision paragraph and the
@@ -377,7 +398,8 @@ None yet.
 - ✓ [Phase 17] L36 assumptions A1/A3 read at ship: CI run 37460451701 (PR #27) printed the three
   `pre-commit installed at .git/hooks/…` lines and no hook fired in CI (17-05-SUMMARY "For ship").
 - ℹ️ [Phase 17] `.planning/codebase/*.md` is stale against 13 top-level paths (the
-  `verify.codebase-drift` advisory fired on every wave, non-blocking); `/gsd-map-codebase` is owed.
+  `verify.codebase-drift` advisory fired on every wave of Phases 17 and 18, non-blocking);
+  `/gsd-map-codebase` is owed.
 - ℹ️ [Phase 16] `_cell_cutters` (`src/spur/model.py:355-357`) raises a bare `TypeError` on a
   non-`Solid` prototype, which `_build_checked` would relabel with the catch-all "try smaller
   fillets" remedy. Pre-existing, untouched by Phase 16 (the function is AST-identical to
@@ -528,19 +550,18 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-08T05:16:18.057Z
+Last session: 2026-10-08T05:30:07Z
 Stopped at: Phase 18 complete, ready to plan Phase 19
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-discuss-phase 18` — Phase 18 (Trochoid Maths, Proved) takes the root-mode
-  decision at its discuss-phase and needs `/gsd-plan-phase --research-phase`; Phase 19 needs a
-  spike first; Phase 20 runs only if the root-mode `Lxx` makes the hob root a default
-  (otherwise recorded as skipped). Before ship: the earlier 12 review findings are fixed
-  (`17-REVIEW-FIX.md`, `9927f3c`…`366d6d4`, WR-01's "bigger host" clause corrected in
-  `9927f3c`) and the incremental re-review's four further items are being fixed now; read
-  A1/A3 from the first CI run.
+- Next: `/gsd-discuss-phase 19` — Phase 19 (The Trochoid in the Part) has no CONTEXT.md yet;
+  the roadmap says it needs a spike first and takes the root-mode `Lxx` (REQ-root-mode-decided);
+  Phase 20 runs only if that `Lxx` makes the hob root a default (otherwise recorded as skipped).
+  Phase 19 planning is also the resource-tracker debt's trigger (re-deferred at 18-05). Before
+  ship of Phase 18: open a PR from `gsd/phase-18-trochoid-maths-proved` like #27; triage
+  IN-01…IN-08 in `18-REVIEW-DISPOSITION.md`.
 - Carried from v0.3 (phase artefacts now under `milestones/v0.3-phases/`): triage
   `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4` baseline,
   WR-02 a false statement and two dangling links left by the two retirements, WR-03 the
