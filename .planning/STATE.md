@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 18
 current_phase_name: Trochoid Maths, Proved
 status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-10-08T01:34:04.086Z"
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-10-08T01:49:57.407Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 18 execution started
-state_head: 7c350ad98378488eeb27d90f5eae0d09ef40476c
+state_head: 1902d5214630c6429a8f3bff7edf9e74a8533653
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 10
-  completed_plans: 6
-  percent: 60
+  completed_plans: 7
+  percent: 70
 ---
 
 # Project State
@@ -33,11 +33,11 @@ to the transition; ships through a PR like #15 — A1/A3 are read from its first
 ## Current Position
 
 Phase: 18 (Trochoid Maths, Proved) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 18 execution started
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -200,6 +200,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 17 P04 | 31 min | 3 tasks | 5 files |
 | Phase 17 P05 | 7 min | 3 tasks | 9 files |
 | Phase 18 P01 | 19 min | 2 tasks | 4 files |
+| Phase 18 P02 | 11 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -336,6 +337,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 18]: Cutter tip radius cap floored to 3 dp, not rounded: the used and printed radius are one float and the tip land stays >= 0 (18-01, F3)
 - [Phase 18]: Tip-land refusal decided on the sharp-corner land a0 < 0, never a pressure-angle constant: 32.14 deg at backlash 0, 33.07 at the default gear (18-01, F2)
 - [Phase 18]: Junction bars JUNCTION_BAR_RAD/MM 1e-12 (headroom 2.4e4/562) and DIRECTION_BAR_RAD 1e-5 (headroom 72), re-measured 2026-10-08; none under 10x (18-01)
+- [Phase 18]: 18-02: rb <= rf is decided in root_mode before the generator runs (undercut implies rb > rf, F9)
+- [Phase 18]: 18-02: a thin positive waist survives as a curve; no waist floor is chosen in Phase 18 (D-17, Phase 19's call)
+- [Phase 18]: 18-02: the oracle's neighbouring teeth do not separate a severed tooth on the committed oracle; the severed rows are pinned as a gouge on the mirror flank (measured), not as neighbours on versus off
 
 ### Pending Todos
 
@@ -509,8 +513,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-08T01:34:04.045Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-10-08T01:49:57.367Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
