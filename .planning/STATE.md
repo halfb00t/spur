@@ -4,12 +4,11 @@ milestone: v0.4
 milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
-status: planning
+status: "Phase 18 shipped — PR #28"
 stopped_at: Phase 18 complete, ready to plan Phase 19
-last_updated: "2026-10-08T05:28:18.869Z"
+last_updated: "2026-10-08T09:02:26.495Z"
 last_activity: 2026-10-08
-last_activity_desc: Phase 18 complete, transitioned to Phase 19
-state_head: 165954e13493e2c8366ff5cff93cbf6edb71d637
+state_head: 35ee75e26fbd03fd3706d3006d9a5a08f7db0b6d
 progress:
   total_phases: 4
   completed_phases: 5
@@ -34,10 +33,10 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 
 Phase: 19 — The Trochoid in the Part
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-08 — Phase 18 complete, transitioned to Phase 19
+Status: Phase 18 shipped — PR #28
+Last activity: 2026-10-08
 
-Progress: [████████████████████] 11/11 plans (100%)
+Progress: [████████████████████] 11/11 plans ([███████░░░] 71%)
 
 ## Performance Metrics
 
