@@ -3600,6 +3600,23 @@ the 41-tooth gap, **0.1403 mm at a sharp cutter and no fillet, 0.0800 mm at 0.38
 curve anyway (`trochoid_root` has no `rb` test of its own) to show that the gap does not vanish at
 the edge; no user sees those curves.
 
+Human's reading (2026-10-08): **d05-hold**. The human was shown both tables and the verdict and
+answered "d05-hold": the premises hold, and Phase 19 is planned on D-01 (the root-mode option,
+default off) and D-02 (the trochoid only where `rb > rf`) as decided. The crossover step stays a
+visible discontinuity in the opt-in mode, on record above for Phase 19's Lxx: 0.1403 mm at a sharp
+cutter and no fillet, 0.0800 mm at 0.38, 0.1213 mm at 0.471, all at 41 teeth.
+
+Open note, not resolved here: one figure does not reconcile with 18-RESEARCH. Pattern 8's prototype
+quoted the sharp-cutter crossover as "rho 0 -> -0.1885"; this run reads **+0.1403 mm** at rho 0, 41
+teeth (and +0.1471 mm at 40 teeth), with the opposite sign. Its other crossover figures match to
+four decimals (0.0800 and 0.1213 at 41 teeth), so the difference is confined to the rho 0 row.
+ASSUMPTION: the prototype paired rho 0 with a non-zero shipped fillet (the trochoid of a sharp
+cutter against a filleted shipped root), where this table's rho 0 row sets the shipped fillet to 0
+too. Not checked, because the prototype's script is not in the repository and the verdict does not
+turn on it: the premise rule reads only the 17- and 18-tooth rows of the threshold table, and none
+of them uses rho 0. If Phase 19 prices the sharp-cutter crossover, it should re-derive this row
+rather than quote either figure.
+
 ### Per-call cost (18-05, D-14)
 
 How long the maths takes per call, read the way `derive()`'s docstring reads it, so Phase 19 can
