@@ -261,7 +261,7 @@ maths is derived and cross-checked three ways, SUMMARY). Open items: ISO 21771 f
 parity (clause unread — STACK, PITFALLS), the oracle's external anchor (no published table
 found — STACK, LOW for the absence), the two-flank interaction at very low tooth counts or
 large ρ (STACK's 7,296 cases solved one flank only), and the `z_min` double root.
-**Plans**: 5/5 plans executed
+**Plans**: 6/6 plans executed
 
 Plans:
 **Wave 1**
@@ -278,7 +278,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [x] 18-05-PLAN.md — The records: the root-shape step at the threshold and the `rb = rf` crossover against a line written first, the per-call costs and `derive()`'s docstring, the human's two decisions (D-05, the resource-tracker debt), the layout rows, the final gate
-- [ ] 18-06-PLAN.md — Gap closure: the fourth `curve invalid` guard arm tested and seen red under mutation; `cutter()` refuses a non-finite or negative tip radius (18-VERIFICATION item 1, 18-REVIEW WR-01/WR-02; human decision 2026-10-08)
+- [x] 18-06-PLAN.md — Gap closure: the fourth `curve invalid` guard arm tested and seen red under mutation; `cutter()` refuses a non-finite or negative tip radius (18-VERIFICATION item 1, 18-REVIEW WR-01/WR-02; human decision 2026-10-08)
 
 ### Phase 19: The Trochoid in the Part
 
@@ -423,6 +423,6 @@ before the human at Phase 18's discuss-phase.
 | 7–12 | v0.2 | 34/34 | Complete | 2026-10-01 |
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
-| 18. Trochoid Maths, Proved | v0.4 | 5/5 | In Progress | - |
+| 18. Trochoid Maths, Proved | v0.4 | 6/6 | In Progress | - |
 | 19. The Trochoid in the Part | v0.4 | 0/TBD | Not started | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |

@@ -5,16 +5,16 @@ milestone_name: True Root
 current_phase: 18
 current_phase_name: Trochoid Maths, Proved
 status: verifying
-stopped_at: Completed 18-05-PLAN.md
-last_updated: "2026-10-08T03:07:17.635Z"
+stopped_at: Completed 18-06-PLAN.md
+last_updated: "2026-10-08T05:16:18.106Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 18 execution started
-state_head: 695df3365cf9a9da27688dae7ac2ce8d155247ba
+state_head: a417422a933b570386d278c3f577173683dfc74d
 progress:
   total_phases: 4
   completed_phases: 4
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 11
+  completed_plans: 11
   percent: 100
 ---
 
@@ -204,6 +204,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 18 P03 | 20 min | 2 tasks | 7 files |
 | Phase 18 P04 | 28 min | 3 tasks | 5 files |
 | Phase 18 P05 | 19 min | 3 tasks | 7 files |
+| Phase 18 P06 | 9 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -352,6 +353,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 18]: 18-05 D-05 (human, 2026-10-08): d05-hold -- the measured root-shape step (0.1449-0.1463 mm at 17/18 teeth, premise holds) leaves D-01 and D-02 standing; Phase 19 is planned on them as decided
 - [Phase 18]: 18-05 debt (human, 2026-10-08): debt-redefer -- resource-tracker flake stays must/active, trigger is the next make verify failure or Phase 19 planning
 - [Phase 18]: 18-05 D-14: no derive() budget set; five per-call costs recorded with load and date (derive 14.7 usec at load 14.4)
+- [Phase 18]: 18-06: the fourth curve-invalid arm test moves the last pre-junction sample to rb + 0.01 mm (no early sample of the tracer gear is past rb); cutter() raises ValueError, not a RootReason, for a non-finite or negative tip radius until Phase 19's field validates it
 
 ### Pending Todos
 
@@ -525,8 +527,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-08T03:07:17.590Z
-Stopped at: Completed 18-05-PLAN.md
+Last session: 2026-10-08T05:16:18.057Z
+Stopped at: Completed 18-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
