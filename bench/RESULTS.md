@@ -3138,3 +3138,75 @@ Tripwires (both seen red):
 
 No headroom here is under 10x. 18-04 Task 3 (the phase's L33 D-06 checkpoint) collects every
 18-01 bar again.
+
+### Join epsilon (18-03)
+
+The question (D-09): how close to the z_min double root may `xi` (the roll of the cutter's flank
+foot, mm) get before the closed-form bracket for the junction with the involute is lost, so that
+inside that band the flank join is taken as the form point without a bracket? The band has to be
+relative to `rb`: STACK and 18-RESEARCH saw it scale with the base radius (1e-5 mm at module 0.2,
+1e-4 at module 1, 1e-3 at module 10). `calc.TROCHOID_JOIN_EPS` was the research value, 1e-4, from a
+prototype; this is the measurement made in the repo, with the repo's `_junction`.
+
+Command, from the repo root: `.venv/bin/python -m bench.trochoid epsilon` (about 0.7 s).
+
+#### Host state
+
+- Machine: Apple M2 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  12 CPUs, arm64, 32.0 GiB RAM
+- Python 3.12.13 (`.venv`); stdlib maths only, no kernel in this measurement
+- HEAD: `39c00dd` (the commit that carries `bench/trochoid.py` and the constant's comment)
+- Read 2026-10-08T01:59:30Z (the table below); the run that wrote the constant's comment, a minute
+  earlier, printed the same figures
+- Load (1-minute, `os.getloadavg()`): 2.21 before, 2.21 after. These are float residues, not
+  timings, so load does not move them; it is recorded because every section records it.
+
+#### The scan
+
+`random.Random(18)`, 400 usable draws (1,163 attempts, 763 skipped): teeth 6 to 40, module from
+{0.2, 0.5, 1, 1.75, 4, 10}, pressure angle on the 0.5 degree grid 14.5 to 30, backlash from
+{0, 0.1, 0.25, 0.5}, tip radius a uniform fraction 0 to 0.5 of the module. For each draw the
+profile shift is tuned (xi is linear in it: `xi(x) = xi(x0) + (x - x0) * m / sin(alpha)`, and `rb`
+does not depend on it) so that `xi = -t * rb` for t from 1e-2 down to 1e-12 at 4 steps per decade
+(41 values), and `_junction(c, 0.0)` is called at each. A draw is skipped when its cutter has no tip
+land, its own z_min double root is outside the field's shift range -0.6 to 1.0, or the gear does not
+validate (763 of 1,163 attempts).
+
+| | value |
+|---|---|
+| draws used | 400 |
+| draws that lost the bracket at some t | 400 (never lost: 0) |
+| largest lost t | 5.62e-6 |
+| median of the draws' largest lost t | 3.16e-6 |
+| 18-RESEARCH F6 (361 prototype draws) | largest 1.0e-5, median 3.2e-6 |
+
+| decade of the largest lost t | draws |
+|---|---|
+| 1e-6 to 1e-5 | 399 |
+| 1e-7 to 1e-6 | 1 |
+
+STACK's two points, re-created on the 10-tooth, 20 degree, module 1, backlash 0, tip radius 0.38 mm
+gear (rb 4.6985 mm) with the epsilon at 0: the bracket is found at xi -2.9e-3 mm, as STACK
+measured, and also at -2.9e-5 mm, where the prototype lost it. That gear's own edge in this scan is
+t = 5.62e-6, xi = -2.64e-5 mm: the same place as STACK's loss point to within one scan step (a
+quarter decade is a factor 1.8, and 2.9e-5 / 2.64e-5 is 1.1). So the two points bracket the edge
+and the repo's solver does not move it.
+
+#### Decision
+
+Recommended constant: the smallest power of ten at least 10x the largest loss: 10 * 5.62e-6 =
+5.62e-5, so 1e-4. `TROCHOID_JOIN_EPS` stays 1e-4; its comment now quotes this run (date, load,
+draws, largest and median loss, STACK's two points as the bracket, the error bound). The scan's
+ceiling for a constant worth writing is 1e-3; 1e-4 is a decade under it.
+
+The flank-join error where the bracket would have worked is bounded by `(eps*rb)^2 / (2*rb)` =
+`eps^2/2 * rb` = 5e-9 * rb: 2.4e-8 mm at the 10-tooth gear's rb, and 4.8e-6 mm at the largest base
+radius the box allows (200 teeth, module 10, 14.5 degrees, rb 968 mm). That is the maths bound, not
+a kernel measurement; no kernel was run here.
+
+Pinned in `tests/test_trochoid.py`: 9 / 10 / 11 teeth (30 degrees, module 1, no shift) read crossing
+/ tangent / tangent, the 10-tooth `xi` is -8.9e-16; x -0.05 / 0.05 at the same gear read crossing /
+tangent; at xi = -10 * eps * rb the bracket is found and the last point is on `Profile.half_angle`
+to 1e-12 rad, at -eps * rb / 10 it is the flank join; STACK's -2.9e-3 mm is a crossing and -2.9e-5
+mm is a tangent join; with the constant patched to 0 at xi = -1e-9 * rb the bracket is lost and
+`root_mode` names `bracket degenerate`.
