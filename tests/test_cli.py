@@ -532,7 +532,7 @@ _TROCHOID_ROWS: dict[str, tuple[dict[str, object], dict[str, object], list[str]]
         {"root_shape": "trochoid", "teeth": 17, "module": 1, "pressure_angle": 20,
          "root_fillet": 0.38, **_BORE_OFF},
         {"root_thickness": None, "root_gap": None, "root_form_d": 15.975,
-         "root_waist": 1.62, "root_fillet": 0.38},
+         "root_waist": 1.605, "root_fillet": 0.38},
         [TROCHOID_THICKNESS, _UNDERCUT_17]),
     "nothing-radial-42": (
         {"root_shape": "trochoid", "teeth": 42, "module": 1, "pressure_angle": 20,
@@ -544,7 +544,7 @@ _TROCHOID_ROWS: dict[str, tuple[dict[str, object], dict[str, object], list[str]]
         {"root_shape": "trochoid", "teeth": 12, "module": 1, "pressure_angle": 20,
          "backlash": 0, "root_fillet": 3.0, **_BORE_OFF},
         {"root_thickness": None, "root_gap": None, "root_form_d": 11.294,
-         "root_waist": 1.586, "root_fillet": 0.471},
+         "root_waist": 1.56, "root_fillet": 0.471},
         [_CAP_12, TROCHOID_THICKNESS, _UNDERCUT_12]),
 }
 

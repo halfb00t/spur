@@ -49,8 +49,14 @@ From 19-06 (the numbers and sentences beside it):
   10-tooth crossing; null in radial mode, on a refused request and on all 44 records.
 - `test_the_root_waist_is_printed_where_the_trochoid_applies_and_null_elsewhere` — 3.303
   on the default gear, equal to the involute's own thickness at the junction through
-  `Profile.half_angle` (an independent check, not the curve); 1.473 on the crossing,
+  `Profile.half_angle` (an independent check, not the curve); 1.442 on the crossing,
   below the involute's 1.622 there.
+- `test_the_printed_waist_is_the_narrowest_arc_of_the_root_on_a_crossing_join` — three
+  crossing gears, the printed waist within one print step of the smallest of 20,001
+  samples of `2 R h`, and the smallest-half-angle reading at least 0.03 mm over it.
+- `test_the_thin_waist_warning_fires_where_the_smallest_half_angle_read_over_the_floor` —
+  8 teeth at shift -0.5132 and 6 teeth at -0.3103 (module 1, 14.5 degrees): 0.395 and
+  0.391 mm warn where the smallest-half-angle reading, 0.401, was silent.
 - `test_the_waist_warning_fires_one_print_step_below_the_floor_and_not_at_it` — two
   series of the 19-02 walk, the profile shift bisected until the printed waist is 0.4 and
   then 0.399: silent at the floor, one sentence one step under, the gear valid either way.

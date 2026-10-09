@@ -966,8 +966,9 @@ class DerivedDimensions(BaseModel):
                     "unless the trochoid root applies.",
         json_schema_extra={"unit": "mm"})
     root_waist: float | None = Field(
-        description="Narrowest tooth thickness in the hob-cut root, an arc on its "
-                    "radius; null unless the trochoid root applies.",
+        description="Narrowest tooth thickness anywhere in the hob-cut root, the "
+                    "smallest arc on its own radius; null unless the trochoid root "
+                    "applies.",
         json_schema_extra={"unit": "mm"})
     tip_chamfer_effective: float | None = Field(
         description="Tip chamfer actually cut on the tooth-tip edges at both faces, "
@@ -1477,9 +1478,11 @@ class RootCurve:
     # centre rad), strictly increasing radius, ROOT_CURVE_POINTS long
     join: _Join  # "tangent": it meets the involute with its direction; "crossing":
     # the gear is undercut and the curve is cut off where it meets the involute
-    waist: tuple[float, float]  # (radius mm, half-angle rad) where the half-angle is
-    # smallest, refined between the samples: the root's narrowest point, which is half
-    # the tooth thickness there, so it is always above zero on a curve that survives
+    waist: tuple[float, float]  # (radius mm, half-angle rad) where the arc thickness
+    # 2 R h is smallest, refined between the samples: the root's narrowest point, 2 R h
+    # being the tooth's thickness on that radius, so it is always above zero on a curve
+    # that survives. Not where h is smallest: on a crossing join R h is still falling
+    # below that radius (19-REVIEW CR-01)
 
 
 def _trochoid_point(c: Cutter, beta: float) -> tuple[float, float]:
@@ -1503,37 +1506,49 @@ def _trochoid_point(c: Cutter, beta: float) -> tuple[float, float]:
 
 def _waist(c: Cutter, betas: list[float],
            points: tuple[tuple[float, float], ...]) -> tuple[float, float]:
-    """The point of the curve where the half-angle from the tooth centre is smallest:
-    where the two neighbouring spaces' roots come closest to cutting the tooth through
-    (D-17), as (radius mm, half-angle rad).
+    """The point of the curve where the tooth's arc thickness 2 R h is smallest, for h
+    the half-angle from the tooth centre: where the two neighbouring spaces' roots come
+    closest to cutting the tooth through (D-17), as (radius mm, half-angle rad).
 
-    The smallest sample is refined by 60 golden-section steps of the half-angle between
-    that sample's neighbours (clamped to the curve's ends), because 16 samples can miss
-    the dip: at 6 teeth, 14.5 degrees, shift -0.5, tip radius 0 the smallest sample reads
+    It minimises R h, not h. On a crossing join d(R h)/dR = R' h is positive where h is
+    smallest, so the thickness is still falling below that radius: minimising h printed
+    1.473 mm for the 10-tooth tracer gear whose narrowest arc is 1.442 mm, and 3.269 for
+    7 teeth, module 2, 25 degrees, shift 0.27 against 3.149 (40,001 samples to the
+    junction, 19-REVIEW CR-01). The arc, not the chord 2 R sin(h), because every thickness
+    this tool prints is an arc on its radius (tip_thickness, root_thickness). R > 0 makes
+    R h <= 0 exactly when h <= 0, so the severed-tooth test on the half-angle is unchanged.
+
+    The smallest sample is refined by 60 golden-section steps of R h between that
+    sample's neighbours (clamped to the curve's ends), because 16 samples can miss the
+    dip: at 6 teeth, 14.5 degrees, shift -0.5, tip radius 0 the smallest sample reads
     -0.0055 rad and the refined waist -0.0066 (18-RESEARCH). A fixed step count, no
     data-dependent loop (T-18-02); whichever of the sample and the refined point is
     smaller is returned, so refining can only lower the answer.
     """
-    i = min(range(len(points)), key=lambda k: points[k][1])
+
+    def thickness(point: tuple[float, float]) -> float:
+        return point[0] * point[1]
+
+    i = min(range(len(points)), key=lambda k: thickness(points[k]))
     lo, hi = betas[max(i - 1, 0)], betas[min(i + 1, len(betas) - 1)]
     golden = (math.sqrt(5) - 1) / 2
 
-    def half(beta: float) -> float:
-        return _trochoid_point(c, beta)[1]
+    def arc(beta: float) -> float:
+        return thickness(_trochoid_point(c, beta))
 
     c1, c2 = hi - golden * (hi - lo), lo + golden * (hi - lo)
-    f1, f2 = half(c1), half(c2)
+    f1, f2 = arc(c1), arc(c2)
     for _ in range(60):
         if f1 < f2:
             hi, c2, f2 = c2, c1, f1
             c1 = hi - golden * (hi - lo)
-            f1 = half(c1)
+            f1 = arc(c1)
         else:
             lo, c1, f1 = c1, c2, f2
             c2 = lo + golden * (hi - lo)
-            f2 = half(c2)
+            f2 = arc(c2)
     refined = _trochoid_point(c, 0.5 * (lo + hi))
-    return min(points[i], refined, key=lambda point: point[1])
+    return min(points[i], refined, key=thickness)
 
 
 def _bisect(f: Callable[[float], float], lo: float, hi: float) -> float:

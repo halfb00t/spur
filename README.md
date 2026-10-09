@@ -233,7 +233,9 @@ while a bore too wide for the root is still refused.
   root is built. Under it `/api/info` prints `root_form_d`, the diameter of the
   cutter-envelope junction where the hob's root curve meets the involute (a different
   quantity from the ISO 21771 one, and not to be read as it), and `root_waist`, the
-  narrowest the tooth gets in the root, warned below 0.4 mm (bench/RESULTS.md, "Waist
+  narrowest the tooth gets in the root (the smallest arc thickness along the hob's
+  curve, which on an undercut gear lies below the point where the half-angle is
+  smallest), warned below 0.4 mm (bench/RESULTS.md, "Waist
   floor"). It prints no root-circle thickness or gap, because under a hob root that
   thickness is ill-conditioned at the root circle and no honest number exists there;
   `warnings` says so. When the gear is undercut, the warning states the tooth count the

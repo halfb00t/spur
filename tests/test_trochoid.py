@@ -575,14 +575,16 @@ def test_root_form_d_is_twice_the_junction_radius_and_null_when_radial() -> None
 
 def test_the_root_waist_is_printed_where_the_trochoid_applies_and_null_elsewhere() -> None:
     """REQ-derived-numbers-honest-under-trochoid (D-06): root_waist is the narrowest tooth
-    in the hob-cut root, an arc on its own radius, 2 R h of RootCurve.waist. On a tangent
+    in the hob-cut root, an arc on its own radius, 2 R h of RootCurve.waist (the smallest
+    R h of the curve since 19-REVIEW CR-01, not the smallest h). On a tangent
     join the root leaves the involute with its direction, so the narrowest point is the
     junction and the waist is the involute's own thickness there: 3.303 mm on the default
     gear, checked through Profile.half_angle at sqrt(rb^2 + xi^2) and through this file's
     own involute half-angle, not through the curve. On the 10-tooth tracer gear (a
-    crossing) the curve dips below the involute's thickness at its junction: 1.473 against
-    1.622 (R = 4.7256 mm). Null in radial mode, on a refused request and on all 44
-    fixture records. Captured from derive() on 2026-10-09 (L33)."""
+    crossing) the curve dips below the involute's thickness at its junction: 1.442 against
+    1.622 (R = 4.7256 mm); it read 1.473 at the smallest half-angle, 0.031 too thick.
+    Null in radial mode, on a refused request and on all 44 fixture records. Captured
+    from derive() on 2026-10-09 (L33)."""
     default = GearParams(root_shape="trochoid")
     c = cutter(default, default.root_fillet)
     rb = profile(default).rb
@@ -599,11 +601,77 @@ def test_the_root_waist_is_printed_where_the_trochoid_applies_and_null_elsewhere
     assert rm.curve.join == "crossing"
     junction = rm.curve.points[-1][0]
     involute = 2 * junction * profile(tracer).half_angle(junction)
-    assert derive(tracer).root_waist == 1.473
-    assert 1.473 < round(involute, 3) == 1.622
+    assert derive(tracer).root_waist == 1.442
+    assert 1.442 < round(involute, 3) == 1.622
 
     assert derive(GearParams()).root_waist is None
     assert all(derive(p).root_waist is None for _, p in _fixture_gears())
+
+
+def _dense_waists(p: GearParams) -> tuple[float, float]:
+    """(the smallest arc thickness 2 R h, 2 R h at the smallest half-angle), mm, of the
+    hob-cut root of `p`, each the smallest of 20,001 samples from the root circle to the
+    junction. The curve's own waist is not read: this is the independent check."""
+    c = cutter(p, p.root_fillet)
+    junction = _junction(c, TROCHOID_JOIN_EPS)
+    assert junction is not None
+    points = [_trochoid_point(c, junction[0] * i / 20000) for i in range(20001)]
+    radius, half = min(points, key=lambda point: point[1])
+    return min(2 * r * h for r, h in points), 2 * radius * half
+
+
+@pytest.mark.parametrize("fields", [
+    pytest.param({"teeth": 10, "module": 1, "pressure_angle": 20, "profile_shift": 0,
+                  "backlash": 0, "root_fillet": 0.38}, id="10T-m1-20deg"),
+    pytest.param({"teeth": 7, "module": 2, "pressure_angle": 25, "profile_shift": 0.27,
+                  "root_fillet": 0}, id="7T-m2-25deg"),
+    pytest.param({"teeth": 8, "module": 2, "pressure_angle": 25, "profile_shift": 0.24,
+                  "root_fillet": 1}, id="8T-m2-25deg"),
+])
+def test_the_printed_waist_is_the_narrowest_arc_of_the_root_on_a_crossing_join(
+        fields: dict[str, object]) -> None:
+    """REQ-derived-numbers-honest-under-trochoid, precision (L08; 19-REVIEW CR-01): on a
+    crossing join the arc thickness 2 R h is still falling below the radius where the
+    half-angle is smallest, so a waist taken at the smallest half-angle prints too thick.
+    Three crossing gears, the printed root_waist against the smallest of 20,001 samples
+    of 2 R h to the junction. Measured 2026-10-09: printed 1.442 / 3.149 / 3.428 against
+    dense 1.442 / 3.149 / 3.428, and the smallest-half-angle reading 1.473 / 3.269 /
+    3.536 (2.1 %, 3.8 % and 3.1 % over). The bar is one print step, 0.001 mm; the old
+    definition is 0.031 mm or more over on all three."""
+    p = _hob(bore_d=0, **fields)
+    assert derive(p).root_waist is not None
+    rm = root_mode(p, profile(p), requested="trochoid", rho=p.root_fillet)
+    assert rm.curve is not None
+    assert rm.curve.join == "crossing"
+    narrowest, at_smallest_angle = _dense_waists(p)
+    printed = derive(p).root_waist
+    assert printed is not None
+    assert abs(printed - narrowest) <= 0.001
+    assert at_smallest_angle - narrowest > 0.03
+
+
+@pytest.mark.parametrize(("teeth", "shift", "narrowest"), [
+    pytest.param(8, -0.5132, 0.395, id="8T-x-0.5132"),
+    pytest.param(6, -0.3103, 0.391, id="6T-x-0.3103"),
+])
+def test_the_thin_waist_warning_fires_where_the_smallest_half_angle_read_over_the_floor(
+        teeth: int, shift: float, narrowest: float) -> None:
+    """REQ-derived-numbers-honest-under-trochoid, adjacency (D-06; 19-REVIEW CR-01): two
+    crossing gears at module 1, 14.5 degrees, default backlash and tip radius 0.38 mm
+    whose narrowest arc is under the 0.4 mm floor while 2 R h at the smallest half-angle
+    reads 0.401 and stays silent. Measured 2026-10-09 by 20,001 samples: narrowest arc
+    0.395 mm (8 teeth, shift -0.5132) and 0.391 mm (6 teeth, shift -0.3103); at the
+    smallest half-angle 0.401 on both. The warning fires once and names the printed
+    waist."""
+    p = _hob(teeth=teeth, module=1, pressure_angle=14.5, profile_shift=shift, backlash=0.10,
+             root_fillet=0.38, bore_d=0)
+    dense, at_smallest_angle = _dense_waists(p)
+    assert round(at_smallest_angle, 3) >= ROOT_WAIST_FLOOR
+    assert round(dense, 3) == narrowest < ROOT_WAIST_FLOOR
+    d = derive(p)
+    assert d.root_waist == narrowest
+    assert [w for w in d.warnings if "narrowest" in w] == [
+        _ROOT_SENTENCES["waist thin"].format(waist=narrowest, floor=ROOT_WAIST_FLOOR)]
 
 
 def _waist_at(fields: dict[str, object], shift: float) -> float:
@@ -790,30 +858,35 @@ def _flank_samples(c: Cutter) -> tuple[list[float], tuple[tuple[float, float], .
     return betas, tuple(_trochoid_point(c, beta) for beta in betas)
 
 
-@pytest.mark.parametrize(("teeth", "shift", "waist", "sample", "gouge"), [
-    pytest.param(6, -0.6, -0.047395, -0.047235, -0.138979, id="6T-x-0.6-severed"),
-    pytest.param(6, -0.5, -0.006559, -0.005537, -0.020103, id="6T-x-0.5-severed"),
-    pytest.param(7, -0.6, 0.001961, 0.002042, None, id="7T-x-0.6-thin-but-whole"),
+@pytest.mark.parametrize(("teeth", "shift", "half_thickness", "sample", "gouge"), [
+    pytest.param(6, -0.6, -0.089372, -0.086817, -0.141352, id="6T-x-0.6-severed"),
+    pytest.param(6, -0.5, -0.012726, -0.010360, -0.020146, id="6T-x-0.5-severed"),
+    pytest.param(7, -0.6, 0.004709, 0.004952, None, id="7T-x-0.6-thin-but-whole"),
 ])
 def test_a_severed_tooth_is_refused_and_the_oracle_with_neighbours_agrees(
-        teeth: int, shift: float, waist: float, sample: float, gouge: float | None) -> None:
+        teeth: int, shift: float, half_thickness: float, sample: float,
+        gouge: float | None) -> None:
     """REQ-root-mode-single-predicate and REQ-trochoid-proved-independently, adjacency
     (D-17, 18-RESEARCH Pitfall 3): 14.5 degrees, module 1, backlash 0, sharp cutter. A
-    curve whose refined waist (smallest half-angle) is at or below zero is `tooth
-    severed`: trochoid_root is None and root_mode names it; a thin positive waist (7
-    teeth, +0.0020 rad) survives as a curve that carries it. Refinement matters: the
-    smallest of the 16 samples reads -0.005537 rad on the second row, the refined waist
-    -0.006559 (and +0.002042 against +0.001961 on the third). The refined waist is within
-    2.3e-10 rad below a 20,001-point scan (measured 2026-10-08), so the bar is 1e-8 (43x).
+    curve whose refined waist (smallest R h, half the arc thickness) is at or below zero
+    is `tooth severed`: trochoid_root is None and root_mode names it; a thin positive
+    waist (7 teeth, +0.0047 mm of half-thickness) survives as a curve that carries it.
+    Refinement matters: the smallest of the 16 samples reads -0.010360 mm on the second
+    row, the refined waist -0.012726 (and +0.004952 against +0.004709 on the third). The
+    refined waist is within 1.5e-9 mm below a 20,001-point scan (measured 2026-10-09, the
+    worst of the three rows), so the bar is 1e-8 (6.7x). It was the smallest half-angle
+    until 19-REVIEW CR-01; the sign is the same (R > 0), the point is not.
 
     The oracle is the independent check. Fed the one-flank curve with the neighbouring
-    cutter teeth on, it reads the gouge the closed predicate predicts: -0.138979 and
-    -0.020103 mm at the waist on the two severed rows (18-RESEARCH read 0.141 and 0.0201 on
-    its 21-point sets), and nothing below -5e-16 mm on the 7-tooth row; with the neighbours
-    off it reads 2e-15 mm on all three, because one flank is a cut boundary even on a tooth
-    the next space cuts through -- a single-tooth oracle cannot see severance, the tooth
-    k = -1 or +1 does. The tooth's other flank, the mirror (radius, -half-angle), reads the
-    same gouge with the neighbours on or off, being inside the cutter's own sweep.
+    cutter teeth on, it reads the gouge the closed predicate predicts: -0.141352 and
+    -0.020146 mm at the waist on the two severed rows (18-RESEARCH read 0.141 and 0.0201 on
+    its 21-point sets; these were -0.138979 and -0.020103 at the smallest half-angle before
+    19-REVIEW CR-01 moved the waist to the smallest arc thickness), and nothing below
+    -5e-16 mm on the 7-tooth row; with the neighbours off it reads 2e-15 mm on all three,
+    because one flank is a cut boundary even on a tooth the next space cuts through -- a
+    single-tooth oracle cannot see severance, the tooth k = -1 or +1 does. The tooth's
+    other flank, the mirror (radius, -half-angle), reads the same gouge with the
+    neighbours on or off, being inside the cutter's own sweep.
     Measured 2026-10-08. 18-02 recorded the neighbours as making no difference on a
     committed oracle whose roll window was +-1 span; the window was too narrow (a trochoid
     point's contact roll reaches 2.13 spans over the sweep product) and 18-04 widened it
@@ -825,15 +898,17 @@ def test_a_severed_tooth_is_refused_and_the_oracle_with_neighbours_agrees(
     c = cutter(p, 0.0)
     betas, samples = _flank_samples(c)
     refined = _waist(c, betas, samples)
-    smallest = min(half for _, half in samples)
-    dense = min(_trochoid_point(c, betas[-1] * i / 20000)[1] for i in range(20001))
-    print(f"{teeth}T x {shift}: smallest sample {smallest:.6f}, waist {refined[1]:.6f} "
-          f"at R {refined[0]:.4f}, dense scan {dense:.9f} rad")
+    waist = refined[0] * refined[1]
+    smallest = min(radius * half for radius, half in samples)
+    dense = min((lambda q: q[0] * q[1])(_trochoid_point(c, betas[-1] * i / 20000))
+                for i in range(20001))
+    print(f"{teeth}T x {shift}: smallest sample {smallest:.6f}, waist {waist:.6f} "
+          f"at R {refined[0]:.4f}, dense scan {dense:.9f} mm")
     assert smallest == pytest.approx(sample, abs=5e-7)
-    assert refined[1] == pytest.approx(waist, abs=5e-7)
-    assert refined[1] <= smallest
-    assert refined[1] <= dense
-    assert dense - refined[1] < 1e-8
+    assert waist == pytest.approx(half_thickness, abs=5e-7)
+    assert waist <= smallest
+    assert waist <= dense
+    assert dense - waist < 1e-8
 
     rm = root_mode(p, pr, requested="trochoid", rho=0.0)
     curve = trochoid_root(c)
@@ -1383,12 +1458,12 @@ def test_t2_the_oracle_sees_a_gouge_where_one_exists() -> None:
        way to the flank foot: -9.6e-3, -2.2e-2 and -5.19e-2 mm (18-RESEARCH: 5.19e-2 at
        the foot), the penetration a curve left running past the form point would have.
     3. A severed tooth (6 teeth, 14.5 degrees, x -0.6, sharp cutter): trochoid_root is
-       None, and its one-flank points read -0.138979 mm at the waist with the neighbouring
+       None, and its one-flank points read -0.141352 mm at the waist with the neighbouring
        cutter teeth on and 2e-15 mm with them off -- the next space's cutter is what cuts
        this tooth through, so a single-tooth oracle cannot see it. This is the separation
        18-RESEARCH described (0.141 mm on its 21-point set); 18-02 could not reproduce it on
        an oracle whose roll window was +-1 span, and 18-04 widened the window to +-3 spans
-       (see tests/trochoid_oracle.py). The tooth's mirror flank reads -0.138979 mm either way.
+       (see tests/trochoid_oracle.py). The tooth's mirror flank reads -0.141352 mm either way.
     """
     p = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=0, backlash=0)
     c = cutter(p, 0.38)
@@ -1867,7 +1942,7 @@ def test_every_root_sentence_is_ascii_and_in_a_fixed_order() -> None:
     chamfer; the undercut sentence; the waist sentence; then bore, recess and cutout. One
     gear fires five of them: 6 teeth, module 1, 14.5 degrees, shift -0.5, default
     backlash, root_fillet 3.0 (cut at 0.661), a 3.0 mm tip chamfer (cut at 0.38) and a
-    waist of 0.262 mm under the 0.4 mm floor. Its whole tuple is asserted in order, and
+    waist of 0.257 mm under the 0.4 mm floor. Its whole tuple is asserted in order, and
     every sentence of the table and every warning on the gear is ASCII (RUF001-003 in the
     source, str.isascii() on what a user reads). Captured from derive() on 2026-10-09
     (L33)."""
@@ -1885,9 +1960,9 @@ def test_every_root_sentence_is_ascii_and_in_a_fixed_order() -> None:
         "junction with the hob-cut root.",
         "Below 40.1 teeth this cutter undercuts the gear, and the root is cut the way the "
         "hob cuts it; a profile shift of 0.567 or more avoids the undercut.",
-        "The tooth is only 0.262 mm thick at its narrowest in the hob-cut root, under the "
+        "The tooth is only 0.257 mm thick at its narrowest in the hob-cut root, under the "
         "0.4 mm this design holds for a printable tooth; more teeth, a larger profile_shift "
         "or a larger pressure_angle thickens it.")
-    assert (d.root_fillet, d.tip_chamfer_effective, d.root_waist) == (0.661, 0.38, 0.262)
+    assert (d.root_fillet, d.tip_chamfer_effective, d.root_waist) == (0.661, 0.38, 0.257)
     assert all(w.isascii() for w in d.warnings)
     assert all(sentence.isascii() for sentence in _ROOT_SENTENCES.values())

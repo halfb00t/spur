@@ -4692,3 +4692,39 @@ into `bench/`, each named with its cost; (C) raise the bar with a new decision. 
 That leaves L34's 66 s on paper while the gate reads about 193 s on this host; re-setting the bar from an
 idle-host reading, or a measured revisit of the per-row position count, is a separate decision and is not part
 of this plan. L38 (19-10) records the cost.
+
+### Waist at the smallest arc thickness (19-REVIEW CR-01)
+
+The 19-02 walk above takes `RootCurve.waist` at the smallest half-angle `h` and prints `2 R h` there.
+19-REVIEW CR-01 found that on a crossing join `d(R h)/dR = R' h` is positive at that point, so the arc
+thickness is still falling below that radius and the printed `root_waist` was too thick. `_waist` now
+minimises `R h` (the same 60-step golden section, the same neighbours of the smallest sample), so
+`root_waist` is the narrowest arc. The walk table above is dated history and is not rewritten.
+
+Read 2026-10-09 on the host of the walk above (18 CPUs, arm64, Python 3.12.15), from the curve alone, no
+kernel and no oracle. Dense = the smallest of 40,000 samples of `2 R h` from the root circle to the
+junction.
+
+| Gear (module, pressure angle, shift, tip radius) | Printed before | Printed after | Dense minimum |
+|---|---|---|---|
+| 10 teeth, 1, 20, 0, 0.38 (backlash 0) | 1.473 | 1.442 | 1.442 |
+| 7 teeth, 2, 25, 0.27, 0 | 3.269 | 3.149 | 3.149 |
+| 8 teeth, 2, 25, 0.24, 1 | 3.536 | 3.428 | 3.428 |
+| 8 teeth, 1, 14.5, -0.5132, 0.38 | 0.401 | 0.395 | 0.395 |
+| 6 teeth, 1, 14.5, -0.3103, 0.38 | 0.401 | 0.391 | 0.391 |
+| default gear (tangent join) | 3.303 | 3.303 | 3.303 |
+
+The last two gears sit just under the 0.4 mm floor: the old reading printed 0.401 and warned on neither.
+
+The walk and the product re-counted with the same code (`bench.trochoid_part`'s `WALK_*` grid and
+`product_waists()`), old definition reproducing L38's figures first:
+
+| | Before | After |
+|---|---|---|
+| Walk trochoid gears under 0.4 mm | 294 of 1,061 | 303 of 1,061 |
+| Product gears under 0.4 mm (unrounded) | 771 of 10,326 | 775 of 10,326 |
+| Thinnest walk waist, mm | 3.2325e-3 | 3.2317e-3 |
+| Thinnest product waist per module, mm | 2.5577e-3 | 2.5574e-3 |
+
+The floor is unchanged at 0.4 mm and stays 124x the thinnest walk waist. The kernel and oracle columns of
+the walk were not re-read: no curve moved, only which point of it is called the waist.

@@ -2201,9 +2201,11 @@ a warning, or it is null.
   the cutter-envelope junction (30.558 on the default gear, 19-06, `6032926`). It is not a form
   diameter in ISO 21771's sense, and no label, schema description or README line calls it one (a test
   holds that). Its proof is Phase 18's junction bars and T4's KISSsoft anchor on the tangent branch.
-- `root_waist` is the tooth's narrowest thickness in the hob-cut root (3.303 mm on the default gear;
-  on a tangent join equal to the involute's own thickness at the junction, checked through
-  `Profile.half_angle`), printed wherever the trochoid applies and null elsewhere. The name is the
+- `root_waist` is the tooth's narrowest thickness in the hob-cut root, the smallest arc thickness
+  `2 R h` along the curve (3.303 mm on the default gear; on a tangent join equal to the involute's own
+  thickness at the junction, checked through `Profile.half_angle`; on a crossing join below it, 1.442
+  mm on the 10-tooth tracer against 1.473 at the smallest half-angle, which 19-REVIEW CR-01 found to
+  print up to 3.8 % too thick), printed wherever the trochoid applies and null elsewhere. The name is the
   human's (`name-root_waist`, 19-02) and is a published key on `/api/info` and `spur info` from its
   first release. It is warned below `ROOT_WAIST_FLOOR` = 0.4 mm, absolute, and never refused (D-06);
   `tooth severed` (waist at or under zero) stays a refusal. The floor is the human's (`floor-print`,
@@ -2213,7 +2215,10 @@ a warning, or it is null.
   waist and warns on 294 of 1,061 walk gears and 771 of 10,326 product gears. Small-module caveat,
   adopted with the counts in front of the human: 595 of the 616 module-0.2 gears warn, 195 of them on
   tangent joins with no undercut at all, against 176 of 9,710 at module 1 and above, so the sentence
-  never uses the word undercut ("Waist walk (19-02, D-07)", "Bars adopted (19-02)").
+  never uses the word undercut ("Waist walk (19-02, D-07)", "Bars adopted (19-02)"). Those counts were
+  read with the waist at the smallest half-angle; at the smallest arc thickness (19-REVIEW CR-01) the same
+  walk warns on 303 of 1,061 and the product on 775 of 10,326, the thinnest walk waist is 3.2317e-3 mm,
+  and the floor does not move ("Waist at the smallest arc thickness (19-REVIEW CR-01)").
 - The cap sentence names `root_fillet` and says the printed radius is within 0.001 mm of the largest
   that keeps the cutter a tip land (0.471 silent, 0.472 trimmed to 0.471 with the sentence, 0.4715
   used as given, at module 1, 20 degrees, backlash 0, 19-06).
