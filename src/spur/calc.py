@@ -1066,9 +1066,12 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     on every keystroke" claim (measured, not assumed -- CLAUDE.md).
 
     With the `root_mode` call this function now makes (19-04), re-measured 2026-10-09 by
-    the same command on an Apple M5 Max, Python 3.12.15, 1-minute load 2.75 (a different
-    host from the figures above, so not a delta against them): 10.3 usec for the default
-    gear and 29.6 usec with `root_shape="trochoid"`, which solves the curve once.
+    the same command on an Apple M5 Max, Python 3.12.15 (a different host from the
+    figures above, so not a delta against them): 10.3 usec for the default gear at a
+    1-minute load of 2.55 to 2.67 and 30 usec (timeit's own rounding) with
+    `root_shape="trochoid"`, which solves the curve once, at 2.67; the same two calls
+    read 10.2 and 29.8 usec at a load of about 5.0 earlier that day (bench/RESULTS.md,
+    "The gate, priced (19-09)").
     """
     pr = profile(p)
     tip, root, gap = _tooth(pr)

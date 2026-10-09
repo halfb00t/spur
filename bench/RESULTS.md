@@ -4585,3 +4585,110 @@ The heaviest row a trochoid request can change reads 14.64 s on this host, half 
 another host, so Phase 19's composed re-measure does not reach L37's row: its 503-under-load contract,
 `SPUR_BUILD_TIMEOUT` = 30 s and `spoke_count`'s `le` of 32 stand. Nothing here is extrapolated to
 concurrent load, and no figure is compared across hosts as a delta.
+
+### The gate, priced (19-09)
+
+What the phase cost the gate (L34, 66 s) and the commit slice (L36, 30 s), and what `derive()` costs per call
+now that it asks `root_mode`. Everything is read on the host 19-01 read its before-figure on, so the delta
+below is between two readings on one machine; the bars were set on another and are quoted, not compared with a
+delta. HEAD for every run below is `4b08aa8` (19-09 Task 1, which added one test and touched only `bench/` and
+`tests/test_bench.py` beyond the plans before it). The runs are consecutive, `uptime` before and after each, nothing else CPU-heavy
+started by the executor.
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`), 18 CPUs, arm64, 64.0 GiB RAM: the host of
+  `### Gate baseline (19-01)`, so a delta against its 52.89 s mean is valid
+- The bars' host: L34 set 66 s on an Apple M2 Max with 12 CPUs (63.555 s read there); L36 read
+  `make verify.fast` at 11.28 s warm on the same host. `PYTEST_WORKERS` is 8 on both machines. The bars are
+  quoted as written, not rescaled, and no figure here is extrapolated to another host
+- Python 3.12.15 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- Read 2026-10-09, 05:59 to 06:13 UTC for the runs, 07:32 UTC for the `derive()` re-read
+- The 1-minute load rose with each run's own eight workers (4.03 before the first `make verify`, 9.06
+  after the second), so every wall figure is an upper bound for an idle host and none is a bar
+
+#### `make verify`, three runs
+
+| Run | Result line | `real` (s) | 1-minute load before -> after | UTC |
+|---|---|---|---|---|
+| 1 | `1210 passed in 208.01s` | 208.52 | 4.03 -> 6.30 | 05:59:24 -> 06:02:52 |
+| 2 | `1210 passed in 160.95s` | 161.71 | 6.30 -> 9.06 | 06:02:52 -> 06:05:34 |
+| 3 | `1210 passed in 207.90s` | 208.60 | 9.06 -> 7.98 | 06:05:34 -> 06:09:02 |
+
+Mean `real` **192.94 s** (pytest 192.29 s), range 161.71 to 208.60 s; coverage 97.90 % against the floor of 96;
+all three green, no `ReentrantCallError`. **Against L34's 66 s bar: 2.92 times it, 126.94 s over.** **Delta
+against `### Gate baseline (19-01)` on this host: +140.05 s (52.89 s mean to 192.94 s), 3.65 times, with 187
+more tests (1023 to 1210).** The plan's gate stops here, because the mean is over 66.0 s; the human was asked
+and answered `accept-A` on 2026-10-09 (below).
+
+The cost accumulated wave by wave. These are the orchestrator's `make test` walls after each wave, same host,
+the same caveat on load:
+
+| After | Tests | `make test` wall |
+|---|---|---|
+| 19-01 baseline | 1026 | 52.89 s |
+| wave 3 (19-04) | 1054 | 112.79 s |
+| wave 4 (19-06) | 1081 | 137.76 s |
+| wave 5 (19-07) | 1209 | 206.05 s |
+
+Wave by wave the wall grew by 59.90 s (wave 3, 28 tests), 24.97 s (wave 4, 27 tests) and 68.29 s (wave 5, 128
+tests); 19-09 added one test (1209 to 1210). The walls are single readings under different loads, so the steps
+say where the cost entered, not what each test costs.
+
+#### `make verify.fast`, three runs against L36's 30 s kill
+
+| Run | Result line | `real` (s) | 1-minute load before -> after |
+|---|---|---|---|
+| 1 | `824 passed in 11.01s` | 11.46 | 6.34 -> 6.12 |
+| 2 | `824 passed in 10.96s` | 11.39 | 6.12 -> 6.49 |
+| 3 | `824 passed in 11.11s` | 11.54 | 6.49 -> 8.06 |
+
+All three are inside the 30 s kill, at 824 tests, 11.39 to 11.54 s; L36's own reading was 11.28 s on the M2
+Max. A commit does not pay the gate's extra time: the pre-push hook, CI and `make worktree.land` do.
+
+#### Where the cost is: the 25 slowest calls
+
+One `.venv/bin/python -m pytest -n 8 --cov --cov-report=term --durations=25 -q`: `1210 passed in 208.03s`,
+`real` 208.23 s, load 8.06 -> 6.43. The 25 slowest call times sum to 340.5 s. **21 of them are this phase's
+tests in `tests/test_model.py`, summing to 305.5 s**, which is 18.4 % of the 1,664 worker-seconds the run had
+(208.03 s x 8 workers):
+
+| Kernel-tier test | Rows in the 25 | Each (s) | Sum (s) |
+|---|---|---|---|
+| `test_the_built_root_is_the_oracle_s_root_on_every_kernel_row` | 7 | 11.1 to 21.6 | 92.0 |
+| `test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-*]` | 12 | 12.5 to 21.4 | 169.5 |
+| `test_the_kernel_tier_proof_fails_when_the_printed_tip_radius_is_off_by_0_05_mm` | 1 | 25.78 | 25.78 |
+| `test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root` | 1 | 18.22 | 18.22 |
+
+The listing stops at 25, so 305.5 s is a lower bound for the phase's share, not the whole of the 140.05 s
+delta. The other four of the 25 are not this phase's: `tests/test_cli.py::test_readme_export_examples_run`
+12.06 s, `tests/test_calc.py::test_the_trochoid_sweep_over_the_allowed_box` 8.80 s and two pool tests. The
+oracle's 401 positions per row (19-02) set the kernel rows' cost; 19-02's `Method B against the number of
+positions` table is the place that count was chosen.
+
+#### `derive()` per call
+
+`.venv/bin/python -m timeit -r 5 -s "from spur.calc import derive; from spur.params import GearParams;
+p=GearParams()" "derive(p)"`, and the same with `p=GearParams(root_shape='trochoid')`, best of 5:
+
+| Call | Best of 5 | UTC | 1-minute load before -> after |
+|---|---|---|---|
+| default `GearParams()` | 10.2 usec | 06:13:50 | 5.22 -> 4.96 |
+| `GearParams(root_shape='trochoid')` | 29.8 usec | 06:13:51 | 4.96 -> 4.96 |
+| default `GearParams()` | 10.3 usec | 07:32:45 | 2.55 -> 2.67 |
+| `GearParams(root_shape='trochoid')` | 30 usec (timeit's own rounding) | 07:32:47 | 2.67 -> 2.67 |
+
+19-04 read 10.3 and 29.6 usec at a load of 2.75 on this host. The hob root costs `derive()` about three times
+the radial call, 20 usec, because it solves the curve once; against an HTTP round trip and the module
+docstring's every-keystroke claim that stays negligible. The `derive()` docstring carries the second pair and
+names the first.
+
+#### Decision: `accept-A` (2026-10-09)
+
+The mean is 2.92 times L34's 66 s bar, so the plan stopped and the human was offered three options: (A) accept
+the measured cost and record it in L38 (Phase 12 D-10's precedent); (B) move named kernel rows out of the gate
+into `bench/`, each named with its cost; (C) raise the bar with a new decision. The human's reply, verbatim:
+`accept-A`. No test moves out of the gate, L34's 66 s is not changed and the oracle's 401-position count stays.
+That leaves L34's 66 s on paper while the gate reads about 193 s on this host; re-setting the bar from an
+idle-host reading, or a measured revisit of the per-row position count, is a separate decision and is not part
+of this plan. L38 (19-10) records the cost.
