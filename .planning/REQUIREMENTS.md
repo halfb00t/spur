@@ -173,7 +173,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   the measured gap (STACK's N = 16 uniform-in-roll sampling, 3.6–4.0e-5 mm, is the starting
   point; the two files' spline-deviation methods are reconciled before a bar is set); the
   trochoid generator never enters `model.py`.
-- [ ] **REQ-derived-numbers-honest-under-trochoid**: Where the trochoid applies,
+- [x] **REQ-derived-numbers-honest-under-trochoid**: Where the trochoid applies,
   `root_thickness` and `root_gap` are either null with a warning or redefined at the form
   circle with that circle printed (decided at discuss-phase; FEATURES: the default gear's
   printed 3.253 mm against a true 4.68 mm at rf + 0.001·m); `root_form_d` is printed only if
@@ -260,7 +260,7 @@ the phase where its acceptance can be read.
 | REQ-undercut-warning-restated | Phase 19 | Pending |
 | REQ-root-mode-decided | Phase 19 | Pending |
 | REQ-outline-consumes-root-curve | Phase 19 | Complete |
-| REQ-derived-numbers-honest-under-trochoid | Phase 19 | Pending |
+| REQ-derived-numbers-honest-under-trochoid | Phase 19 | Complete |
 | REQ-cutter-tip-radius-settable | Phase 19 | Pending |
 | REQ-trochoid-composes-and-is-priced | Phase 19 | Pending |
 

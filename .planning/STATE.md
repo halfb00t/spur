@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
 status: executing
-stopped_at: Completed 19-05-PLAN.md
-last_updated: "2026-10-09T04:23:38.149Z"
+stopped_at: Completed 19-06-PLAN.md
+last_updated: "2026-10-09T04:39:23.521Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 19 execution started
-state_head: 89248266a34e23a9a33009871075735f4cd6aba0
+state_head: 8504a92d13eaa66817171ef53924a3f11b887495
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 22
-  completed_plans: 16
-  percent: 73
+  completed_plans: 17
+  percent: 77
 ---
 
 # Project State
@@ -33,11 +33,11 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 ## Current Position
 
 Phase: 19 (The Trochoid in the Part) — EXECUTING
-Plan: 6 of 11
+Plan: 7 of 11
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 19 execution started
 
-Progress: [████████████████████] 11/11 plans ([███████░░░] 73%)
+Progress: [████████████████████] 11/11 plans ([████████░░] 77%)
 
 ## Performance Metrics
 
@@ -211,6 +211,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 19 P03 | ~50 min | 3 tasks | 3 files |
 | Phase 19 P04 | 30 min | 2 tasks | 8 files |
 | Phase 19 P05 | 10 min | 3 tasks | 6 files |
+| Phase 19 P06 | 11 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -372,6 +373,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: 19-04: kernel-tier gate cost +65 to +75 s (117-129 s vs 52.89 s baseline, over L34 66 s bar) left for 19-09 to price
 - [Phase 19]: 19-05: ROOT_ARC_MIN 2e-6 mm and the three guard bars written into model.py as adopted at 19-02, each beside its measurement; _guard_junction/_spacing/_annulus/_area raise BuildError naming a modelling defect and root_shape radial
 - [Phase 19]: 19-05: the generator source test matches whole identifiers so the plan-mandated _guard_junction is not read as the generator's private _junction
+- [Phase 19]: 19-06: ROOT_WAIST_FLOOR 0.4 mm absolute as its own constant (floor-print, equal to MIN_TIP_FDM but not bound to it); small-module caveat (595 of 616 module-0.2 gears warn) recorded beside it, in errors_and_logging.md and implementation.md
+- [Phase 19]: 19-06: the restated undercut sentence fires on rm.curve.join == crossing, prints the cutter's onset rounded up to 0.1 teeth and the shift rounded up to 0.001 after residue removal, and prints no shift above the profile_shift field's 1.0; radial mode and a refused request keep the shipped sentence byte for byte
+- [Phase 19]: 19-06: root_form_d (30.558 on the default gear) and root_waist (3.303) printed under the hob root, null elsewhere; root_form_d is the cutter-envelope junction and never called a form diameter; cap sentence names root_fillet and says within 0.001 mm of the largest
 
 ### Pending Todos
 
@@ -570,8 +574,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T04:23:38.096Z
-Stopped at: Completed 19-05-PLAN.md
+Last session: 2026-10-09T04:39:23.491Z
+Stopped at: Completed 19-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
