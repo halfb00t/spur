@@ -162,7 +162,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   regeneration and the `Lxx` listing the moving records in advance (ARCHITECTURE under O1:
   5 `derived` blocks, 3 `solid` blocks, one added null field in the other 39); any other
   record moving is a bug.
-- [ ] **REQ-outline-consumes-root-curve**: `model._outline` replaces the fillet arc plus
+- [x] **REQ-outline-consumes-root-curve**: `model._outline` replaces the fillet arc plus
   lead-in line, per tooth side, with one `makeSpline` through `RootCurve`, and the involute
   spline starts at the junction radius taken from the same float (a 1e-6 mm gap silently
   opens the wire — PITFALLS). Structural guards that do not depend on `isValid()`:
@@ -259,7 +259,7 @@ the phase where its acceptance can be read.
 | REQ-trochoid-proved-independently | Phase 18 | Complete |
 | REQ-undercut-warning-restated | Phase 19 | Pending |
 | REQ-root-mode-decided | Phase 19 | Pending |
-| REQ-outline-consumes-root-curve | Phase 19 | Pending |
+| REQ-outline-consumes-root-curve | Phase 19 | Complete |
 | REQ-derived-numbers-honest-under-trochoid | Phase 19 | Pending |
 | REQ-cutter-tip-radius-settable | Phase 19 | Pending |
 | REQ-trochoid-composes-and-is-priced | Phase 19 | Pending |
