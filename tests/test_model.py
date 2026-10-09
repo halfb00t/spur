@@ -203,6 +203,16 @@ def test_builds_one_valid_solid(kw: dict[str, object]) -> None:
     pytest.param({"keyway_width": 3, "keyway_depth": 9},
                  collections.Counter({"CIRCLE": 2, "LINE": 2}), None, 38,
                  id="keyway-recess-dropped"),
+    # The hob root (19-08): its CIRCLE arcs sit at the root circle and its splines are
+    # BSPLINE, so none of the three selectors (rim at the bore, floor at the recess, tip
+    # CIRCLE at ra) can take them; each twin reads its radial row's counts.
+    pytest.param({"root_shape": "trochoid"}, collections.Counter({"CIRCLE": 2, "LINE": 2}),
+                 4, 38, id="trochoid-d-flat"),
+    pytest.param({"root_shape": "trochoid", "bore_hex": 6}, collections.Counter({"LINE": 12}),
+                 4, 38, id="trochoid-hex"),
+    pytest.param({"root_shape": "trochoid", "keyway_width": 3, "keyway_depth": 1.4},
+                 collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 38,
+                 id="trochoid-keyway"),
     pytest.param({"teeth": 200}, collections.Counter({"CIRCLE": 2, "LINE": 2}), 4, 400,
                  id="teeth-200"),
     pytest.param({"teeth": 200, "module": 0.2, "backlash": 0.07},
@@ -916,6 +926,68 @@ def test_the_kernel_fails_one_step_past_the_start_of_the_involute(
     monkeypatch.setattr("spur.model.tip_chamfer_effective", lambda _p: 2.9875)
     with pytest.raises(BuildError, match="Geometry kernel produced an invalid solid"):
         _build_checked(GearParams(profile_shift=1.0, pressure_angle=14.5, tip_chamfer=3))
+
+
+# The one row of 19-01's chamfer table where ra - R_join is the cap in force and the kernel
+# sits on the law (bench/RESULTS.md "Chamfer across the junction (19-01)"): 6 teeth, module
+# 1, 14.5 degrees, no shift, a sharp hob (root_fillet 0), no bore, no recess. The junction
+# lies at R_join 3.0994 mm, above the pitch circle (3.0), so ra - r = 1.0 mm is not the
+# smaller bound; the bisection built up to 0.9006364 mm and failed at 0.9006397, against
+# ra - R_join = 0.9006385. Typed out, not read back from calc (L08).
+JUNCTION_ROW: dict[str, object] = {
+    "teeth": 6, "module": 1, "pressure_angle": 14.5, "profile_shift": 0, "root_fillet": 0,
+    "root_shape": "trochoid", "bore_d": 0, "bore_flat": 0, "recess_sides": "none",
+    "tip_chamfer": 3}
+
+
+def test_the_largest_tip_chamfer_the_hob_root_junction_allows_builds() -> None:
+    """L29's shape on the hob root: the tip chamfer's cap is `ra - R_join` less the
+    margin where the junction of the two splines is the bound, and the printed cap builds.
+    On the row above it is 4.0 - 3.0994 - 0.001 = 0.8996 mm, printed 0.9 at three places
+    (the 0.45 x face_width bound is 3.375 and ra - r is 1.0, so the hob-root bound is the
+    one that binds, and the reason says so). That cap builds one valid solid with 2 x 6
+    new CONE faces over the unchamfered part and nothing else new. The kernel's own limit
+    on this row is 0.9006364 (19-01), so the printed number sits 0.0006 mm inside it."""
+    p = GearParams.model_validate(JUNCTION_ROW)
+    limit, why = spur.calc.tip_chamfer_limit(p)
+    assert limit == pytest.approx(0.89964, abs=1e-5)
+    assert "above its junction with the hob-cut root" in why
+    assert tip_chamfer_effective(p) == 0.9
+    assert derive(p).tip_chamfer_effective == 0.9
+
+    cut = _build_checked(p)
+    bare = _build_checked(GearParams.model_validate({**JUNCTION_ROW, "tip_chamfer": 0}))
+    assert cut.isValid()
+    assert len(cut.Solids()) == 1
+    added = (collections.Counter(f.geomType() for f in cut.Faces())
+             - collections.Counter(f.geomType() for f in bare.Faces()))
+    assert added == collections.Counter({"CONE": 2 * p.teeth})
+    assert len(cut.Faces()) == len(bare.Faces()) + 2 * p.teeth
+
+
+def test_the_kernel_fails_one_step_past_the_hob_root_junction(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The measurement behind the cap above, recorded as a test, in the shape of
+    test_the_kernel_fails_one_step_past_the_start_of_the_involute. ra - R_join is 0.9006
+    mm on JUNCTION_ROW; one 0.05 mm step past it (0.9506) the kernel returns one solid that
+    is not valid. If a kernel bump makes this build, this test goes red and the law must
+    be re-measured (bench/trochoid_part.py chamfer). The stand-in takes both arguments
+    tip_chamfer_effective now has."""
+    monkeypatch.setattr("spur.model.tip_chamfer_effective", lambda _p, _rm=None: 0.9506)
+    with pytest.raises(BuildError, match="Geometry kernel produced an invalid solid"):
+        _build_checked(GearParams.model_validate(JUNCTION_ROW))
+
+
+def test_a_bare_trochoid_gear_builds() -> None:
+    """The empty case of the composition: the default gear asked for the hob root with
+    the bore off, no recess, no tip chamfer and no cutout is one valid solid, and the tip
+    chamfer prints null (nothing was asked for)."""
+    p = GearParams.model_validate({"root_shape": "trochoid", "bore_d": 0, "bore_flat": 0,
+                                   "recess_sides": "none", "tip_chamfer": 0})
+    solid = _build_checked(p)
+    assert solid.isValid()
+    assert len(solid.Solids()) == 1
+    assert derive(p).tip_chamfer_effective is None
 
 
 @pytest.mark.parametrize("kw", [
@@ -1746,10 +1818,12 @@ _build_reference = functools.cache(_build_checked)
     pytest.param("keyed", "cells", collections.Counter({"PLANE": 72}),
                  216, 327.357603, id="keyed-cells"),
 ])
+@pytest.mark.parametrize("root", ["radial", "trochoid"])
 def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore(
-        bore: str, cutout: str, d_faces: collections.Counter[str],
+        root: str, bore: str, cutout: str, d_faces: collections.Counter[str],
         d_edges: int, d_volume: float | None) -> None:
-    """D-07 tier 2, D-09, ROADMAP SC1 on the built solid: the tip chamfer (1.75 mm, the
+    """D-07 tier 2, D-09, ROADMAP SC1 on the built solid, in both roots (Phase 19: 12 rows
+    per root, 24 in all): the tip chamfer (1.75 mm, the
     default gear's own cap) applied together with each cutout on each bore, on one
     composed solid -- the features' own built-solid proofs (10-03's
     _assert_only_the_tip_arcs_were_chamfered, 11-08's
@@ -1773,11 +1847,21 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
     hub wall clears the keyed bore's floor-corner mouth (6.179 mm) by only 0.021 mm
     above MIN_WALL, so a single valid solid there is the composition pass's own edge
     case, not the easy middle of the range.
+
+    The hob root (19-08) reads the radial row's pinned deltas, every one of them: a
+    cutout is a difference against the same bore's no-cutout reference and the chamfer
+    against the same gear without it, both built with the same root, so the root cancels
+    out of every subtraction (the references never mix modes: `_build_reference` keys on
+    the whole parameter object, `root_shape` included). That is the claim under test, so
+    no delta is loosened or re-pinned for the hob root. Under it the composed solid's
+    tooth-0 root also still reads within the kernel bar of the oracle: composition cuts
+    inside the root circle and at the tip, and must not move the root between them.
     """
-    kw = {**TIPPED, **COMPOSED_BORES[bore], **COMPOSED_CUTOUTS[cutout]}
+    kw = {**TIPPED, **COMPOSED_BORES[bore], **COMPOSED_CUTOUTS[cutout], "root_shape": root}
     p = GearParams.model_validate(kw)
     p_no_tip = GearParams.model_validate({k: v for k, v in kw.items() if k != "tip_chamfer"})
-    p_no_cut = GearParams.model_validate({**TIPPED, **COMPOSED_BORES[bore]})
+    p_no_cut = GearParams.model_validate({**TIPPED, **COMPOSED_BORES[bore],
+                                          "root_shape": root})
     cut = _build_checked(p)
 
     _assert_only_the_tip_arcs_were_chamfered(cut, _build_checked(p_no_tip), p, p_no_tip)
@@ -1803,6 +1887,14 @@ def test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_e
         d_faces=d_faces, d_edges=d_edges, d_volume=d_volume,
         hub_angle=hub_angle, rim_angle=rim_angle,
         volume_rel=volume_rel, volume_abs=volume_abs)
+
+    if root == "trochoid":
+        # `_root_edges` asserts its own count (2 x teeth = 38) before anything reads them.
+        assert len(_root_edges(cut, p)) == 2 * p.teeth
+        reading = _oracle_reading(cut, p, derive(p).root_fillet)
+        print(f"{bore}-{cutout}: oracle reads {reading:.4e} mm of "
+              f"{KERNEL_BAR_PER_MODULE * p.module:.4e}")
+        assert reading <= KERNEL_BAR_PER_MODULE * p.module
 
 
 @pytest.mark.parametrize(("cutout", "d_faces", "d_edges", "d_volume", "torus"), [
