@@ -116,6 +116,7 @@ spur export -o gear.stl --teeth 24 --module 1 --pressure-angle 20 --bore-flat 0
 spur export -o hexgear.stl --bore-hex 6                   # 6 mm hex bore
 spur export -o keyedgear.step --keyway-width 3 --keyway-depth 1.4  # keyway in the default D-flat bore
 spur export -o chamfered.stl --tip-chamfer 0.4             # tooth-tip edge break
+spur export -o hob-root.stl --root-shape trochoid          # the root a hob would cut, not the analytic one
 spur export -o holes.stl --hole-count 6 --hole-d 4 --hole-circle-d 20      # six lightening holes
 spur export -o spokes.stl --spoke-count 4 --spoke-width 2 --hub-d 12 --rim-wall 1 --spoke-fillet 1  # four spoke arms
 spur export -o honeycomb.stl --hex-cell 3 --hex-wall 1     # honeycomb web
@@ -174,8 +175,9 @@ Lengths in mm, angles in degrees.
 | `pressure_angle` | 25 | Higher gives thinner tips and thicker roots. Must match the mating gear |
 | `profile_shift` | 0 | Coefficient *x*; positive thickens the root and moves the tip outward |
 | `backlash` | 0.1 | Removed from the circular tooth thickness (printing clearance) |
-| `root_fillet` | 0.5 | Fillet radius at the tooth roots, capped to fit. 0 = sharp |
+| `root_fillet` | 0.5 | Two meanings, by `root_shape`. With the radial root: the fillet radius at the tooth roots. With the trochoid root: the tip radius of the hob that cuts them. Capped to fit either way, and `/api/info` prints the value actually used. 0 = sharp |
 | `tip_chamfer` | 0 | Chamfer on the tooth-tip edges at both faces: an edge break for handling and printing, capped to fit the tooth. 0 = none |
+| `root_shape` | radial | `radial`: the analytic root, the shipped default. `trochoid`: the root a hob with tip radius `root_fillet` cuts, where the base circle is above the root circle (where it is not, the request is ignored and warned). `/api/info` then prints `root_form_d` and `root_waist`, the narrowest tooth, and no root-circle thickness |
 | `face_width` | 7.5 | Overall thickness |
 | `bore_d` | 9 | Round part of the bore. 0 = no round bore |
 | `bore_flat` | 8 | Flat to opposite side of the bore. 0 = round bore |
@@ -222,16 +224,32 @@ while a bore too wide for the root is still refused.
 
 - Flanks are true involutes sampled into B-splines, from the base circle (or the root
   circle, if that is larger) to the tip.
-- Below the base circle the flank is radial, as in most gear generators. Real hobbed
-  gears have a trochoidal root there; it only matters for undercut on small tooth
-  counts, and the UI warns when that applies.
-- Root fillets are computed analytically in the 2D outline rather than with the kernel's
-  fillet operator, which is far slower on a many-toothed profile. Where a fillet needs
-  room above the base circle, the flank starts with a short chord onto the involute:
-  1.188 mm below the pitch circle on the default gear, but above it, where the chord
-  deviates from the true involute, when the root fillet exceeds half the dedendum,
-  `(1.25 − x)·m / 2`, and the profile shift `x` exceeds 0.125 (below that shift the chord
-  stops halfway up the tooth, at or under the pitch circle). `warnings` says how far.
+- Two root shapes, chosen by `root_shape`. The default, `radial`, is as in most gear
+  generators: below the base circle the flank is radial, and the UI warns when a small
+  tooth count makes the gear undercut. `trochoid` gives the root the hob cut: the curve
+  a hob with tip radius `root_fillet` sweeps out, which is where a real hobbed gear
+  differs from the radial one. It applies only where the base circle lies above the root
+  circle; anywhere else the request is ignored and `warnings` says so, and the radial
+  root is built. Under it `/api/info` prints `root_form_d`, the diameter of the
+  cutter-envelope junction where the hob's root curve meets the involute (a different
+  quantity from the ISO 21771 one, and not to be read as it), and `root_waist`, the
+  narrowest the tooth gets in the root (the smallest arc thickness along the hob's
+  curve, which on an undercut gear lies below the point where the half-angle is
+  smallest), warned below 0.4 mm (bench/RESULTS.md, "Waist
+  floor"). It prints no root-circle thickness or gap, because under a hob root that
+  thickness is ill-conditioned at the root circle and no honest number exists there;
+  `warnings` says so. When the gear is undercut, the warning states the tooth count the
+  cutter undercuts below and the profile shift that avoids it. The default does not change: a shared link without
+  `root_shape` still builds the radial root (decision log L38).
+- With the radial root, root fillets are computed analytically in the 2D outline rather
+  than with the kernel's fillet operator, which is far slower on a many-toothed profile.
+  Where a fillet needs room above the base circle, the flank starts with a short chord
+  onto the involute: 1.188 mm below the pitch circle on the default gear, but above it,
+  where the chord deviates from the true involute, when the root fillet exceeds half the
+  dedendum, `(1.25 − x)·m / 2`, and the profile shift `x` exceeds 0.125 (below that shift
+  the chord stops halfway up the tooth, at or under the pitch circle). `warnings` says
+  how far. This chord, and the warning about it, belong to the radial root only: the
+  trochoid root has no lead-in chord.
 - The tip chamfer is a 45-degree edge break on each tooth's tip arc at both faces,
   `tip_chamfer` off the end face and the same off the tip, cut on the finished solid.
   It touches only those arcs: the flanks, the root fillets, the bore and the recess are
@@ -239,7 +257,11 @@ while a bore too wide for the root is still refused.
   whichever is smallest of: 45% of the face width (a land stays on the tip between the
   two faces' chamfers), the addendum (its footprint stays above the pitch circle), and
   the start of the involute above the root fillet's straight lead-in, where the kernel
-  stops being able to cut it (measured; decision log L29). `/api/info` prints
+  stops being able to cut it (measured; decision log L29). Under the trochoid root the
+  third bound is the junction of the hob root with the involute flank instead, since
+  there is no lead-in: the same kernel limit, measured across the spline-to-spline
+  junction on 14 gear rows, none of which would build above it (bench/RESULTS.md,
+  "Chamfer across the junction"; decision log L38). `/api/info` prints
   `tip_chamfer_effective`, the chamfer actually cut. It is the one cut here the kernel
   does edge by edge on every tooth: at 200 teeth it adds about 12 s to a build (400
   edges chamfered in one operation; bench/RESULTS.md's tip-chamfer spike).

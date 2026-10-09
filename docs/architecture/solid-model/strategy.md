@@ -30,10 +30,14 @@ Three, and they are the reason the module exists rather than being inlined:
    chamfer have to be found again — by radius and z for a groove floor, by position for a
    D-bore rim (which is an arc plus a straight line, so a type test would not do). These
    predicates are the fragile part and they are private.
-3. **That a fast root fillet is arithmetic, not a kernel call** (L09).
+3. **That a fast root fillet is arithmetic, not a kernel call** (L09). The radial root
+   keeps its analytic fillet; the hob-cut root (`root_shape` trochoid, L38) is one spline
+   per tooth side through the curve `calc` hands over, and the generator never enters
+   `model.py`.
 
 ## Key decisions
 
 L06 (one lock), L07 (bounded caches + arena release), L09 (analytic root fillets),
-and the tolerance convention: `TOL = 1e-6` mm is how kernel output is matched back to the
-numbers that were asked for.
+L38 (the hob-cut root is opt-in through `root_shape`; amends L09), and the tolerance
+convention: `TOL = 1e-6` mm is how kernel output is matched back to the numbers that were
+asked for.

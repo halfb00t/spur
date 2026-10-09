@@ -3655,3 +3655,1076 @@ asking for nothing costs 0.362 usec. `derive(p)` read 14.7 usec against the 11.5
 carried: 18-RESEARCH read 14.5 usec at load 14.33 (2026-10-07) and PITFALLS 20.4 at about 6.8, so the
 old figure moves with the host and nothing measured here separates a regression from load; the
 docstring now carries the number, the load and the date together.
+
+## Trochoid in the part (Phase 19)
+
+What the hob's trochoid root costs once it is in the part, in the order the phase builds it: the
+gate's before-figure at the phase base (19-01, this subsection first), the tip chamfer's kernel
+limit across the spline-to-spline junction (19-01), and the heaviest low-tooth rows against
+`SPUR_BUILD_TIMEOUT` (19-01); the later plans (19-02, 19-09) append their own subsections below.
+Each subsection carries its own host state, because every number belongs to the load it was read
+at. The kernel subsections are measured on a trochoid outline `bench/trochoid_part.py` builds
+itself from the Phase 18 `RootCurve` and runs through the shipped pipeline steps (recesses, bore,
+keyway, body cutout), before any schema change: ROADMAP "Order inside the phase", PITFALLS 18, the
+`bench/tip_chamfer_spike.py` precedent (L29).
+
+### Gate baseline (19-01)
+
+The gate's before-figure for Phase 19, taken at the phase base before any edit: `make verify`
+four times in a row (three green readings were wanted, and one run failed), nothing else
+CPU-heavy started by this session. Each run was `/usr/bin/time -p make verify`, `uptime` read
+immediately before and after. The phase base is `df4749e`; HEAD for these runs was `29c742c`,
+which differs from it by planning documents only (no file under `src/`, `tests/` or `bench/`).
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`:
+  18 CPUs, arm64, 64.0 GiB RAM
+- Python 3.12.15 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (the pinned pair)
+- Read 2026-10-08, 22:10 to 22:14 local time (16:10 to 16:14 UTC), ten users logged in
+- The 1-minute load is dominated by the run itself (eight xdist workers plus the gate's
+  other steps): the "after" of one run is mostly the "before" of the next, so the loads below
+  are not independent readings. Before the first run, with nothing of this session running, the
+  1-minute load read 3.16.
+
+| Run | Result line | `real` (s) | 1-minute load before -> after |
+|---|---|---|---|
+| 1 | `1023 passed in 53.89s` | 54.60 | 3.16 -> 16.71 |
+| 2 | `1 failed, 1022 passed in 53.61s` (a flake, below) | 54.04 | 16.71 -> 22.09 |
+| 3 | `1023 passed in 52.10s` | 52.53 | 22.09 -> 24.94 |
+| 4 | `1023 passed in 51.09s` | 51.53 | 11.75 -> 24.80 (a 20 s pause preceded it) |
+
+Mean of the three green runs: `real` 52.89 s (54.60, 52.53, 51.53), pytest 52.36 s (53.89, 52.10,
+51.09).
+
+Run 2 failed `tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced`
+on worker `gw0`, with `multiprocessing.resource_tracker.ReentrantCallError` and the
+`UserWarning: ResourceTracker called reentrantly` it raises under `filterwarnings = ["error"]`,
+the known flake. The whole log is kept at
+`.planning/phases/19-the-trochoid-in-the-part/investigation/19-01-gate-flake.log` as evidence for
+19-03. Nothing was changed between runs 1, 2, 3 and 4.
+
+For the record, not for a conclusion: L34 read 63.555 s on an Apple M2 Max with 12 CPUs and set
+the bar at 66 s on that host; 19-RESEARCH F10 read 46.21 s wall (1023 passed in 45.59s) on this
+host at a 1-minute load of 6.12 before and 15.73 after. 19-09 measures the phase's delta against
+the readings above, on this host, in one session.
+
+### Chamfer across the junction (19-01)
+
+L29's kernel law on the hob root: the tip chamfer's footprint on the end face reaches inward
+from the tip circle, and the kernel cannot carry it from one spline onto another. On the radial
+outline that boundary was the spline start; on the trochoid outline it is the junction between
+the root spline and the involute spline, `R_join = RootCurve.points[-1][0]`. `python -m
+bench.trochoid_part chamfer` builds each of 14 rows (seven gears at tip radius 0 and 0.5 mm,
+typed out in `CHAMFER_ROWS`, every one a trochoid gear), bisects the chamfer size on the unchamfered
+part's tip arcs for 20 halvings between 0 and 0.45 x face_width (3.375 mm), and compares the
+largest size that built with `pred = ra - R_join`. The verdict is never optimistic: only a last
+building size more than `TIP_CHAMFER_MARGIN` (0.001 mm) inside `pred` fails. Every part is one
+valid solid, its tooth-0 root edges are selected by position with the count asserted equal to
+2 x teeth, and the Phase 18 oracle reads them with the tip radius the cutter used (no bar is
+applied here: 19-02 sets it). The script's output follows verbatim.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `29c742c`
+- Read 2026-10-08T16:18:28Z to 2026-10-08T16:23:12Z
+- Load averages at start: 8.92, 10.72, 9.15; at end: 9.61, 8.53, 8.48
+
+#### Bisection (20 halvings between 0 and 0.45 x face_width)
+
+| Gear | Tip radius (mm) | Join | R_join (mm) | pred = ra - R_join | last ok | first fail | last ok - pred | Verdict | Binding cap | Worst oracle (mm) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0 | tangent | 15.1805 | 3.1944892 | 3.1944884 | 3.1944916 | -7.71e-07 | on the law | ra - r | 1.35e-05 |
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0.5 | tangent | 15.2788 | 3.0961925 | 3.0961908 | 3.0961940 | -1.73e-06 | on the law | ra - r | 2.20e-05 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0 | tangent | 48.6785 | 1.7215252 | 1.7215244 | 1.7215276 | -8.65e-07 | on the law | ra - r | 5.91e-06 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | tangent | 48.8589 | 1.5410770 | 1.5410739 | 1.5410771 | -3.06e-06 | on the law | ra - r | 9.50e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0 | crossing | 14.5916 | 0.8084213 | 0.8233534 | 0.8233566 | +1.49e-02 | conservative | ra - r | 2.44e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | crossing | 14.5508 | 0.8492071 | 2.2499979 | 2.2500011 | +1.40e+00 | conservative | ra - r | 1.23e-04 |
+| 12 teeth, m 1, 20 deg, x 0 | 0 | crossing | 5.6756 | 1.3243676 | 1.3243654 | 1.3243686 | -2.23e-06 | on the law | ra - r | 1.97e-05 |
+| 12 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 5.6457 | 1.3542630 | 1.3542602 | 1.3542634 | -2.80e-06 | on the law | ra - r | 3.99e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0 | crossing | 4.7567 | 1.2433329 | 2.2499979 | 2.2500011 | +1.01e+00 | conservative | ra - r | 2.15e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 4.7174 | 1.2825685 | 1.2825680 | 1.2825712 | -5.13e-07 | on the law | ra - r | 3.94e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0 | crossing | 3.8448 | 1.1552447 | 1.2656250 | 1.2656282 | +1.10e-01 | conservative | ra - r | 2.29e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 3.7960 | 1.2039992 | 2.2499979 | 2.2500011 | +1.05e+00 | conservative | ra - r | 3.66e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0 | crossing | 3.0994 | 0.9006385 | 0.9006364 | 0.9006397 | -2.04e-06 | on the law | ra - R_join | 2.99e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0.5 | crossing | 3.0183 | 0.9816865 | 1.3320547 | 1.3320580 | +3.50e-01 | conservative | ra - R_join | 4.47e-05 |
+
+First-failure reasons: default 19 teeth, m 1.75, 25 deg, x 0 @ 0: Standard_Failure; default 19 teeth, m 1.75, 25 deg, x 0 @ 0.5: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0: invalid; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 12 teeth, m 1, 20 deg, x 0 @ 0: invalid; 12 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5: invalid
+
+Binding cap is ra - R_join on: 6 teeth, m 1, 14.5 deg, x 0 @ 0; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5.
+Verdict: law holds -- 8 rows on the law, 6 conservative (30 teeth, m 1, 14.5 deg, x -0.6 @ 0; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5; 10 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0.5; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5).
+
+The law holds across the junction, to the bisection's resolution. On the 8 rows on the law, the
+largest chamfer that built sits 0.5 to 3.1 microns inside `pred` and the first that failed
+sits 0.1 to 2.7 microns past it, a bracket 3.2e-6 mm wide on every row (3.375 mm / 2^20), so
+the kernel's boundary is `ra - R_join` to the last bisection step, the same "within about 2
+microns" L29 read at the spline start on five of six configurations (there the bracket was
+2.9e-6 mm). RESEARCH F5's 14 to 16 step scratch readings (3.19434 against 3.1945 on the default
+gear, 1.7215 on 100 teeth) resolved about 2e-4 mm; these are 20 steps on the same rows and agree.
+Six rows are conservative, as L29's sixth was: the same six F5 named (10 teeth at tip radius 0,
+8 teeth at both, 6 teeth at 0.5, 30 teeth at both) built past `pred`, by 0.015 mm (30 teeth, tip
+radius 0) up to 1.40 mm (30 teeth, tip radius 0.5). Three of them (30 teeth at 0.5, 10 teeth at
+0, 8 teeth at 0.5) stopped at 2.25 mm, which is the whole tooth depth `ra - rf` of a module-1 gear;
+ASSUMPTION: that is the footprint reaching the root circle, not isolated here. A conservative row
+costs a user nothing unless `ra - R_join - TIP_CHAMFER_MARGIN` is the cap in force: of the 14 rows
+that is only the two 6-tooth rows (`ra - R_join` against `ra - r` = 1.0 mm there, the junction
+above the pitch circle at R_join 3.0994 and 3.0183 mm against r 3.0), and the one of the two that
+is conservative (tip radius 0.5) is conservative by 0.35 mm. Everywhere else `ra - r` or
+0.45 x face_width binds first, so those rows prove the law is not optimistic, not that it
+binds. The worst oracle reading on an unchamfered root is 1.23e-04 mm (30 teeth, module 1,
+tip radius 0.5), against the 1.79e-4 mm per module RESEARCH F3 read as the worst of the 5,159
+swept gears; no bar is applied in this plan.
+
+
+### Heaviest low-tooth rows (19-01)
+
+ROADMAP success criterion 4: what the hob root costs at the heaviest gear a `root_shape="trochoid"`
+request can still change, before the field exists. The trochoid applies only where `rb > rf`
+(`root_mode` ignores the request otherwise, 18 D-02), and with `rb = r cos(alpha)` and
+`rf = r - m (1.25 - x)` that reads `z < 2 (1.25 - x) / (1 - cos(alpha))`, which is 116.1 at
+14.5 degrees and profile shift -0.6, the field's extremes. So `CORNER` is 116 teeth, 14.5 degrees,
+profile shift -0.6, and every row of `bench/sweeps/composed.json` (18 rows: 200 teeth, modules 1.75
+and 10, every cutout family, hex and keyed bores, the tip chamfer at each module's largest, both
+recesses) is moved to it, keeping its other keys. Two lighter module-10 rows are added: the bare
+corner gear and the corner gear with `tip_chamfer=3` and both recesses. Each row is built and
+exported twice, as a worker pays it (a cold build with no cache, then the fine STL and the STEP
+export, each timed with `time.perf_counter()`): radial through `model._build_checked`, trochoid
+through `trochoid_part` with the cutter's tip radius at `root_fillet` (the cap applied by the cutter,
+as 19-04 will pass it). A cold request is the build plus the slower of the two exports, the rule of
+`bench.build_time.Timing.worst_request`, against `SPUR_BUILD_TIMEOUT` = 30 s. The last column is the
+Phase 18 oracle's worst reading over the built trochoid part's tooth-0 root edges, so the timed part
+is shown to be the oracle's root. 20 rows were tried: 17 validated and are timed as a pair, three are
+refused by `GearParams` at the corner and are printed with their sentences below the table. The
+RESEARCH A12 plan to replace refused hole rows did not arise: all five 60-hole rows validate at the
+corner and are timed. The script's output follows verbatim.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `7a0268f`
+- Read 2026-10-08T16:28:04Z to 2026-10-08T16:33:04Z
+- Load averages at start: 4.86, 7.00, 7.87; at end: 9.48, 10.47, 9.41
+
+SPUR_BUILD_TIMEOUT: 30 s; a cold request is one build plus the slower of the fine STL and the STEP export.
+
+#### Timings
+
+| Parameter set | Mode | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Trochoid / radial | Inside 30 s | Oracle, tooth 0 (mm) |
+|---|---|---|---|---|---|---|---|---|
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 10.03 | 0.36 | 0.33 | 10.40 | -- | yes | -- |
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 11.04 | 0.41 | 0.30 | 11.45 | 1.10 | yes | 1.12e-04 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 9.14 | 0.42 | 0.38 | 9.56 | -- | yes | -- |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 10.71 | 0.69 | 0.66 | 11.41 | 1.19 | yes | 1.12e-04 |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 12.21 | 0.63 | 0.43 | 12.85 | -- | yes | -- |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 13.97 | 0.69 | 0.43 | 14.66 | 1.14 | yes | 2.79e-04 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 13.16 | 0.66 | 0.46 | 13.82 | -- | yes | -- |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 14.28 | 0.70 | 0.43 | 14.98 | 1.08 | yes | 2.79e-04 |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 11.10 | 0.38 | 0.30 | 11.48 | -- | yes | -- |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 16.20 | 0.41 | 0.27 | 16.61 | 1.45 | yes | 1.12e-04 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.95 | 1.04 | 0.30 | 5.99 | -- | yes | -- |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 6.07 | 1.06 | 0.20 | 7.13 | 1.19 | yes | 1.12e-04 |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.21 | 0.70 | 0.23 | 4.91 | -- | yes | -- |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 5.53 | 0.75 | 0.19 | 6.28 | 1.28 | yes | 2.79e-04 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.33 | 0.72 | 0.21 | 5.05 | -- | yes | -- |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 5.94 | 0.80 | 0.18 | 6.74 | 1.34 | yes | 2.79e-04 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 7.37 | 0.54 | 0.42 | 7.91 | -- | yes | -- |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.23 | 0.61 | 0.39 | 9.85 | 1.24 | yes | 1.12e-04 |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 9.33 | 0.71 | 0.47 | 10.03 | -- | yes | -- |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.88 | 0.76 | 0.48 | 10.64 | 1.06 | yes | 2.79e-04 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 8.02 | 0.76 | 0.79 | 8.81 | -- | yes | -- |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.51 | 0.79 | 0.44 | 10.30 | 1.17 | yes | 2.79e-04 |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 4.50 | 0.64 | 0.29 | 5.13 | -- | yes | -- |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 4.04 | 0.51 | 0.19 | 4.54 | 0.88 | yes | 1.12e-04 |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 1.33 | 1.34 | 0.25 | 2.67 | -- | yes | -- |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 1.39 | 1.08 | 0.16 | 2.47 | 0.93 | yes | 1.12e-04 |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 8.12 | 0.60 | 0.39 | 8.72 | -- | yes | -- |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 9.41 | 0.63 | 0.37 | 10.04 | 1.15 | yes | 2.79e-04 |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | radial | 2.85 | 0.53 | 0.37 | 3.37 | -- | yes | -- |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | trochoid | 4.06 | 0.64 | 0.37 | 4.69 | 1.39 | yes | 1.12e-04 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 | radial | 0.76 | 0.68 | 0.16 | 1.44 | -- | yes | -- |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 | trochoid | 0.82 | 0.79 | 0.14 | 1.60 | 1.11 | yes | 2.79e-04 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both | radial | 4.66 | 0.69 | 0.21 | 5.36 | -- | yes | -- |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both | trochoid | 3.68 | 0.75 | 0.18 | 4.43 | 0.83 | yes | 2.79e-04 |
+
+Refused by `GearParams` at the corner, not timed:
+
+- `teeth=116 module=1.75 bore_hex=200 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6`: Hex bore is too large for the root diameter: its corners (231.11 mm across) must stay 0.4 mm inside the root circle (196.53 mm); reduce bore_hex. No whole honeycomb cell fits between 116.42 and 97.86 mm from the axis (hex_wall outside the bore mouth and inside the root circle): a 3 mm cell reaches 1.73 mm from its centre; reduce hex_cell or hex_wall.
+- `teeth=116 module=1.75 bore_hex=200 recess_sides=both bore_chamfer=0.4 pressure_angle=14.5 profile_shift=-0.6`: Hex bore is too large for the root diameter: its corners (231.11 mm across) must stay 0.4 mm inside the root circle (196.53 mm); reduce bore_hex.
+- `teeth=116 module=1.75 bore_d=200 bore_flat=150 keyway_width=3 keyway_depth=1.4 recess_sides=both bore_chamfer=0.4 pressure_angle=14.5 profile_shift=-0.6`: Bore is too large for the root diameter. Keyway is too deep for the root diameter: its floor corners reach 202.97 mm across, which must stay 0.4 mm inside the root circle (196.53 mm); reduce keyway_depth or keyway_width.
+
+**Heaviest:** teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 (trochoid) -- 16.61 s of 30 s.
+**Heaviest trochoid:** teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 (trochoid) -- 16.61 s of 30 s.
+
+
+`uptime` read 4.86 7.00 7.87 at 22:28 local time and 9.48 10.47 9.41 at 22:33, the same figures the
+script printed. The 1-minute load was above 1.5 for the whole run (the host carried other work, and
+the run itself adds its own build and export threads), so each figure is an upper bound for this host.
+
+Every one of the 17 pairs is inside 30 s, on both paths. The heaviest trochoid row is the 116-tooth,
+module-1.75 gear with a 156.3 mm hex bore, 60 holes of 1 mm on a 183.4 mm circle, the tip chamfer at
+1.75 mm and both recesses: 16.20 s to build plus 0.41 s (STL) and 0.27 s (STEP), 16.61 s for the
+request, 13.39 s of margin to 30 s, and 1.45 times its own radial row (11.48 s); it is also the heaviest
+row overall, radial rows included, which the keyed 32-spoke module-10 row (13.82 s radial, 14.98 s
+trochoid, 1.08 times) and the hex-bore 32-spoke module-10 row (12.85 s, 14.66 s, 1.14 times) follow.
+RESEARCH F7's scratch run read the keyed 32-spoke module-10 row at 11.12 s radial and 12.24 s
+trochoid (host load 6.5 to 11); this run reads 13.82 s and 14.98 s, 24 % and 22 % higher at a
+1-minute load of 4.9 to 9.5, with no cause isolated, and the same ratio to two digits (1.10 there,
+1.08 here). The trochoid path costs more than the radial on 14 of the 17 pairs and less on three (0.83, 0.88 and
+0.93 times: the module-10 and module-1.75 chamfer-and-recess rows and the module-1.75 60-hole row
+without a bore, each a 2.5 to 5.4 s request); the ratio ranges from 0.83 to 1.45, and the five largest
+(1.45, 1.39, 1.34, 1.28, 1.24) are all hole or honeycomb rows. This names the trochoid's share of each
+row and does not extrapolate to concurrent load: L37 owns that contract. L37's 29.42 s row (the
+200-tooth, module-10 keyed 32-spoke composition, read on the 12-CPU M2 Max) is untouched by
+construction: at 200 teeth `rb <= rf`, so a trochoid request is ignored and warned (18 D-02) and its
+cold request stays as L37 records it. The three refusals are the rows whose 200 mm hex bore or 200 mm
+round bore reaches the 196.53 mm root circle of a 116-tooth module-1.75 gear; they are `GearParams`
+refusals, not trochoid ones, and honeycomb, hex bore and keyed bore are all timed on the other rows.
+The oracle reads every trochoid row's root at 1.12e-04 mm (module 1.75, 6.4e-5 per module) or
+2.79e-04 mm (module 10, 2.79e-5 per module), inside the 1.3e-5 to 1.8e-4 per module RESEARCH F3 read
+over the swept gears; no bar is applied in this plan.
+
+
+### Spline deviation and the kernel bar (19-02)
+
+Two research files measured the shipped involute flank's spline deviation a factor of hundreds
+apart (SUMMARY correction 16: STACK 6.0e-5 and 1.0e-4 mm, PITFALLS 0.13 and 0.004 micrometres), so
+neither number could be a bar. `python -m bench.trochoid_part spline` reconciles them. **Method A**
+is the distance from a sample of the kernel spline to the nearest *vertex* of a 20,001-point
+reference; **method B** is the distance to the reference *polyline*, segment-wise. The reference
+for the hob root is `_trochoid_point` at 20,001 contact-normal angles, uniform in tan(beta) like
+the 16 points of `RootCurve`, from the root circle to the junction. The kernel tier is the Phase
+18 oracle (`tests/trochoid_oracle.clearance`) on `Edge.positionAt` positions of the built solid's
+tooth-0 root edges, read beside method B on the very same positions. Exit 0 means method B
+reproduced STACK's three trochoid figures to within one in the third digit and the oracle agreed
+with method B on all seven rows to the same standard.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `88c5ec5`
+- Read 2026-10-08T16:56:53Z to 2026-10-08T16:58:05Z
+- Load averages at start: 6.89, 6.37, 7.89; at end: 3.96, 5.57, 7.46
+
+Positions per spline: 2001 for the deviation figures (method B converges there, see the table below), 401 per root edge for the oracle against method B on the same positions, 41 for the 19-01 oracle reading. Reference: 20,001 points.
+
+#### Reconciliation: STACK's trochoid figures (module 1, mm)
+
+| Gear | Join | STACK | Method B | B off by (units of the 3rd digit) | Method A | Half the reference's largest vertex gap |
+|---|---|---|---|---|---|---|
+| 8 teeth, m 1, 20 deg, x 0, tip radius 0.38 | crossing | 3.58e-05 | 3.5807e-05 | 0.07 | 5.1845e-05 | 3.78e-05 |
+| 10 teeth, m 1, 20 deg, x 0, tip radius 0.38 | crossing | 3.89e-05 | 3.8933e-05 | 0.33 | 5.2097e-05 | 3.74e-05 |
+| 14 teeth, m 1, 20 deg, x 0, tip radius 0.38 | crossing | 3.99e-05 | 3.9847e-05 | 0.53 | 5.2250e-05 | 3.62e-05 |
+
+#### Reconciliation: STACK's shipped-flank figures (mm)
+
+| Gear | STACK | Reference spacing | Method A | Half the largest vertex gap | Method B |
+|---|---|---|---|---|---|
+| z=12, m=1, 20 deg | 6.0e-05 | i^1.5 (the shipped spline's) | 5.722e-05 | 5.820e-05 | 1.701e-06 |
+| z=12, m=1, 20 deg | 6.0e-05 | uniform in radius | 3.824e-05 | 3.880e-05 | 1.701e-06 |
+| z=12, m=1, 25 deg | 6.0e-05 | i^1.5 (the shipped spline's) | 6.221e-05 | 6.353e-05 | 1.536e-06 |
+| z=12, m=1, 25 deg | 6.0e-05 | uniform in radius | 4.192e-05 | 4.235e-05 | 1.536e-06 |
+| z=8, m=1, 25 deg | -- | i^1.5 (the shipped spline's) | 6.903e-05 | 7.055e-05 | 2.373e-05 |
+| z=8, m=1, 25 deg | -- | uniform in radius | 4.639e-05 | 4.703e-05 | 2.373e-05 |
+| z=19, m=1.75, 25 deg (default gear) | 1.0e-04 | i^1.5 (the shipped spline's) | 1.310e-04 | 1.343e-04 | 3.343e-06 |
+| z=19, m=1.75, 25 deg (default gear) | 1.0e-04 | uniform in radius | 8.854e-05 | 8.956e-05 | 3.343e-06 |
+
+#### Method B against the number of positions (14 teeth, m 1, 20 deg, x 0)
+
+| Positions per root edge | Method B (mm) |
+|---|---|
+| 201 | 3.9675e-05 |
+| 2001 | 3.9847e-05 |
+| 20001 | 3.9847e-05 |
+
+#### Kernel tier on seven rows (mm unless stated)
+
+| Row | Tip radius used | Join | Oracle, 41 positions | Oracle | Method B, same positions | Oracle vs B (units of the 3rd digit) | Method B, converged | Converged per module | 41-position reading / converged |
+|---|---|---|---|---|---|---|---|---|---|
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0.5 | tangent | 2.1967e-05 | 2.2595e-05 | 2.2596e-05 | 0.01 | 2.2610e-05 | 1.2920e-05 | 0.97 |
+| 8 teeth, m 1, 20 deg, x 0 | 0.38 | crossing | 3.5473e-05 | 3.5794e-05 | 3.5795e-05 | 0.01 | 3.5807e-05 | 3.5807e-05 | 0.99 |
+| 10 teeth, m 1, 20 deg, x 0 | 0.38 | crossing | 3.8193e-05 | 3.8929e-05 | 3.8929e-05 | 0.01 | 3.8933e-05 | 3.8933e-05 | 0.98 |
+| 14 teeth, m 1, 20 deg, x 0 | 0.38 | crossing | 3.8167e-05 | 3.9846e-05 | 3.9847e-05 | 0.01 | 3.9847e-05 | 3.9847e-05 | 0.96 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0 | crossing | 2.9877e-05 | 3.4905e-05 | 3.4906e-05 | 0.01 | 3.4941e-05 | 3.4941e-05 | 0.86 |
+| 30 teeth, m 0.2, 14.5 deg, x -0.6 | 0.183 | crossing | 3.5795e-05 | 3.5795e-05 | 3.5796e-05 | 0.01 | 3.5796e-05 | 1.7898e-04 | 1.00 |
+| 30 teeth, m 10, 14.5 deg, x -0.6 | 0.5 | crossing | 4.4785e-04 | 6.2097e-04 | 6.2097e-04 | 0.00 | 6.2097e-04 | 6.2097e-05 | 0.72 |
+
+#### Tripwire: the tip radius read 0.05 mm above the one used
+
+| Row | Reading (mm) | Reading per module | vs 0.001 x module | vs 0.002 x module | vs 0.005 x module | vs 0.01 x module |
+|---|---|---|---|---|---|---|
+| 10 teeth, m 1, 20 deg, x 0 | 1.1039e-02 | 1.1039e-02 | 11.04x, over | 5.52x, over | 2.21x, over | 1.10x, over |
+| 30 teeth, m 10, 14.5 deg, x -0.6 | 1.3233e-02 | 1.3233e-03 | 1.32x, over | 0.66x, UNDER | 0.26x, UNDER | 0.13x, UNDER |
+
+tripwire, 10 teeth, m 1, 20 deg, x 0: 1.1039e-02 mm, 1.1039e-02 per module
+tripwire, 30 teeth, m 10, 14.5 deg, x -0.6: 1.3233e-02 mm, 1.3233e-03 per module
+
+Verdict: reconciled -- method B reproduces STACK's three trochoid figures to one in the third digit, and the oracle agrees with method B on all seven rows.
+
+**Reading the tables.** STACK's trochoid figures are method B: 3.5807, 3.8933 and 3.9847e-5 mm
+against the quoted 3.58, 3.89 and 3.99e-5, off by 0.07, 0.33 and 0.53 of a unit of the third digit
+(the 14-tooth row reads 3.98e-5 where STACK printed 3.99e-5). Method A reads 5.18 to 5.23e-5 on the
+same splines, because it adds the reference's own vertex spacing to the deviation. STACK's
+shipped-flank figures are method A: every A reading sits within 2.5 % of half the largest vertex
+gap of its own reference (5.72 against 5.82e-5, 6.22 against 6.35e-5, 1.310 against 1.343e-4, and
+so on), so they are a measurement floor of the 20,001-point curve and not a deviation; method B on
+the same splines reads 1.5 to 3.3e-6 mm on z=12 and the default gear, 30 to 40 times below what
+STACK quoted. STACK does not record its flank's pressure angle or reference spacing, so its 6.0e-5
+and 1.0e-4 are bracketed (5.7 to 6.2e-5 with the shipped i^1.5 spacing at 20 and 25 degrees; 8.9e-5
+uniform to 1.31e-4 i^1.5 on the default gear) and not reproduced to three digits. PITFALLS' 0.13
+micrometre (1.3e-4 mm, z=8, 25 degrees) is not reproduced by either method (B reads 2.37e-5 mm, A
+6.9e-5 mm); its 0.004 micrometre on the default gear is within 20 % of B's 3.34e-6 mm (0.0033
+micrometre) and is not claimed as a reproduction, since the other of the pair is not. SUMMARY
+correction 16 is closed: **method B is the deviation, and the one a bar rests on.**
+
+**Sampling.** The plan read the kernel spline at 201 positions; the 14-tooth row shows that is too
+few (3.9675e-5 at 201, 3.9847e-5 at 2,001 and at 20,001: 2.2 units off STACK's third digit at
+201, 0.5 at 2,001), so the deviation figures here and in `product` use 2,001 positions. The oracle
+reads 401 positions per root edge (the whole run takes about 70 s for the seven rows, most of it
+the oracle) and agrees with method B on the same positions to 0.01 of a unit on all seven rows; the
+19-01 reading at 41 positions reads 0.72 to 1.00 of the converged figure (the module-10 row 28 %
+low, 4.4785e-4 against 6.2097e-4 mm). A correct root read at 41 positions can therefore sit 28 %
+below its true spline error, so the bar rests on the converged method-B maximum and not on a
+41-position reading, and 19-04 chooses its position count knowing that.
+
+**Bar arithmetic on the seven rows** (the whole product is `product`'s): the worst per module is
+the 30-tooth module-0.2 row at 1.7898e-4 (3.5796e-5 mm, matching 19-RESEARCH F3's 1.79e-4); 2e-3
+times the module is 11.2 times that. **Tripwire** (the tip radius read 0.05 mm above the one the
+cutter used): the module-1 10-tooth row reads 1.1039e-2 mm, over every listed bar (11.0x over
+1e-3, 5.5x over 2e-3, 2.2x over 5e-3, 1.10x over 1e-2). The shift does not scale with the module, so
+the module-10 row reads 1.3233e-2 mm = 1.32e-3 per module: over 1e-3 times the module, **under**
+2e-3 times it (0.66x). The tripwire therefore sits on a module-1 row.
+
+
+### Root arc dead band (19-02)
+
+The hob root leaves the root circle at half-angle pi / z - a / rf, where `a` is the cutter's flat
+tip land, so the root arc between neighbouring teeth spans about 2a, and
+`cq.Edge.makeThreePointArc` fails or silently drops it when that chord is tiny (19-RESEARCH F4).
+`python -m bench.trochoid_part arc` moves the first point of one gear's root curve along the root
+circle by each `a` below, builds the blank through the spike's outline and reads what the kernel
+did; then it tunes `backlash` by bisection until the real cutter's `a` lands near 1e-8 mm, to show
+the band is reachable from user input.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `88c5ec5`
+- Read 2026-10-08T16:58:06Z to 2026-10-08T16:58:06Z
+- Load averages at start: 3.96, 5.57, 7.46; at end: 3.96, 5.57, 7.46
+
+Gear: 12 teeth, module 1, 20 degrees, shift 0, tip radius 0.38 mm; the first point of the root curve moved along the root circle to half-angle pi / z - a / rf, so the root arc between neighbours spans about 2a. A build counts only if it is valid and has 6 z + 2 = 74 faces.
+
+#### Dead band
+
+| a (mm) | chord, root_r[-1] to the next root_l[0] (mm) | result |
+|---|---|---|
+| 0 | 0.000e+00 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 1e-12 | 2.000e-12 | builds, 62 faces (expected 74), valid, the arc was silently dropped |
+| 1e-10 | 2.000e-10 | builds, 62 faces (expected 74), valid, the arc was silently dropped |
+| 1e-09 | 2.000e-09 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 1e-08 | 2.000e-08 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 1e-07 | 2.000e-07 | Standard_Failure: GC_MakeArcOfCircle::Value() - no result |
+| 2e-07 | 4.000e-07 | builds, 74 faces (expected 74), valid |
+| 3e-07 | 6.000e-07 | builds, 74 faces (expected 74), valid |
+| 6e-07 | 1.200e-06 | builds, 74 faces (expected 74), valid |
+| 1e-06 | 2.000e-06 | builds, 74 faces (expected 74), valid |
+| 2e-06 | 4.000e-06 | builds, 74 faces (expected 74), valid |
+
+Last failing chord: 2.000e-07 mm (a = 1e-07); first building chord above it: 4.000e-07 mm (a = 2e-07); monotone (no building row at or below the last failing chord): yes.
+
+#### Reachable from user input: the tuned-backlash gear
+
+`GearParams` as above with root_fillet 3.0 (the cap applies) and backlash bisected over [0, 0.4] in 40 halvings: backlash 0.19898413579248878, tip radius used 0.614 mm of rho_max 0.614000014 mm, tip-land half-width a = 1.000e-08 mm (target 1e-08), root-arc chord 2.000e-08 mm. The bench outline raises Standard_Failure: GC_MakeArcOfCircle::Value() - no result.
+
+ROOT_ARC_MIN proposal: 2e-06 mm (10.0x the last failing chord); against the smallest real chord the product shows: pending (`product` reads it)
+
+**Reading the table.** The dead band has two edges. At chords of 2e-12 and 2e-10 mm (a = 1e-12 and
+1e-10) the arc is silently dropped: the blank builds, is valid, and has 62 faces where 74 are
+expected, which is the worse failure for being quiet. From 2e-9 mm up to **2.0e-7 mm (the last
+failing chord, a = 1e-7)**, and at a chord of exactly 0, the kernel raises `Standard_Failure:
+GC_MakeArcOfCircle::Value() - no result`. **4.0e-7 mm (a = 2e-7)
+is the first chord that builds** with all 74 faces, valid; every larger row builds, and no row at
+or below the last failing chord builds (monotone). 19-RESEARCH had 3e-7 as the first building row
+because it did not try 2e-7. The band is reachable: at backlash 0.19898413579248878 the cutter's
+`a` is 1.0e-8 mm with the tip radius capped to 0.614 mm of a rho_max of 0.614000014, and the bench
+outline raises the same exception. `model._build_checked` catches any non-`BuildError` and
+re-labels it "Geometry kernel failed (Standard_Failure); try smaller fillets or chamfers." which is
+the wrong remedy: the user set neither a fillet nor a chamfer, and the cause is a backlash and tip
+radius that happen to leave 1e-8 mm of tip land. 19-05's `ROOT_ARC_MIN` branch drops the arc below
+the constant and shares the junction vector instead. The proposal printed above is the smallest of
+1e-6, 2e-6, 5e-6 and 1e-5 mm that is at least 10 times the last failing chord, 2e-6 mm; whether
+it is below the smallest real chord in the product is read by `product`: the smallest real chord
+is 3.1644e-5 mm, so 2e-6 mm is 15.8 times below it (the guard subsection below).
+
+
+### Guard numbers over the product (19-02)
+
+19-RESEARCH measured the four structural guards on a 5,159-gear stride-2 sample of the Phase 18
+sweep product (A7). `python -m bench.trochoid_part product` runs **every** trochoid case of the
+31,446-case product, no stride: it builds each gear's blank through the spike's outline, reads the
+tooth-0 root splines against a 20,001-point reference (method B, 2,001 positions per edge), and
+measures the spacing ratio (max over min chord of the 16 root points), the annulus (81 positions
+per root edge against [rf, ra]), the closed-form area (the extruded face's area, volume over face
+width, against the shoelace area of the outline's own points), the junction gap
+(|half-angle of the last point - Profile.half_angle at its radius|, split by join) and the root
+arc's chord. It then resamples one gear's own curve with a growing chord ratio to find where the
+kernel fails, and proposes each bar from the maximum, with the headroom beside it. A second area
+measure, with the polygon taken through each arc's midpoint as well as its ends, is printed beside
+the plan's arcs-as-chords measure (see the area guard below).
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `01cd617`
+- Read 2026-10-08T17:12:56Z to 2026-10-08T17:15:28Z
+- Load averages at start: 19.93, 23.88, 15.18; at end: 68.90, 44.50, 25.06
+
+- Sweep cases: 31,446; trochoid gears (what `bench.trochoid._oracle_cases()` lists as `trochoid`): 10,326; built without a kernel exception: 10,326; kernel exceptions: 0.
+- 150 s wall on 18 spawn workers, one pass, no stride.
+
+#### Maxima over the whole product
+
+| Measure | Worst over the product | Gear |
+|---|---|---|
+| Spline error per module (method B, mm per mm of module) | 1.8431e-04 | grid B: 30 teeth, m 1.75, 14.5 deg, x -0.6, backlash 1.0, tip radius asked 3 mm |
+| Spacing ratio, max / min chord of the 16 root points | 13.325 (median 1.692) | grid A: 40 teeth, m 1.0, 14.5 deg, x 0.5, backlash 0.1, tip radius asked 3 mm |
+| Annulus, min(R - rf) over 162 positions | -1.137e-13 mm | grid B: 116 teeth, m 10.0, 14.5 deg, x -0.6, backlash 0.0, tip radius asked 3 mm |
+| Annulus, max(R - ra) | -4.405e-02 mm | grid B: 8 teeth, m 0.2, 14.5 deg, x -0.6, backlash 0.0, tip radius asked 0 mm |
+| Closed-form area, |face area / shoelace area - 1|, arcs as chords | 1.2162e-02 | grid A: 6 teeth, m 1.0, 14.5 deg, x -0.6, backlash 0.0, tip radius asked 0.38 mm |
+| Closed-form area, the polygon through each arc's midpoint too | 3.6791e-03 | grid B: 7 teeth, m 1.75, 14.5 deg, x -0.6, backlash 1.0, tip radius asked 3 mm |
+| Junction gap, tangent joins (4,303 gears), rad | 2.442e-13 | grid A: 26 teeth, m 1.0, 20.0 deg, x -0.6, backlash 0.1, tip radius asked 0.5 mm |
+| Junction gap, crossing joins (6,023 gears), rad | 6.939e-16 | grid A: 7 teeth, m 1.0, 14.5 deg, x -0.5, backlash 0.1, tip radius asked 0 mm |
+| Smallest root-arc chord | 3.1644e-05 mm | grid B: 6 teeth, m 1.75, 14.5 deg, x -0.6, backlash 0.1, tip radius asked 3 mm |
+| Thinnest waist per module (2 R h) | 2.5577e-03 mm | grid B: 7 teeth, m 10.0, 14.5 deg, x -0.6, backlash 0.1, tip radius asked 0 mm |
+
+#### Bunching: one gear resampled with a growing chord ratio (12 teeth, module 1, 20 degrees, tip radius 0.38 mm)
+
+| Nominal ratio | Chord ratio as built | Spline error, method B (mm) | Kernel |
+|---|---|---|---|
+| 10 | 7.849 | 6.0802e-05 | builds, 74 faces, valid |
+| 100 | 76.5 | 2.2007e-04 | builds, 74 faces, valid |
+| 1000 | 749.7 | 5.1756e-04 | builds, 74 faces, valid |
+| 10000 | 7393 | 3.6088e-03 | builds, 74 faces, valid |
+| 100000 | 7.327e+04 | 9.1444e-03 | builds, 74 faces, valid |
+| 1e+06 | 7.289e+05 | nan | Standard_Failure:  |
+| 1e+07 | 7.269e+06 | nan | Standard_Failure:  |
+
+#### Proposals (each from the maximum above)
+
+kernel bar proposal: 0.002 x module -- the worst spline error per module is 1.8431e-04 and the oracle's own resolution about 1e-15 per module; headroom 10.9x over the worst, 2e+12x over the resolution (at or over 10x: the planner's call)
+ROOT_SPACING_RATIO_MAX proposal: 1000 -- the maximum spacing ratio is 13.325, headroom 75.0x (at or over 10x: the planner's call); the first chord ratio the kernel failed at is 728888, 729x over the bar
+annulus proposal: [rf - TOL, ra + TOL] with TOL = 1e-06 mm -- the worst excursion outside [rf, ra] is 1.137e-13 mm, headroom 8.8e+06x (at or over 10x: the planner's call)
+ROOT_AREA_REL_MAX proposal (arcs as chords): NONE of (0.01, 0.02, 0.05, 0.1) has 10x headroom over 1.2162e-02; the largest listed value, 0.1, is 8.2x; goes to the human
+ROOT_AREA_REL_MAX proposal (arc midpoints in the polygon): 0.05 -- the maximum is 3.6791e-03, headroom 13.6x (at or over 10x: the planner's call)
+ROOT_JUNCTION_BAR_RAD proposal: 1e-11 rad -- the larger join maximum is 2.442e-13 rad (tangent 2.442e-13, crossing 6.939e-16), the libm floor 1e-12; headroom 40.9x (at or over 10x: the planner's call)
+ROOT_ARC_MIN check: proposal 2e-06 mm (from `arc`) against the smallest real root-arc chord 3.1644e-05 mm: the proposal is below it, which is 15.8x the proposal
+
+**Guard by guard.** 10,326 trochoid gears, the count `bench.trochoid._oracle_cases()` lists (and
+18-04's 10,326 curves), all built, **0 kernel exceptions**.
+
+- *Kernel bar.* The worst spline error is 1.8431e-4 per module (30 teeth, module 1.75, 14.5 degrees,
+  x -0.6, backlash 1.0, tip radius capped from 3.0), 3 % above the 1.79e-4 the stride-2 sample
+  read; the oracle's own resolution is about 1e-15 per module (18-04). The proposed bar is
+  2e-3 x module, **10.9x the worst**: at the 10x line, so it goes to the human with the tripwire
+  (11.0x over 1e-3 and 5.5x over 2e-3 on the module-1 10-tooth row; 0.66x of it on module 10).
+- *Spacing ratio.* Maximum 13.325 (40 teeth, module 1, 14.5 degrees, x 0.5, backlash 0.1, tip radius
+  capped from 3.0; the sample's 11.34 was another gear). Proposed `ROOT_SPACING_RATIO_MAX` 1000,
+  **75x**; the kernel first fails at a chord ratio of 7.29e5 (an empty `Standard_Failure`), 729x
+  above it, and the spline error on the bunching gear is 5.2e-4 mm at a ratio of 750 and 3.6e-3 mm at
+  7,393 (over a 2e-3 bar): at 1000 the guard stops a bunched curve before the proof would see it.
+- *Annulus.* The worst excursion outside [rf, ra] is 1.137e-13 mm (116 teeth, module 10, backlash 0:
+  a float residue below the root circle); the nearest approach to the tip circle is 0.044 mm.
+  Proposed [rf - TOL, ra + TOL] with `model.TOL` = 1e-6 mm, **8.8e6x**.
+- *Closed-form area.* With both arcs taken as chords, as the plan specifies, the maximum is
+  1.2162e-2 (6 teeth, module 1, 14.5 degrees, x -0.6, backlash 0, tip radius 0.38): none of 1e-2,
+  2e-2, 5e-2, 1e-1 is 10x over it (0.1 is **8.2x**), so this guard **joins the checkpoint**. With the
+  polygon through each arc's midpoint (which `model` has for nothing: `_polar(ra, c)` and
+  `_polar(rf, c + pi / z)` are the arcs' own middle points) the maximum is 3.6791e-3 (7 teeth,
+  module 1.75, x -0.6, backlash 1.0, tip radius capped from 3.0) and 5e-2 reads **13.6x**. 19-05
+  builds the polygon either way; the measure is the human's choice, with the bar following it.
+- *Junction gap.* Tangent joins (4,303 gears) 2.442e-13 rad (26 teeth, 20 degrees, x -0.6, backlash
+  0.1, tip radius 0.5), crossing joins (6,023 gears) 6.939e-16 rad. Proposed
+  `ROOT_JUNCTION_BAR_RAD` 1e-11 rad, **40.9x**. The 1e-12 rad of 18-01's `JUNCTION_BAR_RAD` was set on
+  rows reading 4e-17 and is only 4.1x over this product's tangent maximum, so 19-05 does not reuse
+  it.
+- *Root arc.* The smallest real chord in the product is 3.1644e-5 mm (6 teeth, module 1.75, 14.5
+  degrees, x -0.6, backlash 0.1, tip radius capped from 3.0); the `arc` proposal of 2e-6 mm is
+  **15.8x below it**, which closes the comparison the root-arc subsection left pending: the
+  guard cannot drop a real arc.
+
+
+### Waist walk (19-02, D-07)
+
+D-07 asked the bench to walk the low-tooth corner and find where the built waist stops being a
+tooth: the kernel refuses, or the spline-to-oracle gap leaves its bar. `python -m bench.trochoid_part
+waist --bar-per-module 2e-3` walks 6, 7 and 8 teeth, module 1, 14.5 degrees, profile shift -0.6 to 0
+in 0.01 steps, tip radius 0, 0.38 and 3.0 (capped), at the default backlash (0.10) and at 0 (the
+backlash 19-RESEARCH F8's scratch walk used), builds every trochoid gear's blank, reads its tooth-0
+root with the independent oracle at 401 positions per edge and takes the waist as `2 R h` of
+`RootCurve.waist`. The bar in use is 2e-3 x module, the proposal `product` made. Floor candidates
+are printed with the number of gears each would warn on, in the walk and in the whole product (the
+product's waists come from the curve alone, no kernel).
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `2dbf6f3`
+- Read 2026-10-08T17:50:55Z to 2026-10-08T18:02:50Z
+- Load averages at start: 8.47, 23.43, 36.47; at end: 49.56, 54.38, 49.19
+
+D-07's walk: teeth (6, 7, 8), module 1, 14.5 degrees, backlash (0.1, 0.0) mm, profile shift -0.6 to 0 in 0.01 steps, tip radius (0.0, 0.38, 3.0) mm (3.0 is the field's maximum, capped by the cutter). 1098 gears in 713 s on 18 spawn workers; oracle at 401 positions per root edge; bar read as 0.002 x module.
+
+#### What `root_mode` answered
+
+| Answer | Gears |
+|---|---|
+| radial (tooth severed) | 37 |
+| trochoid | 1061 |
+
+#### The walk by series
+
+| Teeth | Backlash | Tip radius asked (used) | Severed at x up to | First trochoid x | Thinnest built waist (mm) | at x | Worst oracle reading (mm) |
+|---|---|---|---|---|---|---|---|
+| 6 | 0.1 | 0 (0) | -0.44 | -0.43 | 1.4861e-02 | -0.43 | 4.227e-05 |
+| 6 | 0.1 | 0.38 (0.38) | -0.58 | -0.57 | 3.2325e-03 | -0.57 | 4.447e-05 |
+| 6 | 0.1 | 3 (0.661) | -- | -0.6 | 1.0652e-01 | -0.6 | 5.017e-05 |
+| 6 | 0 | 0 (0) | -0.49 | -0.48 | 4.9794e-03 | -0.48 | 4.300e-05 |
+| 6 | 0 | 0.38 (0.38) | -- | -0.6 | 2.1992e-02 | -0.6 | 4.463e-05 |
+| 6 | 0 | 3 (0.596) | -- | -0.6 | 1.3753e-01 | -0.6 | 4.814e-05 |
+| 7 | 0.1 | 0 (0) | -0.56 | -0.55 | 1.2622e-02 | -0.55 | 4.685e-05 |
+| 7 | 0.1 | 0.38 (0.38) | -- | -0.6 | 1.3704e-01 | -0.6 | 5.023e-05 |
+| 7 | 0.1 | 3 (0.661) | -- | -0.6 | 2.8410e-01 | -0.6 | 5.983e-05 |
+| 7 | 0 | 0 (0) | -- | -0.6 | 9.4238e-03 | -0.6 | 4.764e-05 |
+| 7 | 0 | 0.38 (0.38) | -- | -0.6 | 2.0800e-01 | -0.6 | 5.023e-05 |
+| 7 | 0 | 3 (0.596) | -- | -0.6 | 3.2235e-01 | -0.6 | 5.681e-05 |
+| 8 | 0.1 | 0 (0) | -- | -0.6 | 9.0302e-02 | -0.6 | 5.001e-05 |
+| 8 | 0.1 | 0.38 (0.38) | -- | -0.6 | 2.8143e-01 | -0.6 | 5.541e-05 |
+| 8 | 0.1 | 3 (0.661) | -- | -0.6 | 4.2284e-01 | -0.6 | 6.900e-05 |
+| 8 | 0 | 0 (0) | -- | -0.6 | 1.6362e-01 | -0.6 | 5.001e-05 |
+| 8 | 0 | 0.38 (0.38) | -- | -0.6 | 3.5694e-01 | -0.6 | 5.541e-05 |
+| 8 | 0 | 3 (0.596) | -- | -0.6 | 4.6704e-01 | -0.6 | 6.502e-05 |
+
+The thinnest built waist, then the next four:
+
+- 3.2325e-03 mm: 6 teeth, x -0.57, backlash 0.1, tip radius asked 0.38 mm (used 0.38), crossing join
+- 4.9794e-03 mm: 6 teeth, x -0.48, backlash 0, tip radius asked 0 mm (used 0), crossing join
+- 9.4238e-03 mm: 7 teeth, x -0.6, backlash 0, tip radius asked 0 mm (used 0), crossing join
+- 1.2622e-02 mm: 7 teeth, x -0.55, backlash 0.1, tip radius asked 0 mm (used 0), crossing join
+- 1.4861e-02 mm: 6 teeth, x -0.43, backlash 0.1, tip radius asked 0 mm (used 0), crossing join
+
+**Thinnest built waist: 3.2325e-03 mm** (6 teeth, x -0.57, backlash 0.1, tip radius asked 0.38 mm (used 0.38)); 1061 trochoid gears built of 1098 walked.
+
+Kernel refusals: none (every trochoid gear built one valid solid).
+
+Worst oracle reading in the walk: 6.8995e-05 mm (8 teeth, x 0, backlash 0.1, tip radius asked 3 mm (used 0.661)).
+- readings over 0.001 x module (module 1): 0 of 1061
+- readings over 0.002 x module (module 1): 0 of 1061
+- readings over 0.005 x module (module 1): 0 of 1061
+- readings over 0.01 x module (module 1): 0 of 1061
+Oracle readings over the bar in use (0.002 mm): 0.
+
+#### Floor candidates
+
+| Candidate | Floor | Walk gears warned (of 1061 built) | Product gears warned (of 10,326) |
+|---|---|---|---|
+| measured: 10x the thickest waist where the kernel refused or the oracle left the bar | none: no failure signature in the walk | -- | -- |
+| spline scale: 10x the worst oracle reading in the walk | 6.8995e-04 mm per mm of module | 0 | 0 |
+| printability: MIN_TIP_FDM, the tip warning's own number | 4.0000e-01 mm, absolute | 294 | 771 |
+
+Product gears warned, by module:
+
+- spline scale: module 0.2: 0 of 616 (0 on a tangent join); module 1: 0 of 6,399 (0 on a tangent join); module 1.75: 0 of 1,469 (0 on a tangent join); module 10: 0 of 1,842 (0 on a tangent join)
+- printability: module 0.2: 595 of 616 (195 on a tangent join); module 1: 125 of 6,399 (0 on a tangent join); module 1.75: 43 of 1,469 (0 on a tangent join); module 10: 8 of 1,842 (0 on a tangent join)
+
+Thinnest waist per module over the whole product: 2.5577e-03 mm (grid B: 7 teeth, m 10.0, 14.5 deg, x -0.6, backlash 0.1, tip radius asked 0 mm).
+
+**What the walk found.** Nothing refuses. Of 1,098 gears, 37 are `tooth severed` (waist at or below
+zero, refused by `root_mode` before the kernel sees them) and 1,061 are trochoid gears, **all
+1,061 built one valid solid**; the worst oracle reading is 6.9e-5 mm (8 teeth, x 0, tip radius
+capped from 3.0), and **0 readings are over even the smallest listed bar**, 1e-3 mm. So there is no
+failure signature above the spline-error scale, as 19-RESEARCH F8 expected: the kernel builds a
+valid tooth at a waist of 3.2e-3 mm and the oracle accepts it, and the floor is a choice the human
+makes on these numbers. The walk reproduces F8 (4.9794e-3 mm at 6 teeth, x -0.48, backlash 0, sharp
+cutter; next 9.4238e-3 mm, F8's 4.98e-3 and 9.4e-3) and finds a thinner waist F8 did not: **3.2325e-3
+mm** at 6 teeth, x -0.57, backlash 0.1, tip radius 0.38. The waist grows by about 0.015 mm per 0.01
+of profile shift, so any positive thickness is reachable from user input. The three candidates:
+**(measured)** none, because no gear failed; **(spline scale)** 10x the worst oracle reading,
+6.8995e-4 mm per mm of module, warns on 0 of 1,061 walk gears and 0 of the 10,326 product gears
+(the product's thinnest waist per module is 2.5577e-3 mm, 3.7x above it); **(printability)**
+`MIN_TIP_FDM`, 0.4 mm, the number the tip warning already uses, warns on 294 of the 1,061 walk gears
+and 771 of the 10,326 product gears. By module the 771 are mostly a small-module warning: 595 of
+the 616 module-0.2 gears (195 of them on tangent joins, with no undercut at all) against 176 of the
+9,710 gears of module 1 and above (125 at module 1, 43 at 1.75, 8 at 10), because an absolute
+0.4 mm floor sits above the whole tooth base of a module-0.2 gear.
+
+
+### Bars adopted (19-02)
+
+Recorded 2026-10-09 from the human's answer at 19-02's blocking checkpoint (Task 3). 19-04, 19-05
+and 19-06 write these values into code from this subsection, each beside the measurement it rests
+on, and nowhere else. Nothing was re-measured to write it: every number below is copied from the
+four subsections above (HEAD `01cd617`, `2dbf6f3`, `af53e4f`).
+
+**The human's words, verbatim: `take the recommendations`.** The mapping to option ids is the
+orchestrator's, from the recommendations the first 19-02 executor stated in its checkpoint report;
+the human named no id. The five decisions as adopted:
+
+| Decision | Adopted id | Value |
+|---|---|---|
+| Kernel bar | `bar-proposed` | 2e-3 x module |
+| Waist floor | `floor-print` | 0.4 mm, absolute (`MIN_TIP_FDM`) |
+| Waist field name | `name-root_waist` | `root_waist` |
+| D-02's one-way door | `d02-confirm` | `root_shape` and the `root_fillet` reinterpretation stand |
+| Area guard bar | `area-midpoints` | 5e-2 on the polygon through the arcs' midpoints |
+
+#### Kernel bar: `bar-proposed`, 2e-3 x module (L33 D-06)
+
+- Worst spline error per module over all 10,326 trochoid gears of the Phase 18 product, no stride:
+  **1.8431e-4** (30 teeth, module 1.75, 14.5 degrees, x -0.6, backlash 1.0, tip radius capped from
+  3.0). The oracle's own resolution: about 1e-15 per module (18-04).
+- Bar 2e-3 x module: **10.9x** the worst (10.85), 2e12x the resolution. At the 10x line and not
+  far over it, which is why it went to the human; the next listed value, 5e-3, was offered as
+  `bar-wider` (27x) and not taken.
+- Tripwire (the tip radius read 0.05 mm above the one the cutter used), on the module-1 10-tooth
+  row: **1.1039e-2 mm, 5.5x over the bar**. The tripwire must stay on a module-1 row: the shift does
+  not scale with the module, and on module 10 the same shift reads 1.3233e-2 mm, 0.66x of the bar
+  (2e-2 mm), under it.
+- Position count: the 19-01 reading at 41 positions can sit 28 % below the converged spline error
+  (module-10 row, 4.4785e-4 against 6.2097e-4 mm), so the bar is applied to a reading taken at 401 or
+  more positions per root edge, where the oracle agrees with method B to 0.01 of a unit of the third
+  digit on all seven rows.
+
+#### Waist floor: `floor-print`, 0.4 mm absolute (D-07, L08)
+
+- Measured: thinnest built waist **3.2325e-3 mm** (6 teeth, module 1, x -0.57, backlash 0.1, tip
+  radius 0.38, crossing join). Every one of the 1,061 trochoid gears in the walk built one valid
+  solid; the worst oracle reading was 6.8995e-5 mm and no reading was over even 1e-3 x module. There
+  is no failure signature above the spline-error scale, so the floor is a printability choice made
+  on the numbers, after the walk, and not a kernel limit. The floor is 124x the thinnest built waist
+  and 5.8e3x the worst oracle reading; "headroom over a failure" does not apply because nothing failed.
+- The floor warns and never refuses (D-06): the waist is printed for every trochoid gear.
+- It warns on **294 of the 1,061** walk gears and **771 of the 10,326** product gears.
+- **Small-module caveat, recorded with the adoption.** 595 of the 616 module-0.2 gears warn (195 of
+  them on tangent joins, which have no undercut at all) against 176 of the 9,710 gears of module 1
+  and above (125 of 6,399 at module 1, 43 of 1,469 at 1.75, 8 of 1,842 at 10). The 0.4 mm floor sits
+  above the whole tooth base of a module-0.2 gear, so on a small module the warning is mostly a
+  printability remark about the part and not about the undercut. The human adopted the floor with
+  these counts in front of them. The warning 19-06 plans for it is the `waist thin` sentence, which
+  does not use the word undercut, so a tangent-join module-0.2 gear is not told it is undercut.
+- The two candidates not taken: `floor-measured` does not exist (no failure signature) and
+  `floor-spline` (6.8995e-4 mm per mm of module) warns on 0 of 1,061 and 0 of 10,326.
+
+#### Waist field name: `name-root_waist`
+
+`root_waist`: the tooth's narrowest thickness in the hob-cut root, printed for every trochoid gear,
+true on tangent and crossing joins alike, beside `root_d`, `root_fillet` and `root_form_d`. "Undercut
+waist" would misname it on a tangent gear, which has a waist and no undercut. It is a published key
+on `/api/info` and `spur info` from its first release, so a rename later must keep the old key.
+
+#### D-02's one-way door: `d02-confirm`
+
+`root_shape: Literal["radial", "trochoid"]`, default `radial` (so no shared link moves, L05), group
+Teeth after `tip_chamfer`, the generated `--root-shape` flag, and `root_fillet` read as the hob's
+tip radius under it (D-01). Resting on: 10,326 of 10,326 trochoid gears built, 0 kernel exceptions.
+**19-04 is not blocked.**
+
+#### Area guard: `area-midpoints`, bar 5e-2 on the polygon through the arcs' midpoints
+
+- Measure: |face area / shoelace area - 1| with the polygon taken through the midpoint of each arc
+  (the tip arc's and the root arc's own middle points, which `model` already has) as well as its
+  ends. Worst over the product: **3.6791e-3** (7 teeth, module 1.75, x -0.6, backlash 1.0, tip radius
+  capped from 3.0). Bar 5e-2: **13.6x** (13.59).
+- Rejected: the plan's measure with both arcs taken as chords. Worst 1.2162e-2 (6 teeth, module 1,
+  14.5 degrees, x -0.6, backlash 0, tip radius 0.38); the largest listed bar, 0.1, is **8.2x**, and
+  none of 1e-2, 2e-2, 5e-2, 1e-1 reaches 10x. A bar under 10x is the human's, and a larger listed
+  value was not invented to fit it. 19-05 builds the midpoint polygon.
+
+#### The other guard bars: the planner's call, recorded as measured
+
+None of these is under 10x, so none needed a human answer (19-CONTEXT "Claude's Discretion").
+
+| Bar | Value | Worst over the product | Headroom | Beside it |
+|---|---|---|---|---|
+| `ROOT_SPACING_RATIO_MAX` | 1000 | 13.325 (40 teeth, module 1, 14.5 degrees, x 0.5, backlash 0.1, tip radius capped from 3.0) | 75.0x | the kernel first fails at a chord ratio of 728,888, 729x above the bar |
+| annulus | [rf - TOL, ra + TOL], TOL = `model.TOL` = 1e-6 mm | 1.137e-13 mm outside [rf, ra] (116 teeth, module 10, backlash 0); nearest approach to the tip circle 0.044 mm | 8.8e6x | |
+| `ROOT_JUNCTION_BAR_RAD` | 1e-11 rad | 2.442e-13 rad on tangent joins (26 teeth, 20 degrees, x -0.6, backlash 0.1, tip radius 0.5); crossing joins 6.939e-16 rad | 40.9x | the 18-01 bar of 1e-12 rad is only 4.1x over this product's tangent maximum, so **19-05 must not reuse it** |
+| `ROOT_ARC_MIN` | 2e-6 mm | last failing chord 2.0e-7 mm (a = 1e-7 mm) | 10.0x over the last failing chord | 15.8x below the smallest real chord in the product, 3.1644e-5 mm (6 teeth, module 1.75, x -0.6, backlash 0.1, tip radius capped from 3.0) |
+
+The root-arc dead band has a second, quieter edge: chords of 2e-12 and 2e-10 mm build a valid
+solid with the arc silently dropped (62 faces where 74 are expected), and the band is reachable
+from user input (backlash 0.19898413579248878 with the tip radius capped leaves a = 1.0e-8 mm).
+`ROOT_ARC_MIN` is why 19-05 drops the arc below it and shares the junction vector.
+
+
+### Chamfer law on the real build (19-09)
+
+19-01 bisected L29's tip-chamfer law on a trochoid outline `bench/trochoid_part.py` assembled itself
+(`trochoid_outline`, a copy of RESEARCH Pattern 2), and 19-02 read the root arc's dead band on the
+same copy. 19-04 moved the builder into `spur.model` and 19-09 removed the copy: since this plan the
+bench builds blanks through `model._gear_blank` / `model._outline` and parts through
+`model._build_checked` with `root_shape="trochoid"` and the row's tip radius as `root_fillet`; for a
+bisection the part is built with `tip_chamfer=0` and chamfered at `c` by `chamfered`, as before. One
+definition of the hob-root outline by the phase's end (the 11-05 precedent). The same 14 rows were
+re-run with `python -m bench.trochoid_part chamfer` and `... arc`; both outputs follow verbatim
+(`chamfer` first), the `arc` host-state heading renamed so this subsection has one per run. HEAD in the
+host state is the commit before this plan's: the tree carried this plan's bench edits, uncommitted,
+while the runs were taken.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `5f3df84`
+- Read 2026-10-09T05:47:04Z to 2026-10-09T05:51:31Z
+- Load averages at start: 2.92, 5.27, 5.90; at end: 3.86, 4.27, 5.26
+
+#### Bisection (20 halvings between 0 and 0.45 x face_width)
+
+| Gear | Tip radius (mm) | Join | R_join (mm) | pred = ra - R_join | last ok | first fail | last ok - pred | Verdict | Binding cap | Worst oracle (mm) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0 | tangent | 15.1805 | 3.1944892 | 3.1944884 | 3.1944916 | -7.71e-07 | on the law | ra - r | 1.35e-05 |
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0.5 | tangent | 15.2788 | 3.0961925 | 3.0961908 | 3.0961940 | -1.73e-06 | on the law | ra - r | 2.20e-05 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0 | tangent | 48.6785 | 1.7215252 | 1.7215244 | 1.7215276 | -8.65e-07 | on the law | ra - r | 5.91e-06 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | tangent | 48.8589 | 1.5410770 | 1.5410739 | 1.5410771 | -3.06e-06 | on the law | ra - r | 9.50e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0 | crossing | 14.5916 | 0.8084213 | 0.8233534 | 0.8233566 | +1.49e-02 | conservative | ra - r | 2.44e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | crossing | 14.5508 | 0.8492071 | 2.2499979 | 2.2500011 | +1.40e+00 | conservative | ra - r | 1.23e-04 |
+| 12 teeth, m 1, 20 deg, x 0 | 0 | crossing | 5.6756 | 1.3243676 | 1.3243654 | 1.3243686 | -2.23e-06 | on the law | ra - r | 1.97e-05 |
+| 12 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 5.6457 | 1.3542630 | 1.3542602 | 1.3542634 | -2.80e-06 | on the law | ra - r | 3.99e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0 | crossing | 4.7567 | 1.2433329 | 2.2499979 | 2.2500011 | +1.01e+00 | conservative | ra - r | 2.15e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 4.7174 | 1.2825685 | 1.2825680 | 1.2825712 | -5.13e-07 | on the law | ra - r | 3.94e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0 | crossing | 3.8448 | 1.1552447 | 1.2656250 | 1.2656282 | +1.10e-01 | conservative | ra - r | 2.29e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 3.7960 | 1.2039992 | 2.2499979 | 2.2500011 | +1.05e+00 | conservative | ra - r | 3.66e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0 | crossing | 3.0994 | 0.9006385 | 0.9006364 | 0.9006397 | -2.04e-06 | on the law | ra - R_join | 2.99e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0.5 | crossing | 3.0183 | 0.9816865 | 1.3320547 | 1.3320580 | +3.50e-01 | conservative | ra - R_join | 4.47e-05 |
+
+First-failure reasons: default 19 teeth, m 1.75, 25 deg, x 0 @ 0: Standard_Failure; default 19 teeth, m 1.75, 25 deg, x 0 @ 0.5: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0: invalid; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 12 teeth, m 1, 20 deg, x 0 @ 0: invalid; 12 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5: invalid
+
+Binding cap is ra - R_join on: 6 teeth, m 1, 14.5 deg, x 0 @ 0; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5.
+Verdict: law holds -- 8 rows on the law, 6 conservative (30 teeth, m 1, 14.5 deg, x -0.6 @ 0; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5; 10 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0.5; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5).
+
+**Against 19-01.** The 14 table rows above are identical to the 14 rows of `### Chamfer across the
+junction (19-01)`: every R_join, `pred`, last ok, first fail, `last ok - pred`, verdict, binding cap and
+worst oracle reading (a string equality of the two row lists, run when this was written). So the last
+building `c` on every row equals 19-01's to all seven printed decimals, inside the bisection's
+resolution (3.2e-6 mm), as expected: the assembly moved unchanged from the bench into `model.py`. The
+verdict is the same, `law holds`, 8 rows on the law and the same 6 conservative, no row optimistic, so
+the cap `ra - R_join - TIP_CHAMFER_MARGIN` that 19-04 shipped rests on the shipped build and not only on
+the copy. The worst oracle reading on an unchamfered root is 1.23e-04 mm (30 teeth, module 1, tip radius
+0.5), unchanged; the bar is 2e-3 x module (`### Bars adopted (19-02)`), so that reading is 0.06 of it.
+
+#### Root arc dead band on the shipped outline
+
+#### Host state (the `arc` run)
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `5f3df84`
+- Read 2026-10-09T05:52:24Z to 2026-10-09T05:52:24Z
+- Load averages at start: 3.40, 4.09, 5.13; at end: 3.40, 4.09, 5.13
+
+Gear: 12 teeth, module 1, 20 degrees, shift 0, tip radius 0.38 mm; the first point of the root curve moved along the root circle to half-angle pi / z - a / rf, so the root arc between neighbours spans about 2a. The outline is the shipped one (`model._outline`, ROOT_ARC_MIN 2e-06 mm), read twice: with every guard on, and with the annulus guard lifted (a moved first point is not a curve any cutter draws, and its spline swings under the root circle). A build counts only if it is one valid solid with 5 z + (root arcs made) + 2 faces; 6 z + 2 = 74 when every arc is made.
+
+#### Dead band
+
+| a (mm) | chord, root_r[-1] to the next root_l[0] (mm) | all guards on | annulus guard lifted |
+|---|---|---|---|
+| 0 | 0.000e+00 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-12 | 2.000e-12 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-10 | 2.000e-10 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-09 | 2.000e-09 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-08 | 2.000e-08 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-07 | 2.000e-07 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 2e-07 | 4.000e-07 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 3e-07 | 6.000e-07 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 6e-07 | 1.200e-06 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-06 | 2.000e-06 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 67 faces (expected 67: 5 of 12 root arcs made), valid |
+| 2e-06 | 4.000e-06 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 74 faces (expected 74: 12 of 12 root arcs made), valid |
+
+11 rows. All guards on: 0 build, 11 are refused before the kernel. Annulus guard lifted: 10 rows are under ROOT_ARC_MIN (chord at most 2.000e-06 mm, the neighbours share a vertex); the dead band is CLOSED: every row builds one valid solid.
+
+#### Reachable from user input: the tuned-backlash gear
+
+`GearParams` as above with root_fillet 3.0 (the cap applies) and backlash bisected over [0, 0.4] in 40 halvings: backlash 0.19898413579248878, tip radius used 0.614 mm of rho_max 0.614000014 mm, tip-land half-width a = 1.000e-08 mm (target 1e-08), root-arc chord 2.000e-08 mm: builds, 62 faces (expected 62: 0 of 12 root arcs made), valid. The shipped blank builds.
+
+**Is the dead band closed?** On what the kernel and `ROOT_ARC_MIN` do, yes. With the annulus guard lifted,
+all 11 rows build one valid solid: the 9 rows with a chord of 1.2e-6 mm or less leave the arc out and read
+62 faces (5 z + 2: the neighbours share a vertex), the row at a = 1e-6 mm (chord 2.000e-06 mm, which is
+`ROOT_ARC_MIN` to float noise) makes 5 of its 12 arcs and reads 67 faces, and the row at 2e-6 mm makes all
+12 and reads 74. 19-02 read this gear raising `GC_MakeArcOfCircle::Value() - no result` at every chord from
+2e-9 to 2.0e-7 mm and at exactly 0, silently dropping the arc (62 faces where 74 were expected) at 2e-12
+and 2e-10 mm, and building from 4.0e-7 mm; no row of this table raises, and the 62-face rows are the
+shipped rule's own answer and not a silent drop. The user-reachable gear (backlash 0.19898413579248878,
+tip land 1.0e-8 mm) builds through the shipped blank with every guard on: 62 faces, 0 of 12 arcs made.
+
+**With every guard on, the 11 hand-made rows are all refused, and the refusal is not the dead band.** The
+shipped annulus guard raises `BuildError` on each, at the same radius (4.748526 mm against a root circle
+of 4.750000 mm, 1.474e-3 mm under it). A moved first point is not a curve any cutter draws: the root spline
+through it and the other points of the real curve runs under the root circle. 19-02's table built these
+rows because its outline had no such guard; this outline is the shipped one and does what 19-04 and 19-05
+made it do. The plan expected every row of the dead-band table to build one valid solid with the guards on,
+and that is not met for these hand-made rows; the table shows both readings instead of smoothing it. The
+closure is read on the annulus-lifted column (kernel plus `ROOT_ARC_MIN`) and on the tuned gear, which is a
+real cutter's curve and builds with all guards on.
+
+**What else moved in the bench.** `arc`'s ROOT_ARC_MIN proposal and `arc_min_proposal` are gone (the
+constant is adopted: 2e-6 mm, 10.0x the last failing chord 19-02 read); `product` prints the shipped
+constant against the smallest real root-arc chord instead of a proposal; `product`'s bunching table lifts
+the shipped spacing guard for its builds (it would answer first at every ratio over 1000), so it still
+reads the kernel's own first failure and not the guard. Neither `product` nor `waist` was re-run: their
+bars are adopted and no number in this plan depends on them. `outline_teeth` stays as a measuring helper:
+it makes no edge and keeps the points before `ROOT_ARC_MIN`, which `arc` and `product` read their chords
+and areas from.
+
+### Composed build time on the real build (19-09)
+
+ROADMAP success criterion 4, on the code that ships: the heaviest gear a `root_shape="trochoid"` request
+can still change (116 teeth at 14.5 degrees and profile shift -0.6, where `rb > rf` still holds), every
+row 19-01 timed, each in both root shapes, through the standard runner. `bench/sweeps/trochoid.json` holds
+the 17 corner rows `GearParams` accepts (the 18 rows of `composed.json` moved to the corner, minus 3
+refused there, plus the 2 lighter module-10 rows of `LIGHTER_ROWS`), each followed by the same row with
+`"root_shape": "trochoid"`; `tests/test_bench.py` pins the file to `corner_rows()` and the refusal rule and
+checks that every twin is a trochoid build (a row the predicate ignores would be timed as a radial one).
+`make bench.build SWEEP=bench/sweeps/trochoid.json` times each set as a worker pays it: a cold build, then
+the fine STL and the STEP export, against `SPUR_BUILD_TIMEOUT` = 30 s. This is also the reading L37 asks
+for ("Revisit when ... Phase 19's composed re-measure"). The script's output follows verbatim.
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `5f3df84`
+- Sweep: `bench/sweeps/trochoid.json`
+- Load averages at start: 3.40, 4.05, 5.10
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+- `uptime` before the first row: 11:52 local, load averages 3.26 4.04 5.10 (2026-10-09T05:52:35Z); after the last: 11:56 local, 7.70 6.45 5.96 (05:56:45Z)
+
+#### Timings
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 9.94 | 0.43 | 0.38 | 10.37 | yes | 5898384 | 117966 |
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 10.81 | 0.48 | 0.35 | 11.28 | yes | 9656784 | 193134 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 9.26 | 0.43 | 0.35 | 9.69 | yes | 5935584 | 118710 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 10.24 | 0.49 | 0.36 | 10.73 | yes | 9693984 | 193878 |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 10.79 | 0.54 | 0.39 | 11.33 | yes | 7298484 | 145968 |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 11.73 | 0.59 | 0.39 | 12.32 | yes | 10708884 | 214176 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 10.78 | 0.55 | 0.38 | 11.33 | yes | 7354284 | 147084 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 11.86 | 0.59 | 0.37 | 12.45 | yes | 10764684 | 215292 |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 9.17 | 0.32 | 0.27 | 9.50 | yes | 10223484 | 204468 |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 14.28 | 0.36 | 0.25 | 14.64 | yes | 13981884 | 279636 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 4.67 | 0.91 | 0.22 | 5.58 | yes | 8951684 | 179032 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 4.87 | 0.95 | 0.19 | 5.83 | yes | 12710084 | 254200 |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 3.99 | 0.62 | 0.19 | 4.61 | yes | 13825284 | 276504 |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 3.89 | 0.69 | 0.17 | 4.58 | yes | 17235684 | 344712 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 4.11 | 0.67 | 0.20 | 4.77 | yes | 14545884 | 290916 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 4.10 | 0.73 | 0.17 | 4.84 | yes | 17956284 | 359124 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 6.99 | 0.52 | 0.41 | 7.51 | yes | 5546684 | 110932 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 7.08 | 0.55 | 0.37 | 7.63 | yes | 9305084 | 186100 |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 7.82 | 0.64 | 0.44 | 8.46 | yes | 10425284 | 208504 |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 8.00 | 0.68 | 0.41 | 8.68 | yes | 13835684 | 276712 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 6.68 | 0.65 | 0.41 | 7.33 | yes | 7757084 | 155140 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 6.93 | 0.70 | 0.41 | 7.63 | yes | 11167484 | 223348 |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 3.73 | 0.41 | 0.19 | 4.14 | yes | 7420684 | 148412 |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 3.62 | 0.44 | 0.16 | 4.06 | yes | 11179084 | 223580 |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 1.09 | 0.91 | 0.17 | 2.01 | yes | 8921484 | 178428 |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 1.25 | 1.03 | 0.16 | 2.28 | yes | 12679884 | 253596 |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 7.21 | 0.54 | 0.35 | 7.75 | yes | 7324084 | 146480 |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 8.49 | 0.56 | 0.33 | 9.06 | yes | 10757684 | 215152 |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 2.74 | 0.50 | 0.37 | 3.24 | yes | 5504484 | 110088 |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 2.89 | 0.56 | 0.33 | 3.45 | yes | 9262884 | 185256 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 | 0.70 | 0.66 | 0.15 | 1.35 | yes | 12991684 | 259832 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 root_shape=trochoid | 0.86 | 0.75 | 0.14 | 1.61 | yes | 16425284 | 328504 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both | 3.54 | 0.64 | 0.19 | 4.18 | yes | 13014884 | 260296 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both root_shape=trochoid | 3.44 | 0.71 | 0.17 | 4.14 | yes | 16425284 | 328504 |
+
+**Heaviest:** teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid -- 14.64 s of 30 s.
+**Largest fine STL:** teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid -- 17956284 bytes, 359124 triangles.
+
+The 1-minute load was above 1.5 for the whole run (3.3 to 7.7; the run's own build and export threads are
+part of it), so every figure is an upper bound for this host and none is a bar.
+
+**The heaviest row, against 30 s.** The runner exits 0: all 34 requests are inside 30 s. The heaviest is the
+trochoid twin of the 116-tooth, module-1.75 gear with a 156.3 mm hex bore, 60 holes of 1 mm on a 183.4 mm
+circle, the tip chamfer at 1.75 mm and both recesses: 14.28 s to build plus 0.36 s (STL) and 0.25 s (STEP),
+**14.64 s of 30 s, 15.36 s of margin** (49 % of the timeout). It is the heaviest row of the whole sweep,
+radial rows included (the heaviest radial request is 11.33 s). **Against its radial twin:** 9.50 s (9.17
+build, 0.32 STL, 0.27 STEP), so the hob root costs 1.54 times the radial request on this row, the largest
+of the 17 pairs. The other 16 pairs read 0.98 to 1.19 times (median over the 17, 1.06; 14 above 1, 3 below,
+at 0.98, 0.99 and 0.99); the next heaviest are the module-10 keyed 32-spoke row at 12.45 s trochoid against
+11.33 s radial (1.10) and the module-10 hex-bore 32-spoke row at 12.32 against 11.33 (1.09). **Against
+19-01's spike reading of the same row:** 16.61 s trochoid (16.20 build) and 11.48 s radial, 1.45 times, at a
+load of 4.86 rising to 9.48 on the same host. This run reads 1.97 s lower on the trochoid request
+(14.64 against 16.61, 12 %) and 1.98 s lower on the radial one (9.50 against 11.48, 17 %) at a load of 3.3
+rising to 7.7. Both are single readings under different loads, so this is not a delta and no cause is
+isolated; what it supports is that the shipped build did not cost more than the bench copy it replaced on
+this row, and that the margin to 30 s was 13.39 s in the spike and is 15.36 s here. The ratio rose from 1.45
+to 1.54 because both requests fell by about the same 2 s.
+
+**Against L37's 29.42 s row.** L37's heaviest allowed composed row is the 200-tooth, module-10 keyed
+32-spoke composition (29.42 s alone on the 12-CPU M2 Max, 2026-09-30). It is not in this sweep and was not
+re-run: at 200 teeth `rb <= rf` for every pressure angle and shift the field allows (the trochoid applies
+only below 116.1 teeth, `CORNER`'s comment), so a trochoid request is ignored and warned (18 D-02,
+`root_mode` answers "nothing radial to replace") and that request builds the radial part it built before.
+The heaviest row a trochoid request can change reads 14.64 s on this host, half of L37's figure from
+another host, so Phase 19's composed re-measure does not reach L37's row: its 503-under-load contract,
+`SPUR_BUILD_TIMEOUT` = 30 s and `spoke_count`'s `le` of 32 stand. Nothing here is extrapolated to
+concurrent load, and no figure is compared across hosts as a delta.
+
+### The gate, priced (19-09)
+
+What the phase cost the gate (L34, 66 s) and the commit slice (L36, 30 s), and what `derive()` costs per call
+now that it asks `root_mode`. Everything is read on the host 19-01 read its before-figure on, so the delta
+below is between two readings on one machine; the bars were set on another and are quoted, not compared with a
+delta. HEAD for every run below is `4b08aa8` (19-09 Task 1, which added one test and touched only `bench/` and
+`tests/test_bench.py` beyond the plans before it). The runs are consecutive, `uptime` before and after each, nothing else CPU-heavy
+started by the executor.
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`), 18 CPUs, arm64, 64.0 GiB RAM: the host of
+  `### Gate baseline (19-01)`, so a delta against its 52.89 s mean is valid
+- The bars' host: L34 set 66 s on an Apple M2 Max with 12 CPUs (63.555 s read there); L36 read
+  `make verify.fast` at 11.28 s warm on the same host. `PYTEST_WORKERS` is 8 on both machines. The bars are
+  quoted as written, not rescaled, and no figure here is extrapolated to another host
+- Python 3.12.15 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- Read 2026-10-09, 05:59 to 06:13 UTC for the runs, 07:32 UTC for the `derive()` re-read
+- The 1-minute load rose with each run's own eight workers (4.03 before the first `make verify`, 9.06
+  after the second), so every wall figure is an upper bound for an idle host and none is a bar
+
+#### `make verify`, three runs
+
+| Run | Result line | `real` (s) | 1-minute load before -> after | UTC |
+|---|---|---|---|---|
+| 1 | `1210 passed in 208.01s` | 208.52 | 4.03 -> 6.30 | 05:59:24 -> 06:02:52 |
+| 2 | `1210 passed in 160.95s` | 161.71 | 6.30 -> 9.06 | 06:02:52 -> 06:05:34 |
+| 3 | `1210 passed in 207.90s` | 208.60 | 9.06 -> 7.98 | 06:05:34 -> 06:09:02 |
+
+Mean `real` **192.94 s** (pytest 192.29 s), range 161.71 to 208.60 s; coverage 97.90 % against the floor of 96;
+all three green, no `ReentrantCallError`. **Against L34's 66 s bar: 2.92 times it, 126.94 s over.** **Delta
+against `### Gate baseline (19-01)` on this host: +140.05 s (52.89 s mean to 192.94 s), 3.65 times, with 187
+more tests (1023 to 1210).** The plan's gate stops here, because the mean is over 66.0 s; the human was asked
+and answered `accept-A` on 2026-10-09 (below).
+
+The cost accumulated wave by wave. These are the orchestrator's `make test` walls after each wave, same host,
+the same caveat on load:
+
+| After | Tests | `make test` wall |
+|---|---|---|
+| 19-01 baseline | 1026 | 52.89 s |
+| wave 3 (19-04) | 1054 | 112.79 s |
+| wave 4 (19-06) | 1081 | 137.76 s |
+| wave 5 (19-07) | 1209 | 206.05 s |
+
+Wave by wave the wall grew by 59.90 s (wave 3, 28 tests), 24.97 s (wave 4, 27 tests) and 68.29 s (wave 5, 128
+tests); 19-09 added one test (1209 to 1210). The walls are single readings under different loads, so the steps
+say where the cost entered, not what each test costs.
+
+#### `make verify.fast`, three runs against L36's 30 s kill
+
+| Run | Result line | `real` (s) | 1-minute load before -> after |
+|---|---|---|---|
+| 1 | `824 passed in 11.01s` | 11.46 | 6.34 -> 6.12 |
+| 2 | `824 passed in 10.96s` | 11.39 | 6.12 -> 6.49 |
+| 3 | `824 passed in 11.11s` | 11.54 | 6.49 -> 8.06 |
+
+All three are inside the 30 s kill, at 824 tests, 11.39 to 11.54 s; L36's own reading was 11.28 s on the M2
+Max. A commit does not pay the gate's extra time: the pre-push hook, CI and `make worktree.land` do.
+
+#### Where the cost is: the 25 slowest calls
+
+One `.venv/bin/python -m pytest -n 8 --cov --cov-report=term --durations=25 -q`: `1210 passed in 208.03s`,
+`real` 208.23 s, load 8.06 -> 6.43. The 25 slowest call times sum to 340.5 s. **21 of them are this phase's
+tests in `tests/test_model.py`, summing to 305.5 s**, which is 18.4 % of the 1,664 worker-seconds the run had
+(208.03 s x 8 workers):
+
+| Kernel-tier test | Rows in the 25 | Each (s) | Sum (s) |
+|---|---|---|---|
+| `test_the_built_root_is_the_oracle_s_root_on_every_kernel_row` | 7 | 11.1 to 21.6 | 92.0 |
+| `test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-*]` | 12 | 12.5 to 21.4 | 169.5 |
+| `test_the_kernel_tier_proof_fails_when_the_printed_tip_radius_is_off_by_0_05_mm` | 1 | 25.78 | 25.78 |
+| `test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root` | 1 | 18.22 | 18.22 |
+
+The listing stops at 25, so 305.5 s is a lower bound for the phase's share, not the whole of the 140.05 s
+delta. The other four of the 25 are not this phase's: `tests/test_cli.py::test_readme_export_examples_run`
+12.06 s, `tests/test_calc.py::test_the_trochoid_sweep_over_the_allowed_box` 8.80 s and two pool tests. The
+oracle's 401 positions per row (19-02) set the kernel rows' cost; 19-02's `Method B against the number of
+positions` table is the place that count was chosen.
+
+#### `derive()` per call
+
+`.venv/bin/python -m timeit -r 5 -s "from spur.calc import derive; from spur.params import GearParams;
+p=GearParams()" "derive(p)"`, and the same with `p=GearParams(root_shape='trochoid')`, best of 5:
+
+| Call | Best of 5 | UTC | 1-minute load before -> after |
+|---|---|---|---|
+| default `GearParams()` | 10.2 usec | 06:13:50 | 5.22 -> 4.96 |
+| `GearParams(root_shape='trochoid')` | 29.8 usec | 06:13:51 | 4.96 -> 4.96 |
+| default `GearParams()` | 10.3 usec | 07:32:45 | 2.55 -> 2.67 |
+| `GearParams(root_shape='trochoid')` | 30 usec (timeit's own rounding) | 07:32:47 | 2.67 -> 2.67 |
+
+19-04 read 10.3 and 29.6 usec at a load of 2.75 on this host. The hob root costs `derive()` about three times
+the radial call, 20 usec, because it solves the curve once; against an HTTP round trip and the module
+docstring's every-keystroke claim that stays negligible. The `derive()` docstring carries the second pair and
+names the first.
+
+#### Decision: `accept-A` (2026-10-09)
+
+The mean is 2.92 times L34's 66 s bar, so the plan stopped and the human was offered three options: (A) accept
+the measured cost and record it in L38 (Phase 12 D-10's precedent); (B) move named kernel rows out of the gate
+into `bench/`, each named with its cost; (C) raise the bar with a new decision. The human's reply, verbatim:
+`accept-A`. No test moves out of the gate, L34's 66 s is not changed and the oracle's 401-position count stays.
+That leaves L34's 66 s on paper while the gate reads about 193 s on this host; re-setting the bar from an
+idle-host reading, or a measured revisit of the per-row position count, is a separate decision and is not part
+of this plan. L38 (19-10) records the cost.
+
+### Waist at the smallest arc thickness (19-REVIEW CR-01)
+
+The 19-02 walk above takes `RootCurve.waist` at the smallest half-angle `h` and prints `2 R h` there.
+19-REVIEW CR-01 found that on a crossing join `d(R h)/dR = R' h` is positive at that point, so the arc
+thickness is still falling below that radius and the printed `root_waist` was too thick. `_waist` now
+minimises `R h` (the same 60-step golden section, the same neighbours of the smallest sample), so
+`root_waist` is the narrowest arc. The walk table above is dated history and is not rewritten.
+
+Read 2026-10-09 on the host of the walk above (18 CPUs, arm64, Python 3.12.15), from the curve alone, no
+kernel and no oracle. Dense = the smallest of 40,000 samples of `2 R h` from the root circle to the
+junction.
+
+| Gear (module, pressure angle, shift, tip radius) | Printed before | Printed after | Dense minimum |
+|---|---|---|---|
+| 10 teeth, 1, 20, 0, 0.38 (backlash 0) | 1.473 | 1.442 | 1.442 |
+| 7 teeth, 2, 25, 0.27, 0 | 3.269 | 3.149 | 3.149 |
+| 8 teeth, 2, 25, 0.24, 1 | 3.536 | 3.428 | 3.428 |
+| 8 teeth, 1, 14.5, -0.5132, 0.38 | 0.401 | 0.395 | 0.395 |
+| 6 teeth, 1, 14.5, -0.3103, 0.38 | 0.401 | 0.391 | 0.391 |
+| default gear (tangent join) | 3.303 | 3.303 | 3.303 |
+
+The last two gears sit just under the 0.4 mm floor: the old reading printed 0.401 and warned on neither.
+
+The walk and the product re-counted with the same code (`bench.trochoid_part`'s `WALK_*` grid and
+`product_waists()`), old definition reproducing L38's figures first:
+
+| | Before | After |
+|---|---|---|
+| Walk trochoid gears under 0.4 mm | 294 of 1,061 | 303 of 1,061 |
+| Product gears under 0.4 mm (unrounded) | 771 of 10,326 | 775 of 10,326 |
+| Thinnest walk waist, mm | 3.2325e-3 | 3.2317e-3 |
+| Thinnest product waist per module, mm | 2.5577e-3 | 2.5574e-3 |
+
+The floor is unchanged at 0.4 mm and stays 124x the thinnest walk waist. The kernel and oracle columns of
+the walk were not re-read: no curve moved, only which point of it is called the waist.

@@ -50,7 +50,10 @@ TIP_CHAMFER_MARGIN = 0.001  # mm, how far inside the start of the involute splin
 # 0.05 mm inside it. The margin is one printed step, not the contact itself, because
 # tip_chamfer_effective rounds to 3 dp at construction and round() can move a value up
 # by half a step (2.9365 mm rounds to 2.937 mm) -- a cap sitting exactly at the contact
-# could round past it.
+# could round past it. Phase 19 re-bisected the law across the hob root's spline-to-spline
+# junction (bench/RESULTS.md "Chamfer across the junction (19-01)", 2026-10-08, 14 rows,
+# 20 steps): no row optimistic, 8 on the law (worst last-building minus pred -3.06e-6 mm)
+# and 6 conservative, so the same margin holds under the trochoid.
 HEX_CELL_CAP = 120  # cells, the most whole honeycomb cells one part may have. Measured
 # 2026-09-29 (bench/RESULTS.md "Honeycomb cell-count spike (Phase 11, D-24)") on a
 # 12-CPU arm64 host, load averages 8-9 (well above this project's own "quiet" bar):
@@ -66,8 +69,9 @@ HEX_CELL_CAP = 120  # cells, the most whole honeycomb cells one part may have. M
 ROOT_CURVE_POINTS = 16  # points, how many the hob's trochoid root is sampled at. STACK's
 # N = 16 uniform in roll measured 3.6-4.0e-5 mm against cq.Edge.makeSpline at module 1,
 # z 8/10/14, tip radius 0.38 mm (re-run in the research with the pinned kernel pair:
-# 3.58e-5, 3.89e-5, 3.98e-5 mm); the shipped flank is 16 points too. Phase 19 sets the
-# kernel bar, not this phase.
+# 3.58e-5, 3.89e-5, 3.98e-5 mm); the shipped flank is 16 points too. The bar the built
+# root is held to lives in tests/test_model.py (KERNEL_BAR_PER_MODULE, 2e-3 x module) and
+# bench/RESULTS.md "Bars adopted (19-02)".
 TROCHOID_JOIN_EPS = 1e-4  # relative to rb, never millimetres: how close to zero the
 # roll of the cutter's flank foot (Cutter.xi) may be before the junction with the
 # involute is taken as tangent without a bracket. Measured in the repo 2026-10-08 (Apple
@@ -81,6 +85,33 @@ TROCHOID_JOIN_EPS = 1e-4  # relative to rb, never millimetres: how close to zero
 # within one scan step, and 1e-4*rb is 4.7e-4 mm there, 16x STACK's loss point. Inside the
 # band the flank join is the form point, off by at most (eps*rb)^2/(2*rb) = 5e-9*rb.
 # bench/RESULTS.md "Join epsilon (18-03)" carries the run.
+ROOT_WAIST_FLOOR = 0.4  # mm, absolute and not a multiple of the module: the thinnest the
+# hob-cut root's narrowest tooth (the root waist) may print before derive() warns. It only
+# ever warns: the waist is printed for every trochoid gear and nothing is refused for being
+# thin (D-06); a waist at or under zero is `tooth severed`, a refusal of its own. The walk
+# behind it (bench/RESULTS.md "Waist walk (19-02, D-07)", read 2026-10-08, 18-CPU arm64,
+# Python 3.12.15, cadquery 2.8.0): 6, 7 and 8 teeth, module 1, 14.5 degrees, profile shift
+# -0.6 to 0 in 0.01 steps, tip radius 0 / 0.38 / 3.0 mm, backlash 0.1 and 0 -- 1,098 gears,
+# 37 refused as `tooth severed`, the other 1,061 all built one valid solid, the worst oracle
+# reading 6.8995e-5 mm and the thinnest built waist 3.2325e-3 mm (6 teeth, shift -0.57,
+# backlash 0.1, tip radius 0.38). No failure signature exists above the spline-error scale,
+# so this is a printability choice and not a kernel limit, and "headroom over a failure"
+# does not apply: it is 124x the thinnest built waist and 5.8e3x the worst oracle reading.
+# Three candidates were put to the human with their firing counts; the one adopted at 19-02
+# ("take the recommendations", mapped to `floor-print` by the orchestrator, recorded in
+# "Bars adopted (19-02)", 2026-10-09) is MIN_TIP_FDM's own number, the width below which a
+# tip is about one extrusion line. A separate constant so a change to the tip warning does
+# not move this one without a new walk. It warns on 294 of the 1,061 walk gears and 771 of
+# the 10,326 gears of the Phase 18 sweep product -- and mostly on small modules: 595 of the
+# 616 module-0.2 gears (195 of them on tangent joins, which have no undercut at all) against
+# 176 of the 9,710 of module 1 and above (125 at module 1, 43 at 1.75, 8 at 10), because
+# 0.4 mm is more than the whole tooth base of a module-0.2 gear. So on a small module this
+# warning is a printability remark about the part, which is why its sentence never says
+# "undercut".
+PROFILE_SHIFT_MAX = 1.0  # modules, the `profile_shift` field's upper bound (params.py `le`).
+# calc.py imports params for typing only, so the number is written here once and
+# tests/test_trochoid.py reads the field's metadata to keep the two equal. The restated
+# undercut sentence prints no advised shift above it.
 
 
 def inv(a: float) -> float:
@@ -263,10 +294,16 @@ def root_fillet(p: GearParams) -> float:
     return round(min(p.root_fillet, 0.45 * gap), 3) if gap > 0 else 0.0
 
 
-def spline_start(pr: Profile, fillet: float) -> float:
+def spline_start(pr: Profile, fillet: float, curve: RootCurve | None = None) -> float:
     """Radius where the outline's involute spline begins: the base circle (or the root
     circle, if larger), raised to make room for the root fillet's straight lead-in when
     one is needed, and never past halfway from root to tip.
+
+    Under the hob's root (`curve` given) it is the junction radius, the curve's own last
+    float, and the halfway clamp does not apply: 1,713 of 5,159 trochoid junctions sit
+    beyond halfway (19-RESEARCH F6), and the chamfer bound that reads this
+    (`tip_chamfer_limit`) was re-bisected on exactly that radius (bench/RESULTS.md
+    "Chamfer across the junction (19-01)"). `fillet` is not read then.
 
     model._outline starts the flank spline here, and tip_chamfer_limit keeps the tip
     chamfer's footprint above it, because the kernel cannot carry an end-face chamfer
@@ -274,6 +311,8 @@ def spline_start(pr: Profile, fillet: float) -> float:
     tip chamfer spike"). Not Profile.r_start: that is the theoretical involute start,
     this is where the modelled spline actually starts.
     """
+    if curve is not None:
+        return curve.points[-1][0]
     r_line = max(pr.rb, pr.rf + 2.0 * fillet) if fillet > 0 else pr.rb
     r_line = min(r_line, pr.rf + 0.5 * (pr.ra - pr.rf))
     return max(r_line, pr.r_start)
@@ -291,7 +330,7 @@ def recess_fillet(p: GearParams, rf: float) -> float:
     return round(min(p.recess_fillet, 0.45 * width, 0.45 * p.recess_depth), 3)
 
 
-def tip_chamfer_limit(p: GearParams) -> tuple[float, str]:
+def tip_chamfer_limit(p: GearParams, rm: RootMode | None = None) -> tuple[float, str]:
     """(limit, reason): the smallest of three bounds on the tip chamfer, and which one
     binds. Compared as a tuple so a tie is broken by the reason text, deterministically.
 
@@ -304,27 +343,39 @@ def tip_chamfer_limit(p: GearParams) -> tuple[float, str]:
     - ra - spline_start(...) - TIP_CHAMFER_MARGIN: the kernel's own limit, measured, not
       a design rule (bench/RESULTS.md "Tooth-tip chamfer spike") -- it binds only where
       the root fillet's straight lead-in reaches above the pitch circle (a large profile
-      shift or root fillet for the module).
+      shift or root fillet for the module). Under the hob's root there is no lead-in:
+      the bound reads the junction of the two splines instead.
+
+    `rm` is the caller's one answer to "which root is built"; without it this asks
+    `root_mode` itself, so the bound and the part cannot name different roots.
     """
     pr = profile(p)
+    if rm is None:
+        rm = root_mode(p, pr, requested=p.root_shape, rho=p.root_fillet)
+    if rm.curve is not None:
+        flank = (pr.ra - spline_start(pr, 0.0, rm.curve) - TIP_CHAMFER_MARGIN,
+                 "to keep it on the involute flank, above its junction with the hob-cut "
+                 "root")
+    else:
+        flank = (pr.ra - spline_start(pr, root_fillet(p)) - TIP_CHAMFER_MARGIN,
+                 "to keep it on the involute flank, above the straight lead-in from the "
+                 "root fillet")
     return min(
         (0.45 * p.face_width, "to leave a land on the tooth tip between the two faces' "
                               "chamfers"),
         (pr.ra - pr.r, "to keep it above the pitch circle"),
-        (pr.ra - spline_start(pr, root_fillet(p)) - TIP_CHAMFER_MARGIN,
-         "to keep it on the involute flank, above the straight lead-in from the root "
-         "fillet"),
+        flank,
     )
 
 
-def tip_chamfer_effective(p: GearParams) -> float:
+def tip_chamfer_effective(p: GearParams, rm: RootMode | None = None) -> float:
     """Tip chamfer actually cut on the tooth-tip edges at both faces: the requested
     size, trimmed to what the tooth allows and never refused (L03,
     REQ-tip-chamfer-capped). model.py cuts exactly this value, so the part and the
     printed number cannot disagree (L08)."""
     if p.tip_chamfer <= 0:
         return 0.0
-    return round(min(p.tip_chamfer, tip_chamfer_limit(p)[0]), 3)
+    return round(min(p.tip_chamfer, tip_chamfer_limit(p, rm)[0]), 3)
 
 
 def cutout_walls(p: GearParams, rf: float) -> tuple[float, float] | None:
@@ -896,12 +947,28 @@ class DerivedDimensions(BaseModel):
         json_schema_extra={"unit": "mm"})
     tip_thickness: float = Field(description="Tooth thickness at the tip, as an arc.",
                                  json_schema_extra={"unit": "mm"})
-    root_thickness: float = Field(description="Tooth thickness on the root circle, as an arc.",
-                                  json_schema_extra={"unit": "mm"})
-    root_gap: float = Field(description="Gap between teeth on the root circle, as an arc.",
-                            json_schema_extra={"unit": "mm"})
+    root_thickness: float | None = Field(
+        description="Tooth thickness on the root circle, as an arc; null where the "
+                    "hob-cut (trochoid) root applies.",
+        json_schema_extra={"unit": "mm"})
+    root_gap: float | None = Field(
+        description="Gap between teeth on the root circle, as an arc; null where the "
+                    "hob-cut (trochoid) root applies.",
+        json_schema_extra={"unit": "mm"})
     root_fillet: float = Field(
-        description="Root fillet radius actually used, after capping to the gap.",
+        description="Root fillet radius actually used: with the radial root, the request "
+                    "capped to the tooth gap; with the trochoid root, the hob's tip "
+                    "radius, capped to the largest that leaves the cutter a tip land.",
+        json_schema_extra={"unit": "mm"})
+    root_form_d: float | None = Field(
+        description="Diameter where the hob-cut root meets the involute flank, the "
+                    "cutter-envelope junction; not an ISO 21771 form diameter; null "
+                    "unless the trochoid root applies.",
+        json_schema_extra={"unit": "mm"})
+    root_waist: float | None = Field(
+        description="Narrowest tooth thickness anywhere in the hob-cut root, the "
+                    "smallest arc on its own radius; null unless the trochoid root "
+                    "applies.",
         json_schema_extra={"unit": "mm"})
     tip_chamfer_effective: float | None = Field(
         description="Tip chamfer actually cut on the tooth-tip edges at both faces, "
@@ -998,6 +1065,14 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     validating the frozen model on construction cost about 2.3 usec, negligible next
     to an HTTP round trip and well inside the module docstring's "fast enough to run
     on every keystroke" claim (measured, not assumed -- CLAUDE.md).
+
+    With the `root_mode` call this function now makes (19-04), re-measured 2026-10-09 by
+    the same command on an Apple M5 Max, Python 3.12.15 (a different host from the
+    figures above, so not a delta against them): 10.3 usec for the default gear at a
+    1-minute load of 2.55 to 2.67 and 30 usec (timeit's own rounding) with
+    `root_shape="trochoid"`, which solves the curve once, at 2.67; the same two calls
+    read 10.2 and 29.8 usec at a load of about 5.0 earlier that day (bench/RESULTS.md,
+    "The gate, priced (19-09)").
     """
     pr = profile(p)
     tip, root, gap = _tooth(pr)
@@ -1005,25 +1080,42 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     odd = p.teeth % 2 == 1
     over_tips = 2 * pr.ra * (math.cos(math.pi / (2 * p.teeth)) if odd else 1.0)
 
+    # One answer to "which root is built", asked once and read below, exactly as
+    # model._build reads it (19 D-01; PITFALLS 1: three predicates is how a number gets
+    # printed for a part that was built another way).
+    rm = root_mode(p, pr, requested=p.root_shape, rho=p.root_fillet)
+
     warnings: list[str] = []
     if tip < MIN_TIP_FDM:
         warnings.append(f"Tip is only {tip:.2f} mm wide; FDM needs about {MIN_TIP_FDM} mm.")
-    rfil = root_fillet(p)
-    if rfil < p.root_fillet:
-        warnings.append(f"Root fillet reduced to {rfil:.2f} mm to fit the tooth gap.")
-    h = spline_start(pr, rfil) - pr.r
-    if round(h, 3) > 0:
-        # Compared at the 3 dp it prints, never the raw float: a crossing can sit
-        # arbitrarily close to zero and "0.000 mm above" must never print (the
-        # tip-chamfer branch's rule below, 10-REVIEW.md CR-01). The cause clause is true
-        # on every firing: the chord ends at r + 2*fillet - (1.25 - x)*m, capped halfway
-        # up the tooth at r + (x - 0.125)*m, so a positive height needs the fillet over
-        # half the dedendum. 0 of 44 pre-v0.2 fixture records cross (counted
-        # 2026-10-02), so no pinned warnings tuple moves (L26).
-        warnings.append(f"The flank starts with a straight chord reaching {h:.3f} mm above "
-                        "the pitch circle, where it deviates from the involute: the root "
-                        "fillet is larger than half the dedendum.")
-    tch = tip_chamfer_effective(p)
+    if rm.curve is not None and rm.cutter is not None:
+        # The hob's root: the printed tip radius is the one the cutter used, the cap
+        # sentence comes from root_warnings below, and there is neither a gap to cap
+        # to nor a straight lead-in chord to measure (L08).
+        rfil = rm.cutter.rho
+    else:
+        rfil = root_fillet(p)
+        if rfil < p.root_fillet:
+            warnings.append(f"Root fillet reduced to {rfil:.2f} mm to fit the tooth gap.")
+        h = spline_start(pr, rfil) - pr.r
+        if round(h, 3) > 0:
+            # Compared at the 3 dp it prints, never the raw float: a crossing can sit
+            # arbitrarily close to zero and "0.000 mm above" must never print (the
+            # tip-chamfer branch's rule below, 10-REVIEW.md CR-01). The cause clause is
+            # true on every firing: the chord ends at r + 2*fillet - (1.25 - x)*m, capped
+            # halfway up the tooth at r + (x - 0.125)*m, so a positive height needs the
+            # fillet over half the dedendum. 0 of 44 pre-v0.2 fixture records cross
+            # (counted 2026-10-02), so no pinned warnings tuple moves (L26).
+            warnings.append(f"The flank starts with a straight chord reaching {h:.3f} mm "
+                            "above the pitch circle, where it deviates from the involute: "
+                            "the root fillet is larger than half the dedendum.")
+    # Empty for every gear nobody asked about, so no fixture tuple moves; after the
+    # radial sentences so a refused request reads the sentence that explains it next to
+    # the radial root it fell back to.
+    warnings.extend(root_warnings(rm))
+    if rm.curve is not None:
+        warnings.append(_ROOT_SENTENCES["thickness not printed"])
+    tch = tip_chamfer_effective(p, rm)
     if tch < round(p.tip_chamfer, 3):
         # A limit only actually binds when it sits below the request at the 0.001 mm
         # resolution the chamfer is cut at (tip_chamfer_effective rounds to 3 dp;
@@ -1034,7 +1126,7 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         # silent too: that rounding is the model's print resolution, shared with
         # root_fillet, recess_fillet and bore_chamfer, not a reduction -- attributing
         # it to tip_chamfer_limit's reason text was a false cause (10-REVIEW.md CR-01).
-        warnings.append(f"Tip chamfer reduced to {tch:g} mm {tip_chamfer_limit(p)[1]}.")
+        warnings.append(f"Tip chamfer reduced to {tch:g} mm {tip_chamfer_limit(p, rm)[1]}.")
     elif p.tip_chamfer > 0 and tch == 0.0:
         # The one rounding case where the built part actually differs from the
         # request: a chamfer was asked for and none was cut. A parameter the user set
@@ -1045,9 +1137,24 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         warnings.append(f"Tip chamfer {p.tip_chamfer:g} mm is below the 0.001 mm resolution "
                         "it is cut at and was not cut.")
     z_min = 2 * (1 - p.profile_shift) / math.sin(pr.alpha) ** 2
-    if p.teeth < z_min:
+    # True only while the part really has the radial root: a refused trochoid request
+    # still builds it, so the sentence stays byte for byte (five fixture records carry
+    # it). A trochoid part reads the cutter that cut it instead, and only where its join
+    # is a crossing -- the curve's own reading of undercut, the one the part is built
+    # from. The shipped z_min is not that cutter's onset (it is right at 20 degrees only,
+    # undercut_teeth's docstring), and a join inside the 1e-4 rb band reads tangent and
+    # prints nothing, exactly as its part is built.
+    if rm.mode == "radial" and p.teeth < z_min:
         warnings.append(f"Below {z_min:.1f} teeth a cut gear would be undercut; "
                         "this model uses a radial root instead.")
+    elif rm.curve is not None and rm.cutter is not None and rm.curve.join == "crossing":
+        warnings.append(_undercut_advice(rm.cutter))
+    # Compared at the 3 dp it prints, like the lead-in warning above (10-REVIEW.md CR-01):
+    # a waist that prints as the floor is silent, one printed step under it warns.
+    waist = None if rm.curve is None else round(2 * rm.curve.waist[0] * rm.curve.waist[1], 3)
+    if waist is not None and waist < ROOT_WAIST_FLOOR:
+        warnings.append(_ROOT_SENTENCES["waist thin"].format(
+            waist=waist, floor=ROOT_WAIST_FLOOR))
 
     if p.bore_hex > 0:
         # D-02: a hex bore replaces the round profile (D-01); this is the one place
@@ -1161,13 +1268,19 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         base_d=r3(2 * pr.rb),
         caliper_over_tips=r3(over_tips),
         tip_thickness=r3(tip),
-        root_thickness=r3(root),
-        root_gap=r3(gap),
+        # Null under the hob's root: the tooth's thickness there changes too fast with
+        # radius to give one number someone could cut to (D-03, L08).
+        root_thickness=None if rm.curve is not None else r3(root),
+        root_gap=None if rm.curve is not None else r3(gap),
         # rfil and rec_fil already round(..., 3) internally (root_fillet(),
         # recess_fillet()), so this changes no value on the wire today -- but every
         # length is rounded once, at construction (D-10), so the rule stays true if
         # either helper's rounding ever changes.
         root_fillet=r3(rfil),
+        # The junction is the curve's last point; the waist is the sentence's own
+        # rounded value, so the number and the warning read one float (L08).
+        root_form_d=None if rm.curve is None else r3(2 * rm.curve.points[-1][0]),
+        root_waist=waist,
         tip_chamfer_effective=r3(tch) if p.tip_chamfer > 0 else None,
         span_teeth=k,
         span=r3(w),
@@ -1235,8 +1348,9 @@ def centre_distance(p: GearParams, mate_teeth: int,
 # --- The hob's trochoid root (Phase 18) -------------------------------------------------
 # Below the base circle a hobbed gear's root is not the radial lead-in plus fillet the
 # model builds today (L09, L10) but the envelope of the hob's rounded tip as the rack
-# rolls on the pitch circle. Everything here is pure maths over the rack; nothing in
-# production reads it until Phase 19, so no number a user sees moves.
+# rolls on the pitch circle. Everything here is pure maths over the rack; Phase 19's
+# `root_shape` field reaches it only through `root_mode`, so a gear that does not ask
+# for the hob's root sees no number move.
 
 RootShape = Literal["radial", "trochoid"]
 RootReason = Literal["not requested", "nothing radial to replace", "tip land gone",
@@ -1318,8 +1432,9 @@ def undercut_teeth(c: Cutter) -> float:
     one is the sharp-cornered rack with the full tip depth at 20 degrees only. At module
     1, tip radius 0.38 mm and no shift this reads 30.7909 / 17.0967 / 11.5404 teeth at
     14.5 / 20 / 25 degrees (STACK's table, reproduced 2026-10-08) where the shipped
-    formula reads 31.9029 / 17.0973 / 11.1978. The shipped sentence is untouched until
-    Phase 19 restates it (REQ-undercut-warning-restated).
+    formula reads 31.9029 / 17.0973 / 11.1978. `derive()` prints this onset, not the
+    shipped one, wherever the hob-cut root applies and its join is a crossing
+    (REQ-undercut-warning-restated).
     """
     sin_a = math.sin(c.pr.alpha)
     return 2 * (c.d - c.rho * (1 - sin_a)) / (c.pr.m * sin_a ** 2)
@@ -1334,6 +1449,28 @@ def undercut_shift(c: Cutter) -> float:
     return c.x - c.xi * math.sin(c.pr.alpha) / c.pr.m
 
 
+def _undercut_advice(c: Cutter) -> str:
+    """The undercut sentence for a gear whose hob-cut root crosses the involute: the
+    cutter's own onset and the smallest profile shift that avoids it, both read from the
+    cutter that cuts (a trimmed tip radius gives the trimmed cutter's numbers, L08).
+
+    Both bounds are rounded UP at the resolution they print, after removing the float
+    residue `round(v * 10**k, 9)` (a value that is an exact multiple must not climb a
+    step): the onset to 0.1 teeth, so "below 17.1 teeth" stays true for every integer
+    count that crosses; the shift to 0.001, because rounding to nearest is false -- 0.41508
+    prints 0.415 and the gear is still undercut there (roll -7.9e-5 mm), where 0.416 is not
+    (18-RESEARCH F9; module 1, 20 degrees, 10 teeth, backlash 0, tip radius 0.38 mm). And
+    above the `profile_shift` field's maximum no shift is advised: 6 teeth, 14.5 degrees
+    and a sharp cutter need 1.0619, so the sentence says no shift in range avoids it.
+    """
+    z_min = math.ceil(round(undercut_teeth(c) * 10, 9)) / 10
+    x_min = math.ceil(round(undercut_shift(c) * 1000, 9)) / 1000
+    if x_min > PROFILE_SHIFT_MAX:
+        return _ROOT_SENTENCES["undercut out of range"].format(
+            z_min=z_min, x_max=PROFILE_SHIFT_MAX)
+    return _ROOT_SENTENCES["undercut"].format(z_min=z_min, x_min=x_min)
+
+
 @dataclass(frozen=True)
 class RootCurve:
     """The hob's root below the junction with the involute, root circle first."""
@@ -1341,9 +1478,11 @@ class RootCurve:
     # centre rad), strictly increasing radius, ROOT_CURVE_POINTS long
     join: _Join  # "tangent": it meets the involute with its direction; "crossing":
     # the gear is undercut and the curve is cut off where it meets the involute
-    waist: tuple[float, float]  # (radius mm, half-angle rad) where the half-angle is
-    # smallest, refined between the samples: the root's narrowest point, which is half
-    # the tooth thickness there, so it is always above zero on a curve that survives
+    waist: tuple[float, float]  # (radius mm, half-angle rad) where the arc thickness
+    # 2 R h is smallest, refined between the samples: the root's narrowest point, 2 R h
+    # being the tooth's thickness on that radius, so it is always above zero on a curve
+    # that survives. Not where h is smallest: on a crossing join R h is still falling
+    # below that radius (19-REVIEW CR-01)
 
 
 def _trochoid_point(c: Cutter, beta: float) -> tuple[float, float]:
@@ -1367,37 +1506,49 @@ def _trochoid_point(c: Cutter, beta: float) -> tuple[float, float]:
 
 def _waist(c: Cutter, betas: list[float],
            points: tuple[tuple[float, float], ...]) -> tuple[float, float]:
-    """The point of the curve where the half-angle from the tooth centre is smallest:
-    where the two neighbouring spaces' roots come closest to cutting the tooth through
-    (D-17), as (radius mm, half-angle rad).
+    """The point of the curve where the tooth's arc thickness 2 R h is smallest, for h
+    the half-angle from the tooth centre: where the two neighbouring spaces' roots come
+    closest to cutting the tooth through (D-17), as (radius mm, half-angle rad).
 
-    The smallest sample is refined by 60 golden-section steps of the half-angle between
-    that sample's neighbours (clamped to the curve's ends), because 16 samples can miss
-    the dip: at 6 teeth, 14.5 degrees, shift -0.5, tip radius 0 the smallest sample reads
+    It minimises R h, not h. On a crossing join d(R h)/dR = R' h is positive where h is
+    smallest, so the thickness is still falling below that radius: minimising h printed
+    1.473 mm for the 10-tooth tracer gear whose narrowest arc is 1.442 mm, and 3.269 for
+    7 teeth, module 2, 25 degrees, shift 0.27 against 3.149 (40,001 samples to the
+    junction, 19-REVIEW CR-01). The arc, not the chord 2 R sin(h), because every thickness
+    this tool prints is an arc on its radius (tip_thickness, root_thickness). R > 0 makes
+    R h <= 0 exactly when h <= 0, so the severed-tooth test on the half-angle is unchanged.
+
+    The smallest sample is refined by 60 golden-section steps of R h between that
+    sample's neighbours (clamped to the curve's ends), because 16 samples can miss the
+    dip: at 6 teeth, 14.5 degrees, shift -0.5, tip radius 0 the smallest sample reads
     -0.0055 rad and the refined waist -0.0066 (18-RESEARCH). A fixed step count, no
     data-dependent loop (T-18-02); whichever of the sample and the refined point is
     smaller is returned, so refining can only lower the answer.
     """
-    i = min(range(len(points)), key=lambda k: points[k][1])
+
+    def thickness(point: tuple[float, float]) -> float:
+        return point[0] * point[1]
+
+    i = min(range(len(points)), key=lambda k: thickness(points[k]))
     lo, hi = betas[max(i - 1, 0)], betas[min(i + 1, len(betas) - 1)]
     golden = (math.sqrt(5) - 1) / 2
 
-    def half(beta: float) -> float:
-        return _trochoid_point(c, beta)[1]
+    def arc(beta: float) -> float:
+        return thickness(_trochoid_point(c, beta))
 
     c1, c2 = hi - golden * (hi - lo), lo + golden * (hi - lo)
-    f1, f2 = half(c1), half(c2)
+    f1, f2 = arc(c1), arc(c2)
     for _ in range(60):
         if f1 < f2:
             hi, c2, f2 = c2, c1, f1
             c1 = hi - golden * (hi - lo)
-            f1 = half(c1)
+            f1 = arc(c1)
         else:
             lo, c1, f1 = c1, c2, f2
             c2 = lo + golden * (hi - lo)
-            f2 = half(c2)
+            f2 = arc(c2)
     refined = _trochoid_point(c, 0.5 * (lo + hi))
-    return min(points[i], refined, key=lambda point: point[1])
+    return min(points[i], refined, key=thickness)
 
 
 def _bisect(f: Callable[[float], float], lo: float, hi: float) -> float:
@@ -1504,6 +1655,8 @@ class RootMode:
     reason: RootReason | None       # why it stayed radial; None exactly when trochoid
     cutter: Cutter | None           # the cutter asked about; None only when nothing
     # was requested
+    curve: RootCurve | None = None  # set exactly when `mode` is "trochoid": the curve the
+    # part is built from and the numbers are read from, solved once (18-REVIEW IN-02)
 
 
 def root_mode(p: GearParams, pr: Profile,
@@ -1527,11 +1680,12 @@ def root_mode(p: GearParams, pr: Profile,
        centreline or past the junction.
     6. `tooth severed`: the curve's narrowest half-angle is at or below zero (D-17).
 
-    Every sentence for these comes from `root_warnings`. Nothing in production calls
-    this until Phase 19, so the present callers get radial with "not requested" and the
-    pre-v0.2 fixture cannot move. The default `rho = 0.0` is the sharp cutter, legal,
-    and ignored whenever nothing is requested; D-07 forbids reading `p.root_fillet` as
-    the tip radius in this phase.
+    Every sentence for these comes from `root_warnings`. `derive()`, `model._build` and
+    `tip_chamfer_limit` each call it once, with `requested=p.root_shape` and the tip
+    radius `rho=p.root_fillet` (19 D-01), so a gear nobody asked about reads radial with
+    "not requested" and the pre-v0.2 fixture cannot move. The default `rho = 0.0` is the
+    sharp cutter, legal, and ignored whenever nothing is requested; it stays for callers
+    that request nothing.
     """
     if requested != "trochoid":
         return RootMode("radial", "not requested", None)
@@ -1540,13 +1694,13 @@ def root_mode(p: GearParams, pr: Profile,
         return RootMode("radial", "nothing radial to replace", c)
     curve = _root_curve(c)
     if isinstance(curve, RootCurve):
-        return RootMode("trochoid", None, c)
+        return RootMode("trochoid", None, c, curve)
     return RootMode("radial", curve, c)
 
 
 # One sentence per refusal reason, plus the cap; all filled from the same keyword values
-# so the lookup in root_warnings has no branches. These are the sentences Phase 19's
-# derive() will carry; tests capture them from root_warnings, never type them (L33).
+# so the lookup in root_warnings has no branches. These are the sentences `derive()` now
+# carries; tests capture them from derive(), never type them (L33).
 _ROOT_SENTENCES: dict[str, str] = {
     "nothing radial to replace":
         "No radial root to replace on this gear (base circle {rb:.3f} mm, root circle "
@@ -1563,9 +1717,44 @@ _ROOT_SENTENCES: dict[str, str] = {
     "tooth severed":
         "The trochoid roots of the two neighbouring tooth spaces cut this tooth through: "
         "the analytic root is used.",
+    # Not a refusal and not placeholder-filled: derive() prints it on every trochoid gear,
+    # where root_thickness and root_gap are null. Measured 2026-10-09 on the default gear
+    # (tip radius 0.5 mm): the tooth is 4.532 mm thick on the arc at rf + 0.00175 mm and
+    # 3.405 mm at rf + 0.525 mm (0.3 module), so any one radius would be a number somebody
+    # cuts to by mistake. (FEATURES quoted 4.68 and 3.51; this is the reproduction.)
+    "thickness not printed":
+        "root_thickness and root_gap are not printed with the hob-cut root: the tooth's "
+        "thickness changes too fast with radius near the root circle to give one honest "
+        "number there.",
+    # Names the field the user typed (root_fillet is the hob's tip radius under the hob
+    # root) and says "within 0.001 mm", never "the largest" alone: the printed radius is
+    # the cap floored to 3 dp, so it can sit up to 0.001 mm under the largest that keeps a
+    # tip land, and prints 0.000 where the cap is under a micrometre (18-REVIEW IN-01).
     "rho capped":
-        "Cutter tip radius reduced to {rho:.3f} mm, the largest that leaves the cutter a "
-        "tip land at this pressure angle and backlash.",
+        "root_fillet is the hob's tip radius here, and it was reduced to {rho:.3f} mm, "
+        "within 0.001 mm of the largest that keeps the cutter a tip land at this pressure "
+        "angle and backlash.",
+    # Placeholders {z_min} (the cutter's onset, rounded up to 0.1 teeth) and {x_min} (the
+    # smallest profile shift that avoids it, rounded up to 0.001) or, out of range, {x_max}
+    # (PROFILE_SHIFT_MAX). Neither says "radial": the part has the hob-cut root.
+    "undercut":
+        "Below {z_min:.1f} teeth this cutter undercuts the gear, and the root is cut the "
+        "way the hob cuts it; a profile shift of {x_min:.3f} or more avoids the undercut.",
+    "undercut out of range":
+        "Below {z_min:.1f} teeth this cutter undercuts the gear, and the root is cut the "
+        "way the hob cuts it; no profile shift up to {x_max:g} avoids the undercut at this "
+        "pressure angle and tip radius.",
+    # Placeholders {waist} (the printed root_waist) and {floor} (ROOT_WAIST_FLOOR). Names
+    # the three fields D-06 chose and never the word undercut: 595 of the 616 module-0.2
+    # gears warn, 195 of them on tangent joins that have no undercut (ROOT_WAIST_FLOOR).
+    # "Thickens" is a direction, not a promise of reaching the floor. Checked 2026-10-09 on
+    # 3,901 seeded random trochoid gears (6-60 teeth, module 0.2-10, 14.5-24.5 degrees,
+    # shift -0.6 to 1.0, backlash 0-0.25): one step up in teeth, profile_shift or
+    # pressure_angle made the waist thinner on none.
+    "waist thin":
+        "The tooth is only {waist:.3f} mm thick at its narrowest in the hob-cut root, under "
+        "the {floor:g} mm this design holds for a printable tooth; more teeth, a larger "
+        "profile_shift or a larger pressure_angle thickens it.",
 }
 
 

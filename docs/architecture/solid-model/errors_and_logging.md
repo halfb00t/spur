@@ -11,6 +11,27 @@ is deterministic for a given parameter set, so retrying would only burn seconds.
   `Standard_Failure` subclasses that share no useful base — and re-raises it as
   `BuildError(f"Geometry kernel failed ({type(exc).__name__}); try smaller fillets or
   chamfers.")`. The original is chained, so the traceback survives.
+- Two raise it themselves, before the kernel can, for a defect that is spur's and not the
+  user's: the edge selectors on an empty selection while their feature is on (L26), e.g.
+  `_tip_edges`: "Tip chamfer selected no tip-arc edges: a modelling defect in spur, not a
+  conflict in these parameters. Set tip_chamfer to 0 to build this gear without it."; and
+  the four hob-root guards, which refuse a trochoid outline that is wrong without resting on
+  `isValid()`. Each ends with the same sentence, "a modelling defect in spur, not a conflict
+  in these parameters. Set root_shape to radial to build this gear with the analytic root.",
+  never the "try smaller fillets or chamfers" above. They begin:
+  - `_guard_junction`: "The hob root leaves the involute at its junction by {gap} rad (bar
+    {ROOT_JUNCTION_BAR_RAD}): "
+  - `_guard_spacing`: "The hob root's point spacing is uneven (largest chord {ratio}x the
+    smallest, bar {ROOT_SPACING_RATIO_MAX}): "
+  - `_guard_annulus`: "A hob-root spline leaves the root-to-tip annulus (radius {r} mm
+    outside {rf} to {ra}): "
+  - `_guard_area`: "The hob-root outline's area is {miss} off the polygon of its own points
+    (bar {ROOT_AREA_REL_MAX}): "
+  A kernel exception raised while that outline is being built (an edge constructor, the
+  wire or the face) takes the same remedy with "The hob-root outline could not be built
+  ({type(exc).__name__}): " in front, only on the trochoid branch (19-REVIEW WR-01).
+  An honest curve never trips one (0 failures over the 10,326 trochoid gears of the Phase 18
+  product, 19-02), so reading one is a bug report, not a parameter to adjust.
 - `BuildError` is the only exception the module lets out. `app.py` turns it into `422`
   with the message; `cli.py` prints `error: <message>` and exits 2.
 

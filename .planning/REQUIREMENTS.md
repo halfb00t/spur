@@ -138,7 +138,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   resolution) with the headroom stated, and goes to the human if under about 10× (the L33
   D-06 rule); a published or tool-generated reference, if the human can supply one, is
   added as T4 with its stated precision and cutter assumptions.
-- [ ] **REQ-undercut-warning-restated**: `derive()`'s undercut warning comes from the same
+- [x] **REQ-undercut-warning-restated**: `derive()`'s undercut warning comes from the same
   cutter constants as the geometry (the shipped `z_min = 2(1−x)/sin²α` matches the rack
   model only at 20° — STACK: 31.903 vs 30.791 at 14.5°, 11.198 vs 11.540 at 25°), no longer
   says "radial root", and prints `x_min`, the profile shift that avoids undercut (closed
@@ -149,7 +149,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
 
 ### Trochoid in the part — kernel integration, landed dark or opt-in
 
-- [ ] **REQ-root-mode-decided**: The human's root-mode choice is logged as an `Lxx` that
+- [x] **REQ-root-mode-decided**: The human's root-mode choice is logged as an `Lxx` that
   supersedes L10 and amends L09 and L33, picked from the priced table: O1 always-on when
   undercut (5 of 44 records move, discontinuous at the threshold); O2 always-on wherever
   `rb > rf` (28 of 44 move, the default gear by up to ≈0.30 mm of root material — FEATURES
@@ -162,7 +162,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   regeneration and the `Lxx` listing the moving records in advance (ARCHITECTURE under O1:
   5 `derived` blocks, 3 `solid` blocks, one added null field in the other 39); any other
   record moving is a bug.
-- [ ] **REQ-outline-consumes-root-curve**: `model._outline` replaces the fillet arc plus
+- [x] **REQ-outline-consumes-root-curve**: `model._outline` replaces the fillet arc plus
   lead-in line, per tooth side, with one `makeSpline` through `RootCurve`, and the involute
   spline starts at the junction radius taken from the same float (a 1e-6 mm gap silently
   opens the wire — PITFALLS). Structural guards that do not depend on `isValid()`:
@@ -173,7 +173,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   the measured gap (STACK's N = 16 uniform-in-roll sampling, 3.6–4.0e-5 mm, is the starting
   point; the two files' spline-deviation methods are reconciled before a bar is set); the
   trochoid generator never enters `model.py`.
-- [ ] **REQ-derived-numbers-honest-under-trochoid**: Where the trochoid applies,
+- [x] **REQ-derived-numbers-honest-under-trochoid**: Where the trochoid applies,
   `root_thickness` and `root_gap` are either null with a warning or redefined at the form
   circle with that circle printed (decided at discuss-phase; FEATURES: the default gear's
   printed 3.253 mm against a true 4.68 mm at rf + 0.001·m); `root_form_d` is printed only if
@@ -183,14 +183,14 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   warning does not fire when no chord exists. *Acceptance*: `DerivedDimensions` grows
   additively, new fields null on fixture replay; every printed number has a proof or a
   warning, none a plausible value (L08).
-- [ ] **REQ-cutter-tip-radius-settable**: The cutter tip radius is an explicit, printed,
+- [x] **REQ-cutter-tip-radius-settable**: The cutter tip radius is an explicit, printed,
   capped input — either `root_fillet` reinterpreted as ρ in trochoid mode (its changed
   meaning documented, and where it is ignored a warning, the L27 hex-bore precedent) or a
   new default-off field — the human's call at discuss-phase; the default stays absolute
   millimetres (L05; 0.5 mm is 0.286·m at m 1.75 but 0.05·m at m 10 — FEATURES). *Acceptance*:
   the value actually used is in `DerivedDimensions` at 3 dp; the web form and the CLI expose
   it from the model; a trimmed value warns with the cap.
-- [ ] **REQ-trochoid-composes-and-is-priced**: The trochoid root composes with the tip
+- [x] **REQ-trochoid-composes-and-is-priced**: The trochoid root composes with the tip
   chamfer (`tip_chamfer_limit` follows the form radius; L29's kernel boundary re-bisected
   across the spline-to-spline junction, which is spiked before any schema change), face
   recesses and each cutout pattern; build time is measured at the heaviest allowed low-tooth
@@ -215,7 +215,10 @@ Deferred deliberately; recorded so they survive this session.
 ### Trochoid follow-ups (v0.4.x)
 
 - Flipping the default root mode to the hob root, if O3 is chosen now (own `Lxx`, own
-  commit, the moving records named in advance).
+  commit, the moving records named in advance). O4 was taken in Phase 19: L38 makes the
+  hob root opt-in through `root_shape`, the default unmoved, and Phase 20 is skipped. This
+  bullet owns the flip from here, triggered by a real fit report or a mating-pair request
+  below `z_min` (D-09), not by a date.
 - Mate interference checked against the form diameter; ISO 6336-3 critical section
   (geometry only, no stress numbers); an editable dedendum (needs an L05 decision).
 
@@ -257,12 +260,12 @@ the phase where its acceptance can be read.
 | REQ-trochoid-root-generated | Phase 18 | Complete |
 | REQ-root-mode-single-predicate | Phase 18 | Complete |
 | REQ-trochoid-proved-independently | Phase 18 | Complete |
-| REQ-undercut-warning-restated | Phase 19 | Pending |
-| REQ-root-mode-decided | Phase 19 | Pending |
-| REQ-outline-consumes-root-curve | Phase 19 | Pending |
-| REQ-derived-numbers-honest-under-trochoid | Phase 19 | Pending |
-| REQ-cutter-tip-radius-settable | Phase 19 | Pending |
-| REQ-trochoid-composes-and-is-priced | Phase 19 | Pending |
+| REQ-undercut-warning-restated | Phase 19 | Complete |
+| REQ-root-mode-decided | Phase 19 | Complete |
+| REQ-outline-consumes-root-curve | Phase 19 | Complete |
+| REQ-derived-numbers-honest-under-trochoid | Phase 19 | Complete |
+| REQ-cutter-tip-radius-settable | Phase 19 | Complete |
+| REQ-trochoid-composes-and-is-priced | Phase 19 | Complete |
 
 **Placement notes** (where a requirement's phase is not the one its text first suggests):
 - REQ-root-mode-decided: the choice is *taken* at Phase 18's discuss-phase (it fixes the

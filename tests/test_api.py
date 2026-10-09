@@ -77,7 +77,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
 
     fields = {
         "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
-        "root_thickness", "root_gap", "root_fillet", "tip_chamfer_effective", "span_teeth",
+        "root_thickness", "root_gap", "root_fillet", "root_form_d", "root_waist",
+        "tip_chamfer_effective", "span_teeth",
         "span", "bore_effective", "hex_across_flats", "hex_across_corners",
         "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
         "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall",
@@ -98,6 +99,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
     assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
     assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
+    assert component["properties"]["root_form_d"]["unit"] == "mm"
+    assert component["properties"]["root_waist"]["unit"] == "mm"
     assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
     assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
     assert component["properties"]["spoke_fillet_effective"]["unit"] == "mm"
@@ -137,6 +140,23 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     model_fields = set(DerivedDimensions.model_fields)
     assert set(dims_keys) <= model_fields
     assert {"span_teeth", "centre_distance", "warnings"} <= model_fields
+
+
+def test_root_form_d_is_never_labelled_an_iso_form_diameter_where_a_user_reads_it() -> None:
+    """D-04 (REQ-derived-numbers-honest-under-trochoid, transparency): root_form_d is the
+    cutter-envelope junction, not an ISO 21771 form diameter (a different quantity that
+    18's T4 tier compared it to). The UI row, the schema description a client reads and
+    the README say so by never calling it one: the only place the phrase appears is the
+    description's own denial."""
+    source = (STATIC / "app.js").read_text()
+    (label,) = re.findall(r"^\s*\['root_form_d', '([^']*)'\]", source, re.MULTILINE)
+    assert "form" not in label.lower()
+    description = DerivedDimensions.model_fields["root_form_d"].description
+    assert description is not None
+    assert "not an ISO 21771 form diameter" in description
+    assert "form diameter" not in description.replace("not an ISO 21771 form diameter", "")
+    readme = (STATIC.parents[2] / "README.md").read_text()
+    assert "root_form_d" not in readme or "form diameter" not in readme
 
 
 def test_the_shareable_link_round_trips_every_field_through_generic_code() -> None:
@@ -312,7 +332,9 @@ def test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut() -> None:
     assert props["tip_chamfer"]["step"] == 0.05
     names = list(props)
     assert names.index("tip_chamfer") == names.index("root_fillet") + 1
-    assert names.index("face_width") == names.index("tip_chamfer") + 1
+    # D-02 put root_shape directly after tip_chamfer, so it now precedes face_width.
+    assert names.index("root_shape") == names.index("tip_chamfer") + 1
+    assert names.index("face_width") == names.index("root_shape") + 1
 
     r = client.get("/api/info", params={"tip_chamfer": 0.4})
     assert r.status_code == 200
@@ -344,6 +366,50 @@ def test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut() -> None:
     r = client.get("/api/model.step", params={"tip_chamfer": 0.4})
     assert r.status_code == 200
     assert r.content.startswith(b"ISO-10303-21;")
+
+
+def test_a_root_shape_link_is_served_with_the_root_it_cut() -> None:
+    """?root_shape=trochoid end to end (D-02, SC5): the schema's choice field (group,
+    title, enum and default, no step), /api/info's hob-root numbers with no root-circle
+    thickness, the form leaving a default value out of its link, and the model download.
+
+    The download's slug is the same as the radial gear's: it ignores root_shape (19-RESEARCH
+    Open Question 6, filed as an idea by 19-11, not changed here). 23 teeth: a count no
+    other test downloads, and one where the hob root applies (from 27 teeth on at the
+    default module and angle the base circle is above the root circle, the request is
+    ignored and the two parts are the same), so the byte cache cannot answer the request
+    and the two downloads differ."""
+    prop = client.get("/api/schema").json()["properties"]["root_shape"]
+    assert prop["group"] == "Teeth"
+    assert prop["title"] == "Root shape"
+    assert prop["enum"] == ["radial", "trochoid"]
+    assert prop["default"] == "radial"
+    assert "step" not in prop
+
+    # Probe empty, the form's side: a field at its default is left out of the link, so a
+    # link that omits root_shape is a radial gear (L05). The proof is the token-level
+    # one test_the_shareable_link_round_trips_every_field_through_generic_code pins for
+    # the other loops of app.js.
+    source = re.sub(r"\s+", " ", (STATIC / "app.js").read_text())
+    assert ("if (input.value !== '' && String(input.value) !== String(defaults[name])) "
+            "q.set(name, input.value);") in source
+
+    r = client.get("/api/info", params={"root_shape": "trochoid"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["root_thickness"] is None
+    assert body["root_gap"] is None
+    assert body["root_form_d"] == pytest.approx(30.558)
+
+    radial = client.get("/api/model.stl", params={"teeth": 23, "quality": "preview"})
+    r = client.get("/api/model.stl", params={"teeth": 23, "root_shape": "trochoid",
+                                             "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+    assert r.content != radial.content  # a different root is a different part
+    assert r.headers["content-disposition"] == radial.headers["content-disposition"]
+    assert 'filename="spur_z23_m1.75_pa25.stl"' in r.headers["content-disposition"]
 
 
 def test_a_hole_link_is_served_with_its_walls() -> None:

@@ -21,6 +21,8 @@ const DIMS = [
   ['root_thickness', 'Tooth at root'],
   ['root_gap', 'Gap at root'],
   ['root_fillet', 'Root fillet used'],
+  ['root_form_d', 'Hob root junction Ø'],
+  ['root_waist', 'Narrowest tooth in the root'],
   ['tip_chamfer_effective', 'Tip chamfer used'],
   ['bore_effective', 'Bore Ø incl. clearance'],
   ['hex_across_flats', 'Hex across flats incl. clearance'],

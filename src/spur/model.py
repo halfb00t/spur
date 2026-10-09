@@ -19,18 +19,20 @@ import math
 import tempfile
 import threading
 from functools import lru_cache
+from itertools import pairwise
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, NamedTuple
 
 import cadquery as cq
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
 from . import int_env
 from .build_errors import BuildError
 from .calc import (
     Profile,
+    RootCurve,
     bore_radius,
     bore_rim_limit,
     hex_across_flats,
@@ -40,6 +42,7 @@ from .calc import (
     recess_fillet,
     recess_radii,
     root_fillet,
+    root_mode,
     spline_start,
     spoke_fillet_effective,
     tip_chamfer_effective,
@@ -59,6 +62,41 @@ BORE_RIM_SLACK = 0.01   # mm, how far past bore_rim_limit() a rim point may read
 # GearParams(bore_flat=0, bore_chamfer=0), 2026-09-26 -- by five orders of magnitude,
 # and stay far below MIN_WALL (0.4 mm), the least clearance recess_radii() keeps between
 # the rim and the next end-face edge.
+
+ROOT_ARC_MIN = 2e-6     # mm, the shortest chord between neighbouring teeth's hob roots that
+# gets a root arc; below it the two teeth share one vertex and the outline has no arc there.
+# Measured 2026-10-08 (19-02, bench/RESULTS.md "Root arc dead band"; 12 teeth, module 1,
+# 20 degrees, Apple M5 Max, cadquery 2.8.0): `makeThreePointArc` raises
+# "GC_MakeArcOfCircle::Value() - no result" at every chord from 2e-9 mm up to 2.0e-7 mm
+# (the last failing one) and at exactly 0, silently drops the arc at 2e-12 and 2e-10 mm (a
+# valid solid with 62 faces where 74 are expected), and builds from 4.0e-7 mm up. 2e-6 is
+# 10.0x the last failing chord and 15.8x below the smallest real chord in the whole
+# 10,326-gear Phase 18 product (3.1644e-5 mm), so no honest arc is dropped. Reachable from
+# user input: the tip radius cap floors to 3 dp and backlash is not stepped on the wire, so
+# backlash 0.19898413579248878 with root_fillet 3.0 leaves a tip land of 1.0e-8 mm
+# (test_model.py), and _build_checked would blame the user's fillets for it.
+# The four bars below are the 19-02 whole-product measurement (10,326 trochoid gears, no
+# stride, 18 spawn workers, Apple M5 Max, Python 3.12.15, cadquery 2.8.0, read 2026-10-08,
+# adopted 2026-10-09; bench/RESULTS.md "Guard numbers over the product", "Bars adopted").
+# Each is a defect detector: an honest curve never trips one, and none rests on isValid().
+ROOT_JUNCTION_BAR_RAD = 1e-11   # rad, how far the root curve's last point may sit off the
+# involute's half-angle at its radius. Worst over the product 2.442e-13 on tangent joins (26
+# teeth, module 1, 20 degrees, x -0.6, backlash 0.1, tip radius 0.5) and 6.939e-16 on
+# crossing joins: 40.9x. NOT calc's 1e-12 rad libm floor (18-01), which was set on rows
+# reading 4e-17 and is only 4.1x over this product's tangent maximum.
+ROOT_SPACING_RATIO_MAX = 1000.0  # largest over smallest chord of the 16 root points. Worst
+# over the product 13.325 (40 teeth, module 1, 14.5 degrees, x 0.5, backlash 0.1, tip radius
+# capped from 3.0): 75.0x. One gear resampled with a growing ratio first fails in the kernel
+# at 728,888 (729x above the bar), and its spline reads 5.2e-4 mm off at 750 and 3.6e-3 mm
+# off at 7,393, over the 2e-3 mm kernel bar for module 1: at 1000 the guard stops a bunched
+# curve before the oracle would see it.
+ROOT_AREA_REL_MAX = 5e-2        # |face area / polygon area - 1|, the polygon through the
+# outline's own points with each arc taken through its midpoint. Worst over the product
+# 3.6791e-3 (7 teeth, module 1.75, 14.5 degrees, x -0.6, backlash 1.0, tip radius capped
+# from 3.0): 13.6x. With the arcs as chords the worst is 1.2162e-2 and no listed bar
+# reaches 10x (0.1 is 8.2x), which is why the polygon takes the midpoints.
+# The annulus guard uses TOL: the worst excursion outside [rf, ra] is 1.137e-13 mm (116
+# teeth, module 10, backlash 0), 8.8e6x under it.
 
 _LOCK = threading.RLock()
 
@@ -130,7 +168,177 @@ def _fillet_corner(p0: cq.Vector, p1: cq.Vector, rf: float, rho: float,
     return on_root, mid, on_line
 
 
-def _outline(pr: Profile, fillet: float) -> cq.Wire:
+class _Tooth(NamedTuple):
+    """One tooth's hob-root outline points, kept as lists so the shared-vertex rule below
+    can replace one entry before any edge is made."""
+    c: float                  # the tooth's centre angle, rad
+    root_l: list[cq.Vector]   # the left root spline, root circle first
+    root_r: list[cq.Vector]   # the right root spline, ending on the root circle
+    flank_l: list[cq.Vector]  # the left involute spline, from root_l[-1] to the tip
+    flank_r: list[cq.Vector]  # the right involute spline, from the tip to root_r[0]
+    arc: bool                 # the root arc to the next tooth is made (chord >= ROOT_ARC_MIN)
+
+
+def _trochoid_teeth(pr: Profile, curve: RootCurve) -> list[_Tooth]:
+    """Every tooth's points, from the `RootCurve`, with the short-arc rule decided.
+
+    The involute spline starts with the SAME `Vector` object the root spline ends on,
+    never a recomputed one: a gap of 1e-6 mm silently opens a wire (PITFALLS 7), and a
+    shared object has none. Its other radii run from the curve's own last radius, so
+    the junction is one float (`calc.spline_start` returns it too).
+
+    Where the chord from one tooth's last root point to the next tooth's first is under
+    ROOT_ARC_MIN (the kernel cannot make that arc: see the constant), the next tooth's
+    root spline starts from this tooth's `root_r[-1]` object and no arc is made. Decided
+    for every tooth here, before any edge exists, so the object both splines receive is
+    the same one. The outline and the area guard both read these lists, so the check
+    cannot drift from the outline it checks.
+    """
+    pitch = 2 * math.pi / pr.z
+    r0 = curve.points[-1][0]
+    radii = [r0 + (pr.ra - r0) * (i / (FLANK_POINTS - 1)) ** 1.5 for i in range(FLANK_POINTS)]
+    teeth = []
+    for k in range(pr.z):
+        c = k * pitch
+        root_l = [_polar(r, c - h) for r, h in curve.points]
+        root_r = [_polar(r, c + h) for r, h in reversed(curve.points)]
+        flank_l = [root_l[-1]] + [_polar(r, c - pr.half_angle(r)) for r in radii[1:]]
+        flank_r = [_polar(r, c + pr.half_angle(r)) for r in reversed(radii[1:])]
+        flank_r.append(root_r[0])
+        teeth.append(_Tooth(c, root_l, root_r, flank_l, flank_r, True))
+    # The kernel raises on an arc over a chord of 2e-9 to 2.0e-7 mm and drops one under
+    # 1e-10 (19-02), so below ROOT_ARC_MIN the two splines meet at one vertex instead.
+    for k, tooth in enumerate(teeth):
+        nxt = teeth[(k + 1) % pr.z]
+        if (tooth.root_r[-1] - nxt.root_l[0]).Length < ROOT_ARC_MIN:
+            nxt.root_l[0] = tooth.root_r[-1]
+            teeth[k] = tooth._replace(arc=False)
+    return teeth
+
+
+def _trochoid_polygon(pr: Profile, teeth: Sequence[_Tooth]) -> list[cq.Vector]:
+    """The outline's own points in order, for the area guard: each tooth's root spline,
+    flank, the tip arc's midpoint, the mirror flank and root spline, then the root arc's
+    midpoint where the arc is made. An arc enters through its midpoint (19-02: with the arcs
+    taken as chords no listed bar reached 10x headroom), which `_trochoid_outline` has for
+    nothing -- they are its own three-point arcs' middle points."""
+    points: list[cq.Vector] = []
+    for t in teeth:
+        points += [*t.root_l, *t.flank_l[1:], _polar(pr.ra, t.c), *t.flank_r, *t.root_r[1:]]
+        if t.arc:
+            points.append(_polar(pr.rf, t.c + math.pi / pr.z))
+    return points
+
+
+_NOT_A_PARAMETER_PROBLEM = (
+    "a modelling defect in spur, not a conflict in these parameters. Set root_shape to "
+    "radial to build this gear with the analytic root.")
+
+
+def _hob_root_kernel_failure(exc: Exception) -> BuildError:
+    """A kernel exception raised while the hob-root outline was being built. Without this
+    `_build_checked` blames the user's fillets ("try smaller fillets or chamfers"), and
+    under the hob root root_fillet is the cutter's tip radius, so that advice is wrong. The
+    ROOT_ARC_MIN dead band was this class: makeThreePointArc raised GC_MakeArcOfCircle on
+    a near-zero root arc and was found only by measurement (19-02)."""
+    return BuildError(f"The hob-root outline could not be built ({type(exc).__name__}): "
+                      f"{_NOT_A_PARAMETER_PROBLEM}")
+
+
+def _guard_junction(pr: Profile, curve: RootCurve) -> None:
+    """The root curve's last point must lie on the involute: the involute spline starts
+    from that very point, so a gap here is a step in the flank (SC2, L26)."""
+    r, h = curve.points[-1]
+    gap = abs(h - pr.half_angle(r))
+    if gap > ROOT_JUNCTION_BAR_RAD:
+        raise BuildError(
+            f"The hob root leaves the involute at its junction by {gap:.3e} rad "
+            f"(bar {ROOT_JUNCTION_BAR_RAD:.0e}): {_NOT_A_PARAMETER_PROBLEM}")
+
+
+def _guard_spacing(curve: RootCurve) -> None:
+    """The root's 16 points must be spread evenly enough for a spline to follow them: the
+    largest chord over the smallest, in the plane, stays under ROOT_SPACING_RATIO_MAX."""
+    chords = [math.hypot(r1 * math.cos(h1) - r0 * math.cos(h0),
+                         r1 * math.sin(h1) - r0 * math.sin(h0))
+              for (r0, h0), (r1, h1) in pairwise(curve.points)]
+    lo, hi = min(chords), max(chords)
+    ratio = hi / lo if lo > 0 else math.inf
+    if ratio > ROOT_SPACING_RATIO_MAX:
+        raise BuildError(
+            f"The hob root's point spacing is uneven (largest chord {ratio:.4g}x the smallest, "
+            f"bar {ROOT_SPACING_RATIO_MAX:g}): {_NOT_A_PARAMETER_PROBLEM}")
+
+
+def _guard_annulus(pr: Profile, edges: Sequence[cq.Edge]) -> None:
+    """A root spline must stay between the root circle and the tip circle (to TOL): a
+    spline that swings through its points leaves the annulus first (81 positions each)."""
+    for e in edges:
+        for i in range(81):
+            v = e.positionAt(i / 80)
+            r = math.hypot(v.x, v.y)
+            if not pr.rf - TOL <= r <= pr.ra + TOL:
+                raise BuildError(
+                    f"A hob-root spline leaves the root-to-tip annulus (radius {r:.6f} mm "
+                    f"outside {pr.rf:.6f} to {pr.ra:.6f}): {_NOT_A_PARAMETER_PROBLEM}")
+
+
+def _guard_area(face: cq.Face, points: Sequence[cq.Vector]) -> None:
+    """The face must have the area of the polygon through the points it was drawn from, to
+    ROOT_AREA_REL_MAX: a wire that closes the wrong way round a tooth is still a valid face
+    (PITFALLS 7: volume 347.9 against 21.4)."""
+    polygon = abs(0.5 * sum(a.x * b.y - b.x * a.y
+                            for a, b in pairwise([*points, points[0]])))
+    miss = abs(face.Area() / polygon - 1) if polygon > 0 else math.inf
+    if miss > ROOT_AREA_REL_MAX:
+        raise BuildError(
+            f"The hob-root outline's area is {miss:.3e} off the polygon of its own points "
+            f"(bar {ROOT_AREA_REL_MAX:g}): {_NOT_A_PARAMETER_PROBLEM}")
+
+
+def _trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
+    """Closed gear outline whose root is the hob's trochoid: one spline per side
+    through the `RootCurve`, then one involute spline from the same junction `Vector`, the
+    tip arc, the mirror image, and the root arc to the next tooth. Six side faces per
+    tooth where the radial outline has eight, five where the root arc is under
+    ROOT_ARC_MIN and the neighbours share a vertex (`_trochoid_teeth`).
+
+    The junction and spacing guards read floats and run before any kernel call; the
+    annulus guard reads tooth 0's two root splines as soon as they are made. A kernel
+    exception from the edge constructors or the wire becomes a BuildError that names the
+    hob-root outline (`_hob_root_kernel_failure`). Built and read
+    back through the oracle on 15,723 swept cases without a failure (19-RESEARCH F1), and
+    on the 10,326 trochoid gears of the Phase 18 product by 19-02's `product` run.
+    """
+    _guard_junction(pr, curve)
+    _guard_spacing(curve)
+    pitch = 2 * math.pi / pr.z
+    teeth = _trochoid_teeth(pr, curve)
+    edges: list[cq.Edge] = []
+    try:
+        for k, t in enumerate(teeth):
+            root_l, root_r = cq.Edge.makeSpline(t.root_l), cq.Edge.makeSpline(t.root_r)
+            if k == 0:
+                _guard_annulus(pr, [root_l, root_r])
+            edges += [
+                root_l,
+                cq.Edge.makeSpline(t.flank_l),
+                cq.Edge.makeThreePointArc(t.flank_l[-1], _polar(pr.ra, t.c), t.flank_r[0]),
+                cq.Edge.makeSpline(t.flank_r),
+                root_r,
+            ]
+            if t.arc:
+                edges.append(cq.Edge.makeThreePointArc(
+                    t.root_r[-1], _polar(pr.rf, t.c + pitch / 2),
+                    teeth[(k + 1) % pr.z].root_l[0]))
+        return cq.Wire.assembleEdges(edges)
+    except BuildError:
+        raise
+    except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+        raise _hob_root_kernel_failure(exc) from exc
+
+
+def _outline(pr: Profile, fillet: float, curve: RootCurve | None = None) -> cq.Wire:
     """Closed gear outline with analytic root fillets.
 
     Each flank starts with a straight segment from the root circle: radial up to the
@@ -142,7 +350,14 @@ def _outline(pr: Profile, fillet: float) -> cq.Wire:
 
     calc.spline_start places the spline's start, so the tip chamfer's cap reads the
     same radius the outline is built from.
+
+    With a `curve` (calc.RootMode.curve, set only where the hob's root applies) the root
+    is that curve instead and `fillet` is not read: the whole outline is
+    `_trochoid_outline`. The radial body below is untouched, float for float, for every
+    caller that passes none.
     """
+    if curve is not None:
+        return _trochoid_outline(pr, curve)
     r0 = spline_start(pr, fillet)  # where the involute spline starts
     straight = r0 > pr.rf + 1e-6
     radii = [r0 + (pr.ra - r0) * (i / (FLANK_POINTS - 1)) ** 1.5 for i in range(FLANK_POINTS)]
@@ -187,9 +402,22 @@ def _outline(pr: Profile, fillet: float) -> cq.Wire:
 
 # --- the part, one decision per step -------------------------------------------------
 
-def _gear_blank(pr: Profile, fillet: float, face_width: float) -> cq.Shape:
-    """The toothed disc, before the face recesses and the bore."""
-    face = cq.Face.makeFromWires(_outline(pr, fillet))
+def _gear_blank(pr: Profile, fillet: float, face_width: float,
+                curve: RootCurve | None = None) -> cq.Shape:
+    """The toothed disc, before the face recesses and the bore. Under a hob-root `curve`
+    the face's area is checked against the polygon of the points it was drawn from before
+    it is extruded. The points are made a second time for that (1.4 ms at 41 teeth, module
+    1, against a 118 ms build; Apple M5 Max, 2026-10-09) so `_outline` keeps returning a
+    wire and the check reads the same function the outline did."""
+    wire = _outline(pr, fillet, curve)
+    try:
+        face = cq.Face.makeFromWires(wire)
+    except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+        if curve is None:
+            raise
+        raise _hob_root_kernel_failure(exc) from exc
+    if curve is not None:
+        _guard_area(face, _trochoid_polygon(pr, _trochoid_teeth(pr, curve)))
     return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, face_width))
 
 
@@ -539,7 +767,11 @@ def _tip_edges(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
 
 def _build(p: GearParams) -> cq.Solid:
     pr = profile(p)
-    solid = _gear_blank(pr, root_fillet(p), p.face_width)
+    # The one answer to "which root", the same call derive() makes, so the part and the
+    # numbers cannot name different roots (PITFALLS 1). Only the curve crosses into this
+    # module: the generator stays in calc.
+    rm = root_mode(p, pr, requested=p.root_shape, rho=p.root_fillet)
+    solid = _gear_blank(pr, root_fillet(p), p.face_width, rm.curve)
     solid = _cut_face_recesses(solid, p, pr.rf)
     solid = _cut_bore(solid, p)
     solid = _cut_keyway(solid, p)

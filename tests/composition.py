@@ -12,9 +12,9 @@ wrong number (L08, CLAUDE.md).
 from __future__ import annotations
 
 # --- Tier 1: the 96-row bore x cutout x recess x tip-chamfer cross product (D-07) -----
-# Each dict is `{**bore, **cutout, **recess, **tip}` through `GearParams.model_validate`.
-# All four tables key by the id used in the parametrized test's row id
-# ("{bore}-{cutout}-{recess}-{tip}").
+# Each dict is `{**bore, **cutout, **recess, **tip}` through `GearParams.model_validate`,
+# run once per root (`ROOTS`, Phase 19: 192 rows). All four tables key by the id used in
+# the parametrized test's row id ("{root}-{bore}-{cutout}-{recess}-{tip}").
 
 BORES: dict[str, dict[str, object]] = {
     "round": {"bore_flat": 0},   # bore_d stays the 9 mm default; no D-flat, no keyway
@@ -42,13 +42,38 @@ TIPS: dict[str, dict[str, object]] = {
     "off": {},
     "on": {"tip_chamfer": 1.75},   # the default 19-tooth gear's pitch-circle cap, no warning
 }
+# The fifth axis (Phase 19): the root the tooth is cut with. Composition cuts inside the
+# root circle (bore, cutouts, recesses) and at the tip (chamfer); the hob root changes
+# only what lies between, so no family's number may move with it.
+ROOTS: dict[str, dict[str, object]] = {
+    "radial": {},
+    "trochoid": {"root_shape": "trochoid"},
+}
 
 # The `DerivedDimensions` fields that are non-null on every tier-1 row, regardless of
 # family (measured this session, `12-05-PLAN.md <interfaces>`).
+# `root_thickness` and `root_gap` are the radial root's (D-03): null under the hob root, so
+# they live in `ROOT_FIELDS`, not here.
 ALWAYS: frozenset[str] = frozenset({
     "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
-    "root_thickness", "root_gap", "root_fillet", "span_teeth", "span",
+    "root_fillet", "span_teeth", "span",
 })
+
+# Non-null fields each root adds on top of ALWAYS. The hob root prints its junction
+# diameter and its narrowest tooth in place of the two radial-root numbers.
+ROOT_FIELDS: dict[str, frozenset[str]] = {
+    "radial": frozenset({"root_thickness", "root_gap"}),
+    "trochoid": frozenset({"root_form_d", "root_waist"}),
+}
+
+# The one sentence the hob root adds to every row, ahead of the row's own warnings (the
+# first warning `derive()` prints for the default gear asked for the hob root, captured
+# 2026-10-09 and typed in -- a copy of `_ROOT_SENTENCES["thickness not printed"]` would
+# be the code under test building its own expectation, L33).
+TROCHOID_THICKNESS = (
+    "root_thickness and root_gap are not printed with the hob-cut root: the tooth's "
+    "thickness changes too fast with radius near the root circle to give one honest "
+    "number there.")
 
 # Non-null fields each bore family adds on top of ALWAYS.
 BORE_FIELDS: dict[str, frozenset[str]] = {

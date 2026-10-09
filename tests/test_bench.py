@@ -33,9 +33,11 @@ A bare `.venv/bin/pytest` would not find `bench` (hard_fact_4, 260924-bv5-PLAN.m
 from __future__ import annotations
 
 import itertools
+import json
 import math
 from pathlib import Path
 
+import cadquery as cq
 import httpx
 import pytest
 from pydantic import ValidationError
@@ -60,12 +62,32 @@ from bench.trochoid import (
     rack,
     sweep_cases,
 )
+from bench.trochoid_part import (
+    CHAMFER_ROWS,
+    KERNEL_ROWS,
+    LIGHTER_ROWS,
+    STACK_TROCHOID_MM,
+    STACK_TROCHOID_ROWS,
+    WALK_BACKLASH,
+    WALK_RHO_MM,
+    WALK_SHIFTS,
+    WALK_TEETH,
+    chamfer_verdict,
+    corner_rows,
+    deviation_a,
+    deviation_b,
+    proposed_bar,
+    shoelace_area,
+    smallest_listed,
+    smallest_power_of_ten,
+)
 from spur.calc import (
     HEX_CELL_CAP,
     RootCurve,
     cutter,
     hex_cells,
     profile,
+    root_mode,
     tip_chamfer_effective,
     tip_chamfer_limit,
     trochoid_root,
@@ -844,3 +866,202 @@ def test_the_d05_premise_line_sits_25_percent_either_side_of_0_14_m() -> None:
         assert all(premise_holds(-g, module) for g in inside)
         assert not any(premise_holds(g, module) for g in outside)
         assert not any(premise_holds(-g, module) for g in outside)
+
+
+def test_the_chamfer_law_verdict_is_never_optimistic() -> None:
+    """19-01's verdict on one bisected row: a chamfer that last built more than
+    TIP_CHAMFER_MARGIN (0.001 mm) inside pred = ra - R_join is "optimistic" -- the only
+    failing reading, because the cap would let a user ask for a chamfer the kernel cannot
+    cut (L03, L08). One building past pred is "conservative", as L29's sixth row was. Pinned
+    at points clear of the margin's float edge."""
+    assert chamfer_verdict(1.0, 1.0) == "on the law"
+    assert chamfer_verdict(1.0005, 1.0) == "on the law"
+    assert chamfer_verdict(1.05, 1.0) == "conservative"
+    assert chamfer_verdict(0.998, 1.0) == "optimistic"
+
+
+def test_the_chamfer_rows_are_fourteen_trochoid_gears() -> None:
+    """The spike's rows are 18-RESEARCH-era scratch rows typed out, never generated from
+    calc: seven gears at tip radius 0 and 0.5 mm. Each is a trochoid gear, its junction
+    sits where the scratch run read it (pred = ra - R_join, four places), and only the two
+    6-tooth rows have the junction above the pitch circle -- the one place ra - R_join is
+    the binding cap (F6)."""
+    assert len(CHAMFER_ROWS) == 14
+    assert len({row.label for row in CHAMFER_ROWS}) == 7
+    assert {(row.label, row.rho) for row in CHAMFER_ROWS} == {
+        (row.label, rho) for row in CHAMFER_ROWS for rho in (0.0, 0.5)}
+
+    above_pitch = []
+    for row in CHAMFER_ROWS:
+        p = GearParams.model_validate(row.fields)
+        pr = profile(p)
+        rm = root_mode(p, pr, requested="trochoid", rho=row.rho)
+        assert rm.mode == "trochoid", row.label
+        assert rm.cutter is not None
+        curve = trochoid_root(rm.cutter)
+        assert curve is not None
+        assert pr.ra - curve.points[-1][0] == pytest.approx(row.scratch_pred, abs=1e-4)
+        if curve.points[-1][0] > pr.r:
+            above_pitch.append(row)
+    assert [(row.fields["teeth"], row.rho) for row in above_pitch] == [(6, 0.0), (6, 0.5)]
+
+
+def test_the_corner_rows_are_the_composed_sweep_at_the_trochoid_corner() -> None:
+    """19-01's heaviest-row spike takes every row of the composed sweep to the largest gear
+    the trochoid can apply to: 116 teeth at 14.5 degrees and profile shift -0.6, where rb >
+    rf still holds (z < 2 (1.25 - x) / (1 - cos(alpha)) = 116.1). Read against the JSON in
+    the test, not a typed copy: a row dropped from the spike must fail here, and every other
+    key of every row must arrive unchanged and in the file's order."""
+    path = Path(__file__).resolve().parents[1] / "bench" / "sweeps" / "composed.json"
+    raw: list[dict[str, object]] = json.loads(path.read_text())
+    rows = corner_rows()
+    assert len(rows) == len(raw)
+    for row, original in zip(rows, raw, strict=True):
+        assert row == {**original, "teeth": 116, "pressure_angle": 14.5,
+                       "profile_shift": -0.6}
+        assert list(row)[:len(original)] == list(original)
+
+
+def test_the_trochoid_sweep_is_the_corner_rows_in_both_root_shapes() -> None:
+    """19-09's sweep file is every row 19-01 timed -- the composed sweep at the trochoid
+    corner and the two lighter module-10 rows, minus the rows `GearParams` refuses there --
+    each followed by its trochoid twin (the same row plus `"root_shape": "trochoid"`), so
+    `make bench.build SWEEP=bench/sweeps/trochoid.json` reads the hob root's price through
+    the standard runner. The expected rows are rebuilt from `corner_rows()` and the refusal
+    rule, never typed, so a hand edit or a drift in composed.json goes red. The twin must be
+    a trochoid build: a row the predicate ignores would be timed as a radial one and read as
+    a pass."""
+    path = DEFAULT_SWEEP.parent / "trochoid.json"
+    raw: list[dict[str, object]] = json.loads(path.read_text())
+    expected: list[dict[str, object]] = []
+    for fields in [*corner_rows(), *LIGHTER_ROWS]:
+        try:
+            GearParams.model_validate(fields)
+        except ValidationError:
+            continue  # refused at the corner: load_sweep would raise on it, 19-01 printed it
+        expected += [fields, {**fields, "root_shape": "trochoid"}]
+    assert raw == expected
+    assert [list(r) for r in raw] == [list(r) for r in expected]
+
+    sets = load_sweep(path)
+    assert len(sets) == len(raw)
+    for (_, radial), (_, trochoid) in zip(sets[0::2], sets[1::2], strict=True):
+        assert radial.root_shape == "radial"
+        assert trochoid == GearParams.model_validate(
+            {**radial.model_dump(), "root_shape": "trochoid"})
+        mode = root_mode(trochoid, profile(trochoid), requested=trochoid.root_shape,
+                         rho=trochoid.root_fillet)
+        assert mode.mode == "trochoid", (trochoid.teeth, mode.reason)
+
+
+def test_the_proposed_bar_is_the_smallest_listed_value_ten_times_over_the_worst() -> None:
+    """19-02's kernel bar rule (L33 D-06): the smallest of 1e-3, 2e-3, 5e-3, 1e-2 (times the
+    module) that is at least 10x the worst spline error per module. 1.79e-4 is the worst
+    19-RESEARCH read on its sample (11.2x under 2e-3); the rows either side pin the step to
+    the next listed value, and 1.1e-3 is the case with no listed value left -- a question for
+    the human, not a default, so it raises and names the worst."""
+    assert proposed_bar(1.79e-4) == 2e-3
+    assert proposed_bar(0.99e-4) == 1e-3
+    assert proposed_bar(2.1e-4) == 5e-3
+    assert proposed_bar(9.9e-4) == 1e-2
+    with pytest.raises(ValueError, match=r"0\.0011"):
+        proposed_bar(1.1e-3)
+
+
+def test_deviation_b_reads_the_distance_to_the_polyline_not_to_its_vertices() -> None:
+    """Method B (STACK's trochoid figures) is the distance to the reference polyline; method
+    A (STACK's shipped-flank figures) is the distance to its nearest vertex, so it carries the
+    reference's own vertex spacing as a floor. A sample on a vertex reads 0 under B; one
+    1e-5 above the middle of a segment reads 1e-5 under B and the half-segment under A. The
+    radius-bracketed search B uses must equal a brute-force scan on a curved reference."""
+    straight = [(1.0, 0.0), (2.0, 0.0), (3.0, 0.0), (4.0, 0.0)]
+    assert deviation_b([(2.0, 0.0)], straight) == 0.0
+    assert deviation_b([(2.5, 1e-5)], straight) == pytest.approx(1e-5, abs=1e-15)
+    assert deviation_a([(2.5, 1e-5)], straight) == pytest.approx(0.5, abs=1e-6)
+    assert deviation_a([(2.5, 1e-5)], straight) > deviation_b([(2.5, 1e-5)], straight)
+
+    spiral = [(r * math.cos(0.1 * r), r * math.sin(0.1 * r))
+              for r in (1.0 + 2.0 * i / 199 for i in range(200))]
+    samples = [(x + 0.003 * math.sin(7 * i), y + 0.002 * math.cos(3 * i))
+               for i, (x, y) in enumerate(spiral[::13])] + [(0.0, 0.5), (9.0, 9.0)]
+
+    def segment_distance(px: float, py: float, a: tuple[float, float],
+                         b: tuple[float, float]) -> float:
+        ex, ey = b[0] - a[0], b[1] - a[1]
+        t = max(0.0, min(1.0, ((px - a[0]) * ex + (py - a[1]) * ey) / (ex * ex + ey * ey)))
+        return math.hypot(px - (a[0] + t * ex), py - (a[1] + t * ey))
+
+    brute_b = max(min(segment_distance(x, y, a, b) for a, b in itertools.pairwise(spiral))
+                  for x, y in samples)
+    brute_a = max(min(math.hypot(x - a, y - b) for a, b in spiral) for x, y in samples)
+    assert deviation_b(samples, spiral) == pytest.approx(brute_b, abs=1e-15)
+    assert deviation_a(samples, spiral) == pytest.approx(brute_a, abs=1e-15)
+
+
+def test_a_reference_that_does_not_move_outward_is_refused_by_both_methods() -> None:
+    """The radius-bracketed search is exact only for a reference whose distance from the
+    origin strictly rises (every RootCurve and every flank does). A reference that is not
+    one is refused by name, never searched wrongly and read as a small number (L08)."""
+    for bad in ([(2.0, 0.0), (1.0, 0.0)], [(1.0, 0.0), (1.0, 0.0), (2.0, 0.0)]):
+        with pytest.raises(ValueError, match="strictly rise"):
+            deviation_a([(1.5, 0.0)], bad)
+        with pytest.raises(ValueError, match="strictly rise"):
+            deviation_b([(1.5, 0.0)], bad)
+
+
+def test_the_kernel_tier_rows_are_seven_trochoid_gears_and_three_carry_stacks_figures() -> None:
+    """19-02's rows are 19-RESEARCH F3's, typed out. Each is a trochoid gear at its tip
+    radius (a row that fell back to radial would be read against a curve it does not
+    have), the first is the default gear, and the three STACK quoted are the 8, 10 and 14
+    tooth rows at module 1 and 20 degrees, in the order of their figures."""
+    assert len(KERNEL_ROWS) == 7
+    assert KERNEL_ROWS[0].fields == {}
+    for row in KERNEL_ROWS:
+        p = GearParams.model_validate(row.fields)
+        assert root_mode(p, profile(p), requested="trochoid", rho=row.rho).mode == "trochoid", \
+            row.label
+    stack = [KERNEL_ROWS[i] for i in STACK_TROCHOID_ROWS]
+    assert [row.fields["teeth"] for row in stack] == [8, 10, 14]
+    assert {(row.fields["module"], row.fields["pressure_angle"], row.rho) for row in stack} == {
+        (1, 20, 0.38)}
+    assert STACK_TROCHOID_MM == (3.58e-5, 3.89e-5, 3.99e-5)
+
+
+def test_the_junction_bar_is_the_smallest_power_of_ten_over_the_gap_and_the_libm_floor() -> None:
+    """19-02's ROOT_JUNCTION_BAR_RAD rule (18-01's JUNCTION_BAR_RAD reasoning): the smallest
+    power of ten that is at least 10x the larger join maximum and at least 1e-12, the
+    cross-platform libm floor. The whole product's tangent maximum, 2.442e-13 rad, needs
+    2.4e-12 and so reads 1e-11; a maximum at float noise leaves the floor binding."""
+    assert smallest_power_of_ten(10 * 2.442e-13, 1e-12) == 1e-11
+    assert smallest_power_of_ten(10 * 6.939e-16, 1e-12) == 1e-12
+    assert smallest_power_of_ten(10 * 1.0e-12, 1e-12) == 1e-11
+    assert smallest_power_of_ten(0.0, 1e-12) == 1e-12
+
+
+def test_a_listed_bar_is_chosen_from_the_front_and_none_is_none() -> None:
+    """The spacing and area proposals take the first listed value at 10x or more; a maximum
+    with no such value over it yields None, which `product` prints as a question for the
+    human and not as the largest value."""
+    assert smallest_listed((100.0, 1000.0, 10000.0), 133.25) == 1000.0
+    assert smallest_listed((1e-2, 2e-2, 5e-2, 1e-1), 0.12162) is None
+
+
+def test_the_shoelace_area_of_a_unit_square_is_one_whichever_way_it_is_walked() -> None:
+    """The closed-form area guard divides the kernel's face area by this: it must not
+    depend on the orientation of the outline."""
+    square = [cq.Vector(0, 0, 0), cq.Vector(1, 0, 0), cq.Vector(1, 1, 0), cq.Vector(0, 1, 0)]
+    assert shoelace_area(square) == pytest.approx(1.0)
+    assert shoelace_area(square[::-1]) == pytest.approx(1.0)
+
+
+def test_the_waist_walk_is_d07s_grid_at_both_backlashes() -> None:
+    """D-07's walk: 6, 7 and 8 teeth, shift -0.6 to 0 in 0.01 steps (61 values, none lost
+    to float drift), tip radius 0, 0.38 and the field's maximum 3.0, at the default
+    backlash and at 0 -- the one 19-RESEARCH F8's scratch walk used."""
+    assert WALK_TEETH == (6, 7, 8)
+    assert len(WALK_SHIFTS) == 61
+    assert WALK_SHIFTS[0] == -0.6
+    assert WALK_SHIFTS[-1] == 0.0
+    assert all(round(b - a, 2) == 0.01 for a, b in itertools.pairwise(WALK_SHIFTS))
+    assert WALK_RHO_MM == (0.0, 0.38, 3.0)
+    assert set(WALK_BACKLASH) == {0.0, GearParams().backlash}
