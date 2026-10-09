@@ -5,10 +5,10 @@ milestone_name: True Root
 current_phase: 20
 current_phase_name: The Flip (conditional)
 status: planning
-stopped_at: Phase 19 complete, ready to plan Phase 20
+stopped_at: Phase 19 complete and verified; Phase 20 skipped under L38 — ship Phase 19, then close v0.4
 last_updated: "2026-10-09T09:09:47.142Z"
 last_activity: 2026-10-09
-last_activity_desc: Phase 19 complete, transitioned to Phase 20
+last_activity_desc: Phase 19 complete (verified passed 5/5); Phase 20 recorded skipped under L38
 state_head: b1b111b78a4b0b4eb3611851a83deca72827cb5d
 progress:
   total_phases: 4
@@ -22,22 +22,23 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-08)
+See: .planning/PROJECT.md (updated 2026-10-09)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 19 — The Trochoid in the Part
-2026-10-08 on `gsd/phase-18-trochoid-maths-proved`, 44 commits from `15174f9` to the
-transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like #27)
+**Current focus:** close v0.4 — Phase 19 ships through a PR from
+`gsd/phase-19-the-trochoid-in-the-part` (like #27, landed with `make pr.land`); Phase 20 is
+recorded skipped under L38 (O4, flip deferred); then `/gsd-complete-milestone v0.4`.
 
 ## Current Position
 
-Phase: 20 — The Flip (conditional)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-09 — Phase 19 complete, transitioned to Phase 20
+Phase: 20 — The Flip (conditional) — skipped under L38 (O4, flip deferred; ROADMAP row
+`Skipped (O4, flip deferred)`, 19-11)
+Plan: none — nothing to plan; the flip waits on D-09's trigger under its own `Lxx`
+Status: Phase 19 complete and verified (passed 5/5); v0.4 ready to close once Phase 19 lands on `main`
+Last activity: 2026-10-09 — Phase 19 complete; review CR-01/WR-01 fixed; Phase 20 skipped
 
-Progress: [████████████████████] 11/11 plans ([█████████░] 86%)
+Progress: [████████████████████] 22/22 plans (100%)
 
 ## Performance Metrics
 
@@ -388,6 +389,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: 19-09: accept-A (2026-10-09) -- the measured gate cost (make verify 192.94 s mean against L34's 66 s, +140.05 s on the same M5 Max) is accepted and recorded in L38; no test moved, L34's bar and the 401-position oracle count unchanged
 - [Phase 19]: L38 logged (supersedes L10, amends L09 and L33): root_shape opt-in, default unmoved in v0.4, Phase 20 skipped; flip rules and the D-09 trigger recorded
 - [Phase 19]: L38 records the gate cost as accepted (accept-A): mean 192.94 s against L34's 66 s on the 18-CPU M5 Max, +140.05 s on the same host; L34's bar and the 401-position count untouched, the bar's re-set left as a separate decision
+- [Phase 19]: review CR-01, fix-now (2026-10-09): root_waist redefined to the narrowest arc thickness (was the narrowest half-angle, 2–5 % high on crossing joins; 1.473 → 1.442 on the tracer gear, sub-floor gears now warn), every pin re-measured, 0.4 mm floor unmoved (`e733cc2`); WR-01: a kernel exception in the hob-root outline becomes a BuildError naming it (`b51931c`); IN-01…04 deferred as one debt item
 
 ### Pending Todos
 
@@ -402,8 +404,6 @@ None yet.
   `ROOT_CURVE_POINTS`'s unrepeatable kernel figure, the flake re-deferral's weak evidence, `root_mode`'s
   docstring not naming the new `ValueError` (and `+inf` now refused where it was capped), `-0.0`
   surviving into `Cutter.rho`.
-- ⚠️ [Phase 18] Phase 19 must validate the tip radius once at its `GearParams` field (finite, ≥ 0);
-  `cutter()`'s `ValueError` (`calc.py:1291`) is the interim guard, not the boundary.
 - ℹ️ [Phase 18] One figure unreconciled, recorded as `ASSUMPTION:` in `bench/RESULTS.md` and
   18-05-SUMMARY: 18-RESEARCH's prototype quoted "rho 0 → −0.1885" at the `rb = rf` crossover; this
   phase reads +0.1403 mm at 41 teeth. The D-05 verdict does not depend on it.
@@ -555,6 +555,22 @@ None yet.
   `110b827` and only STATE.md changed after. No code, test, plan or summary changed after
   any report. Upstream GSD behaviour, not a project defect.
 
+- ⚠️ [Phase 19] L34's 66 s gate bar is a dead number: `make verify` reads 162–240 s on the M5 Max
+  (192.94 s mean, 19-09) after the kernel-tier proofs; the human accepted the cost (`accept-A`, L38)
+  and no test moved. Re-setting the bar from an idle-host reading under a new `Lxx`, or revisiting
+  the 401-position oracle count, is an open decision; the Makefile comment still quotes 63.555 s
+  (review IN-03, in the deferred debt item).
+- ℹ️ [Phase 19] 19-02's waist walk in `bench/RESULTS.md` used the pre-CR-01 waist (narrowest
+  half-angle); the 0.4 mm floor was chosen on it and stands. No curve moved, only which point of
+  it is called the waist (`e733cc2`; dated subsection in RESULTS).
+- ℹ️ [Phase 19] Review IN-01…IN-04 deferred: `docs/tech_debt/active/2026-10-09-phase-19-review-info-findings-deferred.md`.
+- ℹ️ [Phase 19] Twelve macOS crash reports (2026-10-08 16:46 to 2026-10-09 08:36) show one xdist
+  worker per run dying in `~BRepAlgoAPI_BuilderAlgo` at interpreter exit, after its tests reported;
+  not reproduced in any run this session. `docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`
+  (`nice`); open question to the human: which command ran 07:19–08:36.
+- ℹ️ [Phase 19] Commit trailers mixed again: executors and the fixer signed `Claude Sonnet 5.5`,
+  orchestrator commits `Claude Fable 5.1`. Cosmetic; not rewritten.
+
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
@@ -587,34 +603,20 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T08:02:19.053Z
-Stopped at: Phase 19 complete, ready to plan Phase 20
+Last session: 2026-10-09T09:11:34Z
+Stopped at: Phase 19 complete and verified (passed 5/5); Phase 20 skipped under L38 — ready to ship Phase 19 and close v0.4
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-discuss-phase 19` — Phase 19 (The Trochoid in the Part) has no CONTEXT.md yet;
-  the roadmap says it needs a spike first and takes the root-mode `Lxx` (REQ-root-mode-decided);
-  Phase 20 runs only if that `Lxx` makes the hob root a default (otherwise recorded as skipped).
-  Phase 19 planning is also the resource-tracker debt's trigger (re-deferred at 18-05). Before
-  ship of Phase 18: open a PR from `gsd/phase-18-trochoid-maths-proved` like #27; triage
-  IN-01…IN-08 in `18-REVIEW-DISPOSITION.md`.
-- Carried from v0.3 (phase artefacts now under `milestones/v0.3-phases/`): triage
-  `15-REVIEW-DISPOSITION.md` (8 open: WR-01 the CI datapoint without the `-n 4` baseline,
-  WR-02 a false statement and two dangling links left by the two retirements, WR-03 the
-  commit-timeout debt contradicting its own trigger, WR-04 the "five runs" undercount,
-  IN-01…IN-04); `14-REVIEW-DISPOSITION.md` (4 open: WR-01 one assert in the shared cutout
-  assertion, IN-01 three stale finding-id citations in `tests/test_model.py`, IN-02 L33's
-  D-06 attribution for the `1e-8` bar, IN-03; decide whether the hole-link test's `rel=1e-6`
-  row moves to the web formula; re-file the macOS-only calibration finding if it is to stay
-  tracked); `16-REVIEW-DISPOSITION.md` (5 open: WR-01 `_cell_cutters`' bare `TypeError`,
-  WR-02 the `no-fake-done` pin's spellings, IN-01…IN-03). Phase 13's two are fixed.
-- `/gsd-map-codebase` — `.planning/codebase/TESTING.md` still says "Warm run ~11 seconds"
-  and predates coverage and xdist; `--paths bench` is also owed (Phase 13).
-- Decide whether `_cell_cutters`' bare `TypeError` on a non-Solid prototype
-  (`src/spur/model.py:355-357`, review 16 WR-01) gets a `docs/tech_debt/active/` file.
-- SDK commits work again since `5a3332f` (L36): the pre-commit hook is `make verify.fast`
-  (~11 s warm, ~20 s cold-mypy), inside the SDK's 30 s band. If one ever returns
-  `committed: false` / `commit_timeout`, apply D-07 (docs/HOW_TO_DEVELOP.md §4): wait until
-  `pgrep -fl 'pre_commit hook-impl|pytest|mypy'` prints nothing, then exactly one plain
-  `git commit`. Run `make verify` before every push — the pre-push hook runs the whole gate.
+- Next: ship Phase 19 — open a PR from `gsd/phase-19-the-trochoid-in-the-part` (like #27) and land it
+  with `make pr.land PR=N`; then `/gsd-complete-milestone v0.4` (Phase 20 is recorded skipped under
+  L38; nothing is left to execute in v0.4).
+- Open decision: re-set L34's 66 s gate bar from an idle-host reading under a new `Lxx` (the gate
+  reads ~193 s; `accept-A` recorded the cost, not a new bar), or revisit the 401-position oracle
+  count as its own measured decision.
+- Open question: which command, cwd and venv ran 2026-10-09 07:19–08:36 — every run crashed one
+  xdist worker at exit (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
+- Still open before the next milestone: Phase 18's IN-01…IN-08 (`18-REVIEW-DISPOSITION.md`), Phase
+  19's IN-01…IN-04 (debt item), and the resource-tracker flake (`must`), whose trigger is the next
+  `make verify` failure with its whole log kept.
