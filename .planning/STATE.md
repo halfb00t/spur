@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
 status: executing
-stopped_at: Completed 19-06-PLAN.md
-last_updated: "2026-10-09T04:39:23.521Z"
+stopped_at: Completed 19-08-PLAN.md
+last_updated: "2026-10-09T04:55:29.042Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 19 execution started
-state_head: 8504a92d13eaa66817171ef53924a3f11b887495
+state_head: b78e47e201435cde37a04949035328f0894aba9e
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 22
-  completed_plans: 17
-  percent: 77
+  completed_plans: 18
+  percent: 82
 ---
 
 # Project State
@@ -33,11 +33,11 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 ## Current Position
 
 Phase: 19 (The Trochoid in the Part) — EXECUTING
-Plan: 7 of 11
+Plan: 8 of 11
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 19 execution started
 
-Progress: [████████████████████] 11/11 plans ([████████░░] 77%)
+Progress: [████████████████████] 11/11 plans ([████████░░] 82%)
 
 ## Performance Metrics
 
@@ -212,6 +212,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 19 P04 | 30 min | 2 tasks | 8 files |
 | Phase 19 P05 | 10 min | 3 tasks | 6 files |
 | Phase 19 P06 | 11 min | 3 tasks | 7 files |
+| Phase 19 P08 | 25 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -376,6 +377,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: 19-06: ROOT_WAIST_FLOOR 0.4 mm absolute as its own constant (floor-print, equal to MIN_TIP_FDM but not bound to it); small-module caveat (595 of 616 module-0.2 gears warn) recorded beside it, in errors_and_logging.md and implementation.md
 - [Phase 19]: 19-06: the restated undercut sentence fires on rm.curve.join == crossing, prints the cutter's onset rounded up to 0.1 teeth and the shift rounded up to 0.001 after residue removal, and prints no shift above the profile_shift field's 1.0; radial mode and a refused request keep the shipped sentence byte for byte
 - [Phase 19]: 19-06: root_form_d (30.558 on the default gear) and root_waist (3.303) printed under the hob root, null elsewhere; root_form_d is the cutter-envelope junction and never called a form diameter; cap sentence names root_fillet and says within 0.001 mm of the largest
+- [Phase 19]: 19-08: the hob root composes with every shipped feature on the radial row's own numbers; no pinned delta, bar or oracle position count changed
+- [Phase 19]: 19-08: the tip chamfer cap on the hob root is pinned on the 6-tooth, module 1, 14.5 degree, sharp-hob row (cap 0.9 mm, 12 new CONE faces; BuildError at 0.9506)
 
 ### Pending Todos
 
@@ -574,8 +577,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T04:39:23.491Z
-Stopped at: Completed 19-06-PLAN.md
+Last session: 2026-10-09T04:55:29.011Z
+Stopped at: Completed 19-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
