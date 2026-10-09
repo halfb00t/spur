@@ -401,6 +401,8 @@ dated line naming the `Lxx` that skipped it, and its criteria are marked not app
 which is mapped to Phase 19 so that a skipped Phase 20 orphans nothing.
 **Success Criteria** (what must be TRUE; not applicable when skipped):
 
+  Not applicable: skipped under L38 (O4, flip deferred), the trigger D-09 names.
+
   1. The fixture moves exactly once in the milestone: `git log --oneline --
      tests/regression/pre_v0_2.json` since the milestone start shows one commit, and that
      commit also carries the predicate change and the `Lxx`; every commit before and after it
@@ -451,4 +453,4 @@ before the human at Phase 18's discuss-phase.
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
 | 18. Trochoid Maths, Proved | v0.4 | 6/6 | Complete    | 2026-10-08 |
 | 19. The Trochoid in the Part | v0.4 | 10/11 | In Progress | - |
-| 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |
+| 20. The Flip (conditional) | v0.4 | 0/0 | Skipped (O4, flip deferred) | - |

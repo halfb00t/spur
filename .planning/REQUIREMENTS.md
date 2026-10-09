@@ -215,7 +215,10 @@ Deferred deliberately; recorded so they survive this session.
 ### Trochoid follow-ups (v0.4.x)
 
 - Flipping the default root mode to the hob root, if O3 is chosen now (own `Lxx`, own
-  commit, the moving records named in advance).
+  commit, the moving records named in advance). O4 was taken in Phase 19: L38 makes the
+  hob root opt-in through `root_shape`, the default unmoved, and Phase 20 is skipped. This
+  bullet owns the flip from here, triggered by a real fit report or a mating-pair request
+  below `z_min` (D-09), not by a date.
 - Mate interference checked against the form diameter; ISO 6336-3 critical section
   (geometry only, no stress numbers); an editable dedendum (needs an L05 decision).
 
