@@ -9,6 +9,7 @@ import cadquery as cq
 import pytest
 from trochoid_oracle import clearance
 
+import spur.model
 from spur.build_errors import BuildError
 from spur.calc import (
     MIN_WALL,
@@ -1973,3 +1974,163 @@ def test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root() -> N
     print(f"default gear, hob root: oracle reads {reading:.4e} mm of "
           f"{KERNEL_BAR_PER_MODULE * p.module:.4e}")
     assert reading <= KERNEL_BAR_PER_MODULE * p.module
+
+
+# Typed out, never generated from calc (a row that moved with the code under test would
+# agree with it): the seven rows 19-02 read the kernel tier on (bench/RESULTS.md "Spline
+# deviation and the kernel bar (19-02)"), as (id, fields, tip radius asked, tip radius the
+# cutter used). Default backlash 0.10 throughout. The module-0.2 row is the worst per
+# module, the module-10 row the worst in mm; row 6 is capped from 0.5 to 0.183 mm.
+_M1: dict[str, object] = {"module": 1, "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0,
+                          "recess_sides": "none"}
+KERNEL_ROWS: list[tuple[str, dict[str, object], float, float]] = [
+    ("19t-m1.75-25deg-x0", {}, 0.5, 0.5),
+    ("8t-m1-20deg-x0", {**_M1, "teeth": 8, "pressure_angle": 20, "profile_shift": 0},
+     0.38, 0.38),
+    ("10t-m1-20deg-x0", {**_M1, "teeth": 10, "pressure_angle": 20, "profile_shift": 0},
+     0.38, 0.38),
+    ("14t-m1-20deg-x0", {**_M1, "teeth": 14, "pressure_angle": 20, "profile_shift": 0},
+     0.38, 0.38),
+    ("6t-m1-14.5deg-x0", {**_M1, "teeth": 6, "pressure_angle": 14.5, "profile_shift": 0},
+     0.0, 0.0),
+    ("30t-m0.2-14.5deg-x-0.6", {**_M1, "module": 0.2, "teeth": 30, "pressure_angle": 14.5,
+                                "profile_shift": -0.6}, 0.5, 0.183),
+    ("30t-m10-14.5deg-x-0.6", {**_M1, "module": 10, "teeth": 30, "pressure_angle": 14.5,
+                               "profile_shift": -0.6}, 0.5, 0.5),
+]
+TRIPWIRE_ROW = KERNEL_ROWS[2]
+
+
+def _hob_gear(fields: dict[str, object], rho: float) -> GearParams:
+    return GearParams.model_validate({**fields, "root_fillet": rho, "root_shape": "trochoid"})
+
+
+@pytest.mark.parametrize(("fields", "asked", "used"), [
+    pytest.param(f, a, u, id=name) for name, f, a, u in KERNEL_ROWS])
+def test_the_built_root_is_the_oracle_s_root_on_every_kernel_row(
+        fields: dict[str, object], asked: float, used: float) -> None:
+    """SC2, the kernel tier (REQ-outline-consumes-root-curve): on each row 19-02 measured,
+    the built part's tooth-0 root splines -- selected by position, 2 x teeth of them, the
+    count asserted -- read within KERNEL_BAR_PER_MODULE x module of the independent
+    swept-cutter oracle when it is given the tip radius derive() printed. The printed
+    radius is the cut radius (L08): it is also pinned to the radius 19-02 recorded the
+    cutter used, so a row cannot pass by reading the wrong cutter."""
+    p = _hob_gear(fields, asked)
+    printed = derive(p).root_fillet
+    assert printed == used
+    solid = _build_checked(p)
+    reading = _oracle_reading(solid, p, printed)
+    print(f"oracle reads {reading:.4e} mm of {KERNEL_BAR_PER_MODULE * p.module:.4e}")
+    assert reading <= KERNEL_BAR_PER_MODULE * p.module
+
+
+def test_the_kernel_tier_proof_fails_when_the_printed_tip_radius_is_off_by_0_05_mm() -> None:
+    """The tripwire that gives the rows above their teeth (L33 D-06): the module-1 10-tooth
+    row read with the tip radius 0.05 mm above the one printed is over the bar (19-02
+    recorded 1.1039e-2 mm, 5.5x). It must be a module-1 row: the shift does not scale with
+    the module, and on module 10 it reads 0.66x of the bar. An oracle that passes anything
+    proves nothing."""
+    _, fields, asked, _ = TRIPWIRE_ROW
+    p = _hob_gear(fields, asked)
+    printed = derive(p).root_fillet
+    solid = _build_checked(p)
+    assert p.module == 1
+    assert _oracle_reading(solid, p, printed) <= KERNEL_BAR_PER_MODULE * p.module
+    off = _oracle_reading(solid, p, printed + 0.05)
+    print(f"tripwire reads {off:.4e} mm against a bar of {KERNEL_BAR_PER_MODULE:.1e}")
+    assert off > KERNEL_BAR_PER_MODULE * p.module
+
+
+@pytest.mark.parametrize("shape", ["radial", "trochoid"])
+@pytest.mark.parametrize(("fields", "rho"), [
+    pytest.param({}, 0.5, id="default"),
+    pytest.param(KERNEL_ROWS[2][1], 0.38, id="10t-m1-20deg-x0"),
+])
+def test_root_d_is_the_root_circle_in_both_root_modes(
+        fields: dict[str, object], rho: float, shape: str) -> None:
+    """SC2's `root_d == 2 rf` in both modes: the arc between neighbouring teeth is a CIRCLE
+    edge at z = 0 on the root circle, one per gap (selected by that radius, so the bore and
+    recess circles never count), and the document prints round(2 rf, 3). Under the hob's
+    root no sample of any root spline reads below the root circle either: the trochoid
+    starts on it and rises."""
+    p = GearParams.model_validate({**fields, "root_fillet": rho, "root_shape": shape})
+    rf = profile(p).rf
+    solid = _build_checked(p)
+
+    def root_arc(e: cq.Edge) -> bool:
+        a, b = e.startPoint(), e.endPoint()
+        return (e.geomType() == "CIRCLE" and abs(e.radius() - rf) < TOL
+                and abs(a.z) < TOL and abs(b.z) < TOL)
+
+    assert len([e for e in solid.Edges() if root_arc(e)]) == p.teeth
+    assert derive(p).root_d == round(2 * rf, 3)
+    if shape == "trochoid":
+        for e in _root_edges(solid, p):
+            low = min(math.hypot(v.x, v.y) for v in (e.positionAt(i / 40) for i in range(41)))
+            assert low >= rf - TOL
+
+
+def test_nothing_radial_to_replace_builds_the_radial_part() -> None:
+    """Probe boundary (REQ-root-mode-decided), in the solid: one tooth step either side of
+    rb = rf at module 1, 20 degrees, no shift, no backlash, tip radius 0.38 mm. At 42
+    teeth the request is refused (`nothing radial to replace`), so the part is the radial
+    request's -- same faces, edges and volume. At 41 it is the hob's root, with two
+    fewer side faces per tooth."""
+    fields = {**_M1, "pressure_angle": 20, "profile_shift": 0, "backlash": 0,
+              "root_fillet": 0.38}
+    radial42 = _build_checked(GearParams.model_validate({**fields, "teeth": 42}))
+    asked42 = _build_checked(GearParams.model_validate(
+        {**fields, "teeth": 42, "root_shape": "trochoid"}))
+    assert len(asked42.Faces()) == len(radial42.Faces())
+    assert len(asked42.Edges()) == len(radial42.Edges())
+    assert asked42.Volume() == pytest.approx(radial42.Volume(), rel=1e-6)
+
+    radial41 = _build_checked(GearParams.model_validate({**fields, "teeth": 41}))
+    hob41 = _build_checked(GearParams.model_validate(
+        {**fields, "teeth": 41, "root_shape": "trochoid"}))
+    assert len(radial41.Faces()) - len(hob41.Faces()) == 2 * 41
+
+
+def test_the_same_trochoid_link_builds_the_same_solid_twice() -> None:
+    """The same-link-same-part property (L05), for the hob's root: two independent builds
+    of one parameter set agree on topology, volume and bounding box. Uses _build_checked,
+    bypassing the lru_cache, so both builds actually run the kernel."""
+    p = GearParams(root_shape="trochoid")
+    a = _build_checked(p)
+    b = _build_checked(p)
+    assert len(a.Faces()) == len(b.Faces())
+    assert len(a.Edges()) == len(b.Edges())
+    assert a.Volume() == pytest.approx(b.Volume(), rel=1e-9)
+    box_a, box_b = a.BoundingBox(), b.BoundingBox()
+    for corner in ("xmin", "xmax", "ymin", "ymax", "zmin", "zmax"):
+        assert getattr(box_a, corner) == pytest.approx(getattr(box_b, corner), abs=1e-6)
+
+
+def test_a_radial_and_a_trochoid_request_never_share_a_cached_solid() -> None:
+    """Probe concurrency (REQ-outline-consumes-root-curve): the solid cache keys on the
+    whole GearParams, so the default gear and the same gear asked for the hob's root are
+    two entries on one worker -- different objects, 38 faces apart."""
+    radial = build(GearParams())
+    hob = build(GearParams(root_shape="trochoid"))
+    assert radial is not hob
+    assert len(radial.Faces()) - len(hob.Faces()) == 38
+    assert build(GearParams()) is radial
+
+
+# The generator's names, which must not appear in model.py (RESEARCH Pitfall 11): the
+# private point, junction and curve builders, the public generator, and a call to the
+# cutter constructor. model.py consumes the RootCurve that calc.RootMode carries.
+GENERATOR_NAMES = ("_trochoid_point", "_junction", "_root_curve", "trochoid_root", "cutter(")
+
+
+def _generator_names_in(source: str) -> list[str]:
+    return [name for name in GENERATOR_NAMES if name in source]
+
+
+def test_the_trochoid_generator_never_enters_the_model_module() -> None:
+    """The kernel module draws a curve; it does not make one. Source test in the shape of
+    test_calc_module_stays_log_free. The first assertion is the check's own tripwire: it
+    flags a string that holds a name, so the second cannot pass by matching nothing."""
+    assert _generator_names_in("c = cutter(p, 0.5)\nx = _junction(c, 0.0)") == [
+        "_junction", "cutter("]
+    assert _generator_names_in(Path(spur.model.__file__).read_text()) == []
