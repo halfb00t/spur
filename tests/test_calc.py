@@ -17,8 +17,11 @@ from composition import (
     HEX_IGNORES_ROUND,
     RECESS_FIELDS,
     RECESSES,
+    ROOT_FIELDS,
+    ROOTS,
     TIP_FIELDS,
     TIPS,
+    TROCHOID_THICKNESS,
 )
 from pydantic import ValidationError
 
@@ -1418,32 +1421,36 @@ def test_the_honeycomb_fields_are_bounded_zero_to_a_hundred() -> None:
                                "hex_wall": 1})
 
 
-_TIER_1_ROWS = list(itertools.product(BORES, CUTOUTS, RECESSES, TIPS))
+_TIER_1_ROWS = list(itertools.product(ROOTS, BORES, CUTOUTS, RECESSES, TIPS))
 
 
 @pytest.mark.parametrize(
-    ("bore", "cutout", "recess", "tip"), _TIER_1_ROWS,
+    ("root", "bore", "cutout", "recess", "tip"), _TIER_1_ROWS,
     ids=["-".join(row) for row in _TIER_1_ROWS])
 def test_every_bore_cutout_recess_and_tip_combination_derives_its_own_numbers(
-        bore: str, cutout: str, recess: str, tip: str) -> None:
-    """D-07 tier 1: the full 96-row bore x cutout x recess x tip-chamfer cross product
-    (`tests/composition.py`'s four family tables, `itertools.product`) -- every row is a
-    valid composition on the default 19-tooth gear (the refusals are this file's next
-    test, D-08). Each row derives exactly the non-null `DerivedDimensions` fields
-    `ALWAYS | BORE_FIELDS[bore] | CUTOUT_FIELDS[cutout] | RECESS_FIELDS[recess] |
-    TIP_FIELDS[tip]` name and the warnings their families imply -- expectations written
-    out in `tests/composition.py`, never computed by calling `derive()` itself (L08). A
-    family's own number does not move when an unrelated family switches on: every row
-    with the tip chamfer on prints 1.75, and every row with spokes prints a 1.0 mm spoke
-    fillet, whatever else composes with it. The keyed-round bore composed with spokes
-    ("keyed-spokes-*") derives a 0.421 mm `cutout_hub_wall` -- 0.021 mm above MIN_WALL,
-    not a refusal (edge: adjacency) -- asserted on those three rows explicitly.
+        root: str, bore: str, cutout: str, recess: str, tip: str) -> None:
+    """D-07 tier 1: the full 192-row root x bore x cutout x recess x tip-chamfer cross
+    product (`tests/composition.py`'s five family tables, `itertools.product`) -- every
+    row is a valid composition on the default 19-tooth gear (the refusals are this
+    file's next test, D-08). Each row derives exactly the non-null `DerivedDimensions`
+    fields `ALWAYS | ROOT_FIELDS[root] | BORE_FIELDS[bore] | CUTOUT_FIELDS[cutout] |
+    RECESS_FIELDS[recess] | TIP_FIELDS[tip]` name and the warnings their families imply
+    (under the hob root, its one thickness sentence first) -- expectations written out
+    in `tests/composition.py`, never computed by calling `derive()` itself (L08). A
+    family's own number does not move when an unrelated family switches on, nor when the
+    root changes: composition cuts inside the root circle and at the tip, and the hob
+    root changes only what lies between, so every row with the tip chamfer on prints
+    1.75, and every row with spokes prints a 1.0 mm spoke fillet, whatever else composes
+    with it, in both roots. The keyed-round bore composed with spokes
+    ("*-keyed-spokes-*") derives a 0.421 mm `cutout_hub_wall` -- 0.021 mm above MIN_WALL,
+    not a refusal (edge: adjacency) -- asserted on those rows explicitly.
     """
-    kw = {**BORES[bore], **CUTOUTS[cutout], **RECESSES[recess], **TIPS[tip]}
+    kw = {**ROOTS[root], **BORES[bore], **CUTOUTS[cutout], **RECESSES[recess],
+          **TIPS[tip]}
     d = derive(GearParams.model_validate(kw))
 
-    want = ALWAYS | BORE_FIELDS[bore] | CUTOUT_FIELDS[cutout] | RECESS_FIELDS[recess] | \
-        TIP_FIELDS[tip]
+    want = ALWAYS | ROOT_FIELDS[root] | BORE_FIELDS[bore] | CUTOUT_FIELDS[cutout] | \
+        RECESS_FIELDS[recess] | TIP_FIELDS[tip]
     # Class-level model_fields, not the instance attribute: pydantic 2.11 deprecates the
     # instance accessor, and this project's pytest config turns every warning into an
     # error (pyproject.toml `filterwarnings = ["error", ...]`).
@@ -1451,7 +1458,9 @@ def test_every_bore_cutout_recess_and_tip_combination_derives_its_own_numbers(
           if name != "warnings" and getattr(d, name) is not None}
     assert got == want
 
-    assert d.warnings == ((HEX_IGNORES_ROUND,) if bore == "hex" else ())
+    radial_warnings = (HEX_IGNORES_ROUND,) if bore == "hex" else ()
+    assert d.warnings == ((TROCHOID_THICKNESS,) if root == "trochoid" else ()) + \
+        radial_warnings
 
     if tip == "on":
         assert d.tip_chamfer_effective == pytest.approx(1.75)
