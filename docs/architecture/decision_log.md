@@ -2087,3 +2087,206 @@ Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand
 hw.memsize`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); the
 two `identical` readings were taken on 2026-10-06, SC3 on 2026-10-02, the Phase 12 readings on
 2026-09-30.
+
+## L38 — The hob-cut root is opt-in through root_shape, every number beside it is proved or warned, and the default does not move in v0.4 (supersedes L10, amends L09 and L33)
+
+Date: 2026-10-09.
+
+L09, L10, L33 and L37 stay as written; this entry supersedes L10 and amends L09 and L33 with
+what Phase 19 built, measured and had the human decide, and it answers L37's "Revisit when"
+clause. Every figure below is cited to the plan SUMMARY (and its commit sha) or to the
+`bench/RESULTS.md` subsection under "Trochoid in the part (Phase 19)" that holds it. None is
+re-estimated here, and no figure is carried from one host to another.
+
+**The choice** (D-01, D-02, D-05, D-08; O4). The hob-cut root is opt-in.
+`root_shape: Literal["radial", "trochoid"] = "radial"` joins `GearParams`' Teeth group directly
+after `tip_chamfer`, a plain `Field` with no `step`, so the schema carries the enum, the form
+renders a `<select>` and the CLI generates `--root-shape {radial,trochoid}` with no edit to
+`cli.py`. It is a `Literal`, never a bool, because `--flag false` reads true. Under `trochoid`
+`root_fillet` is the hob's tip radius: its millimetre value goes to `cutter()` as the radius,
+capped by the cutter's geometric maximum and warned with the cap sentence, `0` a legal sharp hob,
+and the printed `root_fillet` is the radius actually cut (19-04, `d58707f`). In radial mode it
+stays the analytic fillet radius (L09). The trochoid applies only where the base circle is above
+the root circle; a request elsewhere builds the radial part and says so ("No radial root to
+replace on this gear (base circle 19.734 mm, root circle 19.750 mm): the trochoid root request
+is ignored." at 42 teeth, module 1, 20 degrees, 19-04) (18 D-02). **The default does not move in
+v0.4**: a link that omits `root_shape` reads `radial`, so no shared link moves (L05), the 44
+fixture records all read radial with no curve and no warning, and `tests/regression` passed
+unmodified at every plan (86 passed, 19-04 to 19-06). Phase 20, the flip, is skipped. The
+human confirmed the field name, the group and the `root_fillet` reinterpretation at 19-02
+(`d02-confirm`, replying `take the recommendations` on 2026-10-09, the option ids mapped by the
+orchestrator from the first executor's stated recommendations; 10,326 of 10,326 trochoid gears of
+the sweep product built, `bench/RESULTS.md` "Bars adopted (19-02)").
+
+**What a future flip must do** (D-08, D-09). Changing the default is one commit that carries the
+predicate change, the `make fixture.regen` output and an `Lxx` that lists the moving records
+before they move (L26 D-03: the fixture changes only via `make fixture.regen`, in its own commit,
+never in a feature commit; 18 D-01: the default stays off this milestone). 19-CONTEXT D-08 quotes
+18 D-05's measured step of 0.08 to 0.14 mm at 41 to 42 teeth, which a default user never meets
+while the default stays radial. The trigger is demand, not time: **a real fit report, or a
+request for a mating pair below `z_min`** (D-09), the trigger `docs/ideas/2026-09-21-trochoidal-root-fillets.md`
+already records. REQUIREMENTS.md "Trochoid follow-ups" owns the flip from here. It is not
+"the next milestone that touches the root".
+
+**What it supersedes and amends.** *L10* (radial root below the base circle, with a warning):
+the radial root is now the default, not the only root. In radial mode, and for a trochoid request
+that was refused for having nothing radial to replace, the undercut sentence is byte-identical to
+the string the five fixture records carry ("Below 51.0 teeth a cut gear would be undercut; this
+model uses a radial root instead.", 19-06, `fe8fed9`). Where the trochoid applies, the sentence is
+restated from the cutter that cut the part and says nothing about a radial root: it fires on the
+crossing join (`curve.join == "crossing"`), not on the printed onset, so a join inside the `1e-4`
+`rb` band reads tangent and prints nothing, exactly as its part is built; the onset is rounded up to
+0.1 teeth and the avoiding shift up to 0.001, residue removed first, and no shift is printed above
+the field's 1.0 (the sentence then says none in range avoids it). 17 teeth print "Below 17.1 teeth
+... 0.006 or more", 18 print nothing; 10 teeth advise 0.416, where the cutter's roll is +2.7e-3 mm
+and negative at 0.415, which rounding to nearest would have printed (19-06). *L09* (root fillets are
+computed, not filleted): the analytic fillet stays for the radial root. The hob root is one spline
+per tooth side through `RootCurve`, six side faces per tooth against eight (134 faces and 376 edges
+against the default part's 172 and 490, 19-04), not a kernel fillet, and the generator never enters
+`model.py` (a source test with its own tripwire, 19-04 and 19-05). *L33* (the root lead-in is warned,
+not re-cut): the lead-in warning is evaluated only where a chord exists, the radial root; under the
+hob root there is no chord and no lead-in sentence. L33's condition and its 15 rows are untouched
+in radial mode.
+
+**The part** (19-04, 19-05, 19-01, 19-09). `_trochoid_outline` takes the junction vector from one
+float: the root curve's last `Vector` is the first involute point, so the two splines cannot name
+different junctions. `tip_chamfer_limit` reads the same root through `RootMode.curve`, and its third
+bound under the trochoid is `ra - R_join - TIP_CHAMFER_MARGIN`. L29's law was re-bisected across the
+spline-to-spline junction, 20 halvings on 14 rows (19-01, `7a0268f`): `Verdict: law holds -- 8 rows
+on the law, 6 conservative`, no optimistic row, worst `last ok - pred` on a row on the law -3.06e-06 mm
+(`bench/RESULTS.md` "Chamfer across the junction (19-01)"), and `TIP_CHAMFER_MARGIN` stands at 0.001 mm.
+The same 14 rows were re-run on the shipped build with identical results (19-09, `4b08aa8`,
+"Chamfer law on the real build (19-09)"), and 19-08 pins the cap on the 6-tooth row where it binds: the printed 0.9 mm builds, and one 0.05 mm
+step past `ra - R_join` the kernel raises (`6607f69`).
+
+- *`ROOT_ARC_MIN` = 2e-6 mm* (19-02, "Root arc dead band (19-02)"; 19-05, `4b2b03a`). The kernel
+  raises `GC_MakeArcOfCircle::Value() - no result` at every root-arc chord from 2e-9 to 2.0e-7 mm
+  and at exactly 0, silently drops the arc at 2e-12 and 2e-10 mm (62 faces where 74 are expected)
+  and builds from 4.0e-7 mm. The constant is 10.0x the last failing chord and 15.8x below the
+  smallest real chord in the product, 3.1644e-5 mm. A root arc under it is left out and the two
+  teeth share one vertex. The band is reachable from user input (12 teeth, module 1, 20 degrees,
+  `root_fillet` 3.0, backlash 0.19898413579248878 leaves a tip land of 1.000e-08 mm); that gear
+  now builds one valid solid of 62 faces, 5 x 12 + 2, through `build(p)`.
+- *Four guards that do not rest on `isValid()`* (19-05, `356682b`; bars from "Bars adopted
+  (19-02)", set from the whole product of 10,326 trochoid gears, no stride): junction gap
+  `ROOT_JUNCTION_BAR_RAD` 1e-11 rad (40.9x the tangent-join maximum 2.442e-13 rad; 18-01's 1e-12
+  rad is only 4.1x over it and is not reused); point spacing `ROOT_SPACING_RATIO_MAX` 1000 (75.0x the
+  worst ratio 13.325; the kernel first fails at a chord ratio of 728,888, 729x above the bar); the
+  root splines inside the annulus `[rf - TOL, ra + TOL]` with `TOL` = 1e-6 mm (8.8e6x the worst
+  excursion, 1.137e-13 mm); face area against the polygon through each arc's midpoint,
+  `ROOT_AREA_REL_MAX` 5e-2 (13.6x the worst miss, 3.6791e-3). The plan's own measure, with both
+  arcs taken as chords, read 1.2162e-2 and no listed bar reached 10x (the largest, 0.1, is 8.2x), so
+  the human chose the midpoint measure at 19-02. Each guard raises a `BuildError` that says it is a
+  modelling defect in spur and names `root_shape` radial as the remedy, never "try smaller", and
+  each is reached by its own test, and loosening its bar makes that test fail (a mutation run, 19-05).
+- *The kernel tier* (19-02 d8abb23; 19-04, `ad8c51a`). The spline deviation is the distance from a
+  kernel-spline sample to the reference polyline (method B). It reproduces the research's three
+  figures to 0.07, 0.33 and 0.53 of a unit of the third digit, and the oracle agrees with it to 0.01 of
+  that unit on seven rows; method A (nearest vertex) is the reference's own vertex-spacing floor and
+  is never a bar ("Spline deviation and the kernel bar (19-02)"). `KERNEL_BAR_PER_MODULE` = 2e-3 is
+  10.9x the worst whole-product spline error, 1.8431e-4 per module, and the human adopted it
+  (`bar-proposed`, `take the recommendations`, 2026-10-09). It is read at 401 positions per root
+  edge, because 41 positions can sit 28 % low (4.4785e-4 against 6.2097e-4 mm on the module-10 row).
+  The seven rows read 2.2595e-05 to 6.2097e-04 mm (19-04's table). The tripwire, the module-1
+  10-tooth row read 0.05 mm off the printed radius, reads 1.1039e-2 mm, 5.5x over the bar; it must stay on
+  a module-1 row, because on module 10 the same shift reads 0.66x of the bar.
+
+**The numbers** (D-03, D-04, D-05, D-06, D-07). A number printed beside the hob root has a proof or
+a warning, or it is null.
+- `root_thickness` and `root_gap` are null with one sentence under the hob root. The thickness at the
+  root circle changes too fast with radius to give one honest number there: on the default gear at tip
+  radius 0.5 mm it measured 4.532 mm of arc at `rf + 0.00175` mm and 3.405 mm at `rf + 0.525` mm (19-04;
+  the research's 4.68 and 3.51 mm did not reproduce). Both keep their numbers in radial mode.
+- `root_form_d` is twice the junction radius from `RootCurve`, 3 dp, null in radial mode and on replay:
+  the cutter-envelope junction (30.558 on the default gear, 19-06, `6032926`). It is not a form
+  diameter in ISO 21771's sense, and no label, schema description or README line calls it one (a test
+  holds that). Its proof is Phase 18's junction bars and T4's KISSsoft anchor on the tangent branch.
+- `root_waist` is the tooth's narrowest thickness in the hob-cut root (3.303 mm on the default gear;
+  on a tangent join equal to the involute's own thickness at the junction, checked through
+  `Profile.half_angle`), printed wherever the trochoid applies and null elsewhere. The name is the
+  human's (`name-root_waist`, 19-02) and is a published key on `/api/info` and `spur info` from its
+  first release. It is warned below `ROOT_WAIST_FLOOR` = 0.4 mm, absolute, and never refused (D-06);
+  `tooth severed` (waist at or under zero) stays a refusal. The floor is the human's (`floor-print`,
+  `take the recommendations`, 2026-10-09) and a printability choice, because D-07's walk found no
+  failure signature: 1,098 gears (37 `tooth severed`), all 1,061 trochoid gears built one valid solid,
+  worst oracle reading 6.8995e-5 mm, thinnest built waist 3.2325e-3 mm. The floor is 124x that
+  waist and warns on 294 of 1,061 walk gears and 771 of 10,326 product gears. Small-module caveat,
+  adopted with the counts in front of the human: 595 of the 616 module-0.2 gears warn, 195 of them on
+  tangent joins with no undercut at all, against 176 of 9,710 at module 1 and above, so the sentence
+  never uses the word undercut ("Waist walk (19-02, D-07)", "Bars adopted (19-02)").
+- The cap sentence names `root_fillet` and says the printed radius is within 0.001 mm of the largest
+  that keeps the cutter a tip land (0.471 silent, 0.472 trimmed to 0.471 with the sentence, 0.4715
+  used as given, at module 1, 20 degrees, backlash 0, 19-06).
+
+**The interfaces** (19-04, 19-07, 19-08). The field walk exempts every `Literal` field read from the
+model (`get_origin(annotation) is Literal`) and pins the exemption equal to `[root_shape, recess_sides]`.
+Four trochoid documents (default, 17-tooth undercut, 42-tooth nothing-radial, 12-tooth capped) print
+byte-identical on `spur info` and `/api/info`. Seven spellings of an unknown `root_shape` (`false`,
+`Trochoid`, `TROCHOID`, `hob`, empty, leading and trailing space) are refused on both front ends. The
+composition matrix gained a root axis: 192 calc-tier rows and 24 kernel-tier rows, every trochoid row reading
+its radial twin's pinned deltas, with no delta, bar or oracle position count moved (19-08, `2be041e` and
+`6607f69`). **The refusal routing the human chose at 19-07** (`exit-documented`, 2026-10-09): "keep the
+CLI contract as shipped; ROADMAP SC5's 'exit 2' is read as the parameter refusals; a root guard's
+BuildError exits 1 with its sentence (D-14, cli.md 'Errors')" (`19-07-SUMMARY.md`, `63cc041`). An
+unknown `root_shape` is a `422` with a `loc` naming it on the API and argparse exit 2 on the CLI. A root
+guard's `BuildError` is a `422` of type `build_error` carrying its "modelling defect ... root_shape"
+sentence, and `error: <the same sentence>` with exit 1 on the CLI. SC5's sentence therefore stays
+literally false for the guard, which was that option's stated cost; `cli.py`, `docs/architecture/cli.md` and
+ROADMAP's SC5 text were not edited, and this is where the reading is written down.
+
+**The price** (SC4; 19-01, 19-09). *The heaviest row a trochoid request can change*: the 116-tooth,
+module-1.75 gear with a 156.3 mm hex bore, 60 holes of 1 mm on a 183.4 mm circle, the tip chamfer at 1.75
+and both recesses, at 14.5 degrees and profile shift -0.6 (the corner where `rb > rf` still holds). It
+reads **14.64 s of 30 s** with the hob root (14.28 s build plus the slower export, the fine STL, 0.36 s),
+15.36 s of margin; its radial twin reads 9.50 s, 1.54 times, the largest of the 17 pairs (the other 16
+read 0.98 to 1.19); the heaviest radial request in the sweep reads 11.33 s; 19-01's spike read the same
+row at 16.61 s. All 34 requests are inside `SPUR_BUILD_TIMEOUT` (19-09, `4b08aa8`, `make bench.build
+SWEEP=bench/sweeps/trochoid.json`; "Composed build time on the real build (19-09)", 1-minute load 3.3 to 7.7,
+so each figure is an upper bound for this host). This answers L37's "Revisit when Phase 19's composed
+re-measure": L37's 29.42 s row is the 200-tooth composition, where a trochoid request is ignored and
+warned (the trochoid applies only below 116.1 teeth), so it was not re-run and stands. The 503-under-load
+contract, `SPUR_BUILD_TIMEOUT` = 30 s and `spoke_count`'s `le` of 32 are unchanged.
+
+*The gate* (`bench/RESULTS.md` "Gate baseline (19-01)", "The gate, priced (19-09)"). Both readings are on
+one host, an Apple M5 Max with 18 CPUs; **L34's 66 s bar was set on an Apple M2 Max with 12 CPUs**
+(63.555 s read there), so the bar is quoted as written and no figure here is scaled between the two. At
+the phase base the mean of three green `make verify` runs was 52.89 s (`real`, 1023 tests, 19-01,
+`7a0268f`). At the phase's end three runs read 208.52, 161.71 and 208.60 s (`1210 passed` each), mean
+**192.94 s**: 2.92 times L34's 66 s, 126.94 s over, and **+140.05 s on the same host against 19-01's
+52.89 s**, with 187 more tests. The loads were 4 to 9 and rose with each run's own eight workers, so these
+are upper bounds for an idle host; a fourth reading after Task 2, not in the mean, was `1210
+passed in 166.25s`. The cost came in by wave (`make test` walls on this host: 112.79 s at 1054 tests after 19-04,
+137.76 s at 1081 after 19-06, 206.05 s at 1209 after 19-07). 21 of the 25 slowest calls are this
+phase's kernel-tier tests in `tests/test_model.py`, 305.5 s of the run's 1,664 worker-seconds (18.4 %), a
+lower bound for the phase's share; the oracle's 401 positions per row (19-02) set their cost.
+`make verify.fast` read 11.39 to 11.54 s at 824 tests, inside L36's 30 s kill (L36 read 11.28 s on the
+M2 Max). `derive()` costs 10.3 usec per call for the default gear and 30 usec with `root_shape="trochoid"`
+(load 2.55 to 2.67, best of 5; 10.2 and 29.8 usec at a load near 5), because the hob root solves the curve
+once. **The human accepted the gate's cost** (`accept-A`, 2026-10-09, at 19-09's step-2 gate, in the
+precedent of Phase 12 D-10 recorded in L31, whose verbatim answer was "accept"): the measured cost stands,
+no kernel row moved out of the gate, **L34's 66 s bar and the 401-position oracle count are unchanged**.
+That leaves 66 s on paper while the gate reads about 193 s on this host; re-setting the bar from an
+idle-host reading, or a measured revisit of the per-row position count, is a separate decision that this
+entry does not make. The known resource-tracker flake (`ReentrantCallError`) was re-deferred at 19-03
+with 60 isolation loops that did not reproduce it (`0f7c375`); no run of 19-04 to 19-09 hit it.
+
+**Reversibility.** D-01 is **costly**: a later separate tip-radius field must keep reading `root_fillet`
+for every shared link that set it under the trochoid, because those links already mean a hob radius.
+D-02 is **one-way**: `root_shape` is in every shareable link and CLI flag from the first release that
+ships it. D-08 is **reversible**: the flip is deferred, so running it later is exactly one commit under its
+own `Lxx` and nothing recorded here has to be undone. The bars, `ROOT_ARC_MIN` and the waist floor are
+constants beside their measurements and move by a new entry with a new measurement; the field name
+`root_waist` and the `root_form_d` key cannot be renamed without keeping the old key.
+
+Reason: no default moved (L05), and every number printed beside the hob root is proved against an
+independent oracle, or null, or warned (L08); every bar sits 10x or more over the worst reading it rests
+on, and where one sat under 10x it went to the human instead of being tuned toward a pass. The
+choice was between flipping the default for everyone and offering the hob root to those who ask; the
+price (14.64 s of 30 s on the heaviest row it can change, a gate that reads 2.92 times its bar) was
+measured and accepted rather than trimmed or hidden.
+Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string hw.memsize`);
+macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0,
+cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`); the gate baseline and the heaviest-row spike were read on
+2026-10-08 (19-01), the other spikes, guards, floor and bars on 2026-10-08 and 2026-10-09 (19-02), the corner
+rows, the gate's three runs and the `derive()` timings on 2026-10-09 (19-09). L34's bar and L36's 11.28 s were
+read on a 12-CPU Apple M2 Max.

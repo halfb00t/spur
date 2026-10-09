@@ -31,5 +31,8 @@ requested dimensions had to be trimmed to fit.
 - **L08** — an impossible mating pair gets a warning, not a number. `centre_distance()`
   returns `None` and `derive()` turns that into a warning plus `centre_distance: null`,
   once, for both the API and the CLI.
-- **L10** — the root is radial below the base circle; `derive()` warns where that
-  matters.
+- **L38** — the root is radial by default and the hob-cut (trochoid) root on request
+  through `root_shape`, where the base circle is above the root circle; `derive()` restates
+  the undercut warning from the cutter in trochoid mode and prints no radial-flank root
+  number beside it. This supersedes **L10** (the root is radial below the base circle,
+  `derive()` warns where that matters), which still describes the default.
