@@ -22,6 +22,7 @@ from bench.trochoid import ORACLE_BAR_MM as BENCH_ORACLE_BAR_MM
 from bench.trochoid import tuned_shift
 from spur.calc import (
     ROOT_CURVE_POINTS,
+    ROOT_WAIST_FLOOR,
     TROCHOID_JOIN_EPS,
     Cutter,
     Profile,
@@ -535,6 +536,118 @@ def test_a_trochoid_request_with_nothing_radial_to_replace_prints_the_radial_num
         radial.root_thickness, radial.root_gap, radial.root_fillet)
     assert asked.warnings == (refusal,)
     assert asked.root_d == radial.root_d
+
+
+def test_root_form_d_is_twice_the_junction_radius_and_null_when_radial() -> None:
+    """REQ-derived-numbers-honest-under-trochoid (D-04): root_form_d is the cutter-envelope
+    junction, twice the radius where the hob-cut root meets the involute, at 3 dp. On the
+    default gear (a tangent join) that radius is sqrt(rb^2 + xi^2), written out here from
+    the base radius and the cutter's flank-foot roll and not read from the curve: 30.558
+    mm. On the 10-tooth, module 1, 20 degree, backlash 0, tip radius 0.38 mm gear (a
+    crossing, no closed form) it is 9.451. Null where the part has the radial root: a
+    gear nobody asked about, a request refused for a severed tooth (it builds the radial
+    root, so its thickness is the radial one), and all 44 pre-v0.2 fixture records.
+    Captured from derive() on 2026-10-09 (L33)."""
+    default = GearParams(root_shape="trochoid")
+    c = cutter(default, default.root_fillet)
+    rb = default.module * default.teeth / 2 * math.cos(math.radians(default.pressure_angle))
+    assert derive(default).root_form_d == round(2 * math.hypot(rb, c.xi), 3) == 30.558
+    curve = trochoid_root(c)
+    assert curve is not None
+    assert derive(default).root_form_d == round(2 * curve.points[-1][0], 3)
+
+    tracer = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=0, backlash=0,
+                   root_shape="trochoid", root_fillet=0.38)
+    assert derive(tracer).root_form_d == 9.451
+
+    assert derive(GearParams()).root_form_d is None
+    severed = _gear(teeth=6, module=1, pressure_angle=14.5, profile_shift=-0.6,
+                    root_fillet=0, root_shape="trochoid")
+    asked = derive(severed)
+    assert (asked.root_form_d, asked.root_waist) == (None, None)
+    assert asked.root_thickness is not None
+    assert all(derive(p).root_form_d is None for _, p in _fixture_gears())
+
+
+def test_the_root_waist_is_printed_where_the_trochoid_applies_and_null_elsewhere() -> None:
+    """REQ-derived-numbers-honest-under-trochoid (D-06): root_waist is the narrowest tooth
+    in the hob-cut root, an arc on its own radius, 2 R h of RootCurve.waist. On a tangent
+    join the root leaves the involute with its direction, so the narrowest point is the
+    junction and the waist is the involute's own thickness there: 3.303 mm on the default
+    gear, checked through Profile.half_angle at sqrt(rb^2 + xi^2) and through this file's
+    own involute half-angle, not through the curve. On the 10-tooth tracer gear (a
+    crossing) the curve dips below the involute's thickness at its junction: 1.473 against
+    1.622 (R = 4.7256 mm). Null in radial mode, on a refused request and on all 44
+    fixture records. Captured from derive() on 2026-10-09 (L33)."""
+    default = GearParams(root_shape="trochoid")
+    c = cutter(default, default.root_fillet)
+    rb = profile(default).rb
+    junction = math.hypot(rb, c.xi)
+    waist = derive(default).root_waist
+    assert waist == round(2 * junction * profile(default).half_angle(junction), 3)
+    assert waist == round(2 * junction * _involute_half_angle(default, junction), 3)
+    assert waist == 3.303
+
+    tracer = _gear(teeth=10, module=1, pressure_angle=20, profile_shift=0, backlash=0,
+                   root_shape="trochoid", root_fillet=0.38)
+    rm = root_mode(tracer, profile(tracer), requested="trochoid", rho=0.38)
+    assert rm.curve is not None
+    assert rm.curve.join == "crossing"
+    junction = rm.curve.points[-1][0]
+    involute = 2 * junction * profile(tracer).half_angle(junction)
+    assert derive(tracer).root_waist == 1.473
+    assert 1.473 < round(involute, 3) == 1.622
+
+    assert derive(GearParams()).root_waist is None
+    assert all(derive(p).root_waist is None for _, p in _fixture_gears())
+
+
+def _waist_at(fields: dict[str, object], shift: float) -> float:
+    """The root waist, mm, of the hob-cut root at this profile shift, unrounded."""
+    p = _gear(profile_shift=shift, root_shape="trochoid", **fields)
+    rm = root_mode(p, profile(p), requested="trochoid", rho=p.root_fillet)
+    assert rm.curve is not None
+    return 2 * rm.curve.waist[0] * rm.curve.waist[1]
+
+
+def _shift_for_waist(fields: dict[str, object], target: float, lo: float, hi: float) -> float:
+    """The profile shift in [lo, hi] at which the waist reads `target` mm: 60 halvings,
+    the waist rising with the shift (it gains about 0.015 mm per 0.01 of shift)."""
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if _waist_at(fields, mid) < target else (lo, mid)
+    return (lo + hi) / 2
+
+
+@pytest.mark.parametrize(("fields", "lo", "hi"), [
+    pytest.param({"teeth": 8, "module": 1, "pressure_angle": 14.5, "backlash": 0.10,
+                  "root_fillet": 0.38}, -0.6, 0.0, id="8T-14.5deg"),
+    pytest.param({"teeth": 6, "module": 1, "pressure_angle": 14.5, "backlash": 0.10,
+                  "root_fillet": 0.38}, -0.57, 0.0, id="6T-14.5deg"),
+])
+def test_the_waist_warning_fires_one_print_step_below_the_floor_and_not_at_it(
+        fields: dict[str, object], lo: float, hi: float) -> None:
+    """REQ-derived-numbers-honest-under-trochoid, boundary and adjacency (D-06, D-07): two
+    of the 19-02 waist walk's series (6 and 8 teeth, module 1, 14.5 degrees, default
+    backlash, tip radius 0.38 mm), the profile shift bisected until the waist reads the
+    floor and then one 0.001 mm print step under it. The floor is 0.4 mm absolute. A
+    waist that prints as 0.4 is silent; one that prints as 0.399 warns, once, naming the
+    three fields that thicken it; the gear validates either way (nothing is refused for
+    being thin). The comparison is round(waist, 3) < floor, the resolution the number
+    prints at. The sentence was captured from derive() on 2026-10-09 (L33)."""
+    assert ROOT_WAIST_FLOOR == 0.4
+    sentence = ("The tooth is only 0.399 mm thick at its narrowest in the hob-cut root, under "
+                "the 0.4 mm this design holds for a printable tooth; more teeth, a larger "
+                "profile_shift or a larger pressure_angle thickens it.")
+    at_floor = _shift_for_waist(fields, ROOT_WAIST_FLOOR, lo, hi)
+    under = _shift_for_waist(fields, ROOT_WAIST_FLOOR - 0.001, lo, hi)
+    assert under < at_floor
+    on = derive(_gear(profile_shift=at_floor, root_shape="trochoid", **fields))
+    below = derive(_gear(profile_shift=under, root_shape="trochoid", **fields))
+    assert (on.root_waist, below.root_waist) == (0.4, 0.399)
+    assert [w for w in on.warnings if "narrowest" in w] == []
+    assert [w for w in below.warnings if "narrowest" in w] == [sentence]
+    assert "undercut" not in sentence
 
 
 def test_the_fixture_straddles_the_three_undercuts_without_mixing_them() -> None:

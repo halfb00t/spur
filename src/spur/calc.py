@@ -69,8 +69,9 @@ HEX_CELL_CAP = 120  # cells, the most whole honeycomb cells one part may have. M
 ROOT_CURVE_POINTS = 16  # points, how many the hob's trochoid root is sampled at. STACK's
 # N = 16 uniform in roll measured 3.6-4.0e-5 mm against cq.Edge.makeSpline at module 1,
 # z 8/10/14, tip radius 0.38 mm (re-run in the research with the pinned kernel pair:
-# 3.58e-5, 3.89e-5, 3.98e-5 mm); the shipped flank is 16 points too. Phase 19 sets the
-# kernel bar, not this phase.
+# 3.58e-5, 3.89e-5, 3.98e-5 mm); the shipped flank is 16 points too. The bar the built
+# root is held to lives in tests/test_model.py (KERNEL_BAR_PER_MODULE, 2e-3 x module) and
+# bench/RESULTS.md "Bars adopted (19-02)".
 TROCHOID_JOIN_EPS = 1e-4  # relative to rb, never millimetres: how close to zero the
 # roll of the cutter's flank foot (Cutter.xi) may be before the junction with the
 # involute is taken as tangent without a bracket. Measured in the repo 2026-10-08 (Apple
@@ -84,6 +85,33 @@ TROCHOID_JOIN_EPS = 1e-4  # relative to rb, never millimetres: how close to zero
 # within one scan step, and 1e-4*rb is 4.7e-4 mm there, 16x STACK's loss point. Inside the
 # band the flank join is the form point, off by at most (eps*rb)^2/(2*rb) = 5e-9*rb.
 # bench/RESULTS.md "Join epsilon (18-03)" carries the run.
+ROOT_WAIST_FLOOR = 0.4  # mm, absolute and not a multiple of the module: the thinnest the
+# hob-cut root's narrowest tooth (the root waist) may print before derive() warns. It only
+# ever warns: the waist is printed for every trochoid gear and nothing is refused for being
+# thin (D-06); a waist at or under zero is `tooth severed`, a refusal of its own. The walk
+# behind it (bench/RESULTS.md "Waist walk (19-02, D-07)", read 2026-10-08, 18-CPU arm64,
+# Python 3.12.15, cadquery 2.8.0): 6, 7 and 8 teeth, module 1, 14.5 degrees, profile shift
+# -0.6 to 0 in 0.01 steps, tip radius 0 / 0.38 / 3.0 mm, backlash 0.1 and 0 -- 1,098 gears,
+# 37 refused as `tooth severed`, the other 1,061 all built one valid solid, the worst oracle
+# reading 6.8995e-5 mm and the thinnest built waist 3.2325e-3 mm (6 teeth, shift -0.57,
+# backlash 0.1, tip radius 0.38). No failure signature exists above the spline-error scale,
+# so this is a printability choice and not a kernel limit, and "headroom over a failure"
+# does not apply: it is 124x the thinnest built waist and 5.8e3x the worst oracle reading.
+# Three candidates were put to the human with their firing counts; the one adopted at 19-02
+# ("take the recommendations", mapped to `floor-print` by the orchestrator, recorded in
+# "Bars adopted (19-02)", 2026-10-09) is MIN_TIP_FDM's own number, the width below which a
+# tip is about one extrusion line. A separate constant so a change to the tip warning does
+# not move this one without a new walk. It warns on 294 of the 1,061 walk gears and 771 of
+# the 10,326 gears of the Phase 18 sweep product -- and mostly on small modules: 595 of the
+# 616 module-0.2 gears (195 of them on tangent joins, which have no undercut at all) against
+# 176 of the 9,710 of module 1 and above (125 at module 1, 43 at 1.75, 8 at 10), because
+# 0.4 mm is more than the whole tooth base of a module-0.2 gear. So on a small module this
+# warning is a printability remark about the part, which is why its sentence never says
+# "undercut".
+PROFILE_SHIFT_MAX = 1.0  # modules, the `profile_shift` field's upper bound (params.py `le`).
+# calc.py imports params for typing only, so the number is written here once and
+# tests/test_trochoid.py reads the field's metadata to keep the two equal. The restated
+# undercut sentence prints no advised shift above it.
 
 
 def inv(a: float) -> float:
@@ -932,6 +960,15 @@ class DerivedDimensions(BaseModel):
                     "capped to the tooth gap; with the trochoid root, the hob's tip "
                     "radius, capped to the largest that leaves the cutter a tip land.",
         json_schema_extra={"unit": "mm"})
+    root_form_d: float | None = Field(
+        description="Diameter where the hob-cut root meets the involute flank, the "
+                    "cutter-envelope junction; not an ISO 21771 form diameter; null "
+                    "unless the trochoid root applies.",
+        json_schema_extra={"unit": "mm"})
+    root_waist: float | None = Field(
+        description="Narrowest tooth thickness in the hob-cut root, an arc on its "
+                    "radius; null unless the trochoid root applies.",
+        json_schema_extra={"unit": "mm"})
     tip_chamfer_effective: float | None = Field(
         description="Tip chamfer actually cut on the tooth-tip edges at both faces, "
                     "after the cap; null with no tip chamfer.",
@@ -1098,10 +1135,16 @@ def derive(p: GearParams, mate_teeth: int | None = None,
     z_min = 2 * (1 - p.profile_shift) / math.sin(pr.alpha) ** 2
     # True only while the part really has the radial root: a refused trochoid request
     # still builds it, so the sentence stays; a trochoid part gets no undercut sentence
-    # until 19-06 restates it for the cutter that cut it.
+    # until Task 2 restates it for the cutter that cut it.
     if rm.mode == "radial" and p.teeth < z_min:
         warnings.append(f"Below {z_min:.1f} teeth a cut gear would be undercut; "
                         "this model uses a radial root instead.")
+    # Compared at the 3 dp it prints, like the lead-in warning above (10-REVIEW.md CR-01):
+    # a waist that prints as the floor is silent, one printed step under it warns.
+    waist = None if rm.curve is None else round(2 * rm.curve.waist[0] * rm.curve.waist[1], 3)
+    if waist is not None and waist < ROOT_WAIST_FLOOR:
+        warnings.append(_ROOT_SENTENCES["waist thin"].format(
+            waist=waist, floor=ROOT_WAIST_FLOOR))
 
     if p.bore_hex > 0:
         # D-02: a hex bore replaces the round profile (D-01); this is the one place
@@ -1224,6 +1267,10 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         # length is rounded once, at construction (D-10), so the rule stays true if
         # either helper's rounding ever changes.
         root_fillet=r3(rfil),
+        # The junction is the curve's last point; the waist is the sentence's own
+        # rounded value, so the number and the warning read one float (L08).
+        root_form_d=None if rm.curve is None else r3(2 * rm.curve.points[-1][0]),
+        root_waist=waist,
         tip_chamfer_effective=r3(tch) if p.tip_chamfer > 0 else None,
         span_teeth=k,
         span=r3(w),
@@ -1635,6 +1682,17 @@ _ROOT_SENTENCES: dict[str, str] = {
     "rho capped":
         "Cutter tip radius reduced to {rho:.3f} mm, the largest that leaves the cutter a "
         "tip land at this pressure angle and backlash.",
+    # Placeholders {waist} (the printed root_waist) and {floor} (ROOT_WAIST_FLOOR). Names
+    # the three fields D-06 chose and never the word undercut: 595 of the 616 module-0.2
+    # gears warn, 195 of them on tangent joins that have no undercut (ROOT_WAIST_FLOOR).
+    # "Thickens" is a direction, not a promise of reaching the floor. Checked 2026-10-09 on
+    # 3,901 seeded random trochoid gears (6-60 teeth, module 0.2-10, 14.5-24.5 degrees,
+    # shift -0.6 to 1.0, backlash 0-0.25): one step up in teeth, profile_shift or
+    # pressure_angle made the waist thinner on none.
+    "waist thin":
+        "The tooth is only {waist:.3f} mm thick at its narrowest in the hob-cut root, under "
+        "the {floor:g} mm this design holds for a printable tooth; more teeth, a larger "
+        "profile_shift or a larger pressure_angle thickens it.",
 }
 
 

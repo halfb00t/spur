@@ -77,7 +77,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
 
     fields = {
         "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
-        "root_thickness", "root_gap", "root_fillet", "tip_chamfer_effective", "span_teeth",
+        "root_thickness", "root_gap", "root_fillet", "root_form_d", "root_waist",
+        "tip_chamfer_effective", "span_teeth",
         "span", "bore_effective", "hex_across_flats", "hex_across_corners",
         "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
         "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall",
@@ -98,6 +99,8 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
     assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
     assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
+    assert component["properties"]["root_form_d"]["unit"] == "mm"
+    assert component["properties"]["root_waist"]["unit"] == "mm"
     assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
     assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
     assert component["properties"]["spoke_fillet_effective"]["unit"] == "mm"
@@ -137,6 +140,23 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     model_fields = set(DerivedDimensions.model_fields)
     assert set(dims_keys) <= model_fields
     assert {"span_teeth", "centre_distance", "warnings"} <= model_fields
+
+
+def test_root_form_d_is_never_labelled_an_iso_form_diameter_where_a_user_reads_it() -> None:
+    """D-04 (REQ-derived-numbers-honest-under-trochoid, transparency): root_form_d is the
+    cutter-envelope junction, not an ISO 21771 form diameter (a different quantity that
+    18's T4 tier compared it to). The UI row, the schema description a client reads and
+    the README say so by never calling it one: the only place the phrase appears is the
+    description's own denial."""
+    source = (STATIC / "app.js").read_text()
+    (label,) = re.findall(r"^\s*\['root_form_d', '([^']*)'\]", source, re.MULTILINE)
+    assert "form" not in label.lower()
+    description = DerivedDimensions.model_fields["root_form_d"].description
+    assert description is not None
+    assert "not an ISO 21771 form diameter" in description
+    assert "form diameter" not in description.replace("not an ISO 21771 form diameter", "")
+    readme = (STATIC.parents[2] / "README.md").read_text()
+    assert "root_form_d" not in readme or "form diameter" not in readme
 
 
 def test_the_shareable_link_round_trips_every_field_through_generic_code() -> None:
