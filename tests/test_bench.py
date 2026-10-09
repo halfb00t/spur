@@ -65,6 +65,7 @@ from bench.trochoid import (
 from bench.trochoid_part import (
     CHAMFER_ROWS,
     KERNEL_ROWS,
+    LIGHTER_ROWS,
     STACK_TROCHOID_MM,
     STACK_TROCHOID_ROWS,
     WALK_BACKLASH,
@@ -919,6 +920,38 @@ def test_the_corner_rows_are_the_composed_sweep_at_the_trochoid_corner() -> None
         assert row == {**original, "teeth": 116, "pressure_angle": 14.5,
                        "profile_shift": -0.6}
         assert list(row)[:len(original)] == list(original)
+
+
+def test_the_trochoid_sweep_is_the_corner_rows_in_both_root_shapes() -> None:
+    """19-09's sweep file is every row 19-01 timed -- the composed sweep at the trochoid
+    corner and the two lighter module-10 rows, minus the rows `GearParams` refuses there --
+    each followed by its trochoid twin (the same row plus `"root_shape": "trochoid"`), so
+    `make bench.build SWEEP=bench/sweeps/trochoid.json` reads the hob root's price through
+    the standard runner. The expected rows are rebuilt from `corner_rows()` and the refusal
+    rule, never typed, so a hand edit or a drift in composed.json goes red. The twin must be
+    a trochoid build: a row the predicate ignores would be timed as a radial one and read as
+    a pass."""
+    path = DEFAULT_SWEEP.parent / "trochoid.json"
+    raw: list[dict[str, object]] = json.loads(path.read_text())
+    expected: list[dict[str, object]] = []
+    for fields in [*corner_rows(), *LIGHTER_ROWS]:
+        try:
+            GearParams.model_validate(fields)
+        except ValidationError:
+            continue  # refused at the corner: load_sweep would raise on it, 19-01 printed it
+        expected += [fields, {**fields, "root_shape": "trochoid"}]
+    assert raw == expected
+    assert [list(r) for r in raw] == [list(r) for r in expected]
+
+    sets = load_sweep(path)
+    assert len(sets) == len(raw)
+    for (_, radial), (_, trochoid) in zip(sets[0::2], sets[1::2], strict=True):
+        assert radial.root_shape == "radial"
+        assert trochoid == GearParams.model_validate(
+            {**radial.model_dump(), "root_shape": "trochoid"})
+        mode = root_mode(trochoid, profile(trochoid), requested=trochoid.root_shape,
+                         rho=trochoid.root_fillet)
+        assert mode.mode == "trochoid", (trochoid.teeth, mode.reason)
 
 
 def test_the_proposed_bar_is_the_smallest_listed_value_ten_times_over_the_worst() -> None:

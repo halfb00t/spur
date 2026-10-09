@@ -1,12 +1,14 @@
-"""Measures the hob's trochoid root in the kernel before the field exists (19-CONTEXT order).
+"""Measures the hob's trochoid root in the kernel (19-CONTEXT order; 19-09 moved it onto the part).
 
-ROADMAP "Order inside the phase" (PITFALLS 18) puts two spikes ahead of any schema change,
+ROADMAP "Order inside the phase" (PITFALLS 18) put two spikes ahead of any schema change,
 the `bench/tip_chamfer_spike.py` precedent (L29 measured the chamfer before its field
 existed): `chamfer` re-bisects L29's kernel law across the spline-to-spline junction of the
 hob root, and `heaviest` times the heaviest low-tooth rows the composed sweep allows against
-SPUR_BUILD_TIMEOUT. Both run on a trochoid outline this module builds itself from the Phase
-18 `RootCurve`, through the shipped pipeline steps after the blank, so what is timed and
-bisected is the part 19-04 will ship, not a stand-in.
+SPUR_BUILD_TIMEOUT. They ran on a trochoid outline this module built itself from the Phase
+18 `RootCurve`. That copy moved into `spur.model` in 19-04, and since 19-09 this module keeps
+no outline of its own: blanks are `model._gear_blank` / `model._outline`, parts are
+`model._build_checked` with `root_shape="trochoid"`, so what is timed and bisected is the
+part that ships (the 11-05 precedent: one definition by the phase's end).
 
 It is not part of `make verify`: a run takes minutes and its timings depend on the host,
 and a timing assertion on shared hardware would flap (`bench/build_time.py`'s stance). Run it
@@ -29,6 +31,7 @@ from bisect import bisect_right
 from collections import Counter
 from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import partial
@@ -37,6 +40,7 @@ from itertools import pairwise
 from multiprocessing import get_context
 from pathlib import Path
 from statistics import median
+from unittest.mock import patch
 
 import cadquery as cq
 from pydantic import ValidationError
@@ -78,6 +82,10 @@ def outline_teeth(pr: Profile, curve: RootCurve) -> list[Tooth]:
     """Every tooth's points as (centre angle, root_l, root_r, flank_l, flank_r): the root
     spline up to the junction, the involute spline from it to the tip and their mirrors.
 
+    A measuring helper, not an outline: it makes no edge. It keeps the points as the curve
+    gives them, before `model._trochoid_teeth` applies ROOT_ARC_MIN, because the root-arc
+    chord and the closed-form area are read from the unruled points (`arc`, `product`).
+
     The left involute spline starts with the SAME `Vector` object the root spline ends on,
     never a recomputed one: a gap of 1e-6 mm silently opens the wire (PITFALLS 7), and a
     shared object has none. Its other radii start from the curve's own last radius.
@@ -98,32 +106,6 @@ def outline_teeth(pr: Profile, curve: RootCurve) -> list[Tooth]:
     return teeth
 
 
-def trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
-    """Closed gear outline whose root is the hob's trochoid, six edges per tooth (the
-    radial path's `model._outline` has eight): the root spline up to the junction, the
-    involute spline from it to the tip, the tip arc, the mirror involute and root splines,
-    and the root arc to the next tooth.
-
-    This is the spike's copy; 19-04 moves the builder into `model.py` and 19-09 replaces
-    this one with it, so there is one definition by the phase's end (the 11-05 precedent).
-    """
-    pitch = 2 * math.pi / pr.z
-    teeth = outline_teeth(pr, curve)
-    edges: list[cq.Edge] = []
-    for k, (c, root_l, root_r, flank_l, flank_r) in enumerate(teeth):
-        edges += [
-            cq.Edge.makeSpline(root_l),
-            cq.Edge.makeSpline(flank_l),
-            cq.Edge.makeThreePointArc(flank_l[-1], model._polar(pr.ra, c), flank_r[0]),
-            cq.Edge.makeSpline(flank_r),
-            cq.Edge.makeSpline(root_r),
-        ]
-        nxt = teeth[(k + 1) % pr.z]
-        edges.append(cq.Edge.makeThreePointArc(
-            root_r[-1], model._polar(pr.rf, c + pitch / 2), nxt[1][0]))
-    return cq.Wire.assembleEdges(edges)
-
-
 def trochoid_curve(p: GearParams, rho: float) -> tuple[Cutter, RootCurve]:
     """The cutter and the hob's root curve for `p` at tip radius `rho` mm, from the one
     predicate (`root_mode`). `RootMode.curve` does not exist until 19-04, so the curve is
@@ -140,23 +122,18 @@ def trochoid_curve(p: GearParams, rho: float) -> tuple[Cutter, RootCurve]:
 
 
 def extrude_outline(p: GearParams, curve: RootCurve) -> cq.Solid:
-    """The outline of `curve` as a face, extruded over the face width."""
-    face = cq.Face.makeFromWires(trochoid_outline(profile(p), curve))
+    """The shipped outline of `curve` (`model._outline`, its guards included) as a face,
+    extruded over the face width. For the hand-made curves of `arc`, `product` and `waist`,
+    which have no `GearParams` that would produce them."""
+    face = cq.Face.makeFromWires(model._outline(profile(p), 0.0, curve))
     return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.face_width))
 
 
 def trochoid_blank(p: GearParams, rho: float) -> tuple[cq.Shape, Cutter, RootCurve]:
-    """The toothed disc with the trochoid root, before the recesses and the bore."""
+    """The toothed disc with the trochoid root, before the recesses and the bore: the
+    blank `model._build` starts from, area guard included."""
     cut, curve = trochoid_curve(p, rho)
-    return extrude_outline(p, curve), cut, curve
-
-
-def trochoid_cap(p: GearParams, curve: RootCurve) -> float:
-    """The tip chamfer cap 19-04 will ship (RESEARCH Pattern 8): the radial model's two
-    bounds, and the kernel's own limit read from the junction of this curve."""
-    pr = profile(p)
-    return round(min(0.45 * p.face_width, pr.ra - pr.r,
-                     pr.ra - curve.points[-1][0] - TIP_CHAMFER_MARGIN), 3)
+    return model._gear_blank(profile(p), 0.0, p.face_width, curve), cut, curve
 
 
 def _one_solid(shape: cq.Shape) -> cq.Solid:
@@ -169,27 +146,24 @@ def _one_solid(shape: cq.Shape) -> cq.Solid:
 
 
 def trochoid_part(p: GearParams, rho: float, chamfer: float | None = None) -> cq.Solid:
-    """The part as `model._build` assembles it, with the trochoid blank in place of
-    `_gear_blank`: face recesses, bore, keyway, body cutout, then the tip chamfer -- the
-    requested `p.tip_chamfer` capped by `trochoid_cap`, or `chamfer` when given (the
-    bisection asks for sizes the cap would refuse). Exactly one valid solid, or a
-    ValueError naming what failed."""
-    pr = profile(p)
-    solid, _, curve = trochoid_blank(p, rho)
-    solid = model._cut_face_recesses(solid, p, pr.rf)
-    solid = model._cut_bore(solid, p)
-    solid = model._cut_keyway(solid, p)
-    solid = model._cut_body(solid, p, pr)
-    part = _one_solid(solid)
-    c = chamfer if chamfer is not None else min(p.tip_chamfer, trochoid_cap(p, curve))
-    if c <= 0:
+    """The part as the product builds it, `model._build_checked` with `root_shape` trochoid
+    and the tip radius `rho` as `root_fillet`: face recesses, bore, keyway, body cutout and
+    the tip chamfer under the shipped cap. With `chamfer` given (the bisection asks for
+    sizes the cap would refuse) the part is built with `tip_chamfer` 0 and chamfered here
+    at that size, unless it is 0. Exactly one valid solid, or a BuildError / ValueError
+    naming what failed."""
+    asked = {**p.model_dump(), "root_shape": "trochoid", "root_fillet": rho}
+    if chamfer is None:
+        return model._build_checked(GearParams.model_validate(asked))
+    part = model._build_checked(GearParams.model_validate({**asked, "tip_chamfer": 0.0}))
+    if chamfer <= 0:
         return part
-    arcs = tip_arcs(part, pr.ra, p.face_width)
+    arcs = tip_arcs(part, profile(p).ra, p.face_width)
     if not arcs:
         raise ValueError("the tip chamfer selected no tip-arc edges")
-    chamfered_part, why = chamfered(part, c, arcs)
+    chamfered_part, why = chamfered(part, chamfer, arcs)
     if chamfered_part is None:
-        raise ValueError(f"the kernel refused a tip chamfer of {c:g} mm: {why}")
+        raise ValueError(f"the kernel refused a tip chamfer of {chamfer:g} mm: {why}")
     return chamfered_part
 
 
@@ -441,6 +415,14 @@ def corner_rows() -> list[dict[str, object]]:
     return [{**row, **CORNER} for row in raw]
 
 
+# Two light module-10 rows beside the heavy ones: the bare corner gear and the corner gear
+# with the chamfer at its largest and both recesses (19-01).
+LIGHTER_ROWS: list[dict[str, object]] = [
+    {**CORNER, "module": 10},
+    {**CORNER, "module": 10, "tip_chamfer": 3, "recess_sides": "both"},
+]
+
+
 def _label(fields: dict[str, object]) -> str:
     return " ".join(f"{k}={v}" for k, v in fields.items())
 
@@ -480,13 +462,11 @@ def run_heaviest() -> int:
     `GearParams` refuses is printed with its sentence, never silently dropped; nothing is
     trimmed, re-run or re-picked until it passes."""
     timeout = int_env("SPUR_BUILD_TIMEOUT", 30)
-    lighter = [{**CORNER, "module": 10},
-               {**CORNER, "module": 10, "tip_chamfer": 3, "recess_sides": "both"}]
     start, load_before = datetime.now(UTC), os.getloadavg()
 
     refused: list[tuple[str, str]] = []
     timed: list[TimedRow] = []
-    for fields in [*corner_rows(), *lighter]:
+    for fields in [*corner_rows(), *LIGHTER_ROWS]:
         label = _label(fields)
         try:
             p = GearParams.model_validate(fields)
@@ -882,7 +862,6 @@ def run_spline() -> int:
 ARC_HALF_WIDTHS_MM = (0.0, 1e-12, 1e-10, 1e-9, 1e-8, 1e-7, 2e-7, 3e-7, 6e-7, 1e-6, 2e-6)
 ARC_FIELDS: dict[str, object] = {**_M1, "teeth": 12, "pressure_angle": 20, "profile_shift": 0}
 ARC_RHO_MM = 0.38
-ARC_MIN_CANDIDATES_MM = (1e-6, 2e-6, 5e-6, 1e-5)
 ARC_TARGET_HALF_WIDTH_MM = 1e-8
 # GearParams refuses this gear above about 0.49 mm of backlash ("Teeth come to a point"), so
 # the bisection runs over [0, 0.4] and not the plan's [0, 1]: rho_max spans 0.472 to 0.758
@@ -895,27 +874,40 @@ class ArcOutcome:
     half_width: float      # a, mm
     chord: float           # between root_r[-1] and the next tooth's root_l[0], mm
     outcome: str           # exception class and message, or what built
-    builds: bool           # the arc is there: valid, 6 z + 2 faces
+    builds: bool           # one valid solid with every face the shipped rule calls for
 
 
-def arc_outcome(p: GearParams, curve: RootCurve, half_width: float) -> ArcOutcome:
-    """Build the blank with the curve's first point moved along the root circle so the
-    root arc between neighbours spans 2 x half_width, and say what the kernel did."""
+def arc_outcome(p: GearParams, curve: RootCurve, half_width: float,
+                *, annulus: bool = True) -> ArcOutcome:
+    """Build the shipped outline with the curve's first point moved along the root circle so
+    the root arc between neighbours spans 2 x half_width, and say what it did. Under
+    ROOT_ARC_MIN the neighbours share a vertex and no arc is made, so the faces expected are
+    5 z + (arcs made) + 2, counted from the shipped rule (`model._trochoid_teeth`), not
+    6 z + 2: a build counts only if it is one valid solid with exactly those faces.
+
+    A moved first point is not a curve any cutter draws: the spline through it swings under
+    the root circle (1.5e-3 mm on `ARC_FIELDS`), so the shipped annulus guard refuses every
+    such outline before the kernel sees it. `annulus=False` lifts that one guard for this
+    build, which leaves the question the table asks: what the kernel and ROOT_ARC_MIN do
+    with a root arc of this width."""
     pr = profile(p)
     first = (curve.points[0][0], math.pi / p.teeth - half_width / pr.rf)
     variant = replace(curve, points=(first, *curve.points[1:]))
     teeth = outline_teeth(pr, variant)
     chord = (teeth[0][2][-1] - teeth[1][1][0]).Length
+    arcs = sum(t.arc for t in model._trochoid_teeth(pr, variant))
+    expected = 5 * p.teeth + arcs + 2
     try:
-        solid = extrude_outline(p, variant)
+        with nullcontext() if annulus else patch.object(model, "_guard_annulus"):
+            solid = extrude_outline(p, variant)
     except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
         return ArcOutcome(half_width, chord, f"{type(exc).__name__}: {exc}", False)
     faces, valid = len(solid.Faces()), solid.isValid()
-    builds = valid and faces == 6 * p.teeth + 2
+    builds = valid and len(solid.Solids()) == 1 and faces == expected
     return ArcOutcome(half_width, chord,
-                      f"builds, {faces} faces (expected {6 * p.teeth + 2}), "
-                      f"{'valid' if valid else 'INVALID'}"
-                      + ("" if builds else ", the arc was silently dropped" if valid else ""),
+                      f"builds, {faces} faces (expected {expected}: {arcs} of {p.teeth} "
+                      f"root arcs made), {'valid' if valid else 'INVALID'}"
+                      + ("" if builds else ", NOT the faces the shipped rule calls for"),
                       builds)
 
 
@@ -942,26 +934,21 @@ def tuned_backlash(fields: dict[str, object], rho_request: float) -> float:
     return hi
 
 
-def dead_band() -> tuple[GearParams, list[ArcOutcome]]:
-    """The gear of ARC_FIELDS and what the kernel did at each ARC_HALF_WIDTHS_MM."""
+def dead_band(*, annulus: bool = True) -> tuple[GearParams, list[ArcOutcome]]:
+    """The gear of ARC_FIELDS and what the shipped outline did at each ARC_HALF_WIDTHS_MM."""
     p = GearParams.model_validate(ARC_FIELDS)
     _, curve = trochoid_curve(p, ARC_RHO_MM)
-    return p, [arc_outcome(p, curve, a) for a in ARC_HALF_WIDTHS_MM]
-
-
-def arc_min_proposal(last_failing: float) -> float | None:
-    """The smallest of ARC_MIN_CANDIDATES_MM at least 10x the last failing chord, None when
-    there is none. A chord is read to about 1e-15 mm (two vectors of length rf subtracted),
-    which is 5e-9 of 2e-7, so "10x" is compared to a part in a million and not to the last
-    float."""
-    return next((c for c in ARC_MIN_CANDIDATES_MM if c / last_failing >= 10 - 1e-6), None)
+    return p, [arc_outcome(p, curve, a, annulus=annulus) for a in ARC_HALF_WIDTHS_MM]
 
 
 def run_arc() -> int:
-    """The dead band of the root arc (19-RESEARCH F4), the tuned-backlash gear that
-    reaches it from user input, and the ROOT_ARC_MIN proposal."""
+    """The dead band of the root arc (19-RESEARCH F4) on the shipped outline: every width of
+    ARC_HALF_WIDTHS_MM, and the tuned-backlash gear that reaches it from user input. 19-02
+    measured the kernel failing at chords from 2e-9 to 2.0e-7 mm; `model.ROOT_ARC_MIN` is the
+    rule that closes it, and this reads whether it does."""
     start, load_before = datetime.now(UTC), os.getloadavg()
-    p, outcomes = dead_band()
+    p, guarded = dead_band()
+    _, lifted = dead_band(annulus=False)
 
     fields = {**ARC_FIELDS, "root_fillet": 3.0}
     backlash = tuned_backlash(fields, 3.0)
@@ -970,36 +957,41 @@ def run_arc() -> int:
     tuned_outcome = arc_outcome(tuned, tuned_curve, tuned_cut.a)
     try:
         trochoid_blank(tuned, tuned.root_fillet)
-        bench_outline = "builds"
-    except Exception as exc:  # the bench outline as 19-04 would ship it, unguarded
-        bench_outline = f"raises {type(exc).__name__}: {exc}"
+        shipped_blank = "builds"
+    except Exception as exc:  # the blank as `_build` makes it, guards included
+        shipped_blank = f"raises {type(exc).__name__}: {exc}"
     end, load_after = datetime.now(UTC), os.getloadavg()
 
     print("\n".join(_host_state(start, end, load_before, load_after)))
     print(f"Gear: {p.teeth} teeth, module {p.module:g}, {p.pressure_angle:g} degrees, shift "
           f"{p.profile_shift:g}, tip radius {ARC_RHO_MM:g} mm; the first point of the root "
           "curve moved along the root circle to half-angle pi / z - a / rf, so the root arc "
-          "between neighbours spans about 2a. A build counts only if it is valid and has "
-          f"6 z + 2 = {6 * p.teeth + 2} faces.")
+          "between neighbours spans about 2a. The outline is the shipped one "
+          f"(`model._outline`, ROOT_ARC_MIN {model.ROOT_ARC_MIN:g} mm), read twice: with "
+          "every guard on, and with the annulus guard lifted (a moved first point is not a "
+          "curve any cutter draws, and its spline swings under the root circle). A build "
+          "counts only if it is one valid solid with 5 z + (root arcs made) + 2 faces; "
+          f"6 z + 2 = {6 * p.teeth + 2} when every arc is made.")
     print()
     print("#### Dead band")
     print()
-    print("| a (mm) | chord, root_r[-1] to the next root_l[0] (mm) | result |")
-    print("|---|---|---|")
-    for o in outcomes:
-        print(f"| {o.half_width:g} | {o.chord:.3e} | {o.outcome} |")
+    print("| a (mm) | chord, root_r[-1] to the next root_l[0] (mm) | all guards on "
+          "| annulus guard lifted |")
+    print("|---|---|---|---|")
+    for g, o in zip(guarded, lifted, strict=True):
+        print(f"| {o.half_width:g} | {o.chord:.3e} | {g.outcome} | {o.outcome} |")
     print()
-    failing = [o for o in outcomes if not o.builds]
-    last_failing = max(o.chord for o in failing)
-    building = [o for o in outcomes if o.builds and o.chord > last_failing]
-    first_building = min(o.chord for o in building)
-    below = [o for o in outcomes if o.builds and o.chord <= last_failing]
-    print(f"Last failing chord: {last_failing:.3e} mm (a = "
-          f"{next(o.half_width for o in failing if o.chord == last_failing):g}); first "
-          f"building chord above it: {first_building:.3e} mm (a = "
-          f"{next(o.half_width for o in building if o.chord == first_building):g}); "
-          f"monotone (no building row at or below the last failing chord): "
-          f"{'yes' if not below else 'NO'}.")
+    refused = [o for o in guarded if not o.builds]
+    failing = [o for o in lifted if not o.builds]
+    shared = [o for o in lifted if o.chord < model.ROOT_ARC_MIN]
+    closed = not failing
+    verdict = ("CLOSED: every row builds one valid solid" if closed else "OPEN: " + "; ".join(
+        f"a = {o.half_width:g}: {o.outcome}" for o in failing))
+    print(f"{len(guarded)} rows. All guards on: {len(guarded) - len(refused)} build, "
+          f"{len(refused)} are refused before the kernel. Annulus guard lifted: "
+          f"{len(shared)} rows are under ROOT_ARC_MIN (chord at most "
+          f"{max((o.chord for o in shared), default=0.0):.3e} mm, the neighbours share a "
+          f"vertex); the dead band is {verdict}.")
     print()
     print("#### Reachable from user input: the tuned-backlash gear")
     print()
@@ -1008,17 +1000,10 @@ def run_arc() -> int:
           f"{backlash!r}, tip radius used "
           f"{tuned_cut.rho:g} mm of rho_max {tuned_cut.rho_max:.9f} mm, tip-land half-width "
           f"a = {tuned_cut.a:.3e} mm (target {ARC_TARGET_HALF_WIDTH_MM:g}), root-arc chord "
-          f"{tuned_outcome.chord:.3e} mm. The bench outline {bench_outline}.")
-    print()
-    proposal = arc_min_proposal(last_failing)
-    if proposal is None:
-        print(f"ROOT_ARC_MIN proposal: none of {ARC_MIN_CANDIDATES_MM} has 10x headroom over "
-              f"the last failing chord {last_failing:.3e} mm")
-        return 1
-    print(f"ROOT_ARC_MIN proposal: {proposal:g} mm ({proposal / last_failing:.1f}x the last "
-          f"failing chord); against the smallest real chord the product shows: pending "
-          "(`product` reads it)")
-    return 0 if tuned_cut.a < 2 * ARC_TARGET_HALF_WIDTH_MM else 1
+          f"{tuned_outcome.chord:.3e} mm: {tuned_outcome.outcome}. The shipped blank "
+          f"{shipped_blank}.")
+    return 0 if (closed and tuned_outcome.builds and shipped_blank == "builds"
+                 and tuned_cut.a < 2 * ARC_TARGET_HALF_WIDTH_MM) else 1
 
 
 # --- the whole product: spline error and the four guards (19-02, A7) -------------------
@@ -1145,7 +1130,9 @@ def bunched_points(cut: Cutter, steps: int, ratio: float) -> tuple[tuple[float, 
 
 def bunching_table() -> list[BunchingRow]:
     """The kernel and the spline error on one gear (ARC_FIELDS) as its 16 root points are
-    resampled with a growing chord ratio, to put the spacing guard below a measured failure."""
+    resampled with a growing chord ratio, to put the spacing guard below a measured failure.
+    The shipped outline's spacing guard is lifted for these builds (it would answer first at
+    every ratio over its bar), so the rows read the kernel and the spline, not the guard."""
     p = GearParams.model_validate(ARC_FIELDS)
     cut, curve = trochoid_curve(p, ARC_RHO_MM)
     reference = dense_root(cut)
@@ -1155,7 +1142,8 @@ def bunching_table() -> list[BunchingRow]:
         cartesian = [(r * math.cos(h), r * math.sin(h)) for r, h in points]
         chords = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in pairwise(cartesian)]
         try:
-            solid = extrude_outline(p, replace(curve, points=points))
+            with patch.object(model, "ROOT_SPACING_RATIO_MAX", math.inf):
+                solid = extrude_outline(p, replace(curve, points=points))
             faces, valid = len(solid.Faces()), solid.isValid()
             deviation = spline_deviation(tooth0_root_edges(solid, p), reference)
         except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
@@ -1198,7 +1186,6 @@ def run_product() -> int:
         rows = list(pool.map(product_row, cases, chunksize=8))
     wall = time.perf_counter() - t0
     bunching = bunching_table()
-    _, band = dead_band()
     end, load_after = datetime.now(UTC), os.getloadavg()
 
     good = [r for r in rows if not r.error]
@@ -1316,15 +1303,10 @@ def run_product() -> int:
           f"crossing {worst_crossing.junction_gap if worst_crossing else 0:.3e}), the libm "
           f"floor {LIBM_FLOOR_RAD:g}; headroom {junction / gap if gap else math.inf:.3g}x "
           f"({verdict(junction / gap if gap else math.inf)})")
-    last_failing = max(o.chord for o in band if not o.builds)
-    arc_min = arc_min_proposal(last_failing)
-    if arc_min is None:
-        print("ROOT_ARC_MIN check: no candidate")
-    else:
-        side = "below" if arc_min < shortest.arc_chord else "ABOVE"
-        print(f"ROOT_ARC_MIN check: proposal {arc_min:g} mm (from `arc`) against the smallest "
-              f"real root-arc chord {shortest.arc_chord:.4e} mm: the proposal is {side} it, "
-              f"which is {shortest.arc_chord / arc_min:.3g}x the proposal")
+    side = "below" if shortest.arc_chord > model.ROOT_ARC_MIN else "ABOVE"
+    print(f"ROOT_ARC_MIN check: the shipped {model.ROOT_ARC_MIN:g} mm against the smallest "
+          f"real root-arc chord {shortest.arc_chord:.4e} mm: the constant is {side} it, "
+          f"which is {shortest.arc_chord / model.ROOT_ARC_MIN:.3g}x the constant")
     return 1 if errors else 0
 
 

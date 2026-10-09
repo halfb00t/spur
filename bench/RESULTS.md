@@ -4367,3 +4367,221 @@ The root-arc dead band has a second, quieter edge: chords of 2e-12 and 2e-10 mm 
 solid with the arc silently dropped (62 faces where 74 are expected), and the band is reachable
 from user input (backlash 0.19898413579248878 with the tip radius capped leaves a = 1.0e-8 mm).
 `ROOT_ARC_MIN` is why 19-05 drops the arc below it and shares the junction vector.
+
+
+### Chamfer law on the real build (19-09)
+
+19-01 bisected L29's tip-chamfer law on a trochoid outline `bench/trochoid_part.py` assembled itself
+(`trochoid_outline`, a copy of RESEARCH Pattern 2), and 19-02 read the root arc's dead band on the
+same copy. 19-04 moved the builder into `spur.model` and 19-09 removed the copy: since this plan the
+bench builds blanks through `model._gear_blank` / `model._outline` and parts through
+`model._build_checked` with `root_shape="trochoid"` and the row's tip radius as `root_fillet`; for a
+bisection the part is built with `tip_chamfer=0` and chamfered at `c` by `chamfered`, as before. One
+definition of the hob-root outline by the phase's end (the 11-05 precedent). The same 14 rows were
+re-run with `python -m bench.trochoid_part chamfer` and `... arc`; both outputs follow verbatim
+(`chamfer` first), the `arc` host-state heading renamed so this subsection has one per run. HEAD in the
+host state is the commit before this plan's: the tree carried this plan's bench edits, uncommitted,
+while the runs were taken.
+
+#### Host state
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `5f3df84`
+- Read 2026-10-09T05:47:04Z to 2026-10-09T05:51:31Z
+- Load averages at start: 2.92, 5.27, 5.90; at end: 3.86, 4.27, 5.26
+
+#### Bisection (20 halvings between 0 and 0.45 x face_width)
+
+| Gear | Tip radius (mm) | Join | R_join (mm) | pred = ra - R_join | last ok | first fail | last ok - pred | Verdict | Binding cap | Worst oracle (mm) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0 | tangent | 15.1805 | 3.1944892 | 3.1944884 | 3.1944916 | -7.71e-07 | on the law | ra - r | 1.35e-05 |
+| default 19 teeth, m 1.75, 25 deg, x 0 | 0.5 | tangent | 15.2788 | 3.0961925 | 3.0961908 | 3.0961940 | -1.73e-06 | on the law | ra - r | 2.20e-05 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0 | tangent | 48.6785 | 1.7215252 | 1.7215244 | 1.7215276 | -8.65e-07 | on the law | ra - r | 5.91e-06 |
+| 100 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | tangent | 48.8589 | 1.5410770 | 1.5410739 | 1.5410771 | -3.06e-06 | on the law | ra - r | 9.50e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0 | crossing | 14.5916 | 0.8084213 | 0.8233534 | 0.8233566 | +1.49e-02 | conservative | ra - r | 2.44e-05 |
+| 30 teeth, m 1, 14.5 deg, x -0.6 | 0.5 | crossing | 14.5508 | 0.8492071 | 2.2499979 | 2.2500011 | +1.40e+00 | conservative | ra - r | 1.23e-04 |
+| 12 teeth, m 1, 20 deg, x 0 | 0 | crossing | 5.6756 | 1.3243676 | 1.3243654 | 1.3243686 | -2.23e-06 | on the law | ra - r | 1.97e-05 |
+| 12 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 5.6457 | 1.3542630 | 1.3542602 | 1.3542634 | -2.80e-06 | on the law | ra - r | 3.99e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0 | crossing | 4.7567 | 1.2433329 | 2.2499979 | 2.2500011 | +1.01e+00 | conservative | ra - r | 2.15e-05 |
+| 10 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 4.7174 | 1.2825685 | 1.2825680 | 1.2825712 | -5.13e-07 | on the law | ra - r | 3.94e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0 | crossing | 3.8448 | 1.1552447 | 1.2656250 | 1.2656282 | +1.10e-01 | conservative | ra - r | 2.29e-05 |
+| 8 teeth, m 1, 20 deg, x 0 | 0.5 | crossing | 3.7960 | 1.2039992 | 2.2499979 | 2.2500011 | +1.05e+00 | conservative | ra - r | 3.66e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0 | crossing | 3.0994 | 0.9006385 | 0.9006364 | 0.9006397 | -2.04e-06 | on the law | ra - R_join | 2.99e-05 |
+| 6 teeth, m 1, 14.5 deg, x 0 | 0.5 | crossing | 3.0183 | 0.9816865 | 1.3320547 | 1.3320580 | +3.50e-01 | conservative | ra - R_join | 4.47e-05 |
+
+First-failure reasons: default 19 teeth, m 1.75, 25 deg, x 0 @ 0: Standard_Failure; default 19 teeth, m 1.75, 25 deg, x 0 @ 0.5: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0: Standard_Failure; 100 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0: invalid; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5: Standard_Failure; 12 teeth, m 1, 20 deg, x 0 @ 0: invalid; 12 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0: invalid; 10 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0: invalid; 8 teeth, m 1, 20 deg, x 0 @ 0.5: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0: invalid; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5: invalid
+
+Binding cap is ra - R_join on: 6 teeth, m 1, 14.5 deg, x 0 @ 0; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5.
+Verdict: law holds -- 8 rows on the law, 6 conservative (30 teeth, m 1, 14.5 deg, x -0.6 @ 0; 30 teeth, m 1, 14.5 deg, x -0.6 @ 0.5; 10 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0; 8 teeth, m 1, 20 deg, x 0 @ 0.5; 6 teeth, m 1, 14.5 deg, x 0 @ 0.5).
+
+**Against 19-01.** The 14 table rows above are identical to the 14 rows of `### Chamfer across the
+junction (19-01)`: every R_join, `pred`, last ok, first fail, `last ok - pred`, verdict, binding cap and
+worst oracle reading (a string equality of the two row lists, run when this was written). So the last
+building `c` on every row equals 19-01's to all seven printed decimals, inside the bisection's
+resolution (3.2e-6 mm), as expected: the assembly moved unchanged from the bench into `model.py`. The
+verdict is the same, `law holds`, 8 rows on the law and the same 6 conservative, no row optimistic, so
+the cap `ra - R_join - TIP_CHAMFER_MARGIN` that 19-04 shipped rests on the shipped build and not only on
+the copy. The worst oracle reading on an unchamfered root is 1.23e-04 mm (30 teeth, module 1, tip radius
+0.5), unchanged; the bar is 2e-3 x module (`### Bars adopted (19-02)`), so that reading is 0.06 of it.
+
+#### Root arc dead band on the shipped outline
+
+#### Host state (the `arc` run)
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `5f3df84`
+- Read 2026-10-09T05:52:24Z to 2026-10-09T05:52:24Z
+- Load averages at start: 3.40, 4.09, 5.13; at end: 3.40, 4.09, 5.13
+
+Gear: 12 teeth, module 1, 20 degrees, shift 0, tip radius 0.38 mm; the first point of the root curve moved along the root circle to half-angle pi / z - a / rf, so the root arc between neighbours spans about 2a. The outline is the shipped one (`model._outline`, ROOT_ARC_MIN 2e-06 mm), read twice: with every guard on, and with the annulus guard lifted (a moved first point is not a curve any cutter draws, and its spline swings under the root circle). A build counts only if it is one valid solid with 5 z + (root arcs made) + 2 faces; 6 z + 2 = 74 when every arc is made.
+
+#### Dead band
+
+| a (mm) | chord, root_r[-1] to the next root_l[0] (mm) | all guards on | annulus guard lifted |
+|---|---|---|---|
+| 0 | 0.000e+00 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-12 | 2.000e-12 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-10 | 2.000e-10 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-09 | 2.000e-09 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-08 | 2.000e-08 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-07 | 2.000e-07 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 2e-07 | 4.000e-07 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 3e-07 | 6.000e-07 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 6e-07 | 1.200e-06 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 62 faces (expected 62: 0 of 12 root arcs made), valid |
+| 1e-06 | 2.000e-06 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 67 faces (expected 67: 5 of 12 root arcs made), valid |
+| 2e-06 | 4.000e-06 | BuildError: A hob-root spline leaves the root-to-tip annulus (radius 4.748526 mm outside 4.750000 to 7.000000): a modelling defect in spur, not a conflict in these parameters. Set root_shape to radial to build this gear with the analytic root. | builds, 74 faces (expected 74: 12 of 12 root arcs made), valid |
+
+11 rows. All guards on: 0 build, 11 are refused before the kernel. Annulus guard lifted: 10 rows are under ROOT_ARC_MIN (chord at most 2.000e-06 mm, the neighbours share a vertex); the dead band is CLOSED: every row builds one valid solid.
+
+#### Reachable from user input: the tuned-backlash gear
+
+`GearParams` as above with root_fillet 3.0 (the cap applies) and backlash bisected over [0, 0.4] in 40 halvings: backlash 0.19898413579248878, tip radius used 0.614 mm of rho_max 0.614000014 mm, tip-land half-width a = 1.000e-08 mm (target 1e-08), root-arc chord 2.000e-08 mm: builds, 62 faces (expected 62: 0 of 12 root arcs made), valid. The shipped blank builds.
+
+**Is the dead band closed?** On what the kernel and `ROOT_ARC_MIN` do, yes. With the annulus guard lifted,
+all 11 rows build one valid solid: the 9 rows with a chord of 1.2e-6 mm or less leave the arc out and read
+62 faces (5 z + 2: the neighbours share a vertex), the row at a = 1e-6 mm (chord 2.000e-06 mm, which is
+`ROOT_ARC_MIN` to float noise) makes 5 of its 12 arcs and reads 67 faces, and the row at 2e-6 mm makes all
+12 and reads 74. 19-02 read this gear raising `GC_MakeArcOfCircle::Value() - no result` at every chord from
+2e-9 to 2.0e-7 mm and at exactly 0, silently dropping the arc (62 faces where 74 were expected) at 2e-12
+and 2e-10 mm, and building from 4.0e-7 mm; no row of this table raises, and the 62-face rows are the
+shipped rule's own answer and not a silent drop. The user-reachable gear (backlash 0.19898413579248878,
+tip land 1.0e-8 mm) builds through the shipped blank with every guard on: 62 faces, 0 of 12 arcs made.
+
+**With every guard on, the 11 hand-made rows are all refused, and the refusal is not the dead band.** The
+shipped annulus guard raises `BuildError` on each, at the same radius (4.748526 mm against a root circle
+of 4.750000 mm, 1.474e-3 mm under it). A moved first point is not a curve any cutter draws: the root spline
+through it and the other points of the real curve runs under the root circle. 19-02's table built these
+rows because its outline had no such guard; this outline is the shipped one and does what 19-04 and 19-05
+made it do. The plan expected every row of the dead-band table to build one valid solid with the guards on,
+and that is not met for these hand-made rows; the table shows both readings instead of smoothing it. The
+closure is read on the annulus-lifted column (kernel plus `ROOT_ARC_MIN`) and on the tuned gear, which is a
+real cutter's curve and builds with all guards on.
+
+**What else moved in the bench.** `arc`'s ROOT_ARC_MIN proposal and `arc_min_proposal` are gone (the
+constant is adopted: 2e-6 mm, 10.0x the last failing chord 19-02 read); `product` prints the shipped
+constant against the smallest real root-arc chord instead of a proposal; `product`'s bunching table lifts
+the shipped spacing guard for its builds (it would answer first at every ratio over 1000), so it still
+reads the kernel's own first failure and not the guard. Neither `product` nor `waist` was re-run: their
+bars are adopted and no number in this plan depends on them. `outline_teeth` stays as a measuring helper:
+it makes no edge and keeps the points before `ROOT_ARC_MIN`, which `arc` and `product` read their chords
+and areas from.
+
+### Composed build time on the real build (19-09)
+
+ROADMAP success criterion 4, on the code that ships: the heaviest gear a `root_shape="trochoid"` request
+can still change (116 teeth at 14.5 degrees and profile shift -0.6, where `rb > rf` still holds), every
+row 19-01 timed, each in both root shapes, through the standard runner. `bench/sweeps/trochoid.json` holds
+the 17 corner rows `GearParams` accepts (the 18 rows of `composed.json` moved to the corner, minus 3
+refused there, plus the 2 lighter module-10 rows of `LIGHTER_ROWS`), each followed by the same row with
+`"root_shape": "trochoid"`; `tests/test_bench.py` pins the file to `corner_rows()` and the refusal rule and
+checks that every twin is a trochoid build (a row the predicate ignores would be timed as a radial one).
+`make bench.build SWEEP=bench/sweeps/trochoid.json` times each set as a worker pays it: a cold build, then
+the fine STL and the STEP export, against `SPUR_BUILD_TIMEOUT` = 30 s. This is also the reading L37 asks
+for ("Revisit when ... Phase 19's composed re-measure"). The script's output follows verbatim.
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`); `bench.machine_facts()`: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `5f3df84`
+- Sweep: `bench/sweeps/trochoid.json`
+- Load averages at start: 3.40, 4.05, 5.10
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+- `uptime` before the first row: 11:52 local, load averages 3.26 4.04 5.10 (2026-10-09T05:52:35Z); after the last: 11:56 local, 7.70 6.45 5.96 (05:56:45Z)
+
+#### Timings
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles |
+|---|---|---|---|---|---|---|---|
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 9.94 | 0.43 | 0.38 | 10.37 | yes | 5898384 | 117966 |
+| teeth=116 module=1.75 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 10.81 | 0.48 | 0.35 | 11.28 | yes | 9656784 | 193134 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 9.26 | 0.43 | 0.35 | 9.69 | yes | 5935584 | 118710 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 10.24 | 0.49 | 0.36 | 10.73 | yes | 9693984 | 193878 |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 10.79 | 0.54 | 0.39 | 11.33 | yes | 7298484 | 145968 |
+| teeth=116 module=10 bore_hex=43.35 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 11.73 | 0.59 | 0.39 | 12.32 | yes | 10708884 | 214176 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 10.78 | 0.55 | 0.38 | 11.33 | yes | 7354284 | 147084 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 11.86 | 0.59 | 0.37 | 12.45 | yes | 10764684 | 215292 |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 9.17 | 0.32 | 0.27 | 9.50 | yes | 10223484 | 204468 |
+| teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 14.28 | 0.36 | 0.25 | 14.64 | yes | 13981884 | 279636 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 4.67 | 0.91 | 0.22 | 5.58 | yes | 8951684 | 179032 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 4.87 | 0.95 | 0.19 | 5.83 | yes | 12710084 | 254200 |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 3.99 | 0.62 | 0.19 | 4.61 | yes | 13825284 | 276504 |
+| teeth=116 module=10 bore_hex=200 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 3.89 | 0.69 | 0.17 | 4.58 | yes | 17235684 | 344712 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 4.11 | 0.67 | 0.20 | 4.77 | yes | 14545884 | 290916 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 4.10 | 0.73 | 0.17 | 4.84 | yes | 17956284 | 359124 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 6.99 | 0.52 | 0.41 | 7.51 | yes | 5546684 | 110932 |
+| teeth=116 module=1.75 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=0.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 7.08 | 0.55 | 0.37 | 7.63 | yes | 9305084 | 186100 |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 7.82 | 0.64 | 0.44 | 8.46 | yes | 10425284 | 208504 |
+| teeth=116 module=10 bore_hex=200 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 8.00 | 0.68 | 0.41 | 8.68 | yes | 13835684 | 276712 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 6.68 | 0.65 | 0.41 | 7.33 | yes | 7757084 | 155140 |
+| teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hex_cell=3 hex_wall=5 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 6.93 | 0.70 | 0.41 | 7.63 | yes | 11167484 | 223348 |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 3.73 | 0.41 | 0.19 | 4.14 | yes | 7420684 | 148412 |
+| teeth=116 module=1.75 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 3.62 | 0.44 | 0.16 | 4.06 | yes | 11179084 | 223580 |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 1.09 | 0.91 | 0.17 | 2.01 | yes | 8921484 | 178428 |
+| teeth=116 module=1.75 hole_count=60 hole_d=1 hole_circle_d=183.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 1.25 | 1.03 | 0.16 | 2.28 | yes | 12679884 | 253596 |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 7.21 | 0.54 | 0.35 | 7.75 | yes | 7324084 | 146480 |
+| teeth=116 module=10 spoke_count=32 spoke_width=0.4 hub_d=52 rim_wall=0.4 spoke_fillet=5 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 8.49 | 0.56 | 0.33 | 9.06 | yes | 10757684 | 215152 |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 | 2.74 | 0.50 | 0.37 | 3.24 | yes | 5504484 | 110088 |
+| teeth=116 module=1.75 hex_cell=3 hex_wall=0.4 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid | 2.89 | 0.56 | 0.33 | 3.45 | yes | 9262884 | 185256 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 | 0.70 | 0.66 | 0.15 | 1.35 | yes | 12991684 | 259832 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 root_shape=trochoid | 0.86 | 0.75 | 0.14 | 1.61 | yes | 16425284 | 328504 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both | 3.54 | 0.64 | 0.19 | 4.18 | yes | 13014884 | 260296 |
+| teeth=116 pressure_angle=14.5 profile_shift=-0.6 module=10 tip_chamfer=3 recess_sides=both root_shape=trochoid | 3.44 | 0.71 | 0.17 | 4.14 | yes | 16425284 | 328504 |
+
+**Heaviest:** teeth=116 module=1.75 bore_hex=156.3 hole_count=60 hole_d=1 hole_circle_d=183.4 tip_chamfer=1.75 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid -- 14.64 s of 30 s.
+**Largest fine STL:** teeth=116 module=10 bore_d=9 bore_flat=0 keyway_width=3 keyway_depth=1.4 hole_count=60 hole_d=5.85 hole_circle_d=400 tip_chamfer=3 recess_sides=both pressure_angle=14.5 profile_shift=-0.6 root_shape=trochoid -- 17956284 bytes, 359124 triangles.
+
+The 1-minute load was above 1.5 for the whole run (3.3 to 7.7; the run's own build and export threads are
+part of it), so every figure is an upper bound for this host and none is a bar.
+
+**The heaviest row, against 30 s.** The runner exits 0: all 34 requests are inside 30 s. The heaviest is the
+trochoid twin of the 116-tooth, module-1.75 gear with a 156.3 mm hex bore, 60 holes of 1 mm on a 183.4 mm
+circle, the tip chamfer at 1.75 mm and both recesses: 14.28 s to build plus 0.36 s (STL) and 0.25 s (STEP),
+**14.64 s of 30 s, 15.36 s of margin** (49 % of the timeout). It is the heaviest row of the whole sweep,
+radial rows included (the heaviest radial request is 11.33 s). **Against its radial twin:** 9.50 s (9.17
+build, 0.32 STL, 0.27 STEP), so the hob root costs 1.54 times the radial request on this row, the largest
+of the 17 pairs. The other 16 pairs read 0.98 to 1.19 times (median over the 17, 1.06; 14 above 1, 3 below,
+at 0.98, 0.99 and 0.99); the next heaviest are the module-10 keyed 32-spoke row at 12.45 s trochoid against
+11.33 s radial (1.10) and the module-10 hex-bore 32-spoke row at 12.32 against 11.33 (1.09). **Against
+19-01's spike reading of the same row:** 16.61 s trochoid (16.20 build) and 11.48 s radial, 1.45 times, at a
+load of 4.86 rising to 9.48 on the same host. This run reads 1.97 s lower on the trochoid request
+(14.64 against 16.61, 12 %) and 1.98 s lower on the radial one (9.50 against 11.48, 17 %) at a load of 3.3
+rising to 7.7. Both are single readings under different loads, so this is not a delta and no cause is
+isolated; what it supports is that the shipped build did not cost more than the bench copy it replaced on
+this row, and that the margin to 30 s was 13.39 s in the spike and is 15.36 s here. The ratio rose from 1.45
+to 1.54 because both requests fell by about the same 2 s.
+
+**Against L37's 29.42 s row.** L37's heaviest allowed composed row is the 200-tooth, module-10 keyed
+32-spoke composition (29.42 s alone on the 12-CPU M2 Max, 2026-09-30). It is not in this sweep and was not
+re-run: at 200 teeth `rb <= rf` for every pressure angle and shift the field allows (the trochoid applies
+only below 116.1 teeth, `CORNER`'s comment), so a trochoid request is ignored and warned (18 D-02,
+`root_mode` answers "nothing radial to replace") and that request builds the radial part it built before.
+The heaviest row a trochoid request can change reads 14.64 s on this host, half of L37's figure from
+another host, so Phase 19's composed re-measure does not reach L37's row: its 503-under-load contract,
+`SPUR_BUILD_TIMEOUT` = 30 s and `spoke_count`'s `le` of 32 stand. Nothing here is extrapolated to
+concurrent load, and no figure is compared across hosts as a delta.
