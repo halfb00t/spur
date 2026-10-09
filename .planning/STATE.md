@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
 status: executing
-stopped_at: Completed 19-02-PLAN.md
-last_updated: "2026-10-09T03:41:10.626Z"
+stopped_at: Completed 19-03-PLAN.md
+last_updated: "2026-10-09T03:47:03.741Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 19 execution started
-state_head: b6907ebae468becd646ddcc2f07db4f50a6351b3
+state_head: 66f847e4048ae36487db555f2ec0b9a2685540b8
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 22
-  completed_plans: 13
-  percent: 59
+  completed_plans: 14
+  percent: 64
 ---
 
 # Project State
@@ -33,11 +33,11 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 ## Current Position
 
 Phase: 19 (The Trochoid in the Part) — EXECUTING
-Plan: 3 of 11
+Plan: 4 of 11
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 19 execution started
 
-Progress: [████████████████████] 11/11 plans ([██████░░░░] 59%)
+Progress: [████████████████████] 11/11 plans ([██████░░░░] 64%)
 
 ## Performance Metrics
 
@@ -208,6 +208,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 18 P06 | 9 min | 2 tasks | 4 files |
 | Phase 19 P01 | 27min | 2 tasks | 3 files |
 | Phase 19 P02 | 1h 45m | 3 tasks | 3 files |
+| Phase 19 P03 | ~50 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -364,6 +365,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: 19-02: waist field named root_waist (name-root_waist), a published key on /api/info and spur info
 - [Phase 19]: 19-02: D-02 confirmed (d02-confirm): root_shape radial/trochoid default radial, --root-shape, root_fillet read as the hob tip radius; 19-04 is not blocked
 - [Phase 19]: 19-02: area guard 5e-2 on the arc-midpoint polygon (area-midpoints, 13.6x); the arcs-as-chords measure (bar 0.1, 8.2x) rejected. Planner's-call bars: spacing 1000 (75x), annulus TOL 1e-6 mm, junction 1e-11 rad (18-01's 1e-12 not reusable), ROOT_ARC_MIN 2e-6 mm
+- [Phase 19]: 19-03: resource-tracker flake re-deferred (debt-redefer; human: 'take the recommendations', id mapped by the orchestrator): 0 of 60 two-file isolation loops reproduced it (95 % bound ~14 % per config, ~3 % over 100 with 17-04), every occurrence came from a whole-suite run; must/active stays, no shutdown(wait=True), no filterwarnings; trigger: next make verify failure with its whole log kept, else whole-suite loops by Phase 20 planning or the next milestone
 
 ### Pending Todos
 
@@ -396,7 +398,10 @@ None yet.
   pre-Phase-17 test; the re-run and the identical-code run 37460192883 were green). Escalated by the
   human at ship; trigger re-deferred 2026-10-08 (18-05, `debt-redefer`): the next `make verify`
   failure or Phase 19 planning, whichever first — Phase 18 ran the full gate green on every wave
-  and added no process-spawning test.
+  and added no process-spawning test. Re-deferred again 2026-10-09 (19-03, `debt-redefer`): 60
+  two-file isolation loops saw nothing (0 of 60), a fourth occurrence came from 19-01's whole-suite
+  baseline; new trigger is the next `make verify` failure with its whole log kept, else whole-suite
+  loops by Phase 20 planning or the next milestone's start. Still `must`, still `active`.
 - ✓ [Phase 17] The earlier review's 12 findings (WR-01…WR-05, IN-01…IN-07;
   `17-REVIEW-DISPOSITION.md`) are fixed: `17-REVIEW-FIX.md`, commits `9927f3c`…`366d6d4`.
   WR-01's backwards "bigger host" clause (`README.md:97`, L37's decision paragraph and the
@@ -559,8 +564,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T03:41:10.587Z
-Stopped at: Completed 19-02-PLAN.md
+Last session: 2026-10-09T03:47:03.709Z
+Stopped at: Completed 19-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
