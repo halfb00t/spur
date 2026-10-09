@@ -81,5 +81,39 @@ adding a filter; Severity stays `must`, Status stays `active`.
 New trigger: the next `make verify` failure, or Phase 19 planning — whichever comes first — gets
 the isolation runs under Next step and a fix plan.
 
+Phase 19 trigger read on 2026-10-09 (plan 19-03), with the isolation run. 19-01's gate baseline run 2
+(`make verify`, `-n 8 --cov`, `1 failed, 1022 passed in 53.61s`) printed the chain in
+`tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced` on worker `gw0` (fourth
+occurrence; whole log `.planning/phases/19-the-trochoid-in-the-part/investigation/19-01-gate-flake.log`). The
+isolation under Next step was then run: 60 loops of `tests/test_pool.py` and `tests/test_api.py`, 20 each at
+`-n 8 --cov`, `-n 8 --no-cov` and `-n0 --cov`, interleaved round by round. All 60 read `74 passed`; none
+contained `ReentrantCallError`. 0 of 20 per configuration puts the 95 % upper bound on a per-loop rate at about
+14 %; with 17-04's 40 two-file loops (also silent) it is 0 of 100, about 3 %. So the isolation did not separate
+xdist from coverage's `multiprocessing` concurrency: no configuration reproduced it. Every one of the four
+recorded occurrences came from a whole-suite run, none from the two process-spawning files alone, and the local
+whole-suite rate is 2 in 12 (17-04 1 in 3, Phase 18 0 in 4, 19-01 1 in 5); the two-file loops probably do not
+sample the same population as the gate. ASSUMPTION, not measured: what the whole suite adds is other test files
+on the same worker, or the longer life of the run. Counts, per-loop table and host state:
+`.planning/phases/19-the-trochoid-in-the-part/investigation/19-03-isolation.md`.
+
+A separate observation, verified on 2026-10-09 by the orchestrator (not re-measured here): 12 macOS crash
+reports since 2026-10-08 16:46 show a pytest-xdist worker dying at interpreter exit in
+`BRepAlgoAPI_BuilderAlgo::~BRepAlgoAPI_BuilderAlgo()` under `Py_FinalizeEx -> finalize_modules ->
+_PyModule_ClearDict -> list_dealloc -> tupledealloc -> OCP`, after the worker's tests had reported, so it cannot
+fail a test. No mechanical link to the `ReentrantCallError` chain is established; the only shared trait is that
+both appear in whole-suite runs only. Three whole-suite runs that day (`make test` 1034 passed in 58.74 s, one
+probed `-n 8 --cov` run, `make verify.fast` 713 passed in 11.07 s) produced no crash report.
+
+Re-deferred on 2026-10-09 by the human, who answered `take the recommendations` to the choice between fixing the
+shutdown order, adding the narrowest filter and re-deferring. The orchestrator mapped those words to
+`debt-redefer`, the course the executor had stated as its recommendation (the mapping is the orchestrator's, not
+the human's). No `shutdown(wait=True)` was added: no occurrence was localised to a pool a test leaves to its
+finalizer, so a fix would be a guess. No `filterwarnings` entry was added: a filter would hide the symptom of a
+failure whose cause is unlocated. Severity stays `must`, Status stays `active`.
+
+New trigger: the next `make verify` failure, with its whole log kept (as 19-01 did) so the test and worker
+localise the fix; or, if none by Phase 20 planning or the next milestone's start, whole-suite loops of
+`make test` at `-n 8 --cov` and `-n 8 --no-cov`.
+
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
