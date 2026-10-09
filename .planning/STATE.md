@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
 status: executing
-stopped_at: Completed 19-09-PLAN.md
-last_updated: "2026-10-09T07:38:37.630Z"
+stopped_at: Completed 19-10-PLAN.md
+last_updated: "2026-10-09T07:52:21.453Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 19 execution started
-state_head: 391783b65e055665346936d15d1359b4aa746ddf
+state_head: 05fc2b9cb5ae8c303bbc54a790d669d95e831993
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 22
-  completed_plans: 20
-  percent: 91
+  completed_plans: 21
+  percent: 95
 ---
 
 # Project State
@@ -33,11 +33,11 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 ## Current Position
 
 Phase: 19 (The Trochoid in the Part) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 19 execution started
 
-Progress: [████████████████████] 11/11 plans ([█████████░] 91%)
+Progress: [████████████████████] 11/11 plans ([█████████░] 95%)
 
 ## Performance Metrics
 
@@ -215,6 +215,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 19 P08 | 25 min | 2 tasks | 3 files |
 | Phase 19 P07 | 25 min | 2 tasks | 3 files |
 | Phase 19 P09 | ~2h | 2 tasks | 5 files |
+| Phase 19 P10 | 12min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -383,6 +384,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: 19-08: the tip chamfer cap on the hob root is pinned on the 6-tooth, module 1, 14.5 degree, sharp-hob row (cap 0.9 mm, 12 new CONE faces; BuildError at 0.9506)
 - [Phase 19]: 19-07: the human answered exit-documented (2026-10-09): the CLI contract stands (unknown root_shape -> 422 loc root_shape / argparse exit 2; a root guard's BuildError -> 422 build_error / SystemExit('error: ...') exit 1, D-14); ROADMAP SC5's 'exit 2' is read as the parameter refusals; cli.py, cli.md and the SC5 sentence are not edited; 19-10's L38 must record the reading
 - [Phase 19]: 19-09: accept-A (2026-10-09) -- the measured gate cost (make verify 192.94 s mean against L34's 66 s, +140.05 s on the same M5 Max) is accepted and recorded in L38; no test moved, L34's bar and the 401-position oracle count unchanged
+- [Phase 19]: L38 logged (supersedes L10, amends L09 and L33): root_shape opt-in, default unmoved in v0.4, Phase 20 skipped; flip rules and the D-09 trigger recorded
+- [Phase 19]: L38 records the gate cost as accepted (accept-A): mean 192.94 s against L34's 66 s on the 18-CPU M5 Max, +140.05 s on the same host; L34's bar and the 401-position count untouched, the bar's re-set left as a separate decision
 
 ### Pending Todos
 
@@ -581,8 +584,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T07:38:37.597Z
-Stopped at: Completed 19-09-PLAN.md
+Last session: 2026-10-09T07:52:21.415Z
+Stopped at: Completed 19-10-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -36,7 +36,7 @@ key-decisions:
   - "L34's 66 s bar is not re-set by L38; the entry says the gate reads about 193 s on the 18-CPU M5 Max against a bar set on a 12-CPU M2 Max and names the re-set as a separate decision"
   - "The strategy docs name L38 as superseding L10 (gear-maths) and amending L09 (solid-model); L10 and L09 stay named, as written in the log"
 
-requirements-completed: [REQ-root-mode-decided, REQ-undercut-warning-restated]  # see Issues Encountered: REQ-trochoid-composes-and-is-priced is also declared by 19-11, left to its last declaring plan
+requirements-completed: []  # REQ-root-mode-decided, REQ-trochoid-composes-and-is-priced and REQ-undercut-warning-restated are declared here and by 19-11 (no SUMMARY yet): requirements.ready-ids returned 0/3 ready (#2388 shared-ID gate); this plan satisfies them in part; nothing marked
 
 coverage:
   - id: D1
@@ -131,7 +131,7 @@ None - plan executed exactly as written. Two small items inside the plan's latit
 
 - **Commit attribution line.** The commit ends with `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`, the line the session's attribution reminder gives. The dispatch text named `Claude Fable 5.1`; `CLAUDE.md` names neither, so the reminder was followed, as 19-05 to 19-08 did.
 - **`gsd_run` was not defined in the executor's shell** for the protected-branch probe (`git.base-branch`); the five-name fallback of the pre-commit assertion was used (branch `gsd/phase-19-the-trochoid-in-the-part`, not protected).
-- **Shared requirement ID.** `REQ-trochoid-composes-and-is-priced` is also declared by 19-11, which has no SUMMARY yet; it is left for 19-11 under the #2388 gate.
+- **Shared requirement IDs.** All three of this plan's IDs are also declared by 19-11, which has no SUMMARY yet; `requirements.ready-ids` answered 0/3 ready (#2388) and nothing was marked complete.
 - **L34's bar against the measured gate.** L38 records the cost and the human's acceptance; the 66 s bar now sits against a gate that reads about 193 s on this host (about 167 s on the quietest reading). Nothing was filed (see below); a debt item or a new `Lxx` that re-sets the bar is the human's call.
 
 ## Known Stubs
