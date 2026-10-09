@@ -41,7 +41,7 @@ key-decisions:
 patterns-established:
   - "A refusal that is a defect in spur takes the BuildError route on both front ends (422 build_error / exit 1); a refusal that is a conflict in the user's parameters takes the parameter route (422 with a loc / argparse exit 2)"
 
-requirements-completed: []  # REQ-root-mode-decided, REQ-trochoid-composes-and-is-priced and REQ-cutter-tip-radius-settable are declared by this plan; each is also declared by a sibling with no SUMMARY yet (19-09, 19-10, 19-11), so the #2388 gate leaves them for the last declaring plan; this plan satisfies them in part (see the roadmap/requirements step in STATE)
+requirements-completed: [REQ-cutter-tip-radius-settable]  # declared by this plan: REQ-root-mode-decided, REQ-trochoid-composes-and-is-priced, REQ-cutter-tip-radius-settable; requirements.ready-ids (#2388) answered 1/3 ready after this SUMMARY: REQ-cutter-tip-radius-settable (19-07 is its last declaring plan) was marked complete; the other two are also declared by siblings with no SUMMARY yet (19-09, 19-10, 19-11) and were left for their last declaring plan
 
 coverage:
   - id: D1

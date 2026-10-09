@@ -183,7 +183,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   warning does not fire when no chord exists. *Acceptance*: `DerivedDimensions` grows
   additively, new fields null on fixture replay; every printed number has a proof or a
   warning, none a plausible value (L08).
-- [ ] **REQ-cutter-tip-radius-settable**: The cutter tip radius is an explicit, printed,
+- [x] **REQ-cutter-tip-radius-settable**: The cutter tip radius is an explicit, printed,
   capped input — either `root_fillet` reinterpreted as ρ in trochoid mode (its changed
   meaning documented, and where it is ignored a warning, the L27 hex-bore precedent) or a
   new default-off field — the human's call at discuss-phase; the default stays absolute
@@ -261,7 +261,7 @@ the phase where its acceptance can be read.
 | REQ-root-mode-decided | Phase 19 | Pending |
 | REQ-outline-consumes-root-curve | Phase 19 | Complete |
 | REQ-derived-numbers-honest-under-trochoid | Phase 19 | Complete |
-| REQ-cutter-tip-radius-settable | Phase 19 | Pending |
+| REQ-cutter-tip-radius-settable | Phase 19 | Complete |
 | REQ-trochoid-composes-and-is-priced | Phase 19 | Pending |
 
 **Placement notes** (where a requirement's phase is not the one its text first suggests):

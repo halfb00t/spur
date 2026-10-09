@@ -354,7 +354,7 @@ build time on the heaviest allowed low-tooth row are spiked first, before any sc
 **Research flag**: Needs a spike, not a research phase — the chamfer junction (L29's boundary
 was bisected to ~2 µm on the old geometry) and the build time on the heaviest low-tooth row;
 STACK's assumption that the spline leaves `make bench.build` timings unaffected is unmeasured.
-**Plans**: 7/11 plans executed
+**Plans**: 8/11 plans executed
 **UI hint**: yes
 
 Plans:
@@ -373,7 +373,7 @@ Plans:
 - [x] 19-06-PLAN.md — The numbers: `root_form_d`, the root waist and its pinned floor, the undercut sentence restated from the cutter used with `x_min` rounded up, the cap sentence reworded, the gear-maths docs
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 19-07-PLAN.md — Three-interface parity: the human settles SC5's exit 2 against the documented CLI contract (checkpoint), the trochoid documents byte-identical, refusals routed identically, README rows and example
+- [x] 19-07-PLAN.md — Three-interface parity: the human settles SC5's exit 2 against the documented CLI contract (checkpoint), the trochoid documents byte-identical, refusals routed identically, README rows and example
 - [x] 19-08-PLAN.md — Composition: the calc-tier (192 rows) and kernel-tier matrices in both root modes, the chamfer cap one step either side of the hob root's junction, the selector twins, a bare build
 
 **Wave 6** *(blocked on Wave 5 completion)*
@@ -450,5 +450,5 @@ before the human at Phase 18's discuss-phase.
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
 | 18. Trochoid Maths, Proved | v0.4 | 6/6 | Complete    | 2026-10-08 |
-| 19. The Trochoid in the Part | v0.4 | 7/11 | In Progress | - |
+| 19. The Trochoid in the Part | v0.4 | 8/11 | In Progress | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |
