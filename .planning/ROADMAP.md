@@ -354,7 +354,7 @@ build time on the heaviest allowed low-tooth row are spiked first, before any sc
 **Research flag**: Needs a spike, not a research phase — the chamfer junction (L29's boundary
 was bisected to ~2 µm on the old geometry) and the build time on the heaviest low-tooth row;
 STACK's assumption that the spline leaves `make bench.build` timings unaffected is unmeasured.
-**Plans**: 3/11 plans executed
+**Plans**: 4/11 plans executed
 **UI hint**: yes
 
 Plans:
@@ -366,7 +366,7 @@ Plans:
 - [x] 19-03-PLAN.md — The resource-tracker debt's "Phase 19 planning" trigger: 60 isolation loops, the human's fix-or-defer answer (checkpoint), the ledger updated
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 19-04-PLAN.md — Tracer: `root_shape` end to end on the default gear (field, `RootMode.curve`, the junction from one float, the trochoid outline in `model.py`, `derive()` printing only what is true), then the kernel-tier proof at the human's bar, `root_d == 2 rf` in both modes and the generator kept out of `model.py`
+- [x] 19-04-PLAN.md — Tracer: `root_shape` end to end on the default gear (field, `RootMode.curve`, the junction from one float, the trochoid outline in `model.py`, `derive()` printing only what is true), then the kernel-tier proof at the human's bar, `root_d == 2 rf` in both modes and the generator kept out of `model.py`
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 19-05-PLAN.md — The outline hardened: `ROOT_ARC_MIN` closes the dead band a typed backlash reaches, four structural guards that do not rest on `isValid()`, the solid-model docs
@@ -450,5 +450,5 @@ before the human at Phase 18's discuss-phase.
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
 | 18. Trochoid Maths, Proved | v0.4 | 6/6 | Complete    | 2026-10-08 |
-| 19. The Trochoid in the Part | v0.4 | 3/11 | In Progress | - |
+| 19. The Trochoid in the Part | v0.4 | 4/11 | In Progress | - |
 | 20. The Flip (conditional) | v0.4 | 0/TBD | Not started (conditional on the root-mode Lxx) | - |

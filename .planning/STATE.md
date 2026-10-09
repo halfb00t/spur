@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
 status: executing
-stopped_at: Completed 19-03-PLAN.md
-last_updated: "2026-10-09T03:47:03.741Z"
+stopped_at: Completed 19-04-PLAN.md
+last_updated: "2026-10-09T04:06:09.421Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 19 execution started
-state_head: 66f847e4048ae36487db555f2ec0b9a2685540b8
+state_head: ad8c51a261f8fab486bf93dc606842bc4f115075
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 22
-  completed_plans: 14
-  percent: 64
+  completed_plans: 15
+  percent: 68
 ---
 
 # Project State
@@ -33,11 +33,11 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 ## Current Position
 
 Phase: 19 (The Trochoid in the Part) — EXECUTING
-Plan: 4 of 11
+Plan: 5 of 11
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 19 execution started
 
-Progress: [████████████████████] 11/11 plans ([██████░░░░] 64%)
+Progress: [████████████████████] 11/11 plans ([███████░░░] 68%)
 
 ## Performance Metrics
 
@@ -209,6 +209,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 19 P01 | 27min | 2 tasks | 3 files |
 | Phase 19 P02 | 1h 45m | 3 tasks | 3 files |
 | Phase 19 P03 | ~50 min | 3 tasks | 3 files |
+| Phase 19 P04 | 30 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -366,6 +367,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: 19-02: D-02 confirmed (d02-confirm): root_shape radial/trochoid default radial, --root-shape, root_fillet read as the hob tip radius; 19-04 is not blocked
 - [Phase 19]: 19-02: area guard 5e-2 on the arc-midpoint polygon (area-midpoints, 13.6x); the arcs-as-chords measure (bar 0.1, 8.2x) rejected. Planner's-call bars: spacing 1000 (75x), annulus TOL 1e-6 mm, junction 1e-11 rad (18-01's 1e-12 not reusable), ROOT_ARC_MIN 2e-6 mm
 - [Phase 19]: 19-03: resource-tracker flake re-deferred (debt-redefer; human: 'take the recommendations', id mapped by the orchestrator): 0 of 60 two-file isolation loops reproduced it (95 % bound ~14 % per config, ~3 % over 100 with 17-04), every occurrence came from a whole-suite run; must/active stays, no shutdown(wait=True), no filterwarnings; trigger: next make verify failure with its whole log kept, else whole-suite loops by Phase 20 planning or the next milestone
+- [Phase 19]: 19-04: root_shape tracer lands end to end; trochoid mode silences the shipped undercut sentence until 19-06 restates it (a refused request keeps it)
+- [Phase 19]: 19-04: kernel-tier gate cost +65 to +75 s (117-129 s vs 52.89 s baseline, over L34 66 s bar) left for 19-09 to price
 
 ### Pending Todos
 
@@ -564,8 +567,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T03:47:03.709Z
-Stopped at: Completed 19-03-PLAN.md
+Last session: 2026-10-09T04:06:09.391Z
+Stopped at: Completed 19-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
