@@ -235,6 +235,16 @@ _NOT_A_PARAMETER_PROBLEM = (
     "radial to build this gear with the analytic root.")
 
 
+def _hob_root_kernel_failure(exc: Exception) -> BuildError:
+    """A kernel exception raised while the hob-root outline was being built. Without this
+    `_build_checked` blames the user's fillets ("try smaller fillets or chamfers"), and
+    under the hob root root_fillet is the cutter's tip radius, so that advice is wrong. The
+    ROOT_ARC_MIN dead band was this class: makeThreePointArc raised GC_MakeArcOfCircle on
+    a near-zero root arc and was found only by measurement (19-02)."""
+    return BuildError(f"The hob-root outline could not be built ({type(exc).__name__}): "
+                      f"{_NOT_A_PARAMETER_PROBLEM}")
+
+
 def _guard_junction(pr: Profile, curve: RootCurve) -> None:
     """The root curve's last point must lie on the involute: the involute spline starts
     from that very point, so a gap here is a step in the flank (SC2, L26)."""
@@ -294,7 +304,9 @@ def _trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
     ROOT_ARC_MIN and the neighbours share a vertex (`_trochoid_teeth`).
 
     The junction and spacing guards read floats and run before any kernel call; the
-    annulus guard reads tooth 0's two root splines as soon as they are made. Built and read
+    annulus guard reads tooth 0's two root splines as soon as they are made. A kernel
+    exception from the edge constructors or the wire becomes a BuildError that names the
+    hob-root outline (`_hob_root_kernel_failure`). Built and read
     back through the oracle on 15,723 swept cases without a failure (19-RESEARCH F1), and
     on the 10,326 trochoid gears of the Phase 18 product by 19-02's `product` run.
     """
@@ -303,21 +315,27 @@ def _trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
     pitch = 2 * math.pi / pr.z
     teeth = _trochoid_teeth(pr, curve)
     edges: list[cq.Edge] = []
-    for k, t in enumerate(teeth):
-        root_l, root_r = cq.Edge.makeSpline(t.root_l), cq.Edge.makeSpline(t.root_r)
-        if k == 0:
-            _guard_annulus(pr, [root_l, root_r])
-        edges += [
-            root_l,
-            cq.Edge.makeSpline(t.flank_l),
-            cq.Edge.makeThreePointArc(t.flank_l[-1], _polar(pr.ra, t.c), t.flank_r[0]),
-            cq.Edge.makeSpline(t.flank_r),
-            root_r,
-        ]
-        if t.arc:
-            edges.append(cq.Edge.makeThreePointArc(
-                t.root_r[-1], _polar(pr.rf, t.c + pitch / 2), teeth[(k + 1) % pr.z].root_l[0]))
-    return cq.Wire.assembleEdges(edges)
+    try:
+        for k, t in enumerate(teeth):
+            root_l, root_r = cq.Edge.makeSpline(t.root_l), cq.Edge.makeSpline(t.root_r)
+            if k == 0:
+                _guard_annulus(pr, [root_l, root_r])
+            edges += [
+                root_l,
+                cq.Edge.makeSpline(t.flank_l),
+                cq.Edge.makeThreePointArc(t.flank_l[-1], _polar(pr.ra, t.c), t.flank_r[0]),
+                cq.Edge.makeSpline(t.flank_r),
+                root_r,
+            ]
+            if t.arc:
+                edges.append(cq.Edge.makeThreePointArc(
+                    t.root_r[-1], _polar(pr.rf, t.c + pitch / 2),
+                    teeth[(k + 1) % pr.z].root_l[0]))
+        return cq.Wire.assembleEdges(edges)
+    except BuildError:
+        raise
+    except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+        raise _hob_root_kernel_failure(exc) from exc
 
 
 def _outline(pr: Profile, fillet: float, curve: RootCurve | None = None) -> cq.Wire:
@@ -391,7 +409,13 @@ def _gear_blank(pr: Profile, fillet: float, face_width: float,
     it is extruded. The points are made a second time for that (1.4 ms at 41 teeth, module
     1, against a 118 ms build; Apple M5 Max, 2026-10-09) so `_outline` keeps returning a
     wire and the check reads the same function the outline did."""
-    face = cq.Face.makeFromWires(_outline(pr, fillet, curve))
+    wire = _outline(pr, fillet, curve)
+    try:
+        face = cq.Face.makeFromWires(wire)
+    except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+        if curve is None:
+            raise
+        raise _hob_root_kernel_failure(exc) from exc
     if curve is not None:
         _guard_area(face, _trochoid_polygon(pr, _trochoid_teeth(pr, curve)))
     return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, face_width))

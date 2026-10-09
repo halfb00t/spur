@@ -659,3 +659,30 @@ def test_a_root_guard_build_error_reads_the_same_on_the_api_and_the_cli(
     assert isinstance(exc.value.code, str)  # a BuildError exits 1, not argparse's 2 (D-13)
     assert exc.value.code == f"error: {detail['msg']}"
     assert not out.exists()
+
+
+def test_a_kernel_refusal_in_the_hob_root_outline_is_a_422_that_names_the_outline(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """19-REVIEW WR-01: an exception from the kernel while the hob-root outline is being
+    built takes the same BuildError route as a root guard, a 422 of type `build_error`,
+    and names the outline and the remedy (set root_shape to radial) instead of
+    `_build_checked`'s "try smaller fillets or chamfers", which is wrong when root_fillet
+    is the hob's tip radius. 26 teeth for the reason the guard test above gives."""
+    async def inline(p: GearParams, fmt: str, quality: str) -> bytes:
+        return spur.model.export(p, cast(Format, fmt), cast(Quality, quality))
+
+    def boom(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("Standard_Failure: stand-in for a kernel refusal")
+
+    monkeypatch.setitem(spur.app.app.dependency_overrides, build_backend, lambda: inline)
+    spur.model._build_cached.cache_clear()
+    monkeypatch.setattr(cq.Edge, "makeSpline", boom)
+
+    r = TestClient(spur.app.app).get(
+        "/api/model.stl", params={"teeth": 26, "root_shape": "trochoid", "quality": "preview"})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["type"] == "build_error"
+    assert "hob-root outline could not be built (RuntimeError)" in detail["msg"]
+    assert "root_shape" in detail["msg"]
+    assert "try smaller" not in detail["msg"]

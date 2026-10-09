@@ -54,7 +54,10 @@ module should be called from outside.
   "try smaller fillets or chamfers", is the wrong remedy for a defect in the hob-root
   outline (the user set neither). That is why the hob-root guards raise `BuildError`
   themselves, with their own sentence, before the kernel can: a new way for that outline to
-  fail should be a new guard or a new branch, not another case for the relabel.
+  fail should be a new guard or a new branch, not another case for the relabel. The kernel
+  calls inside that outline (`makeSpline`, `makeThreePointArc`, `assembleEdges` in
+  `_trochoid_outline` and `makeFromWires` in `_gear_blank`) are covered the same way by
+  `_hob_root_kernel_failure`, only on the trochoid branch (19-REVIEW WR-01).
 - **The generator stays out of this module.** `model.py` receives a `RootCurve` from
   `calc.RootMode` and never names the generator; `test_the_trochoid_generator_never_enters_the_model_module`
   reads this file's source for the generator's names, as whole identifiers (`_guard_junction`

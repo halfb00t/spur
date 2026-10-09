@@ -2421,6 +2421,34 @@ def test_an_outline_whose_area_misses_its_polygon_is_a_build_error(
     _a_defect_in_spur(err)
 
 
+@pytest.mark.parametrize(("owner", "name"), [
+    pytest.param(cq.Edge, "makeSpline", id="spline"),
+    pytest.param(cq.Edge, "makeThreePointArc", id="arc"),
+    pytest.param(cq.Wire, "assembleEdges", id="wire"),
+    pytest.param(cq.Face, "makeFromWires", id="face"),
+])
+def test_a_kernel_exception_in_the_hob_root_outline_names_the_outline_not_the_fillets(
+        monkeypatch: pytest.MonkeyPatch, owner: type, name: str) -> None:
+    """19-REVIEW WR-01: the four guards read points and the finished face; every kernel
+    call between them is outside any guard, and `_build_checked` blames the user's fillets
+    for whatever it raises ("try smaller fillets or chamfers"), when under the hob root
+    root_fillet is the cutter's tip radius. A kernel exception from an edge constructor,
+    the wire or the face now takes the guards' sentence and remedy, with the exception's
+    type. The same exception on the radial outline keeps the fillet advice and the fixture
+    does not move (the regression suite holds that)."""
+    def boom(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("Standard_Failure: stand-in for a kernel refusal")
+
+    monkeypatch.setattr(owner, name, boom)
+    with pytest.raises(
+            BuildError, match=r"hob-root outline could not be built \(RuntimeError\)") as err:
+        _build_checked(GearParams(root_shape="trochoid"))
+    _a_defect_in_spur(err)
+    assert isinstance(err.value.__cause__, RuntimeError)
+    with pytest.raises(BuildError, match="try smaller fillets or chamfers"):
+        _build_checked(GearParams())
+
+
 @pytest.mark.parametrize(("fields", "asked"), [
     pytest.param({}, 0.5, id="default")]
     + [pytest.param(f, a, id=name) for name, f, a, _ in KERNEL_ROWS])
