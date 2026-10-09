@@ -1134,11 +1134,17 @@ def derive(p: GearParams, mate_teeth: int | None = None,
                         "it is cut at and was not cut.")
     z_min = 2 * (1 - p.profile_shift) / math.sin(pr.alpha) ** 2
     # True only while the part really has the radial root: a refused trochoid request
-    # still builds it, so the sentence stays; a trochoid part gets no undercut sentence
-    # until Task 2 restates it for the cutter that cut it.
+    # still builds it, so the sentence stays byte for byte (five fixture records carry
+    # it). A trochoid part reads the cutter that cut it instead, and only where its join
+    # is a crossing -- the curve's own reading of undercut, the one the part is built
+    # from. The shipped z_min is not that cutter's onset (it is right at 20 degrees only,
+    # undercut_teeth's docstring), and a join inside the 1e-4 rb band reads tangent and
+    # prints nothing, exactly as its part is built.
     if rm.mode == "radial" and p.teeth < z_min:
         warnings.append(f"Below {z_min:.1f} teeth a cut gear would be undercut; "
                         "this model uses a radial root instead.")
+    elif rm.curve is not None and rm.cutter is not None and rm.curve.join == "crossing":
+        warnings.append(_undercut_advice(rm.cutter))
     # Compared at the 3 dp it prints, like the lead-in warning above (10-REVIEW.md CR-01):
     # a waist that prints as the floor is silent, one printed step under it warns.
     waist = None if rm.curve is None else round(2 * rm.curve.waist[0] * rm.curve.waist[1], 3)
@@ -1422,8 +1428,9 @@ def undercut_teeth(c: Cutter) -> float:
     one is the sharp-cornered rack with the full tip depth at 20 degrees only. At module
     1, tip radius 0.38 mm and no shift this reads 30.7909 / 17.0967 / 11.5404 teeth at
     14.5 / 20 / 25 degrees (STACK's table, reproduced 2026-10-08) where the shipped
-    formula reads 31.9029 / 17.0973 / 11.1978. The shipped sentence is untouched until
-    Phase 19 restates it (REQ-undercut-warning-restated).
+    formula reads 31.9029 / 17.0973 / 11.1978. `derive()` prints this onset, not the
+    shipped one, wherever the hob-cut root applies and its join is a crossing
+    (REQ-undercut-warning-restated).
     """
     sin_a = math.sin(c.pr.alpha)
     return 2 * (c.d - c.rho * (1 - sin_a)) / (c.pr.m * sin_a ** 2)
@@ -1436,6 +1443,28 @@ def undercut_shift(c: Cutter) -> float:
     reproduced 2026-10-08), so a shift of 0.40 is undercut and 0.45 is not.
     """
     return c.x - c.xi * math.sin(c.pr.alpha) / c.pr.m
+
+
+def _undercut_advice(c: Cutter) -> str:
+    """The undercut sentence for a gear whose hob-cut root crosses the involute: the
+    cutter's own onset and the smallest profile shift that avoids it, both read from the
+    cutter that cuts (a trimmed tip radius gives the trimmed cutter's numbers, L08).
+
+    Both bounds are rounded UP at the resolution they print, after removing the float
+    residue `round(v * 10**k, 9)` (a value that is an exact multiple must not climb a
+    step): the onset to 0.1 teeth, so "below 17.1 teeth" stays true for every integer
+    count that crosses; the shift to 0.001, because rounding to nearest is false -- 0.41508
+    prints 0.415 and the gear is still undercut there (roll -7.9e-5 mm), where 0.416 is not
+    (18-RESEARCH F9; module 1, 20 degrees, 10 teeth, backlash 0, tip radius 0.38 mm). And
+    above the `profile_shift` field's maximum no shift is advised: 6 teeth, 14.5 degrees
+    and a sharp cutter need 1.0619, so the sentence says no shift in range avoids it.
+    """
+    z_min = math.ceil(round(undercut_teeth(c) * 10, 9)) / 10
+    x_min = math.ceil(round(undercut_shift(c) * 1000, 9)) / 1000
+    if x_min > PROFILE_SHIFT_MAX:
+        return _ROOT_SENTENCES["undercut out of range"].format(
+            z_min=z_min, x_max=PROFILE_SHIFT_MAX)
+    return _ROOT_SENTENCES["undercut"].format(z_min=z_min, x_min=x_min)
 
 
 @dataclass(frozen=True)
@@ -1679,9 +1708,24 @@ _ROOT_SENTENCES: dict[str, str] = {
         "root_thickness and root_gap are not printed with the hob-cut root: the tooth's "
         "thickness changes too fast with radius near the root circle to give one honest "
         "number there.",
+    # Names the field the user typed (root_fillet is the hob's tip radius under the hob
+    # root) and says "within 0.001 mm", never "the largest" alone: the printed radius is
+    # the cap floored to 3 dp, so it can sit up to 0.001 mm under the largest that keeps a
+    # tip land, and prints 0.000 where the cap is under a micrometre (18-REVIEW IN-01).
     "rho capped":
-        "Cutter tip radius reduced to {rho:.3f} mm, the largest that leaves the cutter a "
-        "tip land at this pressure angle and backlash.",
+        "root_fillet is the hob's tip radius here, and it was reduced to {rho:.3f} mm, "
+        "within 0.001 mm of the largest that keeps the cutter a tip land at this pressure "
+        "angle and backlash.",
+    # Placeholders {z_min} (the cutter's onset, rounded up to 0.1 teeth) and {x_min} (the
+    # smallest profile shift that avoids it, rounded up to 0.001) or, out of range, {x_max}
+    # (PROFILE_SHIFT_MAX). Neither says "radial": the part has the hob-cut root.
+    "undercut":
+        "Below {z_min:.1f} teeth this cutter undercuts the gear, and the root is cut the "
+        "way the hob cuts it; a profile shift of {x_min:.3f} or more avoids the undercut.",
+    "undercut out of range":
+        "Below {z_min:.1f} teeth this cutter undercuts the gear, and the root is cut the "
+        "way the hob cuts it; no profile shift up to {x_max:g} avoids the undercut at this "
+        "pressure angle and tip radius.",
     # Placeholders {waist} (the printed root_waist) and {floor} (ROOT_WAIST_FLOOR). Names
     # the three fields D-06 chose and never the word undercut: 595 of the 616 module-0.2
     # gears warn, 195 of them on tangent joins that have no undercut (ROOT_WAIST_FLOOR).

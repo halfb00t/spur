@@ -21,6 +21,8 @@ from trochoid_oracle import clearance
 from bench.trochoid import ORACLE_BAR_MM as BENCH_ORACLE_BAR_MM
 from bench.trochoid import tuned_shift
 from spur.calc import (
+    _ROOT_SENTENCES,
+    PROFILE_SHIFT_MAX,
     ROOT_CURVE_POINTS,
     ROOT_WAIST_FLOOR,
     TROCHOID_JOIN_EPS,
@@ -29,6 +31,7 @@ from spur.calc import (
     _junction,
     _root_curve,
     _trochoid_point,
+    _undercut_advice,
     _waist,
     cutter,
     derive,
@@ -143,8 +146,9 @@ def test_the_cap_is_floored_and_warned_one_print_step_either_side() -> None:
     p = _gear(teeth=12, module=0.5, pressure_angle=15, profile_shift=0, backlash=0)
     cap = cutter(p, 0.0).rho_max
     assert cap == pytest.approx(0.29353, abs=5e-6)
-    sentence = ("Cutter tip radius reduced to 0.293 mm, the largest that leaves the cutter a "
-                "tip land at this pressure angle and backlash.")
+    sentence = ("root_fillet is the hob's tip radius here, and it was reduced to 0.293 mm, "
+                "within 0.001 mm of the largest that keeps the cutter a tip land at this "
+                "pressure angle and backlash.")
 
     for request, used, warns in [(0.293, 0.293, ()), (0.294, 0.293, (sentence,)),
                                  (cap, cap, ())]:
@@ -1673,3 +1677,217 @@ def test_t4_a_1e_3_in_tip_radius_moves_the_form_diameter_past_the_bar() -> None:
         miss = abs(_zhang_form_diameter_in(neighbour, rho) - ZHANG_T4["kisssoft_form_diameter_in"])
         print(f"T4 pitch {neighbour}: misses by {miss:.3e} in = {miss / T4_BAR_IN:.1f} x the bar")
         assert miss > T4_BAR_IN
+
+
+def _hob(**fields: object) -> GearParams:
+    """A gear asked for the hob-cut root: `_gear` with root_shape set."""
+    return _gear(root_shape="trochoid", **fields)
+
+
+def _undercut_sentences(p: GearParams) -> list[str]:
+    return [w for w in derive(p).warnings if "undercut" in w]
+
+
+def test_the_restated_undercut_sentence_fires_at_17_teeth_and_not_18() -> None:
+    """REQ-undercut-warning-restated, adjacency: one tooth step either side of the cutter's
+    onset at module 1, 20 degrees, no shift, tip radius 0.38 mm. 17 teeth cross the
+    involute (the hob undercuts them) and print one sentence with the onset rounded up to
+    0.1 teeth (17.0967 -> 17.1) and the smallest avoiding shift rounded up to 0.001
+    (0.00566 -> 0.006), and no radial-root wording; 18 teeth join tangent and print none. A
+    gear nobody asked about still prints the shipped sentence (17 teeth, below its 17.1),
+    and a tangent join prints no undercut sentence at all. Captured from derive() on
+    2026-10-09 (L33)."""
+    sentence = ("Below 17.1 teeth this cutter undercuts the gear, and the root is cut the way "
+                "the hob cuts it; a profile shift of 0.006 or more avoids the undercut.")
+    fields = {"module": 1, "pressure_angle": 20, "profile_shift": 0, "root_fillet": 0.38}
+    assert _undercut_sentences(_hob(teeth=17, **fields)) == [sentence]
+    assert _undercut_sentences(_hob(teeth=18, **fields)) == []
+    assert "radial" not in sentence
+    assert _undercut_sentences(_gear(teeth=17, **fields)) == [
+        "Below 17.1 teeth a cut gear would be undercut; this model uses a radial root instead."]
+    assert _undercut_sentences(_gear(teeth=18, **fields)) == []
+
+    # The two lines disagree away from this gear, and the join decides (PITFALLS 1): a
+    # sharp cutter undercuts 18 teeth (onset 21.4) where the shipped line calls it clear;
+    # at 14.5 degrees (default backlash, tip radius 0.38 mm) 31 teeth are undercut by the
+    # shipped line (31.9) and clear of the cutter's (30.79), and 30 are undercut by both.
+    sharp = _undercut_sentences(_hob(teeth=18, module=1, pressure_angle=20, profile_shift=0,
+                                     root_fillet=0))
+    assert [s.startswith("Below 21.4 teeth this cutter") and s.endswith("0.198 or more "
+            "avoids the undercut.") for s in sharp] == [True]
+    shallow = {"module": 1, "pressure_angle": 14.5, "profile_shift": 0, "root_fillet": 0.38}
+    assert _undercut_sentences(_hob(teeth=31, **shallow)) == []
+    assert _undercut_sentences(_gear(teeth=31, **shallow)) == [
+        "Below 31.9 teeth a cut gear would be undercut; this model uses a radial root instead."]
+    assert [s.startswith("Below 30.8 teeth this cutter") for s in
+            _undercut_sentences(_hob(teeth=30, **shallow))] == [True]
+
+
+def test_the_advised_shift_is_rounded_up_and_flips_the_gear_out_of_undercut() -> None:
+    """REQ-undercut-warning-restated, precision (F9; T-19-12): at 10 teeth, module 1, 20
+    degrees, backlash 0, tip radius 0.38 mm the shift that avoids undercut is 0.41508.
+    Rounded to nearest it would print 0.415, where the cutter's roll is still -7.9e-5 mm;
+    the sentence prints 0.416, where it is +2.7e-3 mm. So the advice is read from the
+    cutter's own xi one step either side, never from the join (0.415 sits inside the
+    1e-4 rb join band and reads tangent). The 17-tooth row (0.00566 -> 0.006) flips the
+    same way. A bound that is an exact multiple of its step must not climb one: the
+    residue is removed before the ceiling, so 0.416 plus 1e-13 still prints 0.416.
+    Reproduced 2026-10-09."""
+    base = {"module": 1, "pressure_angle": 20, "root_fillet": 0.38}
+    for teeth, backlash, printed in [(10, 0, 0.416), (17, 0.10, 0.006)]:
+        fields = {"teeth": teeth, "backlash": backlash, **base}
+        sentence = f"a profile shift of {printed:.3f} or more avoids the undercut."
+        assert [s.endswith(sentence) for s in _undercut_sentences(
+            _hob(profile_shift=0, **fields))] == [True]
+        step = 0.001
+        assert cutter(_gear(profile_shift=printed, **fields), 0.38).xi >= 0
+        assert cutter(_gear(profile_shift=round(printed - step, 3), **fields), 0.38).xi < 0
+
+    c = cutter(_gear(teeth=10, backlash=0, profile_shift=0, **base), 0.38)
+    assert undercut_shift(c) == pytest.approx(0.41508, abs=5e-6)
+    assert round(undercut_shift(c), 3) == 0.415      # nearest is the false answer
+    on_the_step = replace(c, x=0.416, xi=0.0)
+    off_by_residue = replace(c, x=0.416, xi=-1e-13 * c.pr.m / math.sin(c.pr.alpha))
+    assert undercut_shift(off_by_residue) > 0.416
+    for exact in (on_the_step, off_by_residue):
+        assert _undercut_advice(exact).count("0.416 or more") == 1
+
+
+def test_a_shift_above_the_field_s_range_is_never_advised() -> None:
+    """REQ-undercut-warning-restated, boundary and safety (L08, F9; T-19-12): 6 teeth, 14.5
+    degrees, module 1, no shift, sharp cutter needs a shift of 1.0619, above the
+    profile_shift field's maximum, so the sentence says no shift in range avoids the
+    undercut and prints none. One step either side of the field's maximum on the printed
+    bound: 8 teeth at 14.5 degrees need 0.99924, rounded up to 1.000, which the field
+    allows and the sentence prints; 7 teeth at 15.5 degrees need 1.00004, which rounds up
+    to 1.001, above it, so none is printed. PROFILE_SHIFT_MAX is the field's own `le`, read
+    from the schema, so the two cannot drift. Captured from derive() on 2026-10-09
+    (L33)."""
+    field_max = GearParams.model_json_schema()["properties"]["profile_shift"]["maximum"]
+    assert field_max == PROFILE_SHIFT_MAX
+    out_of_range = ("Below 39.9 teeth this cutter undercuts the gear, and the root is cut the "
+                    "way the hob cuts it; no profile shift up to 1 avoids the undercut at this "
+                    "pressure angle and tip radius.")
+    base = {"module": 1, "profile_shift": 0, "backlash": 0, "root_fillet": 0}
+
+    sharp = _hob(teeth=6, pressure_angle=14.5, **base)
+    assert undercut_shift(cutter(sharp, 0.0)) == pytest.approx(1.06193, abs=5e-6)
+    assert _undercut_sentences(sharp) == [out_of_range]
+    assert "1.06" not in out_of_range
+
+    inside = _undercut_sentences(_hob(teeth=8, pressure_angle=14.5, **base))
+    assert undercut_shift(cutter(_hob(teeth=8, pressure_angle=14.5, **base), 0.0)) < 1.0
+    assert len(inside) == 1
+    assert inside[0].endswith("a profile shift of 1.000 or more avoids the undercut.")
+
+    over = _hob(teeth=7, pressure_angle=15.5, **base)
+    assert 1.0 < undercut_shift(cutter(over, 0.0)) < 1.001
+    assert [s.endswith("avoids the undercut at this pressure angle and tip radius.")
+            for s in _undercut_sentences(over)] == [True]
+    assert not any("1.001" in s for s in _undercut_sentences(over))
+
+
+def test_the_onset_is_the_trimmed_cutter_s() -> None:
+    """REQ-undercut-warning-restated, precision: 12 teeth, module 1, 20 degrees, backlash 0
+    has a tip radius cap of 0.47191 mm. A request of 3.0 is cut at 0.471, and the sentence
+    carries that cutter's onset (16.07 -> 16.1) and shift (0.238 rounds up to 0.239), the
+    same sentence a request for 0.471 itself prints. The 3.0 mm cutter, were it used, has
+    no positive onset at all (2 (1.25 - 3 (1 - sin 20 degrees)) / sin^2 20 degrees < 0).
+    Captured from derive() on 2026-10-09 (L33)."""
+    sentence = ("Below 16.1 teeth this cutter undercuts the gear, and the root is cut the way "
+                "the hob cuts it; a profile shift of 0.239 or more avoids the undercut.")
+    base = {"teeth": 12, "module": 1, "pressure_angle": 20, "profile_shift": 0, "backlash": 0}
+    trimmed = _hob(root_fillet=3.0, **base)
+    assert _undercut_sentences(trimmed) == [sentence]
+    assert _undercut_sentences(_hob(root_fillet=0.471, **base)) == [sentence]
+    assert derive(trimmed).root_fillet == 0.471
+    assert _onset_teeth(1, 20, 0, 3.0) < 0
+    assert _onset_teeth(1, 20, 0, 0.471) == pytest.approx(16.073, abs=5e-4)
+
+
+def test_a_refused_trochoid_request_keeps_the_shipped_undercut_sentence() -> None:
+    """REQ-undercut-warning-restated, empty (Pitfall 6): 6 teeth, 14.5 degrees, shift -0.6,
+    sharp cutter is refused as a severed tooth, so the radial root is built and the
+    shipped sentence ("this model uses a radial root instead") is still true. It prints
+    beside the refusal, byte for byte the string the pre-v0.2 fixture recorded for the
+    same gear, read from the JSON and not retyped, and equal to what the same gear without
+    the request prints. The refusal sentence was captured from derive() on 2026-10-09
+    (L33)."""
+    refusal = ("The trochoid roots of the two neighbouring tooth spaces cut this tooth "
+               "through: the analytic root is used.")
+    path = Path(__file__).parent / "regression" / "pre_v0_2.json"
+    records: dict[str, dict[str, dict[str, list[str]]]] = json.loads(path.read_text())["records"]
+    recorded = {w for r in records.values() for w in r["derived"]["warnings"]
+                if w.startswith("Below 51.0 teeth")}
+    assert len(recorded) == 1
+    (shipped,) = recorded
+
+    fields = {"teeth": 6, "module": 1, "pressure_angle": 14.5, "profile_shift": -0.6,
+              "root_fillet": 0}
+    asked = derive(_hob(**fields))
+    assert asked.warnings == (refusal, shipped)
+    assert derive(_gear(**fields)).warnings == (shipped,)
+    assert (asked.root_thickness, asked.root_form_d, asked.root_waist) == (
+        derive(_gear(**fields)).root_thickness, None, None)
+
+
+def test_the_trimmed_tip_radius_is_printed_and_warned_one_step_either_side_of_the_cap() -> None:
+    """REQ-cutter-tip-radius-settable, boundary and precision (D-01; 18-REVIEW IN-01): at
+    module 1, 20 degrees, backlash 0 the largest tip radius that keeps a tip land is
+    0.47191 mm. 0.471 is used and printed as 0.471 with no sentence; 0.472 is over it, so
+    it is cut at the cap floored to 3 dp, 0.471, printed 0.471, with the cap sentence; 0.4715
+    is under the unrounded cap, used as given, and prints at the shared 3 dp resolution as
+    0.471 with no sentence (the used and the printed radius agree to the print). The
+    sentence names root_fillet and says the radius is within 0.001 mm of the largest, and
+    never the bare "the largest that leaves" it used to say. A sharp hob (0) is legal.
+    Captured from derive() on 2026-10-09 (L33)."""
+    sentence = ("root_fillet is the hob's tip radius here, and it was reduced to 0.471 mm, "
+                "within 0.001 mm of the largest that keeps the cutter a tip land at this "
+                "pressure angle and backlash.")
+    base = {"teeth": 12, "module": 1, "pressure_angle": 20, "profile_shift": 0, "backlash": 0}
+    assert cutter(_hob(root_fillet=0.0, **base), 0.0).rho_max == pytest.approx(0.47191, abs=5e-6)
+    for asked, used, warns in [(0.471, 0.471, False), (0.472, 0.471, True),
+                               (0.4715, 0.4715, False), (0.0, 0.0, False)]:
+        p = _hob(root_fillet=asked, **base)
+        d = derive(p)
+        assert cutter(p, asked).rho == used
+        assert d.root_fillet == round(used, 3)
+        assert (sentence in d.warnings) == warns, asked
+    assert [w for w in derive(_hob(root_fillet=0.472, **base)).warnings
+            if "tip radius" in w or "root_fillet" in w] == [sentence]
+    assert "the largest that leaves" not in sentence
+    assert "root_fillet" in sentence
+    assert "within 0.001 mm" in sentence
+
+
+def test_every_root_sentence_is_ascii_and_in_a_fixed_order() -> None:
+    """REQ-derived-numbers-honest-under-trochoid, ordering and encoding: the warnings come
+    in one fixed order -- tip FDM; radial only, the L09 and lead-in sentences; the
+    root-mode sentence (the cap here); trochoid only, the thickness sentence; the tip
+    chamfer; the undercut sentence; the waist sentence; then bore, recess and cutout. One
+    gear fires five of them: 6 teeth, module 1, 14.5 degrees, shift -0.5, default
+    backlash, root_fillet 3.0 (cut at 0.661), a 3.0 mm tip chamfer (cut at 0.38) and a
+    waist of 0.262 mm under the 0.4 mm floor. Its whole tuple is asserted in order, and
+    every sentence of the table and every warning on the gear is ASCII (RUF001-003 in the
+    source, str.isascii() on what a user reads). Captured from derive() on 2026-10-09
+    (L33)."""
+    p = _hob(teeth=6, module=1, pressure_angle=14.5, profile_shift=-0.5, backlash=0.10,
+             root_fillet=3.0, tip_chamfer=3.0)
+    d = derive(p)
+    assert d.warnings == (
+        "root_fillet is the hob's tip radius here, and it was reduced to 0.661 mm, within "
+        "0.001 mm of the largest that keeps the cutter a tip land at this pressure angle "
+        "and backlash.",
+        "root_thickness and root_gap are not printed with the hob-cut root: the tooth's "
+        "thickness changes too fast with radius near the root circle to give one honest "
+        "number there.",
+        "Tip chamfer reduced to 0.38 mm to keep it on the involute flank, above its "
+        "junction with the hob-cut root.",
+        "Below 40.1 teeth this cutter undercuts the gear, and the root is cut the way the "
+        "hob cuts it; a profile shift of 0.567 or more avoids the undercut.",
+        "The tooth is only 0.262 mm thick at its narrowest in the hob-cut root, under the "
+        "0.4 mm this design holds for a printable tooth; more teeth, a larger profile_shift "
+        "or a larger pressure_angle thickens it.")
+    assert (d.root_fillet, d.tip_chamfer_effective, d.root_waist) == (0.661, 0.38, 0.262)
+    assert all(w.isascii() for w in d.warnings)
+    assert all(sentence.isascii() for sentence in _ROOT_SENTENCES.values())
