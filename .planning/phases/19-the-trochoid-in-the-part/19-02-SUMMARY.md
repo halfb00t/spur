@@ -118,7 +118,7 @@ duration: "1h 45m"
 completed: 2026-10-09
 status: complete
 plan_head_before: 88c5ec52b37be9a1fb73dc7862a015f22dabeff4
-plan_head_after: d8abb232fbde4a1be7e37cb5d6f22f2ec9845ded
+plan_head_after: d8abb23dcb9d7332bb196f7021ac80b81ad83940
 # MEASURED from the ledger: git rev-list --count plan_head_before..HEAD reads 5 because 19-03's f2f4f47 (investigation/19-03-isolation.md only) landed between af53e4f and d8abb23; the 4 below are the commits titled (19-02), counted with --grep.
 commits: 4
 ---

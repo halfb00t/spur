@@ -5,17 +5,17 @@ milestone_name: True Root
 current_phase: 19
 current_phase_name: The Trochoid in the Part
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-10-08T16:37:05.000Z"
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-10-09T03:41:10.626Z"
 last_activity: 2026-10-08
 last_activity_desc: Phase 19 execution started
-state_head: abe318e717075a6a1046805135e398701872687b
+state_head: b6907ebae468becd646ddcc2f07db4f50a6351b3
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 22
-  completed_plans: 12
-  percent: 55
+  completed_plans: 13
+  percent: 59
 ---
 
 # Project State
@@ -33,11 +33,11 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 ## Current Position
 
 Phase: 19 (The Trochoid in the Part) — EXECUTING
-Plan: 2 of 11
+Plan: 3 of 11
 Status: Ready to execute
 Last activity: 2026-10-08 — Phase 19 execution started
 
-Progress: [████████████████████] 11/11 plans ([██████░░░░] 55%)
+Progress: [████████████████████] 11/11 plans ([██████░░░░] 59%)
 
 ## Performance Metrics
 
@@ -207,6 +207,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 18 P05 | 19 min | 3 tasks | 7 files |
 | Phase 18 P06 | 9 min | 2 tasks | 4 files |
 | Phase 19 P01 | 27min | 2 tasks | 3 files |
+| Phase 19 P02 | 1h 45m | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -358,6 +359,11 @@ pending; the next milestone starts this list fresh.
 - [Phase 18]: 18-06: the fourth curve-invalid arm test moves the last pre-junction sample to rb + 0.01 mm (no early sample of the tracer gear is past rb); cutter() raises ValueError, not a RootReason, for a non-finite or negative tip radius until Phase 19's field validates it
 - [Phase 19]: 19-01: TIP_CHAMFER_MARGIN (0.001 mm) stands under the trochoid; 14 rows bisected 20 steps, no optimistic row, ra - R_join binds only on the two 6-tooth rows
 - [Phase 19]: 19-01: heaviest trochoid request at the 116-tooth corner is 16.61 s of 30 s (1.45x its radial row); no limit moves
+- [Phase 19]: 19-02: kernel bar 2e-3 x module (bar-proposed), 10.9x the whole-product worst spline error 1.8431e-4 per module; tripwire on a module-1 row (5.5x over, 0.66x of the bar on module 10). Human: 'take the recommendations' (ids mapped by the orchestrator)
+- [Phase 19]: 19-02: waist floor 0.4 mm absolute, MIN_TIP_FDM (floor-print); no failure signature in the walk (1,061 of 1,061 built, thinnest 3.2325e-3 mm); warns on 771 of 10,326 product gears, 595 of 616 module-0.2 (small-module caveat)
+- [Phase 19]: 19-02: waist field named root_waist (name-root_waist), a published key on /api/info and spur info
+- [Phase 19]: 19-02: D-02 confirmed (d02-confirm): root_shape radial/trochoid default radial, --root-shape, root_fillet read as the hob tip radius; 19-04 is not blocked
+- [Phase 19]: 19-02: area guard 5e-2 on the arc-midpoint polygon (area-midpoints, 13.6x); the arcs-as-chords measure (bar 0.1, 8.2x) rejected. Planner's-call bars: spacing 1000 (75x), annulus TOL 1e-6 mm, junction 1e-11 rad (18-01's 1e-12 not reusable), ROOT_ARC_MIN 2e-6 mm
 
 ### Pending Todos
 
@@ -553,8 +559,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-08T16:37:04.968Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-10-09T03:41:10.587Z
+Stopped at: Completed 19-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
