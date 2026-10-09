@@ -26,6 +26,7 @@ Severity (grep-able `Severity:` field):
 | must | [A reentrant `resource_tracker` cleanup warning sometimes fails `make verify`](active/2026-10-06-resource-tracker-flake-fails-the-gate.md) | the next `make verify` failure, with its whole log kept (as 19-01 did) so the test and worker localise the fix; or, if none by Phase 20 planning or the next milestone's start, whole-suite loops of `make test` at `-n 8 --cov` and `-n 8 --no-cov` (re-deferred 2026-10-09 by the human at Phase 19's 19-03: 0 of 60 two-file isolation loops reproduced it, so xdist and coverage were not separated; every occurrence, four so far, came from a whole-suite run; escalated to `must` by the human 2026-10-06) |
 | nice | [A wedged worker holds process exit until it finishes or is killed](active/2026-10-06-wedged-worker-holds-process-exit.md) | `BuildPool.shutdown` is next touched, or a graceful shutdown is observed to hang |
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
+| nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
 
 ## Resolved
 
