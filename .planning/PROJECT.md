@@ -18,6 +18,10 @@ either computed honestly or reported as a warning, never guessed (L08). Everythi
 
 ## Current State
 
+**Shipped: v0.4 True Root (2026-10-09).** The last two `must` debts retired by measurement and decision — the commit gate split into `make verify.fast` at pre-commit and the whole gate at pre-push, proved by a live SDK commit (L36); the same-slot timeout race reproduced on attempt 1, fixed by a two-fact guard and `_closed`, the heaviest composed row's limit recorded as documented behaviour (L37) — then the hob-cut trochoid root: the cutter defined once, the envelope generated or honestly refused by one predicate, proven against a swept-cutter oracle sharing no code with `calc`, freecad.gears and KISSsoft (Phase 18); in the part as the opt-in `root_shape=trochoid` through one `makeSpline` per side with four structural guards, every number beside it proved or warned (`root_form_d`, `root_waist` at the narrowest arc, null thickness/gap, the undercut sentence from the cutter), parity on all three interfaces, the default unmoved and Phase 20 skipped with the flip deferred to a named trigger (L38 supersedes L10, amends L09 and L33). The 44-record fixture byte-identical to the `v0.3` tag. Two `must` retired, four debt items filed (one `must`: the resource-tracker flake). Record: `.planning/MILESTONES.md`, `milestones/v0.4-ROADMAP.md`, `milestones/v0.4-MILESTONE-AUDIT.md` (status `tech_debt`: 14/14 requirements, 15/15 integration, 8/8 flows, 12 active debt items with triggers, 1 `must`).
+
+Codebase at `767317b`: 4,040 lines of package Python, 12,268 of tests, 4,544 of bench, 372 lines of hand-written UI JS, 1,220 tests, 31 pinned runtime packages (unchanged since v0), `make verify` green at 97.92 % coverage — 162–240 s on the 18-CPU M5 Max against L34's 66 s bar, accepted (`accept-A`, L38) with the bar's re-set an open decision.
+
 **Shipped: v0.3 Clean Ledger (2026-10-05).** The record is true and the gate is measured:
 the ten-concurrent latency bar demonstrated on the unmodified harness (L32); the root lead-in
 warned where it rises above the pitch circle and the filleted-spoke proof checked against a
@@ -60,7 +64,12 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Current Milestone: v0.4 True Root
+## Next Milestone
+
+Not yet defined — `/gsd-new-milestone`. Candidates carried since the v0.1 kickoff: the gear family (helical first — re-derives module, span and centre distance; then internal/ring, then rack; bevel needs a product-scope decision first); the hob-root default flip, owned by `milestones/v0.4-REQUIREMENTS.md` "Trochoid follow-ups" with D-09's trigger (a real fit report or a mating-pair request below z_min); the re-set of L34's gate bar from an idle-host reading; the Phase 18 review's eight open info findings and the Phase 19 deferral item. The `nice` debt with external triggers stays where it is until a trigger fires.
+
+<details>
+<summary>v0.4 True Root — scope as set at kickoff (shipped 2026-10-09)</summary>
 
 **Goal:** Retire the last two `must` items — the same-slot timeout race by a measured
 reproduction and a narrow fix, the commit-timeout gap by a logged decision — then replace
@@ -237,6 +246,8 @@ Picked 2026-09-25 from the candidates gathered at v0.1 kickoff
 internal / rack — re-derives module, span and centre distance, the riskiest surface in
 the product, and rack needs a second parameter model) and "precision" (trochoidal fillet
 plus the waived latency bar — no trigger has fired). Both stay candidates for v0.3.
+
+</details>
 
 </details>
 
@@ -480,7 +491,7 @@ Milestone v0.4 True Root — hypotheses until shipped; REQ-IDs and acceptance li
   scope (see Current Milestone), not this.
 - A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
   `make verify` gate.
-- Ten `docs/tech_debt/active/` items at the v0.4 start (after the 2026-10-06 ledger pass,
+- Twelve `docs/tech_debt/active/` items at the v0.4 close (one `must`: the resource-tracker flake, filed 17-04, re-deferred 18-05 and 19-03 with a named trigger; eleven `nice`, three of them filed in v0.4 — the wedged worker, the xdist worker segfault at exit, the Phase 19 review deferral — each with its trigger; `milestones/v0.4-MILESTONE-AUDIT.md`). At the v0.4 start: ten `docs/tech_debt/active/` items (after the 2026-10-06 ledger pass,
   PRs #23–#25). The two `must` — the same-slot timeout-cleanup race (`pool.py:204`, D-17)
   and gsd's 30 s commit timeout against the ~64 s hook (trigger fired at L34) — retired in Phase 17
   (`c06749d` L36, `7af75af` L37). Eight `nice` stay deferred with their triggers: server-side
@@ -670,6 +681,16 @@ kickoff.
 3. **Same part.** `tests/regression/pre_v0_2.json` byte-unchanged and green at the close;
    `GearParams` has no new field.
 
+## Success Metric (Milestone v0.4)
+
+Three clauses from the milestone goal, read at the close (`milestones/v0.4-MILESTONE-AUDIT.md`):
+
+1. **The last two `must` items retired by measurement or decision.** Met — the commit-timeout gap (`c06749d`, L36, proved by SDK commit `5a3332f`) and the same-slot race (`0628182` fix, `7af75af` margin, L37) are in `docs/tech_debt/resolved/`. One `must` the milestone itself filed (the resource-tracker flake, 17-04) stays active with a named trigger — the same shape as v0.3's metric 1.
+2. **The hob's trochoid root in the part, proven against an independent oracle.** Met — T1–T4 at the calc tier (Phase 18), the built root within 2e-3 × module of the swept-cutter oracle at 401 positions on seven rows with a tripwire (Phase 19); every number beside it proved or warned, `root_waist` corrected to the narrowest arc by review CR-01 before verification.
+3. **The fixture rule honoured, never bypassed.** Met — `tests/regression/pre_v0_2.json` byte-identical to the `v0.3` tag; the default unmoved (O4); the flip deferred under L38 with `make fixture.regen` and its own `Lxx` as the only path.
+
+Cost recorded, not hidden: `make verify` 52.89 s → 192.94 s mean on the M5 Max for Phase 19's kernel proofs (L34's 66 s bar unmoved, `accept-A`).
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -688,4 +709,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-09 after Phase 19 (The Trochoid in the Part).*
+*Last updated: 2026-10-09 after the v0.4 True Root milestone close.*
