@@ -1,4 +1,5 @@
 import collections
+import dataclasses
 import functools
 import math
 import struct
@@ -9,6 +10,7 @@ import cadquery as cq
 import pytest
 from trochoid_oracle import clearance
 
+import spur.calc
 import spur.model
 from spur.build_errors import BuildError
 from spur.calc import (
@@ -16,11 +18,13 @@ from spur.calc import (
     bore_mouth_limit,
     bore_radius,
     bore_rim_limit,
+    cutter,
     derive,
     hex_cells,
     keyway_width_effective,
     profile,
     recess_radii,
+    root_mode,
     spoke_fillet_effective,
     tip_chamfer_effective,
 )
@@ -32,6 +36,7 @@ from spur.model import (
     _bore_rim_edges,
     _build_checked,
     _fillet_corner,
+    _gear_blank,
     _groove_floor_edges,
     _shape_of,
     _tip_edges,
@@ -2134,3 +2139,107 @@ def test_the_trochoid_generator_never_enters_the_model_module() -> None:
     assert _generator_names_in("c = cutter(p, 0.5)\nx = _junction(c, 0.0)") == [
         "_junction", "cutter("]
     assert _generator_names_in(Path(spur.model.__file__).read_text()) == []
+
+
+# --- the root arc between two teeth, and its dead band (19-05) --------------------------
+
+_ARC_FIELDS: dict[str, object] = {**_M1, "teeth": 12, "pressure_angle": 20, "profile_shift": 0}
+# GearParams refuses this gear above about 0.49 mm of backlash ("Teeth come to a point"),
+# so the search runs over [0, 0.4] and not [0, 1] (bench/RESULTS.md "Root arc dead band").
+_ARC_BACKLASH_CEILING = 0.4
+
+
+def _tuned_backlash(fields: dict[str, object], rho_request: float, land: float) -> float:
+    """The backlash at which the cutter's tip-land half-width lands just above `land` mm.
+
+    A request above the cap is floored to 3 dp, so the land is (rho_max - used) x (sec -
+    tan): a sawtooth that is tiny just above each multiple of 0.001 and rises with backlash
+    in between. 40 halvings of [0, _ARC_BACKLASH_CEILING] on rho_max, aimed `land` past
+    the multiple of 0.001 below the middle one (the bench's `tuned_backlash`, which
+    `tuned_shift` is the precedent of)."""
+    def rho_max(backlash: float) -> float:
+        return cutter(GearParams.model_validate({**fields, "backlash": backlash}),
+                      rho_request).rho_max
+
+    alpha = math.radians(float(str(fields["pressure_angle"])))
+    delta = land / (1 / math.cos(alpha) - math.tan(alpha))
+    target = math.floor(rho_max(_ARC_BACKLASH_CEILING / 2) * 1000) / 1000 + delta
+    lo, hi = 0.0, _ARC_BACKLASH_CEILING
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if rho_max(mid) < target:
+            lo = mid
+        else:
+            hi = mid
+    return hi
+
+
+def _hob_curve(p: GearParams) -> spur.calc.RootCurve:
+    curve = root_mode(p, profile(p), requested="trochoid", rho=p.root_fillet).curve
+    assert curve is not None
+    return curve
+
+
+def test_a_root_arc_shorter_than_root_arc_min_is_left_out_and_the_teeth_share_a_vertex() -> None:
+    """REQ-outline-consumes-root-curve, T-19-11: a gear a user can type -- root_fillet 3.0
+    capped to 3 dp and a backlash that leaves the cutter's tip land near 1e-8 mm -- puts
+    the chord between neighbouring teeth's hob roots inside the kernel's dead band, where
+    `makeThreePointArc` raises "GC_MakeArcOfCircle::Value() - no result" and
+    `_build_checked` would relabel it "try smaller fillets or chamfers". Below
+    ROOT_ARC_MIN no arc is made, the two teeth share one Vector object, and the part is
+    one valid solid with 5 x 12 side faces."""
+    backlash = _tuned_backlash(_ARC_FIELDS, 3.0, 1e-8)
+    p = GearParams.model_validate(
+        {**_ARC_FIELDS, "backlash": backlash, "root_fillet": 3.0, "root_shape": "trochoid"})
+    cut = cutter(p, 3.0)
+    print(f"backlash {backlash!r}: tip land {cut.a:.3e} mm, tip radius used {cut.rho}")
+    assert 5e-9 <= cut.a <= 2e-8
+    assert derive(p).root_fillet == cut.rho == pytest.approx(0.614)
+
+    teeth = spur.model._trochoid_teeth(profile(p), _hob_curve(p))
+    assert all(not t.arc for t in teeth)
+    assert all(teeth[k].root_r[-1] is teeth[(k + 1) % 12].root_l[0] for k in range(12))
+
+    solid = build(p)
+    assert len(solid.Solids()) == 1
+    assert solid.isValid()
+    assert len(solid.Faces()) == 5 * 12 + 2
+
+
+def test_a_hand_built_curve_with_no_tip_land_builds_without_a_root_arc() -> None:
+    """The limit of the same rule: the tuned gear's curve with its first point moved the
+    last 1e-8 mm onto the space centreline (tip land 0, a chord of about 1e-16 mm -- the
+    kernel raises on a chord of exactly 0) is one valid solid with no root arc. Only that
+    point moves: a hand-built curve with a larger move swings the spline below the root
+    circle, which the annulus guard refuses."""
+    p = GearParams.model_validate(
+        {**_ARC_FIELDS, "backlash": _tuned_backlash(_ARC_FIELDS, 3.0, 1e-8),
+         "root_fillet": 3.0, "root_shape": "trochoid"})
+    curve = _hob_curve(p)
+    first = (curve.points[0][0], math.pi / p.teeth)
+    flat = dataclasses.replace(curve, points=(first, *curve.points[1:]))
+    teeth = spur.model._trochoid_teeth(profile(p), flat)
+    assert all(not t.arc for t in teeth)
+    solid = _gear_blank(profile(p), 0.0, p.face_width, flat)
+    assert len(solid.Solids()) == 1
+    assert solid.isValid()
+    assert len(solid.Faces()) == 5 * p.teeth + 2
+
+
+def test_a_root_arc_above_root_arc_min_is_kept() -> None:
+    """The other side of the threshold, on real gears: the default 12-tooth gear, one whose
+    tip land is tuned to 1e-5 mm and one tuned to 1.5e-6 mm (a chord of 3e-6 against
+    ROOT_ARC_MIN's 2e-6, and well over the 4.0e-7 mm the kernel first builds at) keep every
+    root arc -- 6 x teeth side faces, no shared vertex."""
+    for land in (None, 1e-5, 1.5e-6):
+        fields = {**_ARC_FIELDS, "root_fillet": 3.0 if land else 0.38, "root_shape": "trochoid"}
+        if land:
+            fields["backlash"] = _tuned_backlash(_ARC_FIELDS, 3.0, land)
+        p = GearParams.model_validate(fields)
+        assert cutter(p, p.root_fillet).a >= (land or 1e-5) * 0.999
+        teeth = spur.model._trochoid_teeth(profile(p), _hob_curve(p))
+        assert all(t.arc for t in teeth)
+        assert teeth[0].root_r[-1] is not teeth[1].root_l[0]
+        solid = build(p)
+        assert solid.isValid()
+        assert len(solid.Faces()) == 6 * p.teeth + 2

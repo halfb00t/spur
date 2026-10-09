@@ -20,7 +20,7 @@ import tempfile
 import threading
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, NamedTuple
 
 import cadquery as cq
 
@@ -61,6 +61,19 @@ BORE_RIM_SLACK = 0.01   # mm, how far past bore_rim_limit() a rim point may read
 # GearParams(bore_flat=0, bore_chamfer=0), 2026-09-26 -- by five orders of magnitude,
 # and stay far below MIN_WALL (0.4 mm), the least clearance recess_radii() keeps between
 # the rim and the next end-face edge.
+
+ROOT_ARC_MIN = 2e-6     # mm, the shortest chord between neighbouring teeth's hob roots that
+# gets a root arc; below it the two teeth share one vertex and the outline has no arc there.
+# Measured 2026-10-08 (19-02, bench/RESULTS.md "Root arc dead band"; 12 teeth, module 1,
+# 20 degrees, Apple M5 Max, cadquery 2.8.0): `makeThreePointArc` raises
+# "GC_MakeArcOfCircle::Value() - no result" at every chord from 2e-9 mm up to 2.0e-7 mm
+# (the last failing one) and at exactly 0, silently drops the arc at 2e-12 and 2e-10 mm (a
+# valid solid with 62 faces where 74 are expected), and builds from 4.0e-7 mm up. 2e-6 is
+# 10.0x the last failing chord and 15.8x below the smallest real chord in the whole
+# 10,326-gear Phase 18 product (3.1644e-5 mm), so no honest arc is dropped. Reachable from
+# user input: the tip radius cap floors to 3 dp and backlash is not stepped on the wire, so
+# backlash 0.19898413579248878 with root_fillet 3.0 leaves a tip land of 1.0e-8 mm
+# (test_model.py), and _build_checked would blame the user's fillets for it.
 
 _LOCK = threading.RLock()
 
@@ -132,18 +145,30 @@ def _fillet_corner(p0: cq.Vector, p1: cq.Vector, rf: float, rho: float,
     return on_root, mid, on_line
 
 
-def _trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
-    """Closed gear outline whose root is the hob's trochoid: one spline per side through
-    the `RootCurve`, then one involute spline from the same junction `Vector`, the tip
-    arc, the mirror image, and the root arc to the next tooth. Six side faces per tooth
-    where the radial outline has eight.
+class _Tooth(NamedTuple):
+    """One tooth's hob-root outline points, kept as lists so the shared-vertex rule below
+    can replace one entry before any edge is made."""
+    c: float                  # the tooth's centre angle, rad
+    root_l: list[cq.Vector]   # the left root spline, root circle first
+    root_r: list[cq.Vector]   # the right root spline, ending on the root circle
+    flank_l: list[cq.Vector]  # the left involute spline, from root_l[-1] to the tip
+    flank_r: list[cq.Vector]  # the right involute spline, from the tip to root_r[0]
+    arc: bool                 # the root arc to the next tooth is made (chord >= ROOT_ARC_MIN)
+
+
+def _trochoid_teeth(pr: Profile, curve: RootCurve) -> list[_Tooth]:
+    """Every tooth's points, from the `RootCurve`, with the short-arc rule decided.
 
     The involute spline starts with the SAME `Vector` object the root spline ends on,
     never a recomputed one: a gap of 1e-6 mm silently opens a wire (PITFALLS 7), and a
     shared object has none. Its other radii run from the curve's own last radius, so
-    the junction is one float (`calc.spline_start` returns it too). Built and read back
-    through the oracle on 15,723 swept cases without a failure (19-RESEARCH F1), and on
-    the 10,326 trochoid gears of the Phase 18 product by 19-02's `product` run.
+    the junction is one float (`calc.spline_start` returns it too).
+
+    Where the chord from one tooth's last root point to the next tooth's first is under
+    ROOT_ARC_MIN (the kernel cannot make that arc: see the constant), the next tooth's
+    root spline starts from this tooth's `root_r[-1]` object and no arc is made. Decided
+    for every tooth here, before any edge exists, so the object both splines receive is
+    the same one.
     """
     pitch = 2 * math.pi / pr.z
     r0 = curve.points[-1][0]
@@ -156,20 +181,42 @@ def _trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
         flank_l = [root_l[-1]] + [_polar(r, c - pr.half_angle(r)) for r in radii[1:]]
         flank_r = [_polar(r, c + pr.half_angle(r)) for r in reversed(radii[1:])]
         flank_r.append(root_r[0])
-        teeth.append((c, root_l, root_r, flank_l, flank_r))
-
-    edges: list[cq.Edge] = []
-    for k, (c, root_l, root_r, flank_l, flank_r) in enumerate(teeth):
-        edges += [
-            cq.Edge.makeSpline(root_l),
-            cq.Edge.makeSpline(flank_l),
-            cq.Edge.makeThreePointArc(flank_l[-1], _polar(pr.ra, c), flank_r[0]),
-            cq.Edge.makeSpline(flank_r),
-            cq.Edge.makeSpline(root_r),
-        ]
+        teeth.append(_Tooth(c, root_l, root_r, flank_l, flank_r, True))
+    # The kernel raises on an arc over a chord of 2e-9 to 2.0e-7 mm and drops one under
+    # 1e-10 (19-02), so below ROOT_ARC_MIN the two splines meet at one vertex instead.
+    for k, tooth in enumerate(teeth):
         nxt = teeth[(k + 1) % pr.z]
-        edges.append(cq.Edge.makeThreePointArc(
-            root_r[-1], _polar(pr.rf, c + pitch / 2), nxt[1][0]))
+        if (tooth.root_r[-1] - nxt.root_l[0]).Length < ROOT_ARC_MIN:
+            nxt.root_l[0] = tooth.root_r[-1]
+            teeth[k] = tooth._replace(arc=False)
+    return teeth
+
+
+def _trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
+    """Closed gear outline whose root is the hob's trochoid: one spline per side
+    through the `RootCurve`, then one involute spline from the same junction `Vector`, the
+    tip arc, the mirror image, and the root arc to the next tooth. Six side faces per
+    tooth where the radial outline has eight, five where the root arc is under
+    ROOT_ARC_MIN and the neighbours share a vertex (`_trochoid_teeth`).
+
+    Built and read back through the oracle on 15,723 swept cases without a failure
+    (19-RESEARCH F1), and on the 10,326 trochoid gears of the Phase 18 product by 19-02's
+    `product` run.
+    """
+    pitch = 2 * math.pi / pr.z
+    teeth = _trochoid_teeth(pr, curve)
+    edges: list[cq.Edge] = []
+    for k, t in enumerate(teeth):
+        edges += [
+            cq.Edge.makeSpline(t.root_l),
+            cq.Edge.makeSpline(t.flank_l),
+            cq.Edge.makeThreePointArc(t.flank_l[-1], _polar(pr.ra, t.c), t.flank_r[0]),
+            cq.Edge.makeSpline(t.flank_r),
+            cq.Edge.makeSpline(t.root_r),
+        ]
+        if t.arc:
+            edges.append(cq.Edge.makeThreePointArc(
+                t.root_r[-1], _polar(pr.rf, t.c + pitch / 2), teeth[(k + 1) % pr.z].root_l[0]))
     return cq.Wire.assembleEdges(edges)
 
 
