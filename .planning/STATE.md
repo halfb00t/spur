@@ -4,12 +4,11 @@ milestone: v0.4
 milestone_name: True Root
 current_phase: 20
 current_phase_name: The Flip (conditional)
-status: planning
+status: "Phase 19 shipped — PR #29"
 stopped_at: Phase 19 complete and verified; Phase 20 skipped under L38 — ship Phase 19, then close v0.4
-last_updated: "2026-10-09T09:09:47.142Z"
+last_updated: "2026-10-09T09:28:33.837Z"
 last_activity: 2026-10-09
-last_activity_desc: Phase 19 complete (verified passed 5/5); Phase 20 recorded skipped under L38
-state_head: b1b111b78a4b0b4eb3611851a83deca72827cb5d
+state_head: 5774e9f117385c098f55080057c634692e9b55c8
 progress:
   total_phases: 4
   completed_phases: 6
@@ -35,10 +34,10 @@ recorded skipped under L38 (O4, flip deferred); then `/gsd-complete-milestone v0
 Phase: 20 — The Flip (conditional) — skipped under L38 (O4, flip deferred; ROADMAP row
 `Skipped (O4, flip deferred)`, 19-11)
 Plan: none — nothing to plan; the flip waits on D-09's trigger under its own `Lxx`
-Status: Phase 19 complete and verified (passed 5/5); v0.4 ready to close once Phase 19 lands on `main`
-Last activity: 2026-10-09 — Phase 19 complete; review CR-01/WR-01 fixed; Phase 20 skipped
+Status: Phase 19 shipped — PR #29
+Last activity: 2026-10-09
 
-Progress: [████████████████████] 22/22 plans (100%)
+Progress: [████████████████████] 22/22 plans ([█████████░] 86%)
 
 ## Performance Metrics
 
