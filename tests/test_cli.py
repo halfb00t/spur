@@ -5,18 +5,19 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Literal, get_args, get_origin
+from typing import Literal, cast, get_args, get_origin
 
 import cadquery as cq
 import pytest
-from composition import BORE_REFUSALS, CUTOUT_REFUSALS
+from composition import BORE_REFUSALS, CUTOUT_REFUSALS, TROCHOID_THICKNESS
 from fastapi.testclient import TestClient
 
 import spur.app
 import spur.model
 from spur import cli
-from spur.app import InfoQuery
+from spur.app import InfoQuery, build_backend
 from spur.calc import DerivedDimensions, check
+from spur.model import Format, Quality
 from spur.params import GearParams
 
 # The README's composed link (D-14): every v0.2 family on one 19-tooth gear -- a keyed
@@ -156,6 +157,16 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     cli.main(["export", "-o", str(everything), *_flags(COMPOSED)])
     assert everything.stat().st_size > 1000
     assert "warning:" not in capsys.readouterr().err
+
+    # The hob root (SC5, 19-07): the documented command is asserted present, then run.
+    # Its one warning is the hob root's thickness sentence, captured in 19-04 -- a
+    # trochoid gear prints no root-circle thickness and says why.
+    assert "spur export -o hob-root.stl --root-shape trochoid" in readme
+    hob_root = tmp_path / "hob-root.stl"
+    cli.main(["export", "-o", str(hob_root), "--root-shape", "trochoid"])
+    assert hob_root.stat().st_size > 1000
+    warnings = [ln for ln in capsys.readouterr().err.splitlines() if "warning:" in ln]
+    assert warnings == [f"warning: {TROCHOID_THICKNESS}"]
 
 
 def test_cli_and_api_print_the_same_composed_document(
@@ -488,4 +499,163 @@ def test_a_tip_chamfer_that_selects_no_tip_arcs_stops_the_export_and_writes_noth
                   "--quality", "preview"])
     assert str(exc.value.code).startswith("error: Tip chamfer selected no tip-arc edges")
     assert isinstance(exc.value.code, str)  # a BuildError exits 1, not argparse's 2 (D-13)
+    assert not out.exists()
+
+
+# The four hob-root documents the three interfaces must print identically (SC5). Each
+# row is a gear whose trochoid answer differs in kind: the default gear (the thickness
+# sentence alone), a 17-tooth gear the cutter undercuts, a 42-tooth gear whose base
+# circle is above its root circle (nothing radial to replace: the request is ignored and
+# the radial numbers print), and a 12-tooth gear asked for a tip radius over the cap.
+# Sentences and numbers were captured from `derive()` on 2026-10-09 and typed in, never
+# composed from the code under test (L33).
+_BORE_OFF: dict[str, object] = {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0,
+                                "recess_sides": "none"}
+_UNDERCUT_17 = ("Below 17.1 teeth this cutter undercuts the gear, and the root is cut the "
+                "way the hob cuts it; a profile shift of 0.006 or more avoids the "
+                "undercut.")
+_NOTHING_RADIAL_42 = ("No radial root to replace on this gear (base circle 19.734 mm, "
+                      "root circle 19.750 mm): the trochoid root request is ignored.")
+_CAP_12 = ("root_fillet is the hob's tip radius here, and it was reduced to 0.471 mm, "
+           "within 0.001 mm of the largest that keeps the cutter a tip land at this "
+           "pressure angle and backlash.")
+_UNDERCUT_12 = ("Below 16.1 teeth this cutter undercuts the gear, and the root is cut the "
+                "way the hob cuts it; a profile shift of 0.239 or more avoids the "
+                "undercut.")
+_TROCHOID_ROWS: dict[str, tuple[dict[str, object], dict[str, object], list[str]]] = {
+    "default": (
+        {"root_shape": "trochoid"},
+        {"root_thickness": None, "root_gap": None, "root_form_d": 30.558,
+         "root_waist": 3.303, "root_fillet": 0.5},
+        [TROCHOID_THICKNESS]),
+    "undercut-17": (
+        {"root_shape": "trochoid", "teeth": 17, "module": 1, "pressure_angle": 20,
+         "root_fillet": 0.38, **_BORE_OFF},
+        {"root_thickness": None, "root_gap": None, "root_form_d": 15.975,
+         "root_waist": 1.62, "root_fillet": 0.38},
+        [TROCHOID_THICKNESS, _UNDERCUT_17]),
+    "nothing-radial-42": (
+        {"root_shape": "trochoid", "teeth": 42, "module": 1, "pressure_angle": 20,
+         "backlash": 0, "root_fillet": 0.38, **_BORE_OFF},
+        {"root_thickness": 2.065, "root_gap": 0.889, "root_form_d": None,
+         "root_waist": None, "root_fillet": 0.38},
+        [_NOTHING_RADIAL_42]),
+    "capped-12": (
+        {"root_shape": "trochoid", "teeth": 12, "module": 1, "pressure_angle": 20,
+         "backlash": 0, "root_fillet": 3.0, **_BORE_OFF},
+        {"root_thickness": None, "root_gap": None, "root_form_d": 11.294,
+         "root_waist": 1.586, "root_fillet": 0.471},
+        [_CAP_12, TROCHOID_THICKNESS, _UNDERCUT_12]),
+}
+
+
+@pytest.mark.parametrize(("params", "fields", "warnings"), list(_TROCHOID_ROWS.values()),
+                         ids=list(_TROCHOID_ROWS))
+def test_cli_and_api_print_the_same_trochoid_documents(
+        params: dict[str, object], fields: dict[str, object], warnings: list[str],
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """SC5: asked for the hob root, `spur info` prints byte for byte what `/api/info`
+    serves once the API's compact JSON is re-indented the way the CLI indents it (12-07's
+    reading of byte-identical), keys in `DerivedDimensions` order. The spot asserts are
+    what makes the four rows different in kind: the hob root prints no root-circle
+    thickness and gap, a refused request prints the radial ones, a trimmed tip radius
+    prints the radius actually cut, and each warning is the captured sentence."""
+    cli.main(["info", *_flags(params)])
+    cli_out = capsys.readouterr().out.rstrip("\n")
+    api = TestClient(spur.app.app).get("/api/info", params=params)
+    assert api.status_code == 200
+    assert cli_out == json.dumps(api.json(), indent=2, ensure_ascii=False)
+
+    doc = json.loads(cli_out)
+    assert list(doc) == list(DerivedDimensions.model_fields)
+    assert {k: doc[k] for k in fields} == fields
+    assert doc["warnings"] == warnings
+
+
+@pytest.mark.parametrize("value", ["false", "Trochoid", "TROCHOID", "hob", "",
+                                   " trochoid", "trochoid "],
+                         ids=["false", "Trochoid", "TROCHOID", "hob", "empty",
+                              "leading-space", "trailing-space"])
+def test_an_unknown_root_shape_exits_2_on_the_cli_and_is_a_422_on_the_api(
+        value: str, capsys: pytest.CaptureFixture[str]) -> None:
+    """T-19-14: the enum match is exact and case-sensitive on both front ends -- a case
+    or whitespace variant is refused, never normalised into a value the user did not
+    send. argparse names the valid choices; the API's 422 names `root_shape` in `loc`.
+    An empty string is refused too, never read as the default (probe empty)."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["info", f"--root-shape={value}"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "invalid choice" in err
+    choices = err.partition("choose from")[2]  # the quoting of the list varies by Python
+    assert "radial" in choices
+    assert "trochoid" in choices
+
+    r = TestClient(spur.app.app).get("/api/info", params={"root_shape": value})
+    assert r.status_code == 422
+    assert r.json()["detail"][0]["loc"][-1] == "root_shape"
+
+
+def test_both_root_shapes_are_accepted_and_omitting_it_reads_radial(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """Probe empty: `radial` and `trochoid` are accepted on both front ends, and an
+    omitted root_shape is `radial` on both -- the same document as the explicit
+    `radial` (L05: a link that omits the field cannot move)."""
+    client = TestClient(spur.app.app)
+    docs = {}
+    for shape in ("radial", "trochoid"):
+        cli.main(["info", f"--root-shape={shape}"])
+        docs[shape] = json.loads(capsys.readouterr().out)
+        api = client.get("/api/info", params={"root_shape": shape})
+        assert api.status_code == 200
+        assert api.json() == docs[shape]
+    assert docs["radial"] != docs["trochoid"]
+
+    cli.main(["info"])
+    omitted_cli = json.loads(capsys.readouterr().out)
+    assert omitted_cli == docs["radial"]
+    assert client.get("/api/info").json() == docs["radial"]
+
+
+def test_a_root_guard_build_error_reads_the_same_on_the_api_and_the_cli(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A root guard is a defect in spur, not a conflict in the user's parameters, so its
+    BuildError takes the BuildError route on both front ends (the human's answer to
+    19-07's Task 1, 2026-10-09, `exit-documented`): the API's 422 of type `build_error`
+    carries the guard's sentence, and `spur export` stops with the same sentence on
+    stderr, writes nothing and exits 1 -- `SystemExit("error: ...")`, as cli.md "Errors"
+    and D-14 say -- never argparse's 2, which tells a user to change a parameter. The
+    unknown-value refusal above is the parameter refusal that exits 2. ROADMAP SC5's
+    "exit 2" is read as that one (L38 records the reading).
+
+    ROOT_AREA_REL_MAX at zero trips `_guard_area` on any honest trochoid gear. 26 teeth:
+    a count no other test downloads, and one where the hob root applies (the default
+    module 1.75 and 25 degrees leave the base circle above the root circle from 27 teeth
+    on, where the request is ignored and nothing reaches the guard), so neither the solid
+    cache nor the API byte cache answers before the patched bar is read."""
+    async def inline(p: GearParams, fmt: str, quality: str) -> bytes:
+        # The pool-backed dependency needs the app's lifespan; the CLI builds in process,
+        # and this is the same call (tests/test_api.py's _inline_backend).
+        return spur.model.export(p, cast(Format, fmt), cast(Quality, quality))
+
+    monkeypatch.setitem(spur.app.app.dependency_overrides, build_backend, lambda: inline)
+    spur.model._build_cached.cache_clear()
+    monkeypatch.setattr("spur.model.ROOT_AREA_REL_MAX", 0.0)
+
+    r = TestClient(spur.app.app).get(
+        "/api/model.stl", params={"teeth": 26, "root_shape": "trochoid",
+                                  "quality": "preview"})
+    assert r.status_code == 422
+    detail = r.json()["detail"][0]
+    assert detail["type"] == "build_error"
+    assert "modelling defect" in detail["msg"]
+    assert "root_shape" in detail["msg"]
+    assert "try smaller" not in detail["msg"]
+
+    out = tmp_path / "gear.stl"
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["export", "-o", str(out), "--root-shape", "trochoid", "--teeth", "26",
+                  "--quality", "preview"])
+    assert isinstance(exc.value.code, str)  # a BuildError exits 1, not argparse's 2 (D-13)
+    assert exc.value.code == f"error: {detail['msg']}"
     assert not out.exists()

@@ -116,6 +116,7 @@ spur export -o gear.stl --teeth 24 --module 1 --pressure-angle 20 --bore-flat 0
 spur export -o hexgear.stl --bore-hex 6                   # 6 mm hex bore
 spur export -o keyedgear.step --keyway-width 3 --keyway-depth 1.4  # keyway in the default D-flat bore
 spur export -o chamfered.stl --tip-chamfer 0.4             # tooth-tip edge break
+spur export -o hob-root.stl --root-shape trochoid          # the root a hob would cut, not the analytic one
 spur export -o holes.stl --hole-count 6 --hole-d 4 --hole-circle-d 20      # six lightening holes
 spur export -o spokes.stl --spoke-count 4 --spoke-width 2 --hub-d 12 --rim-wall 1 --spoke-fillet 1  # four spoke arms
 spur export -o honeycomb.stl --hex-cell 3 --hex-wall 1     # honeycomb web
@@ -174,8 +175,9 @@ Lengths in mm, angles in degrees.
 | `pressure_angle` | 25 | Higher gives thinner tips and thicker roots. Must match the mating gear |
 | `profile_shift` | 0 | Coefficient *x*; positive thickens the root and moves the tip outward |
 | `backlash` | 0.1 | Removed from the circular tooth thickness (printing clearance) |
-| `root_fillet` | 0.5 | Fillet radius at the tooth roots, capped to fit. 0 = sharp |
+| `root_fillet` | 0.5 | Two meanings, by `root_shape`. With the radial root: the fillet radius at the tooth roots. With the trochoid root: the tip radius of the hob that cuts them. Capped to fit either way, and `/api/info` prints the value actually used. 0 = sharp |
 | `tip_chamfer` | 0 | Chamfer on the tooth-tip edges at both faces: an edge break for handling and printing, capped to fit the tooth. 0 = none |
+| `root_shape` | radial | `radial`: the analytic root, the shipped default. `trochoid`: the root a hob with tip radius `root_fillet` cuts, where the base circle is above the root circle (where it is not, the request is ignored and warned). `/api/info` then prints `root_form_d` and `root_waist`, the narrowest tooth, and no root-circle thickness |
 | `face_width` | 7.5 | Overall thickness |
 | `bore_d` | 9 | Round part of the bore. 0 = no round bore |
 | `bore_flat` | 8 | Flat to opposite side of the bore. 0 = round bore |

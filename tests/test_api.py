@@ -368,6 +368,50 @@ def test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut() -> None:
     assert r.content.startswith(b"ISO-10303-21;")
 
 
+def test_a_root_shape_link_is_served_with_the_root_it_cut() -> None:
+    """?root_shape=trochoid end to end (D-02, SC5): the schema's choice field (group,
+    title, enum and default, no step), /api/info's hob-root numbers with no root-circle
+    thickness, the form leaving a default value out of its link, and the model download.
+
+    The download's slug is the same as the radial gear's: it ignores root_shape (19-RESEARCH
+    Open Question 6, filed as an idea by 19-11, not changed here). 23 teeth: a count no
+    other test downloads, and one where the hob root applies (from 27 teeth on at the
+    default module and angle the base circle is above the root circle, the request is
+    ignored and the two parts are the same), so the byte cache cannot answer the request
+    and the two downloads differ."""
+    prop = client.get("/api/schema").json()["properties"]["root_shape"]
+    assert prop["group"] == "Teeth"
+    assert prop["title"] == "Root shape"
+    assert prop["enum"] == ["radial", "trochoid"]
+    assert prop["default"] == "radial"
+    assert "step" not in prop
+
+    # Probe empty, the form's side: a field at its default is left out of the link, so a
+    # link that omits root_shape is a radial gear (L05). The proof is the token-level
+    # one test_the_shareable_link_round_trips_every_field_through_generic_code pins for
+    # the other loops of app.js.
+    source = re.sub(r"\s+", " ", (STATIC / "app.js").read_text())
+    assert ("if (input.value !== '' && String(input.value) !== String(defaults[name])) "
+            "q.set(name, input.value);") in source
+
+    r = client.get("/api/info", params={"root_shape": "trochoid"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["root_thickness"] is None
+    assert body["root_gap"] is None
+    assert body["root_form_d"] == pytest.approx(30.558)
+
+    radial = client.get("/api/model.stl", params={"teeth": 23, "quality": "preview"})
+    r = client.get("/api/model.stl", params={"teeth": 23, "root_shape": "trochoid",
+                                             "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "model/stl"
+    assert len(r.content) > 84
+    assert r.content != radial.content  # a different root is a different part
+    assert r.headers["content-disposition"] == radial.headers["content-disposition"]
+    assert 'filename="spur_z23_m1.75_pa25.stl"' in r.headers["content-disposition"]
+
+
 def test_a_hole_link_is_served_with_its_walls() -> None:
     """?hole_count=6&hole_d=4&hole_circle_d=20 end to end (D-03, D-17, D-19, D-20): the
     schema, /api/info's two new numbers, the plain-default null case, and both export
