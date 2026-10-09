@@ -1,7 +1,9 @@
 import collections
 import dataclasses
 import functools
+import itertools
 import math
+import re
 import struct
 from collections.abc import Iterator, Sequence
 from pathlib import Path
@@ -2129,7 +2131,9 @@ GENERATOR_NAMES = ("_trochoid_point", "_junction", "_root_curve", "trochoid_root
 
 
 def _generator_names_in(source: str) -> list[str]:
-    return [name for name in GENERATOR_NAMES if name in source]
+    """The generator's names in `source`, each as a whole identifier: `_guard_junction` (a
+    19-05 guard) holds the private `_junction` as a substring and is not it."""
+    return [name for name in GENERATOR_NAMES if re.search(rf"(?<!\w){re.escape(name)}", source)]
 
 
 def test_the_trochoid_generator_never_enters_the_model_module() -> None:
@@ -2138,6 +2142,8 @@ def test_the_trochoid_generator_never_enters_the_model_module() -> None:
     flags a string that holds a name, so the second cannot pass by matching nothing."""
     assert _generator_names_in("c = cutter(p, 0.5)\nx = _junction(c, 0.0)") == [
         "_junction", "cutter("]
+    assert _generator_names_in("spur.calc._junction(c)") == ["_junction"]
+    assert _generator_names_in("_guard_junction(pr, curve)") == []
     assert _generator_names_in(Path(spur.model.__file__).read_text()) == []
 
 
@@ -2243,3 +2249,92 @@ def test_a_root_arc_above_root_arc_min_is_kept() -> None:
         solid = build(p)
         assert solid.isValid()
         assert len(solid.Faces()) == 6 * p.teeth + 2
+
+
+# --- the four structural guards on the hob-root outline (19-05, SC2, L26) ----------------
+
+def _default_hob_curve() -> tuple[GearParams, spur.calc.Profile, spur.calc.RootCurve]:
+    p = GearParams(root_shape="trochoid")
+    return p, profile(p), _hob_curve(p)
+
+
+def _a_defect_in_spur(exc: pytest.ExceptionInfo[BuildError]) -> None:
+    """The error says the fault is spur's and names the remedy that builds the gear -- never
+    the "try smaller fillets or chamfers" `_build_checked` gives a kernel exception
+    (CODING_VALUES "Failure handling")."""
+    text = str(exc.value)
+    assert "modelling defect in spur, not a conflict in these parameters" in text
+    assert "Set root_shape to radial" in text
+    assert "try smaller" not in text
+
+
+def _kernel_never_reached(monkeypatch: pytest.MonkeyPatch) -> None:
+    def boom(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("the outline reached the kernel before a float guard refused it")
+
+    monkeypatch.setattr(cq.Edge, "makeSpline", boom)
+
+
+def test_a_root_curve_that_leaves_the_involute_at_its_junction_is_a_build_error(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """T-19-10: the involute spline starts from the root curve's last point, so a last point
+    1e-6 rad off the involute (the bar is 1e-11) is a step in the flank. The refusal is
+    made on floats, before the kernel is touched."""
+    p, pr, curve = _default_hob_curve()
+    r, h = curve.points[-1]
+    bad = dataclasses.replace(curve, points=(*curve.points[:-1], (r, h + 1e-6)))
+    _kernel_never_reached(monkeypatch)
+    with pytest.raises(BuildError, match="junction") as err:
+        _gear_blank(pr, 0.0, p.face_width, bad)
+    _a_defect_in_spur(err)
+
+
+def test_root_points_bunched_past_the_spacing_bar_are_a_build_error(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """T-19-10: two neighbouring root points moved together until the largest chord is more
+    than ROOT_SPACING_RATIO_MAX times the smallest. The setup is checked first, so the test
+    cannot pass on a curve that was never bunched."""
+    p, pr, curve = _default_hob_curve()
+    points = list(curve.points)
+    points[5] = (points[4][0] + 1e-5, points[4][1])
+    xy = [(r * math.cos(h), r * math.sin(h)) for r, h in points]
+    chords = [math.dist(a, b) for a, b in itertools.pairwise(xy)]
+    assert max(chords) / min(chords) > spur.model.ROOT_SPACING_RATIO_MAX
+    _kernel_never_reached(monkeypatch)
+    with pytest.raises(BuildError, match="spacing") as err:
+        _gear_blank(pr, 0.0, p.face_width, dataclasses.replace(curve, points=tuple(points)))
+    _a_defect_in_spur(err)
+
+
+def test_a_root_spline_outside_the_root_to_tip_annulus_is_a_build_error() -> None:
+    """T-19-10: one interior root point 0.01 mm inside the root circle makes the spline
+    through the points read below it (the bar is TOL, 1e-6 mm)."""
+    p, pr, curve = _default_hob_curve()
+    points = list(curve.points)
+    points[8] = (pr.rf - 0.01, points[8][1])
+    with pytest.raises(BuildError, match="annulus") as err:
+        _gear_blank(pr, 0.0, p.face_width, dataclasses.replace(curve, points=tuple(points)))
+    _a_defect_in_spur(err)
+
+
+def test_an_outline_whose_area_misses_its_polygon_is_a_build_error(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """T-19-10: the default gear's face area against the polygon of its own points is
+    within ROOT_AREA_REL_MAX (the next test); with the bar set to zero the splines' and
+    arcs' own departure from the polygon is over it, so the guard's raise arm is reached
+    on a real gear. Through _build_checked: build() would hand back a cached solid."""
+    monkeypatch.setattr("spur.model.ROOT_AREA_REL_MAX", 0.0)
+    with pytest.raises(BuildError, match="area") as err:
+        _build_checked(GearParams(root_shape="trochoid"))
+    _a_defect_in_spur(err)
+
+
+@pytest.mark.parametrize(("fields", "asked"), [
+    pytest.param({}, 0.5, id="default")]
+    + [pytest.param(f, a, id=name) for name, f, a, _ in KERNEL_ROWS])
+def test_no_guard_fires_on_an_honest_curve(fields: dict[str, object], asked: float) -> None:
+    """The guards are defect detectors, not parameter checks: the default gear and each
+    of the seven kernel rows build through _build_checked with all four in place."""
+    solid = _build_checked(_hob_gear(fields, asked))
+    assert len(solid.Solids()) == 1
+    assert solid.isValid()
