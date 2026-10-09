@@ -2,19 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.4
 milestone_name: True Root
-current_phase: 20
-current_phase_name: The Flip (conditional)
-status: "Phase 19 shipped — PR #29"
-stopped_at: Phase 19 complete and verified; Phase 20 skipped under L38 — ship Phase 19, then close v0.4
-last_updated: "2026-10-09T09:28:33.837Z"
+status: Awaiting next milestone
+stopped_at: Milestone v0.4 complete — all executed phases verified, Phase 20 skipped under L38
+last_updated: "2026-10-09T14:44:42.416Z"
 last_activity: 2026-10-09
-state_head: 5774e9f117385c098f55080057c634692e9b55c8
+last_activity_desc: Milestone v0.4 completed and archived
+state_head: 642e456dd2d544b9ecb4fe2020ad8bf88c6d7bc5
 progress:
   total_phases: 4
   completed_phases: 6
   total_plans: 22
   completed_plans: 22
-  percent: 86
+  percent: 100
+current_phase: 19
+current_phase_name: The Trochoid in the Part
 ---
 
 # Project State
@@ -25,19 +26,15 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** close v0.4 — Phase 19 ships through a PR from
-`gsd/phase-19-the-trochoid-in-the-part` (like #27, landed with `make pr.land`); Phase 20 is
-recorded skipped under L38 (O4, flip deferred); then `/gsd-complete-milestone v0.4`.
+**Current focus:** v0.4 True Root shipped 2026-10-09 (close PR from
+`gsd/milestone-v0.4-close`, tag `v0.4` on its squash); next `/gsd-new-milestone`
 
 ## Current Position
 
-Phase: 20 — The Flip (conditional) — skipped under L38 (O4, flip deferred; ROADMAP row
-`Skipped (O4, flip deferred)`, 19-11)
-Plan: none — nothing to plan; the flip waits on D-09's trigger under its own `Lxx`
-Status: Phase 19 shipped — PR #29
-Last activity: 2026-10-09
-
-Progress: [████████████████████] 22/22 plans ([█████████░] 86%)
+Phase: Milestone v0.4 complete (Phases 17–19 executed; Phase 20 skipped under L38)
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-09 — Milestone v0.4 completed and archived
 
 ## Performance Metrics
 
@@ -602,20 +599,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T09:11:34Z
-Stopped at: Phase 19 complete and verified (passed 5/5); Phase 20 skipped under L38 — ready to ship Phase 19 and close v0.4
+Last session: 2026-10-09T14:45:00Z
+Stopped at: Milestone v0.4 completed and archived on `gsd/milestone-v0.4-close`; close PR and tag pending
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: ship Phase 19 — open a PR from `gsd/phase-19-the-trochoid-in-the-part` (like #27) and land it
-  with `make pr.land PR=N`; then `/gsd-complete-milestone v0.4` (Phase 20 is recorded skipped under
-  L38; nothing is left to execute in v0.4).
-- Open decision: re-set L34's 66 s gate bar from an idle-host reading under a new `Lxx` (the gate
-  reads ~193 s; `accept-A` recorded the cost, not a new bar), or revisit the 401-position oracle
-  count as its own measured decision.
-- Open question: which command, cwd and venv ran 2026-10-09 07:19–08:36 — every run crashed one
-  xdist worker at exit (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
-- Still open before the next milestone: Phase 18's IN-01…IN-08 (`18-REVIEW-DISPOSITION.md`), Phase
-  19's IN-01…IN-04 (debt item), and the resource-tracker flake (`must`), whose trigger is the next
-  `make verify` failure with its whole log kept.
+- Next: land the close — open the PR from `gsd/milestone-v0.4-close` ("Milestone v0.4: True Root — close and archive", like #20), `make pr.land PR=N`, then tag the squash commit `v0.4` on `main` (the v0.2/v0.3 precedent) and push the tag.
+- Then `/gsd-new-milestone` — candidates in PROJECT.md "Next Milestone".
+- Open decision carried: re-set L34's 66 s gate bar from an idle-host reading under a new `Lxx` (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar), or revisit the 401-position oracle count.
+- Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
+- Still open: Phase 18's IN-01…IN-08 (`milestones/v0.4-phases/18-trochoid-maths-proved/18-REVIEW-DISPOSITION.md`), Phase 19's IN-01…IN-04 (debt item), the resource-tracker flake (`must`; trigger: the next `make verify` failure with its whole log kept, else whole-suite loops at the next milestone's start).

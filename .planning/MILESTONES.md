@@ -1,5 +1,34 @@
 # Milestones
 
+## v0.4 True Root (Shipped: 2026-10-09)
+
+**Delivered:** The hob-cut trochoid root in the part as an opt-in — `root_shape=trochoid` builds the root a hob with tip radius `root_fillet` cuts, proven against an independent swept-cutter oracle at the calc tier and on the built solid, every number printed beside it proved or warned, parity on the web form, the API and the CLI, the default unmoved and the 44-record fixture byte-identical to the `v0.3` tag (L38); before it, the last two `must` debts retired — the commit gate split and proved by a live SDK commit (L36), the same-slot timeout race reproduced, fixed and ended as a documented 503 with the worst row's margin logged (L37).
+
+**Phases completed:** 17–19 (22 plans, 52 tasks); Phase 20 (The Flip) skipped under L38 — O4, flip deferred to a real fit report or a mating-pair request below z_min.
+
+**Key accomplishments:**
+- Debt first (Phase 17): `make verify.fast` (11.3 s warm) at pre-commit and the whole gate at pre-push, hooks self-installed, proved by SDK commit `5a3332f` (L36); the ten-identical-worst-row scenario reproduced the undocumented 500 on attempt 1, the two-fact guard plus `_closed` fixed it (red-then-green, 20/20 + 20/20 loops), zero 500s after; the 29.42 s row's limit recorded as documented behaviour with no default moved (L37); both `must` debts retired in their fixing commits.
+- Trochoid maths, proved (Phase 18): the rack cutter defined once from `profile()`'s own expressions, the envelope generated in contact-normal angle or honestly refused by `root_mode`'s six named reasons, proven against a stdlib swept-cutter oracle (T2, worst 2.985e-12 mm over 10,326 curves), freecad.gears at ρ = 0 (T3, 1.8e-15 mm) and KISSsoft's form diameter (T4, 3.6e-5 in), a 31,446-case box sweep at commit; nothing a user can see changed; the human read the measured step and chose O4 (`d05-hold`).
+- The trochoid in the part (Phase 19): `root_shape` (`Literal`, default `radial`) carries the curve through one `root_mode` call into the outline — one `makeSpline` per side, `ROOT_ARC_MIN` closing the kernel's arc dead band, four structural guards independent of `isValid()` — with the built root within 2e-3 × module of the oracle at 401 positions on seven rows (tripwire red at 0.05 mm); `root_form_d` as the cutter-envelope junction, `root_waist` at the narrowest arc under a 0.4 mm floor, thickness/gap null with a sentence, the undercut sentence from the cutter with `x_min`; parity proved the Phase 12 way; composes with every shipped feature (192 + 24 rows), heaviest trochoid row 14.64 s of 30 s.
+- The record (Phase 19): L38 supersedes L10 and amends L09/L33 with every figure cited; README, the strategy docs and the ideas brought true; Phase 20 recorded skipped the way the roadmap's skip condition prescribes; the gate's cost measured on one host (192.94 s mean against L34's 66 s) and accepted by the human rather than a proof trimmed (`accept-A`).
+- Review and close: Phase 19's review found `root_waist` read at the narrowest half-angle, 2–5 % high with the floor warning silent on sub-floor gears (CR-01) — fixed before verification with every pin re-measured (`e733cc2`), plus WR-01's kernel-exception wrap (`b51931c`); the milestone audit read 14/14 requirements, 15/15 integration seams, 8/8 flows, Nyquist and security clean on all three phases.
+
+**Stats:**
+- 169 files changed (+130,722 / −2,289) from the `v0.3` tag to the last squash; the bulk under `.planning/` (phase records, investigation logs, the 19-01 gate-flake log)
+- 4,040 lines of package Python, 12,268 of tests, 4,544 of bench, 372 of hand-written UI JS; 1,220 tests in `make verify` (929 at v0.3), 97.92 % coverage against the 96 % floor
+- 3 phases executed (+1 skipped by decision), 22 plans, 52 tasks; 3 PRs (#27–#29) through `make pr.land` after the start PR #26; 181 branch commits squashed
+- 3 days from the milestone start commit (2026-10-06) to the last squash (2026-10-09)
+- 0 runtime dependencies added (`requirements.txt` 31 → 31 pins; stdlib maths only under `src/spur/`)
+- `make verify` ~64 s → 162–240 s warm on the M5 Max (192.94 s mean; L34's 66 s bar unmoved, `accept-A`)
+
+**Git range:** `e64d764` (Milestone v0.4: True Root — start (#26)) → `767317b` (Phase 19: The Trochoid in the Part (#29))
+
+**Closeout:** `override_closeout` in the tooling's terms — Phases 17 and 18 project `verification_status: stale` because Phase 19 changed files their reports cover (both reports `passed`, 5/5 and 6/6; cause proven per phase in the audit), and Phase 20 is an unstarted row by decision. Known verification overrides: 0 newly acknowledged, 0 carried forward.
+
+**What's next:** `/gsd-new-milestone` — candidates: the gear family (helical first), the hob-root default flip on D-09's trigger, the L34 bar re-set, the Phase 18 review's eight info findings.
+
+---
+
 ## v0.3 Clean Ledger (Shipped: 2026-10-05)
 
 **Delivered:** The record made true and the gate measured — the ten-concurrent latency bar
