@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.4
 milestone_name: True Root
-current_phase: 19
-current_phase_name: The Trochoid in the Part
-status: verifying
-stopped_at: Completed 19-11-PLAN.md
-last_updated: "2026-10-09T08:02:19.089Z"
-last_activity: 2026-10-08
-last_activity_desc: Phase 19 execution started
-state_head: da22501498570f4c0fb2b77da5fe87a184859674
+current_phase: 20
+current_phase_name: The Flip (conditional)
+status: planning
+stopped_at: Phase 19 complete, ready to plan Phase 20
+last_updated: "2026-10-09T09:09:47.142Z"
+last_activity: 2026-10-09
+last_activity_desc: Phase 19 complete, transitioned to Phase 20
+state_head: b1b111b78a4b0b4eb3611851a83deca72827cb5d
 progress:
   total_phases: 4
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 22
   completed_plans: 22
-  percent: 100
+  percent: 86
 ---
 
 # Project State
@@ -32,12 +32,12 @@ transition, verified `passed` 6/6 after gap plan 18-06; ships through a PR like 
 
 ## Current Position
 
-Phase: 19 (The Trochoid in the Part) — EXECUTING
-Plan: 11 of 11
-Status: Phase complete — ready for verification
-Last activity: 2026-10-08 — Phase 19 execution started
+Phase: 20 — The Flip (conditional)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-09 — Phase 19 complete, transitioned to Phase 20
 
-Progress: [████████████████████] 11/11 plans ([██████████] 100%)
+Progress: [████████████████████] 11/11 plans ([█████████░] 86%)
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Progress: [████████████████████] 11/11 p
 | 16 | 3 | - | - |
 | 17 | 5 | - | - |
 | 18 | 6 | - | - |
+| 19 | 11 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -587,7 +588,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-09T08:02:19.053Z
-Stopped at: Completed 19-11-PLAN.md
+Stopped at: Phase 19 complete, ready to plan Phase 20
 Resume file: None
 
 ## Operator Next Steps
