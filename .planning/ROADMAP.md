@@ -354,7 +354,7 @@ build time on the heaviest allowed low-tooth row are spiked first, before any sc
 **Research flag**: Needs a spike, not a research phase — the chamfer junction (L29's boundary
 was bisected to ~2 µm on the old geometry) and the build time on the heaviest low-tooth row;
 STACK's assumption that the spline leaves `make bench.build` timings unaffected is unmeasured.
-**Plans**: 10/11 plans executed
+**Plans**: 11/11 plans executed
 **UI hint**: yes
 
 Plans:
@@ -381,7 +381,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 - [x] 19-10-PLAN.md — The record: L38 (supersedes L10, amends L09 and L33) with the deferred flip, D-09's trigger and every number the phase measured, and the gear-maths and solid-model strategy docs pointing at it
-- [ ] 19-11-PLAN.md — The record, continued: README geometry notes, the trochoid idea and the slug idea, Phase 20 recorded `Skipped (O4, flip deferred)` under L38
+- [x] 19-11-PLAN.md — The record, continued: README geometry notes, the trochoid idea and the slug idea, Phase 20 recorded `Skipped (O4, flip deferred)` under L38
 
 ### Phase 20: The Flip (conditional)
 
@@ -452,5 +452,5 @@ before the human at Phase 18's discuss-phase.
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17. Debt First — Commit Gate and Pool Race | v0.4 | 5/5 | Complete    | 2026-10-06 |
 | 18. Trochoid Maths, Proved | v0.4 | 6/6 | Complete    | 2026-10-08 |
-| 19. The Trochoid in the Part | v0.4 | 10/11 | In Progress | - |
+| 19. The Trochoid in the Part | v0.4 | 11/11 | In Progress | - |
 | 20. The Flip (conditional) | v0.4 | 0/0 | Skipped (O4, flip deferred) | - |

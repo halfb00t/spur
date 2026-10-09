@@ -138,7 +138,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   resolution) with the headroom stated, and goes to the human if under about 10× (the L33
   D-06 rule); a published or tool-generated reference, if the human can supply one, is
   added as T4 with its stated precision and cutter assumptions.
-- [ ] **REQ-undercut-warning-restated**: `derive()`'s undercut warning comes from the same
+- [x] **REQ-undercut-warning-restated**: `derive()`'s undercut warning comes from the same
   cutter constants as the geometry (the shipped `z_min = 2(1−x)/sin²α` matches the rack
   model only at 20° — STACK: 31.903 vs 30.791 at 14.5°, 11.198 vs 11.540 at 25°), no longer
   says "radial root", and prints `x_min`, the profile shift that avoids undercut (closed
@@ -149,7 +149,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
 
 ### Trochoid in the part — kernel integration, landed dark or opt-in
 
-- [ ] **REQ-root-mode-decided**: The human's root-mode choice is logged as an `Lxx` that
+- [x] **REQ-root-mode-decided**: The human's root-mode choice is logged as an `Lxx` that
   supersedes L10 and amends L09 and L33, picked from the priced table: O1 always-on when
   undercut (5 of 44 records move, discontinuous at the threshold); O2 always-on wherever
   `rb > rf` (28 of 44 move, the default gear by up to ≈0.30 mm of root material — FEATURES
@@ -190,7 +190,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.3-REQUIREME
   millimetres (L05; 0.5 mm is 0.286·m at m 1.75 but 0.05·m at m 10 — FEATURES). *Acceptance*:
   the value actually used is in `DerivedDimensions` at 3 dp; the web form and the CLI expose
   it from the model; a trimmed value warns with the cap.
-- [ ] **REQ-trochoid-composes-and-is-priced**: The trochoid root composes with the tip
+- [x] **REQ-trochoid-composes-and-is-priced**: The trochoid root composes with the tip
   chamfer (`tip_chamfer_limit` follows the form radius; L29's kernel boundary re-bisected
   across the spline-to-spline junction, which is spiked before any schema change), face
   recesses and each cutout pattern; build time is measured at the heaviest allowed low-tooth
@@ -260,12 +260,12 @@ the phase where its acceptance can be read.
 | REQ-trochoid-root-generated | Phase 18 | Complete |
 | REQ-root-mode-single-predicate | Phase 18 | Complete |
 | REQ-trochoid-proved-independently | Phase 18 | Complete |
-| REQ-undercut-warning-restated | Phase 19 | Pending |
-| REQ-root-mode-decided | Phase 19 | Pending |
+| REQ-undercut-warning-restated | Phase 19 | Complete |
+| REQ-root-mode-decided | Phase 19 | Complete |
 | REQ-outline-consumes-root-curve | Phase 19 | Complete |
 | REQ-derived-numbers-honest-under-trochoid | Phase 19 | Complete |
 | REQ-cutter-tip-radius-settable | Phase 19 | Complete |
-| REQ-trochoid-composes-and-is-priced | Phase 19 | Pending |
+| REQ-trochoid-composes-and-is-priced | Phase 19 | Complete |
 
 **Placement notes** (where a requirement's phase is not the one its text first suggests):
 - REQ-root-mode-decided: the choice is *taken* at Phase 18's discuss-phase (it fixes the
