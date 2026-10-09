@@ -4269,3 +4269,101 @@ and 771 of the 10,326 product gears. By module the 771 are mostly a small-module
 the 616 module-0.2 gears (195 of them on tangent joins, with no undercut at all) against 176 of the
 9,710 gears of module 1 and above (125 at module 1, 43 at 1.75, 8 at 10), because an absolute
 0.4 mm floor sits above the whole tooth base of a module-0.2 gear.
+
+
+### Bars adopted (19-02)
+
+Recorded 2026-10-09 from the human's answer at 19-02's blocking checkpoint (Task 3). 19-04, 19-05
+and 19-06 write these values into code from this subsection, each beside the measurement it rests
+on, and nowhere else. Nothing was re-measured to write it: every number below is copied from the
+four subsections above (HEAD `01cd617`, `2dbf6f3`, `af53e4f`).
+
+**The human's words, verbatim: `take the recommendations`.** The mapping to option ids is the
+orchestrator's, from the recommendations the first 19-02 executor stated in its checkpoint report;
+the human named no id. The five decisions as adopted:
+
+| Decision | Adopted id | Value |
+|---|---|---|
+| Kernel bar | `bar-proposed` | 2e-3 x module |
+| Waist floor | `floor-print` | 0.4 mm, absolute (`MIN_TIP_FDM`) |
+| Waist field name | `name-root_waist` | `root_waist` |
+| D-02's one-way door | `d02-confirm` | `root_shape` and the `root_fillet` reinterpretation stand |
+| Area guard bar | `area-midpoints` | 5e-2 on the polygon through the arcs' midpoints |
+
+#### Kernel bar: `bar-proposed`, 2e-3 x module (L33 D-06)
+
+- Worst spline error per module over all 10,326 trochoid gears of the Phase 18 product, no stride:
+  **1.8431e-4** (30 teeth, module 1.75, 14.5 degrees, x -0.6, backlash 1.0, tip radius capped from
+  3.0). The oracle's own resolution: about 1e-15 per module (18-04).
+- Bar 2e-3 x module: **10.9x** the worst (10.85), 2e12x the resolution. At the 10x line and not
+  far over it, which is why it went to the human; the next listed value, 5e-3, was offered as
+  `bar-wider` (27x) and not taken.
+- Tripwire (the tip radius read 0.05 mm above the one the cutter used), on the module-1 10-tooth
+  row: **1.1039e-2 mm, 5.5x over the bar**. The tripwire must stay on a module-1 row: the shift does
+  not scale with the module, and on module 10 the same shift reads 1.3233e-2 mm, 0.66x of the bar
+  (2e-2 mm), under it.
+- Position count: the 19-01 reading at 41 positions can sit 28 % below the converged spline error
+  (module-10 row, 4.4785e-4 against 6.2097e-4 mm), so the bar is applied to a reading taken at 401 or
+  more positions per root edge, where the oracle agrees with method B to 0.01 of a unit of the third
+  digit on all seven rows.
+
+#### Waist floor: `floor-print`, 0.4 mm absolute (D-07, L08)
+
+- Measured: thinnest built waist **3.2325e-3 mm** (6 teeth, module 1, x -0.57, backlash 0.1, tip
+  radius 0.38, crossing join). Every one of the 1,061 trochoid gears in the walk built one valid
+  solid; the worst oracle reading was 6.8995e-5 mm and no reading was over even 1e-3 x module. There
+  is no failure signature above the spline-error scale, so the floor is a printability choice made
+  on the numbers, after the walk, and not a kernel limit. The floor is 124x the thinnest built waist
+  and 5.8e3x the worst oracle reading; "headroom over a failure" does not apply because nothing failed.
+- The floor warns and never refuses (D-06): the waist is printed for every trochoid gear.
+- It warns on **294 of the 1,061** walk gears and **771 of the 10,326** product gears.
+- **Small-module caveat, recorded with the adoption.** 595 of the 616 module-0.2 gears warn (195 of
+  them on tangent joins, which have no undercut at all) against 176 of the 9,710 gears of module 1
+  and above (125 of 6,399 at module 1, 43 of 1,469 at 1.75, 8 of 1,842 at 10). The 0.4 mm floor sits
+  above the whole tooth base of a module-0.2 gear, so on a small module the warning is mostly a
+  printability remark about the part and not about the undercut. The human adopted the floor with
+  these counts in front of them. The warning 19-06 plans for it is the `waist thin` sentence, which
+  does not use the word undercut, so a tangent-join module-0.2 gear is not told it is undercut.
+- The two candidates not taken: `floor-measured` does not exist (no failure signature) and
+  `floor-spline` (6.8995e-4 mm per mm of module) warns on 0 of 1,061 and 0 of 10,326.
+
+#### Waist field name: `name-root_waist`
+
+`root_waist`: the tooth's narrowest thickness in the hob-cut root, printed for every trochoid gear,
+true on tangent and crossing joins alike, beside `root_d`, `root_fillet` and `root_form_d`. "Undercut
+waist" would misname it on a tangent gear, which has a waist and no undercut. It is a published key
+on `/api/info` and `spur info` from its first release, so a rename later must keep the old key.
+
+#### D-02's one-way door: `d02-confirm`
+
+`root_shape: Literal["radial", "trochoid"]`, default `radial` (so no shared link moves, L05), group
+Teeth after `tip_chamfer`, the generated `--root-shape` flag, and `root_fillet` read as the hob's
+tip radius under it (D-01). Resting on: 10,326 of 10,326 trochoid gears built, 0 kernel exceptions.
+**19-04 is not blocked.**
+
+#### Area guard: `area-midpoints`, bar 5e-2 on the polygon through the arcs' midpoints
+
+- Measure: |face area / shoelace area - 1| with the polygon taken through the midpoint of each arc
+  (the tip arc's and the root arc's own middle points, which `model` already has) as well as its
+  ends. Worst over the product: **3.6791e-3** (7 teeth, module 1.75, x -0.6, backlash 1.0, tip radius
+  capped from 3.0). Bar 5e-2: **13.6x** (13.59).
+- Rejected: the plan's measure with both arcs taken as chords. Worst 1.2162e-2 (6 teeth, module 1,
+  14.5 degrees, x -0.6, backlash 0, tip radius 0.38); the largest listed bar, 0.1, is **8.2x**, and
+  none of 1e-2, 2e-2, 5e-2, 1e-1 reaches 10x. A bar under 10x is the human's, and a larger listed
+  value was not invented to fit it. 19-05 builds the midpoint polygon.
+
+#### The other guard bars: the planner's call, recorded as measured
+
+None of these is under 10x, so none needed a human answer (19-CONTEXT "Claude's Discretion").
+
+| Bar | Value | Worst over the product | Headroom | Beside it |
+|---|---|---|---|---|
+| `ROOT_SPACING_RATIO_MAX` | 1000 | 13.325 (40 teeth, module 1, 14.5 degrees, x 0.5, backlash 0.1, tip radius capped from 3.0) | 75.0x | the kernel first fails at a chord ratio of 728,888, 729x above the bar |
+| annulus | [rf - TOL, ra + TOL], TOL = `model.TOL` = 1e-6 mm | 1.137e-13 mm outside [rf, ra] (116 teeth, module 10, backlash 0); nearest approach to the tip circle 0.044 mm | 8.8e6x | |
+| `ROOT_JUNCTION_BAR_RAD` | 1e-11 rad | 2.442e-13 rad on tangent joins (26 teeth, 20 degrees, x -0.6, backlash 0.1, tip radius 0.5); crossing joins 6.939e-16 rad | 40.9x | the 18-01 bar of 1e-12 rad is only 4.1x over this product's tangent maximum, so **19-05 must not reuse it** |
+| `ROOT_ARC_MIN` | 2e-6 mm | last failing chord 2.0e-7 mm (a = 1e-7 mm) | 10.0x over the last failing chord | 15.8x below the smallest real chord in the product, 3.1644e-5 mm (6 teeth, module 1.75, x -0.6, backlash 0.1, tip radius capped from 3.0) |
+
+The root-arc dead band has a second, quieter edge: chords of 2e-12 and 2e-10 mm build a valid
+solid with the arc silently dropped (62 faces where 74 are expected), and the band is reachable
+from user input (backlash 0.19898413579248878 with the tip radius capped leaves a = 1.0e-8 mm).
+`ROOT_ARC_MIN` is why 19-05 drops the arc below it and shares the junction vector.
