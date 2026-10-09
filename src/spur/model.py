@@ -31,6 +31,7 @@ from . import int_env
 from .build_errors import BuildError
 from .calc import (
     Profile,
+    RootCurve,
     bore_radius,
     bore_rim_limit,
     hex_across_flats,
@@ -40,6 +41,7 @@ from .calc import (
     recess_fillet,
     recess_radii,
     root_fillet,
+    root_mode,
     spline_start,
     spoke_fillet_effective,
     tip_chamfer_effective,
@@ -130,7 +132,48 @@ def _fillet_corner(p0: cq.Vector, p1: cq.Vector, rf: float, rho: float,
     return on_root, mid, on_line
 
 
-def _outline(pr: Profile, fillet: float) -> cq.Wire:
+def _trochoid_outline(pr: Profile, curve: RootCurve) -> cq.Wire:
+    """Closed gear outline whose root is the hob's trochoid: one spline per side through
+    the `RootCurve`, then one involute spline from the same junction `Vector`, the tip
+    arc, the mirror image, and the root arc to the next tooth. Six side faces per tooth
+    where the radial outline has eight.
+
+    The involute spline starts with the SAME `Vector` object the root spline ends on,
+    never a recomputed one: a gap of 1e-6 mm silently opens a wire (PITFALLS 7), and a
+    shared object has none. Its other radii run from the curve's own last radius, so
+    the junction is one float (`calc.spline_start` returns it too). Built and read back
+    through the oracle on 15,723 swept cases without a failure (19-RESEARCH F1), and on
+    the 10,326 trochoid gears of the Phase 18 product by 19-02's `product` run.
+    """
+    pitch = 2 * math.pi / pr.z
+    r0 = curve.points[-1][0]
+    radii = [r0 + (pr.ra - r0) * (i / (FLANK_POINTS - 1)) ** 1.5 for i in range(FLANK_POINTS)]
+    teeth = []
+    for k in range(pr.z):
+        c = k * pitch
+        root_l = [_polar(r, c - h) for r, h in curve.points]
+        root_r = [_polar(r, c + h) for r, h in reversed(curve.points)]
+        flank_l = [root_l[-1]] + [_polar(r, c - pr.half_angle(r)) for r in radii[1:]]
+        flank_r = [_polar(r, c + pr.half_angle(r)) for r in reversed(radii[1:])]
+        flank_r.append(root_r[0])
+        teeth.append((c, root_l, root_r, flank_l, flank_r))
+
+    edges: list[cq.Edge] = []
+    for k, (c, root_l, root_r, flank_l, flank_r) in enumerate(teeth):
+        edges += [
+            cq.Edge.makeSpline(root_l),
+            cq.Edge.makeSpline(flank_l),
+            cq.Edge.makeThreePointArc(flank_l[-1], _polar(pr.ra, c), flank_r[0]),
+            cq.Edge.makeSpline(flank_r),
+            cq.Edge.makeSpline(root_r),
+        ]
+        nxt = teeth[(k + 1) % pr.z]
+        edges.append(cq.Edge.makeThreePointArc(
+            root_r[-1], _polar(pr.rf, c + pitch / 2), nxt[1][0]))
+    return cq.Wire.assembleEdges(edges)
+
+
+def _outline(pr: Profile, fillet: float, curve: RootCurve | None = None) -> cq.Wire:
     """Closed gear outline with analytic root fillets.
 
     Each flank starts with a straight segment from the root circle: radial up to the
@@ -142,7 +185,14 @@ def _outline(pr: Profile, fillet: float) -> cq.Wire:
 
     calc.spline_start places the spline's start, so the tip chamfer's cap reads the
     same radius the outline is built from.
+
+    With a `curve` (calc.RootMode.curve, set only where the hob's root applies) the root
+    is that curve instead and `fillet` is not read: the whole outline is
+    `_trochoid_outline`. The radial body below is untouched, float for float, for every
+    caller that passes none.
     """
+    if curve is not None:
+        return _trochoid_outline(pr, curve)
     r0 = spline_start(pr, fillet)  # where the involute spline starts
     straight = r0 > pr.rf + 1e-6
     radii = [r0 + (pr.ra - r0) * (i / (FLANK_POINTS - 1)) ** 1.5 for i in range(FLANK_POINTS)]
@@ -187,9 +237,10 @@ def _outline(pr: Profile, fillet: float) -> cq.Wire:
 
 # --- the part, one decision per step -------------------------------------------------
 
-def _gear_blank(pr: Profile, fillet: float, face_width: float) -> cq.Shape:
+def _gear_blank(pr: Profile, fillet: float, face_width: float,
+                curve: RootCurve | None = None) -> cq.Shape:
     """The toothed disc, before the face recesses and the bore."""
-    face = cq.Face.makeFromWires(_outline(pr, fillet))
+    face = cq.Face.makeFromWires(_outline(pr, fillet, curve))
     return cq.Solid.extrudeLinear(face, cq.Vector(0, 0, face_width))
 
 
@@ -539,7 +590,11 @@ def _tip_edges(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
 
 def _build(p: GearParams) -> cq.Solid:
     pr = profile(p)
-    solid = _gear_blank(pr, root_fillet(p), p.face_width)
+    # The one answer to "which root", the same call derive() makes, so the part and the
+    # numbers cannot name different roots (PITFALLS 1). Only the curve crosses into this
+    # module: the generator stays in calc.
+    rm = root_mode(p, pr, requested=p.root_shape, rho=p.root_fillet)
+    solid = _gear_blank(pr, root_fillet(p), p.face_width, rm.curve)
     solid = _cut_face_recesses(solid, p, pr.rf)
     solid = _cut_bore(solid, p)
     solid = _cut_keyway(solid, p)

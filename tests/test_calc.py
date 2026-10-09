@@ -108,6 +108,8 @@ def test_span_measurement(m: float, pa: float, k: int, w: float) -> None:
 def test_higher_pressure_angle_gives_finer_tips_and_thicker_roots() -> None:
     a, b = derive(GearParams(pressure_angle=20)), derive(GearParams(pressure_angle=25))
     assert b.tip_thickness < a.tip_thickness
+    assert a.root_thickness is not None
+    assert b.root_thickness is not None
     assert b.root_thickness > a.root_thickness
 
 
@@ -518,6 +520,8 @@ def test_tooth_thickness_and_gap_are_measured_on_the_same_circle() -> None:
     for teeth in (19, 40):  # 19 -> rb > rf (the broken case), 40 -> rf > rb
         p = GearParams(teeth=teeth)
         d, pr = derive(p), profile(GearParams(teeth=teeth))
+        assert d.root_thickness is not None
+        assert d.root_gap is not None
         assert d.root_thickness + d.root_gap == pytest.approx(
             2 * math.pi * pr.rf / teeth, abs=2e-3)
 

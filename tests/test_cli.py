@@ -5,7 +5,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import get_args
+from typing import Literal, get_args, get_origin
 
 import cadquery as cq
 import pytest
@@ -194,10 +194,15 @@ def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
 
     Order and group names are pinned, not discretionary (12-01-SUMMARY.md, the human's
     binding "seven" answer): the schema carries seven groups, in this order --
-    Teeth, Body, Bore, Recess, Spokes, Holes, Honeycomb -- and `recess_sides` lives in
-    Recess, checked as `enum`, not `step`.
+    Teeth, Body, Bore, Recess, Spokes, Holes, Honeycomb. The fields exempt from `step`
+    are every `Literal` field, read from the model (REQ-root-mode-decided): a number
+    field has a step, a choice field has an enum equal to its annotation's values. The
+    list is pinned too, in model order, so a new choice field is a deliberate edit here.
     """
     names = list(GearParams.model_fields)
+    literal_fields = [n for n, f in GearParams.model_fields.items()
+                      if get_origin(f.annotation) is Literal]
+    assert literal_fields == ["root_shape", "recess_sides"]
     props = TestClient(spur.app.app).get("/api/schema").json()["properties"]
     assert list(props) == names  # buildForm() renders schema.properties in this order
 
@@ -206,13 +211,14 @@ def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
         assert "group" in prop, name
         assert "title" in prop, name
         assert "unit" in prop, name
-        if name == "recess_sides":
-            assert "step" not in prop
+        if name in literal_fields:
+            assert "step" not in prop, name
+            assert prop["enum"] == list(get_args(GearParams.model_fields[name].annotation)), name
         else:
             assert "step" in prop, name
 
-    assert props["recess_sides"]["enum"] == list(
-        get_args(GearParams.model_fields["recess_sides"].annotation))
+    assert props["root_shape"]["enum"] == ["radial", "trochoid"]
+    assert props["root_shape"]["default"] == "radial"
 
     # Each fieldset holds a contiguous run: a group may not start, end and then start
     # again further down the field list.

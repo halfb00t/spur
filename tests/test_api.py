@@ -312,7 +312,9 @@ def test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut() -> None:
     assert props["tip_chamfer"]["step"] == 0.05
     names = list(props)
     assert names.index("tip_chamfer") == names.index("root_fillet") + 1
-    assert names.index("face_width") == names.index("tip_chamfer") + 1
+    # D-02 put root_shape directly after tip_chamfer, so it now precedes face_width.
+    assert names.index("root_shape") == names.index("tip_chamfer") + 1
+    assert names.index("face_width") == names.index("root_shape") + 1
 
     r = client.get("/api/info", params={"tip_chamfer": 0.4})
     assert r.status_code == 200

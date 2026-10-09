@@ -24,9 +24,9 @@ def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
 
 
 class GearParams(BaseModel):
-    """Involute spur gear with an optional tooth-tip chamfer, D-flat or hex bore, a
-    keyway, annular face recesses, a spoke pattern, a lightening-hole pattern and a
-    honeycomb web."""
+    """Involute spur gear with an optional tooth-tip chamfer, an optional hob-cut
+    (trochoid) root, D-flat or hex bore, a keyway, annular face recesses, a spoke
+    pattern, a lightening-hole pattern and a honeycomb web."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -46,12 +46,23 @@ class GearParams(BaseModel):
                          help="Removed from the circular tooth thickness (printing clearance).")
     root_fillet: float = _f(0.5, 0, 3, title="Root fillet", group="Teeth", unit="mm",
                             step=0.05,
-                            help="Fillet radius at the tooth roots, capped to fit. 0 = sharp.")
+                            help="Fillet radius at the tooth roots with the radial root; "
+                                 "the hob's tip radius with the trochoid root. Capped to "
+                                 "fit either way. 0 = sharp.")
     tip_chamfer: float = _f(0.0, 0, 3, title="Tip chamfer", group="Teeth", unit="mm",
                             step=0.05,
                             help="Chamfer on the tooth-tip edges at both faces: an edge "
                                  "break for handling and printing, capped to fit the "
                                  "tooth. 0 = none.")
+    # A Literal like recess_sides, so it needs no `step`; the default is radial because
+    # every shareable link that omits the field must build the part it always built (L05).
+    root_shape: Literal["radial", "trochoid"] = Field(
+        "radial", title="Root shape",
+        description="radial is the analytic root: a fillet and a straight lead-in "
+                    "below the base circle. trochoid is the root a hob with tip radius "
+                    "root_fillet cuts, used where the base circle lies above the root "
+                    "circle and warned about elsewhere.",
+        json_schema_extra={"group": "Teeth", "unit": ""})
 
     # --- Body ------------------------------------------------------------------
     face_width: float = _f(7.5, 1, 100, title="Face width", group="Body", unit="mm",

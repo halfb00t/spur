@@ -7,6 +7,7 @@ from pathlib import Path
 
 import cadquery as cq
 import pytest
+from trochoid_oracle import clearance
 
 from spur.build_errors import BuildError
 from spur.calc import (
@@ -39,6 +40,61 @@ from spur.model import (
 from spur.params import GearParams
 
 Facet = tuple[tuple[float, ...], tuple[float, ...], tuple[float, ...]]
+
+# mm per mm of module, how far the Phase 18 swept-cutter oracle may read the built hob root
+# from the cut boundary. The human adopted it at 19-02 Task 3 (2026-10-09, "take the
+# recommendations", id bar-proposed; bench/RESULTS.md "Bars adopted (19-02)"), from two
+# numbers measured over every one of the 10,326 trochoid gears of the Phase 18 sweep
+# product, no stride: the worst kernel-spline error is 1.8431e-4 per module (30 teeth,
+# module 1.75, 14.5 degrees, x -0.6, backlash 1.0, tip radius capped from 3.0), and the
+# oracle's own resolution is about 1e-15 per module. 2e-3 is 10.9x the first and 2e12x the
+# second. Its tripwire, the tip radius read 0.05 mm above the one the cutter used, reads
+# 1.1039e-2 mm on the module-1 10-tooth row: 5.5x over the bar. That is why the tripwire
+# sits on a module-1 row: on module 10 the same shift reads 0.66x of the bar. Measured on an
+# Apple M5 Max (18 CPUs), Python 3.12.15, cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1. Readings
+# are taken at 401 positions per root edge: 41 can sit 28 % below the converged error.
+KERNEL_BAR_PER_MODULE = 2e-3
+ORACLE_SAMPLES = 400    # positions per root edge, minus one
+
+
+def _root_edges(solid: cq.Shape, p: GearParams) -> list[cq.Edge]:
+    """The hob-root splines on the z = 0 face: BSPLINE edges lying on that face with one
+    end on the root circle, two per tooth. The count is asserted before anything reads
+    them: a selector that selects nothing must fail, not read zero (L26)."""
+    rf = profile(p).rf
+
+    def on_root(e: cq.Edge) -> bool:
+        if e.geomType() != "BSPLINE":
+            return False
+        a, b = e.startPoint(), e.endPoint()
+        return (abs(a.z) < TOL and abs(b.z) < TOL
+                and any(abs(math.hypot(v.x, v.y) - rf) < TOL for v in (a, b)))
+
+    edges = [e for e in solid.Edges() if on_root(e)]
+    assert len(edges) == 2 * p.teeth
+    return edges
+
+
+def _oracle_reading(solid: cq.Shape, p: GearParams, rho_used: float) -> float:
+    """The largest |reading| in mm of the swept-cutter oracle over the two root edges of
+    tooth 0, ORACLE_SAMPLES + 1 positions on each, with the tip radius `rho_used`. Tooth 0
+    is centred on +X, so its edges are the two whose midpoint lies within pi / teeth of
+    it. A solid may hand an edge back reversed; each position is read as (radius,
+    |angle|), so direction does not matter."""
+    tooth0 = [e for e in _root_edges(solid, p)
+              if abs(math.atan2(e.positionAt(0.5).y, e.positionAt(0.5).x)) < math.pi / p.teeth]
+    assert len(tooth0) == 2
+    worst = 0.0
+    for e in tooth0:
+        points = tuple((math.hypot(v.x, v.y), abs(math.atan2(v.y, v.x)))
+                       for v in (e.positionAt(i / ORACLE_SAMPLES)
+                                 for i in range(ORACLE_SAMPLES + 1)))
+        readings = clearance(points, teeth=p.teeth, module=p.module,
+                             pressure_angle=p.pressure_angle,
+                             profile_shift=p.profile_shift, backlash=p.backlash,
+                             rho=rho_used, neighbours=True)
+        worst = max(worst, max(abs(v) for v in readings))
+    return worst
 
 
 @pytest.mark.parametrize("kw", [
@@ -1892,3 +1948,28 @@ def test_an_stl_export_matches_a_first_export_whatever_came_before(tmp_path: Pat
         assert int.from_bytes(data[80:84], "little") == int.from_bytes(reference[80:84], "little")
         assert (_closed_shell_volume(data)
                 == pytest.approx(_closed_shell_volume(reference), rel=1e-6))
+
+
+def test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root() -> None:
+    """The tracer, kernel tier (REQ-outline-consumes-root-curve, L08): the default gear
+    with root_shape "trochoid" is one valid solid with six side faces per tooth where the
+    default part has eight, so 2 x 19 = 38 fewer faces and 6 x 19 = 114 fewer edges (172
+    faces and 490 edges become 134 and 376, read 2026-10-09); its 2 x 19 root splines are
+    selected by position, and tooth 0's, read by the independent swept-cutter oracle with
+    the tip radius derive() printed, sit within the adopted bar."""
+    p = GearParams(root_shape="trochoid")
+    radial = _build_checked(GearParams())
+    hob = _build_checked(p)
+    assert len(hob.Solids()) == 1
+    assert hob.isValid()
+    assert (len(radial.Faces()), len(radial.Edges())) == (172, 490)
+    assert (len(hob.Faces()), len(hob.Edges())) == (134, 376)
+    assert len(radial.Faces()) - len(hob.Faces()) == 2 * p.teeth
+    assert len(radial.Edges()) - len(hob.Edges()) == 6 * p.teeth
+    assert len(_root_edges(hob, p)) == 38
+    printed = derive(p).root_fillet
+    assert printed == 0.5
+    reading = _oracle_reading(hob, p, printed)
+    print(f"default gear, hob root: oracle reads {reading:.4e} mm of "
+          f"{KERNEL_BAR_PER_MODULE * p.module:.4e}")
+    assert reading <= KERNEL_BAR_PER_MODULE * p.module

@@ -457,14 +457,84 @@ def test_every_pre_v0_2_record_reads_radial_because_nobody_asked() -> None:
     make, root_mode(p, profile(p)), reads radial / "not requested" with no cutter and no
     warning on all 44 records of the pre-v0.2 fixture, whatever the gear and whatever rho
     is passed beside it, so wiring it in later cannot move a record that nobody asked to
-    move."""
+    move. The call the consumers make since 19-04, with the record's own root_shape and
+    root_fillet, reads the same (REQ-root-mode-decided: every record spells nothing, so
+    the field defaults to radial and the part and the document are the shipped ones)."""
     gears = _fixture_gears()
     assert len(gears) == 44
     for name, p in gears:
         pr = profile(p)
-        for rm in (root_mode(p, pr), root_mode(p, pr, rho=0.38)):
+        for rm in (root_mode(p, pr), root_mode(p, pr, rho=0.38),
+                   root_mode(p, pr, requested=p.root_shape, rho=p.root_fillet)):
             assert (rm.mode, rm.reason, rm.cutter) == ("radial", "not requested", None), name
+            assert rm.curve is None, name
             assert root_warnings(rm) == (), name
+
+
+def test_the_default_gear_asked_for_the_hob_root_prints_its_numbers_and_no_radial_ones() -> None:
+    """The tracer, calc tier (D-01, D-03, D-05; REQ-derived-numbers-honest-under-trochoid):
+    the default gear with root_shape "trochoid" prints no tooth thickness or gap at the
+    root, the tip radius the cutter used (0.5 mm, under its 0.6348 mm cap), and one
+    sentence saying why the two are absent -- and every number that does not depend on the
+    root's shape equal to the radial document's, because root_d is the same rf in both
+    (probe precision). No straight-chord sentence: there is no chord. The sentence was
+    captured from derive() on 2026-10-09, never composed here (L33)."""
+    sentence = ("root_thickness and root_gap are not printed with the hob-cut root: the "
+                "tooth's thickness changes too fast with radius near the root circle to "
+                "give one honest number there.")
+    hob, radial = derive(GearParams(root_shape="trochoid")), derive(GearParams())
+    assert hob.root_thickness is None
+    assert hob.root_gap is None
+    assert hob.root_fillet == 0.5
+    assert hob.warnings == (sentence,)
+    shared = ("root_d", "pitch_d", "tip_d", "base_d", "caliper_over_tips", "tip_thickness",
+              "span_teeth", "span")
+    assert len(shared) == 8
+    for name in shared:
+        assert getattr(hob, name) == getattr(radial, name), name
+    assert radial.root_thickness is not None
+    assert radial.warnings == ()
+
+
+def test_a_link_that_spells_the_default_root_shape_is_the_link_that_omits_it() -> None:
+    """Probe adjacency (REQ-root-mode-decided, L05): "radial" is the default, so a link
+    that writes it and one that leaves it out are one parameter object -- equal, equally
+    hashed (the solid cache keys on it) and deriving the same document."""
+    spelled, omitted = GearParams(root_shape="radial"), GearParams()
+    assert spelled == omitted
+    assert hash(spelled) == hash(omitted)
+    assert derive(spelled) == derive(omitted)
+    assert GearParams(root_shape="trochoid") != omitted
+
+
+def test_a_trochoid_request_with_nothing_radial_to_replace_prints_the_radial_numbers_and_says_so(
+) -> None:
+    """Probe boundary (REQ-root-mode-decided), the derive tier of the 41/42 rows of
+    test_root_mode_hands_back_where_the_involute_reaches_the_root_circle: module 1, 20
+    degrees, no shift, no backlash, tip radius 0.38 mm. 41 teeth have a radial root to
+    replace and print the hob's document (null thickness and gap). 42 do not: the request
+    is refused, the root is the radial one, and the document is the radial request's
+    thickness, gap and fillet with the sentence that explains the refusal -- never the
+    hob's null. Both sentences were captured from derive() on 2026-10-09 (L33)."""
+    thickness_sentence = (
+        "root_thickness and root_gap are not printed with the hob-cut root: the tooth's "
+        "thickness changes too fast with radius near the root circle to give one honest "
+        "number there.")
+    refusal = ("No radial root to replace on this gear (base circle 19.734 mm, root circle "
+               "19.750 mm): the trochoid root request is ignored.")
+    fields = {"module": 1, "pressure_angle": 20, "profile_shift": 0, "backlash": 0,
+              "root_fillet": 0.38}
+    hob41 = derive(_gear(teeth=41, root_shape="trochoid", **fields))
+    assert (hob41.root_thickness, hob41.root_gap, hob41.root_fillet) == (None, None, 0.38)
+    assert hob41.warnings == (thickness_sentence,)
+
+    asked = derive(_gear(teeth=42, root_shape="trochoid", **fields))
+    radial = derive(_gear(teeth=42, **fields))
+    assert (asked.root_thickness, asked.root_gap, asked.root_fillet) == (2.065, 0.889, 0.38)
+    assert (asked.root_thickness, asked.root_gap, asked.root_fillet) == (
+        radial.root_thickness, radial.root_gap, radial.root_fillet)
+    assert asked.warnings == (refusal,)
+    assert asked.root_d == radial.root_d
 
 
 def test_the_fixture_straddles_the_three_undercuts_without_mixing_them() -> None:
