@@ -604,8 +604,8 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Next: the human reviews and approves the v0.5 roadmap (`.planning/ROADMAP.md`, five phases); the orchestrator commits it. Then `/gsd-discuss-phase 21` — decisions 1–4 (confirm the kickoff choices) and the Linux/WebGL spike as the first task.
-- Prerequisite found at roadmap time: the `v0.4` tag exists neither locally nor on `origin` (only `v0.1`–`v0.3` do), yet v0.5's fixture rule is stated against "the `v0.4` tag". Tag the v0.4 close on `main` (the v0.2/v0.3 precedent) before the first phase that diffs against it; which commit (the close squash `b24287a` or Phase 19's `767317b`) is the human's call.
+- Next: the roadmap is approved and committed (`7f761c9`); the start branch `gsd/milestone-v0.5-start` (4 commits) lands as its own PR through `make pr.land` (the v0.4 precedent, PR #26). Then `/gsd-discuss-phase 21` — decisions 1–4 (confirm the kickoff choices) and the Linux/WebGL spike as the first task.
+- Done at roadmap time: the `v0.4` tag was missing locally and on `origin` (only `v0.1`–`v0.3` existed) although v0.5's fixture rule is stated against it; the human chose the close squash `b24287a` (the v0.2/v0.3 precedent) and the annotated tag was created and pushed 2026-10-10.
 - Open decision carried, now owned by Phase 25: re-set L34's 66 s gate bar from an idle-host reading under a rule written before the first reading (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar). The 401-position oracle count is not part of this milestone.
 - Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
 - Still open: Phase 18's IN-01…IN-08 (`milestones/v0.4-phases/18-trochoid-maths-proved/18-REVIEW-DISPOSITION.md`), Phase 19's IN-01…IN-04 (debt item), the resource-tracker flake (`must`; trigger: the next `make verify` failure with its whole log kept, else whole-suite loops at the next milestone's start).
