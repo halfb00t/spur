@@ -6,6 +6,9 @@ PLATFORM    ?=
 PYTEST_ARGS ?=
 SWEEP       ?=
 SET         ?=
+# CI passes --with-deps (the runner needs Playwright's apt libraries, installed through
+# sudo); a developer host never does.
+BROWSER_INSTALL_ARGS ?=
 
 # cadquery-ocp publishes wheels up to CPython 3.12, and spur supports 3.12 only (L23).
 # Choosing the interpreter here instead of using a bare `python3` is what stops pip
@@ -16,6 +19,13 @@ PYTHON ?= $(shell for p in python3.12; do \
 PY    := $(VENV)/bin/python
 STAMP := $(VENV)/.installed
 HOOKS := $(VENV)/.hooks-installed
+BROWSER := $(VENV)/.browser
+# D-06: the headless shell lives with the venv, so `make clean` removes it with the venv and
+# the host's shared cache (~/Library/Caches/ms-playwright holds another project's
+# chromium-1228 here) is never touched. Absolute, because Playwright resolves a relative
+# value against the driver's working directory: launched from another directory it looked
+# for "/private/tmp/ms-playwright/..." and found nothing (21-RESEARCH Pattern 5).
+export PLAYWRIGHT_BROWSERS_PATH := $(abspath $(VENV))/ms-playwright
 # A DOCKER_DEFAULT_PLATFORM in your environment wins unless you set PLATFORM here;
 # PLATFORM=linux/arm64 gives a native, much faster image on Apple silicon.
 PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
@@ -71,6 +81,16 @@ $(HOOKS): .pre-commit-config.yaml $(STAMP)
 	  echo "make: a linked worktree -- the hooks live in the main checkout's .git/hooks; run make venv there (L36)."; \
 	  touch $@; \
 	fi
+
+# The headless shell for the browser test (D-06). 198 MB, 16.4 s on macOS arm64 and 67 s
+# through sudo with --with-deps in an ubuntu:24.04 container (21-RESEARCH, scratch runs).
+# It depends on $(STAMP), which depends on pyproject.toml: a playwright bump changes the
+# pin, so the next gate run installs the shell that wheel expects instead of launching a
+# stale revision (BT-8). 21-06 makes it a prerequisite of `test` only, never of
+# verify.static or test.fast, so the commit-time slice never downloads a browser.
+$(BROWSER): $(STAMP)
+	$(PY) -m playwright install $(BROWSER_INSTALL_ARGS) --only-shell chromium
+	@touch $@
 
 venv: $(STAMP) $(HOOKS)  ## create .venv with the dev extras, ~1.4 GB (override with VENV=)
 
