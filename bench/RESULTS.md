@@ -5165,3 +5165,86 @@ comparison of the code either, only the same host on another day. The reading se
 Human's answer: "accept" (option id `accept`: keep the browser test inside `make verify` and CI, O1), given 2026-10-10 UTC.
 No further words were given. The human did not ask for arm A to be re-measured with the plan's literal `PYTEST_ARGS`
 spelling, so the `PYTEST_ADDOPTS` spelling recorded under `#### Red runs` stands for the three counted A runs.
+
+### The Linux path on the real runner (21-08)
+
+SC5: the admitted suite on a real `ubuntu-latest` run of the phase branch. The human pushed `gsd/phase-21-browser-test-of-the-viewer`
+and opened draft PR #33 (`Phase 21: Browser Test of the Viewer`, base `main`); the pre-push hook's `make verify` passed on the
+macOS host first. The agent only read the run with `gh`. The whole log is kept at
+`.planning/phases/21-browser-test-of-the-viewer/investigation/21-08-run-38059369744.log` (2,713 lines, every job).
+
+| Run | Conclusion | Classification |
+|---|---|---|
+| [38059369744](https://github.com/halfb00t/spur/actions/runs/38059369744) (`ci`, event `pull_request`, head `88df5cf9610e199203b56b9ae6f18a9dc0125953`, created 2026-10-10 14:22:47Z) | success: `test (3.12)`, `image` and `vendor-bundle` all green | none to classify: first push, no red run; one run of the three allowed |
+
+The run's `headSha` is the pushed `HEAD` (`git rev-parse HEAD` read `88df5cf9610e199203b56b9ae6f18a9dc0125953` before and after the
+push). Between the 21-07 B arm's HEAD `45195ce` and this one the diff touches no file under `src/`, `tests/`, `Makefile`,
+`pyproject.toml` or `.github/`: `bench/RESULTS.md`, `docs/tech_debt/` and `.planning/` only. So the suite this run collected is
+the B arm's, and the passed counts compare like for like.
+
+#### Host state (the runner)
+
+- Image `ubuntu-24.04`, version `20261004.327.1`, provisioner `20261002.596`, runner 2.337.0, Ubuntu 24.04.5 LTS (the `Set up job`
+  group): the same image version as 21-02's spike run
+- `pytest -n 4` (`4 workers [1226 items]`), so the runner had 4 CPUs as in 21-02 (`nproc` 4 was read there; this workflow has no
+  hardware step, so it was not read again)
+- Python 3.12.15 (`actions/setup-python@v5`), pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0, `playwright` 1.63.0
+  (`manylinux1_x86_64` wheel, 48.2 MB), Chrome Headless Shell 153.0.8010.12 (`playwright chromium-headless-shell v1243`)
+- Read 2026-10-10 14:22 to 14:39 UTC, from `gh run view 38059369744 --json jobs` and `--log`. A shared runner: load is not
+  observable from the log, so every wall figure is one sample
+
+#### Readings
+
+| Reading | Value |
+|---|---|
+| `test (3.12)` job wall time | **16 min 8 s** (968 s): `startedAt` 14:22:50Z, `completedAt` 14:38:58Z, read from `gh run view --json jobs` |
+| Result line | `1226 passed in 887.92s (0:14:47)`; `[1226 items]` collected, no failure, no skip, no `rerun`, and none of `resource_tracker`, `ReentrantCall`, `ExceptionGroup`, `FAILED` anywhere in the log (`grep -ci` prints 0) |
+| Passed count against the local B arm | 1226 against 1226 (`21-07-B-1` to `B-3`, `45195ce`). Arm A read 1225: the one extra test is `tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` |
+| Coverage TOTAL | `1346 21 384 14 97.98%` against the 96.0 % floor (`Required test coverage of 96.0% reached`). The macOS B arm read `1346 22 384 14 97.92%`: one fewer missed statement on Linux, same statement and branch counts. Not investigated; both are above the floor |
+| Install, `playwright install --with-deps --only-shell chromium` | **13.97 s** from the command line (14:23:52.993) to the next command's line, the pytest command (14:24:06.962): `Switching to root user to install dependencies...`, `apt-get update`, `1 upgraded, 9 newly installed`, 21.5 MB of archives, 79.5 MB of additional disk, then the shell download 14:24:03.058 to 14:24:06.498 (3.44 s) and ffmpeg to 14:24:06.936 |
+| Install path | `/home/runner/work/spur/spur/.venv/ms-playwright/chromium_headless_shell-1243` and `.../.venv/ms-playwright/ffmpeg-1011`: under `.venv`, as D-06 chose, so no other project's browser cache is on the runner's path |
+| Install command | `.venv/bin/python -m playwright install --with-deps --only-shell chromium`, printed by the `$(BROWSER)` stamp rule after the import contracts (`Contracts: 5 kept, 0 broken.`) and before pytest |
+| Other jobs in the run | `image` success, 14:22:51Z to 14:25:04Z (2 min 13 s); `vendor-bundle` success, 14:22:51Z to 14:23:03Z (12 s) |
+
+What the log does and does not show. `tests/test_browser.py` is not named in this log: the workflow runs `make verify` without
+the spike's `PYTEST_ARGS: -rP` and without `-s` or `-v`, so no per-test line or `step` line is printed. That it ran is
+established three ways: the collected count of 1226 is the B arm's, which is the A arm's 1225 plus this file's one test; the
+`$(BROWSER)` stamp installed the shell inside the same job, in the venv the test launches from; and the test has no skip path
+and fails closed on a missing shell (`tests/test_browser_pins.py`), so a pass is a launched browser. The scenario's `webgl2`
+first step is asserted inside the test and is not printed here; it read 0.04 s on this runner image in 21-02 (macOS 0.01 s in
+21-07). Nothing in this reading depends on a line the log does not hold.
+
+#### Against the spike run (21-02)
+
+| | 21-02 spike, run 38044109910 | 21-08, run 38059369744 |
+|---|---|---|
+| Head | `a6a4fc5` on throwaway branch `spike/21-linux-runner` | `88df5cf`, the phase branch |
+| Image | `ubuntu-24.04` `20261004.327.1` | the same |
+| Install | 14.7 s | 13.97 s |
+| `test (3.12)` job | 16 min 25 s | 16 min 8 s |
+| Result line | `1221 passed in 906.71s (0:15:06)` | `1226 passed in 887.92s (0:14:47)` |
+| Coverage TOTAL | 97.98 % | 97.98 % |
+
+The install is within a second of the spike's, on the same apt set (79.5 MB of additional disk in both). The job wall time
+differs by 17 s and the pytest wall by 18.79 s, with five more tests than the spike's 1221, well inside the 437 s band the
+three no-browser `main` runs span in 21-02 (`487.39s` to `924.02s`). So the runner reading repeats the spike's and, as there,
+cannot show what the browser test adds: isolated it reads 4.23 s of pytest serial (21-07). Phase 25 owns pricing the gate.
+One run per branch is one sample, not an interval.
+
+#### The spike stays unmerged
+
+`gh pr list --head spike/21-linux-runner --state merged --json number --jq length` prints `0`; PR #32 reads `state` CLOSED,
+`mergedAt` null; `git merge-base --is-ancestor spike/21-linux-runner HEAD` exits 1. The branch is kept on `origin`.
+
+#### Annotations on the run
+
+Two, on the run and not on a test: a Node 20 deprecation warning for `actions/checkout@v4` and `actions/setup-python@v5`
+(forced to Node 24, no failure), and a notice that "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19,
+2026" (`actions/runner-images#14748`). The run above is on `ubuntu-24.04`; a run after that date is on a different image, and
+nothing here says the `--with-deps` install or the headless shell works there. That is filed as debt, not assumed.
+
+#### Outcome
+
+**SC5 is met**: the phase's own suite, `tests/test_browser.py` inside `make verify` with the headless shell installed under
+`.venv/ms-playwright` by the `$(BROWSER)` stamp with `--with-deps`, is green on a real `ubuntu-latest` run of the phase branch at
+the pushed head `88df5cf`, run 38059369744, job wall time 16 min 8 s, `1226 passed in 887.92s`, TOTAL 97.98 %.
