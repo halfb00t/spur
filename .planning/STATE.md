@@ -4,12 +4,11 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 22
 current_phase_name: Download Name Carries the Root
-status: planning
+status: "Phase 21 shipped — PR #33"
 stopped_at: Phase 21 complete, ready to plan Phase 22
-last_updated: "2026-10-10T15:08:56.689Z"
+last_updated: "2026-10-10T16:19:19.266Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 21 complete, transitioned to Phase 22
-state_head: 721cb363e9ebce726f88d11961f6028fdd5fcbbf
+state_head: 9e9848fbb831364b478310d31dd50c93dc63d01c
 progress:
   total_phases: 5
   completed_phases: 4
@@ -32,10 +31,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 22 — Download Name Carries the Root
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-10 — Phase 21 complete, transitioned to Phase 22
+Status: Phase 21 shipped — PR #33
+Last activity: 2026-10-10
 
-Progress: [██░░░░░░░░] 20% (1 of 5 phases; Phase 24 is discretionary)
+Progress: [████████░░] 80% (1 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
