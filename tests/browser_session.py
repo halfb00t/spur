@@ -26,7 +26,7 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import IO
 
 import pytest
@@ -135,13 +135,19 @@ def _wait_for_pool(base: str, proc: subprocess.Popen[bytes], log: IO[bytes]) -> 
 
 
 @contextlib.contextmanager
-def serve() -> Iterator[str]:
+def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
     """Run the shipped app in its own uvicorn process and yield its base URL.
 
     The listening socket is bound here, to port 0 on 127.0.0.1, and handed down by
     descriptor (`--fd`): the kernel assigns the port, so two xdist workers can never be
     given one, and nothing off the host can reach it. The child gets no `SPUR_*`
     variable, so the pool is the shipped two workers and the shipped timeouts (D-11).
+
+    `floor_applies` is asked at teardown whether the group must still show its
+    `MIN_GROUP_MEMBERS`. Pool workers start on first use: the group read 2 members after
+    /api/health reported a pool and 3 after one preview build (macOS, 2026-10-10). A test
+    that failed before it built anything must not add a second, misleading error here, so
+    the caller says when the floor is meaningful.
     """
     sock = socket.socket()
     try:
@@ -167,7 +173,7 @@ def serve() -> Iterator[str]:
                 body_finished = True
             finally:
                 try:
-                    if body_finished:
+                    if body_finished and floor_applies():
                         members = group_members(proc.pid)
                         print(f"server group members before the kill: {len(members)}")
                         assert len(members) >= MIN_GROUP_MEMBERS, (

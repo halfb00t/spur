@@ -50,14 +50,17 @@ WEBGL2_PROBE = """() => {
 
 
 @pytest.fixture(scope="module")
-def server() -> Iterator[str]:
+def server(request: pytest.FixtureRequest) -> Iterator[str]:
     """One real server for the module.
 
     A subprocess and not an in-process thread: `spur.app.app` is a singleton whose lifespan
     and `dependency_overrides` every TestClient test on the same worker shares. Torn down
     in a `finally` inside `serve()`, so a failing assertion still kills the process group.
+    A test that failed (a missing shell, no WebGL) built nothing, so the pool had not started
+    its workers and the group floor is not asserted for it: one failure, reported once.
     """
-    with serve() as base:
+    failed_before = request.session.testsfailed
+    with serve(lambda: request.session.testsfailed == failed_before) as base:
         yield base
 
 
