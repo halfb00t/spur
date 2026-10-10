@@ -56,7 +56,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 - [ ] **REQ-browser-form-from-schema**: the test reads `/api/schema` and asserts the rendered
   form carries exactly its groups and fields, in its order — every count read from the schema
   at test time, never hard-coded; the CSS custom properties the renderer reads are non-empty.
-- [ ] **REQ-browser-first-build-drawn**: after a fresh load the `#dl-stl` href is set only
+- [x] **REQ-browser-first-build-drawn**: after a fresh load the `#dl-stl` href is set only
   after `showModel` returns, the canvas is non-blank against a blank control (the bar — PNG
   size ratio or distinct-pixel count, 38,908 B vs 3,393 B / 11,478 pixels MEASURED on
   SwiftShader — recorded with the reading that set it), and `canvas.dataset.triangles`
@@ -241,7 +241,7 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 |-------------|-------|--------|
 | REQ-browser-server-fixture | Phase 21 | Pending |
 | REQ-browser-form-from-schema | Phase 21 | Pending |
-| REQ-browser-first-build-drawn | Phase 21 | Pending |
+| REQ-browser-first-build-drawn | Phase 21 | Complete |
 | REQ-browser-invalid-field-marked | Phase 21 | Pending |
 | REQ-browser-warning-rendered | Phase 21 | Pending |
 | REQ-browser-link-round-trip | Phase 21 | Pending |

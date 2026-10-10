@@ -5,17 +5,17 @@ milestone_name: Honest Form
 current_phase: 21
 current_phase_name: Browser Test of the Viewer
 status: executing
-stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-10-10T09:47:29.978Z"
+stopped_at: Completed 21-02-PLAN.md
+last_updated: "2026-10-10T10:35:56.777Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 21 execution started
-state_head: 505ebe71ee1c66dce316b099df0800b1f5f3843f
+state_head: be40b0f74e50ae1bf7a7039e6109f26c7b9d5906
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 8
-  completed_plans: 1
-  percent: 13
+  completed_plans: 2
+  percent: 25
 ---
 
 # Project State
@@ -33,11 +33,11 @@ is `/gsd-discuss-phase 21` (the browser test)
 ## Current Position
 
 Phase: 21 (Browser Test of the Viewer) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-10-10 — Phase 21 execution started
 
-Progress: [█░░░░░░░░░] 13% (0 of 5 phases; Phase 24 is discretionary)
+Progress: [███░░░░░░░] 25% (0 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
@@ -219,6 +219,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 19 P10 | 12min | 1 tasks | 3 files |
 | Phase 19 P11 | 8 min | 2 tasks | 7 files |
 | Phase 21 P01 | 28 min | 3 tasks | 6 files |
+| Phase 21 P02 | 43 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -393,6 +394,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 21]: PNG_RATIO_BAR is 4.9: PD-03 applied to the macOS reading 9.93 (blank 3,917 B, drawn 38,908 B); 21-02 re-sets it from the lower of two hosts
 - [Phase 21]: serve() takes floor_applies: pool workers start on first use (2 members before the first build, 3 after), so a failed test reports once; 21-05's sweep builds nothing and must pass floor_applies=lambda: False
 - [Phase 21]: BUILD_WAIT_MS stays 45,000 ms (slowest build-bound step 2.53 s); headless shell lives under the absolute .venv/ms-playwright, host cache unchanged
+- [Phase 21]: 21-02: PNG_RATIO_BAR stays 4.9 (PD-03 on lower of macOS 9.933 and ubuntu-latest 10.446) and BUILD_WAIT_MS stays 45000 (slowest build-bound step 4.75 s); --with-deps needs no sudo line on ubuntu-latest
 
 ### Pending Todos
 
@@ -607,8 +609,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T09:47:29.958Z
-Stopped at: Completed 21-01-PLAN.md
+Last session: 2026-10-10T10:35:56.759Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
