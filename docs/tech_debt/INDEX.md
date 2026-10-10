@@ -16,6 +16,7 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
+| must | [A whole-suite `make verify` hung near the end with no failure, no crash report and no survivor](active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md) | the next `make verify` that neither passes nor fails (keep its whole log, then rerun with `-v --durations=20`), or `BuildPool.shutdown` is next touched |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
 | nice | [A full run sometimes loses BuildPool's worker coverage, moving the total by 0.22 points](active/2026-10-04-worker-coverage-flush-is-sometimes-lost.md) | a `make verify` reads under the floor with no code change, or `BuildPool.shutdown`/`_run_with_timeout` is next touched after Phase 17 (Phase 17 touched it; not observed in 43/43 runs) |
 | nice | [The service has no authentication](active/2026-09-21-no-authentication.md) | the moment it is bound to anything but localhost |
