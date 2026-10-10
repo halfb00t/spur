@@ -5,17 +5,17 @@ milestone_name: Honest Form
 current_phase: 21
 current_phase_name: Browser Test of the Viewer
 status: executing
-stopped_at: Completed 21-05-PLAN.md
-last_updated: "2026-10-10T13:19:58.120Z"
+stopped_at: Completed 21-06-PLAN.md
+last_updated: "2026-10-10T13:41:57.508Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 21 execution started
-state_head: 012608e5c0a733089d89ffee2ff32459be3bb317
+state_head: f8286ae72b8e128c81d8e79652785c05857a5c3b
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 8
-  completed_plans: 5
-  percent: 63
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State
@@ -33,11 +33,11 @@ is `/gsd-discuss-phase 21` (the browser test)
 ## Current Position
 
 Phase: 21 (Browser Test of the Viewer) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-10-10 — Phase 21 execution started
 
-Progress: [██████░░░░] 63% (0 of 5 phases; Phase 24 is discretionary)
+Progress: [████████░░] 75% (0 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
@@ -223,6 +223,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 21 P03 | 38 min | 2 tasks | 3 files |
 | Phase 21 P04 | 10 min | 2 tasks | 5 files |
 | Phase 21 P05 | 25 min | 2 tasks | 6 files |
+| Phase 21 P06 | 25 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -402,6 +403,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 21]: 21-04: link round trip compares the link, the sent query and the rewritten fragment as sorted (name, value) pairs, waiting on the /api/info request, never on #status or an href
 - [Phase 21]: 21-04: #root_shape=bogus is pinned as today's behaviour (blank select, query without root_shape, API 422) and filed as must debt 2026-10-10-root-shape-bogus-loads-a-blank-select
 - [Phase 21]: 21-05: the golden sweep runs under serve(floor_applies=lambda: False) because it builds nothing; the pin is written only by make golden.regen and only read by the browser test
+- [Phase 21]: 21-06: the browser test is admitted in one commit (d0f5474): test depends on the browser stamp, tests/test_browser.py excluded by name from test.fast and test-image, CI passes --with-deps; no -rP, no hardware step
 
 ### Pending Todos
 
@@ -616,8 +618,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T13:19:58.101Z
-Stopped at: Completed 21-05-PLAN.md
+Last session: 2026-10-10T13:41:57.489Z
+Stopped at: Completed 21-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

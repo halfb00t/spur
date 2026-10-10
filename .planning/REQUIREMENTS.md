@@ -46,7 +46,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 
 ### Browser test — the viewer under a real browser (first)
 
-- [ ] **REQ-browser-server-fixture**: the browser test runs against a real `uvicorn`
+- [x] **REQ-browser-server-fixture**: the browser test runs against a real `uvicorn`
   subprocess bound to a socket the fixture pre-binds on `127.0.0.1` and passes down with
   `--fd` (no port race under 8 xdist workers — MEASURED, PITFALLS BT-5), started with
   `start_new_session=True` and torn down by killing the process group; the fixture proves no
@@ -75,7 +75,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 - [x] **REQ-browser-golden-request-sets**: for each of the 44 fixture records' parameter
   sets, the query string the form sends is pinned by the browser test before any form
   change lands, so Phases 23–24 prove "the same fields are sent" rather than assert it.
-- [ ] **REQ-browser-fails-closed**: a missing headless shell fails the test with a message
+- [x] **REQ-browser-fails-closed**: a missing headless shell fails the test with a message
   naming `playwright install --only-shell chromium`; no `importorskip`, no skip marker, no
   environment opt-out, in CI or locally.
 - [ ] **REQ-browser-in-the-gate**: `tests/test_browser.py` runs inside `make verify` and CI's
@@ -239,14 +239,14 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-browser-server-fixture | Phase 21 | Pending |
+| REQ-browser-server-fixture | Phase 21 | Complete |
 | REQ-browser-form-from-schema | Phase 21 | Complete |
 | REQ-browser-first-build-drawn | Phase 21 | Complete |
 | REQ-browser-invalid-field-marked | Phase 21 | Complete |
 | REQ-browser-warning-rendered | Phase 21 | Complete |
 | REQ-browser-link-round-trip | Phase 21 | Complete |
 | REQ-browser-golden-request-sets | Phase 21 | Complete |
-| REQ-browser-fails-closed | Phase 21 | Pending |
+| REQ-browser-fails-closed | Phase 21 | Complete |
 | REQ-browser-in-the-gate | Phase 21 | Pending |
 | REQ-browser-stack-pinned | Phase 21 | Pending |
 | REQ-slug-carries-effective-root | Phase 22 | Pending |

@@ -240,7 +240,7 @@ research measured an `ubuntu:24.04` container and a 3.2–3.8 s isolated cost; t
 architecture file's 10–25 s is an assumption). Also unverified and settled by the spike: canvas
 readback without `preserveDrawingBuffer`, the `expect` default timeout, and coverage on a
 `SIGKILL`ed child.
-**Plans**: 5/8 plans executed, in 8 waves (each wave depends on the one before: the roadmap fixes the order, and the
+**Plans**: 6/8 plans executed, in 8 waves (each wave depends on the one before: the roadmap fixes the order, and the
 scenario module, `tests/browser_session.py` and `bench/RESULTS.md` are touched by nearly every plan, so there is
 no honest parallelism here)
 
@@ -255,7 +255,7 @@ no honest parallelism here)
   today and filed as `must` debt *(wave 4)*
 - [x] 21-05-PLAN.md — The golden request pin: the query each of the 44 fixture links sends, captured by the real
   page through `make golden.regen` and asserted *(wave 5)*
-- [ ] 21-06-PLAN.md — The fail-closed and stack pins, then the gate admission in one commit (rename to
+- [x] 21-06-PLAN.md — The fail-closed and stack pins, then the gate admission in one commit (rename to
   `tests/test_browser.py`, every exclusion, `--with-deps` in CI), `make verify.fast` read under 30 s *(wave 6)*
 - [ ] 21-07-PLAN.md — The price: isolated cost and a six-run interleaved A/B; the human accepts it or reopens the
   placement *(wave 7)*
