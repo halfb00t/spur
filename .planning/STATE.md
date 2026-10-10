@@ -4,17 +4,17 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 21
 current_phase_name: Browser Test of the Viewer
-status: executing
-stopped_at: Completed 21-07-PLAN.md
-last_updated: "2026-10-10T14:15:32.300Z"
+status: verifying
+stopped_at: Completed 21-08-PLAN.md
+last_updated: "2026-10-10T14:50:11.274Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 21 execution started
-state_head: 3e8e8f9eabef722e47d87805b3dce3d48314efb4
+state_head: f1b2761300f43909f718b8b1563444e6e4033569
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
   percent: 80
 ---
 
@@ -34,7 +34,7 @@ is `/gsd-discuss-phase 21` (the browser test)
 
 Phase: 21 (Browser Test of the Viewer) — EXECUTING
 Plan: 8 of 8
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-10 — Phase 21 execution started
 
 Progress: [████████░░] 80% (0 of 5 phases; Phase 24 is discretionary)
@@ -225,6 +225,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 21 P05 | 25 min | 2 tasks | 6 files |
 | Phase 21 P06 | 25 min | 3 tasks | 12 files |
 | Phase 21 P07 | 21min | 2 tasks | 3 files |
+| Phase 21 P08 | 25 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -407,6 +408,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 21]: 21-06: the browser test is admitted in one commit (d0f5474): test depends on the browser stamp, tests/test_browser.py excluded by name from test.fast and test-image, CI passes --with-deps; no -rP, no hardware step
 - [Phase 21]: 21-07: human accepted the browser test's price (answer 'accept', O1 kept); isolated 4.23 s serial / 4.57 s at -n 2, A/B B-A = -2.47 s, D-01 did not reopen
 - [Phase 21]: 21-07: arm A spelled PYTEST_ADDOPTS, not PYTEST_ARGS, because the shared-recipe hook pin reads the caller's PYTEST_ARGS (debt filed, nice)
+- [Phase 21]: L39 locks the admission: a headless browser inside make verify and CI, out of the commit slice (five heavy files), at a price the human accepted; amends L13 and L36, restates L11
+- [Phase 21]: SC5 is recorded from the phase branch's own ubuntu-latest run (38059369744, head 88df5cf, 1226 passed, job 16 min 8 s), not from the spike
 
 ### Pending Todos
 
@@ -621,8 +624,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T14:15:32.243Z
-Stopped at: Completed 21-07-PLAN.md
+Last session: 2026-10-10T14:50:11.255Z
+Stopped at: Completed 21-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

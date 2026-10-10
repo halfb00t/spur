@@ -87,7 +87,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   silently lapse (PITFALLS BT-2); its isolated cost (3.21 s serial / 3.80 s at `-n 2`
   MEASURED, STACK) and its A/B cost under the full gate recorded in `bench/RESULTS.md`; one
   `Lxx` records the admission and amends L13 and L36 (L11 restated, unchanged).
-- [ ] **REQ-browser-stack-pinned**: `playwright` pinned exactly in the `[dev]` extra (1.63.0
+- [x] **REQ-browser-stack-pinned**: `playwright` pinned exactly in the `[dev]` extra (1.63.0
   at research time); no `pytest-playwright`; the default Chrome Headless Shell, never
   `channel="chromium"` (new headless draws on the host GPU, so dev and CI would differ —
   MEASURED, STACK); the Linux path proven on a real `ubuntu-latest` run before the phase
@@ -248,7 +248,7 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-browser-golden-request-sets | Phase 21 | Complete |
 | REQ-browser-fails-closed | Phase 21 | Complete |
 | REQ-browser-in-the-gate | Phase 21 | Complete |
-| REQ-browser-stack-pinned | Phase 21 | Pending |
+| REQ-browser-stack-pinned | Phase 21 | Complete |
 | REQ-slug-carries-effective-root | Phase 22 | Pending |
 | REQ-slug-consumers-read-first | Phase 22 | Pending |
 | REQ-enabled-when-metadata | Phase 23 | Pending |
