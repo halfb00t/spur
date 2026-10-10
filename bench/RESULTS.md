@@ -4821,12 +4821,23 @@ plans append rows to this table.
 | 21-03 | `invalid field marked`, `bore_flat=3` | `...(d.ctx?.fields ?? [])` removed from the array in `problems()` | `AssertionError: #bore_flat=3: marked [], the 422 names ['D-flat']` | yes |
 | 21-03 | `invalid field marked`, `teeth=2` | `d.loc?.[1],` removed from the same array | `AssertionError: #teeth=2: marked [], the 422 names ['Teeth']` | yes |
 | 21-03 | `warning rendered` | `showMessages([], info.warnings ?? [])` becomes `showMessages([], (info.warnings ?? []).slice(0, 1))` in `renderInfo()` | `AssertionError: #module=1&pressure_angle=14.5: rendered warnings ['Below 31.9 teeth a cut gear would be undercut; this model uses a radial root instead.'] differ from the API's [that one, 'Recess narrowed to 2.47 mm to fit between the bore wall and the tooth rim.']` (containment of the first warning would have passed) | yes |
+| 21-04 | `link round trip`, fresh load | `readHash();` removed from the load function (`app.js`, before `update();`) | `AssertionError: link round trip, fresh load: the form differs from the link on [(('teeth', ''), ('teeth', '24')), (('module', ''), ('module', '2')), (('root_shape', 'radial'), ('root_shape', 'trochoid')), ...]`, note `step: link round trip` (an unread form leaves number inputs empty and selects on their first option) | yes, `git diff --exit-code` clean |
+| 21-04 | `link round trip`, hashchange | `readHash();` removed from the `hashchange` listener. Red, but first at `invalid field marked` (`AssertionError: /api/info? answered 200, not 422`): the earlier steps also rely on that listener, so this break never reaches the new step. To see the new sub-path red itself the listener was narrowed to `if (!location.hash.includes('mate_teeth')) readHash();` | with the narrowed break: `AssertionError: link round trip, hashchange: the form differs from the link on [(('teeth', '23'), ('teeth', '31')), (('module', '1.75'), ('module', '1.5')), (('pressure_angle', '25'), ('pressure_angle', '20')), (('face_width', '7.5'), ('face_width', '6')), (('recess_sides', 'both'), ('recess_sides', 'bottom'))]`, note `step: link round trip` | yes |
+| 21-04 | `link round trip`, Reset | the `for (const [name, { input }] of fields) input.value = defaults[name];` line removed from the `#reset` handler (the `#reset` handler's `mateInput.value = ''` kept) | `AssertionError: link round trip, Reset: the page sent 'face_width=8'` (the form kept link C's values, and the request carried them) | yes |
 
 21-03 readings (Apple M5 Max, macOS, 2026-10-10): the schema holds 31 fields in 7 groups. `/api/info` warnings for the three
 links in order: `module=1&pressure_angle=14.5` two, `bore_hex=6` one, `teeth=23` none. 422 texts: `#bore_flat=3`
 `D-flat must be between 4.5 and 9 mm (flat to opposite side).` (marks `D-flat`, no title prefix); `#teeth=2`
 `Teeth: Input should be greater than or equal to 6` (marks `Teeth`). Steps on this host, STL fulfilled from the first
 build: `form from schema` 0.01 s, `invalid field marked` 0.08 s, `warning rendered` 0.21 s.
+
+21-04 readings (Apple M5 Max, macOS, 2026-10-10): `link round trip` ran in 0.38 s with the STL fulfilled from the first
+build (fresh load on a second page, `hashchange` to a second link, `hashchange` to a link naming `teeth` at its default,
+Reset). Two further breaks, not table rows: dropping the default check in `gearQuery()` altogether went red at the
+fresh-load sub-path (the page sent all 32 pairs, defaults included); to reach the default-dropped sub-path itself the check
+was removed for `teeth` only, `(name === 'teeth' || String(input.value) !== String(defaults[name]))`, and it read
+`AssertionError: link round trip, default dropped: the page sent the default 'teeth=19&face_width=8'`. Both reverted,
+`git diff --exit-code` clean.
 
 ### Linux runner spike (21-02)
 

@@ -253,6 +253,23 @@ def eval_str_list(page: Page, expression: str, arg: object = None) -> list[str]:
     return items
 
 
+def eval_pairs(page: Page) -> list[tuple[str, str]]:
+    """The form's (name, value) pairs in DOM order, each value the control's own string."""
+    value: object = page.evaluate(
+        "() => [...document.querySelectorAll('form#params [name]')].map(e => [e.name, e.value])"
+    )
+    assert isinstance(value, list), f"the form's pairs came back as {value!r}, not a list"
+    pairs: list[tuple[str, str]] = []
+    for item in value:
+        assert isinstance(item, list), f"a form pair that is not a list: {item!r}"
+        assert len(item) == 2, f"a form pair that is not a pair: {item!r}"
+        name, field_value = item
+        assert isinstance(name, str), f"a form pair whose name is not a str: {item!r}"
+        assert isinstance(field_value, str), f"a form pair whose value is not a str: {item!r}"
+        pairs.append((name, field_value))
+    return pairs
+
+
 def serve_stl_from(page: Page, stl: bytes) -> None:
     """Answer every later STL request with `stl`, the first build's bytes (PD-06).
 

@@ -34,6 +34,7 @@ from browser_session import (
     PNG_RATIO_BAR,
     STL_ROUTE,
     eval_opt_str,
+    eval_pairs,
     eval_str,
     eval_str_list,
     launch,
@@ -55,6 +56,24 @@ WEBGL2_PROBE = """() => {
   const info = gl.getExtension('WEBGL_debug_renderer_info');
   return String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
 }"""
+
+# Shared links for `link round trip`. Chosen from /api/schema (31 fields, 7 groups) by hand,
+# each value inside its field's minimum/maximum/enum and none equal to the field's default,
+# because gearQuery() drops a default and the sent query would then rightly lack it. Each
+# spans three groups (Teeth, Body, Recess; A adds Bore) and holds an enum `select` at a
+# non-default option (`root_shape`, `recess_sides`), plus the mate's `mate_teeth`, which is
+# not a schema field. A is written out of schema order on purpose: gearQuery() emits schema
+# order whatever order the hash used, so the comparison has to be on pairs, not on strings.
+# The API answered 200 for both on 2026-10-10 (A with one warning, B with none).
+LINK_A = (
+    "mate_teeth=30&recess_sides=top&root_shape=trochoid&face_width=9&teeth=24&module=2&bore_d=10"
+)
+LINK_B = "mate_teeth=45&recess_sides=bottom&pressure_angle=20&face_width=6&teeth=31&module=1.5"
+# C sets `teeth` to its schema default (read at test time) beside a non-default `face_width`.
+LINK_C_OTHER = "face_width=8"
+
+MATE_VALUE = "() => document.querySelector('#mate-teeth').value"
+FRAGMENT = "() => location.hash.slice(1)"
 
 
 @pytest.fixture(scope="module")
@@ -149,6 +168,54 @@ def _follow_link(page: Page, fragment: str) -> str:
     return urllib.parse.urlsplit(sent.value.url).query
 
 
+def _pairs(query: str) -> list[tuple[str, str]]:
+    """A query string as its (name, value) pairs, sorted: order is not what a link means."""
+    return sorted(urllib.parse.parse_qsl(query, keep_blank_values=True))
+
+
+def _differing(
+    got: list[tuple[str, str]], want: list[tuple[str, str]]
+) -> list[tuple[tuple[str, str], tuple[str, str]]]:
+    """The (got, want) pairs that differ, so a failure names the fields and not the form."""
+    assert len(got) == len(want), f"{len(got)} form fields where {len(want)} were expected"
+    return [(have, expected) for have, expected in zip(got, want, strict=True) if have != expected]
+
+
+def _assert_link_applied(
+    page: Page,
+    where: str,
+    link: str,
+    sent: str,
+    default_pairs: list[tuple[str, str]],
+    kept: list[tuple[str, str]],
+) -> None:
+    """The link reached the form, and what the page sent and wrote back is `kept`.
+
+    Every form field the link names reads that exact string, every other field reads what
+    the fresh default load read, and `#mate-teeth` reads the link's `mate_teeth`. `kept` is
+    the link minus whatever gearQuery() drops as a default; the query the page sent and the
+    fragment update() rewrote must both equal it, as sorted pairs.
+    """
+    wanted = dict(urllib.parse.parse_qsl(link))
+    fields = {name for name, _ in default_pairs}
+    unknown = set(wanted) - fields - {"mate_teeth"}
+    assert not unknown, f"{where}: the link names {sorted(unknown)}, which are no form fields"
+    expected = [(name, wanted.get(name, default)) for name, default in default_pairs]
+    form = eval_pairs(page)
+    assert form == expected, (
+        f"{where}: the form differs from the link on {_differing(form, expected)}"
+    )
+    mate = eval_str(page, MATE_VALUE)
+    assert mate == wanted.get("mate_teeth", ""), (
+        f"{where}: #mate-teeth reads {mate!r}, the link says {wanted.get('mate_teeth')!r}"
+    )
+    assert _pairs(sent) == kept, f"{where}: the page sent {_pairs(sent)}, expected {kept}"
+    fragment = eval_str(page, FRAGMENT)
+    assert _pairs(fragment) == kept, (
+        f"{where}: update() wrote the fragment {_pairs(fragment)}, expected {kept}"
+    )
+
+
 def _wait_until_parked(page: Page, parked: list[Route]) -> None:
     # Under the sync API a route handler runs only while a Playwright call is in flight, so
     # a sleep loop would never see it fire. A round trip per turn lets it run; the bound is
@@ -190,6 +257,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
             with step("form built"):
                 expect(page.locator("form#params [name]")).to_have_count(field_count)
                 _wait_until_parked(page, parked)
+                # The fresh default load: empty hash, readHash() and update() have run.
+                default_pairs = eval_pairs(page)
                 assert page.locator("#dl-stl").get_attribute("href") is None, (
                     "the STL link has an href before any STL was shown"
                 )
@@ -354,5 +423,78 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     )
                     counts.append(len(warnings))
                 print(f"warnings per link (two, one, none expected): {counts}")
+
+            with step("link round trip"):
+                # The three places app.js sets form values programmatically: the load
+                # (readHash), the `hashchange` listener and #reset. The wait on each is the
+                # /api/info request itself, captured around the action: readHash(), the
+                # fragment rewrite and the request all happen before any response, whereas an
+                # empty #status or the mere presence of an href is already true before the
+                # 350 ms debounce fires (21-RESEARCH P6).
+                pairs_a, pairs_b = _pairs(LINK_A), _pairs(LINK_B)
+                for link in (LINK_A, LINK_B):
+                    status, _ = _api_get(server, "/api/info", link)
+                    assert status == 200, f"the link #{link} answers {status}, not 200"
+
+                # fresh load: a new page opened on the link.
+                page2 = browser.new_page()
+                try:
+                    serve_stl_from(page2, stl)
+                    with page2.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as info_request:
+                        page2.goto(f"{server}/#{LINK_A}")
+                    _assert_link_applied(
+                        page2,
+                        "link round trip, fresh load",
+                        LINK_A,
+                        urllib.parse.urlsplit(info_request.value.url).query,
+                        default_pairs,
+                        pairs_a,
+                    )
+                finally:
+                    page2.close()
+
+                # hashchange: a link assigned on the page that is already open. The fragment
+                # must differ from the current one or no event fires (_follow_link asserts it).
+                sent_b = _follow_link(page, LINK_B)
+                _assert_link_applied(
+                    page, "link round trip, hashchange", LINK_B, sent_b, default_pairs, pairs_b
+                )
+
+                # Default dropped: the link names `teeth` at its schema default beside a
+                # non-default field. The form shows the default; the page does not send it.
+                teeth_default = properties["teeth"]["default"]
+                assert isinstance(teeth_default, int), f"teeth default {teeth_default!r}: no int"
+                assert not isinstance(teeth_default, bool), "the teeth default is a bool"
+                link_c = f"teeth={teeth_default}&{LINK_C_OTHER}"
+                sent_c = _follow_link(page, link_c)
+                assert "teeth" not in dict(_pairs(sent_c)), (
+                    f"link round trip, default dropped: the page sent the default {sent_c!r}"
+                )
+                _assert_link_applied(
+                    page,
+                    "link round trip, default dropped",
+                    link_c,
+                    sent_c,
+                    default_pairs,
+                    _pairs(LINK_C_OTHER),
+                )
+
+                # Reset: back to exactly the fresh default load.
+                assert eval_str(page, FRAGMENT) != "", "link round trip, Reset: nothing to clear"
+                with page.expect_request(
+                    lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                ) as info_request:
+                    page.locator("#reset").click()
+                reset_query = urllib.parse.urlsplit(info_request.value.url).query
+                assert reset_query == "", f"link round trip, Reset: the page sent {reset_query!r}"
+                assert eval_str(page, FRAGMENT) == "", "link round trip, Reset: fragment left"
+                assert eval_str(page, MATE_VALUE) == "", "link round trip, Reset: mate left"
+                after = eval_pairs(page)
+                assert after == default_pairs, (
+                    "link round trip, Reset: the form differs from the fresh default load on "
+                    f"{_differing(after, default_pairs)}"
+                )
         finally:
             browser.close()
