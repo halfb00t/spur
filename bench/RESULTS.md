@@ -5162,4 +5162,6 @@ read on an Apple M2 Max with 12 CPUs, so the two are not one host's readings. On
 read 192.94 s at 1210 tests; B reads 163.96 s at 1226 tests under a different load, 28.98 s lower, which is not a
 comparison of the code either, only the same host on another day. The reading sets no bar; Phase 25 does.
 
-Human's answer: pending (Task 2)
+Human's answer: "accept" (option id `accept`: keep the browser test inside `make verify` and CI, O1), given 2026-10-10 UTC.
+No further words were given. The human did not ask for arm A to be re-measured with the plan's literal `PYTEST_ARGS`
+spelling, so the `PYTEST_ADDOPTS` spelling recorded under `#### Red runs` stands for the three counted A runs.
