@@ -53,7 +53,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   `BuildPool` child survives teardown (children outlived a plain `SIGKILL` by 6 s —
   MEASURED, PITFALLS BT-4). No in-process server thread: `app` is a singleton whose lifespan
   and `dependency_overrides` the `TestClient` tests on the same worker share (READ, ARCH).
-- [ ] **REQ-browser-form-from-schema**: the test reads `/api/schema` and asserts the rendered
+- [x] **REQ-browser-form-from-schema**: the test reads `/api/schema` and asserts the rendered
   form carries exactly its groups and fields, in its order — every count read from the schema
   at test time, never hard-coded; the CSS custom properties the renderer reads are non-empty.
 - [x] **REQ-browser-first-build-drawn**: after a fresh load the `#dl-stl` href is set only
@@ -64,9 +64,9 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   milestone adds to `app.js`, named in the `Lxx`. A `webgl2` context is asserted before
   anything else: `app.js:229` builds `WebGLRenderer` at module top level, so without WebGL
   there is no form (READ; 0 fields under `--disable-3d-apis` MEASURED).
-- [ ] **REQ-browser-invalid-field-marked**: an out-of-range value marks its field through
+- [x] **REQ-browser-invalid-field-marked**: an out-of-range value marks its field through
   the 422 `detail[].ctx.fields` path and the rendered message names the field.
-- [ ] **REQ-browser-warning-rendered**: a warning-producing link renders exactly the
+- [x] **REQ-browser-warning-rendered**: a warning-producing link renders exactly the
   `warnings` text `/api/info` returns for the same query — equality, not containment.
 - [ ] **REQ-browser-link-round-trip**: every field set in the hash reaches the form, and the
   query `app.js` sends equals the hash — on all three programmatic-value paths (fresh load,
@@ -240,10 +240,10 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | REQ-browser-server-fixture | Phase 21 | Pending |
-| REQ-browser-form-from-schema | Phase 21 | Pending |
+| REQ-browser-form-from-schema | Phase 21 | Complete |
 | REQ-browser-first-build-drawn | Phase 21 | Complete |
-| REQ-browser-invalid-field-marked | Phase 21 | Pending |
-| REQ-browser-warning-rendered | Phase 21 | Pending |
+| REQ-browser-invalid-field-marked | Phase 21 | Complete |
+| REQ-browser-warning-rendered | Phase 21 | Complete |
 | REQ-browser-link-round-trip | Phase 21 | Pending |
 | REQ-browser-golden-request-sets | Phase 21 | Pending |
 | REQ-browser-fails-closed | Phase 21 | Pending |
