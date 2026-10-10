@@ -1,207 +1,263 @@
 # Project Research Summary
 
-**Project:** spur (parametric involute spur gear generator), milestone v0.4 True Root
-**Domain:** shipped CAD-backed web/API/CLI tool; this milestone is two debt retirements plus one geometry feature
-**Researched:** 2026-10-06
-**Confidence:** MEDIUM-HIGH overall. HIGH for the two debt items (reproduced locally). MEDIUM for the trochoid (derived and cross-checked three ways, but no published reference table exists and the governing standards were not readable).
+**Project:** spur, milestone v0.5 "Honest Form" (a subsequent milestone on a shipping app; the research covers only the new work)
+**Researched:** 2026-10-10
+**Confidence:** MEDIUM-HIGH. Repo and macOS arm64 claims are HIGH (MEASURED or READ). Linux and GitHub-runner claims are MEDIUM or UNVERIFIED.
 
-Sources: `STACK.md`, `FEATURES.md`, `ARCHITECTURE.md`, `PITFALLS.md` in this directory, and `.planning/PROJECT.md` "Current Milestone: v0.4 True Root". Every figure below names the file that measured it. Figures from different files are never merged, even when they look alike; where they differ, the difference is stated.
+Evidence tags carry through from the four files. MEASURED means run on the dev host (M5 Max, macOS arm64, Python 3.12.15, Playwright 1.63.0). READ means a repo file or upstream source. DOCS means vendor documentation fetched. UNVERIFIED and ASSUMPTION mean inference. [judgement] means a FEATURES.md call.
 
 ## Executive Summary
 
-v0.4 has three jobs on a product that already ships. (1) Fix the same-slot timeout race in `src/spur/pool.py`, which turns a second same-slot timeout into an undocumented 500 (`AttributeError`). (2) Decide, in a logged `Lxx`, how the ~64 s pre-commit `make verify` hook coexists with gsd's hard-coded 30 s commit timeout. (3) Replace the radial root below the base circle with the trochoid a hob cuts, proved against an independent profile, with the fixture rule (L26) honoured. The three research files that touch (3) agree on the shape of the answer: pure stdlib `math` in `calc.py` (no new dependency at runtime or dev time, STACK), a new pure generator that returns plain floats because the outline points are built in `model.py`, not `calc.py` (ARCHITECTURE), proof by an independent swept-cutter oracle plus closed forms (STACK, FEATURES, PITFALLS), and landing the geometry dark or opt-in so no shared link changes part without a deliberate, separately logged flip (ARCHITECTURE, FEATURES, PITFALLS).
+v0.5 adds no geometry and no `GearParams` field. It makes the form honest about what each field does, and it puts a real browser behind that claim. The work is:
+- a headless-browser test of the viewer;
+- `enabled_when` relations in `json_schema_extra`, rendered by generic `app.js` code;
+- a bore-shape selector;
+- a `_trochoid` suffix on the download name;
+- a measured re-set of the L34 gate bar;
+- three ledger items.
 
-The recommended approach is to do the debt first, because every later commit lives under the hook decision, then build the trochoid in three steps that each stay shippable: calc-only maths and oracle, then kernel integration under a default-off field, then optionally the flip. Be opinionated about the root mode: three of four files argue for opt-in first (a default-off `Literal` field with one shared "trochoid active?" predicate), and the fourth (STACK) prices both options without choosing. The human decides at discuss-phase; the roadmap should be structured so that "opt-in first, flip later or never" costs nothing extra and "always-on" costs exactly one extra phase.
+All four files agree on the architecture. `/api/schema` is `GearParams.model_json_schema()` untransformed (READ, `app.py:373`). So `app.py`, `records.py`, `calc.py`, `model.py`, `pool.py` and `cli.py` need no edit.
 
-The main risks are all measured, not hypothetical. The race fix as the debt file words it (an identity check) closes only one of two routes to the same `AttributeError` (PITFALLS). "Undercut", "below the base circle" and "the cutter's form circle" are three different predicates that select 5 of 44 versus 28 of 44 fixture records (FEATURES, ARCHITECTURE). ISO 53's 0.38·m tip radius cannot exist at the project's default 25 degrees (STACK, FEATURES, PITFALLS), so the cutter radius must be capped and warned, and the printed `root_thickness`/`root_gap` stop being honest under a trochoid (L08). The gear maths has no external oracle, so the bar must be set from measured gaps, not tuned to pass.
+The recommended approach:
+- **Browser test:** Playwright (Python, sync API) with the default Chrome Headless Shell. WebGL2 comes through SwiftShader with no flags (MEASURED). It runs against a real uvicorn subprocess, sits inside `make verify` and CI, and is excluded from `verify.fast` by name (L36). It fails closed if the browser is missing.
+- **Relations:** a project-defined data structure evaluated by about 15 lines of vanilla JS.
+- **Inert fields:** dimmed and still editable, never natively `disabled`.
+- **Order:** browser test, then the form work in dependency order, then one closing phase that measures the shipped gate once and amends L34 once.
 
-## Corrections to the brief and disagreements between files
-
-The requirements step and the roadmapper should treat this section as authoritative over any single file. "Brief" means the milestone description in PROJECT.md and the orchestrator prompt.
-
-| # | Topic | What the files say | Resolution for the roadmap |
-|---|-------|--------------------|----------------------------|
-| 1 | Where outline points are built | ARCHITECTURE (section 0): `calc.py` holds decisions (`root_fillet` `calc.py:224`, `spline_start` `:230`, `Profile.half_angle` `:85`, `_tooth` `:211`); points are built in `model._outline` (`model.py:133-185`) and `_fillet_corner` (`:98`), which import `cadquery`. | The trochoid is a NEW pure function in `calc.py` returning plain floats; it cannot sit "beside" the fillet geometry. |
-| 2 | "Below the base circle" is not "undercut" | FEATURES: `rb > rf` holds for 28 of 44 fixture records, including the default 19-tooth 25 degree gear (rb 15.067 mm, rf 14.438 mm); undercut by `derive()`'s test for 5 of 44. ARCHITECTURE (section 1.5, counted by script over the fixture): 28 records / 23 built versus 5 / 3 built; the 23 built include the default gear. PITFALLS: 23 of 39 built have `rf < rb`; 3 built are undercut by the warning's definition. STACK: 5 of 44, three distinct gear sets. | The files' counts agree. The root-mode decision turns on which predicate "A" means; carry both counts into discuss-phase. |
-| 3 | Shipped undercut warning `z_min = 2(1-x)/sin^2(alpha)` | STACK: exact only for a rack of addendum 1.0·m with tip radius 0.38·m at 20 degrees (17.0967 vs shipped 17.0973 at 20 degrees, rho* 0.38). STACK table (x = 0, rho* = 0.38): 14.5 degrees shipped 31.903 vs rack model 30.791; 25 degrees shipped 11.198 vs rack model 11.540. FEATURES (cutter radius capped to the geometric maximum, rho* 0.318 at 25 degrees): conservative at 14.5 degrees (31.9 vs 30.8) and optimistic at 25 degrees (11.2 vs 11.9). PITFALLS: exact at 20 degrees, approximate elsewhere. | STACK and FEATURES use different rho* at 25 degrees (0.38 versus the capped 0.318), hence 11.540 versus 11.9. Do not merge. Any restatement of the warning must be proved against the cutter actually used, or the sentence stays. |
-| 4 | ISO 53's 0.38·m is infeasible at 25 degrees | STACK: at 25 degrees rho*_max = 0.318; with rho* 0.38 the tip land `a = -0.0395·m` (zero backlash); 0.5 mm `root_fillet` at m 1.75 is rho* 0.286 and fits. FEATURES (G8): 0.38 stops fitting above 23.16 degrees; rho*_max 0.597 (14.5), 0.472 (20), 0.400 (22.5), 0.318 (25), 0.110 (30), 0 at 32.14 degrees. PITFALLS: at m 1.75, 25 degrees, 0.665 mm gives tip land -0.019 mm; largest feasible 0.635 mm (0.363·m). | STACK and FEATURES agree (0.318). PITFALLS' 0.363·m differs from 0.318 by 0.0451·m, which I read as the default backlash of 0.10 mm entering the tip land as `backlash/2` (STACK states that rule; PITFALLS does not state its backlash). That reconciliation is MY INFERENCE, to be confirmed by the phase's first test. The cap must therefore be computed from the real cutter, backlash included, never from a constant. |
-| 5 | Presence of scipy | Brief: numpy/scipy "present transitively via cadquery". STACK: true of the dev venv (scipy 1.18.1), false of the shipped system: `requirements.txt` has numpy 2.5.3 and no scipy, and `docker/refresh-requirements.sh` lists scipy in `PRUNE`. PITFALLS agrees (installed, not a declared dependency). | Never import scipy (or numpy) in `src/spur/`; bisection in `math` is the project precedent (`_involute_angle`, L08). |
-| 6 | gsd commit-timeout line number | Debt file: `commands.cjs:3655`. STACK, ARCHITECTURE, PITFALLS all read `COMMIT_TIMEOUT_MS = 30_000` at `:3794` in gsd-core 1.16.0 (STACK: also npm `latest`, modified 2026-10-05). | Cite the symbol, not a line. No env var or config key reads it (STACK); no open upstream request exists (STACK, via `gh search issues`, LOW for absence). |
-| 7 | `BuildPool` has no lock | PITFALLS: `recreate_for` is synchronous and the `except TimeoutError` branch never awaits, so the identity check is atomic only because everything runs on one event-loop thread. ARCHITECTURE reaches the same conclusion (no `await` between check and act). | The fix and its tests are written against that fact; an inserted `await` reopens the race. |
-| 8 | Race fix: how narrow | ARCHITECTURE (2.1): a 2-line identity check against the live slot (`self.executor_for(p) is executor`) before touching `_processes`; says nothing moves in `recreate_for`/`app.py`; does not mention `shutdown()`. PITFALLS (Pitfall 9): `BuildPool.shutdown()` runs `shutdown(wait=False)` on every executor without replacing it, setting `_processes = None` while slot identity still holds, a second route to the same `AttributeError` (measured by direct call; reachability through uvicorn's graceful shutdown is ASSUMPTION). | Adopt PITFALLS' guard: slot identity AND `_processes is not None`, plus a `_closed` flag so `recreate_for` cannot build an unowned executor after `shutdown()`. ARCHITECTURE's snippet alone is insufficient. |
-| 9 | Race test shape | ARCHITECTURE (2.2): 3 same-slot tasks in one tick, assert every result is `BuildTimeout`; pre-fix result `[BuildTimeout, AttributeError, AttributeError]`, `replaced == 1` (measured against `HEAD`). PITFALLS (Pitfall 10): window-dependent assertions flake on a loaded 4-vCPU runner; make the decisive test deterministic by injecting a stale executor, and allow `BuildTimeout` or `BrokenProcessPool` (both documented 503) for the sibling in the timing test. | Use both: one deterministic stale-executor test as the load-bearing proof, one same-tick test with PITFALLS' looser assertion. Keep the existing 0.5 s-gap test unchanged. Run the new tests repeatedly under `-n 8 --cov` and `-n 4` and record the count. |
-| 10 | What a sub-30 s pre-commit subset contains | STACK: static steps plus a pytest slice (all files except `test_model.py`, `test_pool.py`, `test_api.py`, `test_cli.py`, `-n 8 --no-cov`): 11.0-11.1 s for 617 tests; subset about 12 s warm, about 21 s with a cold mypy cache; includes `tests/regression`. ARCHITECTURE and PITFALLS: a static-only `verify.fast` (`lint typecheck lint-imports no-fake-done`): ARCHITECTURE 0.57 s warm (P1) and 0.33 s (P2); STACK's four static steps 0.59 s warm; PITFALLS about 9.5 s cold-cache. | Genuine disagreement on content, and it is the human's call at discuss-phase. Static-only is the stricter reading of "one definition of passing" (prefix by construction: `verify: verify.fast test`); STACK's variant buys commit-time fixture checking during the trochoid phases at a ~12 s cost. Whichever is chosen, define it as a Makefile target that `verify` depends on, not a second list. |
-| 11 | What pre-push verifies | Brief and PITFALLS (Pitfall 13): pre-push verifies the checked-out tree, not the pushed commit; `git push origin <sha>:refs/heads/x` from another checkout is verified against the wrong tree; runs once per push, from the first non-delete stdin line; nothing to push means no hook. STACK: pre-commit stashes unstaged changes for pre-push, so the gate sees the index plus untracked files. ARCHITECTURE (section 3): "pre-push runs on the working tree, so it can pass on uncommitted edits". | The files differ on whether unstaged edits are stashed (STACK and PITFALLS read `run.py` and say stashed; ARCHITECTURE says working tree). All agree CI plus `make pr.land` remains the wall. Verify with a scratch repo in the hook plan. |
-| 12 | The killed-commit failure mode | PITFALLS (Pitfall 15, git 2.54.0, Node `spawnSync`, 2 s timeout against a 6 s hook in a scratch repo): the child got `SIGTERM`, nothing committed, no `index.lock`, and the hook ran to completion as an orphan (parent PID 1). | This is why the orchestrator commits by hand until the hook decision lands. A retry after a kill overlaps the orphan (two gates sharing `.coverage` and the stash); the executor's documented "remove lock and retry once" recovery must be re-read against any new hook runtime. |
-| 13 | Printed `root_thickness` of the default gear | FEATURES: printed 3.253 mm; true tooth thickness 4.68 mm at rf+0.001·m falling to 3.51 mm at rf+0.3·m; root land 0 to 0.13 mm. PITFALLS (rho = `root_fillet` 0.5 mm): printed gap 1.609 mm against 0.149 mm between the cutter's fillet tangent points, printed thickness 3.166 mm against 4.625 mm. | Different printed values (3.253 versus 3.166), settings not stated to match. Not reconciled. Both files agree on the conclusion: the radial-flank numbers are wrong under a trochoid. |
-| 14 | Crossing radius for 10 teeth at 20 degrees | STACK: R = 4.72560, rb = 4.69846 (difference 0.02714 mm; module 1 by its stated sweep convention). FEATURES: 4.7255 vs rb 4.6985. PITFALLS: "48 µm (z=10, 20°)" with rho 0.38·m, module not stated. | STACK and FEATURES agree. PITFALLS' 48 µm is about 1.75 times larger, which would fit m 1.75 (my inference, not stated by the file). Treat as a unit question, not a conflict, and have the oracle phase record module with every crossing number. |
-| 15 | Is `root_d` unchanged? | FEATURES (G7): yes, minimum radius equals `r + x·m - 1.25·m`; simulation 3.75000007 vs 3.75. PITFALLS (Pitfall 6): only if the cutter is feasible; when the tip land is negative the deepest point is shallower than `rf`, so printed `root_d = 2·rf` overstates depth. ARCHITECTURE: unchanged, every rim-wall/recess/cutout rule reads `rf`. | Both hold under one condition: the cutter radius is capped so the tip land is non-negative (STACK: `a >= 0` is a precondition of the formulas). Test `root_d == 2*rf` in both modes. |
-| 16 | Sampling the root curve | STACK (real `cq.Edge.makeSpline`, max distance to a 20,001-point curve, m = 1, z = 8/10/14, rho* 0.38): N = 16 uniform in the rolling angle gives 3.6-4.0e-5 mm; the shipped flank (16 points, `i^1.5`) measures 6.0e-5 mm (z=12, m=1) and 1.0e-4 mm (z=19, m=1.75). PITFALLS (kernel facts, cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1): the same shipped flank deviates at most 0.13 µm (z=8/25 degrees) and 0.004 µm on the default gear by ITS method; uniform-in-angle sampling can bunch near cusps; endpoint gaps of 1e-6 mm or more silently open the wire; near-duplicate points (1e-9) raise an empty `Standard_Failure`. | The two files measured the same shipped flank differently (STACK 6.0e-5 and 1.0e-4 mm; PITFALLS 0.13 µm and 0.004 µm), a factor of hundreds apart, so neither number is a usable bar until the methods are compared. Keep STACK's N = 16 as the starting point and PITFALLS' structural guards (shared junction `Vector`s, spacing-ratio check, annulus bounds, area check) as mandatory. |
-| 17 | Backlash handling (G10) | FEATURES: backlash as hob-tooth thickening is derived, NOT simulated (ASSUMPTION). PITFALLS (Pitfall 3, prototype): with `e0 = pi·m/2 - 2x·m·tan(alpha) + backlash` the junction agrees with `Profile.half_angle` to 4.9e-17 rad (z=19, 25 degrees) and 6.9e-18 rad (z=30, 20 degrees) at backlash 0 and 0.10; a cutter without backlash leaves a 0.046 mm step (default gear, backlash 0.10). | PITFALLS' prototype partly closes FEATURES' G10 for the junction only. Make "junction equals `half_angle` at backlash 0 and non-zero" the first test of the maths phase. |
-| 18 | Form diameter as a printed number | FEATURES: `d_Ff` is a P2 differentiator (v0.4.x). ARCHITECTURE: adds `root_form_d` to `DerivedDimensions` in the milestone. STACK: ISO 21771 parity UNPROVEN (clause not readable); either say what the number is (cutter-envelope intersection for a basic rack with tip radius rho) or print none (L08). | Recommend a dedicated, honestly-labelled field only if the oracle proves the number; otherwise defer. Either way the label must not claim ISO parity. |
-| 19 | When to retire the race debt | ARCHITECTURE step 2 retires the debt file in the fixing commit after the margin decision. PITFALLS (12, 24): the debt names two findings (the race and the 29.42 s margin); do not retire on the first commit that touches `pool.py`. | Consistent: retire on the commit that closes both, margin decision in its own `Lxx`. |
-| 20 | Fix shape for the always-on commit problem | ARCHITECTURE (1.5) and PITFALLS (Pitfall 2) both find that a feature commit changing the outline turns the replay red and the hook refuses it, yet L26 D-03 says the fixture "never changes in a feature commit". | Land dark. Under a default-off field there is no regen at all. Under always-on, a single flip commit carrying the one-line switch, the `make fixture.regen` output and a new `Lxx` is the only legal shape; a flag-guarded dead branch merged earlier is not (CLAUDE.md forbids unreachable branches presented as finished). |
+The main risks are about honesty (L08):
+1. Every declared relation must be backed by `calc`, so a parity test is mandatory. Some proposed relations will fail it.
+2. hex × keyway is a 422, not an ignored field.
+3. The existing test `test_the_shareable_link_round_trips_every_field_through_generic_code` forbids field names in `app.js`, and the selector collides with it unless its logic is schema-carried.
+4. L34 was not set on an idle host.
+5. A skipped browser test gives a green gate with no UI coverage.
 
 ## Key Findings
 
-### Recommended Stack
+### Stack (STACK.md)
+- **`playwright` 1.63.0 in `[dev]`.**
+  - Pure wheels for macOS arm64 and manylinux, no sdist, so it installs under `PIP_CONSTRAINT`.
+  - It bundles a 130-135 MB Node driver, so no system Node is needed and L11 is untouched.
+  - MEASURED: the dry-run resolved with 0 errors.
+- **Chrome Headless Shell 153.0.8010.12 (revision 1243)** via `playwright install --only-shell chromium`. About 195 MB on macOS arm64, against 556 MB for the full browser (MEASURED).
+- **`json_schema_extra` nested relation.** Pydantic 2.13.5 emits nested dicts and lists verbatim, key-sorted at every level (MEASURED). `JsonDict` passes `mypy --strict`. DOCS only say "a dict or callable", so the merge behaviour comes from the run, not from a promise.
+- **No new library** for the evaluator, the selector, the slug or the server fixture. Do not use Pydantic `if/then` or `dependentSchemas`.
+- **Runtime closure unchanged.** The 31 pins, the Dockerfile and `refresh-requirements.sh` do not move (READ).
+- **WebGL is load-bearing.** `app.js:229` builds `WebGLRenderer` at module top level, so without WebGL the whole page is dead, form included (READ; PITFALLS MEASURED 0 form fields under `--disable-3d-apis`).
+- **Use the default shell, never `channel="chromium"`.** The shell renders on SwiftShader on both OSes. New headless uses the host GPU (Apple Metal here), so dev and CI would draw differently (MEASURED).
+- **Four-test scenario:** 3.21 s serial, 3.80 s at `-n 2` (MEASURED).
+- **Item 6 probe, resolution only:** none of the 31 pins lacks a macOS arm64 cp312 wheel (MEASURED, two checks). The real delta of adopting the constraint is that `fastapi`, `starlette` and `uvicorn` get downgraded to the pins.
 
-Add nothing, at runtime or dev time (STACK). The 31-package closure stays at 31. The trochoid is about 60 lines of stdlib `math` in `calc.py` (STACK estimate); its proof is about 40 lines of stdlib in `tests/`; the hook decision is a Makefile target plus a `.pre-commit-config.yaml` edit.
+### Features (FEATURES.md)
+**Must have:**
+- **Browser test:** server fixture, form built from the schema (counts read from `/api/schema`, never hard-coded), `#dl-stl` href after the first build, non-blank canvas, invalid field marked, warning text equal to `/api/info`, link round trip, CSS custom properties non-empty, and a loud failure if the browser is missing.
+- **Conditional fields:** `enabled_when` metadata, a generic evaluator, dim-and-editable, a reason derived from the gate field's `title`, re-evaluation on `input`, `readHash`, Reset and `hashchange`, and a calc parity test.
+- **Download name:** radial keeps today's name; trochoid gets a `_trochoid` suffix (suffix, not prefix).
 
-**Core technologies (all already in the tree):**
-- Python stdlib `math`: trochoid sampling, bisection for the form radius, closed-form undercut predicate. Per-flank solve 0.09-0.24 ms; a 7,296-case sweep had 0 failures and a slowest solve of 0.19 ms (STACK, host load 3-9, so upper bounds).
-- numpy in `calc.py`: do not add. STACK measured +33 ms import and +11 MiB RSS (13.0 to 24.1 MiB maxrss) into the serving parent that the fourth import-linter contract keeps kernel-free; last-ulp differences against libm are an unmeasured ASSUMPTION that the byte-identical fixture argues against finding out.
-- scipy: not installable in the image (pruned); 250-270 ms warm import in the dev venv (STACK). `brentq` does not remove the need for a bracket, which is the hard part.
-- cadquery 2.8.0 / cadquery-ocp 7.9.3.1.1 (L34): `model.py` turns the point list into an `Edge.makeSpline`; the kernel never sees the root-finding.
-- pre-commit 4.6.2: supports `stages: [pre-push]`; `default_install_hook_types` defaults to `[pre-commit]` and `default_stages` to all stages, so a new hook must be pinned (STACK, installed source and a scratch repo).
+**Should have:** the bore-shape selector (P2, "the most discretionary item", defer if the budget is short) and stash/restore of zeroed keyway values.
 
-**Root-finding rule (STACK):** decide undercut from the sign of the exact closed form `xi_join` first; bisect only when it is negative. STACK measured that the radius bracket collapses as the join approaches the base circle: at `xi_join = -2.9e-3 mm` the cusp was found (R - rb = 1.3e-7 mm); at `-2.9e-5 mm` the join sat 5e-11 mm above the base circle and bisection returned "no bracket". Double precision cannot separate R from rb below roughly 1e-7 mm of roll, the same order as the 1e-7 mm kernel tolerance L26 measured. The threshold is to be set from a measurement in the phase, not from this summary (L08).
+**Defer:**
+- stale-response test;
+- refused-vs-inert styling;
+- calc warnings for the silent relations;
+- the hex-warning-on-defaults noise (reproduced: `?bore_hex=6` warns every time; `app.js` must not filter it);
+- the cutout "pick one" lock.
 
-### Expected Features
+**Findings the roadmap must know:**
+1. hex × keyway is a 422 (reproduced, `calc.py` ~653). The inventory has two classes: inert (warned) and refused (422).
+2. `root_shape=trochoid` is a no-op at z=30, 41 and 60 (reproduced), so a name from the request can name a root the part lacks.
+3. `gearQuery()` reads `input.value`, not `FormData` (READ), so dim, disable and hide all leave the URL contract (L05) untouched.
 
-Table stakes are those without which the hob root is wrong (FEATURES).
+### Architecture (ARCHITECTURE.md)
+- **Pattern:** metadata on the model, one generic consumer in `app.js`, relations evaluated against the value `gearQuery()` sends.
+- **Files:**
+  - `params.py`: `_f(enabled_when)`, selector metadata, `slug()`.
+  - `app.js` and `style.css`: `applyRelations()` and `.field.inactive`.
+  - `tests/test_browser.py`: new, heavy tier.
+  - `tests/test_params_relations.py`: new, light tier, the one-directional inertness proof (relation false means changing the dependent changes only `warnings`).
+  - Makefile: `$(BROWSER)` stamp and `test.ui`.
+  - CI: browser install inside `test (3.12)`.
+  - Up to five new `Lxx`.
+- **Server fixture:** a subprocess on a pre-bound socket with `--fd`. An in-process thread is rejected because `app` is a singleton (lifespans collide, queue constants are fixed at import, `dependency_overrides` is shared).
+- **Gate placement:** option O1 (inside `test`, excluded from `test.fast`) is recommended. O3 breaks `test_hooks.py:92`. O4 needs `required-jobs.txt` and the GitHub ruleset.
 
-**Must have (table stakes):**
-- Trochoidal fillet generated from the rack tip arc, ISO 53 profile A as the default cutter (dedendum 1.25·m fixed, which `rf = r - m(1.25 - x)` already encodes), as pure `calc.py` maths; no kernel fillet operator, so L09's reason (speed) is not violated.
-- Cutter tip radius capped to the pressure angle's geometric maximum, with a warning when trimmed (L03). The default 25 degrees is outside ISO 53's 20, and the project allows 14.5 to 35 degrees.
-- Tangent hand-off when not undercut; a crossing with a corner when undercut; a closed, non-self-intersecting outline; the involute spline starts at the form radius, not `spline_start`.
-- Not computed above the pressure angle where the 1.25·m rack has no tip land (FEATURES 32.14 degrees; STACK 32.1 degrees, `tan(alpha) = pi/(4·1.25)`), with a warning and the shipped analytic path as the explicit fallback (L08).
-- `root_d` unchanged and asserted in both modes; undercut warning restated from the real onset and no longer saying "radial root"; `root_thickness`/`root_gap` made honest (null plus a warning, or redefined at the form circle with that circle printed).
-- Rules for how `root_fillet`, `tip_chamfer_limit` (L29) and the L33 lead-in warning interact with the new root; an independent proof (below); three-interface parity; a measured build time at the heaviest allowed configuration.
+### Pitfalls (PITFALLS.md), top six
+1. **BT-1: no WebGL kills the form.** Use the default shell, assert `getContext('webgl2')` first, and spike Linux on CI.
+2. **BT-2 / BT-3: the slice and the vacuous skip.**
+   - A new test file joins the 30 s slice by default.
+   - Add `--ignore` in the same commit, and a test that enforces it.
+   - Never `importorskip`.
+   - `make test-image` needs the ignore too (ARCHITECTURE and PITFALLS agree).
+3. **BT-4 / BT-5: server isolation.**
+   - Use a subprocess with a pre-bound `127.0.0.1` socket, `start_new_session=True` and `killpg`.
+   - MEASURED: pool children survived a server `SIGKILL` for 6 s.
+   - MEASURED: `--fd` works with a TCP socket on uvicorn 0.54.0.
+4. **CF-1 / CF-2: the pins and the refusals.**
+   - Never delete a pin; tighten it under the `Lxx`.
+   - `test_every_key_the_ui_reads_is_a_derived_dimensions_field` harvests `['word',` lines as DIMS keys.
+   - MEASURED: `keyway_width` alone and `keyway_depth` alone are both 422, so gating each on the other deadlocks both.
+   - MEASURED: `recess_*` at `none` and `bore_d=0, bore_flat=5` return 200 with `warnings: []`.
+5. **VP-1: venv hook clobbering.** `make venv VENV=.venv-proof` in the main checkout runs `pre-commit install`, which bakes that venv's python into the shared shim (READ: `INSTALL_PYTHON` in `.git/hooks/pre-commit`). Use a scratch clone or a linked worktree.
+6. **GB-1 / GB-2: no idle host, and the spread beats the effect.** Three runs read 208.52, 161.71 and 208.60 s (READ, 19-09). Fix the rule before the first reading.
 
-**Should have (competitive):**
-- `x_min`, the profile shift that avoids undercut, printed beside the warning (closed form, FEATURES G4).
-- Form diameter printed (null when not applicable), only if proven and honestly labelled (see disagreement 18).
-- User-settable cutter tip radius (pro tools expose it: MITCalc, the standardsapplied calculator; hobbyist tools do not).
-- Undercut waist thickness printed, with a floor decision (a waist of 0.021·m at 6 teeth, 14.5 degrees, x = -0.6 is nearly cut through; FEATURES, simulation).
+## Where the Four Files Disagree
 
-**Defer (v0.4.x / v0.5+):**
-- Flipping the default to the hob root (own `Lxx`, own commit), mate interference against form diameter, ISO 6336-3 critical section (geometry only), editable dedendum (needs an L05 decision).
-- Anti-features, by name: automatic profile shift (BOSL2's default; violates the standing rule that an unset parameter never changes the part), a circular-arc approximation sold as a trochoid, bending-stress numbers, vendoring GPL code.
+None of these is resolved here.
 
-**What the user would see (FEATURES, simulation of the rack-cutting process, not a published table):** shipped-versus-true profile gap is +0.13 to +0.30 mm of extra material near the root on every gear with `rb > rf` (default gear +0.295 mm at cutter 0.318·m, +0.266 mm at cutter 0.5 mm); the extra undercut removal is at most 0.030 mm at 10 teeth, 20 degrees. The visible change is mostly the fillet, not the undercut. This matters for scoping: an "undercut gears only" mode changes the part least where the error is largest.
+| # | Topic | What each file says |
+|---|---|---|
+| 1 | Selector logic home (known tension 1) | PROJECT.md says both "UI-only select in `app.js`" and "relation lives in schema metadata, never hard-coded in `app.js`". FEATURES finding 3 and ARCH §5.1 say these cannot both hold. FEATURES: Option A (metadata) or defer; a second `.js` file is gaming the pin. ARCH: S1, a model-level `selectors` entry in the same condition vocabulary; S2 needs an allow-list that weakens the pin. PITFALLS BS-4: a `BORE_SHAPES` constant in `app.js` under an `Lxx`, plus a model-driven round-trip test against `calc`. |
+| 2 | "Idle-host" re-set vs how L34 was set (known tension 2) | PROJECT.md says "idle-host". ARCH §7.1 and PITFALLS GB-1 correct it from `bench/RESULTS.md` (READ): Phase 15 D-04 set the bar with no quiet host, loads 5.3-30. The bar is the largest of three `-n 8 --cov` runs (65.83 s) rounded to 66 s, then mean(B) = 63.555 s. The quiet-host precedent is Phase 12 (load below 1.5). An idle re-set is a new method. STACK only says "measure idle after the browser test lands". |
+| 3 | Slug: requested vs effective (known tension 3) | FEATURES, ARCH and PITFALLS recommend effective (`calc.root_mode`). STACK takes no side. Cost: `slug()` depends on a solver, about 10-30 µs (MEASURED, 19-09). PITFALLS SL-2: `slug()` is called inside failure-path records, so it must be total. |
+| 4 | Dim-and-editable vs `disabled` (known tension 4) | All three recommend dim-and-editable. ARCH §4.3 allows `disabled` only for fields at their default. A disabled field cannot be cleared, so a value in a shared link such as `#spoke_count=0&hub_d=40` would be stuck. |
+| 5 | Keyway in the relation system | FEATURES and ARCH include `keyway_*` (FEATURES calls it the "refused" class). PITFALLS CF-2 says `enabled_when` should cover "ignored" cases only, so refusals stay visible 422s. |
+| 6 | Unbacked relations (`recess_*`, `bore_flat` at `bore_d` 0) | FEATURES: leave out and file an idea. ARCH: includes the recess row, to be settled by the proof. PITFALLS: a human decision. |
+| 7 | Relation grammar | STACK: nested `all/any`. FEATURES: a JSON-Schema-flavoured fragment (`{"const": 0}`). ARCH: a list of `{field, op, value}` with `op` in `eq, ne, gt, ge`. PITFALLS: `{field, gt}` or `{field, eq}` plus `all`. All say AND-only suffices. |
+| 8 | Asserting "STL in the scene" | STACK and FEATURES: `#dl-stl` href plus a canvas check (PNG size ratio 3,393 vs 38,908 bytes, or 11,478 distinct pixels, both MEASURED). ARCH adds an init-script draw count (VERIFY IN SPIKE). PITFALLS BT-7 proposes a production line `canvas.dataset.triangles`, the only production change any file suggests. |
+| 9 | WebGL flags | ARCH: pass CPU-render args (LOW). STACK (MEASURED) and PITFALLS (READ: Playwright already adds `--enable-unsafe-swiftshader`): none needed. |
+| 10 | Server port and worker cost | STACK: "free port". ARCH and PITFALLS: pre-bound socket with `--fd`. ARCH: `xdist_group` with `--dist loadgroup`. PITFALLS (DOCS): the mark is a no-op under the current `--dist load`, and changing suite scheduling is a gate-time change, so it prefers one scenario test. |
+| 11 | Playwright pin and plugin | STACK: `playwright>=1.63`; `pytest-playwright` optional, pin 0.10.0 exactly if used. PITFALLS: pin `playwright` exactly; avoid `pytest-playwright`. |
+| 12 | CI browser cache | ARCH: cache `ms-playwright`. STACK and PITFALLS (DOCS): caching is not recommended. |
+| 13 | Selector write-through | FEATURES: zero the keyway pair on Hex or None, with a stash. ARCH: writes switch-offs only, no keyway zeroing. PITFALLS BS-1: minimum fields, explicit `"0"` never `''`, remember typed values, never write on load. |
+| 14 | Gate-reading N | ARCH: N=3, the bar is the largest run rounded up. PITFALLS GB-2: N≥5 per arm, interleaved A/B, min/median/max. |
+| 15 | Missing-browser opt-out | ARCH and FEATURES: fail loudly, no skip. PITFALLS: no skip, but a printed `SPUR_NO_BROWSER=1` opt-out refused when `CI` is set. |
 
-### Architecture Approach
+## Decisions Reserved for the Human (discuss-phase)
 
-`GearParams` (frozen, validated once) feeds `calc.profile`, a NEW pure `calc.trochoid_root(pr, rho, ...)` returning an immutable `RootCurve` (points as `(rho, half_angle)` pairs, exactly what `_outline` already forms for flanks, so the mirror is free; `None` means "cannot be computed honestly", which falls back to the radial root and a warning), and ONE predicate `calc.root_mode(p, pr)` that `_outline`, `root_fillet`, `spline_start`, `tip_chamfer_limit` and `derive` all read. `model._outline` replaces, per tooth side, the fillet arc plus lead-in line with one `makeSpline`, and the involute spline starts at the junction radius taken from the same float (ARCHITECTURE: joins hold by coincident endpoints; PITFALLS: a 1e-6 mm gap silently opens the wire).
-
-**Major components:**
-1. `calc.trochoid_root`, `RootCurve`, `root_mode` (new, pure `math`): generator, junction by bisection on a monotone bracket, single predicate.
-2. `model._outline`, `_gear_blank`, `_build` (modified): consume `RootCurve`; face count per tooth side goes from arc + line to one spline (8 to 6 side faces per tooth, ARCHITECTURE), so any pinned topology count for an affected gear moves.
-3. `calc.derive` and `DerivedDimensions` (modified): `root_thickness`/`root_gap` become nullable, a new additive field is null on replay, the lead-in warning must not fire when no chord exists, the undercut warning is restated; the five fixture records that carry the old text byte-for-byte keep it in radial mode (`pre_v0_2.json:582,632,948,996,1588`).
-4. `GearParams.root_shape: Literal["radial","trochoid"] = "radial"` (new, if opt-in; name is discuss-phase's): must be a `Literal`, not a `bool` (`cli.py:47-56` handles `Literal` via `choices=`; `type=bool` makes `--flag false` read as true); one enum exemption to generalise in `test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order`.
-5. `pool._run_with_timeout` and `BuildPool.shutdown` (modified), `bench/latency.py` (a `scenario_identical` plus a `record_500` keyword that leaves the default and the pinned 500-raising test alone), `.pre-commit-config.yaml` and `Makefile` (hook decision).
-
-Constraints on the geometry (ARCHITECTURE and PITFALLS): the proof lives in `tests/`, shares no code with the implementation (the L33 `_filleted_spoke_volume` precedent), and the cheap calc tier carries most of it so the gate headroom (66 s bar, 2.445 s to spare, L34 as quoted by PITFALLS) is not spent on kernel rows. `Profile.half_angle` is undefined below `rb` and must not be reused there.
-
-### Critical Pitfalls
-
-1. **Three predicates called "undercut"** (PITFALLS 1, ARCHITECTURE 0 and 1.5, FEATURES): `teeth < z_min` (5 of 44), `rb > rf` (28 of 44), and the cutter's form circle. Decide the predicate first as one pure function derived from the same cutter constants the geometry uses, test one tooth step either side, and show the human the step discontinuity: FEATURES measured a root shape jump of about 0.14·m between 17 and 18 teeth; PITFALLS measured the printed root gap at z = 17 as 2.052 mm against about 0.28 mm cutter-generated (rho 0.38·m, 20 degrees). These two figures use different units and settings and are not merged.
-2. **Always-on collides with L05 and L26 D-03** (PITFALLS 2, ARCHITECTURE 1.5): a shared link that omits a field changes part, and no ordering of two plain commits satisfies both the hook and the fixture rule. Land dark; the flip is its own commit with its own `Lxx`; `git diff --exit-code tests/regression/pre_v0_2.json` after every other task.
-3. **The tip radius cannot exist as specified** (STACK, FEATURES, PITFALLS): see correction 4. Cap from the real cutter including backlash; keep `root_fillet = 0` legal (sharp cutter, deepest cusp); warn with the capped value at the printed 3 dp.
-4. **Junction handled as tangent for every gear; centre path used instead of the envelope** (PITFALLS 4, 5, 20): the join is tangent only when not undercut; for undercut gears it is a crossing found by bisection, and at exactly `z_min` a sign-change search finds no root (a double root), so the near-tangent case needs an explicit rule. The oracle must check clearance of every surviving point against the cutter at all other rolling angles; STACK measured max penetration -1.6e-11 mm on the genuine segment versus +3.9e-3 mm past the form point, eight orders of separation.
-5. **The race has two routes and a fragile test** (PITFALLS 9, 10; ARCHITECTURE 2): see disagreements 8 and 9. Do not widen `recreate_for`; do not await inside the terminate-and-replace block; do not change when the timeout clock starts or `SPUR_BUILD_TIMEOUT`/`MAX_QUEUED_BUILDS`.
-6. **Hook choice drift and weakened guarantees** (PITFALLS 13-15, STACK, ARCHITECTURE): moving the gate to pre-push means a red commit can exist locally and `git bisect` can land on one; the subset must be a prefix of `verify` by construction; `pre-commit install` is per clone and per hook type (this clone's `.git/hooks` holds `pre-commit` and `commit-msg` only, STACK), so an un-reinstalled clone gets no pre-push gate silently; `--no-verify` is forbidden by gsd's own workflows (`workflows/execute-phase.md`, `references/git-integration.md`).
-7. **Kernel and test hygiene** (PITFALLS 7, 18, 19): a valid solid can still be wrong (PITFALLS measured a spline that swung to 538 mm while the face passed `isValid()` with volume 347.9 against 21.4 for the clean curve), so add structural guards that do not depend on `isValid()`; do not widen the fixture's bars to absorb the flip.
+1. Does a headless browser belong in `make verify`? Options: O1 (recommended by all four), O2, O3, O4. STACK prices O1 at +3.2-3.8 s on a 192.94 s mean (MEASURED). One `Lxx` amends L11, L13 and L36.
+2. Missing browser: hard fail, or hard fail plus a printed, CI-refused opt-out.
+3. Whether to add the one production line `canvas.dataset.triangles`.
+4. Whether to adopt `pytest-playwright`.
+5. Dim-and-editable, or `disabled` limited to default values.
+6. Relation grammar scope.
+7. Whether keyway gets a relation, and a separate "refused" style.
+8. Whether unbacked relations stay undimmed or get a warning first.
+9. Selector logic home: schema (S1) or a `BORE_SHAPES` constant (S2). Also whether to defer the selector at all.
+10. A fifth "No bore" option, with keyway kept outside the select.
+11. What Hex or D-flat writes when the matching field is 0: a pending UI state (all files lean this way) or a starter value (`bore_flat` default is 8).
+12. Slug by requested or effective root.
+13. The idle threshold X (precedent 1.5), cool-down, N, and the give-up rule, all fixed before any reading. The human then sets the bar.
+14. Whether to re-sweep the xdist knee on the 18-CPU host (the N=8 knee was swept on 12 CPUs).
+15. Whether to adopt `PIP_CONSTRAINT` in `make venv` if the probe passes.
 
 ## Implications for Roadmap
 
-The roadmap numbers from 17 (PITFALLS). Four phases are proposed; the fourth is conditional on the human's root-mode decision.
+Five phases, numbered from 21.
 
-### Phase 17: Debt, the two `must` items
-**Rationale:** PROJECT.md makes Phase 1 the two `must` items so every later commit runs under the hook decision (ARCHITECTURE step 1). Under option (a) (upstream knob) nothing ships and every commit stays by hand. Within the phase, order: hook decision first, then the race.
-**Delivers:** (1) One `Lxx` for the hook plus the config, Makefile, docs and one live proof that an SDK commit returns `committed: true` (ARCHITECTURE names the places that say "pre-commit hook runs make verify": `.pre-commit-config.yaml:1-3`, `docs/HOW_TO_DEVELOP.md:23-26`, `README.md:288`, `docs/architecture/packaging.md:49-51`, `.github/workflows/ci.yml:24-26`, `decision_log.md` L13 and L34, and a stale "~42 s" comment at `scripts/pr_land.py:67`). (2) The race: bench scenario edit, run on a fresh server to record the 500, fix with the two-fact guard plus `_closed`, deterministic test seen red first, re-run showing no 500. (3) The margin finding (worst composed row 29.42 s alone, ARCHITECTURE/PITFALLS) as its own `Lxx`: `SPUR_BUILD_TIMEOUT`, a cap, or a recorded limit, chosen from measurement.
-**Addresses:** the two `must` debt files; retire each in its own fixing commit with `Status: resolved`, sha, `git mv`, INDEX row.
-**Avoids:** Pitfalls 9-15, 24; correction 12 (orphaned hooks).
-**Hook recommendation (opinionated):** STACK, ARCHITECTURE and PITFALLS all land on a fast commit-time subset plus the full `make verify` at pre-push, amending L13 and L34, and filing the upstream knob request in parallel without depending on it. Patching `~/.claude/gsd-core` is out (outside the repo, overwritten by `gsd-update`, STACK). The subset's content is open (disagreement 10). Pricing available: static only 0.57 s warm (ARCHITECTURE P1), 0.59 s (STACK), mypy cold-cache 9.1 s (STACK) or about 9.5 s total cold (PITFALLS); with the pytest slice about 12 s warm and about 21 s cold (STACK).
-**Standard patterns?** Yes for the race (reproduced, diagnosed); the hook plan needs one scratch-repo check of pre-push semantics (disagreement 11), not a research phase.
+**Phase 21: Browser Test of the Viewer**
+- **Why first:** both UI ideas named "a browser test exists" as their trigger. It is the only thing that can see dim, derive and write-through behaviour. It carries the golden baselines: request sets for the 44 records, the hex-link warning, and the `root_shape=bogus` blank-select behaviour.
+- **Delivers:**
+  - the WebGL and CI spike as the first task;
+  - the subprocess server fixture;
+  - scenarios for all three programmatic-value paths (fresh load, Reset, `hashchange`);
+  - gate admission: `test.fast --ignore`, `HEAVY_TEST_FILES`, the `$(BROWSER)` stamp, `test.ui`, the CI install, the `test-image` ignore, and a `.gitignore` entry for browser artifacts;
+  - the isolated price of the file;
+  - one `Lxx` amending L11, L13 and L36;
+  - the reverify paragraph in `HOW_TO_DEVELOP.md` §6 (cheapest early, PITFALLS M-5).
+- **Install constraint:** the browser install must be a Makefile step, because `.venv` does not exist before `make verify`. Isolate `PLAYWRIGHT_BROWSERS_PATH` or pass `--no-remove`, because this host holds `chromium-1228` and Playwright's browser GC could delete another project's browser.
+- **Avoids:** BT-1 to BT-11, M-1 to M-4.
 
-### Phase 18: Trochoid maths in `calc.py`, no kernel, no field, no fixture contact
-**Rationale:** the research-heavy step; keeping it free of `model.py` makes it testable at the cheap tier (ARCHITECTURE step 3; PITFALLS Phase B).
-**Delivers:** the cutter function (one place for backlash, shift, tip radius), the single "trochoid active?" predicate, the closed-form undercut onset, the envelope generator with the crossing/tangent junction by bisection, the cap on the tip radius, and the oracle tiers below. Includes a measured `derive()` cost: PITFALLS measured 73 µs per call for a 60-step bisection against 20.4 µs for default `derive` (host load about 6.8; the 11.5 µs in the docstring is stale), so the docstring figure must be re-measured and recorded.
-**Proof tiers (STACK, endorsed by ARCHITECTURE and PITFALLS):** T1 closed form pins when the root is a trochoid (assert one tooth either side, and at a tuned shift one field step either side, the L33 pattern); T2 swept-cutter no-gouge oracle in `tests/` pins where it is (STACK: 41 points x 2,001 rolling angles, 0.07 s); T3 a one-off cross-check against freecad.gears at rho = 0 recorded with source file, commit and licence (GPL-3.0, never imported; STACK measured agreement 1.8e-15 mm in R and 1.1e-16 rad in angle for z = 8, 10, 14, x = 0, 0.3). Add PITFALLS' tripwire: move the cutter radius by a small stated amount and prove the assertion goes red. The bar is set from two recorded numbers (the model's own spline error and the reference's stated resolution), headroom stated, and put to the human if under about 10x (ARCHITECTURE, the L33 D-06 rule).
-**Addresses:** table stakes (trochoid, cap, hand-off, domain limit, `root_d` assertion).
-**Avoids:** Pitfalls 1, 3, 4, 5, 6, 8, 20, 21, 22.
-**Research flag: needs a targeted `/gsd-plan-phase --research-phase`.** The maths is already derived and cross-checked three ways, so this is not a from-scratch research phase. The open items are: ISO 21771 form-diameter parity (clause unread; STACK, PITFALLS), the oracle's external anchor (no published table found; STACK LOW for the absence claim), the two-flank interaction at very low z or large rho (not exercised by STACK's 7,296 cases, which solved one flank only), and what happens at the z_min double root.
+**Phase 22: Download Name Carries `root_shape`**
+- **Why here:** independent of the form work and low-risk. It reuses Phase 21's `expect_download` harness while it is fresh, and it can move later at no cost.
+- **Delivers:**
+  - a suffix only for a non-default root, so the `test_api.py:720` pin stays;
+  - a deliberate flip of the `test_api.py:411-412` assertion;
+  - `http-api.md:43` updated;
+  - an `Lxx` listing what pinned the old names, and recording that no cache is keyed by slug (READ).
+- **Avoids:** SL-1, SL-2. Test z=23 (applies) and z=40 (ignored).
 
-### Phase 19: Kernel integration, landed dark or opt-in
-**Rationale:** only after the maths is proven can the outline change be tested against it (ARCHITECTURE step 4; PITFALLS Phase C). Spike before field (PITFALLS 18): measure the trochoid outline's build cost at the heaviest allowed low-z row (tip chamfer, recess, cutout) before any schema change.
-**Delivers:** `_outline`/`_gear_blank`/`_build` consuming `RootCurve`; under the opt-in recommendation, the default-off `Literal` field with the fixture byte-identical (`git diff --exit-code`) and the 85 replay cases unmodified; `spline_start` and `tip_chamfer_limit` reading the same new start radius; the bisection spike for a spline-to-spline junction under a tip chamfer (ARCHITECTURE: whether the kernel can cross it is unmeasured; L29's bound was bisected to about 2 µm on the old boundary); `derive()` fields and warnings (restated undercut sentence from the same predicate, lead-in warning not firing without a chord, `root_thickness`/`root_gap` null or redefined); a kernel-tier proof comparing `Edge.positionAt` samples of the built solid's root edge to the oracle (STACK, ARCHITECTURE 1.6); compose rows with tip chamfer, recess and each cutout; a build-time row in `bench/`; the new `Lxx` that supersedes L10 and amends L09/L33; README, gear-maths docs and the trochoid idea file brought true in the same change (ARCHITECTURE lists `README.md:222-224`, `docs/architecture/gear-maths/strategy.md`, `docs/ideas/2026-09-21-trochoidal-root-fillets.md`).
-**Addresses:** the interaction rules (`root_fillet` ignored-and-warned per the L27 hex-bore precedent versus reinterpreted as the cutter radius, an open decision), three-interface parity, measured build time, `x_min`.
-**Avoids:** Pitfalls 2, 7, 16, 17, 18, 19; the CLI `bool` trap; a trochoid generator inside `model.py` (the 74 % file, ARCHITECTURE).
-**Research flag: needs a spike, not a research phase.** Spline-to-spline junction under the tip chamfer and build time on the heaviest low-tooth row; STACK's ASSUMPTION that the spline is a new edge type in the boolean, so `make bench.build` timings are "unaffected in principle", is unmeasured.
+**Phase 23: Conditional Form Fields**
+- **Why before the selector:** it needs Phase 21 as its regression net, and it defines the evaluator the selector reuses. Building them separately gives two statements of "hex wins" (PITFALLS BS-4).
+- **Delivers:**
+  - `_f(enabled_when)`, and the same key on the two bare-`Field` Literal fields;
+  - `applyRelations()` with dim-and-editable and a reason built from the gate field's `title`;
+  - the calc parity test;
+  - the model-driven field-walk extension;
+  - a keyword-collision test;
+  - the pins rewritten stricter under an `Lxx` that supersedes 08 D-09 (L02 kept).
+- **Avoids:** CF-1 to CF-4, M-3, M-7. Budget for dropping rows that fail the parity proof. File the hex-warning noise as debt.
 
-### Phase 20 (conditional): The flip, only if the human wants always-on or "O4 step 2"
-**Rationale:** isolates the only commit allowed to touch `tests/regression/pre_v0_2.json` (L26 D-03). It changes one predicate body and runs `make fixture.regen`, with the `Lxx` listing exactly what moved: under the narrow definition ARCHITECTURE counts 5 `derived` blocks, 3 `solid` blocks and one added null field in the other 39 `derived` blocks; under the broad definition (`rb > rf`) it is 28 records and changes the default gear's part. Recommend the narrow definition if always-on is chosen (ARCHITECTURE); FEATURES argues even the narrow z-threshold is wrong on its own merits (the step discontinuity) and prefers a mode that applies wherever the flank is radial.
-**Delivers:** the flip commit, never mixed with 18 or 19; the named list of moving records in advance; any other record moving is a bug (PITFALLS 19).
-**Avoids:** Pitfalls 2, 19; widening fixture bars to absorb the change.
-**Standard patterns?** Yes (L26's own `make fixture.regen` flow), but the human must see the priced options first. If the human chooses opt-in only, drop this phase; FEATURES rates flipping the default P2 and "v0.4.x".
+**Phase 24: Bore-Shape Selector**
+- **Why here:** it needs Phase 21 (trigger) and Phase 23 (shared evaluator). It is the largest UX risk and the most discretionary item, so it can be cut without breaking anything else. It needs the human decision on logic location before planning.
+- **Delivers:**
+  - a `<select>` over hex, D-flat, round and none;
+  - no entry in the `fields` map and none in the URL;
+  - stash and restore of typed values;
+  - a model-driven round-trip test per state;
+  - browser tests for the 44-record request-set comparison and for "no non-field key in any `/api/*` request or hash".
+- **Avoids:** BS-1 to BS-4. Write option tables as objects, not `['x', ...]` rows.
 
-### Phase Ordering Rationale
+**Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close**
+- **Why last:** the re-set must measure the shipped `HEAD`, so it needs Phases 21-24 landed. The re-set and the `PIP_CONSTRAINT` probe both amend L34, so they share this phase and L34 is amended once.
+- **Probe constraints:**
+  - It must not run during a gate measurement, because it loads the host.
+  - It must not run in the main checkout. `make venv VENV=...` runs `pre-commit install` and rewrites the shared hook shim (READ, `Makefile:51`, `.git/hooks/pre-commit`).
+  - Use a scratch clone or a linked worktree. The Makefile detects worktrees and skips the install (READ, `Makefile:71`).
+  - Afterwards confirm that `.git/hooks/pre-commit` still names `.venv/bin/python`.
+- **Delivers:**
+  - the rule and threshold written into `bench/RESULTS.md` before any reading;
+  - idle-host readings with load, machine and `HEAD`;
+  - the human sets the bar;
+  - one `Lxx` amending L34;
+  - the stale `63.555 s` / `~64 s` comments in `Makefile`, `.pre-commit-config.yaml` and `HOW_TO_DEVELOP.md` rewritten, with IN-03 retired in the same commit;
+  - the probe result (`make verify` result line, `pip check`, freeze diff);
+  - the README Pi 5 sentence stating only the hardware the numbers came from.
+- **Avoids:** GB-1 to GB-3, VP-1, M-6.
 
-- The hook decision precedes everything (every later commit runs under it); the race and margin follow because both are measured, small and independent of the geometry.
-- Maths before kernel keeps the proof at the 0.06 s calc tier (ARCHITECTURE, from `bench/RESULTS.md`) and keeps the hard numeric work away from the 74 % kernel file.
-- Dark/opt-in before any flip keeps L05 and L26 true by construction and gives the oracle and build-time sweep time to land before any link changes part (FEATURES option O4).
-- Root-mode options as priced in the files, for the discuss-phase table: O1 always-on when undercut (5 of 44 records move; discontinuous; FEATURES argues against it on its own merits); O2 always-on wherever `rb > rf` (28 of 44, default gear moves by up to 0.30 mm of material, FEATURES simulation); O3 new default-off field (0 of 44); O4 O3 now, flip later under its own `Lxx` (0 now). Recommendation: O4, with the seam built as O3 so that "always-on" is one function body plus one regen commit (ARCHITECTURE).
+**Ordering rationale**
+- BT comes first because both UI ideas named it as their trigger.
+- CF comes before BS because the selector reuses the relation evaluation pass.
+- SL is movable anywhere after BT.
+- The gate re-set and the venv probe come last, together, to measure the shipped gate once.
+- The 44-record fixture stays byte-identical because no phase touches `GearParams` fields or `derive()`. The slug is not in the fixture (READ: `pre_v0_2.json` has no `spur_z` string).
 
-### Research Flags
+**Research flags**
+- **Phase 21 needs a spike:**
+  - Linux CI: the headless shell on `ubuntu-latest`, `--with-deps` via `sudo`, and the apt libraries.
+  - Strict mypy on the Playwright-typed file.
+  - Gate cost under eight-worker load on a 4-vCPU runner.
+- **Phase 24** needs a human decision before planning.
+- **Phase 22** has one small decision (requested vs effective).
+- **Phase 23** uses standard patterns, but the parity proof will surface relation rows that are not inert.
+- **Phase 25** uses standard patterns, but the idle threshold, cool-down and N must be fixed before any run.
 
-Phases likely needing deeper research during planning:
-- **Phase 18:** targeted research on the four items listed above; this is where an `/gsd-plan-phase --research-phase 18` earns its cost.
-- **Phase 19:** spike for the chamfer junction and build time; not a research phase.
-
-Phases with standard patterns (skip research-phase):
-- **Phase 17:** the race is diagnosed and reproduced three ways (ARCHITECTURE) with a measured window table (PITFALLS); the hook options are priced (STACK). Plan with a scratch-repo check, no research phase.
-- **Phase 20:** L26's regen flow is established.
-
-### Decisions the human must make at discuss-phase (each file's open list, deduplicated)
-
-1. Root mode: O1/O2/O3/O4, and which predicate "undercut" means for the mode (STACK, FEATURES, ARCHITECTURE, PITFALLS).
-2. Cutter tip radius: reuse `root_fillet` (ARCHITECTURE ASSUMPTION; default 0.5 mm is 0.286·m at m 1.75 per STACK, but 0.5·m at m 1 and 0.05·m at m 10 per FEATURES, against the absolute-mm default rule L05), or a fixed 0.38·m (infeasible at 25 degrees), or a new field.
-3. `root_thickness`/`root_gap` under a trochoid: null plus warning (requires widening two non-optional fields in `DerivedDimensions`) or redefine at the form circle.
-4. Waist floor: a 422 for a direct geometric conflict (L03) or a warning; the 6-tooth, 14.5 degree, x = -0.6 corner is nearly cut through (FEATURES).
-5. Hook: option (a) knob, (b) pre-push, (c) subset, or (b)+(c), and the subset's content; who owns the per-clone `pre-commit install`.
-6. The margin finding: `SPUR_BUILD_TIMEOUT`, a cap (`spoke_count`) or a recorded limit.
-7. Whether a published or tool-generated reference (hob data sheet, KISSsoft export) exists to add as a fourth oracle tier (STACK T4, FEATURES).
-8. Whether the dedendum stays fixed at 1.25·m (assumed) and whether `d_Ff`/`root_form_d` ships this milestone.
-
-## Confidence Assessment
+## Confidence
 
 | Area | Confidence | Notes |
-|------|------------|-------|
-| Stack | HIGH for the maths tool choice and the hook facts; MEDIUM for the reference | Reproduced on this machine against the pinned tree (STACK). No free published point table found, so the reference is built; the absence claim is LOW. |
-| Features | MEDIUM | Geometry verified against an independent brute-force rack simulation; standards text (ISO 53, 21771, DIN 867/3960) read only from secondary pages; tool-behaviour claims MEDIUM or LOW-MEDIUM (FEATURES). |
-| Architecture | HIGH on seams, lines and counts; MEDIUM on the geometry | Every cited file was read this session (ARCHITECTURE); race reproduced three ways. Trochoid geometry itself not researched there. |
-| Pitfalls | HIGH for repo measurements; MEDIUM for gear theory; LOW for ASSUMPTIONs | Scratch scripts were not committed, so every number a plan leans on must be re-created inside the repo (PITFALLS). |
+|---|---|---|
+| Stack | HIGH on macOS arm64; MEDIUM on Linux CI | Linux was an `ubuntu:24.04` container, not a GitHub runner. |
+| Features | MEDIUM-HIGH | Repo claims were reproduced. UX conventions are MEDIUM. FEATURES rated Linux WebGL as LOW; STACK later measured the container. |
+| Architecture | MEDIUM | Claims about existing code are HIGH. ARCH says nothing in it was run; STACK and PITFALLS have since measured several of its assumptions. |
+| Pitfalls | HIGH for MEASURED and READ; MEDIUM for DOCS; LOW for UNVERIFIED | No Linux host, Docker daemon or runner was available. |
 
-**Overall confidence:** MEDIUM-HIGH. The two debt items are well understood and measured; the geometry feature is derived and cross-checked but has no external oracle yet.
-
-### Gaps to Address
-
-- **No published reference table or licensed standard text** (ISO 21771, ISO 53, ISO 6336-3 were not readable; the 0.38·m and the form-diameter parity rest on secondary pages): obtain from a licensed copy or a documented implementation before printing a "form diameter", or print none and keep the warning (L08). Handle in Phase 18.
-- **Scratch measurements are not committed** (STACK, FEATURES, ARCHITECTURE, PITFALLS all say so): each number a plan depends on (race table, N = 16 deviation, crossing radii, subset timings) must be re-derived as a test or bench row, with kernel pair, load figure and date beside it.
-- **Four different prototypes were used** (STACK's closed-form-plus-oracle, FEATURES' numpy brute force, PITFALLS' cutter-envelope prototype, ARCHITECTURE's scratch counts); they agree where they overlap, but the implementation phase must run its own oracle rather than lean on any of them.
-- **Unmeasured:** build-cost effect of the spline in the boolean (STACK ASSUMPTION; PITFALLS 18); whether the kernel carries a tip chamfer across a spline-to-spline junction (ARCHITECTURE); the race window on a 4-vCPU runner (PITFALLS ASSUMPTION); cold-OS-page-cache hook timings, since cold mypy is measured (about 9.1 s, STACK) but a cold OpenCascade page-in is not (ARCHITECTURE); reachability of the `shutdown()` route through uvicorn (PITFALLS ASSUMPTION).
-- **gsd path assumption:** the multi-repo `git push` branch (`commands.cjs:2814`, 60 s timeout) is not used by this repo (STACK ASSUMPTION; `.planning/config.json` has only `git.branching_strategy: phase`).
-- **Edge debt triggers:** editing `pool.py` fires the revisit triggers of two `nice` debts (the lost worker-coverage flush; the resource-tracker flake that failed one gate run, `2403b91`). The plan should schedule a read of each, not necessarily a fix (ARCHITECTURE, PITFALLS).
+**Gaps:**
+- **CI Linux:** unmeasured.
+- **Browser-test gate cost under load:** ARCH's 10-25 s is an ASSUMPTION; STACK's 3.2-3.8 s is the isolated MEASURED figure.
+- **Strict mypy:** `page.evaluate` returns `Any`, so it needs typed wrapper helpers.
+- **Gate re-set spread:** the 19-09 spread is larger than any single effect. At N around 10, 2 failures in 12 runs has a 95% Wilson interval of about 5-45% (calculated).
+- **`make verify` under `PIP_CONSTRAINT`:** only resolution was probed. Also, pip 26.2 no longer applies `PIP_CONSTRAINT` to build isolation (DOCS), and macOS arm64 green says nothing about the Docker `linux/arm64` image or the Pi 5.
+- **Resource-tracker flake (a `must` debt):** keep every failed gate log during Phase 21 and classify it against the four recorded occurrences. Add no `filterwarnings` entry.
+- **Existing silent behaviour to pin and file, not fix:** `#root_shape=bogus` becomes the default via the blank select, where the API returns 422 (MEASURED).
+- **Other UNVERIFIED items:** the `expect` default timeout, canvas readback without `preserveDrawingBuffer`, coverage behaviour on a `SIGKILL`ed child, FastAPI's handling of a nested extra in `/openapi.json`, and same-document `goto` semantics in Playwright.
+- **Ledger hygiene:** retire each idea or debt item in the commit that closes it (status, sha, `git mv`, INDEX row).
 
 ## Sources
-
-### Primary (HIGH confidence)
-- Repo, read directly by the researchers: `src/spur/calc.py`, `model.py`, `params.py`, `pool.py`, `app.py`, `cli.py`, `static/app.js`; `tests/regression/pre_v0_2.json` and `corpus.py`; `tests/test_pool.py`, `test_bench.py`, `test_cli.py`, `test_api.py`; `bench/latency.py`, `bench/sweeps/composed.json`, `bench/RESULTS.md`; `docs/architecture/decision_log.md` (L03, L05, L08, L09, L10, L13, L17, L26, L33, L34, L35); the two `must` debt files and `docs/tech_debt/INDEX.md`; `.pre-commit-config.yaml`, `Makefile`, `.github/workflows/ci.yml`, `docs/HOW_TO_DEVELOP.md`, `README.md`, `pyproject.toml`.
-- Installed tools: pre-commit 4.6.2 (`hook_impl.py`, `run.py`, `clientlib.py`); gsd-core 1.16.0 `~/.claude/gsd-core/bin/lib/commands.cjs` and workflow files; cadquery 2.8.0 `Edge.makeSpline` and `Wire.assembleEdges` via `inspect`; `npm view @opengsd/gsd-core version`; PyPI JSON for pre-commit, numpy, scipy, pytest-xdist, pytest-cov, ezdxf (STACK, 2026-10-06).
-- freecad.gears `pygears/involute_tooth.py` (GPL-3.0; reference only, never a dependency); issue open-gsd/gsd-core #3886.
-- Scratch-repo and scratch-script measurements (not committed): race windows, pre-push semantics, orphaned hook behaviour (git 2.54.0), spline deviation on the real `makeSpline`, fixture counts.
-
-### Secondary (MEDIUM confidence)
-- ISO 53 basic rack values via secondary pages: drivetrainhub.com basic-rack chapter, engineersedge.com DIN 867 page, Gear Solutions (Akpolat et al., 2018-04-15).
-- standardsapplied.com calculator (z_min with rho*, default rho* 0.471; corroboration only, data not copied); tec-science undercut and profile-shift pages; KHK technical reference; BOSL2 `gears.scad` (BSD-2-Clause); Gear Solutions form-diameter, root-form, transition-curve and numerical-root-geometry articles (Zhang 2019, Hyatt 2014, Gorniak 2025, Pinnekamp 2024).
-
-### Tertiary (LOW confidence, needs validation)
-- ISO 21771:2024 / 2007, ISO 6336-3 clause text (not readable; the iTeh ISO 21771 sample does not contain the trochoid or form-diameter clauses, STACK).
-- "Is the root fillet curve in involute gears trochoidal?" (Mech. Mach. Theory, 2025): known only from a search snippet (403 on fetch).
-- GearGen.xyz and 3d-editor.com marketing text; KISSsoft search results; Fusion 360 tutorial; the absence of an open upstream request for a commit-timeout knob.
-
----
-*Research completed: 2026-10-06*
-*Ready for roadmap: yes*
+Only what the four files cite:
+- **HIGH (local runs and repo reads):**
+  - pip dry-run under `PIP_CONSTRAINT`, Playwright installs, WebGL probes, the four-test scenario, reproduced API behaviours, `--fd` and `SIGKILL` experiments.
+  - PyPI JSON for the 31 pins, `playwright`, `pytest-playwright` and `selenium`.
+  - Repo files: `app.js`, `params.py`, `calc.py`, `app.py`, `records.py`, `cli.py`, `tests/test_api.py`, `test_cli.py`, `test_hooks.py`, `Makefile`, `pyproject.toml`, `ci.yml`, `.pre-commit-config.yaml`, `.git/hooks/pre-commit`, `decision_log.md`, `bench/RESULTS.md`, `docs/ideas/*`, `docs/tech_debt/active/*`, `PROJECT.md`.
+  - Upstream source: Playwright `chromium.ts`, uvicorn `config.py`.
+  - OpenSCAD Customizer manual.
+- **MEDIUM:**
+  - `ubuntu:24.04` container run.
+  - Playwright browsers, CI, intro and clock docs.
+  - Pydantic `json_schema_extra` docs.
+  - pytest-xdist distribution and how-to pages.
+  - coverage.py config, pytest-cov 7.0.0 changelog, pip 26.2 release notes.
+  - JSON Schema conditionals, JSON Forms rules, rjsf dependencies.
+  - kittygiraudel on `disabled` vs `aria-disabled`, MDN `inert`, hidde.blog, GOV.UK radios.
+  - RFC 6266.
+- **LOW:**
+  - Chromium SwiftShader docs (two revisions cited).
+  - microlink.io on WebGL without a GPU.
+  - pytest-xdist scheduling guarantees (via web search).

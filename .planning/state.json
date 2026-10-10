@@ -1,7 +1,7 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.4 — True Root",
+  "milestone": "v0.5 — Honest Form",
   "phases": [
     {
       "number": "1",
@@ -20,29 +20,19 @@
     },
     {
       "number": "17",
-      "name": "Debt First — Commit Gate and Pool Race",
+      "name": "20",
       "status": "complete"
     },
     {
-      "number": "18",
-      "name": "Trochoid Maths, Proved",
-      "status": "complete"
-    },
-    {
-      "number": "19",
-      "name": "The Trochoid in the Part",
-      "status": "complete"
-    },
-    {
-      "number": "20",
-      "name": "The Flip (conditional)",
+      "number": "21",
+      "name": "25",
       "status": "pending"
     }
   ],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 21)",
+    "reason": "Phase 21 of 5 — needs a plan"
   },
-  "updated_at": "2026-10-09T14:44:42.428Z"
+  "updated_at": "2026-10-10T08:17:07.665Z"
 }
