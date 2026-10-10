@@ -4,18 +4,18 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 21
 current_phase_name: Browser Test of the Viewer
-status: planning
-stopped_at: Phase 21 context gathered
-last_updated: "2026-10-10T08:17:07.625Z"
+status: executing
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-10-10T09:47:29.978Z"
 last_activity: 2026-10-10
-last_activity_desc: v0.5 roadmap created (Phases 21–25; 24/24 requirements mapped)
-state_head: 34aaf825462eab3a33151d923fdf030544d0f590
+last_activity_desc: Phase 21 execution started
+state_head: 505ebe71ee1c66dce316b099df0800b1f5f3843f
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 8
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 13
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.5 Honest Form — roadmap created (Phases 21–25, started 2026-10-10 on
+**Current focus:** Phase 21 — Browser Test of the Viewer
 `gsd/milestone-v0.5-start`; the seven `docs/ideas/` items plus the L34 bar re-set); next
 is `/gsd-discuss-phase 21` (the browser test)
 
 ## Current Position
 
-Phase: 21 (Browser Test of the Viewer) — READY TO EXECUTE
-Plan: —
-Status: Planning — roadmap created, awaiting the human's approval; then discuss Phase 21
-Last activity: 2026-10-10 — v0.5 roadmap created (Phases 21–25; 24/24 requirements mapped)
+Phase: 21 (Browser Test of the Viewer) — EXECUTING
+Plan: 2 of 8
+Status: Ready to execute
+Last activity: 2026-10-10 — Phase 21 execution started
 
-Progress: [░░░░░░░░░░] 0% (0 of 5 phases; Phase 24 is discretionary)
+Progress: [█░░░░░░░░░] 13% (0 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
@@ -218,6 +218,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 19 P09 | ~2h | 2 tasks | 5 files |
 | Phase 19 P10 | 12min | 1 tasks | 3 files |
 | Phase 19 P11 | 8 min | 2 tasks | 7 files |
+| Phase 21 P01 | 28 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -389,6 +390,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: L38 logged (supersedes L10, amends L09 and L33): root_shape opt-in, default unmoved in v0.4, Phase 20 skipped; flip rules and the D-09 trigger recorded
 - [Phase 19]: L38 records the gate cost as accepted (accept-A): mean 192.94 s against L34's 66 s on the 18-CPU M5 Max, +140.05 s on the same host; L34's bar and the 401-position count untouched, the bar's re-set left as a separate decision
 - [Phase 19]: review CR-01, fix-now (2026-10-09): root_waist redefined to the narrowest arc thickness (was the narrowest half-angle, 2–5 % high on crossing joins; 1.473 → 1.442 on the tracer gear, sub-floor gears now warn), every pin re-measured, 0.4 mm floor unmoved (`e733cc2`); WR-01: a kernel exception in the hob-root outline becomes a BuildError naming it (`b51931c`); IN-01…04 deferred as one debt item
+- [Phase 21]: PNG_RATIO_BAR is 4.9: PD-03 applied to the macOS reading 9.93 (blank 3,917 B, drawn 38,908 B); 21-02 re-sets it from the lower of two hosts
+- [Phase 21]: serve() takes floor_applies: pool workers start on first use (2 members before the first build, 3 after), so a failed test reports once; 21-05's sweep builds nothing and must pass floor_applies=lambda: False
+- [Phase 21]: BUILD_WAIT_MS stays 45,000 ms (slowest build-bound step 2.53 s); headless shell lives under the absolute .venv/ms-playwright, host cache unchanged
 
 ### Pending Todos
 
@@ -603,9 +607,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T06:46:41.463Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-browser-test-of-the-viewer/21-CONTEXT.md
+Last session: 2026-10-10T09:47:29.958Z
+Stopped at: Completed 21-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
