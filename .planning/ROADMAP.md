@@ -115,7 +115,7 @@ gate bar re-set from a measurement under a rule written first, and the three sma
 items closed — with no new `GearParams` field and the 44-record pre-v0.2 fixture
 byte-identical to the `v0.4` tag.
 
-- [ ] **Phase 21: Browser Test of the Viewer** - A real headless browser exercises the shipped
+- [x] **Phase 21: Browser Test of the Viewer** - A real headless browser exercises the shipped (completed 2026-10-10)
       `app.js` inside `make verify` and CI: the form builds from `/api/schema`, an invalid
       field is marked, a warning renders, the first STL is drawn; the Linux path is proved on
       a real runner, the gate cost is measured A/B, and the request each of the 44 fixture
@@ -240,7 +240,7 @@ research measured an `ubuntu:24.04` container and a 3.2–3.8 s isolated cost; t
 architecture file's 10–25 s is an assumption). Also unverified and settled by the spike: canvas
 readback without `preserveDrawingBuffer`, the `expect` default timeout, and coverage on a
 `SIGKILL`ed child.
-**Plans**: 8/8 plans executed, in 8 waves (each wave depends on the one before: the roadmap fixes the order, and the
+**Plans**: 8/8 plans complete, in 8 waves (each wave depends on the one before: the roadmap fixes the order, and the
 scenario module, `tests/browser_session.py` and `bench/RESULTS.md` are touched by nearly every plan, so there is
 no honest parallelism here)
 

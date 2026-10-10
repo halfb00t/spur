@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Honest Form
-current_phase: 21
-current_phase_name: Browser Test of the Viewer
-status: verifying
-stopped_at: Completed 21-08-PLAN.md
-last_updated: "2026-10-10T14:50:11.274Z"
+current_phase: 22
+current_phase_name: Download Name Carries the Root
+status: planning
+stopped_at: Phase 21 complete, ready to plan Phase 22
+last_updated: "2026-10-10T15:08:56.689Z"
 last_activity: 2026-10-10
-last_activity_desc: Phase 21 execution started
-state_head: f1b2761300f43909f718b8b1563444e6e4033569
+last_activity_desc: Phase 21 complete, transitioned to Phase 22
+state_head: 721cb363e9ebce726f88d11961f6028fdd5fcbbf
 progress:
   total_phases: 5
   completed_phases: 4
@@ -32,10 +32,10 @@ is `/gsd-discuss-phase 21` (the browser test)
 
 ## Current Position
 
-Phase: 21 (Browser Test of the Viewer) — EXECUTING
-Plan: 8 of 8
-Status: Phase complete — ready for verification
-Last activity: 2026-10-10 — Phase 21 execution started
+Phase: 22 — Download Name Carries the Root
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-10 — Phase 21 complete, transitioned to Phase 22
 
 Progress: [████████░░] 80% (0 of 5 phases; Phase 24 is discretionary)
 
@@ -73,6 +73,7 @@ Progress: [████████░░] 80% (0 of 5 phases; Phase 24 is discr
 | 17 | 5 | - | - |
 | 18 | 6 | - | - |
 | 19 | 11 | - | - |
+| 21 | 8 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -625,7 +626,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-10T14:50:11.255Z
-Stopped at: Completed 21-08-PLAN.md
+Stopped at: Phase 21 complete, ready to plan Phase 22
 Resume file: None
 
 ## Operator Next Steps
