@@ -35,6 +35,10 @@ from playwright.sync_api import Browser, Error, Page, Playwright
 # SPUR_BUILD_TIMEOUT is 30 s (app.py), so a build-bound wait must outlast it. The first
 # preview build read 2.7-3.7 s at host load 8 (21-RESEARCH); if the slowest build-bound step
 # on either host reads over 15 s, PD-04 makes this three times that, rounded up to 5 s.
+# Slowest build-bound step (`first build drawn`), 2026-10-10: 2.53 s on macOS (21-01, M5 Max,
+# load 3-5) and 4.75 s on ubuntu-latest (21-02, run 38044109910, 4 vCPU, the tracer running
+# inside `make verify` beside three other xdist workers). Neither is over 15 s, so PD-04 leaves
+# the 45 s it started from.
 BUILD_WAIT_MS = 45_000
 
 # uvicorn plus the shipped pool of 2 workers (D-11, 21-RESEARCH Pattern 1). Seen before the
@@ -44,9 +48,12 @@ MIN_GROUP_MEMBERS = 3
 # The lower of the hosts' drawn/blank PNG byte ratios divided by 2, rounded down to one
 # decimal place (PD-03, written before the reading it is applied to). 21-01's reading:
 # blank 3,917 B, drawn 38,908 B, ratio 9.93 (Apple M5 Max, macOS arm64, Chrome Headless
-# Shell 153.0.8010.12 on SwiftShader LLVM, 1-minute load 3.3, 2026-10-10, HEAD a310cd3) ->
-# 9.93 / 2 = 4.96, rounded down to 4.9. A blank canvas reads a ratio near 1.0. 21-02 re-sets
-# this from the lower of the macOS and ubuntu-latest readings.
+# Shell 153.0.8010.12 on SwiftShader LLVM, 1-minute load 3.3, 2026-10-10, HEAD a310cd3).
+# 21-02's reading on ubuntu-latest (ubuntu-24.04 image 20261004.327.1, run 38044109910, the
+# same shell on SwiftShader Subzero, 2026-10-10, spike head a6a4fc5): blank 3,654 B, drawn
+# 38,168 B, ratio 10.45. The lower of the two is macOS's 9.933; 9.933 / 2 = 4.966, rounded down
+# to 4.9, so the bar did not move. A blank canvas reads a ratio near 1.0, a scene with the
+# mesh deleted 4.24 (macOS).
 PNG_RATIO_BAR = 4.9
 
 # How long the server gets to start, and to stop after SIGTERM and then after SIGKILL.

@@ -4816,3 +4816,83 @@ plans append rows to this table.
 | 21-01 | fail closed | `PLAYWRIGHT_BROWSERS_PATH` set to an empty temporary directory, pytest run directly | `1 failed in 0.69s`: ``Failed: the headless shell is not installed: run `playwright install --only-shell chromium` (PLAYWRIGHT_BROWSERS_PATH=/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/tmp.TKWFihxa3O); `make test` runs the install stamp for you.``, then Playwright's own error | yes (nothing to revert: the variable was set for one command) |
 | 21-01 | no orphan after the kill | `stop_group` sends SIGKILL to the leader only (`os.kill(pgid, SIGKILL)` for `os.killpg`) | `Failed: server process group 66058 still has live pids [66059, 66066] after SIGTERM, SIGKILL and 5 s`, then the server log tail (reported as a teardown error after `1 passed`); the two pool workers were killed by group id afterwards | yes |
 | 21-01 | strict typing | `eval_int` returns `page.evaluate(expression, arg)` directly | `tests/browser_session.py:213: error: Returning Any from function declared to return "int"  [no-any-return]` from `make typecheck` | yes |
+
+### Linux runner spike (21-02)
+
+The tracer run inside the whole gate on a real `ubuntu-latest` runner, with the headless shell installed through
+`playwright install --with-deps --only-shell chromium` (sudo, apt). Branch `spike/21-linux-runner`, one commit
+`a6a4fc5` on top of the phase branch's `e5deff8` (the admission wiring 21-06 will land for real: the module
+renamed `tests/test_browser.py`, `test: $(STAMP) $(BROWSER)`, the `--ignore` in `test.fast` and `test-image`,
+`BROWSER_INSTALL_ARGS: --with-deps` and `PYTEST_ARGS: -rP` in `ci.yml`, a `runner hardware (spike only)` step).
+Draft PR #32, `spike(21): browser tracer on ubuntu-latest -- DO NOT MERGE`, never merged; the spike branch is not
+an ancestor of the phase branch. The whole log is kept at
+`.planning/phases/21-browser-test-of-the-viewer/investigation/21-02-run-38044109910.log`.
+
+| Run | Conclusion | Classification |
+|---|---|---|
+| 38044109910 (`ci`, head `a6a4fc5`, 2026-10-10 10:12:40Z) | success (`test (3.12)`, `vendor-bundle`, `image` all green) | none to classify: first push, no red run; one run of the three allowed |
+
+#### Host state (the runner)
+
+- Image `ubuntu-24.04`, version `20261004.327.1`, provisioner `20261002.596`, runner 2.337.0
+  (the `Set up job` group); kernel `6.17.0-1022-azure #22-Ubuntu SMP Mon Jul 27 17:24:03 UTC 2026 x86_64`
+- `nproc` 4; `free -m` read after the run: total 15,989 MB, used 1,028, free 9,107, buff/cache 6,247, available
+  14,961, swap 3,071 (unused)
+- Python 3.12.15 (`actions/setup-python@v5`, cache hit); `playwright` 1.63.0 (`manylinux1_x86_64` wheel, 48.2 MB);
+  shell Chrome Headless Shell 153.0.8010.12 (`chromium_headless_shell-1243`, plus `ffmpeg-1011`, the whole
+  `ls .venv/ms-playwright`)
+- `make verify` ran `pytest -n 4` (`PYTEST_WORKERS` is capped by the CPU count); the tracer ran on worker `gw2`
+  beside three other workers
+- Read 2026-10-10 10:12 to 10:29 UTC. A shared runner: load is not observable from the log, so every wall figure
+  is one sample
+
+#### Readings
+
+| Reading | Value |
+|---|---|
+| `test (3.12)` job wall time | 16 min 25 s (`startedAt` 10:12:43Z, `completedAt` 10:29:08Z); `1221 passed in 906.71s (0:15:06)`, TOTAL coverage 97.98 % against the 96 % floor |
+| Install, `playwright install --with-deps --only-shell chromium` | 14.7 s from the command line (10:13:43.916) to the next command's line (10:13:58.578): `Switching to root user to install dependencies...`, `apt-get update`, 79.5 MB of apt packages (fonts, `libfreetype6` upgraded), then the 3.3 s shell download and the ffmpeg download |
+| Size of `.venv/ms-playwright` on the runner | not measured: the diagnostic step ran `ls`, not `du`. macOS read 198 MB for the same two entries |
+| Renderer string | `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)` (macOS: `(LLVM 10.0.0)`) |
+| `webgl2` step | 0.04 s |
+| `form built` step | 0.16 s |
+| Canvas PNG, blank control | 3,654 B |
+| Canvas PNG, first part drawn | 38,168 B |
+| Ratio drawn / blank | 10.45 (macOS 9.93) |
+| `data-triangles` against the STL header | 9066 against 9066 |
+| `first build drawn` step | 4.75 s (macOS 2.53 s) |
+| `href after showModel` step | 0.25 s |
+| Server process group members before the kill | 3 (uvicorn and two pool workers), read by `ps -A -o pgid=,stat=,pid=` on the runner's procps. The post-kill zero was read by the same reader: the teardown that asserts it ran and the test is in the passed set. The runner's log does not print the group-gone time |
+| Same job on `main`, for scale (same workflow, `pytest -n 4`, no browser) | 8 min 54 s job, `1220 passed in 487.39s` (run 38040124903, 2026-10-10); 16 min 04 s, `894.96s` (37951628866, 2026-10-09); 16 min 35 s, `924.02s` (37930095920, 2026-10-09) |
+
+The three `main` runs differ from each other by up to 437 s of pytest wall with no change to the suite, which is
+more than the spike run differs from the two slower of them. The spike run's own 906.71 s therefore sits inside
+the runner-to-runner band, and these samples cannot show what the browser test adds: its own steps total about
+5.2 s. Phase 25 owns pricing the gate.
+
+#### The two rules applied
+
+- **PD-03** (canvas bar = the lower of the hosts' ratios / 2, rounded down to one decimal place): the lower ratio
+  is macOS's 9.933 (38,908 / 3,917); 9.933 / 2 = 4.966, rounded down to **4.9**. Linux's 10.446 (38,168 / 3,654)
+  is higher, so `PNG_RATIO_BAR` stays 4.9 and is not under 2.0. The macOS scene with the mesh deleted read 4.24,
+  so the bar still separates a gear from an empty scene on the lower host.
+- **PD-04** (build wait): the slowest build-bound step on either host is `first build drawn`, 2.53 s on macOS and
+  4.75 s on Linux. Neither is over 15 s, so `BUILD_WAIT_MS` stays **45,000 ms**.
+
+Both constants in `tests/browser_session.py` carry both readings in their comments; neither value changed.
+
+#### Answers to the research's assumptions
+
+- **A1, sudo through `--with-deps`:** works on `ubuntu-latest` as is, with no `sudo` in the workflow: Playwright
+  prints `Switching to root user to install dependencies...` and runs apt itself. It costs about 10 s of the
+  14.7 s (the rest is the shell download).
+- **A2, the Linux PNG against macOS:** the same shell draws a larger ratio on Linux (10.45 against 9.93), on
+  SwiftShader Subzero rather than LLVM 10.0.0. Blank and drawn byte counts differ by about 7 % and 2 % from
+  macOS, so the ratio, not an absolute size, is the right assertion, and the bar holds on both.
+- **A4, procps columns:** the `ps -A -o pgid=,stat=,pid=` reader works on the runner's procps: the pre-kill floor
+  of 3 members held and the teardown, which fails on any survivor, passed.
+- **A7, memory:** no out-of-memory kill and no failure in a 15 GiB, 4 CPU runner with the tracer beside three
+  other workers; `free -m` read after the run (1,028 MB used) is not a peak, and no peak was measured.
+- **A8, runner image:** `ubuntu-24.04`, version `20261004.327.1`.
+
+SC5's own real run is 21-08's, on the phase's head. This one is the spike's.
