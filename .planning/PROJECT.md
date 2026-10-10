@@ -64,9 +64,55 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Next Milestone
+## Current Milestone: v0.5 Honest Form
 
-Not yet defined — `/gsd-new-milestone`. Candidates carried since the v0.1 kickoff: the gear family (helical first — re-derives module, span and centre distance; then internal/ring, then rack; bevel needs a product-scope decision first); the hob-root default flip, owned by `milestones/v0.4-REQUIREMENTS.md` "Trochoid follow-ups" with D-09's trigger (a real fit report or a mating-pair request below z_min); the re-set of L34's gate bar from an idle-host reading; the Phase 18 review's eight open info findings and the Phase 19 deferral item. The `nice` debt with external triggers stays where it is until a trigger fires.
+**Goal:** The web form tells the user up front what each field does and a browser proves
+it — the deferred UI ideas taken in dependency order behind a real viewer test, the gate
+bar re-set from a measurement, and the three small ledger items closed — with no new
+`GearParams` field and the 44-record fixture byte-identical to the `v0.4` tag.
+
+**Target features:**
+- Browser test for the viewer (`docs/ideas/2026-09-21-browser-test-for-the-viewer.md`) —
+  the first decision is whether a headless browser belongs in `make verify` at all (gate
+  cost against L34's bar; Node at test time where the runtime has none, L11), both routes
+  priced at discuss-phase; then the test proves the form builds from `/api/schema`, an
+  invalid field is marked, a warning renders and the STL loads into the scene. The
+  prerequisite both UI ideas below named as their trigger.
+- Conditional form fields (`2026-09-29-conditional-form-fields.md`) — an `enabled_when`
+  relation as `json_schema_extra` on the model, rendered by `app.js` from `/api/schema`
+  alone; covers the keyway/hex ignored-field cases and the three cutout groups. Supersedes
+  08 D-09 by a new `Lxx`; L02 kept.
+- Bore-shape selector (`2026-09-27-bore-shape-selector-in-the-web-form.md`) — a UI-only
+  select in `app.js` deriving its state from the flat fields on load and still sending the
+  flat fields; API, CLI and URL contract unchanged (L05).
+- Download name carries `root_shape` (`2026-10-08-download-name-carries-the-root-shape.md`)
+  — a slug change under its own `Lxx`, after reading what pins the old names (records,
+  tests).
+- L34 gate-bar re-set (Phase 19 review IN-03;
+  `docs/tech_debt/active/2026-10-09-phase-19-review-info-findings-deferred.md`) — an
+  idle-host reading before and after the browser test lands; one `Lxx` amends L34.
+- Reverify recipe (`2026-09-28-reverify-after-post-verification-fixes.md`) — one paragraph
+  in `HOW_TO_DEVELOP.md` §6, or `.ai_skills/reverify-phase` if the loop has hit three times.
+- Soften the Pi 5 claim (`2026-09-22-measure-or-soften-the-pi5-claim.md`) — README states
+  the hardware the numbers came from; no measurement, nobody has the board.
+- Constrain `make venv` probe (`2026-10-03-constrain-make-venv-to-the-closure.md`) — a fresh
+  venv under `PIP_CONSTRAINT=requirements.txt` on this arm64 host; adopt and amend L34 if
+  `make verify` passes, else record which pins lack arm64 wheels.
+
+**Rules this milestone lives by:**
+- The form is generated from `/api/schema` and nothing else (L02, the spirit of 08 D-09): a
+  field relation lives in schema metadata on the model, never hard-coded in `app.js`.
+- No new `GearParams` field; the pre-v0.2 fixture stays byte-identical to the `v0.4` tag
+  (L26); every shared link builds the same part and sends the same fields (L05).
+- A gate cost is measured before it is accepted, and the bar is re-set by an `Lxx` with the
+  reading, never tuned toward a pass (L08, L34).
+- A debt item or idea is retired only in the commit that closes it (CLAUDE.md).
+
+Picked 2026-10-10 as "the deferred ideas" over the gear family (helical first — still the
+riskiest surface in the product, now the v0.6 candidate). Three ideas stay filed because
+their triggers have not fired: the hob-root default flip (D-09), the cutout rotation field
+(no real part has asked) and the teeth-dependent honeycomb cap (D-12 — needs a user and a
+sweep).
 
 <details>
 <summary>v0.4 True Root — scope as set at kickoff (shipped 2026-10-09)</summary>
@@ -474,12 +520,18 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-Milestone v0.4 True Root — hypotheses until shipped; REQ-IDs and acceptance live in
+Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- None. v0.4's two hypotheses are validated (Phase 19, L38). The deferred default flip is owned
-  by `REQUIREMENTS.md` "Trochoid follow-ups (v0.4.x)" with D-09's trigger (a real fit report or
-  a mating-pair request below z_min), not by a phase of this milestone.
+- [ ] A browser test proves the viewer's form, validation marks, warnings and STL load, and
+  its place in or out of `make verify` is a logged decision with the measured cost.
+- [ ] The web form tells the user before they type that a field is inert — conditional
+  fields from schema metadata, a bore-shape selector over the flat fields — with the API,
+  CLI and URL contracts unchanged.
+- [ ] The download's file name tells a radial part from a trochoid one.
+- [ ] L34's gate bar is re-set from an idle-host reading under its own `Lxx`.
+- [ ] The three small ledger ideas (reverify recipe, Pi 5 claim, `make venv` constraint
+  probe) are closed with a record each.
 
 ### Out of Scope
 
@@ -489,8 +541,10 @@ Milestone v0.4 True Root — hypotheses until shipped; REQ-IDs and acceptance li
   path L33 did not take (v0.3 decision: warned, not re-cut); revisit if the lead-in warning
   fires on gears people actually cut. The trochoidal root below the base circle is v0.4's
   scope (see Current Milestone), not this.
-- A browser-driven test for the 3D viewer — `docs/ideas/` idea; not required for v0's
-  `make verify` gate.
+- The hob-root default flip, a cutout rotation field and a teeth-dependent honeycomb cap —
+  the three `docs/ideas/` items v0.5 left filed: each has a named trigger that has not fired
+  (D-09; a real part; D-12 plus a measured sweep), and taking one would supersede a logged
+  decision on no evidence.
 - Twelve `docs/tech_debt/active/` items at the v0.4 close (one `must`: the resource-tracker flake, filed 17-04, re-deferred 18-05 and 19-03 with a named trigger; eleven `nice`, three of them filed in v0.4 — the wedged worker, the xdist worker segfault at exit, the Phase 19 review deferral — each with its trigger; `milestones/v0.4-MILESTONE-AUDIT.md`). At the v0.4 start: ten `docs/tech_debt/active/` items (after the 2026-10-06 ledger pass,
   PRs #23–#25). The two `must` — the same-slot timeout-cleanup race (`pool.py:204`, D-17)
   and gsd's 30 s commit timeout against the ~64 s hook (trigger fired at L34) — retired in Phase 17
@@ -502,9 +556,10 @@ Milestone v0.4 True Root — hypotheses until shipped; REQ-IDs and acceptance li
   macOS (#23), the stale `.planning/intel/` figures (#24) (`docs/tech_debt/INDEX.md`).
 - Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
   not a cut; keyway and hex cover the shafts a hobbyist actually has.
-- Helical, internal/ring and rack gears (v0.2 decision, deferred at v0.3 and again at v0.4)
-  — candidates for v0.5, one type per phase, helical first; bevel needs a product-scope
-  decision before it is even a candidate (it contradicts "involute spur gear generator").
+- Helical, internal/ring and rack gears (v0.2 decision, deferred at v0.3, v0.4 and again at
+  v0.5) — candidates for v0.6, one type per phase, helical first; bevel needs a
+  product-scope decision before it is even a candidate (it contradicts "involute spur gear
+  generator").
 
 ## Context
 
@@ -523,12 +578,13 @@ Milestone v0.4 True Root — hypotheses until shipped; REQ-IDs and acceptance li
 - Ingest intel: `.planning/intel/SYNTHESIS.md` (entry point), `decisions.md`,
   `requirements.md`, `constraints.md`, `context.md`; conflict report at
   `.planning/INGEST-CONFLICTS.md` (0 blockers, 0 warnings, 5 info).
-- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 10 active at the v0.4 start — 2
-  `must` (the same-slot timeout-cleanup race, D-17; the commit timeout, raised in #25) and 8
-  `nice`; 22 resolved (10 in v0.1, 4 in v0.2, 6 in v0.3, 2 between v0.3 and v0.4). Ideas backlog: `docs/ideas/` — 9
-  items (trochoidal root fillet, browser test for the viewer, the Pi 5 claim, a bore-shape
-  selector, a re-verification recipe, a cutout rotation field, a teeth-dependent honeycomb
-  cap, conditional form fields, constraining `make venv` to the closure).
+- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 12 active at the v0.5 start — 1
+  `must` (the resource-tracker flake, 17-04) and 11 `nice`; 24 resolved (10 in v0.1, 4 in
+  v0.2, 6 in v0.3, 2 between v0.3 and v0.4, 2 in v0.4). Ideas backlog: `docs/ideas/` — 10
+  items at the v0.5 start, 7 of them v0.5's scope (browser test for the viewer, conditional
+  form fields, a bore-shape selector, the download name, a re-verification recipe, the Pi 5
+  claim, constraining `make venv` to the closure) and 3 left filed with their triggers
+  (trochoidal-root default flip, a cutout rotation field, a teeth-dependent honeycomb cap).
 - Process since v0.1: phases run on `gsd/phase-NN-*` branches cut from `origin/main` and
   land only through `make pr.land PR=N` (L22/L25); `.planning/` rides the same PR as the
   code; the milestone close is its own PR and the tag sits on its squash. Every close so far
@@ -691,6 +747,21 @@ Three clauses from the milestone goal, read at the close (`milestones/v0.4-MILES
 
 Cost recorded, not hidden: `make verify` 52.89 s → 192.94 s mean on the M5 Max for Phase 19's kernel proofs (L34's 66 s bar unmoved, `accept-A`).
 
+## Success Metric (Milestone v0.5)
+
+Derived from the kickoff summary the human confirmed 2026-10-10; read at the close.
+
+1. **The browser sees it.** A browser-driven test exercises the shipped `app.js` — the form
+   builds from `/api/schema`, an invalid field is marked, a warning renders, the STL loads —
+   and whether it runs inside `make verify` is an `Lxx` with the measured cost beside L34's
+   re-set bar.
+2. **Honest before, not after.** A field whose value would be ignored says so in the form
+   before it is typed; a bore shape is picked, not inferred from a warning; the API, CLI and
+   URL send and accept exactly the fields they do today (one model-driven field walk).
+3. **Same part, same links.** `tests/regression/pre_v0_2.json` byte-identical to the `v0.4`
+   tag; `GearParams` has no new field; every ledger idea taken is closed in the commit that
+   closes it.
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -709,4 +780,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-09 after the v0.4 True Root milestone close.*
+*Last updated: 2026-10-10 after the v0.5 Honest Form milestone start.*

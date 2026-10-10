@@ -1,40 +1,35 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.4
-milestone_name: True Root
-status: Awaiting next milestone
-stopped_at: Milestone v0.4 complete — all executed phases verified, Phase 20 skipped under L38
-last_updated: "2026-10-09T14:44:42.416Z"
-last_activity: 2026-10-09
-last_activity_desc: Milestone v0.4 completed and archived
-state_head: 642e456dd2d544b9ecb4fe2020ad8bf88c6d7bc5
+milestone: v0.5
+milestone_name: Honest Form
+status: planning
+last_updated: "2026-10-10T04:35:14.462Z"
+last_activity: 2026-10-10
 progress:
-  total_phases: 4
-  completed_phases: 6
-  total_plans: 22
-  completed_plans: 22
-  percent: 100
-current_phase: 19
-current_phase_name: The Trochoid in the Part
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-09)
+See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.4 True Root shipped 2026-10-09 (close PR from
-`gsd/milestone-v0.4-close`, tag `v0.4` on its squash); next `/gsd-new-milestone`
+**Current focus:** v0.5 Honest Form — defining requirements (started 2026-10-10 on
+`gsd/milestone-v0.5-start`; the seven `docs/ideas/` items plus the L34 bar re-set)
 
 ## Current Position
 
-Phase: Milestone v0.4 complete (Phases 17–19 executed; Phase 20 skipped under L38)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-09 — Milestone v0.4 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-10 — Milestone v0.5 started
 
 ## Performance Metrics
 
