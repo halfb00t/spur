@@ -23,7 +23,8 @@ jobs:
           cache: pip
       # The same gate the pre-push hook runs and `make worktree.land` runs before a
       # merge: ruff, mypy --strict, the import-boundary contracts, the unfinished-work
-      # scan and the tests. One definition of "passing", enforced in three places (L13,
+      # scan and the tests -- the tests include the headless browser test
+      # (tests/test_browser.py). One definition of "passing", enforced in three places (L13,
       # L36). Here `make verify` also runs `pre-commit install` once, through the
       # Makefile's `$(HOOKS)` stamp; none is expected to fire in CI (L36 A1, open until
       # the phase's first CI run is read).
@@ -35,9 +36,17 @@ jobs:
       # fixture. docker/refresh-requirements.sh moves the pin; `make fixture.regen` moves
       # the fixture; test_the_fixture_was_captured_on_the_kernel_this_run_uses names any
       # mismatch (L34). A relative path works: make runs in the repo root.
+      #
+      # BROWSER_INSTALL_ARGS: the runner lacks the headless shell's apt libraries, and
+      # `playwright install --with-deps` installs them through sudo (it switches to root
+      # itself, so no sudo line is needed here; 14.7 s on ubuntu-latest, 21-02). It is an env
+      # var on this step and not a step of its own because `.venv` exists only once
+      # `make verify` has made it, and the shell must land under it (D-06). No cache:
+      # Playwright's CI documentation says restoring one is about as slow as downloading.
       - run: make verify PYTHON=python
         env:
           PIP_CONSTRAINT: requirements.txt
+          BROWSER_INSTALL_ARGS: --with-deps
       # `.venv` exists only once make verify has made it; `if: always()` keeps the pair
       # in the log of a red run too.
       - name: kernel pair this run resolved

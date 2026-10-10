@@ -86,8 +86,8 @@ $(HOOKS): .pre-commit-config.yaml $(STAMP)
 # through sudo with --with-deps in an ubuntu:24.04 container (21-RESEARCH, scratch runs).
 # It depends on $(STAMP), which depends on pyproject.toml: a playwright bump changes the
 # pin, so the next gate run installs the shell that wheel expects instead of launching a
-# stale revision (BT-8). 21-06 makes it a prerequisite of `test` only, never of
-# verify.static or test.fast, so the commit-time slice never downloads a browser.
+# stale revision (BT-8). It is a prerequisite of `test` only, never of verify.static or
+# test.fast, so the commit-time slice never downloads a browser (D-01).
 $(BROWSER): $(STAMP)
 	$(PY) -m playwright install $(BROWSER_INSTALL_ARGS) --only-shell chromium
 	@touch $@
@@ -105,7 +105,7 @@ venv: $(STAMP) $(HOOKS)  ## create .venv with the dev extras, ~1.4 GB (override 
 # slice twice, taking the gate from about 64 s to about 75 s, over L34's 66 s bar.
 verify.static: $(HOOKS) lint typecheck lint-imports no-fake-done  ## the gate's static steps: ruff, mypy, import boundaries, unfinished-work scan
 verify: verify.static test  ## the gate: lint, types, import boundaries, tests
-verify.fast: verify.static test.fast  ## the commit-time subset: the static steps + every test file but the four heavy ones, under 30 s (L36)
+verify.fast: verify.static test.fast  ## the commit-time subset: the static steps + every test file but the five heavy ones, under 30 s (L36)
 
 lint: $(STAMP)  ## ruff: correctness rules only, no reformatting (L16)
 	$(PY) -m ruff check .
@@ -166,19 +166,21 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN 2>/dev/null); \
                     [ "$$n" -ge 1 ] 2>/dev/null || n=1; echo $$(( n < w ? n : w )))
 
-test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the tests)
+test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache, not the tests)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
 
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
-# whole gate is 63.555 s (L34). Every test file but the four heavy ones, named by
+# whole gate is 63.555 s (L34). Every test file but the five heavy ones, named by
 # exclusion -- never inclusion, never a marker -- so a new test file runs at commit until
 # someone names it heavy (`--strict-markers` is on and no marker is registered). The
 # first three, by share of pytest's seconds (L34, bench/RESULTS.md "Per-file share"):
 # tests/test_model.py 74.1 %, tests/test_pool.py 8.5 %, tests/test_api.py 4.8 %.
 # tests/test_cli.py (4.3 %) is the fourth by D-02, not by share: tests/regression/
 # test_pre_v0_2.py (7.8 %) ranks above it and stays in the slice on purpose, to keep the
-# fixture replay at the commit boundary (L36). --no-cov is mandatory: `fail_under = 96`
-# reads a partial run as a failure.
+# fixture replay at the commit boundary (L36). tests/test_browser.py is the fifth by D-01
+# (21-CONTEXT) -- it starts a uvicorn and a headless browser -- with its isolated cost
+# cited from bench/RESULTS.md "Spike readings, macOS (21-01)". --no-cov is mandatory:
+# `fail_under = 96` reads a partial run as a failure.
 # Re-priced 2026-10-06 on the 12-core M2 Max dev host (1-min load 3.0-5.5): `make
 # verify.fast` read 11.28, 11.30 and 11.28 s wall warm (620 passed in 10.75 s) and 19.94 s
 # with an empty mypy cache -- all under the 30.0 s kill, with 10 s or more of headroom.
@@ -188,10 +190,11 @@ test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the t
 # The OS-cold page cache is not priced: the slice imports the kernel (tests/test_bench.py
 # through bench.build_time, the regression replay's solids), so D-07 is the recovery if a
 # commit ever runs over.
-test.fast: $(STAMP)  ## run every test file but the four heavy ones, no coverage (the commit-time slice)
+test.fast: $(STAMP)  ## run every test file but the five heavy ones, no coverage (the commit-time slice)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --no-cov \
 	  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
-	  --ignore=tests/test_api.py --ignore=tests/test_cli.py $(PYTEST_ARGS)
+	  --ignore=tests/test_api.py --ignore=tests/test_cli.py \
+	  --ignore=tests/test_browser.py $(PYTEST_ARGS)
 
 serve: $(STAMP)  ## run the dev server on http://127.0.0.1:8000
 	$(VENV)/bin/spur serve
@@ -203,13 +206,16 @@ check: verify smoke vendor-check  ## everything CI runs, locally (needs Docker)
 image:  ## build the container image
 	docker build $(PLATFORM_ARG) -t $(IMAGE) .
 
+# --ignore=tests/test_browser.py: the image installs only pytest and httpx, so that module
+# could not even import playwright here (D-01); tests/test_hooks.py reads this recipe.
 test-image: image  ## run the test suite inside the image (needs no local python)
 	docker run --rm $(PLATFORM_ARG) --user root -e PYTHONPATH=/app/src \
 	  -v "$(CURDIR)/src:/app/src:ro" -v "$(CURDIR)/tests:/app/tests:ro" \
 	  -v "$(CURDIR)/pyproject.toml:/app/pyproject.toml:ro" \
 	  -w /app --entrypoint sh $(IMAGE) \
 	  -c "pip install -q --root-user-action=ignore pytest httpx \
-	      && python -m pytest -q -p no:cacheprovider $(PYTEST_ARGS)"
+	      && python -m pytest -q -p no:cacheprovider \
+	      --ignore=tests/test_browser.py $(PYTEST_ARGS)"
 
 smoke: image  ## exercise the kernel, both exporters and the ASGI app inside the image
 	docker run --rm $(PLATFORM_ARG) --entrypoint python $(IMAGE) docker/smoke.py

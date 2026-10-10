@@ -14,6 +14,7 @@ main checkout's hooks at a venv `make worktree.land` deletes.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -21,7 +22,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 _MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL")
-HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli")
+HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli", "test_browser")
+# The browser stamp, the Makefile's `BROWSER := $(VENV)/.browser`. The commit slice never
+# builds it, so on a checkout where it is missing or older than `$(STAMP)` a dry run of
+# `verify` prints the install lines that `verify.fast` does not, and the two static
+# prefixes differ. `-o` makes make treat the file as old and never remake it, which makes
+# the dry run byte-identical wherever the stamp stands (21-RESEARCH Pitfall P2, verified).
+BROWSER_STAMP = ".venv/.browser"
 
 
 def _make_env() -> dict[str, str]:
@@ -50,7 +57,7 @@ def _hook_blocks() -> dict[str, str]:
 
 def _dry_run(target: str) -> list[str]:
     result = subprocess.run(
-        ["make", "-n", "--no-print-directory", target],
+        ["make", "-n", "-o", BROWSER_STAMP, "--no-print-directory", target],
         cwd=REPO_ROOT,
         env=_make_env(),
         capture_output=True,
@@ -119,6 +126,49 @@ def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() 
         w.removeprefix("--ignore=") for w in fast_pytest.split() if w.startswith("--ignore=")
     }
     assert ignored == {f"tests/{n}.py" for n in HEAVY_TEST_FILES}
+
+
+def test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does() -> None:
+    makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+    assert "BROWSER := $(VENV)/.browser" in makefile
+    # BROWSER_STAMP above is these two spelled out; if either moves, this fails with it.
+    assert re.search(r"^VENV\s+\?= \.venv$", makefile, re.MULTILINE)
+    assert BROWSER_STAMP == ".venv/.browser"
+
+    def dry_run_forcing_the_install(target: str) -> list[str]:
+        # No `-o` here: `-W` pretends `$(STAMP)` just changed, as a pyproject.toml edit
+        # would, so everything that hangs off it is remade, the browser install included.
+        return subprocess.run(
+            ["make", "-n", "--no-print-directory", "-W", ".venv/.installed", target],
+            cwd=REPO_ROOT,
+            env=_make_env(),
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.splitlines()
+
+    whole = dry_run_forcing_the_install("test")
+    installs = [i for i, ln in enumerate(whole) if " -m playwright install " in ln]
+    assert len(installs) == 1, installs
+    assert "--only-shell chromium" in whole[installs[0]]
+    pytest_at = next(i for i, ln in enumerate(whole) if " -m pytest " in ln)
+    assert installs[0] < pytest_at, "the shell must be installed before the tests run"
+
+    for commit_stage in ("test.fast", "verify.static"):
+        lines = dry_run_forcing_the_install(commit_stage)
+        assert [ln for ln in lines if "playwright" in ln] == [], commit_stage
+
+
+def test_the_image_suite_ignores_the_browser_test() -> None:
+    """The image installs only pytest and httpx, so the browser test could not even import
+    there. A dry run builds and runs nothing; it prints the recipe."""
+    lines = _dry_run("test-image")
+    at = next(i for i, ln in enumerate(lines) if " -m pytest " in ln)
+    end = at
+    while lines[end].endswith("\\"):
+        end += 1
+    recipe = " ".join(ln.rstrip("\\").strip() for ln in lines[at : end + 1])
+    assert "--ignore=tests/test_browser.py" in recipe.split(), recipe
 
 
 def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree(

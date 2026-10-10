@@ -6,11 +6,12 @@ only a browser can: that WebGL2 exists (without it the page builds no form at al
 app.js:229), that the first part is actually drawn, that the scene holds as many triangles
 as the STL it was fed, and that the download link appears only after the model was shown.
 
-Staging module (PD-01): pytest collects it only when it is named on the command line, so
-neither `make verify` nor the commit-time slice runs it until 21-06 renames it
-`tests/test_browser.py` in the single commit that adds every exclusion. Quick run:
+It runs inside `make verify`'s `test` -- so also the pre-push hook, `make worktree.land` and
+CI's `test (3.12)` -- and is excluded by name from `make verify.fast` and `make test-image`
+(D-01): the commit-time slice has 30 s (L36) and the image installs no browser. `make test`
+installs the headless shell first, through the `$(BROWSER)` stamp. Quick run:
 
-    make .venv/.browser && make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"
+    make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q"
 
 One test function walks every step in order against one server (D-10), so a gate run
 starts one `uvicorn` and one `BuildPool`; each step prints its name and seconds, and a

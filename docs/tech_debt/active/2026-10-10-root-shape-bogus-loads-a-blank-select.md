@@ -6,7 +6,7 @@ Date: 2026-10-10
 Source: Phase 21, 21-04 -- the browser test's pin (step `root_shape=bogus as today`)
 Related files:
 - `src/spur/static/app.js` -- `buildForm()` enum `select` (lines 66-69), `readHash()` (96-100), `gearQuery()` (103-109)
-- `tests/browser_scenarios.py` -- step `root_shape=bogus as today`, which pins the behaviour below
+- `tests/test_browser.py` -- step `root_shape=bogus as today`, which pins the behaviour below
 
 ## Context
 Opening `#root_shape=bogus&teeth=22` gives the `root_shape` select a value that is not among
