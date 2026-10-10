@@ -313,5 +313,46 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert page.locator("label.field.invalid").count() == 0, (
                     "a valid link left a field marked invalid"
                 )
+
+            with step("warning rendered"):
+                # Equality of ordered lists, against links whose API answer holds two warnings,
+                # one warning and none: the two-warning link is what separates "renders the
+                # list" from "renders something that contains the first warning". The STL is
+                # fulfilled from the first build (serve_stl_from), so nothing here builds.
+                counts: list[int] = []
+                for fragment, at_least in (
+                    ("module=1&pressure_angle=14.5", 2),
+                    ("bore_hex=6", 1),
+                    ("teeth=23", 0),
+                ):
+                    sent = _follow_link(page, fragment)
+                    status, body = _api_get(server, "/api/info", sent)
+                    assert status == 200, f"/api/info?{sent} answered {status}, not 200"
+                    assert isinstance(body, dict), f"/api/info?{sent} is not an object"
+                    warnings = body["warnings"]
+                    assert isinstance(warnings, list), f"/api/info?{sent} has no warnings list"
+                    if at_least == 0:
+                        assert warnings == [], f"/api/info?{sent} warns: {warnings}"
+                    else:
+                        assert len(warnings) >= at_least, (
+                            f"/api/info?{sent} holds {len(warnings)} warnings, "
+                            f"expected at least {at_least}"
+                        )
+                    # The page shows the warnings before it asks for the STL, so the href
+                    # for this very query means the whole update finished: the messages are
+                    # this link's, not an earlier or aborted one's.
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                    )
+                    rendered_warnings = page.locator("#messages .warning").all_text_contents()
+                    assert rendered_warnings == warnings, (
+                        f"#{fragment}: rendered warnings {rendered_warnings} differ from "
+                        f"the API's {warnings}"
+                    )
+                    assert page.locator("#messages .error").count() == 0, (
+                        f"#{fragment}: an error is shown beside the warnings"
+                    )
+                    counts.append(len(warnings))
+                print(f"warnings per link (two, one, none expected): {counts}")
         finally:
             browser.close()

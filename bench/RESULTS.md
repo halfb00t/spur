@@ -4820,6 +4820,13 @@ plans append rows to this table.
 | 21-03 | `form from schema`, theme variable | `--grid:` renamed `--grid-x:` in both blocks of `style.css` | `AssertionError: the custom property --grid is empty on :root`, note `step: form from schema` (the page still loaded and built its form) | yes |
 | 21-03 | `invalid field marked`, `bore_flat=3` | `...(d.ctx?.fields ?? [])` removed from the array in `problems()` | `AssertionError: #bore_flat=3: marked [], the 422 names ['D-flat']` | yes |
 | 21-03 | `invalid field marked`, `teeth=2` | `d.loc?.[1],` removed from the same array | `AssertionError: #teeth=2: marked [], the 422 names ['Teeth']` | yes |
+| 21-03 | `warning rendered` | `showMessages([], info.warnings ?? [])` becomes `showMessages([], (info.warnings ?? []).slice(0, 1))` in `renderInfo()` | `AssertionError: #module=1&pressure_angle=14.5: rendered warnings ['Below 31.9 teeth a cut gear would be undercut; this model uses a radial root instead.'] differ from the API's [that one, 'Recess narrowed to 2.47 mm to fit between the bore wall and the tooth rim.']` (containment of the first warning would have passed) | yes |
+
+21-03 readings (Apple M5 Max, macOS, 2026-10-10): the schema holds 31 fields in 7 groups. `/api/info` warnings for the three
+links in order: `module=1&pressure_angle=14.5` two, `bore_hex=6` one, `teeth=23` none. 422 texts: `#bore_flat=3`
+`D-flat must be between 4.5 and 9 mm (flat to opposite side).` (marks `D-flat`, no title prefix); `#teeth=2`
+`Teeth: Input should be greater than or equal to 6` (marks `Teeth`). Steps on this host, STL fulfilled from the first
+build: `form from schema` 0.01 s, `invalid field marked` 0.08 s, `warning rendered` 0.21 s.
 
 ### Linux runner spike (21-02)
 
