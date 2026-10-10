@@ -32,6 +32,9 @@ from typing import IO
 import pytest
 from playwright.sync_api import Browser, Error, Page, Playwright
 
+# Matches the page's own STL request, whatever its query string.
+STL_ROUTE = "**/api/model.stl*"
+
 # SPUR_BUILD_TIMEOUT is 30 s (app.py), so a build-bound wait must outlast it. The first
 # preview build read 2.7-3.7 s at host load 8 (21-RESEARCH); if the slowest build-bound step
 # on either host reads over 15 s, PD-04 makes this three times that, rounded up to 5 s.
@@ -248,6 +251,18 @@ def eval_str_list(page: Page, expression: str, arg: object = None) -> list[str]:
         assert isinstance(item, str), f"{expression!r} held {item!r}, not a str"
         items.append(item)
     return items
+
+
+def serve_stl_from(page: Page, stl: bytes) -> None:
+    """Answer every later STL request with `stl`, the first build's bytes (PD-06).
+
+    After the first real build every step builds nothing on the server, so the pool is not
+    asked again and a step's cost is the page's, not the kernel's. The bytes must be served
+    and not the request aborted: an aborted STL makes `fail()` replace `#messages` with
+    "Request failed: ...", which erases the very warnings a step asserts (21-RESEARCH P7).
+    """
+    page.unroute(STL_ROUTE)
+    page.route(STL_ROUTE, lambda route: route.fulfill(status=200, body=stl))
 
 
 def stl_triangles(stl: bytes) -> int:

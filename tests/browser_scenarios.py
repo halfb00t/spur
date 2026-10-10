@@ -23,6 +23,8 @@ from __future__ import annotations
 import json
 import re
 import time
+import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Iterator
 
@@ -30,15 +32,21 @@ import pytest
 from browser_session import (
     BUILD_WAIT_MS,
     PNG_RATIO_BAR,
+    STL_ROUTE,
     eval_opt_str,
+    eval_str,
+    eval_str_list,
     launch,
     serve,
+    serve_stl_from,
     step,
     stl_triangles,
 )
 from playwright.sync_api import Page, Route, expect, sync_playwright
 
-STL_ROUTE = "**/api/model.stl*"
+# The four custom properties app.js reads for the scene (applyTheme, placeGrid): a rename in
+# style.css leaves the page loading and the scene silently unthemed.
+THEME_VARIABLES = ("--view-bg", "--grid", "--mesh", "--edge")
 
 # A fresh canvas, not the page's own: it answers whether this browser can do WebGL2 at all.
 WEBGL2_PROBE = """() => {
@@ -64,13 +72,81 @@ def server(request: pytest.FixtureRequest) -> Iterator[str]:
         yield base
 
 
-def _schema_field_count(base: str) -> int:
-    with urllib.request.urlopen(f"{base}/api/schema", timeout=10) as response:
-        schema: object = json.load(response)
+def _api_get(base: str, path: str, query: str) -> tuple[int, object]:
+    """GET `path?query` and return the status with the JSON body, a 4xx included."""
+    try:
+        with urllib.request.urlopen(f"{base}{path}?{query}", timeout=30) as response:
+            body: object = json.load(response)
+            return response.status, body
+    except urllib.error.HTTPError as error:
+        with error:
+            failure: object = json.load(error)
+            return error.code, failure
+
+
+def _schema_properties(base: str) -> dict[str, dict[str, object]]:
+    status, schema = _api_get(base, "/api/schema", "")
+    assert status == 200, f"/api/schema answered {status}"
     assert isinstance(schema, dict), "/api/schema is not an object"
     properties = schema["properties"]
     assert isinstance(properties, dict), "/api/schema has no properties"
-    return len(properties)
+    for name, prop in properties.items():
+        assert isinstance(prop, dict), f"/api/schema property {name!r} is not an object"
+    return properties
+
+
+def _title(properties: dict[str, dict[str, object]], name: str) -> str:
+    # app.js buildForm(): `prop.title ?? name`.
+    title = properties[name].get("title")
+    return name if title is None else str(title)
+
+
+def _expected_422(
+    properties: dict[str, dict[str, object]], body: object
+) -> tuple[set[str], list[str]]:
+    """What app.js problems() must show for this 422 body: the marked titles and the texts.
+
+    Marks every `detail[].loc[1]` and every `detail[].ctx.fields` that names a field. The
+    text is `msg` with a leading "Value error, " removed, prefixed with "<title>: " only when
+    `loc[1]` names a field (so the single-field `infeasible` error, whose loc is just
+    ["query"], carries no prefix).
+    """
+    assert isinstance(body, dict), f"a 422 body that is not an object: {body!r}"
+    detail = body["detail"]
+    assert isinstance(detail, list), f"a 422 with no detail list: {body!r}"
+    assert detail, "a 422 with an empty detail list"
+    marked: set[str] = set()
+    texts: list[str] = []
+    for item in detail:
+        assert isinstance(item, dict), f"a detail entry that is not an object: {item!r}"
+        loc = item.get("loc")
+        ctx = item.get("ctx")
+        owner = loc[1] if isinstance(loc, list) and len(loc) > 1 else None
+        named: list[object] = [owner]
+        if isinstance(ctx, dict) and isinstance(ctx.get("fields"), list):
+            named.extend(ctx["fields"])
+        for name in named:
+            if isinstance(name, str) and name in properties:
+                marked.add(_title(properties, name))
+        msg = str(item["msg"]).removeprefix("Value error, ")
+        if isinstance(owner, str) and owner in properties:
+            msg = f"{_title(properties, owner)}: {msg}"
+        texts.append(msg)
+    return marked, texts
+
+
+def _follow_link(page: Page, fragment: str) -> str:
+    """Open `#fragment` and return the query string of the /api/info request the page sent.
+
+    The fragment must differ from the current one: assigning the same fragment fires no
+    `hashchange`, and the request this waits for would never come (21-RESEARCH P5). The
+    query is the page's own (defaults dropped, schema order), not one rebuilt here.
+    """
+    current = eval_str(page, "() => location.hash.slice(1)")
+    assert current != fragment, f"the page is already on #{fragment}: no hashchange would fire"
+    with page.expect_request(lambda request: "/api/info" in request.url) as sent:
+        page.evaluate("(f) => { location.hash = f; }", fragment)
+    return urllib.parse.urlsplit(sent.value.url).query
 
 
 def _wait_until_parked(page: Page, parked: list[Route]) -> None:
@@ -87,7 +163,8 @@ def _wait_until_parked(page: Page, parked: list[Route]) -> None:
 
 def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
     """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
-    field_count = _schema_field_count(server)
+    properties = _schema_properties(server)
+    field_count = len(properties)
     parked: list[Route] = []
 
     with sync_playwright() as pw:
@@ -116,6 +193,42 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert page.locator("#dl-stl").get_attribute("href") is None, (
                     "the STL link has an href before any STL was shown"
                 )
+
+            with step("form from schema"):
+                # Every expectation is the schema's, read above at test time. A property with
+                # no group sits under "Other" (app.js buildForm), and a group opens its
+                # fieldset at its first property, so two properties of one group are one legend.
+                groups: dict[str, list[str]] = {}
+                for name, prop in properties.items():
+                    group = prop.get("group")
+                    groups.setdefault("Other" if group is None else str(group), []).append(name)
+                expected_names = [name for names in groups.values() for name in names]
+                assert expected_names, "/api/schema holds no properties: nothing to compare"
+
+                # Lists, not sets: the order is the form's, and a reversed form is a bug.
+                rendered = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params [name]')].map(e => e.name)",
+                )
+                assert rendered == expected_names, (
+                    f"form fields {rendered} differ from the schema's, grouped: {expected_names}"
+                )
+                legends = page.locator("form#params legend").all_text_contents()
+                assert legends == list(groups), (
+                    f"form legends {legends} differ from the schema's groups {list(groups)}"
+                )
+                shown = page.locator("form#params label.field .name").all_text_contents()
+                titles = [_title(properties, name) for name in expected_names]
+                assert shown == titles, f"field names {shown} differ from the titles {titles}"
+                for variable in THEME_VARIABLES:
+                    value = eval_str(
+                        page,
+                        "(v) => getComputedStyle(document.documentElement)"
+                        ".getPropertyValue(v).trim()",
+                        variable,
+                    )
+                    assert value != "", f"the custom property {variable} is empty on :root"
+                print(f"schema: {len(expected_names)} fields in {len(groups)} groups")
 
             with step("first build drawn"):
                 canvas = page.locator("#canvas")
@@ -160,6 +273,45 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 kept = canvas.get_attribute("data-triangles")
                 assert kept == declared, (
                     f"a failed build changed data-triangles from {declared} to {kept}"
+                )
+
+            serve_stl_from(page, stl)
+
+            with step("invalid field marked"):
+                # Both marking paths of app.js problems(): `bore_flat=3` is the single-field
+                # `infeasible` error (marked through ctx.fields), `teeth=2` a field-level range
+                # error (marked through loc[1]). The expectation is the API's own 422 body for
+                # the very query the page sent, never a literal.
+                for fragment in ("bore_flat=3", "teeth=2"):
+                    sent = _follow_link(page, fragment)
+                    status, body = _api_get(server, "/api/info", sent)
+                    assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                    marked, texts = _expected_422(properties, body)
+                    assert marked, f"/api/info?{sent} names no schema field: nothing to mark"
+                    for text in texts:
+                        assert any(title in text for title in marked), (
+                            f"the message {text!r} names none of {sorted(marked)}"
+                        )
+                    # On the text, never on the element count: the previous state's error is
+                    # still on screen until this one replaces it (21-RESEARCH P6).
+                    expect(page.locator("#messages .error")).to_have_text(texts)
+                    invalid = set(page.locator("label.field.invalid .name").all_text_contents())
+                    assert invalid == marked, (
+                        f"#{fragment}: marked {sorted(invalid)}, the 422 names {sorted(marked)}"
+                    )
+                    kept = canvas.get_attribute("data-triangles")
+                    assert kept == declared, (
+                        f"a 422 changed data-triangles from {declared} to {kept}"
+                    )
+                    print(f"422 #{fragment}: marked {sorted(marked)}, text {texts}")
+
+                # update() clears the class before each request, so a valid link leaves none.
+                sent = _follow_link(page, "teeth=23")
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                )
+                assert page.locator("label.field.invalid").count() == 0, (
+                    "a valid link left a field marked invalid"
                 )
         finally:
             browser.close()
