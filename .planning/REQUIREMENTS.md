@@ -68,7 +68,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   the 422 `detail[].ctx.fields` path and the rendered message names the field.
 - [x] **REQ-browser-warning-rendered**: a warning-producing link renders exactly the
   `warnings` text `/api/info` returns for the same query — equality, not containment.
-- [ ] **REQ-browser-link-round-trip**: every field set in the hash reaches the form, and the
+- [x] **REQ-browser-link-round-trip**: every field set in the hash reaches the form, and the
   query `app.js` sends equals the hash — on all three programmatic-value paths (fresh load,
   Reset, `hashchange`). The debounce is waited out on content, never on an empty status or
   a bare href (both pass before the 350 ms debounce fires — MEASURED, PITFALLS BT-6).
@@ -244,7 +244,7 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-browser-first-build-drawn | Phase 21 | Complete |
 | REQ-browser-invalid-field-marked | Phase 21 | Complete |
 | REQ-browser-warning-rendered | Phase 21 | Complete |
-| REQ-browser-link-round-trip | Phase 21 | Pending |
+| REQ-browser-link-round-trip | Phase 21 | Complete |
 | REQ-browser-golden-request-sets | Phase 21 | Pending |
 | REQ-browser-fails-closed | Phase 21 | Pending |
 | REQ-browser-in-the-gate | Phase 21 | Pending |
