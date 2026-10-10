@@ -5,17 +5,17 @@ milestone_name: Honest Form
 current_phase: 21
 current_phase_name: Browser Test of the Viewer
 status: executing
-stopped_at: Completed 21-04-PLAN.md
-last_updated: "2026-10-10T13:06:58.045Z"
+stopped_at: Completed 21-05-PLAN.md
+last_updated: "2026-10-10T13:19:58.120Z"
 last_activity: 2026-10-10
 last_activity_desc: Phase 21 execution started
-state_head: 3db272caf8d9c36db4ebcc611eec1096e47e71f0
+state_head: 012608e5c0a733089d89ffee2ff32459be3bb317
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 8
-  completed_plans: 4
-  percent: 50
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State
@@ -33,11 +33,11 @@ is `/gsd-discuss-phase 21` (the browser test)
 ## Current Position
 
 Phase: 21 (Browser Test of the Viewer) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-10-10 — Phase 21 execution started
 
-Progress: [█████░░░░░] 50% (0 of 5 phases; Phase 24 is discretionary)
+Progress: [██████░░░░] 63% (0 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
@@ -222,6 +222,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 21 P02 | 43 min | 3 tasks | 3 files |
 | Phase 21 P03 | 38 min | 2 tasks | 3 files |
 | Phase 21 P04 | 10 min | 2 tasks | 5 files |
+| Phase 21 P05 | 25 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -400,6 +401,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 21]: 21-03: every browser-step expectation is read from the server at test time; STL fulfilled from the first build after it (serve_stl_from); zero-count checks use locator.count() so no literal reaches to_have_count
 - [Phase 21]: 21-04: link round trip compares the link, the sent query and the rewritten fragment as sorted (name, value) pairs, waiting on the /api/info request, never on #status or an href
 - [Phase 21]: 21-04: #root_shape=bogus is pinned as today's behaviour (blank select, query without root_shape, API 422) and filed as must debt 2026-10-10-root-shape-bogus-loads-a-blank-select
+- [Phase 21]: 21-05: the golden sweep runs under serve(floor_applies=lambda: False) because it builds nothing; the pin is written only by make golden.regen and only read by the browser test
 
 ### Pending Todos
 
@@ -614,8 +616,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T13:06:58.023Z
-Stopped at: Completed 21-04-PLAN.md
+Last session: 2026-10-10T13:19:58.101Z
+Stopped at: Completed 21-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
