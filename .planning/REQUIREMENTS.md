@@ -235,16 +235,45 @@ worker at exit; the xdist worker segfault at exit; Phase 7's Manual-Only Nyquist
 
 ## Traceability
 
-Filled by the roadmap.
+Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| REQ-browser-server-fixture | Phase 21 | Pending |
+| REQ-browser-form-from-schema | Phase 21 | Pending |
+| REQ-browser-first-build-drawn | Phase 21 | Pending |
+| REQ-browser-invalid-field-marked | Phase 21 | Pending |
+| REQ-browser-warning-rendered | Phase 21 | Pending |
+| REQ-browser-link-round-trip | Phase 21 | Pending |
+| REQ-browser-golden-request-sets | Phase 21 | Pending |
+| REQ-browser-fails-closed | Phase 21 | Pending |
+| REQ-browser-in-the-gate | Phase 21 | Pending |
+| REQ-browser-stack-pinned | Phase 21 | Pending |
+| REQ-slug-carries-effective-root | Phase 22 | Pending |
+| REQ-slug-consumers-read-first | Phase 22 | Pending |
+| REQ-enabled-when-metadata | Phase 23 | Pending |
+| REQ-relations-calc-backed | Phase 23 | Pending |
+| REQ-dim-and-editable | Phase 23 | Pending |
+| REQ-form-walk-proves-relations | Phase 23 | Pending |
+| REQ-selector-schema-carried | Phase 24 | Pending |
+| REQ-selector-derives-and-writes-through | Phase 24 | Pending |
+| REQ-selector-round-trips-per-state | Phase 24 | Pending |
+| REQ-gate-rule-pre-registered | Phase 25 | Pending |
+| REQ-gate-bar-reset | Phase 25 | Pending |
+| REQ-venv-constraint-probe | Phase 25 | Pending |
+| REQ-pi5-claim-softened | Phase 25 | Pending |
+| REQ-reverify-recipe | Phase 25 | Pending |
 
 **Coverage:**
 - v0.5 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24
+- Unmapped: 0
+- Per phase: Phase 21 — 10; Phase 22 — 2; Phase 23 — 4; Phase 24 — 3; Phase 25 — 5
+
+Phase 24 is discretionary (ROADMAP.md, its "Skip condition"). If it is skipped, its three
+requirements move to Future Requirements by an explicit edit with the human, rather than
+staying mapped to a phase that did not run.
 
 ---
 *Requirements defined: 2026-10-10*
-*Last updated: 2026-10-10 after kickoff scoping*
+*Last updated: 2026-10-10 after roadmap creation (Phases 21–25)*

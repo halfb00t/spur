@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Honest Form
 status: planning
-last_updated: "2026-10-10T04:35:14.462Z"
+last_updated: "2026-10-10T06:08:23.000Z"
 last_activity: 2026-10-10
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,15 +21,18 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.5 Honest Form — defining requirements (started 2026-10-10 on
-`gsd/milestone-v0.5-start`; the seven `docs/ideas/` items plus the L34 bar re-set)
+**Current focus:** v0.5 Honest Form — roadmap created (Phases 21–25, started 2026-10-10 on
+`gsd/milestone-v0.5-start`; the seven `docs/ideas/` items plus the L34 bar re-set); next
+is `/gsd-discuss-phase 21` (the browser test)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 21 of 25 — Browser Test of the Viewer (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-10 — Milestone v0.5 started
+Status: Planning — roadmap created, awaiting the human's approval; then discuss Phase 21
+Last activity: 2026-10-10 — v0.5 roadmap created (Phases 21–25; 24/24 requirements mapped)
+
+Progress: [░░░░░░░░░░] 0% (0 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
@@ -585,6 +588,7 @@ None yet.
 - Phase 16 edited: edited fields: success_criteria SC4 (per 16-CONTEXT.md D-08, D-10, D-12)
 - v0.4 roadmap created: Phases 17–20 (Debt First — Commit Gate and Pool Race; Trochoid Maths, Proved; The Trochoid in the Part; The Flip, conditional) — 14/14 v0.4 requirements mapped, 0 orphans, numbering continues from Phase 16; Phase 20 is skipped, never deleted, if the root-mode `Lxx` is O3 or O4 with the flip deferred
 - Phase 20 skipped (O4, flip deferred) under L38, 2026-10-09: the hob root is opt-in through root_shape; the flip waits on a real fit report or a mating-pair request below z_min (D-09).
+- v0.5 roadmap created: Phases 21–25 (Browser Test of the Viewer; Download Name Carries the Root; Conditional Form Fields; Bore-Shape Selector, discretionary; Gate Bar Re-Set, Venv Probe, Ledger Close) — 24/24 v0.5 requirements mapped, 0 orphans, numbering continues from Phase 20; Phase 24 is skipped, never deleted, if the human cuts it (its three requirements then move to Future Requirements by an explicit edit)
 
 ## Deferred Items
 
@@ -594,14 +598,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-09T14:45:00Z
-Stopped at: Milestone v0.4 completed and archived on `gsd/milestone-v0.4-close`; close PR and tag pending
+Last session: 2026-10-10T06:08:23Z
+Stopped at: v0.5 roadmap written on `gsd/milestone-v0.5-start` (ROADMAP.md, STATE.md, REQUIREMENTS.md traceability); uncommitted, awaiting the human's approval
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: land the close — open the PR from `gsd/milestone-v0.4-close` ("Milestone v0.4: True Root — close and archive", like #20), `make pr.land PR=N`, then tag the squash commit `v0.4` on `main` (the v0.2/v0.3 precedent) and push the tag.
-- Then `/gsd-new-milestone` — candidates in PROJECT.md "Next Milestone".
-- Open decision carried: re-set L34's 66 s gate bar from an idle-host reading under a new `Lxx` (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar), or revisit the 401-position oracle count.
+- Next: the human reviews and approves the v0.5 roadmap (`.planning/ROADMAP.md`, five phases); the orchestrator commits it. Then `/gsd-discuss-phase 21` — decisions 1–4 (confirm the kickoff choices) and the Linux/WebGL spike as the first task.
+- Prerequisite found at roadmap time: the `v0.4` tag exists neither locally nor on `origin` (only `v0.1`–`v0.3` do), yet v0.5's fixture rule is stated against "the `v0.4` tag". Tag the v0.4 close on `main` (the v0.2/v0.3 precedent) before the first phase that diffs against it; which commit (the close squash `b24287a` or Phase 19's `767317b`) is the human's call.
+- Open decision carried, now owned by Phase 25: re-set L34's 66 s gate bar from an idle-host reading under a rule written before the first reading (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar). The 401-position oracle count is not part of this milestone.
 - Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
 - Still open: Phase 18's IN-01…IN-08 (`milestones/v0.4-phases/18-trochoid-maths-proved/18-REVIEW-DISPOSITION.md`), Phase 19's IN-01…IN-04 (debt item), the resource-tracker flake (`must`; trigger: the next `make verify` failure with its whole log kept, else whole-suite loops at the next milestone's start).
