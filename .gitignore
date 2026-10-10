@@ -1,6 +1,9 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+# .venv/ also holds the headless shell the browser test installs ($(VENV)/ms-playwright,
+# about 200 MB; the Makefile's $(BROWSER), D-06), so `make clean` removes it with the venv
+# and the host's shared Playwright cache is never touched.
 .venv/
 venv/
 build/

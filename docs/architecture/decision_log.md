@@ -2295,3 +2295,155 @@ cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`); the gate baseline and the
 2026-10-08 (19-01), the other spikes, guards, floor and bars on 2026-10-08 and 2026-10-09 (19-02), the corner
 rows, the gate's three runs and the `derive()` timings on 2026-10-09 (19-09). L34's bar and L36's 11.28 s were
 read on a 12-CPU Apple M2 Max.
+
+## L39 — A headless browser runs the shipped viewer inside make verify and CI, out of the commit slice, at a measured price (amends L13 and L36, restates L11)
+
+Date: 2026-10-10.
+
+L11, L13 and L36 stay as written; this entry amends L13 and L36 with what Phase 21 built, measured and had
+the human decide, and restates L11 unchanged. Every figure below is cited to the plan SUMMARY (and its commit
+sha) or to the `bench/RESULTS.md` subsection under "Browser test of the viewer (Phase 21)" that holds it. None
+is re-estimated here, and no figure is carried from one host to another.
+
+**The choice** (D-01, D-02, D-03, D-10, D-11). `tests/test_browser.py` holds one scenario function,
+`test_the_shipped_viewer_in_a_real_browser`, that drives the shipped `src/spur/static/app.js` in Playwright's
+default Chrome Headless Shell against one real `uvicorn` subprocess on a pre-bound socket, started once per
+gate run with the pool the product ships (`SPUR_BUILD_WORKERS` at its default of 2; the process group is
+killed on teardown and checked for survivors). It runs inside `make verify`'s `test`, so the pre-push hook,
+`make worktree.land` and CI's `test (3.12)` run it (`d0f5474`, 21-06). It is excluded by name from `make
+verify.fast` and from `make test-image`, and `HEAVY_TEST_FILES` in `tests/test_hooks.py` names it, so the
+commit slice is the suite minus five files (L36 named four): 834 of 1226 tests, 10.14, 10.31 and 10.41 s
+`real` against L36's 30 s kill (21-06, `### Admission (21-06)`; L36 read 11.28 s on another host). A missing
+shell is a hard failure that names `playwright install --only-shell chromium`, the `PLAYWRIGHT_BROWSERS_PATH`
+in force and `make test`; there is no `importorskip`, skip marker or environment opt-out, and
+`tests/test_browser_pins.py` fails if one appears (`2b83400`, seen red). `playwright==1.63.0` is pinned exactly
+in `[dev]`, there is no `pytest-playwright`, and the shell is the default one, never `channel=` (both pinned
+in the same file).
+
+**What it amends.** *L13* (`make verify` is the gate): it is still one command with no Docker, but its pytest
+step now needs the pinned headless shell, which the gate installs for itself through a stamp (20.46 s from a
+venv without the pin, 21-01), so there is no setup step beside it. *L36* (the commit slice): the named
+prefix excludes five heavy files, not four, and the pre-push hook, which runs the whole gate, now runs the
+browser too. L36's 30 s kill, the hook stages and the `make verify.fast` shape do not move.
+
+**The one production line** (D-04; `c479d15`, 21-01). `canvas.dataset.triangles = String(geometry.attributes.position.count / 3);`
+in `showModel`, after `scene.add(mesh, edges)`, with one comment line above it saying what it is for. It
+carries the triangle count of the geometry the page parsed; the test fetches the same preview STL and
+compares it with the uint32 at byte 80 (9066 against 9066 on macOS and on ubuntu-latest, 21-01 and 21-02).
+The init-script draw counter was not built: it couples the test to three.js's draw path and the
+`EdgesGeometry` overlay, and a failed spike would have left the phase without an observable. Nothing else
+outside tests moved: `git diff 592506f -- src/` lists only `app.js`, and `params.py`, `calc.py`, `model.py`,
+`pool.py`, `app.py`, `cli.py`, `tests/regression/pre_v0_2.json` and `tests/test_api.py` are byte-identical to
+`592506f`.
+
+**What it proves** (21-01, 21-03, 21-04, 21-05; each assertion is shown red against a deliberate break and
+reverted, 25 rows in `### Seen red once (Phase 21)`; the count after each step is its red rows).
+- `webgl2`, the first step: the viewer builds no form without a WebGL context (`app.js:229`), so a browser
+  with none fails here, by name (1).
+- The form is built from `/api/schema`: its fields, order and groups equal the schema's (31 fields in 7
+  groups) and a theme custom property is set (2).
+- The first build is drawn: `data-triangles` equals the STL header, and the canvas PNG is at least
+  `PNG_RATIO_BAR` = 4.9 times the blank control's (2); the STL link has no `href` until `showModel`
+  has returned (1). 4.9 is the lower host's drawn/blank ratio over 2, rounded down (PD-03: macOS 9.933,
+  ubuntu-latest 10.446, `### Linux runner spike (21-02)`); the scene with the mesh deleted reads 4.24, so the
+  triangle count alone would have passed that break. `BUILD_WAIT_MS` stays 45,000 ms because the slowest
+  build-bound step read 2.53 s on macOS and 4.75 s on ubuntu-latest, under PD-04's 15 s.
+- Both 422 marking paths: an invalid field is marked through `detail[].ctx.fields` (`#bore_flat=3`) and through
+  `detail[].loc` (`#teeth=2`) (2).
+- The warnings the page renders equal `/api/info`'s, both of them for `#module=1&pressure_angle=14.5`, where
+  containment of the first would have passed (1).
+- The link round trip on three paths, fresh load, `hashchange` and Reset (3).
+- The golden request pin (D-08, D-09): `tests/regression/golden_requests.json` holds, for each of the 44
+  fixture records, the exact `api/info` query the real page sent when the record's link was put in
+  `location.hash`; 44 distinct queries, 16 of 43 non-empty links differ from their raw link (schema order,
+  defaults dropped), written only by `make golden.regen`, which drives the same `serve`, `launch` and `sweep`
+  as the test, and byte-identical on four regens of unchanged code (21-05, `d40a09a` and `9c7f5b3`,
+  `### Golden request pin (21-05)`) (2).
+- `#root_shape=bogus` is pinned as it behaves today (a blank select, a request for `teeth=22` alone) and
+  filed as `must` debt, not fixed: `docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md`
+  (21-04, `3db272c`) (1).
+- Beside these, the fail-closed message, the no-orphan teardown and strict typing were each seen red once
+  (21-01), as were the three pins and the four admission guards (21-06).
+
+**The install** (D-06, D-07; `0c89e9b`, `d0f5474`). The `$(BROWSER)` stamp (`.venv/.browser`) depends on
+`$(STAMP)` and is a prerequisite of `test` and `golden.regen` only, never of `verify.static` or `test.fast`.
+`PLAYWRIGHT_BROWSERS_PATH` is exported to `$(abspath $(VENV))/ms-playwright` (absolute, because Playwright
+resolves a relative value against the driver's working directory), so Playwright's browser GC never reaches
+another project's cache: the host's `~/Library/Caches/ms-playwright` listed `chromium_headless_shell-1228`,
+`chromium-1228` and `ffmpeg-1011` before the install, after it and again after the gate (21-01, 21-06), and
+`make clean` removes the 198 MB browser with the venv. `--with-deps` reaches the stamp on CI only, as
+`BROWSER_INSTALL_ARGS: --with-deps` on the `make verify` step, because `.venv` does not exist before `make
+verify` makes it and so the install cannot be a step of its own; there is no CI cache, since Playwright's
+documentation says restoring one is about as slow as downloading. The dry run in `tests/test_hooks.py` passes
+`-o .venv/.browser`, so `make -n verify` prints the same static prefix as `make -n verify.fast` whether or not
+the stamp stands (21-RESEARCH Pitfall P2; without the `-o` the shared-prefix test goes red, 21-06).
+
+**The price** (D-12; `### The browser test, priced (21-07)`, `9229f26`, Apple M5 Max, 18 CPUs, load 5.8 to 13.2).
+Isolated, the file reads 4.23 s of pytest serial and 4.57 s at `-n 2`, three runs each, against the research's
+3.21 and 3.80 s that D-01 rested on: the same order of magnitude, so D-01 did not reopen. Inside the whole
+gate, six runs interleaved A/B/A/B/A/B, arm A (without the file) averaged 166.44 s and arm B (`make verify`)
+163.96 s: B - A is -2.47 s, inside A's own 47.09 s spread, with pair deltas of +19.65, -2.78 and -24.29 s, so the
+reading does not separate the file's cost from host load. Against the bars, quoted and not rescaled: L34's
+66 s was set on a 12-CPU Apple M2 Max (63.555 s there) and B is 2.48 times it; `### The gate, priced (19-09)`
+read 192.94 s at 1210 tests on the host above, where B reads 163.96 s at 1226 tests under another load, which
+is the same host on another day and not a comparison of the code. **The human accepted the price** (`accept`,
+2026-10-10, keeping the browser test inside `make verify` and CI; `3e8e8f9`). This reading admits the file
+and sets no bar: Phase 25 sets the bar under its own pre-registered rule, and L34's 66 s and L36's 30 s stay
+as written. The one red run in the six-run budget was classified before any re-run: not the resource-tracker
+flake (none of its signatures in the log) but arm A's spelling of `PYTEST_ARGS`, filed as `nice` debt in
+`docs/tech_debt/active/2026-10-10-hook-pin-reads-the-callers-pytest-args.md` (21-07, `36a9f45`).
+
+**The Linux path** (SC5; `### Linux runner spike (21-02)`, `### The Linux path on the real runner (21-08)`).
+The spike ran the tracer inside the whole gate on `ubuntu-latest` (image `ubuntu-24.04` `20261004.327.1`, 4
+CPUs): run 38044109910 on the throwaway branch `spike/21-linux-runner`, never merged and not an ancestor of
+the phase branch, `1221 passed in 906.71s`, install 14.7 s, job 16 min 25 s. The phase's own suite: run
+38059369744 on PR #33, head `88df5cf`, `test (3.12)` green in 16 min 8 s (`startedAt` 14:22:50Z,
+`completedAt` 14:38:58Z), `1226 passed in 887.92s`, TOTAL 97.98 % against the 96 % floor, the headless shell
+installed under `.venv/ms-playwright` in 13.97 s with `--with-deps`. The passed count is the local B arm's,
+and the whole logs are kept under `.planning/phases/21-browser-test-of-the-viewer/investigation/`. Each is one
+sample on a shared runner; three no-browser runs of `main` span 487.39 s to 924.02 s of pytest (21-02), so
+neither run says what the browser test adds. The run carries a notice that the `ubuntu-latest` label moves to
+Ubuntu 26 from 2026-10-19; no run of the install exists there, and it is filed as `must` debt:
+`docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md` (21-08, `fdc90c4`).
+This entry's own commit reaches CI on the human's next push, and is not among the runs read here.
+
+**What later phases must do.** Phases 23-24 prove "the same fields are sent" by an empty diff on
+`tests/regression/golden_requests.json`; a change that must move it goes through `make golden.regen` in a
+commit of its own that says what moved and why, never inside the feature commit. Their browser assertions sit
+on `canvas.dataset.triangles` and keep the scenario's step names. The test's waits stay on content (a rendered
+field count, a status text, a non-empty `#dl-stl[href]` set after `showModel` returns), never on an empty
+status or a bare href, both of which pass before the 350 ms debounce fires. The two `tests/test_api.py`
+docstrings that still say there is no browser test (the pins at `:123` and `:162`) are left as written for
+Phase 23, which owns those pins. The `#root_shape=bogus` pin is edited by whoever fixes that debt, in the same
+commit, with the trigger the debt file names.
+
+**Restates L11.** The Playwright driver, a Node program shipped inside the wheel, is a dev dependency that
+runs at test time only. The runtime has no Node; the 31-pin runtime closure (`requirements.txt`), the
+`Dockerfile` and `docker/refresh-requirements.sh` do not move, and `tests/test_browser_pins.py` fails if
+`playwright` enters the closure or the exact dev pin loosens. The browser-test idea's worry, that it would
+need Node at test time, is accepted for the dev environment only; L11's reason stands for the image. The idea file moved to
+`docs/ideas/retired/` in this entry's commit; an earlier entry that names its old path stays as written.
+
+**Reversibility.** D-01 is **costly**: undoing it means the kickoff options O2 (`make test.ui` alone, outside `make verify`
+and CI), O3 (a second sequential stage, `verify: verify.static test test.ui`) or O4 (a separate CI job), a
+superseding `Lxx`, and for O4 `required-jobs.txt` and the GitHub ruleset. D-04's line and D-09's pin are **costly**: Phases 23-24's
+browser assertions sit on `canvas.dataset.triangles`, and their "same fields are sent" proof is the empty
+diff of the golden file. The canvas bar, the build wait and the `playwright` pin version are **reversible** by
+a new reading in a commit of its own (a pin bump moves the shell revision, and with it the canvas bar's
+readings).
+
+Reason: the viewer is the product for most users and the Python tests structurally cannot see a renamed
+custom property, a changed `detail[].ctx.fields` shape or a form that stops sending a field; the choice was
+between a browser that runs wherever the gate runs and one that runs beside it, and the price (4.23 s
+isolated, no cost visible above host noise in six full runs, 163.96 s against L34's unrescaled 66 s) was
+measured and accepted rather than trimmed or moved out of the gate. A number the tool prints stays one
+someone can cut metal to (L08): the only production change is a count the page already holds, and the
+golden pin makes the next phases' form changes show as a diff.
+Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string hw.memsize`, read
+2026-10-10); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.15,
+`playwright` 1.63.0, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Chrome Headless
+Shell 153.0.8010.12; the spike readings on 2026-10-10 about 09:26 to 09:45 UTC (21-01), the isolated and A/B
+readings on 2026-10-10 13:47 to 14:08 UTC (21-07), the commit-slice and `-n 8` readings on 2026-10-10 (21-06).
+The ubuntu-latest runner: image `ubuntu-24.04` `20261004.327.1`, 4 CPUs (`nproc`), 15,989 MB RAM (`free -m`),
+kernel `6.17.0-1022-azure`, read in run 38044109910 on 2026-10-10 (21-02); run 38059369744 on the same image
+on 2026-10-10 14:22 to 14:39 UTC (21-08). L34's bar and L36's 11.28 s were read on a 12-CPU Apple M2 Max.

@@ -311,6 +311,8 @@ function showModel(buffer) {
   mesh = new Mesh(geometry, material);
   edges = new LineSegments(new EdgesGeometry(geometry, 40), edgeMaterial);
   scene.add(mesh, edges);
+  // The browser test's one scene observable; STLLoader is non-indexed: 3 vertices per triangle.
+  canvas.dataset.triangles = String(geometry.attributes.position.count / 3);
   const previous = box;
   box = geometry.boundingBox.clone();
   placeGrid();

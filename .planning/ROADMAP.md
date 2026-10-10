@@ -115,7 +115,7 @@ gate bar re-set from a measurement under a rule written first, and the three sma
 items closed — with no new `GearParams` field and the 44-record pre-v0.2 fixture
 byte-identical to the `v0.4` tag.
 
-- [ ] **Phase 21: Browser Test of the Viewer** - A real headless browser exercises the shipped
+- [x] **Phase 21: Browser Test of the Viewer** - A real headless browser exercises the shipped (completed 2026-10-10)
       `app.js` inside `make verify` and CI: the form builds from `/api/schema`, an invalid
       field is marked, a warning renders, the first STL is drawn; the Linux path is proved on
       a real runner, the gate cost is measured A/B, and the request each of the 44 fixture
@@ -240,26 +240,26 @@ research measured an `ubuntu:24.04` container and a 3.2–3.8 s isolated cost; t
 architecture file's 10–25 s is an assumption). Also unverified and settled by the spike: canvas
 readback without `preserveDrawingBuffer`, the `expect` default timeout, and coverage on a
 `SIGKILL`ed child.
-**Plans**: 8 plans, in 8 waves (each wave depends on the one before: the roadmap fixes the order, and the
+**Plans**: 8/8 plans complete, in 8 waves (each wave depends on the one before: the roadmap fixes the order, and the
 scenario module, `tests/browser_session.py` and `bench/RESULTS.md` are touched by nearly every plan, so there is
 no honest parallelism here)
 
-- [ ] 21-01-PLAN.md — The spike's tracer: the legitimacy check, then the exact `playwright` pin, the `.venv` stamp,
+- [x] 21-01-PLAN.md — The spike's tracer: the legitimacy check, then the exact `playwright` pin, the `.venv` stamp,
   the `canvas.dataset.triangles` line, the server fixture and the first three steps (webgl2, first build drawn,
   href after showModel) under the staging name `tests/browser_scenarios.py`; each seen red once *(wave 1)*
-- [ ] 21-02-PLAN.md — The Linux runner: a throwaway `spike/21-linux-runner` draft PR the human pushes; the canvas
+- [x] 21-02-PLAN.md — The Linux runner: a throwaway `spike/21-linux-runner` draft PR the human pushes; the canvas
   bar and the build wait set from the macOS and `ubuntu-latest` readings *(wave 2)*
-- [ ] 21-03-PLAN.md — Form from schema, both 422 marking paths and the rendered warnings, every expectation read
+- [x] 21-03-PLAN.md — Form from schema, both 422 marking paths and the rendered warnings, every expectation read
   from the server *(wave 3)*
-- [ ] 21-04-PLAN.md — The link round trip on fresh load, Reset and `hashchange`; `#root_shape=bogus` pinned as
+- [x] 21-04-PLAN.md — The link round trip on fresh load, Reset and `hashchange`; `#root_shape=bogus` pinned as
   today and filed as `must` debt *(wave 4)*
-- [ ] 21-05-PLAN.md — The golden request pin: the query each of the 44 fixture links sends, captured by the real
+- [x] 21-05-PLAN.md — The golden request pin: the query each of the 44 fixture links sends, captured by the real
   page through `make golden.regen` and asserted *(wave 5)*
-- [ ] 21-06-PLAN.md — The fail-closed and stack pins, then the gate admission in one commit (rename to
+- [x] 21-06-PLAN.md — The fail-closed and stack pins, then the gate admission in one commit (rename to
   `tests/test_browser.py`, every exclusion, `--with-deps` in CI), `make verify.fast` read under 30 s *(wave 6)*
-- [ ] 21-07-PLAN.md — The price: isolated cost and a six-run interleaved A/B; the human accepts it or reopens the
+- [x] 21-07-PLAN.md — The price: isolated cost and a six-run interleaved A/B; the human accepts it or reopens the
   placement *(wave 7)*
-- [ ] 21-08-PLAN.md — SC5 on a real `ubuntu-latest` run of the phase branch (the human pushes), then L39 and the
+- [x] 21-08-PLAN.md — SC5 on a real `ubuntu-latest` run of the phase branch (the human pushes), then L39 and the
   idea retired in the closing commit *(wave 8)*
 **UI hint**: yes
 
