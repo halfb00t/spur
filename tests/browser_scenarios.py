@@ -31,6 +31,7 @@ from collections.abc import Iterator
 import pytest
 from browser_session import (
     BUILD_WAIT_MS,
+    GOLDEN_PATH,
     PNG_RATIO_BAR,
     STL_ROUTE,
     eval_int,
@@ -38,11 +39,13 @@ from browser_session import (
     eval_pairs,
     eval_str,
     eval_str_list,
+    fixture_hashes,
     launch,
     serve,
     serve_stl_from,
     step,
     stl_triangles,
+    sweep,
 )
 from playwright.sync_api import Page, Route, expect, sync_playwright
 
@@ -188,6 +191,19 @@ def _differing(
     """The (got, want) pairs that differ, so a failure names the fields and not the form."""
     assert len(got) == len(want), f"{len(got)} form fields where {len(want)} were expected"
     return [(have, expected) for have, expected in zip(got, want, strict=True) if have != expected]
+
+
+def _golden_records() -> dict[str, str]:
+    """The committed pin, read and never written: only `make golden.regen` writes it (D-09)."""
+    document: object = json.loads(GOLDEN_PATH.read_text())
+    assert isinstance(document, dict), "golden_requests.json is not an object"
+    records = document["records"]
+    assert isinstance(records, dict), "golden_requests.json has no records object"
+    pinned: dict[str, str] = {}
+    for name, query in records.items():
+        assert isinstance(query, str), f"golden_requests.json: {name!r} is {query!r}, not a str"
+        pinned[name] = query
+    return pinned
 
 
 def _assert_link_applied(
@@ -505,6 +521,37 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "link round trip, Reset: the form differs from the fresh default load on "
                     f"{_differing(after, default_pairs)}"
                 )
+
+            with step("golden sweep"):
+                # What only a browser can prove: the server's acceptance of every fixture
+                # record is tests/regression's, but what the form SENDS for each link is the
+                # page's. Each record's link goes through location.hash on one page whose STL
+                # route is aborted, so nothing is built (D-08); the sent api/info query must
+                # equal the committed pin. Phases 23-24 change the form and must leave this
+                # file's diff empty (D-09).
+                pinned = _golden_records()
+                hashes = fixture_hashes()
+                assert set(pinned) == set(hashes), (
+                    "golden sweep: the pin and the fixture name different records: only in "
+                    f"the pin {sorted(set(pinned) - set(hashes))}, only in the fixture "
+                    f"{sorted(set(hashes) - set(pinned))}; run `make golden.regen`"
+                )
+                sweep_page = browser.new_page()
+                try:
+                    swept = sweep(sweep_page, server, hashes)
+                finally:
+                    sweep_page.close()
+                moved = {
+                    name: (pinned[name], swept[name])
+                    for name in hashes
+                    if swept[name] != pinned[name]
+                }
+                detail = "; ".join(
+                    f"{name}: expected {want!r}, sent {got!r}"
+                    for name, (want, got) in moved.items()
+                )
+                assert not moved, f"golden sweep: the form sends other queries: {detail}"
+                print(f"golden sweep: {len(swept)} records, {len(set(swept.values()))} distinct")
 
             with step("root_shape=bogus as today"):
                 # Pinned as the page behaves, not fixed (REQUIREMENTS, Form follow-ups): the

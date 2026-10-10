@@ -4825,6 +4825,8 @@ plans append rows to this table.
 | 21-04 | `link round trip`, hashchange | `readHash();` removed from the `hashchange` listener. Red, but first at `invalid field marked` (`AssertionError: /api/info? answered 200, not 422`): the earlier steps also rely on that listener, so this break never reaches the new step. To see the new sub-path red itself the listener was narrowed to `if (!location.hash.includes('mate_teeth')) readHash();` | with the narrowed break: `AssertionError: link round trip, hashchange: the form differs from the link on [(('teeth', '23'), ('teeth', '31')), (('module', '1.75'), ('module', '1.5')), (('pressure_angle', '25'), ('pressure_angle', '20')), (('face_width', '7.5'), ('face_width', '6')), (('recess_sides', 'both'), ('recess_sides', 'bottom'))]`, note `step: link round trip` | yes |
 | 21-04 | `link round trip`, Reset | the `for (const [name, { input }] of fields) input.value = defaults[name];` line removed from the `#reset` handler (the `#reset` handler's `mateInput.value = ''` kept) | `AssertionError: link round trip, Reset: the page sent 'face_width=8'` (the form kept link C's values, and the request carried them) | yes |
 | 21-04 | `root_shape=bogus as today` | `input.value !== '' && ` removed from the condition in `gearQuery()` | `AssertionError: today's behaviour, filed as debt: docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md: /api/info was sent 'teeth=22&root_shape='`, note `step: root_shape=bogus as today` (the first draft waited for the STL request before reading the info query and read this break as a 45 s `TimeoutError` instead: the API refuses the blank field, so no STL is ever requested; the info query is now asserted inside that wait) | yes, `git diff --exit-code` clean |
+| 21-05 | `golden sweep`, pin edited | the value of `README:export-teeth-24` in `tests/regression/golden_requests.json` changed from `teeth=24&...` to `teeth=25&...` | `AssertionError: golden sweep: the form sends other queries: README:export-teeth-24: expected 'teeth=25&module=1&pressure_angle=20&bore_flat=0', sent 'teeth=24&module=1&pressure_angle=20&bore_flat=0'`, note `step: golden sweep` | yes, `git checkout` of the file, `git diff --exit-code` clean |
+| 21-05 | `golden sweep`, `gearQuery()` sends more | `String(input.value) !== String(defaults[name])` becomes `true` in `gearQuery()` (`app.js`), the plan's break. Red, but first at `link round trip, fresh load` (`AssertionError: ... the page sent [('backlash', '0.1'), ('bore_chamfer', '0.4'), ...] expected [('bore_d', '10'), ...]`): the earlier steps also read what the default load sends, so this break never reaches the new step. To see the sweep red itself the condition was narrowed to `... !== String(defaults[name]) \|\| location.hash.includes('mate_teeth=40')` | with the narrowed break: `AssertionError: golden sweep: the form sends other queries: README:info-mate-40+mate=40: expected 'mate_teeth=40', sent 'teeth=19&module=1.75&pressure_angle=25&...&hex_wall=0&mate_teeth=40'; test_api.py::test_impossible_mate_is_a_warning_not_a_number+mate=40: expected ...` (the four records that carry `mate_teeth=40` are named, with their expected and sent queries), note `step: golden sweep` | yes, `git checkout` of `app.js`, `git diff --exit-code` clean |
 
 21-03 readings (Apple M5 Max, macOS, 2026-10-10): the schema holds 31 fields in 7 groups. `/api/info` warnings for the three
 links in order: `module=1&pressure_angle=14.5` two, `bore_hex=6` one, `teeth=23` none. 422 texts: `#bore_flat=3`
@@ -4924,3 +4926,35 @@ Both constants in `tests/browser_session.py` carry both readings in their commen
 - **A8, runner image:** `ubuntu-24.04`, version `20261004.327.1`.
 
 SC5's own real run is 21-08's, on the phase's head. This one is the spike's.
+
+### Golden request pin (21-05)
+
+What is pinned: `tests/regression/golden_requests.json` holds, for each record of `tests/regression/pre_v0_2.json`
+under the same name, the exact `api/info` query string the real page sent when that record's link (its params,
+then its `mate_teeth`) was put in `location.hash` (D-08, PD-08). Only the info query is pinned: the server's
+acceptance of every record is `tests/regression`'s, and what only a browser can show is what the form sends.
+The file is written only by `make golden.regen` (D-09), which drives the real page against a real `uvicorn`
+through the same `serve`, `launch` and `sweep` the test uses, so there is one sweep and no Python copy of
+`gearQuery()`. Step `golden sweep` only reads it.
+
+Readings (Apple M5 Max, macOS, 2026-10-10, 1-minute load 4.4, HEAD `d40a09a`):
+
+| Reading | Value |
+|---|---|
+| Records pinned | 44, read from the fixture (the pin's names equal its names) |
+| Distinct queries | 44 |
+| Non-empty links whose sent query differs from their raw link | 16 of 43 (the form emits schema order and drops values equal to a default) |
+| Empty link | `README:export-defaults` pins `""`, taken from the fresh-load request |
+| `golden sweep` step, 5 runs | 0.23, 0.19, 0.21, 0.23, 0.19 s (a new page, the STL route aborted, nothing built) |
+| `make golden.regen` on unchanged code, 4 runs after the first capture | byte-identical each time (`cmp` against the first capture, then `git diff --exit-code tests/regression/golden_requests.json` exit 0 after the rest) |
+
+Three samples of a differing link (raw link, then what the page sent):
+
+- `README:export-teeth-24`: `bore_flat=0&module=1&pressure_angle=20&teeth=24` became `teeth=24&module=1&pressure_angle=20&bore_flat=0`
+- `README:info-mate-40+mate=40`: `teeth=19&mate_teeth=40` became `mate_teeth=40` (19 is the default)
+- `test_api.py::test_impossible_mate_is_a_warning_not_a_number`: `bore_chamfer=0&bore_d=0&bore_flat=0&pressure_angle=14.5&profile_shift=-0.6&recess_sides=none&teeth=6` became `teeth=6&pressure_angle=14.5&profile_shift=-0.6&bore_d=0&bore_flat=0&bore_chamfer=0&recess_sides=none`
+
+The rule for Phases 23-24: the form change leaves `tests/regression/golden_requests.json` with an empty diff. A
+change that must move it goes through `make golden.regen` in a commit of its own that says what moved and why,
+never inside the feature commit. `tests/regression/pre_v0_2.json` is read, never written
+(`git diff --exit-code 592506f -- tests/regression/pre_v0_2.json` exits 0).
