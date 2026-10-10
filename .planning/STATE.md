@@ -26,9 +26,7 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 21 — Browser Test of the Viewer
-`gsd/milestone-v0.5-start`; the seven `docs/ideas/` items plus the L34 bar re-set); next
-is `/gsd-discuss-phase 21` (the browser test)
+**Current focus:** Phase 22 — Download Name Carries the Root
 
 ## Current Position
 
@@ -37,7 +35,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-10 — Phase 21 complete, transitioned to Phase 22
 
-Progress: [████████░░] 80% (0 of 5 phases; Phase 24 is discretionary)
+Progress: [██░░░░░░░░] 20% (1 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
@@ -411,6 +409,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 21]: 21-07: arm A spelled PYTEST_ADDOPTS, not PYTEST_ARGS, because the shared-recipe hook pin reads the caller's PYTEST_ARGS (debt filed, nice)
 - [Phase 21]: L39 locks the admission: a headless browser inside make verify and CI, out of the commit slice (five heavy files), at a price the human accepted; amends L13 and L36, restates L11
 - [Phase 21]: SC5 is recorded from the phase branch's own ubuntu-latest run (38059369744, head 88df5cf, 1226 passed, job 16 min 8 s), not from the spike
+- [Phase 21]: L39 appended after L38 (0 deleted lines): the browser test admitted to `make verify` and CI, out of the commit slice, at the price 21-07 measured in interleaved A/B arms on one host; the human kept it in the gate (21-07 checkpoint, `accept`, O1).
+- [Phase 21]: `playwright==1.63.0` (with `pyee`, `greenlet`) approved by the human at 21-01's package-legitimacy gate; dev extra only, never `requirements.txt`, the Dockerfile or `refresh-requirements.sh` (L11, L12).
+- [Phase 21]: `spike/21-linux-runner` (PR #32, draft, DO NOT MERGE) proved the Linux `--with-deps` install path on `ubuntu-latest` and was closed unmerged; the branch stays on origin until the human deletes it.
+- [Phase 21]: The 44 fixture records' requests are pinned in `tests/regression/golden_requests.json`, written by `make golden.regen` only; a regen is its own commit stating what moved (D-09). `#root_shape=bogus` loading a blank select is pinned as today's behaviour and filed as `must` debt, not fixed (T-21-12).
 
 ### Pending Todos
 
@@ -418,6 +420,28 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 21] CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the shell's `--with-deps`
+  install has only run on 24.04 (`must`, `docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`).
+  Read the first post-migration run's whole log before any fix; `runs-on: ubuntu-24.04` is the fallback.
+- ⚠️ [Phase 21] `make verify` hung once near 98 % for the 600 s background limit with no failure, no
+  crash report and no survivors (wave 3 gate; `must`, `docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md`,
+  log under `21-browser-test-of-the-viewer/investigation/`). The re-run was green in 175.80 s. Relevant to the
+  resource-tracker flake's trigger ("the next `make verify` failure with its whole log kept").
+- ⚠️ [Phase 21] A link with an invalid enum value loads a blank select and builds the default part
+  (`must`, `docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md`), pinned as today's
+  behaviour by the browser test; trigger: Phase 23 or 24 touching `buildForm`'s enum rendering.
+- ℹ️ [Phase 21] Code review (`21-REVIEW-DISPOSITION.md`): WR-01…WR-03 filed as debt (`fc53e5c`:
+  `stop_group` reads `ps` before it signals; the group floor of 3 is not two pool workers; the launch
+  message names a stamp that skips the install); IN-01…IN-04 open (a dead `bound` assignment in the
+  survivor message, `fixture_hash` on a JSON bool/null, the skip-path scan is a tripwire not a proof,
+  `_follow_link` on Playwright's 30 s default and `_wait_until_parked` spinning without a pause).
+  UI review: two advisory warnings on `canvas.dataset.triangles` (`position.count / 3` assumes
+  non-indexed geometry; the value stays stale after a failed rebuild).
+- ℹ️ [Phase 21] Commit trailers mixed again: 21-08's executor commits carry `Claude Sonnet 5.5`,
+  orchestrator commits `Claude Fable 5.1`, gsd-tools state commits none. Not rewritten.
+- ℹ️ [Phase 21] `phase.complete` warned that six SUMMARYs reference paths not on disk:
+  `tests/browser_scenarios.py` (renamed `tests/test_browser.py` in 21-06) and verify-command strings read
+  as paths. Record only.
 - ℹ️ [Phase 18] Code review (`18-REVIEW-DISPOSITION.md`): WR-01/WR-02 `fixed` by gap plan 18-06
   (`8e96c2d`, `085aee7`); IN-01…IN-08 open — the cap sentence's "the largest" vs a 3-dp floored
   value (`0.000 mm` under 1 µm), `trochoid_root` skipping the `rb <= rf` test `root_mode` applies,
@@ -625,7 +649,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T14:50:11.255Z
+Last session: 2026-10-10
 Stopped at: Phase 21 complete, ready to plan Phase 22
 Resume file: None
 
