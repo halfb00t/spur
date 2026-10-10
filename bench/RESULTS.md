@@ -5026,3 +5026,140 @@ is 1220 (21-05) + 3 pins + 2 hook pins + the browser test.
 **The host's own Playwright cache** (`~/Library/Caches/ms-playwright`) lists `chromium_headless_shell-1228`,
 `chromium-1228`, `ffmpeg-1011`, the same three entries as 21-01 before and after. The shell the gate installs is
 `.venv/ms-playwright/chromium_headless_shell-1243` and `ffmpeg-1011`, 198 MB.
+
+### The browser test, priced (21-07)
+
+What the admitted browser test (`tests/test_browser.py`, 21-06) costs: alone, and inside the whole gate. D-01 admitted
+it on the research figures, 3.21 s serial and 3.80 s at `-n 2`; this replaces them with readings on one host. The gate's
+bars were set on another host and are quoted, not rescaled: L34's 66 s was read on an Apple M2 Max with 12 CPUs
+(63.555 s there), and `### The gate, priced (19-09)` read the gate at a 192.94 s mean on the host below, where the human
+answered `accept-A` on 2026-10-09. This reading sets no bar (D-12): Phase 25 sets the bar under its own pre-registered
+rule. Every run below is at HEAD `45195ce` (the tree is clean apart from the untracked `.DS_Store`,
+`.planning/milestone.lock` and the kept logs), one process at a time, in the foreground, with `uptime` before and after.
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`), 18 CPUs, 64.0 GiB RAM (`hw.memsize` 68719476736), macOS
+  27.0.1 (build 26A434), arm64: the host of 19-01, 19-09 and 21-01 to 21-06
+- Python 3.12.15 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, playwright 1.63.0, pytest 9.1.1, pytest-xdist 3.8.0,
+  pytest-cov 7.1.0; Chrome Headless Shell 153.0.8010.12 (`browser.version`), `PYTEST_WORKERS` 8
+- Read 2026-10-10, 13:47 to 14:08 UTC
+- Not an idle host. At the start `ps` listed `fleet-client-cli` at 99 % CPU and an MTPLX runtime python at 38 %, neither
+  started by this plan, and after the A/B a `Python` process at 108 % that this plan did not start. The 1-minute load
+  read 5.8 at the first run and 6.6 to 13.2 around the full gates. So every wall figure below is an upper bound for an
+  idle host and none is a bar
+
+#### Isolated cost
+
+`make test PYTEST_ARGS="tests/test_browser.py <mode> --no-cov -q -s"` under `/usr/bin/time -p`, the file alone, warm
+(stamp fresh, nothing installed). The Makefile's own `-n 8` precedes the mode and the later `-n` wins. `-s` prints the
+`step` lines only when the test runs in the main process, so the per-step seconds exist for the serial runs and not for
+`-n 2` (xdist workers do not forward stdout).
+
+| Mode | Run | Result line | pytest (s) | `real` (s) | Slowest step | 1-minute load before -> after | UTC start |
+|---|---|---|---|---|---|---|---|
+| `-n0` | 1 | `1 passed in 3.55s` | 3.55 | 3.69 | `first build drawn` 2.02 s | 5.77 -> 5.87 | 13:47:16Z |
+| `-n0` | 2 | `1 passed in 4.50s` | 4.50 | 4.69 | `first build drawn` 2.55 s | 6.20 -> 6.59 | 13:47:25Z |
+| `-n0` | 3 | `1 passed in 4.65s` | 4.65 | 4.83 | `first build drawn` 2.56 s | 6.59 -> 6.94 | 13:47:30Z |
+| `-n 2` | 1 | `1 passed in 5.04s` | 5.04 | 5.22 | not printed | 6.94 -> 7.34 | 13:47:35Z |
+| `-n 2` | 2 | `1 passed in 4.68s` | 4.68 | 4.86 | not printed | 7.34 -> 7.40 | 13:47:40Z |
+| `-n 2` | 3 | `1 passed in 3.98s` | 3.98 | 4.13 | not printed | 7.40 -> 7.28 | 13:47:45Z |
+
+The serial runs' other steps, in seconds, run 1 / 2 / 3: `webgl2` 0.01 / 0.01 / 0.01; `form built` 0.05 / 0.06 / 0.06;
+`form from schema` 0.01 / 0.02 / 0.02; `href after showModel` 0.04 / 0.05 / 0.05; `invalid field marked` 0.08 / 0.09 /
+0.16; `warning rendered` 0.20 / 0.23 / 0.29; `link round trip` 0.22 / 0.26 / 0.30; `golden sweep` 0.21 / 0.29 / 0.30;
+`root_shape=bogus as today` 0.06 / 0.08 / 0.07. The first build is 2.02 to 2.56 s of the 3.55 to 4.65 s.
+
+| Mode | pytest mean (range) | `real` mean (range) | Research figure | D-01 line (10 x research) |
+|---|---|---|---|---|
+| serial (`-n0`) | 4.23 s (3.55 to 4.65) | 4.40 s (3.69 to 4.83) | 3.21 s | 32.1 s |
+| `-n 2` | 4.57 s (3.98 to 5.04) | 4.74 s (4.13 to 5.22) | 3.80 s | 38.0 s |
+
+Against 21-01's isolated reading (3.40 to 3.43 s of pytest, three runs at load 4.7) these are 0.1 to 1.2 s higher, at load
+5.8 to 7.4 and with six more steps in the file. Three runs per mode: the ranges are the spread, not an interval.
+
+#### Full gate, A/B interleaved
+
+Arm A is the gate without the browser test, B is `make verify` as admitted. Six counted runs in the order A1, B1, A2,
+B2, A3, B3, each `uptime`, then `/usr/bin/time -p make verify ... 2>&1 | tee <log>`, then `uptime`, and no other command
+between a pair. B is `make verify` as written. A is not spelled as the plan spells it for A1's re-run and for A2 and A3:
+see `#### Red runs` for why. Every log is kept under `.planning/phases/21-browser-test-of-the-viewer/investigation/`
+as `21-07-<arm>-<n>.log`.
+
+| Run | Arm | Result line | Coverage TOTAL | `real` (s) | 1-minute load before -> after | UTC start -> end | HEAD |
+|---|---|---|---|---|---|---|---|
+| A1 | A (retry 1, `21-07-A-1-retry1.log`) | `1225 passed in 145.06s (0:02:25)` | 97.92 % | 145.50 | 8.96 -> 12.47 | 13:51:24Z -> 13:53:49Z | `45195ce` |
+| B1 | B (`21-07-B-1.log`) | `1226 passed in 164.60s (0:02:44)` | 97.92 % | 165.15 | 12.47 -> 13.19 | 13:53:52Z -> 13:56:37Z | `45195ce` |
+| A2 | A (`21-07-A-2.log`) | `1225 passed in 160.63s (0:02:40)` | 97.92 % | 161.22 | 12.21 -> 11.15 | 13:56:40Z -> 13:59:21Z | `45195ce` |
+| B2 | B (`21-07-B-2.log`) | `1226 passed in 157.97s (0:02:37)` | 97.92 % | 158.44 | 10.58 -> 10.79 | 13:59:24Z -> 14:02:02Z | `45195ce` |
+| A3 | A (`21-07-A-3.log`) | `1225 passed in 191.90s (0:03:11)` | 97.92 % | 192.59 | 10.72 -> 8.39 | 14:02:05Z -> 14:05:18Z | `45195ce` |
+| B3 | B (`21-07-B-3.log`) | `1226 passed in 167.84s (0:02:47)` | 97.92 % | 168.30 | 7.95 -> 12.93 | 14:05:21Z -> 14:08:09Z | `45195ce` |
+
+Coverage is `TOTAL 1346 22 384 14 97.92%` against the required 96.0 % in all six. B runs one test more than A in every
+pair (1226 against 1225).
+
+| | A (no browser test) | B (`make verify`) | B - A |
+|---|---|---|---|
+| `real` mean | 166.44 s | 163.96 s | **-2.47 s** |
+| `real` range | 145.50 to 192.59 s | 158.44 to 168.30 s | |
+| pytest mean | 165.86 s | 163.47 s | -2.39 s |
+| pair deltas, `real` (B1-A1, B2-A2, B3-A3) | | | +19.65, -2.78, -24.29 s |
+
+The delta is smaller than A's own spread (47.09 s across its three runs) and its sign changes between pairs: the three
+pairs read +19.65, -2.78 and -24.29 s. The reading therefore does not separate the browser test's cost from host load,
+and the isolated serial figure (4.23 s of pytest) is the only direct reading of the file's own cost. It does not say B is
+faster; it says no cost shows above the noise of three runs at a load of 6.6 to 13.2.
+
+#### Red runs
+
+One red run, listed apart from the six and not counted in their means.
+
+| Run | Log | Result line | `real` (s) | Load before -> after | UTC |
+|---|---|---|---|---|---|
+| A1, first attempt | `investigation/21-07-A-1.log` | `1 failed, 1224 passed in 164.55s (0:02:44)` | 165.00 | 6.62 -> 12.22 | 13:48:01Z -> 13:50:46Z |
+
+- **What failed:** `tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`, at
+  `assert "--ignore=" not in whole_pytest` (`tests/test_hooks.py:90`). The other 1224 tests passed and coverage read
+  97.92 %.
+- **Classification:** not the resource-tracker flake. None of `resource_tracker`, `ReentrantCall` or `ExceptionGroup`
+  appears in the log (`grep -c` prints 0 for it and for the other six logs), and the failure is an `AssertionError` in a
+  test that runs no pool. It is an artifact of the plan's spelling of arm A: make exports a command-line variable such as
+  `PYTEST_ARGS="--ignore=tests/test_browser.py"` to the recipe's environment, the pin's `_make_env()` strips make's own
+  flags and jobserver but not `PYTEST_ARGS`, and its `make -n verify` dry run takes it through `PYTEST_ARGS ?=` and prints
+  `--ignore=tests/test_browser.py` in the recipe it reads. Read once on the working tree: `PYTEST_ARGS=--ignore=tests/test_browser.py
+  pytest <that test> -n0 --no-cov` and `make test PYTEST_ARGS="<that test> ... --ignore=tests/test_browser.py"` each read `1 failed`
+  with the same assertion. The failure is deterministic: every A run spelled that way reads the same, so repeating it within
+  the budget would have shown nothing new.
+- **Re-run:** at A1's place in the interleave, arm A is spelled `PYTEST_ADDOPTS="--ignore=tests/test_browser.py" make
+  verify`. pytest reads that variable, the Makefile's recipe line is unchanged, and `make -n verify | grep -c --
+  "--ignore="` prints 0 with it and 1 with the plan's spelling. `tests/test_hooks.py` alone with it set read `6 passed`.
+  Both arms run the same recipe and the same `-n 8 --cov`; A differs from B only in the ignored file. A2 and A3 use the
+  same spelling, so the three counted A runs agree.
+- **Budget (D-12, N+3 = 6 per arm):** arm A used 4 attempts (the red one, the retry, A2, A3); arm B used 3 (B1 to B3, none
+  red). No `filterwarnings` entry was added.
+
+The pin failing under `PYTEST_ARGS="--ignore=..."` is filed as `docs/tech_debt/active/2026-10-10-hook-pin-reads-the-callers-pytest-args.md`
+(nice).
+
+#### Outcome
+
+Arm A (without the browser test) averaged **166.44 s**, arm B (`make verify`) **163.96 s**; **B - A is -2.47 s**, inside the
+spread of three runs (see above). Isolated, the file reads 4.23 s of pytest serial and 4.57 s at `-n 2`.
+
+D-01's order-of-magnitude rule, three comparisons:
+
+| Quantity | Reading | Reopen line | Reached? |
+|---|---|---|---|
+| isolated serial mean | 4.23 s (`real` 4.40 s) | 32.1 s (10 x 3.21 s) | no |
+| isolated `-n 2` mean | 4.57 s (`real` 4.74 s) | 38.0 s (10 x 3.80 s) | no |
+| A/B mean delta | -2.47 s | 38.0 s | no |
+
+D-01 does not reopen on any of the three: the measured cost is the same order as the research figures, 1.3 times the serial
+one and 1.2 times the `-n 2` one.
+
+The price against the bars, quoted and not rescaled: B's 163.96 s mean is 2.48 times L34's 66 s bar (97.96 s over), a bar
+read on an Apple M2 Max with 12 CPUs, so the two are not one host's readings. On this host `### The gate, priced (19-09)`
+read 192.94 s at 1210 tests; B reads 163.96 s at 1226 tests under a different load, 28.98 s lower, which is not a
+comparison of the code either, only the same host on another day. The reading sets no bar; Phase 25 does.
+
+Human's answer: pending (Task 2)
