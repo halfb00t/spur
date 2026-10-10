@@ -21,7 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 _MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL")
-HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli")
+HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli", "test_browser")
 
 
 def _make_env() -> dict[str, str]:
@@ -50,7 +50,7 @@ def _hook_blocks() -> dict[str, str]:
 
 def _dry_run(target: str) -> list[str]:
     result = subprocess.run(
-        ["make", "-n", "--no-print-directory", target],
+        ["make", "-n", "-o", ".venv/.browser", "--no-print-directory", target],
         cwd=REPO_ROOT,
         env=_make_env(),
         capture_output=True,

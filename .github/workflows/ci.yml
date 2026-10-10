@@ -38,6 +38,11 @@ jobs:
       - run: make verify PYTHON=python
         env:
           PIP_CONSTRAINT: requirements.txt
+          BROWSER_INSTALL_ARGS: --with-deps
+          PYTEST_ARGS: -rP
+      - name: runner hardware (spike only)
+        if: always()
+        run: nproc; free -m; uname -a; ls .venv/ms-playwright
       # `.venv` exists only once make verify has made it; `if: always()` keeps the pair
       # in the log of a red run too.
       - name: kernel pair this run resolved

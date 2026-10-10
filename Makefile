@@ -166,7 +166,7 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN 2>/dev/null); \
                     [ "$$n" -ge 1 ] 2>/dev/null || n=1; echo $$(( n < w ? n : w )))
 
-test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the tests)
+test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache, not the tests)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
 
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
@@ -191,7 +191,8 @@ test: $(STAMP)  ## run the test suite (a cold first run is page cache, not the t
 test.fast: $(STAMP)  ## run every test file but the four heavy ones, no coverage (the commit-time slice)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --no-cov \
 	  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
-	  --ignore=tests/test_api.py --ignore=tests/test_cli.py $(PYTEST_ARGS)
+	  --ignore=tests/test_api.py --ignore=tests/test_cli.py \
+	  --ignore=tests/test_browser.py $(PYTEST_ARGS)
 
 serve: $(STAMP)  ## run the dev server on http://127.0.0.1:8000
 	$(VENV)/bin/spur serve
@@ -209,7 +210,8 @@ test-image: image  ## run the test suite inside the image (needs no local python
 	  -v "$(CURDIR)/pyproject.toml:/app/pyproject.toml:ro" \
 	  -w /app --entrypoint sh $(IMAGE) \
 	  -c "pip install -q --root-user-action=ignore pytest httpx \
-	      && python -m pytest -q -p no:cacheprovider $(PYTEST_ARGS)"
+	      && python -m pytest -q -p no:cacheprovider \
+	      --ignore=tests/test_browser.py $(PYTEST_ARGS)"
 
 smoke: image  ## exercise the kernel, both exporters and the ASGI app inside the image
 	docker run --rm $(PLATFORM_ARG) --entrypoint python $(IMAGE) docker/smoke.py
