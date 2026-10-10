@@ -4728,3 +4728,91 @@ The walk and the product re-counted with the same code (`bench.trochoid_part`'s 
 
 The floor is unchanged at 0.4 mm and stays 124x the thinnest walk waist. The kernel and oracle columns of
 the walk were not re-read: no curve moved, only which point of it is called the waist.
+
+## Browser test of the viewer (Phase 21)
+
+What Phase 21 priced and proved about the shipped page in a real browser, in plan order: the spike on macOS
+(21-01), the Linux runner spike (21-02), the golden request pin (21-05), the gate's admission (21-06), the
+browser test priced (21-07) and the Linux path on the real runner (21-08). Each subsection carries its own host
+state, because the figures below are read on different machines on different days and are never compared
+across them. Nothing here is a bar unless it says so beside the reading that set it (L08).
+
+### Spike readings, macOS (21-01)
+
+The tracer: `playwright==1.63.0` pinned in the `[dev]` extra, its headless shell installed under `.venv` by the
+`$(BROWSER)` stamp, a real `uvicorn` on a pre-bound socket, the shipped page opened in Chrome Headless Shell.
+HEAD for the readings is `593de97` (the 21-01 test commits on the phase branch); the PNG sizes were first read
+on the uncommitted tree over `a310cd3` and read the same again at `593de97`. `tests/browser_scenarios.py`
+is a staging module that nothing in `make verify` collects yet (PD-01).
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`), 18 CPUs, arm64, 64 GiB RAM
+- macOS 27.0.1, Darwin 27.0.0 kernel (`xnu-13432.1.9~1/RELEASE_ARM64_T6050`)
+- Python 3.12.15 (`.venv`), `playwright` 1.63.0, `uvicorn` 0.54.0
+- Shell: Chrome Headless Shell 153.0.8010.12 (`browser.version`; Playwright `chromium-headless-shell` v1243)
+- Read 2026-10-10, about 09:26 to 09:45 UTC
+- 1-minute load: 4.15 before the install, 3.31 before the first reading, 4.67 to 4.80 around the three isolated
+  runs, 3.22 before and 9.37 after the first `make verify` (its own eight workers). The host has ten logged-in
+  users and was never idle, so every wall figure is an upper bound and none is a bar
+
+#### Readings
+
+| Reading | Value |
+|---|---|
+| `make .venv/.browser` from a venv without the pin | 20.46 s `real`: the `$(STAMP)` re-resolve (playwright 1.63.0, pyee 13.0.1, greenlet 3.5.6) plus the 94.3 MiB shell and a 1 MiB ffmpeg. The research's 16.4 s was the shell alone |
+| Size of `.venv/ms-playwright` | 198 MB (`chromium_headless_shell-1243`, `ffmpeg-1011`) |
+| Host cache `~/Library/Caches/ms-playwright`, before the install | `chromium_headless_shell-1228`, `chromium-1228`, `ffmpeg-1011` |
+| Host cache, after the install | the same three entries (D-06: another project's browser untouched) |
+| `/api/health` reports a non-null `pool` | 0.20, 0.20, 0.21 s after spawn |
+| Group members seen before the kill | 3 (uvicorn and two pool workers) in all three timing runs and every test run. Before the first build the group read 2: pool workers start on first use |
+| Teardown, SIGTERM to group empty and leader reaped | 0.25, 0.24, 0.25 s |
+| Renderer string | `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)` |
+| Canvas PNG, blank control (same `#canvas`, STL request parked) | 3,917 B |
+| Canvas PNG, first part drawn | 38,908 B |
+| Ratio drawn / blank | 9.93 |
+| Canvas PNG with `scene.add(mesh, edges);` deleted (grid and background only) | 16,627 B, ratio 4.24 |
+| `data-triangles` against the STL header (uint32 at byte 80) | 9066 against 9066 |
+| `expect`'s default timeout | 5000 ms (Playwright's own line: `Expect "to_have_count" locator("form#params [name]") with timeout 5000ms`) |
+| Form fields | 31, equal to the `/api/schema` property count read at test time |
+| Slowest build-bound step | 2.53 s (`first build drawn`), under PD-04's 15 s, so `BUILD_WAIT_MS` stays 45,000 ms |
+| `git status --porcelain --ignored` after a green run | nothing outside `.venv/` and the ignores already in place (`.coverage`, caches, `__pycache__`, `web/node_modules`); the test writes no file (PD-10) |
+
+`PNG_RATIO_BAR` by PD-03, written in the plan before this reading: the lower of the hosts' drawn/blank ratios
+divided by 2, rounded down to one decimal place. Only macOS is read here: 9.93 / 2 = 4.96, rounded down to
+**4.9**, which is not under 2.0, so it is asserted. 21-02 re-sets it from the lower of the macOS and
+ubuntu-latest readings. The bar separates a gear from a scene without one by a narrow margin (4.24 against
+4.9 with the mesh deleted, 9.93 with it), which is why the deliberate break below went red on the ratio alone.
+
+Per step, three isolated runs (`make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q -s"`), load
+before the run in brackets:
+
+| Run | `webgl2` | `form built` | `first build drawn` | `href after showModel` | pytest | `make` `real` |
+|---|---|---|---|---|---|---|
+| 1 (4.67) | 0.01 s | 0.06 s | 2.49 s | 0.02 s | 3.43 s | 3.64 s |
+| 2 (4.67) | 0.01 s | 0.06 s | 2.52 s | 0.04 s | 3.40 s | 3.59 s |
+| 3 (4.70) | 0.01 s | 0.05 s | 2.53 s | 0.04 s | 3.40 s | 3.59 s |
+
+The research read 3.21 s for the serial scenario on this host; the isolated runs read 3.40 to 3.43 s of pytest
+(3.59 to 3.64 s with `make`), at load 4.7 against the research's 7 to 8. The difference is inside what a loaded
+host moves, so the 3.2 to 3.8 s order of magnitude that D-01 rests on holds. The first reading of the day
+(cold shell) read `webgl2` at 0.35 s and `first build drawn` at 2.15 s.
+
+The whole gate with the staging module present and uncollected: `make verify` read `1220 passed in 155.30s
+(0:02:35)`, TOTAL coverage 97.92 % against the 96 % floor, and `1220 passed in 198.00s (0:03:17)` on the second
+run at a higher load. Neither is a bar; Phase 25 owns that.
+
+### Seen red once (Phase 21)
+
+Every assertion the tracer makes, shown red once against a deliberate break, reverted before any commit. Later
+plans append rows to this table.
+
+| Plan | Step or pin | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 21-01 | `webgl2` | `launch()` passes `args=["--disable-3d-apis"]` | `1 failed`: `AssertionError: this browser gives no WebGL2 context: the viewer builds no form without WebGL (app.js:229)`, note `step: webgl2` | yes, `git diff --exit-code` clean |
+| 21-01 | `first build drawn`, canvas | `scene.add(mesh, edges);` deleted in `app.js` | `AssertionError: the canvas looks undrawn: PNG 16627 B against a blank 3917 B is 4.24x, bar 4.9`, note `step: first build drawn`; `data-triangles` still read 9066 against the header's 9066, so the triangle check alone would have passed | yes |
+| 21-01 | `first build drawn`, triangles | `/ 3` changed to `/ 9` in the new `app.js` line | `AssertionError: the scene holds 3022 triangles, the STL header declares 9066`, note `step: first build drawn` | yes |
+| 21-01 | `href after showModel` | `setDownloads(q);` moved above `showModel(buf);` in `update()` | `AssertionError: the STL link has an href although showModel failed on the body` (`assert 'api/model.stl?teeth=23' is None`), note `step: href after showModel` | yes |
+| 21-01 | fail closed | `PLAYWRIGHT_BROWSERS_PATH` set to an empty temporary directory, pytest run directly | `1 failed in 0.69s`: ``Failed: the headless shell is not installed: run `playwright install --only-shell chromium` (PLAYWRIGHT_BROWSERS_PATH=/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/tmp.TKWFihxa3O); `make test` runs the install stamp for you.``, then Playwright's own error | yes (nothing to revert: the variable was set for one command) |
+| 21-01 | no orphan after the kill | `stop_group` sends SIGKILL to the leader only (`os.kill(pgid, SIGKILL)` for `os.killpg`) | `Failed: server process group 66058 still has live pids [66059, 66066] after SIGTERM, SIGKILL and 5 s`, then the server log tail (reported as a teardown error after `1 passed`); the two pool workers were killed by group id afterwards | yes |
+| 21-01 | strict typing | `eval_int` returns `page.evaluate(expression, arg)` directly | `tests/browser_session.py:213: error: Returning Any from function declared to return "int"  [no-any-return]` from `make typecheck` | yes |
