@@ -78,7 +78,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 - [x] **REQ-browser-fails-closed**: a missing headless shell fails the test with a message
   naming `playwright install --only-shell chromium`; no `importorskip`, no skip marker, no
   environment opt-out, in CI or locally.
-- [ ] **REQ-browser-in-the-gate**: `tests/test_browser.py` runs inside `make verify` and CI's
+- [x] **REQ-browser-in-the-gate**: `tests/test_browser.py` runs inside `make verify` and CI's
   `test (3.12)` job (the browser installed by a Makefile stamp, with
   `PLAYWRIGHT_BROWSERS_PATH` isolated or `--no-remove` so Playwright's browser GC cannot
   delete another project's cached browser — this host holds `chromium-1228`, MEASURED,
@@ -247,7 +247,7 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-browser-link-round-trip | Phase 21 | Complete |
 | REQ-browser-golden-request-sets | Phase 21 | Complete |
 | REQ-browser-fails-closed | Phase 21 | Complete |
-| REQ-browser-in-the-gate | Phase 21 | Pending |
+| REQ-browser-in-the-gate | Phase 21 | Complete |
 | REQ-browser-stack-pinned | Phase 21 | Pending |
 | REQ-slug-carries-effective-root | Phase 22 | Pending |
 | REQ-slug-consumers-read-first | Phase 22 | Pending |
