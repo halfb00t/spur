@@ -4830,6 +4830,10 @@ plans append rows to this table.
 | 21-06 | pin: no path that passes without the browser | `pytest.importorskip("playwright")` added at the top of `tests/browser_session.py` | `1 failed, 2 passed`: `AssertionError: a path that passes without the browser (D-02): browser_session.py:35: ``importorskip`` in ``pytest.importorskip("playwright")``` | yes, `git checkout` of the file, `git diff --exit-code` clean |
 | 21-06 | pin: playwright exact and dev-only | `"playwright==1.63.0"` changed to `"playwright>=1.63.0"` in `pyproject.toml` (reverted before any `make` ran; the stamps were touched afterwards because the checkout moved the file's mtime, the content being byte-identical) | `1 failed, 2 passed`: `AssertionError: 'playwright>=1.63.0' is not an exact pin: the headless-shell revision, and with it the canvas bar, moves with the release` | yes, `git checkout`, `git diff --exit-code` clean |
 | 21-06 | pin: default shell, no channel | `return pw.chromium.launch()` becomes `return pw.chromium.launch(channel="chromium")` in `tests/browser_session.py` | `1 failed, 2 passed`: `AssertionError: channel= selects a shell other than the default one (D-03): ['browser_session.py:214']` | yes, `git checkout`, `git diff --exit-code` clean |
+| 21-06 | admission: `--ignore` in `test.fast` | `--ignore=tests/test_browser.py` removed from `test.fast` | `1 failed, 5 passed`: `test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`: `AssertionError: assert {'tests/test_...test_pool.py'} == {'tests/test_...test_pool.py'}`, `Extra items in the right set: 'tests/test_browser.py'` | yes, Makefile restored byte-identical (`cmp`) |
+| 21-06 | admission: `--ignore` in `test-image` | `--ignore=tests/test_browser.py` removed from `test-image`'s pytest command | `1 failed, 5 passed`: `test_the_image_suite_ignores_the_browser_test`: `AssertionError: && python -m pytest -q -p no:cacheprovider "` (`'--ignore=tests/test_browser.py'` not among the recipe's words) | yes, `cmp` |
+| 21-06 | admission: `-o` in the dry run (RESEARCH Pitfall P2) | `.venv/.browser` moved to `.venv/.browser.off` and `-o BROWSER_STAMP` dropped from `_dry_run` | `1 failed, 5 passed`: `test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`: the static prefixes differ, `Left contains 2 more items, first extra item: '.venv/bin/python -m playwright install  --only-shell chromium'` | yes, stamp moved back, `tests/test_hooks.py` restored (`cmp`) |
+| 21-06 | admission: the stamp as `test`'s prerequisite | `test: $(STAMP) $(BROWSER)` becomes `test: $(STAMP)` | `1 failed, 5 passed`: `test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does`: `AssertionError: []`, `assert 0 == 1` (no ` -m playwright install ` line in the forced dry run of `test`) | yes, `cmp` |
 
 21-03 readings (Apple M5 Max, macOS, 2026-10-10): the schema holds 31 fields in 7 groups. `/api/info` warnings for the three
 links in order: `module=1&pressure_angle=14.5` two, `bore_hex=6` one, `teeth=23` none. 422 texts: `#bore_flat=3`
@@ -4961,3 +4965,64 @@ The rule for Phases 23-24: the form change leaves `tests/regression/golden_reque
 change that must move it goes through `make golden.regen` in a commit of its own that says what moved and why,
 never inside the feature commit. `tests/regression/pre_v0_2.json` is read, never written
 (`git diff --exit-code 592506f -- tests/regression/pre_v0_2.json` exits 0).
+
+### Admission (21-06)
+
+The browser test is in the gate. One commit, `d0f5474` (`build(gate): admit the browser test into make verify and CI,
+excluded from the commit slice (D-01, D-06)`), carries: `tests/browser_scenarios.py` renamed `tests/test_browser.py`
+(98 % similarity, only the docstring changed); `test: $(STAMP) $(BROWSER)`; `--ignore=tests/test_browser.py` in
+`test.fast` and in `test-image`'s pytest command; `"test_browser"` in `HEAVY_TEST_FILES`, `BROWSER_STAMP` and `-o` in
+`_dry_run`, and two new pins (`test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does`,
+`test_the_image_suite_ignores_the_browser_test`); `BROWSER_INSTALL_ARGS: --with-deps` on CI's `make verify` step (no
+`-rP`, no extra job); the gate's own text (five heavy files in the Makefile and `.pre-commit-config.yaml`,
+`docs/architecture/web-ui.md` `## Tests`, a `.gitignore` comment, the debt file's pointer to the renamed module). The
+pins module came first, as `2b83400`. The four admission guards are in `### Seen red once (Phase 21)`.
+
+Host for every reading below: Apple M5 Max, macOS, 2026-10-10, HEAD `d0f5474` (the tree is identical to it for every
+run), 1-minute load in the table.
+
+**The commit slice, `make verify.fast`, warm (L36's kill is 30 s; L36 read 11.28 s on the M2 Max and 19-09 read
+11.39-11.54 s on this host):**
+
+| Run | Result line | real (s) | load before -> after | UTC |
+|---|---|---|---|---|
+| 1 `make verify.fast` | 834 passed in 9.75 s | 10.14 | 8.29 -> 7.69 | 13:34:32Z |
+| 2 `make verify.fast` | 834 passed in 9.92 s | 10.31 | 7.69 -> 9.39 | 13:34:42Z |
+| 3 `make verify.fast` | 834 passed in 9.99 s | 10.41 | 9.39 -> 10.15 | 13:34:53Z |
+
+All three are under 30.0 s. The count is the whole suite minus the five heavy files: `pytest --collect-only` reads 1226
+tests in all and 392 in `test_model.py`, `test_pool.py`, `test_api.py`, `test_cli.py` and `test_browser.py` together,
+and 1226 - 392 = 834. The slice's own arguments collect 0 lines naming `test_browser.py`. Before the admission the slice
+read 832 passed (Task 1's run; the two new hook pins are the difference).
+
+**`tests/test_browser.py` at `-n 8`, ten consecutive `make test PYTEST_ARGS="tests/test_browser.py -n 8 --no-cov -q"`:
+10 of 10 passed** (the file holds one test function, so eight workers are started and one runs it; the figure shows the
+file is stable under the gate's own worker setting, not that eight copies ran side by side). Each run `1 passed`; pytest
+seconds and `make` wall seconds:
+
+| Run | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| pytest (s) | 3.93 | 4.01 | 3.95 | 3.99 | 3.99 | 3.98 | 3.95 | 3.95 | 3.95 | 3.97 |
+| real (s) | 4.06 | 4.14 | 4.08 | 4.11 | 4.12 | 4.11 | 4.09 | 4.08 | 4.08 | 4.10 |
+
+Load 1-minute 8.64 at the first run, 7.43 at the last. No run was red, so no log is kept under `investigation/`.
+
+**Fail closed at the final path.** `PLAYWRIGHT_BROWSERS_PATH=$(mktemp -d) .venv/bin/python -m pytest
+tests/test_browser.py -n0 --no-cov -p no:cacheprovider -q` read `1 failed in 0.61s`, exit 1, with ``Failed: the headless
+shell is not installed: run `playwright install --only-shell chromium` (PLAYWRIGHT_BROWSERS_PATH=/var/folders/.../tmp.qlQvb7kgfm)``
+in the output (`grep -F 'playwright install --only-shell chromium'` finds it).
+
+**Idempotency (dry runs).** With the stamp fresh `make -n test | grep -c 'playwright install'` prints 0, so a second gate run
+installs nothing. With `-W .venv/.installed` (pyproject.toml pretended changed) the same count is 1, so a pin bump
+re-installs the matching shell. `make -n test.fast | grep -c playwright` prints 0. No `--dist` in `make -n test`, and
+`grep -rn xdist_group tests` finds nothing, so scheduling is unchanged (PD-12).
+
+**The whole gate once, at HEAD `d0f5474`.** `make verify`: `1226 passed in 192.08s (0:03:12)`, coverage TOTAL 97.92 %
+against the required 96.0 %, `real 192.51`, load 6.33 before -> 6.76 after (the 1-minute average read 9.61 in between). An
+earlier run of the same tree before it was committed read `1226 passed in 148.39s (0:02:28)`, `real 148.82`, load 4.66 ->
+10.48. Neither is the A/B: the two differ by 44 s on the same code, which is host load, and 21-07 prices the gate. The count
+is 1220 (21-05) + 3 pins + 2 hook pins + the browser test.
+
+**The host's own Playwright cache** (`~/Library/Caches/ms-playwright`) lists `chromium_headless_shell-1228`,
+`chromium-1228`, `ffmpeg-1011`, the same three entries as 21-01 before and after. The shell the gate installs is
+`.venv/ms-playwright/chromium_headless_shell-1243` and `ffmpeg-1011`, 198 MB.
