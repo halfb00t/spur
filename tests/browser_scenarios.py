@@ -33,6 +33,7 @@ from browser_session import (
     BUILD_WAIT_MS,
     PNG_RATIO_BAR,
     STL_ROUTE,
+    eval_int,
     eval_opt_str,
     eval_pairs,
     eval_str,
@@ -71,6 +72,14 @@ LINK_A = (
 LINK_B = "mate_teeth=45&recess_sides=bottom&pressure_angle=20&face_width=6&teeth=31&module=1.5"
 # C sets `teeth` to its schema default (read at test time) beside a non-default `face_width`.
 LINK_C_OTHER = "face_width=8"
+
+# Named in every assertion of `root_shape=bogus as today`: the pin is today's behaviour and
+# not an endorsement, and the file says why it is debt and when to revisit it.
+BOGUS_LINK = "root_shape=bogus&teeth=22"
+TODAY = (
+    "today's behaviour, filed as debt: "
+    "docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md"
+)
 
 MATE_VALUE = "() => document.querySelector('#mate-teeth').value"
 FRAGMENT = "() => location.hash.slice(1)"
@@ -495,6 +504,63 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert after == default_pairs, (
                     "link round trip, Reset: the form differs from the fresh default load on "
                     f"{_differing(after, default_pairs)}"
+                )
+
+            with step("root_shape=bogus as today"):
+                # Pinned as the page behaves, not fixed (REQUIREMENTS, Form follow-ups): the
+                # select takes a value it has no option for, so it reads '' with selectedIndex
+                # -1, gearQuery() drops it, and the page builds the default part with no word
+                # about the field. The API alone refuses the same link with a 422.
+                assert eval_str(page, FRAGMENT) != BOGUS_LINK, f"{TODAY}: already on the link"
+                # The info query is asserted inside the STL wait: a page that sent the blank
+                # field would be refused with a 422 and never ask for the STL at all.
+                with page.expect_request(
+                    lambda request: "/api/model.stl" in request.url, timeout=BUILD_WAIT_MS
+                ) as stl_request:
+                    with page.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as info_request:
+                        page.evaluate("(f) => { location.hash = f; }", BOGUS_LINK)
+                    info_query = urllib.parse.urlsplit(info_request.value.url).query
+                    assert info_query == "teeth=22", f"{TODAY}: /api/info was sent {info_query!r}"
+                stl_query = urllib.parse.urlsplit(stl_request.value.url).query
+                assert stl_query == "teeth=22&quality=preview", (
+                    f"{TODAY}: the STL was requested with {stl_query!r}"
+                )
+
+                select = "() => document.querySelector('select[name=root_shape]')"
+                select_value = eval_str(page, f"() => ({select})().value")
+                select_index = eval_int(page, f"() => ({select})().selectedIndex")
+                assert (select_value, select_index) == ("", -1), (
+                    f"{TODAY}: the root_shape select reads {select_value!r} at index {select_index}"
+                )
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl?teeth=22", timeout=BUILD_WAIT_MS
+                )
+                fragment = eval_str(page, "() => location.hash")
+                assert fragment == "#teeth=22", f"{TODAY}: the fragment is {fragment!r}"
+                assert page.locator("#messages .error").count() == 0, (
+                    f"{TODAY}: an error is shown for the dropped field"
+                )
+                status, body = _api_get(server, "/api/info", "teeth=22")
+                assert status == 200, f"{TODAY}: /api/info?teeth=22 answered {status}"
+                assert isinstance(body, dict), f"{TODAY}: /api/info?teeth=22 is not an object"
+                warned = page.locator("#messages .warning").all_text_contents()
+                assert warned == body["warnings"], (
+                    f"{TODAY}: the page warns {warned}, the API for teeth=22 says "
+                    f"{body['warnings']}"
+                )
+
+                status, refusal = _api_get(server, "/api/info", BOGUS_LINK)
+                assert status == 422, f"{TODAY}: the API answered {status} for #{BOGUS_LINK}"
+                assert isinstance(refusal, dict), f"{TODAY}: the 422 body is not an object"
+                messages = [str(item["msg"]) for item in refusal["detail"]]
+                assert any("'radial' or 'trochoid'" in msg for msg in messages), (
+                    f"{TODAY}: the 422 does not name the enum's options: {messages}"
+                )
+                print(
+                    f"bogus: select {select_value!r} at {select_index}, sent {info_query!r}, "
+                    f"API {status}"
                 )
         finally:
             browser.close()

@@ -4824,6 +4824,7 @@ plans append rows to this table.
 | 21-04 | `link round trip`, fresh load | `readHash();` removed from the load function (`app.js`, before `update();`) | `AssertionError: link round trip, fresh load: the form differs from the link on [(('teeth', ''), ('teeth', '24')), (('module', ''), ('module', '2')), (('root_shape', 'radial'), ('root_shape', 'trochoid')), ...]`, note `step: link round trip` (an unread form leaves number inputs empty and selects on their first option) | yes, `git diff --exit-code` clean |
 | 21-04 | `link round trip`, hashchange | `readHash();` removed from the `hashchange` listener. Red, but first at `invalid field marked` (`AssertionError: /api/info? answered 200, not 422`): the earlier steps also rely on that listener, so this break never reaches the new step. To see the new sub-path red itself the listener was narrowed to `if (!location.hash.includes('mate_teeth')) readHash();` | with the narrowed break: `AssertionError: link round trip, hashchange: the form differs from the link on [(('teeth', '23'), ('teeth', '31')), (('module', '1.75'), ('module', '1.5')), (('pressure_angle', '25'), ('pressure_angle', '20')), (('face_width', '7.5'), ('face_width', '6')), (('recess_sides', 'both'), ('recess_sides', 'bottom'))]`, note `step: link round trip` | yes |
 | 21-04 | `link round trip`, Reset | the `for (const [name, { input }] of fields) input.value = defaults[name];` line removed from the `#reset` handler (the `#reset` handler's `mateInput.value = ''` kept) | `AssertionError: link round trip, Reset: the page sent 'face_width=8'` (the form kept link C's values, and the request carried them) | yes |
+| 21-04 | `root_shape=bogus as today` | `input.value !== '' && ` removed from the condition in `gearQuery()` | `AssertionError: today's behaviour, filed as debt: docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md: /api/info was sent 'teeth=22&root_shape='`, note `step: root_shape=bogus as today` (the first draft waited for the STL request before reading the info query and read this break as a 45 s `TimeoutError` instead: the API refuses the blank field, so no STL is ever requested; the info query is now asserted inside that wait) | yes, `git diff --exit-code` clean |
 
 21-03 readings (Apple M5 Max, macOS, 2026-10-10): the schema holds 31 fields in 7 groups. `/api/info` warnings for the three
 links in order: `module=1&pressure_angle=14.5` two, `bore_hex=6` one, `teeth=23` none. 422 texts: `#bore_flat=3`
@@ -4838,6 +4839,11 @@ fresh-load sub-path (the page sent all 32 pairs, defaults included); to reach th
 was removed for `teeth` only, `(name === 'teeth' || String(input.value) !== String(defaults[name]))`, and it read
 `AssertionError: link round trip, default dropped: the page sent the default 'teeth=19&face_width=8'`. Both reverted,
 `git diff --exit-code` clean.
+
+The `#root_shape=bogus&teeth=22` reading (same host): the `root_shape` select reads `''` at `selectedIndex` -1; the page sent
+`api/info?teeth=22` and `api/model.stl?teeth=22&quality=preview`; the fragment became `#teeth=22`; no `.error`, no
+`.warning`; the API alone answered `/api/info?root_shape=bogus&teeth=22` with a 422, "Input should be 'radial' or
+'trochoid'". Step 0.07 s. Filed as `docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md` (must).
 
 ### Linux runner spike (21-02)
 
