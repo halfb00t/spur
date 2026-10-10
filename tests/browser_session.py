@@ -25,8 +25,10 @@ import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterator
+from pathlib import Path
 from typing import IO
 
 import pytest
@@ -58,6 +60,10 @@ MIN_GROUP_MEMBERS = 3
 # to 4.9, so the bar did not move. A blank canvas reads a ratio near 1.0, a scene with the
 # mesh deleted 4.24 (macOS).
 PNG_RATIO_BAR = 4.9
+
+# The L05/L26 fixture the sweep reads (never writes) and the pin it is compared with.
+FIXTURE_PATH = Path(__file__).with_name("regression") / "pre_v0_2.json"
+GOLDEN_PATH = Path(__file__).with_name("regression") / "golden_requests.json"
 
 # How long the server gets to start, and to stop after SIGTERM and then after SIGKILL.
 # Measured on the dev host: /api/health reported a pool 0.18-0.24 s after spawn, killpg
@@ -287,6 +293,80 @@ def stl_triangles(stl: bytes) -> int:
     assert len(stl) >= 84, f"{len(stl)} bytes cannot hold an STL header"
     count: int = struct.unpack_from("<I", stl, 80)[0]
     return count
+
+
+def fixture_hash(params: dict[str, object], mate_teeth: int | None) -> str:
+    """The link a person would share for one fixture record: its params, then the mate.
+
+    `str(value)` of the JSON value, so `1.0` stays `1.0` the way a person typing it would
+    send it; the page's own `gearQuery()` decides what survives (a default is dropped).
+    """
+    pairs = [(name, str(value)) for name, value in params.items()]
+    if mate_teeth is not None:
+        pairs.append(("mate_teeth", str(mate_teeth)))
+    return urllib.parse.urlencode(pairs)
+
+
+def fixture_hashes() -> dict[str, str]:
+    """Every record of `pre_v0_2.json` as its shareable link, name -> hash, in file order.
+
+    Parsed straight from the JSON: `tests/regression/capture.py` imports the CAD kernel,
+    which a browser test must not.
+    """
+    document: object = json.loads(FIXTURE_PATH.read_text())
+    assert isinstance(document, dict), "pre_v0_2.json is not an object"
+    records = document["records"]
+    assert isinstance(records, dict), "pre_v0_2.json has no records object"
+    hashes: dict[str, str] = {}
+    for name, record in records.items():
+        assert isinstance(record, dict), f"record {name!r} is not an object"
+        params = record["params"]
+        assert isinstance(params, dict), f"record {name!r} has no params object"
+        mate = record.get("mate_teeth")
+        assert mate is None or isinstance(mate, int), f"record {name!r}: mate_teeth {mate!r}"
+        hashes[name] = fixture_hash(params, mate)
+    return hashes
+
+
+def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
+    """The `api/info` query string the page sends for each link, name -> query (D-08).
+
+    Builds no part: the STL route is aborted, so a link costs one `hashchange` and one
+    info request, not a CAD build. `hashchange` calls `readHash(); update()` directly, no
+    debounce (app.js:340), so the request is sent as soon as the fragment is assigned;
+    21-RESEARCH read 0.09-0.15 s for each of the 43 hash-driven records. The empty link
+    cannot be reached that way (an empty fragment is the fresh load's own), so its query is
+    the fresh load's request, which is the empty string today.
+
+    A link equal to the live fragment fires no `hashchange`, and the wait would time out
+    with a message that names nothing (21-RESEARCH Pitfall P5), so that case raises naming
+    the record. The guard reads the live fragment, not the previous record's raw link:
+    `update()` rewrites the fragment to the normalised query with `replaceState`.
+    Queries are kept exactly as the page's `URLSearchParams` wrote them.
+    """
+    page.route(STL_ROUTE, lambda route: route.abort())
+    with page.expect_request(
+        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+    ) as fresh:
+        page.goto(base + "/")
+    fresh_query = urllib.parse.urlsplit(fresh.value.url).query
+    sent: dict[str, str] = {}
+    for name, link in hashes.items():
+        if link == "":
+            sent[name] = fresh_query
+            continue
+        live = eval_str(page, "() => location.hash.slice(1)")
+        if live == link:
+            raise AssertionError(
+                f"{name}: the link {link!r} equals the page's current fragment, so no "
+                "hashchange would fire; reorder or separate the records"
+            )
+        with page.expect_request(
+            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+        ) as request:
+            page.evaluate("link => { location.hash = link; }", link)
+        sent[name] = urllib.parse.urlsplit(request.value.url).query
+    return sent
 
 
 @contextlib.contextmanager

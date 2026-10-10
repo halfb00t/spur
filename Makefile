@@ -33,7 +33,7 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 .DEFAULT_GOAL := help
 .PHONY: help venv verify verify.static verify.fast lint typecheck lint-imports \
         no-fake-done test test.fast serve \
-        check image test-image smoke up down logs lock vendor vendor-check fixture.regen \
+        check image test-image smoke up down logs lock vendor vendor-check fixture.regen golden.regen \
         bench bench.latency bench.memory bench.build bench.export \
         worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
 
@@ -267,6 +267,9 @@ vendor-check:  ## fail if the committed bundle no longer matches web/
 
 fixture.regen: $(STAMP)  ## rewrite tests/regression/pre_v0_2.json (the L05 fixture); commit it alone, saying what moved and why
 	$(PY) tests/regression/capture.py
+
+golden.regen: $(STAMP) $(BROWSER)  ## rewrite tests/regression/golden_requests.json (the query each fixture record's link sends); commit it alone, saying what moved and why
+	$(PY) tests/capture_requests.py
 
 # --- worktrees: isolated, parallel agent work ---------------------------------------
 
