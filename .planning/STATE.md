@@ -2,20 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Honest Form
-current_phase: 21
-current_phase_name: Browser Test of the Viewer
-status: planning
-stopped_at: Phase 21 context gathered
-last_updated: "2026-10-10T08:17:07.625Z"
+current_phase: 22
+current_phase_name: Download Name Carries the Root
+status: "Phase 21 shipped — PR #33"
+stopped_at: Phase 21 complete, ready to plan Phase 22
+last_updated: "2026-10-10T16:19:19.266Z"
 last_activity: 2026-10-10
-last_activity_desc: v0.5 roadmap created (Phases 21–25; 24/24 requirements mapped)
-state_head: 34aaf825462eab3a33151d923fdf030544d0f590
+state_head: 9e9848fbb831364b478310d31dd50c93dc63d01c
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 8
-  completed_plans: 0
-  percent: 0
+  completed_plans: 8
+  percent: 80
 ---
 
 # Project State
@@ -26,18 +25,16 @@ See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** v0.5 Honest Form — roadmap created (Phases 21–25, started 2026-10-10 on
-`gsd/milestone-v0.5-start`; the seven `docs/ideas/` items plus the L34 bar re-set); next
-is `/gsd-discuss-phase 21` (the browser test)
+**Current focus:** Phase 22 — Download Name Carries the Root
 
 ## Current Position
 
-Phase: 21 (Browser Test of the Viewer) — READY TO EXECUTE
-Plan: —
-Status: Planning — roadmap created, awaiting the human's approval; then discuss Phase 21
-Last activity: 2026-10-10 — v0.5 roadmap created (Phases 21–25; 24/24 requirements mapped)
+Phase: 22 — Download Name Carries the Root
+Plan: Not started
+Status: Phase 21 shipped — PR #33
+Last activity: 2026-10-10
 
-Progress: [░░░░░░░░░░] 0% (0 of 5 phases; Phase 24 is discretionary)
+Progress: [████████░░] 80% (1 of 5 phases; Phase 24 is discretionary)
 
 ## Performance Metrics
 
@@ -73,6 +70,7 @@ Progress: [░░░░░░░░░░] 0% (0 of 5 phases; Phase 24 is discre
 | 17 | 5 | - | - |
 | 18 | 6 | - | - |
 | 19 | 11 | - | - |
+| 21 | 8 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -218,6 +216,14 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 19 P09 | ~2h | 2 tasks | 5 files |
 | Phase 19 P10 | 12min | 1 tasks | 3 files |
 | Phase 19 P11 | 8 min | 2 tasks | 7 files |
+| Phase 21 P01 | 28 min | 3 tasks | 6 files |
+| Phase 21 P02 | 43 min | 3 tasks | 3 files |
+| Phase 21 P03 | 38 min | 2 tasks | 3 files |
+| Phase 21 P04 | 10 min | 2 tasks | 5 files |
+| Phase 21 P05 | 25 min | 2 tasks | 6 files |
+| Phase 21 P06 | 25 min | 3 tasks | 12 files |
+| Phase 21 P07 | 21min | 2 tasks | 3 files |
+| Phase 21 P08 | 25 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -389,6 +395,23 @@ pending; the next milestone starts this list fresh.
 - [Phase 19]: L38 logged (supersedes L10, amends L09 and L33): root_shape opt-in, default unmoved in v0.4, Phase 20 skipped; flip rules and the D-09 trigger recorded
 - [Phase 19]: L38 records the gate cost as accepted (accept-A): mean 192.94 s against L34's 66 s on the 18-CPU M5 Max, +140.05 s on the same host; L34's bar and the 401-position count untouched, the bar's re-set left as a separate decision
 - [Phase 19]: review CR-01, fix-now (2026-10-09): root_waist redefined to the narrowest arc thickness (was the narrowest half-angle, 2–5 % high on crossing joins; 1.473 → 1.442 on the tracer gear, sub-floor gears now warn), every pin re-measured, 0.4 mm floor unmoved (`e733cc2`); WR-01: a kernel exception in the hob-root outline becomes a BuildError naming it (`b51931c`); IN-01…04 deferred as one debt item
+- [Phase 21]: PNG_RATIO_BAR is 4.9: PD-03 applied to the macOS reading 9.93 (blank 3,917 B, drawn 38,908 B); 21-02 re-sets it from the lower of two hosts
+- [Phase 21]: serve() takes floor_applies: pool workers start on first use (2 members before the first build, 3 after), so a failed test reports once; 21-05's sweep builds nothing and must pass floor_applies=lambda: False
+- [Phase 21]: BUILD_WAIT_MS stays 45,000 ms (slowest build-bound step 2.53 s); headless shell lives under the absolute .venv/ms-playwright, host cache unchanged
+- [Phase 21]: 21-02: PNG_RATIO_BAR stays 4.9 (PD-03 on lower of macOS 9.933 and ubuntu-latest 10.446) and BUILD_WAIT_MS stays 45000 (slowest build-bound step 4.75 s); --with-deps needs no sudo line on ubuntu-latest
+- [Phase 21]: 21-03: every browser-step expectation is read from the server at test time; STL fulfilled from the first build after it (serve_stl_from); zero-count checks use locator.count() so no literal reaches to_have_count
+- [Phase 21]: 21-04: link round trip compares the link, the sent query and the rewritten fragment as sorted (name, value) pairs, waiting on the /api/info request, never on #status or an href
+- [Phase 21]: 21-04: #root_shape=bogus is pinned as today's behaviour (blank select, query without root_shape, API 422) and filed as must debt 2026-10-10-root-shape-bogus-loads-a-blank-select
+- [Phase 21]: 21-05: the golden sweep runs under serve(floor_applies=lambda: False) because it builds nothing; the pin is written only by make golden.regen and only read by the browser test
+- [Phase 21]: 21-06: the browser test is admitted in one commit (d0f5474): test depends on the browser stamp, tests/test_browser.py excluded by name from test.fast and test-image, CI passes --with-deps; no -rP, no hardware step
+- [Phase 21]: 21-07: human accepted the browser test's price (answer 'accept', O1 kept); isolated 4.23 s serial / 4.57 s at -n 2, A/B B-A = -2.47 s, D-01 did not reopen
+- [Phase 21]: 21-07: arm A spelled PYTEST_ADDOPTS, not PYTEST_ARGS, because the shared-recipe hook pin reads the caller's PYTEST_ARGS (debt filed, nice)
+- [Phase 21]: L39 locks the admission: a headless browser inside make verify and CI, out of the commit slice (five heavy files), at a price the human accepted; amends L13 and L36, restates L11
+- [Phase 21]: SC5 is recorded from the phase branch's own ubuntu-latest run (38059369744, head 88df5cf, 1226 passed, job 16 min 8 s), not from the spike
+- [Phase 21]: L39 appended after L38 (0 deleted lines): the browser test admitted to `make verify` and CI, out of the commit slice, at the price 21-07 measured in interleaved A/B arms on one host; the human kept it in the gate (21-07 checkpoint, `accept`, O1).
+- [Phase 21]: `playwright==1.63.0` (with `pyee`, `greenlet`) approved by the human at 21-01's package-legitimacy gate; dev extra only, never `requirements.txt`, the Dockerfile or `refresh-requirements.sh` (L11, L12).
+- [Phase 21]: `spike/21-linux-runner` (PR #32, draft, DO NOT MERGE) proved the Linux `--with-deps` install path on `ubuntu-latest` and was closed unmerged; the branch stays on origin until the human deletes it.
+- [Phase 21]: The 44 fixture records' requests are pinned in `tests/regression/golden_requests.json`, written by `make golden.regen` only; a regen is its own commit stating what moved (D-09). `#root_shape=bogus` loading a blank select is pinned as today's behaviour and filed as `must` debt, not fixed (T-21-12).
 
 ### Pending Todos
 
@@ -396,6 +419,28 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 21] CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the shell's `--with-deps`
+  install has only run on 24.04 (`must`, `docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`).
+  Read the first post-migration run's whole log before any fix; `runs-on: ubuntu-24.04` is the fallback.
+- ⚠️ [Phase 21] `make verify` hung once near 98 % for the 600 s background limit with no failure, no
+  crash report and no survivors (wave 3 gate; `must`, `docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md`,
+  log under `21-browser-test-of-the-viewer/investigation/`). The re-run was green in 175.80 s. Relevant to the
+  resource-tracker flake's trigger ("the next `make verify` failure with its whole log kept").
+- ⚠️ [Phase 21] A link with an invalid enum value loads a blank select and builds the default part
+  (`must`, `docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md`), pinned as today's
+  behaviour by the browser test; trigger: Phase 23 or 24 touching `buildForm`'s enum rendering.
+- ℹ️ [Phase 21] Code review (`21-REVIEW-DISPOSITION.md`): WR-01…WR-03 filed as debt (`fc53e5c`:
+  `stop_group` reads `ps` before it signals; the group floor of 3 is not two pool workers; the launch
+  message names a stamp that skips the install); IN-01…IN-04 open (a dead `bound` assignment in the
+  survivor message, `fixture_hash` on a JSON bool/null, the skip-path scan is a tripwire not a proof,
+  `_follow_link` on Playwright's 30 s default and `_wait_until_parked` spinning without a pause).
+  UI review: two advisory warnings on `canvas.dataset.triangles` (`position.count / 3` assumes
+  non-indexed geometry; the value stays stale after a failed rebuild).
+- ℹ️ [Phase 21] Commit trailers mixed again: 21-08's executor commits carry `Claude Sonnet 5.5`,
+  orchestrator commits `Claude Fable 5.1`, gsd-tools state commits none. Not rewritten.
+- ℹ️ [Phase 21] `phase.complete` warned that six SUMMARYs reference paths not on disk:
+  `tests/browser_scenarios.py` (renamed `tests/test_browser.py` in 21-06) and verify-command strings read
+  as paths. Record only.
 - ℹ️ [Phase 18] Code review (`18-REVIEW-DISPOSITION.md`): WR-01/WR-02 `fixed` by gap plan 18-06
   (`8e96c2d`, `085aee7`); IN-01…IN-08 open — the cap sentence's "the largest" vs a 3-dp floored
   value (`0.000 mm` under 1 µm), `trochoid_root` skipping the `rb <= rf` test `root_mode` applies,
@@ -603,9 +648,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-10T06:46:41.463Z
-Stopped at: Phase 21 context gathered
-Resume file: .planning/phases/21-browser-test-of-the-viewer/21-CONTEXT.md
+Last session: 2026-10-10
+Stopped at: Phase 21 complete, ready to plan Phase 22
+Resume file: None
 
 ## Operator Next Steps
 

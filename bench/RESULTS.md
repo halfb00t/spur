@@ -4728,3 +4728,523 @@ The walk and the product re-counted with the same code (`bench.trochoid_part`'s 
 
 The floor is unchanged at 0.4 mm and stays 124x the thinnest walk waist. The kernel and oracle columns of
 the walk were not re-read: no curve moved, only which point of it is called the waist.
+
+## Browser test of the viewer (Phase 21)
+
+What Phase 21 priced and proved about the shipped page in a real browser, in plan order: the spike on macOS
+(21-01), the Linux runner spike (21-02), the golden request pin (21-05), the gate's admission (21-06), the
+browser test priced (21-07) and the Linux path on the real runner (21-08). Each subsection carries its own host
+state, because the figures below are read on different machines on different days and are never compared
+across them. Nothing here is a bar unless it says so beside the reading that set it (L08).
+
+### Spike readings, macOS (21-01)
+
+The tracer: `playwright==1.63.0` pinned in the `[dev]` extra, its headless shell installed under `.venv` by the
+`$(BROWSER)` stamp, a real `uvicorn` on a pre-bound socket, the shipped page opened in Chrome Headless Shell.
+HEAD for the readings is `593de97` (the 21-01 test commits on the phase branch); the PNG sizes were first read
+on the uncommitted tree over `a310cd3` and read the same again at `593de97`. `tests/browser_scenarios.py`
+is a staging module that nothing in `make verify` collects yet (PD-01).
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`), 18 CPUs, arm64, 64 GiB RAM
+- macOS 27.0.1, Darwin 27.0.0 kernel (`xnu-13432.1.9~1/RELEASE_ARM64_T6050`)
+- Python 3.12.15 (`.venv`), `playwright` 1.63.0, `uvicorn` 0.54.0
+- Shell: Chrome Headless Shell 153.0.8010.12 (`browser.version`; Playwright `chromium-headless-shell` v1243)
+- Read 2026-10-10, about 09:26 to 09:45 UTC
+- 1-minute load: 4.15 before the install, 3.31 before the first reading, 4.67 to 4.80 around the three isolated
+  runs, 3.22 before and 9.37 after the first `make verify` (its own eight workers). The host has ten logged-in
+  users and was never idle, so every wall figure is an upper bound and none is a bar
+
+#### Readings
+
+| Reading | Value |
+|---|---|
+| `make .venv/.browser` from a venv without the pin | 20.46 s `real`: the `$(STAMP)` re-resolve (playwright 1.63.0, pyee 13.0.1, greenlet 3.5.6) plus the 94.3 MiB shell and a 1 MiB ffmpeg. The research's 16.4 s was the shell alone |
+| Size of `.venv/ms-playwright` | 198 MB (`chromium_headless_shell-1243`, `ffmpeg-1011`) |
+| Host cache `~/Library/Caches/ms-playwright`, before the install | `chromium_headless_shell-1228`, `chromium-1228`, `ffmpeg-1011` |
+| Host cache, after the install | the same three entries (D-06: another project's browser untouched) |
+| `/api/health` reports a non-null `pool` | 0.20, 0.20, 0.21 s after spawn |
+| Group members seen before the kill | 3 (uvicorn and two pool workers) in all three timing runs and every test run. Before the first build the group read 2: pool workers start on first use |
+| Teardown, SIGTERM to group empty and leader reaped | 0.25, 0.24, 0.25 s |
+| Renderer string | `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)` |
+| Canvas PNG, blank control (same `#canvas`, STL request parked) | 3,917 B |
+| Canvas PNG, first part drawn | 38,908 B |
+| Ratio drawn / blank | 9.93 |
+| Canvas PNG with `scene.add(mesh, edges);` deleted (grid and background only) | 16,627 B, ratio 4.24 |
+| `data-triangles` against the STL header (uint32 at byte 80) | 9066 against 9066 |
+| `expect`'s default timeout | 5000 ms (Playwright's own line: `Expect "to_have_count" locator("form#params [name]") with timeout 5000ms`) |
+| Form fields | 31, equal to the `/api/schema` property count read at test time |
+| Slowest build-bound step | 2.53 s (`first build drawn`), under PD-04's 15 s, so `BUILD_WAIT_MS` stays 45,000 ms |
+| `git status --porcelain --ignored` after a green run | nothing outside `.venv/` and the ignores already in place (`.coverage`, caches, `__pycache__`, `web/node_modules`); the test writes no file (PD-10) |
+
+`PNG_RATIO_BAR` by PD-03, written in the plan before this reading: the lower of the hosts' drawn/blank ratios
+divided by 2, rounded down to one decimal place. Only macOS is read here: 9.93 / 2 = 4.96, rounded down to
+**4.9**, which is not under 2.0, so it is asserted. 21-02 re-sets it from the lower of the macOS and
+ubuntu-latest readings. The bar separates a gear from a scene without one by a narrow margin (4.24 against
+4.9 with the mesh deleted, 9.93 with it), which is why the deliberate break below went red on the ratio alone.
+
+Per step, three isolated runs (`make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q -s"`), load
+before the run in brackets:
+
+| Run | `webgl2` | `form built` | `first build drawn` | `href after showModel` | pytest | `make` `real` |
+|---|---|---|---|---|---|---|
+| 1 (4.67) | 0.01 s | 0.06 s | 2.49 s | 0.02 s | 3.43 s | 3.64 s |
+| 2 (4.67) | 0.01 s | 0.06 s | 2.52 s | 0.04 s | 3.40 s | 3.59 s |
+| 3 (4.70) | 0.01 s | 0.05 s | 2.53 s | 0.04 s | 3.40 s | 3.59 s |
+
+The research read 3.21 s for the serial scenario on this host; the isolated runs read 3.40 to 3.43 s of pytest
+(3.59 to 3.64 s with `make`), at load 4.7 against the research's 7 to 8. The difference is inside what a loaded
+host moves, so the 3.2 to 3.8 s order of magnitude that D-01 rests on holds. The first reading of the day
+(cold shell) read `webgl2` at 0.35 s and `first build drawn` at 2.15 s.
+
+The whole gate with the staging module present and uncollected: `make verify` read `1220 passed in 155.30s
+(0:02:35)`, TOTAL coverage 97.92 % against the 96 % floor, and `1220 passed in 198.00s (0:03:17)` on the second
+run at a higher load. Neither is a bar; Phase 25 owns that.
+
+### Seen red once (Phase 21)
+
+Every assertion the tracer makes, shown red once against a deliberate break, reverted before any commit. Later
+plans append rows to this table.
+
+| Plan | Step or pin | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 21-01 | `webgl2` | `launch()` passes `args=["--disable-3d-apis"]` | `1 failed`: `AssertionError: this browser gives no WebGL2 context: the viewer builds no form without WebGL (app.js:229)`, note `step: webgl2` | yes, `git diff --exit-code` clean |
+| 21-01 | `first build drawn`, canvas | `scene.add(mesh, edges);` deleted in `app.js` | `AssertionError: the canvas looks undrawn: PNG 16627 B against a blank 3917 B is 4.24x, bar 4.9`, note `step: first build drawn`; `data-triangles` still read 9066 against the header's 9066, so the triangle check alone would have passed | yes |
+| 21-01 | `first build drawn`, triangles | `/ 3` changed to `/ 9` in the new `app.js` line | `AssertionError: the scene holds 3022 triangles, the STL header declares 9066`, note `step: first build drawn` | yes |
+| 21-01 | `href after showModel` | `setDownloads(q);` moved above `showModel(buf);` in `update()` | `AssertionError: the STL link has an href although showModel failed on the body` (`assert 'api/model.stl?teeth=23' is None`), note `step: href after showModel` | yes |
+| 21-01 | fail closed | `PLAYWRIGHT_BROWSERS_PATH` set to an empty temporary directory, pytest run directly | `1 failed in 0.69s`: ``Failed: the headless shell is not installed: run `playwright install --only-shell chromium` (PLAYWRIGHT_BROWSERS_PATH=/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/tmp.TKWFihxa3O); `make test` runs the install stamp for you.``, then Playwright's own error | yes (nothing to revert: the variable was set for one command) |
+| 21-01 | no orphan after the kill | `stop_group` sends SIGKILL to the leader only (`os.kill(pgid, SIGKILL)` for `os.killpg`) | `Failed: server process group 66058 still has live pids [66059, 66066] after SIGTERM, SIGKILL and 5 s`, then the server log tail (reported as a teardown error after `1 passed`); the two pool workers were killed by group id afterwards | yes |
+| 21-01 | strict typing | `eval_int` returns `page.evaluate(expression, arg)` directly | `tests/browser_session.py:213: error: Returning Any from function declared to return "int"  [no-any-return]` from `make typecheck` | yes |
+| 21-03 | `form from schema`, order | `Object.entries(schema.properties)` becomes `Object.entries(schema.properties).reverse()` in `buildForm()` (`app.js`) | `AssertionError: form fields ['hex_wall', 'hex_cell', ...] differ from the schema's, grouped: ['teeth', 'module', ...]`, `At index 0 diff: 'hex_wall' != 'teeth'`, note `step: form from schema` (the form-built count wait still passed: 31 fields either way) | yes, `git diff --exit-code` clean |
+| 21-03 | `form from schema`, theme variable | `--grid:` renamed `--grid-x:` in both blocks of `style.css` | `AssertionError: the custom property --grid is empty on :root`, note `step: form from schema` (the page still loaded and built its form) | yes |
+| 21-03 | `invalid field marked`, `bore_flat=3` | `...(d.ctx?.fields ?? [])` removed from the array in `problems()` | `AssertionError: #bore_flat=3: marked [], the 422 names ['D-flat']` | yes |
+| 21-03 | `invalid field marked`, `teeth=2` | `d.loc?.[1],` removed from the same array | `AssertionError: #teeth=2: marked [], the 422 names ['Teeth']` | yes |
+| 21-03 | `warning rendered` | `showMessages([], info.warnings ?? [])` becomes `showMessages([], (info.warnings ?? []).slice(0, 1))` in `renderInfo()` | `AssertionError: #module=1&pressure_angle=14.5: rendered warnings ['Below 31.9 teeth a cut gear would be undercut; this model uses a radial root instead.'] differ from the API's [that one, 'Recess narrowed to 2.47 mm to fit between the bore wall and the tooth rim.']` (containment of the first warning would have passed) | yes |
+| 21-04 | `link round trip`, fresh load | `readHash();` removed from the load function (`app.js`, before `update();`) | `AssertionError: link round trip, fresh load: the form differs from the link on [(('teeth', ''), ('teeth', '24')), (('module', ''), ('module', '2')), (('root_shape', 'radial'), ('root_shape', 'trochoid')), ...]`, note `step: link round trip` (an unread form leaves number inputs empty and selects on their first option) | yes, `git diff --exit-code` clean |
+| 21-04 | `link round trip`, hashchange | `readHash();` removed from the `hashchange` listener. Red, but first at `invalid field marked` (`AssertionError: /api/info? answered 200, not 422`): the earlier steps also rely on that listener, so this break never reaches the new step. To see the new sub-path red itself the listener was narrowed to `if (!location.hash.includes('mate_teeth')) readHash();` | with the narrowed break: `AssertionError: link round trip, hashchange: the form differs from the link on [(('teeth', '23'), ('teeth', '31')), (('module', '1.75'), ('module', '1.5')), (('pressure_angle', '25'), ('pressure_angle', '20')), (('face_width', '7.5'), ('face_width', '6')), (('recess_sides', 'both'), ('recess_sides', 'bottom'))]`, note `step: link round trip` | yes |
+| 21-04 | `link round trip`, Reset | the `for (const [name, { input }] of fields) input.value = defaults[name];` line removed from the `#reset` handler (the `#reset` handler's `mateInput.value = ''` kept) | `AssertionError: link round trip, Reset: the page sent 'face_width=8'` (the form kept link C's values, and the request carried them) | yes |
+| 21-04 | `root_shape=bogus as today` | `input.value !== '' && ` removed from the condition in `gearQuery()` | `AssertionError: today's behaviour, filed as debt: docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md: /api/info was sent 'teeth=22&root_shape='`, note `step: root_shape=bogus as today` (the first draft waited for the STL request before reading the info query and read this break as a 45 s `TimeoutError` instead: the API refuses the blank field, so no STL is ever requested; the info query is now asserted inside that wait) | yes, `git diff --exit-code` clean |
+| 21-05 | `golden sweep`, pin edited | the value of `README:export-teeth-24` in `tests/regression/golden_requests.json` changed from `teeth=24&...` to `teeth=25&...` | `AssertionError: golden sweep: the form sends other queries: README:export-teeth-24: expected 'teeth=25&module=1&pressure_angle=20&bore_flat=0', sent 'teeth=24&module=1&pressure_angle=20&bore_flat=0'`, note `step: golden sweep` | yes, `git checkout` of the file, `git diff --exit-code` clean |
+| 21-05 | `golden sweep`, `gearQuery()` sends more | `String(input.value) !== String(defaults[name])` becomes `true` in `gearQuery()` (`app.js`), the plan's break. Red, but first at `link round trip, fresh load` (`AssertionError: ... the page sent [('backlash', '0.1'), ('bore_chamfer', '0.4'), ...] expected [('bore_d', '10'), ...]`): the earlier steps also read what the default load sends, so this break never reaches the new step. To see the sweep red itself the condition was narrowed to `... !== String(defaults[name]) \|\| location.hash.includes('mate_teeth=40')` | with the narrowed break: `AssertionError: golden sweep: the form sends other queries: README:info-mate-40+mate=40: expected 'mate_teeth=40', sent 'teeth=19&module=1.75&pressure_angle=25&...&hex_wall=0&mate_teeth=40'; test_api.py::test_impossible_mate_is_a_warning_not_a_number+mate=40: expected ...` (the four records that carry `mate_teeth=40` are named, with their expected and sent queries), note `step: golden sweep` | yes, `git checkout` of `app.js`, `git diff --exit-code` clean |
+| 21-06 | pin: no path that passes without the browser | `pytest.importorskip("playwright")` added at the top of `tests/browser_session.py` | `1 failed, 2 passed`: `AssertionError: a path that passes without the browser (D-02): browser_session.py:35: ``importorskip`` in ``pytest.importorskip("playwright")``` | yes, `git checkout` of the file, `git diff --exit-code` clean |
+| 21-06 | pin: playwright exact and dev-only | `"playwright==1.63.0"` changed to `"playwright>=1.63.0"` in `pyproject.toml` (reverted before any `make` ran; the stamps were touched afterwards because the checkout moved the file's mtime, the content being byte-identical) | `1 failed, 2 passed`: `AssertionError: 'playwright>=1.63.0' is not an exact pin: the headless-shell revision, and with it the canvas bar, moves with the release` | yes, `git checkout`, `git diff --exit-code` clean |
+| 21-06 | pin: default shell, no channel | `return pw.chromium.launch()` becomes `return pw.chromium.launch(channel="chromium")` in `tests/browser_session.py` | `1 failed, 2 passed`: `AssertionError: channel= selects a shell other than the default one (D-03): ['browser_session.py:214']` | yes, `git checkout`, `git diff --exit-code` clean |
+| 21-06 | admission: `--ignore` in `test.fast` | `--ignore=tests/test_browser.py` removed from `test.fast` | `1 failed, 5 passed`: `test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`: `AssertionError: assert {'tests/test_...test_pool.py'} == {'tests/test_...test_pool.py'}`, `Extra items in the right set: 'tests/test_browser.py'` | yes, Makefile restored byte-identical (`cmp`) |
+| 21-06 | admission: `--ignore` in `test-image` | `--ignore=tests/test_browser.py` removed from `test-image`'s pytest command | `1 failed, 5 passed`: `test_the_image_suite_ignores_the_browser_test`: `AssertionError: && python -m pytest -q -p no:cacheprovider "` (`'--ignore=tests/test_browser.py'` not among the recipe's words) | yes, `cmp` |
+| 21-06 | admission: `-o` in the dry run (RESEARCH Pitfall P2) | `.venv/.browser` moved to `.venv/.browser.off` and `-o BROWSER_STAMP` dropped from `_dry_run` | `1 failed, 5 passed`: `test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`: the static prefixes differ, `Left contains 2 more items, first extra item: '.venv/bin/python -m playwright install  --only-shell chromium'` | yes, stamp moved back, `tests/test_hooks.py` restored (`cmp`) |
+| 21-06 | admission: the stamp as `test`'s prerequisite | `test: $(STAMP) $(BROWSER)` becomes `test: $(STAMP)` | `1 failed, 5 passed`: `test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does`: `AssertionError: []`, `assert 0 == 1` (no ` -m playwright install ` line in the forced dry run of `test`) | yes, `cmp` |
+
+21-03 readings (Apple M5 Max, macOS, 2026-10-10): the schema holds 31 fields in 7 groups. `/api/info` warnings for the three
+links in order: `module=1&pressure_angle=14.5` two, `bore_hex=6` one, `teeth=23` none. 422 texts: `#bore_flat=3`
+`D-flat must be between 4.5 and 9 mm (flat to opposite side).` (marks `D-flat`, no title prefix); `#teeth=2`
+`Teeth: Input should be greater than or equal to 6` (marks `Teeth`). Steps on this host, STL fulfilled from the first
+build: `form from schema` 0.01 s, `invalid field marked` 0.08 s, `warning rendered` 0.21 s.
+
+21-04 readings (Apple M5 Max, macOS, 2026-10-10): `link round trip` ran in 0.38 s with the STL fulfilled from the first
+build (fresh load on a second page, `hashchange` to a second link, `hashchange` to a link naming `teeth` at its default,
+Reset). Two further breaks, not table rows: dropping the default check in `gearQuery()` altogether went red at the
+fresh-load sub-path (the page sent all 32 pairs, defaults included); to reach the default-dropped sub-path itself the check
+was removed for `teeth` only, `(name === 'teeth' || String(input.value) !== String(defaults[name]))`, and it read
+`AssertionError: link round trip, default dropped: the page sent the default 'teeth=19&face_width=8'`. Both reverted,
+`git diff --exit-code` clean.
+
+The `#root_shape=bogus&teeth=22` reading (same host): the `root_shape` select reads `''` at `selectedIndex` -1; the page sent
+`api/info?teeth=22` and `api/model.stl?teeth=22&quality=preview`; the fragment became `#teeth=22`; no `.error`, no
+`.warning`; the API alone answered `/api/info?root_shape=bogus&teeth=22` with a 422, "Input should be 'radial' or
+'trochoid'". Step 0.07 s. Filed as `docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md` (must).
+
+### Linux runner spike (21-02)
+
+The tracer run inside the whole gate on a real `ubuntu-latest` runner, with the headless shell installed through
+`playwright install --with-deps --only-shell chromium` (sudo, apt). Branch `spike/21-linux-runner`, one commit
+`a6a4fc5` on top of the phase branch's `e5deff8` (the admission wiring 21-06 will land for real: the module
+renamed `tests/test_browser.py`, `test: $(STAMP) $(BROWSER)`, the `--ignore` in `test.fast` and `test-image`,
+`BROWSER_INSTALL_ARGS: --with-deps` and `PYTEST_ARGS: -rP` in `ci.yml`, a `runner hardware (spike only)` step).
+Draft PR #32, `spike(21): browser tracer on ubuntu-latest -- DO NOT MERGE`, never merged; the spike branch is not
+an ancestor of the phase branch. The whole log is kept at
+`.planning/phases/21-browser-test-of-the-viewer/investigation/21-02-run-38044109910.log`.
+
+| Run | Conclusion | Classification |
+|---|---|---|
+| 38044109910 (`ci`, head `a6a4fc5`, 2026-10-10 10:12:40Z) | success (`test (3.12)`, `vendor-bundle`, `image` all green) | none to classify: first push, no red run; one run of the three allowed |
+
+#### Host state (the runner)
+
+- Image `ubuntu-24.04`, version `20261004.327.1`, provisioner `20261002.596`, runner 2.337.0
+  (the `Set up job` group); kernel `6.17.0-1022-azure #22-Ubuntu SMP Mon Jul 27 17:24:03 UTC 2026 x86_64`
+- `nproc` 4; `free -m` read after the run: total 15,989 MB, used 1,028, free 9,107, buff/cache 6,247, available
+  14,961, swap 3,071 (unused)
+- Python 3.12.15 (`actions/setup-python@v5`, cache hit); `playwright` 1.63.0 (`manylinux1_x86_64` wheel, 48.2 MB);
+  shell Chrome Headless Shell 153.0.8010.12 (`chromium_headless_shell-1243`, plus `ffmpeg-1011`, the whole
+  `ls .venv/ms-playwright`)
+- `make verify` ran `pytest -n 4` (`PYTEST_WORKERS` is capped by the CPU count); the tracer ran on worker `gw2`
+  beside three other workers
+- Read 2026-10-10 10:12 to 10:29 UTC. A shared runner: load is not observable from the log, so every wall figure
+  is one sample
+
+#### Readings
+
+| Reading | Value |
+|---|---|
+| `test (3.12)` job wall time | 16 min 25 s (`startedAt` 10:12:43Z, `completedAt` 10:29:08Z); `1221 passed in 906.71s (0:15:06)`, TOTAL coverage 97.98 % against the 96 % floor |
+| Install, `playwright install --with-deps --only-shell chromium` | 14.7 s from the command line (10:13:43.916) to the next command's line (10:13:58.578): `Switching to root user to install dependencies...`, `apt-get update`, 79.5 MB of apt packages (fonts, `libfreetype6` upgraded), then the 3.3 s shell download and the ffmpeg download |
+| Size of `.venv/ms-playwright` on the runner | not measured: the diagnostic step ran `ls`, not `du`. macOS read 198 MB for the same two entries |
+| Renderer string | `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)` (macOS: `(LLVM 10.0.0)`) |
+| `webgl2` step | 0.04 s |
+| `form built` step | 0.16 s |
+| Canvas PNG, blank control | 3,654 B |
+| Canvas PNG, first part drawn | 38,168 B |
+| Ratio drawn / blank | 10.45 (macOS 9.93) |
+| `data-triangles` against the STL header | 9066 against 9066 |
+| `first build drawn` step | 4.75 s (macOS 2.53 s) |
+| `href after showModel` step | 0.25 s |
+| Server process group members before the kill | 3 (uvicorn and two pool workers), read by `ps -A -o pgid=,stat=,pid=` on the runner's procps. The post-kill zero was read by the same reader: the teardown that asserts it ran and the test is in the passed set. The runner's log does not print the group-gone time |
+| Same job on `main`, for scale (same workflow, `pytest -n 4`, no browser) | 8 min 54 s job, `1220 passed in 487.39s` (run 38040124903, 2026-10-10); 16 min 04 s, `894.96s` (37951628866, 2026-10-09); 16 min 35 s, `924.02s` (37930095920, 2026-10-09) |
+
+The three `main` runs differ from each other by up to 437 s of pytest wall with no change to the suite, which is
+more than the spike run differs from the two slower of them. The spike run's own 906.71 s therefore sits inside
+the runner-to-runner band, and these samples cannot show what the browser test adds: its own steps total about
+5.2 s. Phase 25 owns pricing the gate.
+
+#### The two rules applied
+
+- **PD-03** (canvas bar = the lower of the hosts' ratios / 2, rounded down to one decimal place): the lower ratio
+  is macOS's 9.933 (38,908 / 3,917); 9.933 / 2 = 4.966, rounded down to **4.9**. Linux's 10.446 (38,168 / 3,654)
+  is higher, so `PNG_RATIO_BAR` stays 4.9 and is not under 2.0. The macOS scene with the mesh deleted read 4.24,
+  so the bar still separates a gear from an empty scene on the lower host.
+- **PD-04** (build wait): the slowest build-bound step on either host is `first build drawn`, 2.53 s on macOS and
+  4.75 s on Linux. Neither is over 15 s, so `BUILD_WAIT_MS` stays **45,000 ms**.
+
+Both constants in `tests/browser_session.py` carry both readings in their comments; neither value changed.
+
+#### Answers to the research's assumptions
+
+- **A1, sudo through `--with-deps`:** works on `ubuntu-latest` as is, with no `sudo` in the workflow: Playwright
+  prints `Switching to root user to install dependencies...` and runs apt itself. It costs about 10 s of the
+  14.7 s (the rest is the shell download).
+- **A2, the Linux PNG against macOS:** the same shell draws a larger ratio on Linux (10.45 against 9.93), on
+  SwiftShader Subzero rather than LLVM 10.0.0. Blank and drawn byte counts differ by about 7 % and 2 % from
+  macOS, so the ratio, not an absolute size, is the right assertion, and the bar holds on both.
+- **A4, procps columns:** the `ps -A -o pgid=,stat=,pid=` reader works on the runner's procps: the pre-kill floor
+  of 3 members held and the teardown, which fails on any survivor, passed.
+- **A7, memory:** no out-of-memory kill and no failure in a 15 GiB, 4 CPU runner with the tracer beside three
+  other workers; `free -m` read after the run (1,028 MB used) is not a peak, and no peak was measured.
+- **A8, runner image:** `ubuntu-24.04`, version `20261004.327.1`.
+
+SC5's own real run is 21-08's, on the phase's head. This one is the spike's.
+
+### Golden request pin (21-05)
+
+What is pinned: `tests/regression/golden_requests.json` holds, for each record of `tests/regression/pre_v0_2.json`
+under the same name, the exact `api/info` query string the real page sent when that record's link (its params,
+then its `mate_teeth`) was put in `location.hash` (D-08, PD-08). Only the info query is pinned: the server's
+acceptance of every record is `tests/regression`'s, and what only a browser can show is what the form sends.
+The file is written only by `make golden.regen` (D-09), which drives the real page against a real `uvicorn`
+through the same `serve`, `launch` and `sweep` the test uses, so there is one sweep and no Python copy of
+`gearQuery()`. Step `golden sweep` only reads it.
+
+Readings (Apple M5 Max, macOS, 2026-10-10, 1-minute load 4.4, HEAD `d40a09a`):
+
+| Reading | Value |
+|---|---|
+| Records pinned | 44, read from the fixture (the pin's names equal its names) |
+| Distinct queries | 44 |
+| Non-empty links whose sent query differs from their raw link | 16 of 43 (the form emits schema order and drops values equal to a default) |
+| Empty link | `README:export-defaults` pins `""`, taken from the fresh-load request |
+| `golden sweep` step, 5 runs | 0.23, 0.19, 0.21, 0.23, 0.19 s (a new page, the STL route aborted, nothing built) |
+| `make golden.regen` on unchanged code, 4 runs after the first capture | byte-identical each time (`cmp` against the first capture, then `git diff --exit-code tests/regression/golden_requests.json` exit 0 after the rest) |
+
+Three samples of a differing link (raw link, then what the page sent):
+
+- `README:export-teeth-24`: `bore_flat=0&module=1&pressure_angle=20&teeth=24` became `teeth=24&module=1&pressure_angle=20&bore_flat=0`
+- `README:info-mate-40+mate=40`: `teeth=19&mate_teeth=40` became `mate_teeth=40` (19 is the default)
+- `test_api.py::test_impossible_mate_is_a_warning_not_a_number`: `bore_chamfer=0&bore_d=0&bore_flat=0&pressure_angle=14.5&profile_shift=-0.6&recess_sides=none&teeth=6` became `teeth=6&pressure_angle=14.5&profile_shift=-0.6&bore_d=0&bore_flat=0&bore_chamfer=0&recess_sides=none`
+
+The rule for Phases 23-24: the form change leaves `tests/regression/golden_requests.json` with an empty diff. A
+change that must move it goes through `make golden.regen` in a commit of its own that says what moved and why,
+never inside the feature commit. `tests/regression/pre_v0_2.json` is read, never written
+(`git diff --exit-code 592506f -- tests/regression/pre_v0_2.json` exits 0).
+
+### Admission (21-06)
+
+The browser test is in the gate. One commit, `d0f5474` (`build(gate): admit the browser test into make verify and CI,
+excluded from the commit slice (D-01, D-06)`), carries: `tests/browser_scenarios.py` renamed `tests/test_browser.py`
+(98 % similarity, only the docstring changed); `test: $(STAMP) $(BROWSER)`; `--ignore=tests/test_browser.py` in
+`test.fast` and in `test-image`'s pytest command; `"test_browser"` in `HEAVY_TEST_FILES`, `BROWSER_STAMP` and `-o` in
+`_dry_run`, and two new pins (`test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does`,
+`test_the_image_suite_ignores_the_browser_test`); `BROWSER_INSTALL_ARGS: --with-deps` on CI's `make verify` step (no
+`-rP`, no extra job); the gate's own text (five heavy files in the Makefile and `.pre-commit-config.yaml`,
+`docs/architecture/web-ui.md` `## Tests`, a `.gitignore` comment, the debt file's pointer to the renamed module). The
+pins module came first, as `2b83400`. The four admission guards are in `### Seen red once (Phase 21)`.
+
+Host for every reading below: Apple M5 Max, macOS, 2026-10-10, HEAD `d0f5474` (the tree is identical to it for every
+run), 1-minute load in the table.
+
+**The commit slice, `make verify.fast`, warm (L36's kill is 30 s; L36 read 11.28 s on the M2 Max and 19-09 read
+11.39-11.54 s on this host):**
+
+| Run | Result line | real (s) | load before -> after | UTC |
+|---|---|---|---|---|
+| 1 `make verify.fast` | 834 passed in 9.75 s | 10.14 | 8.29 -> 7.69 | 13:34:32Z |
+| 2 `make verify.fast` | 834 passed in 9.92 s | 10.31 | 7.69 -> 9.39 | 13:34:42Z |
+| 3 `make verify.fast` | 834 passed in 9.99 s | 10.41 | 9.39 -> 10.15 | 13:34:53Z |
+
+All three are under 30.0 s. The count is the whole suite minus the five heavy files: `pytest --collect-only` reads 1226
+tests in all and 392 in `test_model.py`, `test_pool.py`, `test_api.py`, `test_cli.py` and `test_browser.py` together,
+and 1226 - 392 = 834. The slice's own arguments collect 0 lines naming `test_browser.py`. Before the admission the slice
+read 832 passed (Task 1's run; the two new hook pins are the difference).
+
+**`tests/test_browser.py` at `-n 8`, ten consecutive `make test PYTEST_ARGS="tests/test_browser.py -n 8 --no-cov -q"`:
+10 of 10 passed** (the file holds one test function, so eight workers are started and one runs it; the figure shows the
+file is stable under the gate's own worker setting, not that eight copies ran side by side). Each run `1 passed`; pytest
+seconds and `make` wall seconds:
+
+| Run | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| pytest (s) | 3.93 | 4.01 | 3.95 | 3.99 | 3.99 | 3.98 | 3.95 | 3.95 | 3.95 | 3.97 |
+| real (s) | 4.06 | 4.14 | 4.08 | 4.11 | 4.12 | 4.11 | 4.09 | 4.08 | 4.08 | 4.10 |
+
+Load 1-minute 8.64 at the first run, 7.43 at the last. No run was red, so no log is kept under `investigation/`.
+
+**Fail closed at the final path.** `PLAYWRIGHT_BROWSERS_PATH=$(mktemp -d) .venv/bin/python -m pytest
+tests/test_browser.py -n0 --no-cov -p no:cacheprovider -q` read `1 failed in 0.61s`, exit 1, with ``Failed: the headless
+shell is not installed: run `playwright install --only-shell chromium` (PLAYWRIGHT_BROWSERS_PATH=/var/folders/.../tmp.qlQvb7kgfm)``
+in the output (`grep -F 'playwright install --only-shell chromium'` finds it).
+
+**Idempotency (dry runs).** With the stamp fresh `make -n test | grep -c 'playwright install'` prints 0, so a second gate run
+installs nothing. With `-W .venv/.installed` (pyproject.toml pretended changed) the same count is 1, so a pin bump
+re-installs the matching shell. `make -n test.fast | grep -c playwright` prints 0. No `--dist` in `make -n test`, and
+`grep -rn xdist_group tests` finds nothing, so scheduling is unchanged (PD-12).
+
+**The whole gate once, at HEAD `d0f5474`.** `make verify`: `1226 passed in 192.08s (0:03:12)`, coverage TOTAL 97.92 %
+against the required 96.0 %, `real 192.51`, load 6.33 before -> 6.76 after (the 1-minute average read 9.61 in between). An
+earlier run of the same tree before it was committed read `1226 passed in 148.39s (0:02:28)`, `real 148.82`, load 4.66 ->
+10.48. Neither is the A/B: the two differ by 44 s on the same code, which is host load, and 21-07 prices the gate. The count
+is 1220 (21-05) + 3 pins + 2 hook pins + the browser test.
+
+**The host's own Playwright cache** (`~/Library/Caches/ms-playwright`) lists `chromium_headless_shell-1228`,
+`chromium-1228`, `ffmpeg-1011`, the same three entries as 21-01 before and after. The shell the gate installs is
+`.venv/ms-playwright/chromium_headless_shell-1243` and `ffmpeg-1011`, 198 MB.
+
+### The browser test, priced (21-07)
+
+What the admitted browser test (`tests/test_browser.py`, 21-06) costs: alone, and inside the whole gate. D-01 admitted
+it on the research figures, 3.21 s serial and 3.80 s at `-n 2`; this replaces them with readings on one host. The gate's
+bars were set on another host and are quoted, not rescaled: L34's 66 s was read on an Apple M2 Max with 12 CPUs
+(63.555 s there), and `### The gate, priced (19-09)` read the gate at a 192.94 s mean on the host below, where the human
+answered `accept-A` on 2026-10-09. This reading sets no bar (D-12): Phase 25 sets the bar under its own pre-registered
+rule. Every run below is at HEAD `45195ce` (the tree is clean apart from the untracked `.DS_Store`,
+`.planning/milestone.lock` and the kept logs), one process at a time, in the foreground, with `uptime` before and after.
+
+#### Host state
+
+- Machine: Apple M5 Max (`sysctl -n machdep.cpu.brand_string`), 18 CPUs, 64.0 GiB RAM (`hw.memsize` 68719476736), macOS
+  27.0.1 (build 26A434), arm64: the host of 19-01, 19-09 and 21-01 to 21-06
+- Python 3.12.15 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, playwright 1.63.0, pytest 9.1.1, pytest-xdist 3.8.0,
+  pytest-cov 7.1.0; Chrome Headless Shell 153.0.8010.12 (`browser.version`), `PYTEST_WORKERS` 8
+- Read 2026-10-10, 13:47 to 14:08 UTC
+- Not an idle host. At the start `ps` listed `fleet-client-cli` at 99 % CPU and an MTPLX runtime python at 38 %, neither
+  started by this plan, and after the A/B a `Python` process at 108 % that this plan did not start. The 1-minute load
+  read 5.8 at the first run and 6.6 to 13.2 around the full gates. So every wall figure below is an upper bound for an
+  idle host and none is a bar
+
+#### Isolated cost
+
+`make test PYTEST_ARGS="tests/test_browser.py <mode> --no-cov -q -s"` under `/usr/bin/time -p`, the file alone, warm
+(stamp fresh, nothing installed). The Makefile's own `-n 8` precedes the mode and the later `-n` wins. `-s` prints the
+`step` lines only when the test runs in the main process, so the per-step seconds exist for the serial runs and not for
+`-n 2` (xdist workers do not forward stdout).
+
+| Mode | Run | Result line | pytest (s) | `real` (s) | Slowest step | 1-minute load before -> after | UTC start |
+|---|---|---|---|---|---|---|---|
+| `-n0` | 1 | `1 passed in 3.55s` | 3.55 | 3.69 | `first build drawn` 2.02 s | 5.77 -> 5.87 | 13:47:16Z |
+| `-n0` | 2 | `1 passed in 4.50s` | 4.50 | 4.69 | `first build drawn` 2.55 s | 6.20 -> 6.59 | 13:47:25Z |
+| `-n0` | 3 | `1 passed in 4.65s` | 4.65 | 4.83 | `first build drawn` 2.56 s | 6.59 -> 6.94 | 13:47:30Z |
+| `-n 2` | 1 | `1 passed in 5.04s` | 5.04 | 5.22 | not printed | 6.94 -> 7.34 | 13:47:35Z |
+| `-n 2` | 2 | `1 passed in 4.68s` | 4.68 | 4.86 | not printed | 7.34 -> 7.40 | 13:47:40Z |
+| `-n 2` | 3 | `1 passed in 3.98s` | 3.98 | 4.13 | not printed | 7.40 -> 7.28 | 13:47:45Z |
+
+The serial runs' other steps, in seconds, run 1 / 2 / 3: `webgl2` 0.01 / 0.01 / 0.01; `form built` 0.05 / 0.06 / 0.06;
+`form from schema` 0.01 / 0.02 / 0.02; `href after showModel` 0.04 / 0.05 / 0.05; `invalid field marked` 0.08 / 0.09 /
+0.16; `warning rendered` 0.20 / 0.23 / 0.29; `link round trip` 0.22 / 0.26 / 0.30; `golden sweep` 0.21 / 0.29 / 0.30;
+`root_shape=bogus as today` 0.06 / 0.08 / 0.07. The first build is 2.02 to 2.56 s of the 3.55 to 4.65 s.
+
+| Mode | pytest mean (range) | `real` mean (range) | Research figure | D-01 line (10 x research) |
+|---|---|---|---|---|
+| serial (`-n0`) | 4.23 s (3.55 to 4.65) | 4.40 s (3.69 to 4.83) | 3.21 s | 32.1 s |
+| `-n 2` | 4.57 s (3.98 to 5.04) | 4.74 s (4.13 to 5.22) | 3.80 s | 38.0 s |
+
+Against 21-01's isolated reading (3.40 to 3.43 s of pytest, three runs at load 4.7) these are 0.1 to 1.2 s higher, at load
+5.8 to 7.4 and with six more steps in the file. Three runs per mode: the ranges are the spread, not an interval.
+
+#### Full gate, A/B interleaved
+
+Arm A is the gate without the browser test, B is `make verify` as admitted. Six counted runs in the order A1, B1, A2,
+B2, A3, B3, each `uptime`, then `/usr/bin/time -p make verify ... 2>&1 | tee <log>`, then `uptime`, and no other command
+between a pair. B is `make verify` as written. A is not spelled as the plan spells it for A1's re-run and for A2 and A3:
+see `#### Red runs` for why. Every log is kept under `.planning/phases/21-browser-test-of-the-viewer/investigation/`
+as `21-07-<arm>-<n>.log`.
+
+| Run | Arm | Result line | Coverage TOTAL | `real` (s) | 1-minute load before -> after | UTC start -> end | HEAD |
+|---|---|---|---|---|---|---|---|
+| A1 | A (retry 1, `21-07-A-1-retry1.log`) | `1225 passed in 145.06s (0:02:25)` | 97.92 % | 145.50 | 8.96 -> 12.47 | 13:51:24Z -> 13:53:49Z | `45195ce` |
+| B1 | B (`21-07-B-1.log`) | `1226 passed in 164.60s (0:02:44)` | 97.92 % | 165.15 | 12.47 -> 13.19 | 13:53:52Z -> 13:56:37Z | `45195ce` |
+| A2 | A (`21-07-A-2.log`) | `1225 passed in 160.63s (0:02:40)` | 97.92 % | 161.22 | 12.21 -> 11.15 | 13:56:40Z -> 13:59:21Z | `45195ce` |
+| B2 | B (`21-07-B-2.log`) | `1226 passed in 157.97s (0:02:37)` | 97.92 % | 158.44 | 10.58 -> 10.79 | 13:59:24Z -> 14:02:02Z | `45195ce` |
+| A3 | A (`21-07-A-3.log`) | `1225 passed in 191.90s (0:03:11)` | 97.92 % | 192.59 | 10.72 -> 8.39 | 14:02:05Z -> 14:05:18Z | `45195ce` |
+| B3 | B (`21-07-B-3.log`) | `1226 passed in 167.84s (0:02:47)` | 97.92 % | 168.30 | 7.95 -> 12.93 | 14:05:21Z -> 14:08:09Z | `45195ce` |
+
+Coverage is `TOTAL 1346 22 384 14 97.92%` against the required 96.0 % in all six. B runs one test more than A in every
+pair (1226 against 1225).
+
+| | A (no browser test) | B (`make verify`) | B - A |
+|---|---|---|---|
+| `real` mean | 166.44 s | 163.96 s | **-2.47 s** |
+| `real` range | 145.50 to 192.59 s | 158.44 to 168.30 s | |
+| pytest mean | 165.86 s | 163.47 s | -2.39 s |
+| pair deltas, `real` (B1-A1, B2-A2, B3-A3) | | | +19.65, -2.78, -24.29 s |
+
+The delta is smaller than A's own spread (47.09 s across its three runs) and its sign changes between pairs: the three
+pairs read +19.65, -2.78 and -24.29 s. The reading therefore does not separate the browser test's cost from host load,
+and the isolated serial figure (4.23 s of pytest) is the only direct reading of the file's own cost. It does not say B is
+faster; it says no cost shows above the noise of three runs at a load of 6.6 to 13.2.
+
+#### Red runs
+
+One red run, listed apart from the six and not counted in their means.
+
+| Run | Log | Result line | `real` (s) | Load before -> after | UTC |
+|---|---|---|---|---|---|
+| A1, first attempt | `investigation/21-07-A-1.log` | `1 failed, 1224 passed in 164.55s (0:02:44)` | 165.00 | 6.62 -> 12.22 | 13:48:01Z -> 13:50:46Z |
+
+- **What failed:** `tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`, at
+  `assert "--ignore=" not in whole_pytest` (`tests/test_hooks.py:90`). The other 1224 tests passed and coverage read
+  97.92 %.
+- **Classification:** not the resource-tracker flake. None of `resource_tracker`, `ReentrantCall` or `ExceptionGroup`
+  appears in the log (`grep -c` prints 0 for it and for the other six logs), and the failure is an `AssertionError` in a
+  test that runs no pool. It is an artifact of the plan's spelling of arm A: make exports a command-line variable such as
+  `PYTEST_ARGS="--ignore=tests/test_browser.py"` to the recipe's environment, the pin's `_make_env()` strips make's own
+  flags and jobserver but not `PYTEST_ARGS`, and its `make -n verify` dry run takes it through `PYTEST_ARGS ?=` and prints
+  `--ignore=tests/test_browser.py` in the recipe it reads. Read once on the working tree: `PYTEST_ARGS=--ignore=tests/test_browser.py
+  pytest <that test> -n0 --no-cov` and `make test PYTEST_ARGS="<that test> ... --ignore=tests/test_browser.py"` each read `1 failed`
+  with the same assertion. The failure is deterministic: every A run spelled that way reads the same, so repeating it within
+  the budget would have shown nothing new.
+- **Re-run:** at A1's place in the interleave, arm A is spelled `PYTEST_ADDOPTS="--ignore=tests/test_browser.py" make
+  verify`. pytest reads that variable, the Makefile's recipe line is unchanged, and `make -n verify | grep -c --
+  "--ignore="` prints 0 with it and 1 with the plan's spelling. `tests/test_hooks.py` alone with it set read `6 passed`.
+  Both arms run the same recipe and the same `-n 8 --cov`; A differs from B only in the ignored file. A2 and A3 use the
+  same spelling, so the three counted A runs agree.
+- **Budget (D-12, N+3 = 6 per arm):** arm A used 4 attempts (the red one, the retry, A2, A3); arm B used 3 (B1 to B3, none
+  red). No `filterwarnings` entry was added.
+
+The pin failing under `PYTEST_ARGS="--ignore=..."` is filed as `docs/tech_debt/active/2026-10-10-hook-pin-reads-the-callers-pytest-args.md`
+(nice).
+
+#### Outcome
+
+Arm A (without the browser test) averaged **166.44 s**, arm B (`make verify`) **163.96 s**; **B - A is -2.47 s**, inside the
+spread of three runs (see above). Isolated, the file reads 4.23 s of pytest serial and 4.57 s at `-n 2`.
+
+D-01's order-of-magnitude rule, three comparisons:
+
+| Quantity | Reading | Reopen line | Reached? |
+|---|---|---|---|
+| isolated serial mean | 4.23 s (`real` 4.40 s) | 32.1 s (10 x 3.21 s) | no |
+| isolated `-n 2` mean | 4.57 s (`real` 4.74 s) | 38.0 s (10 x 3.80 s) | no |
+| A/B mean delta | -2.47 s | 38.0 s | no |
+
+D-01 does not reopen on any of the three: the measured cost is the same order as the research figures, 1.3 times the serial
+one and 1.2 times the `-n 2` one.
+
+The price against the bars, quoted and not rescaled: B's 163.96 s mean is 2.48 times L34's 66 s bar (97.96 s over), a bar
+read on an Apple M2 Max with 12 CPUs, so the two are not one host's readings. On this host `### The gate, priced (19-09)`
+read 192.94 s at 1210 tests; B reads 163.96 s at 1226 tests under a different load, 28.98 s lower, which is not a
+comparison of the code either, only the same host on another day. The reading sets no bar; Phase 25 does.
+
+Human's answer: "accept" (option id `accept`: keep the browser test inside `make verify` and CI, O1), given 2026-10-10 UTC.
+No further words were given. The human did not ask for arm A to be re-measured with the plan's literal `PYTEST_ARGS`
+spelling, so the `PYTEST_ADDOPTS` spelling recorded under `#### Red runs` stands for the three counted A runs.
+
+### The Linux path on the real runner (21-08)
+
+SC5: the admitted suite on a real `ubuntu-latest` run of the phase branch. The human pushed `gsd/phase-21-browser-test-of-the-viewer`
+and opened draft PR #33 (`Phase 21: Browser Test of the Viewer`, base `main`); the pre-push hook's `make verify` passed on the
+macOS host first. The agent only read the run with `gh`. The whole log is kept at
+`.planning/phases/21-browser-test-of-the-viewer/investigation/21-08-run-38059369744.log` (2,713 lines, every job).
+
+| Run | Conclusion | Classification |
+|---|---|---|
+| [38059369744](https://github.com/halfb00t/spur/actions/runs/38059369744) (`ci`, event `pull_request`, head `88df5cf9610e199203b56b9ae6f18a9dc0125953`, created 2026-10-10 14:22:47Z) | success: `test (3.12)`, `image` and `vendor-bundle` all green | none to classify: first push, no red run; one run of the three allowed |
+
+The run's `headSha` is the pushed `HEAD` (`git rev-parse HEAD` read `88df5cf9610e199203b56b9ae6f18a9dc0125953` before and after the
+push). Between the 21-07 B arm's HEAD `45195ce` and this one the diff touches no file under `src/`, `tests/`, `Makefile`,
+`pyproject.toml` or `.github/`: `bench/RESULTS.md`, `docs/tech_debt/` and `.planning/` only. So the suite this run collected is
+the B arm's, and the passed counts compare like for like.
+
+#### Host state (the runner)
+
+- Image `ubuntu-24.04`, version `20261004.327.1`, provisioner `20261002.596`, runner 2.337.0, Ubuntu 24.04.5 LTS (the `Set up job`
+  group): the same image version as 21-02's spike run
+- `pytest -n 4` (`4 workers [1226 items]`), so the runner had 4 CPUs as in 21-02 (`nproc` 4 was read there; this workflow has no
+  hardware step, so it was not read again)
+- Python 3.12.15 (`actions/setup-python@v5`), pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0, `playwright` 1.63.0
+  (`manylinux1_x86_64` wheel, 48.2 MB), Chrome Headless Shell 153.0.8010.12 (`playwright chromium-headless-shell v1243`)
+- Read 2026-10-10 14:22 to 14:39 UTC, from `gh run view 38059369744 --json jobs` and `--log`. A shared runner: load is not
+  observable from the log, so every wall figure is one sample
+
+#### Readings
+
+| Reading | Value |
+|---|---|
+| `test (3.12)` job wall time | **16 min 8 s** (968 s): `startedAt` 14:22:50Z, `completedAt` 14:38:58Z, read from `gh run view --json jobs` |
+| Result line | `1226 passed in 887.92s (0:14:47)`; `[1226 items]` collected, no failure, no skip, no `rerun`, and none of `resource_tracker`, `ReentrantCall`, `ExceptionGroup`, `FAILED` anywhere in the log (`grep -ci` prints 0) |
+| Passed count against the local B arm | 1226 against 1226 (`21-07-B-1` to `B-3`, `45195ce`). Arm A read 1225: the one extra test is `tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` |
+| Coverage TOTAL | `1346 21 384 14 97.98%` against the 96.0 % floor (`Required test coverage of 96.0% reached`). The macOS B arm read `1346 22 384 14 97.92%`: one fewer missed statement on Linux, same statement and branch counts. Not investigated; both are above the floor |
+| Install, `playwright install --with-deps --only-shell chromium` | **13.97 s** from the command line (14:23:52.993) to the next command's line, the pytest command (14:24:06.962): `Switching to root user to install dependencies...`, `apt-get update`, `1 upgraded, 9 newly installed`, 21.5 MB of archives, 79.5 MB of additional disk, then the shell download 14:24:03.058 to 14:24:06.498 (3.44 s) and ffmpeg to 14:24:06.936 |
+| Install path | `/home/runner/work/spur/spur/.venv/ms-playwright/chromium_headless_shell-1243` and `.../.venv/ms-playwright/ffmpeg-1011`: under `.venv`, as D-06 chose, so no other project's browser cache is on the runner's path |
+| Install command | `.venv/bin/python -m playwright install --with-deps --only-shell chromium`, printed by the `$(BROWSER)` stamp rule after the import contracts (`Contracts: 5 kept, 0 broken.`) and before pytest |
+| Other jobs in the run | `image` success, 14:22:51Z to 14:25:04Z (2 min 13 s); `vendor-bundle` success, 14:22:51Z to 14:23:03Z (12 s) |
+
+What the log does and does not show. `tests/test_browser.py` is not named in this log: the workflow runs `make verify` without
+the spike's `PYTEST_ARGS: -rP` and without `-s` or `-v`, so no per-test line or `step` line is printed. That it ran is
+established three ways: the collected count of 1226 is the B arm's, which is the A arm's 1225 plus this file's one test; the
+`$(BROWSER)` stamp installed the shell inside the same job, in the venv the test launches from; and the test has no skip path
+and fails closed on a missing shell (`tests/test_browser_pins.py`), so a pass is a launched browser. The scenario's `webgl2`
+first step is asserted inside the test and is not printed here; it read 0.04 s on this runner image in 21-02 (macOS 0.01 s in
+21-07). Nothing in this reading depends on a line the log does not hold.
+
+#### Against the spike run (21-02)
+
+| | 21-02 spike, run 38044109910 | 21-08, run 38059369744 |
+|---|---|---|
+| Head | `a6a4fc5` on throwaway branch `spike/21-linux-runner` | `88df5cf`, the phase branch |
+| Image | `ubuntu-24.04` `20261004.327.1` | the same |
+| Install | 14.7 s | 13.97 s |
+| `test (3.12)` job | 16 min 25 s | 16 min 8 s |
+| Result line | `1221 passed in 906.71s (0:15:06)` | `1226 passed in 887.92s (0:14:47)` |
+| Coverage TOTAL | 97.98 % | 97.98 % |
+
+The install is within a second of the spike's, on the same apt set (79.5 MB of additional disk in both). The job wall time
+differs by 17 s and the pytest wall by 18.79 s, with five more tests than the spike's 1221, well inside the 437 s band the
+three no-browser `main` runs span in 21-02 (`487.39s` to `924.02s`). So the runner reading repeats the spike's and, as there,
+cannot show what the browser test adds: isolated it reads 4.23 s of pytest serial (21-07). Phase 25 owns pricing the gate.
+One run per branch is one sample, not an interval.
+
+#### The spike stays unmerged
+
+`gh pr list --head spike/21-linux-runner --state merged --json number --jq length` prints `0`; PR #32 reads `state` CLOSED,
+`mergedAt` null; `git merge-base --is-ancestor spike/21-linux-runner HEAD` exits 1. The branch is kept on `origin`.
+
+#### Annotations on the run
+
+Two, on the run and not on a test: a Node 20 deprecation warning for `actions/checkout@v4` and `actions/setup-python@v5`
+(forced to Node 24, no failure), and a notice that "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19,
+2026" (`actions/runner-images#14748`). The run above is on `ubuntu-24.04`; a run after that date is on a different image, and
+nothing here says the `--with-deps` install or the headless shell works there. That is filed as debt, not assumed.
+
+#### Outcome
+
+**SC5 is met**: the phase's own suite, `tests/test_browser.py` inside `make verify` with the headless shell installed under
+`.venv/ms-playwright` by the `$(BROWSER)` stamp with `--with-deps`, is green on a real `ubuntu-latest` run of the phase branch at
+the pushed head `88df5cf`, run 38059369744, job wall time 16 min 8 s, `1226 passed in 887.92s`, TOTAL 97.98 %.

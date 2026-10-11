@@ -48,7 +48,18 @@ slider still queues work nobody will read (`app.js` update loop). Tracked in
 ## Tests
 
 Thin, and honestly so: `tests/test_api.py` asserts `/` and the static assets are served
-and that the schema carries the metadata the form depends on. There is no browser test.
-Adding one is an idea, not a plan — see `docs/ideas/`.
+and that the schema carries the metadata the form depends on.
+
+`tests/test_browser.py` is the one test that runs `app.js`, in Chrome Headless Shell against a
+real `uvicorn` with the shipped pool. It proves that WebGL2 exists; that the form is built
+from `/api/schema`; that the first part is drawn, with `canvas.dataset.triangles` equal to
+the STL header's count; that both `422` paths mark their fields; that the rendered warnings
+equal `/api/info`'s; that the shareable link round-trips on load, on Reset and on
+`hashchange`; and that the query the page sends for each record of the regression fixture
+equals the pin in `tests/regression/golden_requests.json` (rewritten only by
+`make golden.regen`, in a commit of its own). `#root_shape=bogus` is pinned as today's
+behaviour and filed as debt. It runs inside `make verify` and CI's `test (3.12)`, which
+install the headless shell under `.venv` first; the commit-time `make verify.fast` never
+collects it.
 
 Rebuild the bundle: `make vendor`. Check it still matches: `make vendor-check`.

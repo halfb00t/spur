@@ -3,9 +3,9 @@ phase: "21"
 slug: "browser-test-of-the-viewer"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-10"
 ---
 
@@ -40,26 +40,26 @@ created: "2026-10-10"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 21-01-01 | 01 | 1 | REQ-browser-stack-pinned | T-21-SC | `playwright`, `pyee`, `greenlet` confirmed by a human before any install (blocking-human) | manual + guard | `git diff --exit-code -- pyproject.toml Makefile` and `find_spec('playwright') is None` (nothing installed before the answer) | ✅ | ⬜ pending |
-| 21-01-02 | 01 | 1 | REQ-browser-server-fixture, REQ-browser-first-build-drawn, REQ-browser-fails-closed, REQ-browser-stack-pinned | T-21-01..07 | socket on 127.0.0.1 only; process group killed with no survivor; `SPUR_*` scrubbed; shell under `.venv` only; host cache unchanged | e2e (tracer) | `make .venv/.browser && make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make lint typecheck`; `make verify` | ❌ W0 (created by this task) | ⬜ pending |
-| 21-01-03 | 01 | 1 | REQ-browser-first-build-drawn, REQ-browser-fails-closed, REQ-browser-server-fixture | T-21-02, T-21-06 | each assertion seen red once; every break reverted | e2e + record | `git diff --exit-code -- src/spur/static/app.js tests/browser_session.py tests/browser_scenarios.py && make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; the `bench/RESULTS.md` record check | ✅ | ⬜ pending |
-| 21-02-01 | 02 | 2 | REQ-browser-stack-pinned | T-21-08 | the spike branch exists and is never an ancestor of the phase branch | git guard | `git rev-parse --verify -q spike/21-linux-runner && ! git merge-base --is-ancestor spike/21-linux-runner HEAD ...`; the spike branch's Makefile/ci.yml/test_hooks greps | ✅ | ⬜ pending |
-| 21-02-02 | 02 | 2 | REQ-browser-stack-pinned | T-21-08 | the human pushes; the agent never does | manual | `gh run list --branch spike/21-linux-runner --workflow ci --limit 1 ...` | ✅ | ⬜ pending |
-| 21-02-03 | 02 | 2 | REQ-browser-stack-pinned, REQ-browser-first-build-drawn, REQ-browser-server-fixture | T-21-09 | `--with-deps` (sudo apt) on CI only; bar and wait set from both hosts | e2e + record | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; the `### Linux runner spike (21-02)` check; `! git merge-base --is-ancestor spike/21-linux-runner HEAD` | ✅ | ⬜ pending |
-| 21-03-01 | 03 | 3 | REQ-browser-form-from-schema, REQ-browser-invalid-field-marked | T-21-10, T-21-11 | expectations read from the server; content waits only; breaks reverted | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `git diff --exit-code -- src/spur/static/app.js src/spur/static/style.css`; `make lint typecheck` | ✅ | ⬜ pending |
-| 21-03-02 | 03 | 3 | REQ-browser-warning-rendered | T-21-10, T-21-11 | warnings equal `/api/info`'s for the query the page sent | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make verify` | ✅ | ⬜ pending |
-| 21-04-01 | 04 | 4 | REQ-browser-link-round-trip | T-21-13 | fragment asserted to differ before each assignment; request-URL waits | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k round_trips"`; `make lint typecheck` | ✅ | ⬜ pending |
-| 21-04-02 | 04 | 4 | REQ-browser-link-round-trip | T-21-12 | `#root_shape=bogus` pinned as today, filed as `must` debt, not fixed | e2e + ledger | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; the debt-file and INDEX greps; `make verify` | ✅ | ⬜ pending |
-| 21-05-01 | 05 | 5 | REQ-browser-golden-request-sets | T-21-14, T-21-15 | only `make golden.regen` writes the pin; a regen on unchanged code is byte-identical; `pre_v0_2.json` read only | regen + pin | `make golden.regen && git diff --exit-code tests/regression/golden_requests.json`; the JSON shape check; `make help \| grep -q '^golden.regen'` | ❌ W0 (`tests/capture_requests.py`, `tests/regression/golden_requests.json` created by this task) | ⬜ pending |
-| 21-05-02 | 05 | 5 | REQ-browser-golden-request-sets | T-21-14 | the test reads the pin, never writes it | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make verify` | ✅ | ⬜ pending |
-| 21-06-01 | 06 | 6 | REQ-browser-fails-closed, REQ-browser-stack-pinned | T-21-16 | no skip path, exact dev-only pin, no plugin, no `channel=` | unit (AST/toml pins) | `.venv/bin/python -m pytest tests/test_browser_pins.py -n0 --no-cov -q -p no:cacheprovider`; `make verify.fast` | ❌ W0 (`tests/test_browser_pins.py` created by this task) | ⬜ pending |
-| 21-06-02 | 06 | 6 | REQ-browser-in-the-gate, REQ-browser-server-fixture | T-21-17, T-21-18, T-21-19 | excluded from the commit slice and the image by name; admission in one commit | unit (make dry runs) + gate | `make test PYTEST_ARGS="tests/test_hooks.py tests/test_browser_pins.py -n0 --no-cov -q"`; the one-commit `git log` check; `make verify` | ✅ (`tests/test_hooks.py` extended) | ⬜ pending |
-| 21-06-03 | 06 | 6 | REQ-browser-in-the-gate, REQ-browser-fails-closed | T-21-17 | `make verify.fast` under 30 s three times; ten `-n 8` passes; missing shell fails closed at the final path | measurement | the `### Admission (21-06)` check; `test "$(make -n test \| grep -c 'playwright install')" = 0` | ✅ | ⬜ pending |
-| 21-07-01 | 07 | 7 | REQ-browser-in-the-gate | T-21-20, T-21-21 | every red run kept and classified; bars quoted with their host | measurement | the `### The browser test, priced (21-07)` check; the A1/B3 logs exist | ✅ | ⬜ pending |
-| 21-07-02 | 07 | 7 | REQ-browser-in-the-gate | T-21-20 | the human decides the price (blocking-human, no auto_select) | manual | the answer-recorded check | ✅ | ⬜ pending |
-| 21-08-01 | 08 | 8 | REQ-browser-in-the-gate, REQ-browser-stack-pinned | T-21-22 | the human pushes and opens the PR | manual | a CI run exists whose `headSha` is `HEAD` | ✅ | ⬜ pending |
-| 21-08-02 | 08 | 8 | REQ-browser-stack-pinned | T-21-22, T-21-23 | SC5 from the phase branch's own run; the spike never merged | CI evidence | the `### The Linux path on the real runner (21-08)` check; the kept log and the spike-unmerged check | ✅ | ⬜ pending |
-| 21-08-03 | 08 | 8 | REQ-browser-in-the-gate | T-21-24 | L39 cites recorded figures only; the idea retired in the same commit | docs + gate | the L39 citation check; the retirement and one-commit check; `make verify` | ✅ | ⬜ pending |
+| 21-01-01 | 01 | 1 | REQ-browser-stack-pinned | T-21-SC | `playwright`, `pyee`, `greenlet` confirmed by a human before any install (blocking-human) | manual + guard | `git diff --exit-code -- pyproject.toml Makefile` and `find_spec('playwright') is None` (nothing installed before the answer) | ✅ | ✅ green |
+| 21-01-02 | 01 | 1 | REQ-browser-server-fixture, REQ-browser-first-build-drawn, REQ-browser-fails-closed, REQ-browser-stack-pinned | T-21-01..07 | socket on 127.0.0.1 only; process group killed with no survivor; `SPUR_*` scrubbed; shell under `.venv` only; host cache unchanged | e2e (tracer) | `make .venv/.browser && make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make lint typecheck`; `make verify` | ❌ W0 (created by this task) | ✅ green |
+| 21-01-03 | 01 | 1 | REQ-browser-first-build-drawn, REQ-browser-fails-closed, REQ-browser-server-fixture | T-21-02, T-21-06 | each assertion seen red once; every break reverted | e2e + record | `git diff --exit-code -- src/spur/static/app.js tests/browser_session.py tests/browser_scenarios.py && make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; the `bench/RESULTS.md` record check | ✅ | ✅ green |
+| 21-02-01 | 02 | 2 | REQ-browser-stack-pinned | T-21-08 | the spike branch exists and is never an ancestor of the phase branch | git guard | `git rev-parse --verify -q spike/21-linux-runner && ! git merge-base --is-ancestor spike/21-linux-runner HEAD ...`; the spike branch's Makefile/ci.yml/test_hooks greps | ✅ | ✅ green |
+| 21-02-02 | 02 | 2 | REQ-browser-stack-pinned | T-21-08 | the human pushes; the agent never does | manual | `gh run list --branch spike/21-linux-runner --workflow ci --limit 1 ...` | ✅ | ✅ green |
+| 21-02-03 | 02 | 2 | REQ-browser-stack-pinned, REQ-browser-first-build-drawn, REQ-browser-server-fixture | T-21-09 | `--with-deps` (sudo apt) on CI only; bar and wait set from both hosts | e2e + record | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; the `### Linux runner spike (21-02)` check; `! git merge-base --is-ancestor spike/21-linux-runner HEAD` | ✅ | ✅ green |
+| 21-03-01 | 03 | 3 | REQ-browser-form-from-schema, REQ-browser-invalid-field-marked | T-21-10, T-21-11 | expectations read from the server; content waits only; breaks reverted | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `git diff --exit-code -- src/spur/static/app.js src/spur/static/style.css`; `make lint typecheck` | ✅ | ✅ green |
+| 21-03-02 | 03 | 3 | REQ-browser-warning-rendered | T-21-10, T-21-11 | warnings equal `/api/info`'s for the query the page sent | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make verify` | ✅ | ✅ green |
+| 21-04-01 | 04 | 4 | REQ-browser-link-round-trip | T-21-13 | fragment asserted to differ before each assignment; request-URL waits | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k round_trips"`; `make lint typecheck` | ✅ | ✅ green |
+| 21-04-02 | 04 | 4 | REQ-browser-link-round-trip | T-21-12 | `#root_shape=bogus` pinned as today, filed as `must` debt, not fixed | e2e + ledger | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; the debt-file and INDEX greps; `make verify` | ✅ | ✅ green |
+| 21-05-01 | 05 | 5 | REQ-browser-golden-request-sets | T-21-14, T-21-15 | only `make golden.regen` writes the pin; a regen on unchanged code is byte-identical; `pre_v0_2.json` read only | regen + pin | `make golden.regen && git diff --exit-code tests/regression/golden_requests.json`; the JSON shape check; `make help \| grep -q '^golden.regen'` | ❌ W0 (`tests/capture_requests.py`, `tests/regression/golden_requests.json` created by this task) | ✅ green |
+| 21-05-02 | 05 | 5 | REQ-browser-golden-request-sets | T-21-14 | the test reads the pin, never writes it | e2e | `make test PYTEST_ARGS="tests/browser_scenarios.py -n0 --no-cov -q"`; `make verify` | ✅ | ✅ green |
+| 21-06-01 | 06 | 6 | REQ-browser-fails-closed, REQ-browser-stack-pinned | T-21-16 | no skip path, exact dev-only pin, no plugin, no `channel=` | unit (AST/toml pins) | `.venv/bin/python -m pytest tests/test_browser_pins.py -n0 --no-cov -q -p no:cacheprovider`; `make verify.fast` | ❌ W0 (`tests/test_browser_pins.py` created by this task) | ✅ green |
+| 21-06-02 | 06 | 6 | REQ-browser-in-the-gate, REQ-browser-server-fixture | T-21-17, T-21-18, T-21-19 | excluded from the commit slice and the image by name; admission in one commit | unit (make dry runs) + gate | `make test PYTEST_ARGS="tests/test_hooks.py tests/test_browser_pins.py -n0 --no-cov -q"`; the one-commit `git log` check; `make verify` | ✅ (`tests/test_hooks.py` extended) | ✅ green |
+| 21-06-03 | 06 | 6 | REQ-browser-in-the-gate, REQ-browser-fails-closed | T-21-17 | `make verify.fast` under 30 s three times; ten `-n 8` passes; missing shell fails closed at the final path | measurement | the `### Admission (21-06)` check; `test "$(make -n test \| grep -c 'playwright install')" = 0` | ✅ | ✅ green |
+| 21-07-01 | 07 | 7 | REQ-browser-in-the-gate | T-21-20, T-21-21 | every red run kept and classified; bars quoted with their host | measurement | the `### The browser test, priced (21-07)` check; the A1/B3 logs exist | ✅ | ✅ green |
+| 21-07-02 | 07 | 7 | REQ-browser-in-the-gate | T-21-20 | the human decides the price (blocking-human, no auto_select) | manual | the answer-recorded check | ✅ | ✅ green |
+| 21-08-01 | 08 | 8 | REQ-browser-in-the-gate, REQ-browser-stack-pinned | T-21-22 | the human pushes and opens the PR | manual | a CI run exists whose `headSha` is `HEAD` | ✅ | ✅ green |
+| 21-08-02 | 08 | 8 | REQ-browser-stack-pinned | T-21-22, T-21-23 | SC5 from the phase branch's own run; the spike never merged | CI evidence | the `### The Linux path on the real runner (21-08)` check; the kept log and the spike-unmerged check | ✅ | ✅ green |
+| 21-08-03 | 08 | 8 | REQ-browser-in-the-gate | T-21-24 | L39 cites recorded figures only; the idea retired in the same commit | docs + gate | the L39 citation check; the retirement and one-commit check; `make verify` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -69,12 +69,12 @@ created: "2026-10-10"
 
 Created inside the plans that first need them (each by the task that runs it first), not as stubs ahead of time:
 
-- [ ] `playwright==1.63.0` in `pyproject.toml` `[dev]`, only after the 21-01 Task 1 legitimacy checkpoint is answered; `make .venv/.browser` installs the shell under `.venv/ms-playwright` (21-01 Task 2)
-- [ ] `Makefile` `BROWSER`, `BROWSER_INSTALL_ARGS`, the exported `PLAYWRIGHT_BROWSERS_PATH` and the `$(BROWSER): $(STAMP)` stamp (21-01 Task 2; becomes `test`'s prerequisite in 21-06 Task 2)
-- [ ] `tests/browser_session.py` (non-collected helper) and `tests/browser_scenarios.py` (staging name, renamed `tests/test_browser.py` in 21-06 Task 2) — 21-01 Task 2
-- [ ] `tests/capture_requests.py` and `tests/regression/golden_requests.json` — 21-05 Task 1
-- [ ] `tests/test_browser_pins.py` — 21-06 Task 1
-- [ ] `tests/test_hooks.py` edits (`HEAVY_TEST_FILES`, `BROWSER_STAMP`, `-o` in `_dry_run`, two new tests) — 21-06 Task 2
+- [x] `playwright==1.63.0` in `pyproject.toml` `[dev]`, only after the 21-01 Task 1 legitimacy checkpoint is answered; `make .venv/.browser` installs the shell under `.venv/ms-playwright` (21-01 Task 2)
+- [x] `Makefile` `BROWSER`, `BROWSER_INSTALL_ARGS`, the exported `PLAYWRIGHT_BROWSERS_PATH` and the `$(BROWSER): $(STAMP)` stamp (21-01 Task 2; becomes `test`'s prerequisite in 21-06 Task 2)
+- [x] `tests/browser_session.py` (non-collected helper) and `tests/browser_scenarios.py` (staging name, renamed `tests/test_browser.py` in 21-06 Task 2) — 21-01 Task 2
+- [x] `tests/capture_requests.py` and `tests/regression/golden_requests.json` — 21-05 Task 1
+- [x] `tests/test_browser_pins.py` — 21-06 Task 1
+- [x] `tests/test_hooks.py` edits (`HEAVY_TEST_FILES`, `BROWSER_STAMP`, `-o` in `_dry_run`, two new tests) — 21-06 Task 2
 
 ---
 
@@ -91,11 +91,19 @@ Created inside the plans that first need them (each by the task that runs it fir
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** validated 2026-10-10 by `/gsd-validate-phase 21` at `d4371cb` — every requirement has an automated test green in `make verify` (local `1226 passed`, CI run `38059369744` `1226 passed in 887.92s`); the four manual-only rows were performed in this run (package gate `approved`, spike PR #32, price `accept`, phase PR #33)
+
+## Validation Audit 2026-10-10
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |

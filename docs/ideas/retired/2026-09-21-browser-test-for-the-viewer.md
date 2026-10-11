@@ -1,6 +1,8 @@
 # A browser test for the viewer
 
 Date: 2026-09-21
+Status: retired
+Retired in: docs(21): log L39 and retire the browser-test idea -- a headless browser runs in make verify and CI
 Source: writing docs/architecture/web-ui.md — noticed the UI has no automated coverage
 Related files:
 - src/spur/static/app.js
@@ -37,3 +39,11 @@ strictly from Python — in
 all) stays open.
 
 New trigger: revisit when either UI idea above is taken.
+
+## Outcome
+
+Phase 21 built it. L39 records the placement (`tests/test_browser.py` inside `make verify` and CI,
+out of the commit slice) and its measured price, which the human accepted. The worry above that a
+headless browser would "need Node at test time" is answered by L11 restated: the Playwright driver's
+Node ships inside the dev wheel and runs at test time only, and the runtime has none. The two UI
+ideas this was the trigger for are now open to Phases 23 and 24.

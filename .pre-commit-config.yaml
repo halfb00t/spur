@@ -1,9 +1,9 @@
 # The gate, at two git boundaries. At commit the stage runs `make verify.fast`: the gate's
 # static steps plus its own pytest recipe over every test file but tests/test_model.py,
-# tests/test_pool.py, tests/test_api.py and tests/test_cli.py, under 30 s, so gsd's SDK
-# commit fits inside its hard-coded 30 s (L36). At push the stage runs `make verify`, the
-# same command CI and `make worktree.land` run -- one definition of "passing", three
-# places that enforce it.
+# tests/test_pool.py, tests/test_api.py, tests/test_cli.py and tests/test_browser.py, under
+# 30 s, so gsd's SDK commit fits inside its hard-coded 30 s (L36). At push the stage runs
+# `make verify`, the same command CI and `make worktree.land` run -- one definition of
+# "passing", three places that enforce it.
 #
 # Install by running `make venv` once in the main checkout: it installs all three hook
 # types, and the gate re-installs them when this file changes (the Makefile's $(HOOKS)
@@ -20,7 +20,7 @@ repos:
   - repo: local
     hooks:
       - id: verify-fast
-        name: make verify.fast (static checks + every test file but the four heavy ones, under 30 s)
+        name: make verify.fast (static checks + every test file but the five heavy ones, under 30 s)
         entry: make verify.fast
         language: system
         pass_filenames: false
