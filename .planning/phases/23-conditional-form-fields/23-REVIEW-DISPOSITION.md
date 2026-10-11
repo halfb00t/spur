@@ -3,18 +3,6 @@ phase: 23
 review: 23-REVIEW.md
 titles: json
 findings:
-  - id: WR-01
-    severity: warning
-    disposition: fixed
-    title: "An unknown `enabled_when` op freezes the UI silently and leaves a stale part, dimensions and download links on screen"
-  - id: WR-02
-    severity: warning
-    disposition: fixed
-    title: "The \"never disables, hides or clears a field\" guard is narrower than the contract it claims, and has a false-positive hole"
-  - id: WR-03
-    severity: warning
-    disposition: fixed
-    title: "The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)"
   - id: IN-01
     severity: info
     disposition: open
@@ -43,18 +31,39 @@ findings:
     severity: info
     disposition: open
     title: "The refused-pair step does not require both keyway fields to be marked invalid (external: codex)"
-open: 7
-total: 10
-recorded: 2026-10-11T16:17:02.160Z
+  - id: IN-08
+    severity: info
+    disposition: open
+    title: "The driver check cannot tell `spoke_count eq 1` from `spoke_count gt 0`; the docstring's residual does not say so"
+  - id: IN-09
+    severity: info
+    disposition: open
+    title: "L41 and the threat model still describe an unknown op as an uncaught throw"
+  - id: IN-10
+    severity: info
+    disposition: open
+    title: "The last assertion of the `unknown relation op` step does not check what its comment claims"
+  - id: WR-01
+    severity: warning
+    disposition: fixed
+    title: "An unknown `enabled_when` op freezes the UI silently and leaves a stale part, dimensions and download links on screen"
+  - id: WR-02
+    severity: warning
+    disposition: fixed
+    title: "The \"never disables, hides or clears a field\" guard is narrower than the contract it claims, and has a false-positive hole"
+  - id: WR-03
+    severity: warning
+    disposition: fixed
+    title: "The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)"
+open: 10
+total: 13
+recorded: 2026-10-11T16:26:46.802Z
 ---
 
 # Phase 23: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 23-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 23-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 23-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
@@ -62,6 +71,12 @@ recorded: 2026-10-11T16:17:02.160Z
 | IN-05 | info | open | - |
 | IN-06 | info | open | - |
 | IN-07 | info | open | - |
+| IN-08 | info | open | - |
+| IN-09 | info | open | - |
+| IN-10 | info | open | - |
+| WR-01 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
