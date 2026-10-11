@@ -300,7 +300,6 @@ fresh; nothing else blocks it, and it can move later in the milestone at no cost
 exists to name, so no other root value is invented here.
 **Research flag**: No — standard patterns; the one small decision is above.
 **Plans**: 2 plans, in 2 waves (22-02 reads the step 22-01 commits, on the committed tree)
-
 - [ ] 22-01-PLAN.md — Decision 12 in one commit (D-11): `slug()` ends `_trochoid` from L38's predicate; the STL/STEP
   header pins at 23 and 40 teeth, the flipped pin, the totality rows and the `build.failed` name rows, a real browser
   download on its own page; L40 with every consumer read at the base; the doc path corrected; the idea retired *(wave 1)*
