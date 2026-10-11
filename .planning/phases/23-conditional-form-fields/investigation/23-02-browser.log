@@ -1,0 +1,32 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_browser.py -n0 --no-cov -q -s
+webgl2 renderer: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)
+step webgl2: 0.03 s
+step form built: 0.09 s
+schema: 31 fields in 7 groups
+step form from schema: 0.02 s
+canvas PNG blank 3917 B, drawn 38908 B, ratio 9.93 (bar 4.9); data-triangles 9066, STL header 9066
+step first build drawn: 2.92 s
+step href after showModel: 0.04 s
+422 #bore_flat=3: marked ['D-flat'], text ['D-flat must be between 4.5 and 9 mm (flat to opposite side).']
+422 #teeth=2: marked ['Teeth'], text ['Teeth: Input should be greater than or equal to 6']
+step invalid field marked: 0.10 s
+warnings per link (two, one, none expected): [2, 1, 0]
+step warning rendered: 0.28 s
+step link round trip: 0.40 s
+golden sweep: 44 records, 44 distinct
+step golden sweep: 0.24 s
+inert fields: hex_wall: Needs Honeycomb cell A/F above 0
+inert fields: hole_circle_d: Needs Lightening holes above 0
+inert fields: hole_d: Needs Lightening holes above 0
+inert fields: hub_d: Needs Spoke arms above 0
+inert fields: rim_wall: Needs Spoke arms above 0
+inert fields: spoke_fillet: Needs Spoke arms above 0
+inert fields: spoke_width: Needs Spoke arms above 0
+step inert fields: 1.15 s
+download name: spur_z23_m1.75_pa25_trochoid.stl, click to download 0.13 s
+step download name: 3.20 s
+bogus: select '' at -1, sent 'teeth=22', API 422
+step root_shape=bogus as today: 0.09 s
+.server group members before the kill: 4
+
+1 passed in 9.83s

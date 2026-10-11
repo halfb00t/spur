@@ -1,0 +1,120 @@
+.venv/bin/python -m pytest -n 8 --no-cov \
+  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
+  --ignore=tests/test_api.py --ignore=tests/test_cli.py \
+  --ignore=tests/test_browser.py tests/test_relations.py -n0 -q -rf
+.....FF..F                                                               [100%]
+=================================== FAILURES ===================================
+_____ test_the_keyway_pair_is_refused_under_a_hex_bore_alone_and_together ______
+
+    def test_the_keyway_pair_is_refused_under_a_hex_bore_alone_and_together() -> None:
+        """CF-2: the pair is refused, not ignored, and never gated on each other. Red when
+        either is undeclared, they do not share a gate, or both together are not refused
+        naming the gate and both."""
+        relations = _relations()
+>       assert set(relations) >= REFUSED, sorted(REFUSED - set(relations))
+E       AssertionError: ['keyway_depth', 'keyway_width']
+E       assert {'hub_d'} >= frozenset({'k...eyway_width'})
+E         
+E         Extra items in the right set:
+E         'keyway_depth'
+E         'keyway_width'
+
+tests/test_relations.py:317: AssertionError
+__________________ test_every_field_calc_ignores_is_declared ___________________
+
+    def test_every_field_calc_ignores_is_declared() -> None:
+        """SC2, D-10 reverse coverage: every field an "ignored" sentence can name has a
+        relation. Red when `calc` gains an ignored rule without one."""
+>       assert _assert_calc_ignores_only(frozenset(_relations())) > 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_relations.py:333: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+declared = frozenset({'hub_d'})
+
+    def _assert_calc_ignores_only(declared: frozenset[str]) -> int:
+        """Reverse coverage. Set each undeclared numeric field alone, at `minimum + step` and
+        at `maximum`, under defaults; every field an "ignored" sentence of `derive()` then
+        names must be declared. A request `check()` refuses names no ignored field and is
+        skipped. Returns the number of "ignored" sentences seen, so an empty scan is visible.
+        """
+        seen = 0
+        for name, prop in _properties().items():
+            if name in declared or prop.get("type") not in ("number", "integer"):
+                continue
+            low, step = _number(prop, "minimum"), _number(prop, "step")
+            high, default = _number(prop, "maximum"), _number(prop, "default")
+            for value in (low + step, high):
+                if value == default:
+                    continue
+                try:
+                    gear = GearParams.model_validate({name: value})
+                except ValidationError:
+                    continue
+                for warning in derive(gear).warnings:
+                    if "ignored" not in warning:
+                        continue
+                    seen += 1
+                    for field in GearParams.model_fields:
+                        named = re.search(rf"\b{field} \(", warning) is not None
+>                       assert not named or field in declared, (
+                            f"{name}={value:g}: calc says {warning!r}, naming {field}, "
+                            f"but no relation declares {field}")
+E                       AssertionError: bore_hex=0.05: calc says 'Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored.', naming bore_d, but no relation declares bore_d
+E                       assert (not True or 'bore_d' in frozenset({'hub_d'}))
+
+tests/test_relations.py:218: AssertionError
+_____________ test_an_ignored_field_without_its_relation_goes_red ______________
+
+    def test_an_ignored_field_without_its_relation_goes_red() -> None:
+        """RESEARCH Pitfall 2 (c): drop `spoke_fillet` from the declared set and its "ignored"
+        sentence is undeclared. The first call proves the full set passes, so the red below is
+        not an empty scan or an unrelated gap."""
+        declared = frozenset(_relations())
+>       assert _assert_calc_ignores_only(declared) > 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_relations.py:355: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+declared = frozenset({'hub_d'})
+
+    def _assert_calc_ignores_only(declared: frozenset[str]) -> int:
+        """Reverse coverage. Set each undeclared numeric field alone, at `minimum + step` and
+        at `maximum`, under defaults; every field an "ignored" sentence of `derive()` then
+        names must be declared. A request `check()` refuses names no ignored field and is
+        skipped. Returns the number of "ignored" sentences seen, so an empty scan is visible.
+        """
+        seen = 0
+        for name, prop in _properties().items():
+            if name in declared or prop.get("type") not in ("number", "integer"):
+                continue
+            low, step = _number(prop, "minimum"), _number(prop, "step")
+            high, default = _number(prop, "maximum"), _number(prop, "default")
+            for value in (low + step, high):
+                if value == default:
+                    continue
+                try:
+                    gear = GearParams.model_validate({name: value})
+                except ValidationError:
+                    continue
+                for warning in derive(gear).warnings:
+                    if "ignored" not in warning:
+                        continue
+                    seen += 1
+                    for field in GearParams.model_fields:
+                        named = re.search(rf"\b{field} \(", warning) is not None
+>                       assert not named or field in declared, (
+                            f"{name}={value:g}: calc says {warning!r}, naming {field}, "
+                            f"but no relation declares {field}")
+E                       AssertionError: bore_hex=0.05: calc says 'Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored.', naming bore_d, but no relation declares bore_d
+E                       assert (not True or 'bore_d' in frozenset({'hub_d'}))
+
+tests/test_relations.py:218: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_relations.py::test_the_keyway_pair_is_refused_under_a_hex_bore_alone_and_together
+FAILED tests/test_relations.py::test_every_field_calc_ignores_is_declared - A...
+FAILED tests/test_relations.py::test_an_ignored_field_without_its_relation_goes_red
+3 failed, 7 passed in 0.11s
+make: *** [Makefile:194: test.fast] Error 1
