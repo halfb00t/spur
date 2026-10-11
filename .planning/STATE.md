@@ -4,12 +4,11 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 24
 current_phase_name: Bore-Shape Selector
-status: planning
+status: "Phase 23 shipped — PR #35"
 stopped_at: Phase 23 complete, ready to plan Phase 24
-last_updated: "2026-10-11T15:12:30.456Z"
+last_updated: "2026-10-11T15:32:52.274Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 23 complete, transitioned to Phase 24
-state_head: 510f226eb936cfe145751ff90355fae706478f50
+state_head: 9cd7680b7bceb060ec814855e8333273fd540a95
 progress:
   total_phases: 5
   completed_phases: 4
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 24 — Bore-Shape Selector
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-11 — Phase 23 complete, transitioned to Phase 24
+Status: Phase 23 shipped — PR #35
+Last activity: 2026-10-11
 
 Progress: [████████░░] 80% (3 of 5 v0.5 phases complete — 21, 22, 23; Phase 24 is discretionary; 14/14 plans so far)
 
