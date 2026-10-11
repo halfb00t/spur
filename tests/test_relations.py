@@ -10,8 +10,9 @@ says the same thing, so this module holds the three proofs together:
 - the keyword collision: no extra key the model contributes is a JSON Schema word, and
   both construction styles (`_f` and the two `Literal` fields) build it through `_extra()`;
 - the calc parity: with its relation false, a dependent moves nothing in `derive()` but
-  `warnings`, and a warning names it (forward); and every field `derive()` calls ignored
-  has a relation (reverse).
+  `warnings`, and a warning names it (forward); every field `derive()` calls ignored
+  has a relation (reverse); and in each of eight whole-part states the relation is true
+  exactly where `derive()` does not call the field ignored (the driver check).
 
 It imports `spur.params` and `spur.calc` only. The import-boundary contracts keep both off
 the CAD kernel, so it is not in `HEAVY_TEST_FILES` (tests/test_hooks.py) and runs in
@@ -26,7 +27,11 @@ What each test turns red:
   extra without `_extra()` (a `Literal` field would drop `enabled_when` silently);
 - a relation `derive()` contradicts (it changes something but `warnings`), one `calc`
   never calls ignored (nothing names the field), or a keyway field that changes class;
-- a "ignored" sentence in `derive()` for a field that has no relation.
+- a "ignored" sentence in `derive()` for a field that has no relation;
+- a relation on the wrong driver: a spoke field gated on `hole_count`, a hole field on
+  `bore_hex`, or a right driver with an extra gate beside it. The forward parity cannot see
+  these (WR-03): every probe there leaves the other cutout gates at their default 0, so
+  the right driver and a wrong one are closed alike.
 """
 
 import ast
@@ -221,6 +226,82 @@ def _assert_calc_ignores_only(declared: frozenset[str]) -> int:
     return seen
 
 
+# The driver check's states: one whole part per cutout pattern times one per bore kind. `calc`
+# refuses two cutout patterns at once ("Only one body cutout pattern per part"), so a part
+# cannot open every driver together and each family is opened alone, as a full set: the
+# spoke and hole fields are required once their count is set, and hex_wall must be at least
+# 0.4 mm. Each gate sits at the first value past its closed one (the count 1, the cell
+# 0.05 mm, which `calc` enlarges with a warning and accepts), because a relation whose
+# threshold is off by one (`spoke_count gt 1`) is false at exactly that value. All eight
+# states validate (measured 2026-10-11).
+CUTOUT_STATES: dict[str, dict[str, float]] = {
+    "no cutout": {},
+    "spokes": {"spoke_count": 1, "spoke_width": 4, "hub_d": 20, "rim_wall": 3,
+               "spoke_fillet": 0.5},
+    "holes": {"hole_count": 1, "hole_d": 3, "hole_circle_d": 24},
+    "honeycomb": {"hex_cell": 0.05, "hex_wall": 1},
+}
+# A hex bore refuses a keyway (the REFUSED pair); a round bore with one is the other kind.
+BORE_STATES: dict[str, dict[str, float]] = {
+    "round bore": {"keyway_width": 3, "keyway_depth": 1.4},
+    "hex bore": {"bore_hex": 6},
+}
+
+
+def _condition_holds(op: str, have: float, threshold: float) -> bool:
+    return have == threshold if op == "eq" else have > threshold
+
+
+def _assert_relations_name_the_driver_calc_obeys(
+    relations: Mapping[str, Sequence[Condition]],
+) -> int:
+    """Driver parity (WR-03). In each whole-part state, a dependent's relation holds exactly
+    when `derive()` does not call the dependent ignored; a refusal counts as ignored for a
+    `REFUSED` field only. Returns the number of (dependent, state) cells compared.
+
+    The forward check closes one gate from the defaults, where the other cutout gates are
+    already 0, so it passes a relation on the wrong driver (`spoke_width <- hole_count`) and
+    one with an extra gate beside the right one. Here a family's own fields are live in its
+    own state, so a relation naming another driver is false where `calc` uses the field, and
+    one that is true in another family's state is true where `calc` says ignored. The value
+    tried is the state's own, else the field's default, else `minimum + step`: a default
+    is what a hex bore says is ignored (bore_d (9 mm)), and 0 would be named by nothing.
+    A gate that never differs across valid parts (`spoke_count eq 0` beside `hole_count gt
+    0`, since two patterns are refused) changes nothing a user can see and passes.
+    """
+    props = _properties()
+    cells = 0
+    for dep, conditions in relations.items():
+        prop = props[dep]
+        unit = prop["unit"]
+        assert isinstance(unit, str), dep
+        default = _number(prop, "default")
+        fallback = default if default != 0 else _number(prop, "minimum") + _number(prop, "step")
+        for cutout, bore in ((c, b) for c in CUTOUT_STATES for b in BORE_STATES):
+            state = {**CUTOUT_STATES[cutout], **BORE_STATES[bore]}
+            where = f"{dep} in {cutout} + {bore}"
+            value = state.get(dep, fallback)
+            predicted_live = all(
+                _condition_holds(op, state.get(gate, _number(props[gate], "default")), threshold)
+                for gate, op, threshold in conditions)
+            try:
+                gear = GearParams.model_validate({**state, dep: value})
+            except ValidationError as error:
+                refusal = error.errors()[0]["msg"]
+                assert dep in REFUSED, f"{where}: {dep}={value:g} is refused: {refusal}"
+                calc_live = False
+            else:
+                fragment = f"{dep} ({value:g} {unit})"
+                calc_live = not any(
+                    fragment in warning and "ignored" in warning
+                    for warning in derive(gear).warnings)
+            cells += 1
+            assert calc_live == predicted_live, (
+                f"{where}: the relation says {'used' if predicted_live else 'ignored'}, "
+                f"calc says {'used' if calc_live else 'ignored'}: wrong or extra driver")
+    return cells
+
+
 def test_every_relation_is_well_formed_and_emitted_unchanged() -> None:
     """SC1, D-04: the grammar walk. Red on any malformed condition, a dependent that is
     also a driver, an emitted empty list or one that differs from the model's, an extra
@@ -345,6 +426,51 @@ def test_a_relation_calc_never_calls_ignored_goes_red() -> None:
     hex bore and no sentence names it, so only the warning-names check can see it."""
     with pytest.raises(AssertionError, match="no warning names"):
         _assert_relations_hold_in_calc({"bore_chamfer": [("bore_hex", "eq", 0.0)]})
+
+
+def test_each_relation_names_the_driver_calc_obeys() -> None:
+    """WR-03: driver parity over every declared relation, in eight whole-part states. Red on
+    a relation whose driver `calc` does not use for the field, or whose extra gate makes
+    it true where `calc` says ignored."""
+    relations = _relations()
+    cells = _assert_relations_name_the_driver_calc_obeys(relations)
+    assert cells == len(relations) * len(CUTOUT_STATES) * len(BORE_STATES)
+
+
+# Every field a cutout family owns, and the gates it must not be declared on instead.
+_CUTOUT_GATES = {"spoke_count", "hole_count", "hex_cell"}
+_OWNER_OF = {"spoke_width": "spoke_count", "hub_d": "spoke_count", "rim_wall": "spoke_count",
+             "spoke_fillet": "spoke_count", "hole_d": "hole_count",
+             "hole_circle_d": "hole_count", "hex_wall": "hex_cell"}
+_WRONG_DRIVERS = [(dep, wrong) for dep, owner in _OWNER_OF.items()
+                  for wrong in sorted((_CUTOUT_GATES - {owner}) | {"bore_hex"})]
+
+
+def test_the_driver_check_passes_for_the_declared_owner_alone() -> None:
+    """The control for the swaps below: the same seven fields on their own gate are
+    accepted, so a red below is the wrong driver and not an unusable state."""
+    relations = {dep: _relations()[dep] for dep in _OWNER_OF}
+    assert _assert_relations_name_the_driver_calc_obeys(relations) == len(_OWNER_OF) * 8
+
+
+@pytest.mark.parametrize(("dep", "wrong"), _WRONG_DRIVERS)
+def test_a_relation_on_the_wrong_driver_goes_red(dep: str, wrong: str) -> None:
+    """WR-03: the 21 swaps the forward parity accepted (each cutout field on either other
+    cutout gate, or on bore_hex eq 0) all fail the driver check."""
+    op = "eq" if wrong == "bore_hex" else "gt"
+    with pytest.raises(AssertionError, match="wrong or extra driver"):
+        _assert_relations_name_the_driver_calc_obeys({dep: [(wrong, op, 0.0)]})
+
+
+@pytest.mark.parametrize(("dep", "wrong"), _WRONG_DRIVERS)
+def test_an_extra_gate_beside_the_right_driver_goes_red(dep: str, wrong: str) -> None:
+    """WR-03: the same 21 as an extra AND-conjunct. A field then dims when an unrelated
+    gate is off while `calc` uses it (or, for a second cutout gate, is never usable)."""
+    op = "eq" if wrong == "bore_hex" else "gt"
+    owner = _OWNER_OF[dep]
+    with pytest.raises(AssertionError, match="wrong or extra driver"):
+        _assert_relations_name_the_driver_calc_obeys(
+            {dep: [(owner, "gt", 0.0), (wrong, op, 0.0)]})
 
 
 def test_an_ignored_field_without_its_relation_goes_red() -> None:
