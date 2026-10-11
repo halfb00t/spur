@@ -111,13 +111,13 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 
 ### Conditional fields — the form says a field is inert before it is typed
 
-- [ ] **REQ-enabled-when-metadata**: `_f()` accepts an `enabled_when` relation carried in
+- [x] **REQ-enabled-when-metadata**: `_f()` accepts an `enabled_when` relation carried in
   `json_schema_extra` and emitted unchanged by `model_json_schema()` (nested dicts/lists
   verbatim, key-sorted at every level — MEASURED, STACK; so a relation never depends on key
   order); the two bare-`Field` `Literal` fields carry it the same way; the grammar is
   project-defined, AND-only, fixed at discuss-phase (the four files propose four shapes), and
   a test proves the key collides with no JSON Schema vocabulary word.
-- [ ] **REQ-relations-calc-backed**: every declared relation is one `calc` already warns
+- [x] **REQ-relations-calc-backed**: every declared relation is one `calc` already warns
   about — `bore_d`/`bore_flat` under `bore_hex > 0`; each cutout group's dimensions while its
   count field is 0 — or refuses — `keyway_width`/`keyway_depth` under `bore_hex > 0` (a 422,
   carrying its own "refused" reason wording; never gated on each other: width alone and depth
@@ -251,8 +251,8 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-browser-stack-pinned | Phase 21 | Complete |
 | REQ-slug-carries-effective-root | Phase 22 | Complete |
 | REQ-slug-consumers-read-first | Phase 22 | Complete |
-| REQ-enabled-when-metadata | Phase 23 | Pending |
-| REQ-relations-calc-backed | Phase 23 | Pending |
+| REQ-enabled-when-metadata | Phase 23 | Complete |
+| REQ-relations-calc-backed | Phase 23 | Complete |
 | REQ-dim-and-editable | Phase 23 | Pending |
 | REQ-form-walk-proves-relations | Phase 23 | Pending |
 | REQ-selector-schema-carried | Phase 24 | Pending |
