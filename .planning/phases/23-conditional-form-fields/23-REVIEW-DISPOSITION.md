@@ -13,7 +13,7 @@ findings:
     title: "The \"never disables, hides or clears a field\" guard is narrower than the contract it claims, and has a false-positive hole"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)"
   - id: IN-01
     severity: info
@@ -43,9 +43,9 @@ findings:
     severity: info
     disposition: open
     title: "The refused-pair step does not require both keyway fields to be marked invalid (external: codex)"
-open: 8
+open: 7
 total: 10
-recorded: 2026-10-11T16:15:40.927Z
+recorded: 2026-10-11T16:17:02.160Z
 ---
 
 # Phase 23: Code Review Disposition
@@ -54,7 +54,7 @@ recorded: 2026-10-11T16:15:40.927Z
 |---------|----------|-------------|--------|
 | WR-01 | warning | fixed | 23-REVIEW-FIX.md |
 | WR-02 | warning | fixed | 23-REVIEW-FIX.md |
-| WR-03 | warning | open | - |
+| WR-03 | warning | fixed | 23-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
