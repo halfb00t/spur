@@ -249,16 +249,76 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
 
     # L41: an inert field stays a field. A relation dims the field and says why; it never
     # disables, hides, clears or rewrites it, because a shared link such as
-    # #spoke_count=0&hub_d=40 must load a value the user can edit and send (L05). The
+    # #spoke_count=0&hub_d=40 must load a value the user can edit and send (L05). Each way
+    # to shut a field has its own alternative, written out so the contract's verbs are
+    # all covered: disable, make read-only or inert, hide (property, attribute, class,
+    # display/visibility), swallow input (pointer-events), fade (opacity), or write markup.
+    # `(?!=)` keeps `x.hidden === y`, a comparison, from reading as an assignment. The
     # pattern needs a property access or an attribute call, so prose in a comment cannot
     # trip it, and markup is never written (the reason is `textContent`, T-23-01).
-    writes_a_field_shut = (
-        r"\.disabled\s*=|setAttribute\(\s*['\"](?:disabled|hidden)['\"]|\.hidden\s*="
-        r"|\.innerHTML\b|insertAdjacentHTML|\.style\.(?:display|visibility)\b"
+    writes_a_field_shut = re.compile(
+        r"\.(?:disabled|hidden|readOnly|inert)\s*=(?!=)"
+        r"|(?:setAttribute|toggleAttribute)\(\s*['\"](?:disabled|hidden|readonly|inert)['\"]"
+        r"|classList\.(?:add|toggle)\(\s*['\"](?:hidden|disabled|readonly|inert)['\"]"
+        r"|\.innerHTML\b|insertAdjacentHTML"
+        r"|\.style\.(?:display|visibility|pointerEvents|opacity)\b"
+        r"|\.style\.setProperty\(\s*['\"](?:display|visibility|pointer-events|opacity)['\"]",
+        re.IGNORECASE,
     )
-    # A regex that silently stopped matching must fail, not pass.
-    assert re.search(writes_a_field_shut, "x.hidden = true")
-    assert not re.search(writes_a_field_shut, source)
+    # A regex that silently stopped matching must fail, not pass: one probe per
+    # alternative, so dropping any of them turns this red instead of the guard going blind.
+    for shut in (
+        "x.disabled = true",
+        "x.hidden = true",
+        "x.readOnly = true",
+        "x.inert = true",
+        "x.setAttribute('disabled', '')",
+        "x.setAttribute(\"hidden\", '')",
+        "x.setAttribute('readonly', '')",
+        "x.setAttribute('inert', '')",
+        "x.toggleAttribute('disabled', off)",
+        "x.toggleAttribute('hidden', off)",
+        "x.classList.add('hidden')",
+        "x.classList.toggle('disabled', off)",
+        "x.innerHTML = reason",
+        "x.insertAdjacentHTML('beforeend', reason)",
+        "x.style.display = 'none'",
+        "x.style.visibility = 'hidden'",
+        "x.style.pointerEvents = 'none'",
+        "x.style.opacity = '.5'",
+        "x.style.setProperty('pointer-events', 'none')",
+    ):
+        assert writes_a_field_shut.search(shut), shut
+    # And the shapes this guard must leave alone: a comparison, and the dim class itself.
+    for allowed in (
+        "if (x.hidden === y) return;",
+        "if (x.disabled == y) return;",
+        "wrap.classList.toggle('inactive', off);",
+        "wrap.classList.remove('inactive');",
+        "input.setAttribute('aria-describedby', reason.id);",
+    ):
+        assert not writes_a_field_shut.search(allowed), allowed
+    assert not writes_a_field_shut.search(source)
+
+    # "Clears or rewrites" is a write to `.value`, which the page does legitimately in
+    # readHash() and #reset, so it is checked where a relation lives and nowhere else: the
+    # section between the relations banner and the messages banner (effective, holds,
+    # need, applyRelations). Reading the value there is the whole job; writing it is not.
+    relations = re.search(r"-- relations \(L41\)\n(.*?)\n// -+ messages\n", source, re.DOTALL)
+    assert relations, "the relations section moved: this guard would read nothing"
+    assert "function applyRelations()" in relations.group(1)
+    writes_a_value = re.compile(
+        r"\.value\s*=(?!=)|\.(?:reset|setRangeText)\(|removeAttribute\(\s*['\"]value['\"]"
+    )
+    for cleared in (
+        "input.value = ''",
+        "x.value = defaults[name]",
+        "form.reset()",
+        "x.removeAttribute('value')",
+    ):
+        assert writes_a_value.search(cleared), cleared
+    assert not writes_a_value.search("if (input.value === '') return;")
+    assert not writes_a_value.search(relations.group(1))
 
 
 def test_info_reports_the_mate() -> None:
