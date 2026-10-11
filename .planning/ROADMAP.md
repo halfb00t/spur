@@ -120,7 +120,7 @@ byte-identical to the `v0.4` tag.
       field is marked, a warning renders, the first STL is drawn; the Linux path is proved on
       a real runner, the gate cost is measured A/B, and the request each of the 44 fixture
       records makes is pinned before any form change lands
-- [ ] **Phase 22: Download Name Carries the Root** - A hob-root part downloads as
+- [x] **Phase 22: Download Name Carries the Root** - A hob-root part downloads as (completed 2026-10-11)
       `..._trochoid`; every radial part, and every request whose trochoid is ignored, keeps
       today's name byte for byte, and the `Lxx` lists every consumer of the old names first
 - [ ] **Phase 23: Conditional Form Fields** - A field whose value would be ignored (or
@@ -299,7 +299,7 @@ fresh; nothing else blocks it, and it can move later in the milestone at no cost
 **Boundaries**: a suffix, not a prefix; nothing for a non-default root other than the trochoid
 exists to name, so no other root value is invented here.
 **Research flag**: No — standard patterns; the one small decision is above.
-**Plans**: 2/2 plans executed, in 2 waves (22-02 reads the step 22-01 commits, on the committed tree)
+**Plans**: 2/2 plans complete, in 2 waves (22-02 reads the step 22-01 commits, on the committed tree)
 - [x] 22-01-PLAN.md — Decision 12 in one commit (D-11): `slug()` ends `_trochoid` from L38's predicate; the STL/STEP
   header pins at 23 and 40 teeth, the flipped pin, the totality rows and the `build.failed` name rows, a real browser
   download on its own page; L40 with every consumer read at the base; the doc path corrected; the idea retired *(wave 1)*
