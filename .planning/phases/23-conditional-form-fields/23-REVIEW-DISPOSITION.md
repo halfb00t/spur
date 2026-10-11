@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "An unknown `enabled_when` op freezes the UI silently and leaves a stale part, dimensions and download links on screen"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The \"never disables, hides or clears a field\" guard is narrower than the contract it claims, and has a false-positive hole"
   - id: WR-03
     severity: warning
@@ -43,17 +43,17 @@ findings:
     severity: info
     disposition: open
     title: "The refused-pair step does not require both keyway fields to be marked invalid (external: codex)"
-open: 10
+open: 8
 total: 10
-recorded: 2026-10-11T15:51:05.262Z
+recorded: 2026-10-11T16:15:40.927Z
 ---
 
 # Phase 23: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
+| WR-01 | warning | fixed | 23-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 23-REVIEW-FIX.md |
 | WR-03 | warning | open | - |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
