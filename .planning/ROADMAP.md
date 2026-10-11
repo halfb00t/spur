@@ -373,7 +373,7 @@ REQ-form-walk-proves-relations
 `app.js` as DIMS keys, so any new JS table is an object, not rows of that shape.
 **Research flag**: No — standard patterns. The parity proof will surface relation rows that are
 not inert; the plan budgets for dropping them.
-**Plans**: 3/4 plans executed, in 4 waves (sequential: each reads the tree the one before it commits)
+**Plans**: 4/4 plans executed, in 4 waves (sequential: each reads the tree the one before it commits)
 - [x] 23-01-PLAN.md — The tracer and the record in one commit (CF-1): `hub_d` under `spoke_count gt 0` from `when()`/`_extra()`
   through `/api/schema` to generic `applyRelations()`, dimmed, typed into and sent in a real browser; the visible dim; the
   `app.js` pins tightened; L41 *(wave 1)*
@@ -381,7 +381,7 @@ not inert; the plan budgets for dropping them.
   CLI walk, a wrong relation seen red; the unbacked-relations idea and the hex-warning debt filed *(wave 2)*
 - [x] 23-03-PLAN.md — The browser proof: the golden sweep compares each record's dimmed set, one schema-derived flip per
   gate, the refused pair, Reset, the visible dim; the regen proved byte-identical; the idea retired *(wave 3)*
-- [ ] 23-04-PLAN.md — The step and the commit slice priced: three readings each, seen red once, the kept logs *(wave 4)*
+- [x] 23-04-PLAN.md — The step and the commit slice priced: three readings each, seen red once, the kept logs *(wave 4)*
 
 **UI hint**: yes
 

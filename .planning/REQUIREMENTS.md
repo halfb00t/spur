@@ -125,12 +125,12 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   relation false, changing the dependent field changes nothing in `derive()` except
   `warnings` (or yields the 422 for the refused class), and fails when the schema and `calc`
   drift. No relation is declared that `calc` does not back.
-- [ ] **REQ-dim-and-editable**: an inert field is dimmed (`.field.inactive`) with a reason
+- [x] **REQ-dim-and-editable**: an inert field is dimmed (`.field.inactive`) with a reason
   built from the gate field's `title`, stays editable and keeps its value, and is still sent
   — `gearQuery()` reads `input.value` (READ, FEATURES), so the URL/API contract is untouched;
   never `disabled` or hidden (a shared link like `#spoke_count=0&hub_d=40` would load a field
   the user cannot clear); re-evaluated on `input`, `readHash`, Reset and `hashchange`.
-- [ ] **REQ-form-walk-proves-relations**: the model-driven field walk extends to every
+- [x] **REQ-form-walk-proves-relations**: the model-driven field walk extends to every
   relation (schema → form, generic code only); the browser test asserts the dim state of each
   declared relation under the golden request sets; `tests/test_api.py`'s `app.js` pins are
   tightened under one `Lxx` that supersedes 08 D-09 and keeps L02.
@@ -253,8 +253,8 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-slug-consumers-read-first | Phase 22 | Complete |
 | REQ-enabled-when-metadata | Phase 23 | Complete |
 | REQ-relations-calc-backed | Phase 23 | Complete |
-| REQ-dim-and-editable | Phase 23 | Pending |
-| REQ-form-walk-proves-relations | Phase 23 | Pending |
+| REQ-dim-and-editable | Phase 23 | Complete |
+| REQ-form-walk-proves-relations | Phase 23 | Complete |
 | REQ-selector-schema-carried | Phase 24 | Pending |
 | REQ-selector-derives-and-writes-through | Phase 24 | Pending |
 | REQ-selector-round-trips-per-state | Phase 24 | Pending |
