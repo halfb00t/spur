@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 23 — Conditional Form Fields
+**Current focus:** Phase 24 — Bore-Shape Selector (discretionary; the skip decision is taken at its discuss-phase)
 
 ## Current Position
 
@@ -35,7 +35,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-11 — Phase 23 complete, transitioned to Phase 24
 
-Progress: [████████░░] 80% (2 of 5 v0.5 phases complete — 21, 22; Phase 24 is discretionary; 10/10 plans so far)
+Progress: [████████░░] 80% (3 of 5 v0.5 phases complete — 21, 22, 23; Phase 24 is discretionary; 14/14 plans so far)
 
 ## Performance Metrics
 
@@ -440,6 +440,22 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 23] The resource-tracker flake hit `make verify` a fifth time (23-04: `tests/test_pool.py::test_health_reports_pool_state`,
+  `ReentrantCallError`; `investigation/23-04-red-1.log`, green on re-run). The `must` debt
+  `docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md` names "the next `make verify` failure" as its
+  trigger — it has fired; its isolation runs and fix plan are due, not re-deferrable without a new named trigger.
+- ℹ️ [Phase 23] Code review (`23-REVIEW-DISPOSITION.md`, 7 open): WR-01 `holds()` throws on an unknown `enabled_when` op before
+  `scheduleUpdate()` runs (unreachable today — `when()` types the op and the tests pin it — but triage before Phase 24 widens
+  the grammar); WR-02 the static no-disable guard in `tests/test_api.py` is narrower than L41's wording; IN-01 reason-text
+  number formatting differs between JS and Python at extreme thresholds; IN-02 the reason span sits inside `<label>`; IN-03
+  a stale line number in the hex-bore debt; IN-04 `docs/ideas/INDEX.md:13` still says "08 D-09 stands"; IN-05 L41's
+  "declared set" paragraph mixes plan-time and final-state wording.
+- ℹ️ [Phase 23] Cross-CLI review owed before the PR (CLAUDE.md): all four executors and the reviewer were Claude (sonnet);
+  a Codex review of `gsd/phase-23-conditional-form-fields` has not run.
+- ℹ️ [Phase 23] `workflow.ui_safety_gate` set to `false` (`8f7e1c9`): the gate demanded a UI-SPEC no phase of this repo has
+  ever had; the form's design decisions live in the phase CONTEXT and the decision log. `ui-review` likewise skipped.
+- ℹ️ [Phase 23] `docs/ideas/2026-09-27-bore-shape-selector-in-the-web-form.md` still reads "(08 D-09 stands)" — superseded by
+  L41; restate at Phase 24's discuss-phase. `.planning/codebase/*.md` is stale (54 structural changes since the last map).
 - ℹ️ [Phase 22] Code review (`22-REVIEW-DISPOSITION.md`, 5 open): WR-01 `slug()` now runs `root_mode` while
   `build.failed`/`queue.refused` records are built — a raise there would turn a 422 into a 500, and totality
   rests on a one-off sweep, not a test (fix: a small seeded `slug()` test); WR-02 the `build.failed` test
@@ -691,7 +707,10 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Next: Phase 22 is complete on `gsd/phase-22-download-name-carries-the-root` (not pushed, no PR yet; 10 commits over `main`): run `/gsd-secure-phase 22` (owed — security enforcement is on), decide the five open review findings (`22-REVIEW-DISPOSITION.md`; `/gsd-code-review 22 --fix` or defer with a debt file), then ship (`/gsd-ship 22` — the Phase 21 precedent, PR #33), then `/gsd-discuss-phase 23`.
+- Next: Phase 23 is complete and verified on `gsd/phase-23-conditional-form-fields` (not pushed, no PR yet; 28 commits over
+  `main`). Owed before the PR: the Codex cross-review (CLAUDE.md), a decision on the resource-tracker debt whose trigger
+  fired, and WR-01's triage. Then `/gsd-discuss-phase 24` — Phase 24 is discretionary and its first decision (9) is
+  whether to build the selector at all; `/gsd-plan-phase 25` is the alternative if it is skipped.
 - Done at roadmap time: the `v0.4` tag was missing locally and on `origin` (only `v0.1`–`v0.3` existed) although v0.5's fixture rule is stated against it; the human chose the close squash `b24287a` (the v0.2/v0.3 precedent) and the annotated tag was created and pushed 2026-10-10.
 - Open decision carried, now owned by Phase 25: re-set L34's 66 s gate bar from an idle-host reading under a rule written before the first reading (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar). The 401-position oracle count is not part of this milestone.
 - Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).

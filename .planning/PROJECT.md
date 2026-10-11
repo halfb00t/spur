@@ -81,7 +81,7 @@ bar re-set from a measurement, and the three small ledger items closed — with 
 - Conditional form fields (`2026-09-29-conditional-form-fields.md`) — an `enabled_when`
   relation as `json_schema_extra` on the model, rendered by `app.js` from `/api/schema`
   alone; covers the keyway/hex ignored-field cases and the three cutout groups. Supersedes
-  08 D-09 by a new `Lxx`; L02 kept.
+  08 D-09 by a new `Lxx`; L02 kept. Shipped in Phase 23 as L41.
 - Bore-shape selector (`2026-09-27-bore-shape-selector-in-the-web-form.md`) — a UI-only
   select in `app.js` deriving its state from the flat fields on load and still sending the
   flat fields; API, CLI and URL contract unchanged (L05).
@@ -525,14 +525,23 @@ pytest — L13). Full list with sources and acceptance evidence:
   name byte for byte; fixture and golden pin unchanged; verified 15/15, Nyquist 0 gaps,
   `make verify` 1238 tests at 97.92 %)
 
+- ✓ A field whose value would be ignored says so in the form before it is typed — Phase 23
+  (L41: `enabled_when` relations as schema metadata on `GearParams`, eleven rows each proved
+  against `calc` forward and reverse in `tests/test_relations.py`, rendered dimmed-and-editable
+  by generic `app.js` and asserted in the browser under all 44 golden links, four flip links,
+  the refused keyway pair and Reset; `gearQuery()`, `calc.py` and both regression files
+  byte-unchanged; REQ-enabled-when-metadata, REQ-relations-calc-backed, REQ-dim-and-editable,
+  REQ-form-walk-proves-relations; verified 4/4, UAT 2/2, `make verify` 1248 tests at 97.99 %)
+
 ### Active
 
 Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- [ ] The web form tells the user before they type that a field is inert — conditional
-  fields from schema metadata, a bore-shape selector over the flat fields — with the API,
-  CLI and URL contracts unchanged.
+- [ ] A bore shape is picked, not inferred from a warning — a selector over the flat fields
+  (Phase 24, discretionary; the skip decision is taken at its discuss-phase) — with the API,
+  CLI and URL contracts unchanged. The other half of this item, conditional fields from
+  schema metadata, shipped in Phase 23 (L41, above).
 - [ ] L34's gate bar is re-set from an idle-host reading under its own `Lxx`.
 - [ ] The three small ledger ideas (reverify recipe, Pi 5 claim, `make venv` constraint
   probe) are closed with a record each.
@@ -685,6 +694,7 @@ quick reference.
 | L38 | The hob-cut root is opt-in through `root_shape` (`radial` default, `trochoid`; a `Literal`, never a bool), `root_fillet` is the hob's tip radius under it, every number beside it is proved or warned (`root_form_d` the cutter-envelope junction, `root_waist` the narrowest arc under a 0.4 mm floor, `root_thickness`/`root_gap` null, the undercut sentence from the cutter with `x_min`), four structural guards and `ROOT_ARC_MIN` keep a broken outline out of the kernel, and the default does not move in v0.4 — Phase 20 skipped, the flip deferred to a real fit report or a mating-pair request below z_min, in one commit with `make fixture.regen` under its own `Lxx` (supersedes L10, amends L09 and L33) | ✓ Good — verified 5/5, Nyquist 0 gaps, security 22/22 closed; review CR-01 (`root_waist` read at the narrowest half-angle, 2–5 % high on crossing joins) and WR-01 fixed (`e733cc2`, `b51931c`), 4 info deferred; fixture byte-identical to `df4749e`; `make verify` 1220 tests at 97.92 %, 192.94 s mean against L34's 66 s (accepted, bar re-set open) |
 | L39 | A headless browser runs the shipped viewer inside `make verify` and CI, out of the commit slice, at a measured price (amends L13 and L36, restates L11): `playwright==1.63.0` in the dev extra only, Chrome Headless Shell under `.venv/ms-playwright` on SwiftShader; the server fixture on a `127.0.0.1` socket passed by descriptor, `SPUR_*` scrubbed, killed by process group with a floor of 3 live members before the kill; the drawn canvas judged by a PNG byte ratio bar of 4.9 and the triangle count the page reports against the STL header; the 44 fixture records' requests pinned in `tests/regression/golden_requests.json`, written by `make golden.regen` only; `make test` depends on the shell stamp, `test.fast` and `test-image` exclude the file, AST pins forbid any skip path; the human kept the test in the gate at 21-07's price decision (`accept`, O1); every figure cited to a SUMMARY sha or to `bench/RESULTS.md` "Browser test of the viewer (Phase 21)", none restated here | ✓ Good — verified 5/5, Nyquist 0 gaps, security 25/25 closed; CI run 38059369744 green (1226 passed) at `88df5cf`; review 0 critical, 3 warnings filed as debt (`fc53e5c`), 4 info open in `21-REVIEW-DISPOSITION.md`; `make verify` hung once at the 600 s limit with no failure (filed `must`, `068358c`); `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19 (filed `must`) |
 | L40 | The download name carries the root the part has: `GearParams.slug()` ends `_trochoid` exactly when L38's predicate (`root_mode`) builds the hob root — the requested root is rejected as the rule, a refused or ignored request keeps the plain name, no guard and no fallback (totality shown by six pure rows, two `build.failed` rows and a 17,567-case sweep: 9,954 `_trochoid`, none raised); every consumer of the old names read at `5769ac0` and no cache keyed by slug; the browser scenario gains a real `#dl-stl` download step (applies L05 and L08 to the file name; one commit, `e3b1181`) | ✓ Good — 15/15 must-haves; `make verify` 1238 tests at 97.92 %; fixture and golden pin byte-unchanged; the step reads 1.13–3.56 s on a busy M2 Max (no bar set — Phase 25's, D-06); review 2 warnings + 3 info open (`22-REVIEW-DISPOSITION.md`) |
+| L41 | A field the model says is inert is dimmed in the form and stays a field (supersedes 08 D-09, keeps L02): `enabled_when` is one key holding a bare JSON list of `{field, op, value}` conditions (`op` is `eq` or `gt`, the list is the AND; an OR or another op is a stop-and-ask), built by `when()` (`Literal["eq", "gt"]` so a bad op fails `mypy --strict`) and emitted by `_extra()`, the one builder of `json_schema_extra`; eleven rows declared, each only after `tests/test_relations.py` proves it forward (the dependent moves only the warning that names it) and reverse (every field `calc` ignores has a relation); `.field.inactive` dims with `--muted` text and a dashed border, the reason (`Needs {gate title} above 0`) is its own row linked by `aria-describedby`, the field is never `disabled`, hidden or cleared and is still sent; `applyRelations()` runs at `readHash()`, in the `input` listener before the debounce and at `#reset`, never on a build's success; two unbacked relations and the hex warning on default bore fields filed, not declared | ✓ Good — verified 4/4, UAT 2/2; `make verify` 1248 tests at 97.99 %; `inert fields` step 1.32 s mean, commit slice 15.14 s of L36's 30 s (`bench/RESULTS.md`); fixture and golden pin byte-unchanged; review 2 warnings + 5 info open (`23-REVIEW-DISPOSITION.md`, WR-01 to triage before Phase 24 widens the grammar); `workflow.ui_safety_gate` turned off for this repo (no UI-SPEC; design decisions live in CONTEXT and this log) |
 
 ## Success Metric (Milestone v0.1)
 
@@ -786,4 +796,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-11 after Phase 22.*
+*Last updated: 2026-10-11 after Phase 23.*
