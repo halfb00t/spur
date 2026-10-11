@@ -6,7 +6,8 @@ sends the same fields" by an empty diff on it instead of asserting it. It is rew
 on a deliberate change to what the form sends. This script drives the shipped page in a
 real browser against a real `uvicorn`, through the same `serve`, `launch` and `sweep` the
 browser test uses (`tests/browser_session.py`): one sweep, and no Python copy of the page's
-`gearQuery()` that could drift from it.
+`gearQuery()` that could drift from it. The regen pins the query only; the dimmed set the
+sweep also reads is the browser test's to compare (23 D-14).
 
 A regen is its own commit, saying what moved and why (D-09); a feature commit never
 touches the pin, and the browser test only reads it. On unchanged code a regen is a
@@ -36,9 +37,10 @@ def main() -> int:
     with serve(floor_applies=lambda: False) as base, sync_playwright() as pw:
         browser = launch(pw)
         try:
-            sent = sweep(browser.new_page(), base, hashes)
+            swept = sweep(browser.new_page(), base, hashes)
         finally:
             browser.close()
+    sent = {name: s.query for name, s in swept.items()}
     assert len(sent) == len(hashes), f"swept {len(sent)} of {len(hashes)} records"
     GOLDEN_PATH.write_text(
         json.dumps({"records": sent, "regenerate": REGENERATE}, indent=2, sort_keys=True) + "\n"

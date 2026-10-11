@@ -534,7 +534,10 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # page's. Each record's link goes through location.hash on one page whose STL
                 # route is aborted, so nothing is built (D-08); the sent api/info query must
                 # equal the committed pin. Phases 23-24 change the form and must leave this
-                # file's diff empty (D-09).
+                # file's diff empty (D-09). Beside the query, the fields the page dimmed for
+                # the link, with their reasons, must equal the Python evaluator's over
+                # /api/schema (23 D-14, D-16): two implementations that share no code agreeing
+                # on every record. The query pin is unchanged.
                 pinned = _golden_records()
                 hashes = fixture_hashes()
                 assert set(pinned) == set(hashes), (
@@ -548,16 +551,34 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 finally:
                     sweep_page.close()
                 moved = {
-                    name: (pinned[name], swept[name])
+                    name: (pinned[name], swept[name].query)
                     for name in hashes
-                    if swept[name] != pinned[name]
+                    if swept[name].query != pinned[name]
                 }
                 detail = "; ".join(
                     f"{name}: expected {want!r}, sent {got!r}"
                     for name, (want, got) in moved.items()
                 )
                 assert not moved, f"golden sweep: the form sends other queries: {detail}"
-                print(f"golden sweep: {len(swept)} records, {len(set(swept.values()))} distinct")
+                wanted_dim = {
+                    name: expected_inactive(properties, link) for name, link in hashes.items()
+                }
+                assert any(wanted_dim.values()), (
+                    "golden sweep: no record expects a dimmed field, so a schema with no "
+                    "relation would pass this step"
+                )
+                dim_differs = "; ".join(
+                    f"{name}: the page dims {swept[name].inactive}, the schema says {want}"
+                    for name, want in wanted_dim.items()
+                    if swept[name].inactive != want
+                )
+                assert not dim_differs, f"golden sweep: the dimmed sets differ: {dim_differs}"
+                distinct_queries = len({s.query for s in swept.values()})
+                distinct_dims = len({tuple(sorted(s.inactive.items())) for s in swept.values()})
+                print(
+                    f"golden sweep: {len(swept)} records, {distinct_queries} distinct queries, "
+                    f"{distinct_dims} distinct dimmed sets"
+                )
 
             with step("inert fields"):
                 # The roadmap's own link: #spoke_count=0&hub_d=40, a value the model says does

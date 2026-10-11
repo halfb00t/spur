@@ -29,7 +29,7 @@ import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterator, Mapping
 from pathlib import Path
-from typing import IO
+from typing import IO, NamedTuple
 
 import pytest
 from playwright.sync_api import Browser, Error, Page, Playwright
@@ -409,8 +409,15 @@ def fixture_hashes() -> dict[str, str]:
     return hashes
 
 
-def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
-    """The `api/info` query string the page sends for each link, name -> query (D-08).
+class Swept(NamedTuple):
+    """What the page did for one link: the `api/info` query it sent and the fields it dimmed."""
+
+    query: str
+    inactive: dict[str, str]
+
+
+def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, Swept]:
+    """The `api/info` query the page sends for each link and the fields it dims, name -> Swept.
 
     Builds no part: the STL route is aborted, so a link costs one `hashchange` and one
     info request, not a CAD build. `hashchange` calls `readHash(); update()` directly, no
@@ -418,6 +425,11 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
     21-RESEARCH read 0.09-0.15 s for each of the 43 hash-driven records. The empty link
     cannot be reached that way (an empty fragment is the fresh load's own), so its query is
     the fresh load's request, which is the empty string today.
+
+    The dimmed set is read right after the link's own request, and that is the link's state:
+    `readHash()` ends with `applyRelations()` and `update()` sends the request synchronously
+    after it, so the state is set before the request this waits for and no response can have
+    changed it (23-RESEARCH Pitfall 7).
 
     A link equal to the live fragment fires no `hashchange`, and the wait would time out
     with a message that names nothing (21-RESEARCH Pitfall P5), so that case raises naming
@@ -430,11 +442,12 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
         lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
     ) as fresh:
         page.goto(base + "/")
+    swept: dict[str, Swept] = {}
     fresh_query = urllib.parse.urlsplit(fresh.value.url).query
-    sent: dict[str, str] = {}
+    fresh_inactive = eval_inactive(page)
     for name, link in hashes.items():
         if link == "":
-            sent[name] = fresh_query
+            swept[name] = Swept(fresh_query, fresh_inactive)
             continue
         live = eval_str(page, "() => location.hash.slice(1)")
         if live == link:
@@ -446,8 +459,8 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
             lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
         ) as request:
             page.evaluate("link => { location.hash = link; }", link)
-        sent[name] = urllib.parse.urlsplit(request.value.url).query
-    return sent
+        swept[name] = Swept(urllib.parse.urlsplit(request.value.url).query, eval_inactive(page))
+    return swept
 
 
 @contextlib.contextmanager
