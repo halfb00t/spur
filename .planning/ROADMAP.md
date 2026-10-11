@@ -284,8 +284,8 @@ fresh; nothing else blocks it, and it can move later in the milestone at no cost
      `build.failed` record for such a request still carries its `slug`.
   3. The record is written before the names move. The `Lxx` lists every consumer of the old
      names — `Content-Disposition` (`app.py`), the record's `slug` (`records.py`),
-     `docs/http-api.md`, the two `test_api.py` pins — and states that no cache is keyed by slug
-     (the export cache key is `(params, fmt, quality, encoding)`); `docs/http-api.md` says the
+     `docs/architecture/http-api.md`, the two `test_api.py` pins — and states that no cache is keyed by slug
+     (the export cache key is `(params, fmt, quality, encoding)`); `docs/architecture/http-api.md` says the
      new truth; `git diff --exit-code tests/regression/pre_v0_2.json` is clean (the slug is
      not in the fixture); the idea file is retired in the same commit (status, sha, `git mv`,
      INDEX row).

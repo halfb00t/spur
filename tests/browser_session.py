@@ -279,10 +279,13 @@ def eval_pairs(page: Page) -> list[tuple[str, str]]:
 def serve_stl_from(page: Page, stl: bytes) -> None:
     """Answer every later STL request with `stl`, the first build's bytes (PD-06).
 
-    After the first real build every step builds nothing on the server, so the pool is not
-    asked again and a step's cost is the page's, not the kernel's. The bytes must be served
-    and not the request aborted: an aborted STL makes `fail()` replace `#messages` with
-    "Request failed: ...", which erases the very warnings a step asserts (21-RESEARCH P7).
+    On a page that carries this route, every step after the first real build builds nothing
+    on the server, so the pool is not asked again and a step's cost is the page's, not the
+    kernel's. The `download name` step (Phase 22) opens its own page without this route,
+    because it needs the server's Content-Disposition, and builds one more part. The bytes
+    must be served and not the
+    request aborted: an aborted STL makes `fail()` replace `#messages` with "Request failed:
+    ...", which erases the very warnings a step asserts (21-RESEARCH P7).
     """
     page.unroute(STL_ROUTE)
     page.route(STL_ROUTE, lambda route: route.fulfill(status=200, body=stl))

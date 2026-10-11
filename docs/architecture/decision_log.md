@@ -2447,3 +2447,119 @@ readings on 2026-10-10 13:47 to 14:08 UTC (21-07), the commit-slice and `-n 8` r
 The ubuntu-latest runner: image `ubuntu-24.04` `20261004.327.1`, 4 CPUs (`nproc`), 15,989 MB RAM (`free -m`),
 kernel `6.17.0-1022-azure`, read in run 38044109910 on 2026-10-10 (21-02); run 38059369744 on the same image
 on 2026-10-10 14:22 to 14:39 UTC (21-08). L34's bar and L36's 11.28 s were read on a 12-CPU Apple M2 Max.
+
+## L40 — The download name carries the root the part has: _trochoid exactly when L38's predicate builds the hob root, and no cache is keyed by slug (applies L05 and L08 to the file name)
+
+Date: 2026-10-11.
+
+L05, L08, L38 and L39 stay as written. This entry applies L05 (an absent field changes nothing: now also the
+file name) and L08 (a printed claim is never a plausible guess: a name is a claim about the part) to
+`GearParams.slug()`, makes it a caller of L38's predicate, and cites L39, whose browser scenario gains one step.
+Every figure below is cited to the 22-01 SUMMARY, to this commit's tests, or to `bench/RESULTS.md`
+`## Download name carries the root (Phase 22)`, which the next commit of this phase (22-02) adds. None is
+re-estimated here, and none is carried from one host to another.
+
+**The rule** (D-01, D-03). `GearParams.slug()` ends `_trochoid` exactly when
+`root_mode(self, profile(self), requested=self.root_shape, rho=self.root_fillet).mode == "trochoid"`, and
+returns today's `spur_z{teeth}_m{module:g}_pa{pressure_angle:g}` otherwise. A 23-tooth `root_shape=trochoid`
+part is `spur_z23_m1.75_pa25_trochoid`; a 40-tooth request, which `root_mode` ignores (`nothing radial to
+replace`), is `spur_z40_m1.75_pa25`, byte for byte today's name; the predicate flips between 26 teeth
+(`spur_z26_m1.75_pa25_trochoid`) and 27 (`spur_z27_m1.75_pa25`) at the default module, angle and `root_fillet`;
+the refused `tip land gone` request (19 teeth, shift -0.4, backlash 0.10, 33.5 degrees) is
+`spur_z19_m1.75_pa33.5`. The root is a suffix, never a prefix, so today's name is a prefix of the hob-root name
+and a sorted directory lists the two parts of one gear side by side. `_trochoid` is the only non-default root
+word; no other is invented, no `GearParams` field is added and `app.js` is not edited. The call is a local
+import inside the method (`from .calc import profile, root_mode`), the pattern `_feasible` already uses,
+because `calc` imports `GearParams` for typing and a module-level import would be circular; there is no helper
+in `calc`. `slug()` is the fourth call site of `root_mode(p, pr, requested=p.root_shape, rho=p.root_fillet)`,
+beside `derive()` (`calc.py:1086`), `tip_chamfer_limit` (`calc.py:354`) and `model._build` (`model.py:773`):
+22-CONTEXT counted three, and `root_mode`'s docstring now names it. Rejected: the requested root, which is a
+pure string compare but names a root the part may lack.
+
+**Totality** (D-02). There is no `try` in `slug()`, because on a validated `GearParams` `root_mode` returns a
+reason for every refusal and does not raise: `cutter()` raises only for a non-finite or negative `rho`, which
+`root_fillet`'s bounds refuse first; `_root_curve` returns reasons; `_junction` returns `None` on a failed
+bracket. The evidence is the six pure rows of `test_the_download_name_follows_the_root_root_mode_builds`
+(default, 23, 26, 27, 40 teeth and the tip-land request), the two `build.failed` rows of
+`test_a_failed_build_records_the_name_of_the_part_it_would_have_been` (a 25-tooth hob-root request records
+`spur_z25_m1.75_pa25_trochoid`, the refused one `spur_z19_m1.75_pa33.5`), and a one-off sweep on the real
+`slug()` over `bench.trochoid.sweep_cases()` with `root_shape="trochoid"` and each case's `root_fillet`:
+17,567 of the 31,446 cases validate, 9,954 are named `_trochoid`, none raised, and the name agreed with the
+predicate in every one (22-01 SUMMARY). The sweep is a command, not a test: a 1.9 s sweep in the commit slice
+is a gate cost nobody measured or accepted. Rejected: a fallback to the radial name on an exception (a
+plausible name is a false claim and hides a `calc` bug behind a filename); a marked name such as
+`_root-unknown` (a third root word the roadmap excludes).
+
+**The cost.** Per call, timeit best of 5 x 2000, Apple M2 Max, load average 6.5, 2026-10-11: 2.3 us for the
+default radial gear, 5.0 us for a 40-tooth ignored request, 5.2 us for the refused tip-land request, 37.8 us
+where the hob root applies (23 teeth), against 0.32 us for the old f-string alone. At most four calls per
+request (`build.started`, `export.served`, the header, the worker's temp stem), so under 0.2 ms, and not cached
+(a `cached_property` is not worth its interaction with a frozen Pydantic model).
+
+**Every consumer, read before the names moved** (D-10, SC3; PD-02). Read with
+`git grep -n -I -w -E 'slug|spur_z[0-9]+|[Cc]ontent-[Dd]isposition' 5769ac0 -- src bench docs tests README.md .github ':!docs/tech_debt/resolved'`
+at `5769ac0`, the parent of this commit (the tree before the names move); 33 lines, each accounted for.
+- `src/spur/app.py:496`, the `Content-Disposition` header: built per response from `params.slug()`; unedited,
+  it carries the suffix through the one definition.
+- `src/spur/records.py:180`, `_gear_fields`: the `slug` field of `build.started`, `export.served`,
+  `build.failed` and `queue.refused` (`records.py:218, 231, 255, 267`); unedited. `params` in each record is
+  unchanged, so a log grep keyed on a slug sees a new value for effective-hob-root gears only.
+- `src/spur/model.py:807`, `bench/export_cost.py:176`, `tests/test_model.py:2021`: temp-file stems in a
+  directory that is deleted; the name is invisible to the user. `src/spur/params.py:190`: the definition.
+- `docs/architecture/http-api.md:43` (the `model.{stl,step}` row) and `:93` (the records paragraph): rewritten
+  in this commit to state the rule.
+- `tests/test_api.py:411` and `:412`: the trochoid header was asserted equal to the radial one and by
+  substring; both change deliberately, to exact pins of the whole radial header
+  (`spur_z23_m1.75_pa25.stl`) and the whole hob-root header (`spur_z23_m1.75_pa25_trochoid.stl`) in one test,
+  and the docstring at `:376` that said the slug ignores `root_shape` is rewritten. `:720`, the radial-default
+  pin (`spur_z21_m1.75_pa25.{fmt}`), is not edited. The four truthy asserts `:797`, `:985`, `:1086` and `:1123`
+  (`_field(..., "slug")`) are unaffected.
+- `tests/test_records.py:60, 89, 95`: a synthetic `spur_z19`, not tied to `slug()`.
+- `docs/review-2026-09-21.md:13`: frozen history, names the header, not the name.
+- The CLI: `src/spur/cli.py` has no `slug` or `Content-Disposition` line; `-o` is the caller's own name.
+- Prose only, unrelated: `docs/HOW_TO_DEVELOP.md:62, 87, 256, 257` and `docs/ideas/INDEX.md:4` are branch- and
+  file-name templates; the idea file (`docs/ideas/2026-10-08-download-name-carries-the-root-shape.md`) and its
+  `docs/ideas/INDEX.md:19` row are retired in this commit.
+- Frozen history under `.planning/**` and `docs/tech_debt/resolved/` is not edited. `tests/regression/pre_v0_2.json`
+  holds no `spur_z` string and `tests/regression/golden_requests.json` holds only query strings: both show an
+  empty diff.
+
+**No cache is keyed by slug.** The export byte cache keys on `(params, fmt, q.quality, encoding)`
+(`app.py:401`, its raw twin `app.py:418`); the solid cache `_build_cached` (`model.py:797`) is an `lru_cache`
+keyed on the `GearParams` object; `pool.py` routes a build to an executor by `hash(p) % workers`, parameter-hash
+affinity (D-07); and the header is built per response after the byte cache (`app.py:496`). So a cached or
+concurrent request for one gear carries the name its parameters give, and `slug()`, a pure function of a frozen
+`GearParams` with no module state, computes one name for one request in any process or order.
+
+**The browser proof** (D-04, D-05, D-07). The scenario gains one step, `download name`, between `golden sweep`
+and `root_shape=bogus as today`: a fresh `browser.new_page()` (the main page carries `serve_stl_from`, whose
+route answers every STL with the first build's bytes and no `Content-Disposition`, so a click there saves
+`model.stl`), the fragment in the `goto` URL (a hash assigned after the load was lost once in about a dozen
+research runs), a wait on the exact href `api/model.stl?teeth=23&root_shape=trochoid`, then
+`page.expect_download()` around a click on `#dl-stl`, asserting `suggested_filename ==
+"spur_z23_m1.75_pa25_trochoid.stl"`. STL only: STEP is pinned in `tests/test_api.py`. It is seen red against the
+unchanged `slug()` (`the download is named 'spur_z23_m1.75_pa25.stl'`). Its cost is one hob-root build at load
+plus a fine re-mesh of the cached solid: `step download name` read 1.13 s and the click to the download 0.12 s
+beside `step first build drawn` at 2.93 s (Apple M2 Max, load average 5 to 6.5, 2026-10-11, 22-01 SUMMARY);
+the three timed readings on the committed head are 22-02's, in `bench/RESULTS.md`. 21-CONTEXT's "the
+scenario test draws exactly one real part" no longer holds (it builds two), and `serve_stl_from`'s docstring
+says so. `BUILD_WAIT_MS` stays 45,000 ms under 21 PD-04's 15 s rule. L39 states no build count, so it is cited
+and not amended.
+
+**The doc path.** REQUIREMENTS and the roadmap's success criterion 3 named `docs/http-api.md`; the file is
+`docs/architecture/http-api.md`. Both are corrected in this commit.
+
+**Reversibility.** D-01 is **costly**: the rule is pinned by this entry, `docs/architecture/http-api.md`, the
+header pins and the browser step, and switching to the requested root renames every ignored-request download a
+second time. The suffix word and the step's waits are reversible in a commit of their own.
+
+Reason: two different parts, the radial one and the hob-root one, downloaded under one name on disk, and a name
+is a claim about the part (L08); it follows the part the way every number beside it does. Nothing the user did
+not change is renamed (L05): every radial part and every link that omits `root_shape` keeps today's name byte
+for byte, and the regression fixture and the golden pin do not move. The idea file moved to `docs/ideas/retired/`
+in this entry's commit.
+Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string hw.memsize`, read
+2026-10-11); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.13,
+`playwright` 1.63.0, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Chrome Headless
+Shell 153.0.8010.12; the timeit, sweep and browser readings on 2026-10-11 about 12:15 to 12:30 local time
+(22-01), load average 5.2 to 6.5 (`uptime`).

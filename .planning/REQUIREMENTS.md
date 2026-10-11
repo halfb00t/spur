@@ -104,7 +104,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   (ignored).
 - [ ] **REQ-slug-consumers-read-first**: the `Lxx` lists every consumer of the old names
   before they move — `Content-Disposition` (`app.py`), the record's `slug` (`records.py`),
-  `docs/http-api.md`, the two `test_api.py` pins (the trochoid one flips deliberately; the
+  `docs/architecture/http-api.md`, the two `test_api.py` pins (the trochoid one flips deliberately; the
   radial default one must not) — and records that no cache is keyed by slug (READ: the
   export cache key is `(params, fmt, quality, encoding)`). The idea file is retired in the
   same commit.

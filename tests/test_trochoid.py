@@ -205,6 +205,36 @@ def test_the_tip_land_limit_moves_with_backlash_and_module_one_field_step_either
         assert root_warnings(rm) == (sentence,)
 
 
+_BORE_OFF = {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none"}
+
+
+@pytest.mark.parametrize(("fields", "name", "reason"), [
+    pytest.param({}, "spur_z19_m1.75_pa25", "not requested", id="default-gear"),
+    pytest.param({"teeth": 23, "root_shape": "trochoid"},
+                 "spur_z23_m1.75_pa25_trochoid", None, id="23-applies"),
+    pytest.param({"teeth": 26, "root_shape": "trochoid"},
+                 "spur_z26_m1.75_pa25_trochoid", None, id="26-applies-last"),
+    pytest.param({"teeth": 27, "root_shape": "trochoid"},
+                 "spur_z27_m1.75_pa25", "nothing radial to replace", id="27-ignored-first"),
+    pytest.param({"teeth": 40, "root_shape": "trochoid"},
+                 "spur_z40_m1.75_pa25", "nothing radial to replace", id="40-ignored"),
+    pytest.param({"teeth": 19, "module": 1.75, "profile_shift": -0.4, "backlash": 0.10,
+                  "pressure_angle": 33.5, "root_shape": "trochoid", **_BORE_OFF},
+                 "spur_z19_m1.75_pa33.5", "tip land gone", id="tip-land-gone-refused"),
+])
+def test_the_download_name_follows_the_root_root_mode_builds(
+        fields: dict[str, object], name: str, reason: str | None) -> None:
+    """REQ-slug-carries-effective-root, SC2, D-01, D-02: the name follows the predicate
+    that builds the part. A refused and an ignored request each get a name and never an
+    exception, because slug() runs inside the `build.failed` and `queue.refused` records.
+    26/27 is where the predicate flips at the default module, angle and `root_fillet`
+    (measured 2026-10-11). The names are literals."""
+    p = GearParams.model_validate(fields)
+    rm = root_mode(p, profile(p), requested=p.root_shape, rho=p.root_fillet)
+    assert (rm.reason, p.slug()) == (reason, name)
+    assert p.slug().endswith("_trochoid") == (rm.mode == "trochoid")
+
+
 def test_a_sharp_cutter_and_a_corner_centre_on_the_rolling_line_are_both_legal() -> None:
     """REQ-cutter-defined-once, empty and adjacency (F4): a tip radius of 0 is the
     sharp-corner trochoid; a tip radius equal to the tip depth puts the corner-arc centre

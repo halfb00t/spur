@@ -16,7 +16,6 @@ the same commit as the file.
 | 2026-09-29 | [A teeth- or module-dependent honeycomb cell-count cap](2026-09-29-teeth-dependent-honeycomb-cap.md) | D-12 rejected it for one constant; revisit only if a small gear needs more cells and a sweep shows cost falling with gear size |
 | 2026-09-29 | [Conditional form fields ("disabled when")](2026-09-29-conditional-form-fields.md) | Judged "not taken" at Phase 12 (08 D-09 stands); a browser test now exists (L39) and Phase 23 takes it; otherwise revisit when a user reports the ignored-field warnings as insufficient |
 | 2026-10-03 | [Constrain `make venv` to the pinned closure, the way CI is](2026-10-03-constrain-make-venv-to-the-closure.md) | Phase 15 pins CI only (D-14); the closure was resolved on linux/amd64 and its arm64 wheel availability is unproven — revisit when a fresh constrained `make venv` passes `make verify` on this host |
-| 2026-10-08 | [The download's file name does not carry the root shape](2026-10-08-download-name-carries-the-root-shape.md) | A radial and a trochoid download of one gear share a name, but nobody has reported mixing them up, and a slug change renames every download, so it needs its own decision |
 
 ## Retired
 
@@ -26,3 +25,4 @@ items: the file goes to `retired/` with `Status: retired` and `Retired in:` nami
 | Date | Item | Retired in |
 |---|---|---|
 | 2026-09-21 | [A browser test for the viewer](retired/2026-09-21-browser-test-for-the-viewer.md) | docs(21): log L39 and retire the browser-test idea -- a headless browser runs in make verify and CI |
+| 2026-10-08 | [The download's file name does not carry the root shape](retired/2026-10-08-download-name-carries-the-root-shape.md) | feat(22): a hob-root part downloads as _trochoid -- log L40 and retire the download-name idea |

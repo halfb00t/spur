@@ -1,6 +1,8 @@
 # The download's file name does not carry the root shape
 
 Date: 2026-10-08
+Status: retired
+Retired in: feat(22): a hob-root part downloads as _trochoid -- log L40 and retire the download-name idea
 Source: 19-RESEARCH Open Question 6
 Related files:
 - src/spur/params.py (`GearParams.slug`)
@@ -29,3 +31,9 @@ Revisit when a user reports mixing them up, or when the default flip is planned 
 `2026-09-21-trochoidal-root-fillets.md`). A slug change renames every download, and the
 slug is also written into records, so it needs its own decision (`Lxx`) and a look at what
 pins the old names, not a drive-by edit.
+
+## Outcome
+
+Phase 22 built it. L40 records the rule (the name follows the root `root_mode` builds, so an ignored or
+refused request keeps the plain name) and every consumer it read first. The worry above that a slug change
+renames every download is answered: only effective-hob-root parts are renamed, and no cache is keyed by slug.

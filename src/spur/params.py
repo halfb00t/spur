@@ -188,5 +188,23 @@ class GearParams(BaseModel):
         return self
 
     def slug(self) -> str:
-        """Short, filename-safe identifier."""
-        return f"spur_z{self.teeth}_m{self.module:g}_pa{self.pressure_angle:g}"
+        """The short, filename-safe name of the part.
+
+        It ends `_trochoid` exactly when L38's predicate builds the hob root for these
+        parameters, not when the hob root was asked for: a request `root_mode` ignores or
+        refuses is named as the radial part it gets (L08, L40). It is called inside
+        `build.failed` and `queue.refused` records and stays total because `root_mode`
+        returns a reason for every refusal on a validated `GearParams`.
+
+        Cost, per call (timeit, best of 5 x 2000, Apple M2 Max, load average 6.5, 2026-10-11):
+        2.3 us for the default radial gear, 5.0 us for a 40-tooth request `root_mode` ignores,
+        5.2 us for a refused `tip land gone` request, 37.8 us where the hob root applies
+        (23 teeth), against 0.3 us for the old f-string alone. At most four calls per request
+        (`build.started`, `export.served`, the header, the worker's temp stem), so under 0.2 ms,
+        and not cached: a `cached_property` is not worth its interaction with a frozen model.
+        """
+        from .calc import profile, root_mode  # local import: calc imports GearParams
+
+        name = f"spur_z{self.teeth}_m{self.module:g}_pa{self.pressure_angle:g}"
+        rm = root_mode(self, profile(self), requested=self.root_shape, rho=self.root_fillet)
+        return f"{name}_trochoid" if rm.mode == "trochoid" else name

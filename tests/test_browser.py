@@ -4,7 +4,8 @@
 page the product ships, in Chrome Headless Shell, against a real `uvicorn`, and checks what
 only a browser can: that WebGL2 exists (without it the page builds no form at all,
 app.js:229), that the first part is actually drawn, that the scene holds as many triangles
-as the STL it was fed, and that the download link appears only after the model was shown.
+as the STL it was fed, that the download link appears only after the model was shown, and that
+a click on `#dl-stl` saves the file under the name the server gives the part.
 
 It runs inside `make verify`'s `test` -- so also the pre-push hook, `make worktree.land` and
 CI's `test (3.12)` -- and is excluded by name from `make verify.fast` and `make test-image`
@@ -553,6 +554,33 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 assert not moved, f"golden sweep: the form sends other queries: {detail}"
                 print(f"golden sweep: {len(swept)} records, {len(set(swept.values()))} distinct")
+
+            with step("download name"):
+                # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers
+                # with the first build's bytes and no Content-Disposition, so a click there
+                # saves `model.stl` (22-RESEARCH Pitfall 1, reproduced): this step opens its
+                # own page. A fragment assigned after the load can be erased before
+                # buildForm() returns (Pitfall 2, one lost in about a dozen runs), so the
+                # fragment rides the goto URL, the way a shared link does. The href carries no
+                # `quality`, so the click asks ModelQuery's default `fine` (app.py:238-239):
+                # one 23-tooth hob-root build at load plus a fine re-mesh of the cached solid.
+                fresh = browser.new_page()
+                try:
+                    fresh.goto(server + "/#teeth=23&root_shape=trochoid")
+                    expect(fresh.locator("#dl-stl")).to_have_attribute(
+                        "href", "api/model.stl?teeth=23&root_shape=trochoid", timeout=BUILD_WAIT_MS
+                    )
+                    started = time.monotonic()
+                    with fresh.expect_download(timeout=BUILD_WAIT_MS) as download:
+                        fresh.click("#dl-stl")
+                    name = download.value.suggested_filename
+                    clicked = time.monotonic() - started
+                finally:
+                    fresh.close()
+                print(f"download name: {name}, click to download {clicked:.2f} s")
+                assert name == "spur_z23_m1.75_pa25_trochoid.stl", (
+                    f"the download is named {name!r}, not the name the server gives this part"
+                )
 
             with step("root_shape=bogus as today"):
                 # Pinned as the page behaves, not fixed (REQUIREMENTS, Form follow-ups): the
