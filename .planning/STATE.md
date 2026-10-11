@@ -4,18 +4,18 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 23
 current_phase_name: Conditional Form Fields
-status: "Phase 22 shipped — PR #34"
-stopped_at: Phase 23 context gathered
-last_updated: "2026-10-11T10:56:58.202Z"
+status: executing
+stopped_at: Completed 23-01-PLAN.md
+last_updated: "2026-10-11T12:21:34.710Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 23 planning complete
-state_head: e0bddf9912a96360a37bedc6a7551987beb1bee4
+last_activity_desc: Phase 23 execution started
+state_head: e09f834ac4bef35b26371ca09db2b710ff5e1a66
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 14
-  completed_plans: 10
-  percent: 71
+  completed_plans: 11
+  percent: 79
 ---
 
 # Project State
@@ -30,12 +30,12 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 23 (Conditional Form Fields) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 22 shipped — PR #34
-Last activity: 2026-10-11 — Phase 23 planning complete
+Phase: 23 (Conditional Form Fields) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-10-11 — Phase 23 execution started
 
-Progress: [███████░░░] 71% (2 of 5 v0.5 phases complete — 21, 22; Phase 24 is discretionary; 10/10 plans so far)
+Progress: [████████░░] 79% (2 of 5 v0.5 phases complete — 21, 22; Phase 24 is discretionary; 10/10 plans so far)
 
 ## Performance Metrics
 
@@ -228,6 +228,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 21 P08 | 25 min | 3 tasks | 7 files |
 | Phase 22 P01 | 12 min | 3 tasks | 12 files |
 | Phase 22 P02 | 6 min | 2 tasks | 2 files |
+| Phase 23 P01 | 9 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -423,6 +424,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 22]: D-11 held — the whole decision landed in one commit `e3b1181`: `slug()`, the header pins, the pure rows, the `build.failed` rows, the browser `download name` step, both docs, L40, the `docs/http-api.md` → `docs/architecture/http-api.md` correction in REQUIREMENTS/ROADMAP and the idea's retirement; `tests/regression/*` and the golden pin unchanged (L05).
 - [Phase 22]: 22-02 set no bar from its three readings (3.56 / 3.20 / 1.13 s, mean 2.63 s, under 21 PD-04's 15 s) — taken on a busy M2 Max (1-min load 6.5–7.0), so upper bounds; `BUILD_WAIT_MS` stays `45_000` (comment-only edit); Phase 25 re-sets the gate bar on its final HEAD and absorbs the step (D-06).
 - [Phase 22]: 22-01's Task 1 clean-tree precondition read against tracked files only after the orchestrator's phase-start `STATE.md`/`state.json` edits; the executor staged explicitly and flagged it (22-01-SUMMARY) — the commit slice is exactly the 11 planned files plus the rename.
+- [Phase 23]: L41: enabled_when is a bare list of {field, op, value} conditions (eq/gt only), built by when() and emitted through _extra(); supersedes 08 D-09, keeps L02 — The relation lives on the model and reaches the form through the schema, so app.js names no GearParams field outside DIMS; costly to reverse (Phase 24 reuses the vocabulary)
+- [Phase 23]: applyRelations() has exactly three call sites (readHash end, input listener before scheduleUpdate, #reset) and never runs on a build's success; an inert field is dimmed, never disabled, hidden or cleared — A 422 must leave the state the fields imply, and a shared link's value must load, be editable and be sent (L05)
 
 ### Pending Todos
 
@@ -675,9 +678,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T09:51:28.217Z
-Stopped at: Phase 23 context gathered
-Resume file: .planning/phases/23-conditional-form-fields/23-CONTEXT.md
+Last session: 2026-10-11T12:21:34.654Z
+Stopped at: Completed 23-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
