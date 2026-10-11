@@ -40,7 +40,7 @@ own: how much work it is willing to accept at once.
 | `GET /api/health` | a `HealthReport`: `{"status": "ok", "version": ..., "pool": {"workers": N, "queue_available": M, "workers_replaced": R}}`, with `pool` `null` only when the app runs without its lifespan |
 | `GET /api/schema` | `GearParams.model_json_schema()` — the form is built from this |
 | `GET /api/info?…[&mate_teeth=N]` | `derive(params, mate_teeth=…)` → a `DerivedDimensions` document; every key always present, `null` where a value does not apply |
-| `GET /api/model.{stl,step}?…` | the bytes, with `Content-Disposition` from `params.slug()` |
+| `GET /api/model.{stl,step}?…` | the bytes, with `Content-Disposition` from `params.slug()`: `spur_z{teeth}_m{module}_pa{pressure_angle}`, with `_trochoid` appended exactly when the hob root is what the part is built with (`L40`); a radial part, and a `root_shape=trochoid` request `calc.root_mode` ignores or refuses, keep the plain name |
 
 Two request models subclass `GearParams`: `InfoQuery` adds `mate_teeth`, `ModelQuery`
 adds `quality`. `_gear(q)` strips them back to a plain `GearParams` before anything
@@ -90,7 +90,7 @@ and has to measure the event loop, not the pool.
 
 One JSON-lines logger, on stderr, configured at the composition boundary (`L20`,
 `src/spur/records.py`). Every `/api/model` request emits exactly one of the following,
-each carrying a per-request `request` id, the gear's `slug` and non-default `params`:
+each carrying a per-request `request` id, the gear's `slug` (the same name as the download's, so a record for a hob-root gear carries `_trochoid`, `L40`) and non-default `params`:
 
 | Event | Level | When | Fields beyond the shared envelope |
 |---|---|---|---|

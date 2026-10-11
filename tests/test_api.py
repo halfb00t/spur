@@ -373,12 +373,14 @@ def test_a_root_shape_link_is_served_with_the_root_it_cut() -> None:
     title, enum and default, no step), /api/info's hob-root numbers with no root-circle
     thickness, the form leaving a default value out of its link, and the model download.
 
-    The download's slug is the same as the radial gear's: it ignores root_shape (19-RESEARCH
-    Open Question 6, filed as an idea by 19-11, not changed here). 23 teeth: a count no
-    other test downloads, and one where the hob root applies (from 27 teeth on at the
-    default module and angle the base circle is above the root circle, the request is
-    ignored and the two parts are the same), so the byte cache cannot answer the request
-    and the two downloads differ."""
+    The download name carries the root the part has (L40): the hob-root part ends
+    `_trochoid` and the radial part of the same gear keeps today's name. 23 teeth: the
+    hob root applies (from 27 teeth on at the default module and angle the base circle is
+    above the root circle, the request is ignored and the two parts are the same). No
+    other test downloads the radial 23-tooth part, and
+    `test_the_download_name_carries_the_root_the_part_has` asks for the same hob-root
+    part for its header only, which is harmless because the byte cache keys on the whole
+    request, `root_shape` included, and the name is set per response."""
     prop = client.get("/api/schema").json()["properties"]["root_shape"]
     assert prop["group"] == "Teeth"
     assert prop["title"] == "Root shape"
@@ -408,8 +410,9 @@ def test_a_root_shape_link_is_served_with_the_root_it_cut() -> None:
     assert r.headers["content-type"] == "model/stl"
     assert len(r.content) > 84
     assert r.content != radial.content  # a different root is a different part
-    assert r.headers["content-disposition"] == radial.headers["content-disposition"]
-    assert 'filename="spur_z23_m1.75_pa25.stl"' in r.headers["content-disposition"]
+    assert radial.headers["content-disposition"] == 'attachment; filename="spur_z23_m1.75_pa25.stl"'
+    assert (r.headers["content-disposition"]
+            == 'attachment; filename="spur_z23_m1.75_pa25_trochoid.stl"')
 
 
 def test_a_hole_link_is_served_with_its_walls() -> None:
@@ -718,6 +721,27 @@ def test_model_download(fmt: str, ctype: str, magic: bytes | None) -> None:
     assert r.status_code == 200
     assert r.headers["content-type"] == ctype
     assert r.headers["content-disposition"] == f'attachment; filename="spur_z21_m1.75_pa25.{fmt}"'
+    if magic:
+        assert r.content.startswith(magic)
+
+
+@pytest.mark.parametrize(("fmt", "ctype", "magic"), [
+    ("stl", "model/stl", None),
+    ("step", "model/step", b"ISO-10303-21;"),
+])
+@pytest.mark.parametrize(("teeth", "stem"), [
+    (23, "spur_z23_m1.75_pa25_trochoid"),  # the hob root applies
+    (40, "spur_z40_m1.75_pa25"),  # ignored, nothing radial to replace: today's name
+])
+def test_the_download_name_carries_the_root_the_part_has(
+        fmt: str, ctype: str, magic: bytes | None, teeth: int, stem: str) -> None:
+    """STL and STEP are named by one slug(), and the name follows the root the part has
+    (L40, D-08); the names are literals because a filename pin is a literal by design."""
+    r = client.get(f"/api/model.{fmt}", params={"teeth": teeth, "root_shape": "trochoid",
+                                                "quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == ctype
+    assert r.headers["content-disposition"] == f'attachment; filename="{stem}.{fmt}"'
     if magic:
         assert r.content.startswith(magic)
 
@@ -1088,6 +1112,39 @@ def test_a_failed_build_emits_build_failed_naming_the_class_and_the_level(
     assert _field(failed[0], "duration_ms") is not None
 
     assert not _event_records(caplog, "export.served")
+
+
+@pytest.mark.parametrize(("fields", "name"), [
+    pytest.param({"teeth": 25, "root_shape": "trochoid"}, "spur_z25_m1.75_pa25_trochoid",
+                 id="applies"),
+    pytest.param({"teeth": 19, "profile_shift": -0.4, "backlash": 0.10, "pressure_angle": 33.5,
+                  "root_shape": "trochoid", "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0,
+                  "recess_sides": "none"}, "spur_z19_m1.75_pa33.5", id="refused"),
+])
+def test_a_failed_build_records_the_name_of_the_part_it_would_have_been(
+        caplog: pytest.LogCaptureFixture, fields: dict[str, object], name: str) -> None:
+    """SC2: the `build.failed` record names the part the request would have been --
+    `_trochoid` when the hob root applies, the plain name when `root_mode` refuses."""
+    caplog.set_level(logging.INFO)
+
+    async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+        raise BuildError("the kernel refused this part")
+
+    app.dependency_overrides[build_backend] = lambda: backend
+    try:
+        # 25 teeth trochoid is downloaded by no other test and the hob root applies there
+        # (26 is tests/test_cli.py:646, 682, 23 is this file's root-shape test), and no
+        # other test downloads the 33.5 degree tip-land gear, so the byte cache cannot
+        # answer before the raising backend runs.
+        r = client.get("/api/model.stl", params={"quality": "preview", **fields})
+    finally:
+        app.dependency_overrides[build_backend] = lambda: _inline_backend
+    assert r.status_code == 422
+    assert caplog.records  # Pitfall 1: an empty caplog would pass with nothing proven
+
+    failed = _event_records(caplog, "build.failed")
+    assert len(failed) == 1
+    assert _field(failed[0], "slug") == name
 
 
 def test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed(

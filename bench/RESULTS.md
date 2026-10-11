@@ -5248,3 +5248,69 @@ nothing here says the `--with-deps` install or the headless shell works there. T
 **SC5 is met**: the phase's own suite, `tests/test_browser.py` inside `make verify` with the headless shell installed under
 `.venv/ms-playwright` by the `$(BROWSER)` stamp with `--with-deps`, is green on a real `ubuntu-latest` run of the phase branch at
 the pushed head `88df5cf`, run 38059369744, job wall time 16 min 8 s, `1226 passed in 887.92s`, TOTAL 97.98 %.
+
+## Download name carries the root (Phase 22)
+
+What is priced here is the `download name` step 22-01 added to `tests/test_browser.py`: a fresh page, one 23-tooth hob-root
+build at load, a click on `#dl-stl` that asks a fine re-mesh, and `suggested_filename` read from the saved file. D-06 chose the
+step's own timing over a full-gate A/B (six gate runs of about 190 s for one build in one step). No bar is set here: Phase 25
+re-sets the gate bar on its final HEAD and absorbs this step. These readings were taken on this host and are not compared with
+Phase 21's, which were read on an Apple M5 Max with 18 CPUs; the host below is an Apple M2 Max with 12 CPUs. Every run is at
+HEAD `5c6c025`, which contains 22-01's feature commit `e3b1181` (`feat(22): a hob-root part downloads as _trochoid -- log L40
+and retire the download-name idea`). `git status --porcelain --untracked-files=no` printed nothing before and after the three
+runs; the only untracked paths were `.planning/milestone.lock` and the kept logs.
+
+### The download step, priced (22-02)
+
+Three readings of `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, one at a time in the foreground, nothing
+else started by this plan in between, `uptime` before and after each. The Makefile's own `-n 8` precedes the mode and the later
+`-n0` wins; `-s` prints the `step` lines because the test then runs in the main process. Each run's whole output is kept as
+`.planning/phases/22-download-name-carries-the-root/investigation/22-02-reading-N.log` and every figure below is copied from it.
+
+#### Host state
+
+- Machine: `bench.machine_facts()` reads `12 CPUs, arm64, 32.0 GiB RAM`; chip Apple M2 Max (`sysctl -n machdep.cpu.brand_string`),
+  macOS 27.0.1 (build 26A434), Darwin 27.0.0, arm64
+- Python 3.12.13 (`.venv`), playwright 1.63.0, pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0; Chrome Headless Shell
+  153.0.8010.12 (`browser.version`), `PYTEST_WORKERS` 8 (overridden to `-n0` by the command)
+- HEAD `5c6c025`; 22-01's commit `e3b1181`
+- Read 2026-10-11, host state at 06:33:15Z, runs started 06:33:24Z, 06:33:36Z and 06:33:48Z
+- Not an idle host. The 1-minute load read 6.5 to 7.0 across the three runs (15-minute load 7.7). At the start `ps` listed
+  `mediaanalysisd` at 98 % CPU (108 % after the third run), `WindowServer` at 39 %, `trivy` at 26 % and a Firefox plugin
+  container at 22 %, none started by this plan, and an OrbStack helper at 23 % after the third run. So every wall figure below
+  is an upper bound for an idle host and none is a bar
+
+#### Readings
+
+| Run | Result line | `step download name` (s) | click to download (s) | `step first build drawn` (s) | 1-minute load before -> after | UTC start |
+|---|---|---|---|---|---|---|
+| 1 | `1 passed in 9.25s` | 3.56 | 0.14 | 2.98 | 6.83 -> 6.47 | 06:33:24Z |
+| 2 | `1 passed in 8.33s` | 3.20 | 0.12 | 2.92 | 6.83 -> 7.00 | 06:33:36Z |
+| 3 | `1 passed in 6.14s` | 1.13 | 0.13 | 2.91 | 6.76 -> 6.62 | 06:33:48Z |
+
+The other steps, run 1 / 2 / 3, in seconds: `webgl2` 0.03 / 0.01 / 0.01; `form built` 0.09 / 0.07 / 0.07; `form from schema` 0.03 /
+0.02 / 0.03; `href after showModel` 0.08 / 0.04 / 0.04; `invalid field marked` 0.11 / 0.13 / 0.12; `warning rendered` 0.26 /
+0.27 / 0.27; `link round trip` 0.35 / 0.35 / 0.35; `golden sweep` 0.33 / 0.32 / 0.32; `root_shape=bogus as today` 0.09 / 0.09 /
+0.09. The logs are `22-02-reading-1.log`, `22-02-reading-2.log` and `22-02-reading-3.log`.
+
+`step download name` read 2.63 s on average over the three runs, from 1.13 to 3.56 s. The click to download, which is the fine
+re-mesh the click asks for, read 0.12 to 0.14 s. The spread of the step is wide for three runs 12 s apart at a steady load, and
+nothing in the logs says why run 3 is 2 s under runs 1 and 2; it is reported as read, not explained. The slowest build-bound
+step was `download name` in runs 1 and 2 (3.56 s and 3.20 s, against `first build drawn` at 2.98 s and 2.92 s) and `first build
+drawn` in run 3 (2.91 s against 1.13 s); the slowest reading of the three runs is `download name` at 3.56 s. All are under
+21 PD-04's 15 s, so `BUILD_WAIT_MS` stays at 45 s. Two further readings of the same step exist and are quoted, not compared:
+22-01's own, 1.13 s in both its red and its green run (`22-01-browser-red.log` and `22-01-browser-green.log`, same host, load 5
+to 6.5), and 22-RESEARCH's 3.28 s. The `ubuntu-latest` reading of the step comes from the pull request's first CI run and is not
+taken here.
+
+### Seen red once (Phase 22)
+
+These are 22-01's red runs (PD-10): each pin was run red before the code it pins existed, or while the rejected requested-root
+rule was in place, and the first failure line is copied from 22-01's SUMMARY and its kept logs. Later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 22-01 | `tests/test_api.py` header pins: `test_the_download_name_carries_the_root_the_part_has` (23 teeth, STL and STEP) and `test_a_root_shape_link_is_served_with_the_root_it_cut` (flipped) | none: the pins were written before `slug()` moved, so they ran against the unchanged `slug()`. `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q --tb=line -k 'download_name or root_shape_link'"` | `3 failed, 2 passed` (the two 40-tooth rows pass): `tests/test_api.py:414`, `assert 'attachment; ....75_pa25.stl"' == 'attachment; ...trochoid.stl"'`; the 23-tooth STL and STEP rows at `:744` the same shape | n/a, `slug()` then moved to the green state |
+| 22-01 | `download name` step in `tests/test_browser.py` | none: the step ran against the unchanged `slug()`. `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, log `investigation/22-01-browser-red.log` | `1 failed`: `AssertionError: the download is named 'spur_z23_m1.75_pa25.stl', not the name the server gives this part`, note `step: download name`, `tests/test_browser.py:581` | n/a, `slug()` then moved; the green run is `investigation/22-01-browser-green.log` |
+| 22-01 | `tests/test_trochoid.py::test_the_download_name_follows_the_root_root_mode_builds`, the ignored and refused rows | the condition in `slug()` changed to `self.root_shape == "trochoid"` (the rejected requested-root rule) for one run. `make test.fast PYTEST_ARGS="tests/test_trochoid.py -n0 -q --tb=line -k download_name_follows"` | `3 failed, 3 passed` (`27-ignored-first`, `40-ignored`, `tip-land-gone-refused`): `tests/test_trochoid.py:234`, `AssertionError: assert ('nothing rad...a25_trochoid') == ('nothing rad...7_m1.75_pa25')` | yes, the AST check printed `slug(): local calc import, root_mode on the request, no guard` after the restore |
+| 22-01 | `tests/test_api.py::test_a_failed_build_records_the_name_of_the_part_it_would_have_been`, the refused row | the same requested-root condition. `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q --tb=line -k failed_build_records_the_name"` | `1 failed, 1 passed` (`refused`): `tests/test_api.py:1147`, `AssertionError: assert 'spur_z19_m1....33.5_trochoid' == 'spur_z19_m1.75_pa33.5'` | yes, the same AST check after the restore |

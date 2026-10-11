@@ -96,15 +96,15 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 
 ### Download name — the file says which root it has
 
-- [ ] **REQ-slug-carries-effective-root**: `GearParams.slug()` appends `_trochoid` only when
+- [x] **REQ-slug-carries-effective-root**: `GearParams.slug()` appends `_trochoid` only when
   `calc.root_mode` applies the hob root for those parameters; a radial part and an ignored
   trochoid request (`root_shape=trochoid` is a silent no-op at z = 30, 41, 60 — MEASURED,
   FEATURES) keep today's name byte-for-byte. `slug()` stays total — it is called inside
   failure-path log records (READ, PITFALLS SL-2). Tested at z = 23 (applies) and z = 40
   (ignored).
-- [ ] **REQ-slug-consumers-read-first**: the `Lxx` lists every consumer of the old names
+- [x] **REQ-slug-consumers-read-first**: the `Lxx` lists every consumer of the old names
   before they move — `Content-Disposition` (`app.py`), the record's `slug` (`records.py`),
-  `docs/http-api.md`, the two `test_api.py` pins (the trochoid one flips deliberately; the
+  `docs/architecture/http-api.md`, the two `test_api.py` pins (the trochoid one flips deliberately; the
   radial default one must not) — and records that no cache is keyed by slug (READ: the
   export cache key is `(params, fmt, quality, encoding)`). The idea file is retired in the
   same commit.
@@ -249,8 +249,8 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-browser-fails-closed | Phase 21 | Complete |
 | REQ-browser-in-the-gate | Phase 21 | Complete |
 | REQ-browser-stack-pinned | Phase 21 | Complete |
-| REQ-slug-carries-effective-root | Phase 22 | Pending |
-| REQ-slug-consumers-read-first | Phase 22 | Pending |
+| REQ-slug-carries-effective-root | Phase 22 | Complete |
+| REQ-slug-consumers-read-first | Phase 22 | Complete |
 | REQ-enabled-when-metadata | Phase 23 | Pending |
 | REQ-relations-calc-backed | Phase 23 | Pending |
 | REQ-dim-and-editable | Phase 23 | Pending |

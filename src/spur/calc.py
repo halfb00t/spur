@@ -1680,12 +1680,12 @@ def root_mode(p: GearParams, pr: Profile,
        centreline or past the junction.
     6. `tooth severed`: the curve's narrowest half-angle is at or below zero (D-17).
 
-    Every sentence for these comes from `root_warnings`. `derive()`, `model._build` and
-    `tip_chamfer_limit` each call it once, with `requested=p.root_shape` and the tip
-    radius `rho=p.root_fillet` (19 D-01), so a gear nobody asked about reads radial with
-    "not requested" and the pre-v0.2 fixture cannot move. The default `rho = 0.0` is the
-    sharp cutter, legal, and ignored whenever nothing is requested; it stays for callers
-    that request nothing.
+    Every sentence for these comes from `root_warnings`. `derive()`, `model._build`,
+    `tip_chamfer_limit` and `GearParams.slug()` (the download name, L40) each call it
+    once, with `requested=p.root_shape` and the tip radius `rho=p.root_fillet` (19 D-01),
+    so a gear nobody asked about reads radial with "not requested" and the pre-v0.2
+    fixture cannot move. The default `rho = 0.0` is the sharp cutter, legal, and ignored
+    whenever nothing is requested; it stays for callers that request nothing.
     """
     if requested != "trochoid":
         return RootMode("radial", "not requested", None)

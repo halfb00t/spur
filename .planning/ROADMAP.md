@@ -120,7 +120,7 @@ byte-identical to the `v0.4` tag.
       field is marked, a warning renders, the first STL is drawn; the Linux path is proved on
       a real runner, the gate cost is measured A/B, and the request each of the 44 fixture
       records makes is pinned before any form change lands
-- [ ] **Phase 22: Download Name Carries the Root** - A hob-root part downloads as
+- [x] **Phase 22: Download Name Carries the Root** - A hob-root part downloads as (completed 2026-10-11)
       `..._trochoid`; every radial part, and every request whose trochoid is ignored, keeps
       today's name byte for byte, and the `Lxx` lists every consumer of the old names first
 - [ ] **Phase 23: Conditional Form Fields** - A field whose value would be ignored (or
@@ -284,8 +284,8 @@ fresh; nothing else blocks it, and it can move later in the milestone at no cost
      `build.failed` record for such a request still carries its `slug`.
   3. The record is written before the names move. The `Lxx` lists every consumer of the old
      names — `Content-Disposition` (`app.py`), the record's `slug` (`records.py`),
-     `docs/http-api.md`, the two `test_api.py` pins — and states that no cache is keyed by slug
-     (the export cache key is `(params, fmt, quality, encoding)`); `docs/http-api.md` says the
+     `docs/architecture/http-api.md`, the two `test_api.py` pins — and states that no cache is keyed by slug
+     (the export cache key is `(params, fmt, quality, encoding)`); `docs/architecture/http-api.md` says the
      new truth; `git diff --exit-code tests/regression/pre_v0_2.json` is clean (the slug is
      not in the fixture); the idea file is retired in the same commit (status, sha, `git mv`,
      INDEX row).
@@ -299,7 +299,12 @@ fresh; nothing else blocks it, and it can move later in the milestone at no cost
 **Boundaries**: a suffix, not a prefix; nothing for a non-default root other than the trochoid
 exists to name, so no other root value is invented here.
 **Research flag**: No — standard patterns; the one small decision is above.
-**Plans**: TBD
+**Plans**: 2/2 plans complete, in 2 waves (22-02 reads the step 22-01 commits, on the committed tree)
+- [x] 22-01-PLAN.md — Decision 12 in one commit (D-11): `slug()` ends `_trochoid` from L38's predicate; the STL/STEP
+  header pins at 23 and 40 teeth, the flipped pin, the totality rows and the `build.failed` name rows, a real browser
+  download on its own page; L40 with every consumer read at the base; the doc path corrected; the idea retired *(wave 1)*
+- [x] 22-02-PLAN.md — The download step priced (D-06): three readings with host state in `bench/RESULTS.md`, the
+  `BUILD_WAIT_MS` comment, 22-01's red runs recorded, the kept logs, `make verify` green *(wave 2)*
 
 ### Phase 23: Conditional Form Fields
 
