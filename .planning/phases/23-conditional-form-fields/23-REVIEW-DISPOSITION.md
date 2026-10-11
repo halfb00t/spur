@@ -11,6 +11,10 @@ findings:
     severity: warning
     disposition: open
     title: "The \"never disables, hides or clears a field\" guard is narrower than the contract it claims, and has a false-positive hole"
+  - id: WR-03
+    severity: warning
+    disposition: open
+    title: "The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)"
   - id: IN-01
     severity: info
     disposition: open
@@ -31,9 +35,17 @@ findings:
     severity: info
     disposition: open
     title: "The L41 text is in two tenses about what the commit declares"
-open: 7
-total: 7
-recorded: 2026-10-11T13:48:06.303Z
+  - id: IN-06
+    severity: info
+    disposition: open
+    title: "The browser oracle resolves a repeated parameter last-wins where the page resolves it first-wins (external: codex)"
+  - id: IN-07
+    severity: info
+    disposition: open
+    title: "The refused-pair step does not require both keyway fields to be marked invalid (external: codex)"
+open: 10
+total: 10
+recorded: 2026-10-11T15:51:05.262Z
 ---
 
 # Phase 23: Code Review Disposition
@@ -42,11 +54,14 @@ recorded: 2026-10-11T13:48:06.303Z
 |---------|----------|-------------|--------|
 | WR-01 | warning | open | - |
 | WR-02 | warning | open | - |
+| WR-03 | warning | open | - |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
 | IN-04 | info | open | - |
 | IN-05 | info | open | - |
+| IN-06 | info | open | - |
+| IN-07 | info | open | - |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
