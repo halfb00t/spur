@@ -755,6 +755,56 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 expect(page.locator("form#params label.field.invalid")).to_have_count(0)
 
+            with step("unknown relation op"):
+                # D-02: an op the page does not know is loud, never "active". WR-01: but loud
+                # on the field, not by stopping the page. A throw out of applyRelations()
+                # used to skip update() on every keystroke, so the part, the dimensions and
+                # the download links stayed on the previous parameters while the form moved.
+                # The schema is served with the first related field's first op changed to
+                # one the page lacks; its own page, because the route replaces the schema.
+                status, schema = _api_get(server, "/api/schema", "")
+                assert status == 200, f"unknown relation op: /api/schema answered {status}"
+                assert isinstance(schema, dict), "unknown relation op: the schema is not an object"
+                tampered = json.loads(json.dumps(schema))
+                tampered_properties = tampered["properties"]
+                related = [n for n, prop in tampered_properties.items() if "enabled_when" in prop]
+                assert related, "unknown relation op: no field carries a relation to tamper with"
+                broken = related[0]
+                tampered_properties[broken]["enabled_when"][0]["op"] = "ge"
+                bad = browser.new_page()
+                try:
+                    bad.route("**/api/schema", lambda route: route.fulfill(json=tampered))
+                    bad.goto(server + "/#teeth=23")
+                    expect(bad.locator("#dl-stl")).to_have_attribute(
+                        "href", "api/model.stl?teeth=23", timeout=BUILD_WAIT_MS
+                    )
+                    broken_reason = bad.locator(f"label.field:has([name={broken}]) .reason")
+                    expect(broken_reason).to_have_text(
+                        "Cannot tell whether this field is used: Unknown enabled_when op: ge"
+                    )
+                    others = {
+                        name: why
+                        for name, why in expected_inactive(properties, "teeth=23").items()
+                        if name != broken
+                    }
+                    assert eval_inactive(bad) == others, (
+                        f"unknown relation op: the page dims {eval_inactive(bad)}, the other "
+                        f"fields' relations say {others}"
+                    )
+                    with bad.expect_request(
+                        lambda request: "/api/info" in request.url
+                        and urllib.parse.urlsplit(request.url).query == "teeth=24",
+                        timeout=BUILD_WAIT_MS,
+                    ):
+                        bad.locator("[name=teeth]").fill("24")
+                    expect(bad.locator("#dl-stl")).to_have_attribute(
+                        "href", "api/model.stl?teeth=24", timeout=BUILD_WAIT_MS
+                    )
+                    expect(broken_reason).to_have_count(1)
+                finally:
+                    bad.close()
+                print(f"unknown relation op: {broken} unreadable, the form still builds the part")
+
             with step("download name"):
                 # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers
                 # with the first build's bytes and no Content-Disposition, so a click there

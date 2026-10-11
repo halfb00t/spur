@@ -144,14 +144,26 @@ function need({ field, op, value }) {
 // clears the field: a shared link's value must load, be editable and be sent (L05).
 // Called from exactly three places, readHash, the form's input listener and #reset, and
 // never from a build's success: a 422 must leave the state the fields imply (CF-4).
-// Every condition is evaluated, so an unknown op anywhere in a list throws.
+// Every condition is evaluated, so an unknown op anywhere in a list throws -- and the throw
+// is caught per field, here, and nowhere else. Uncaught, it skipped scheduleUpdate()/update()
+// at all four call sites and left the part, the dimensions and the download links on the
+// previous parameters while the fields moved on (L08). A relation the page cannot read does
+// not get to pick the field's state: the field stays plain, as every field was before L41,
+// and its own reason row says so. That row, unlike #messages, is not rewritten by a build,
+// so the error outlives the next keystroke; the other fields are still evaluated.
 function applyRelations() {
   for (const { input, wrap, rels, reason } of fields.values()) {
-    const off = rels.map(holds).includes(false);
-    wrap.classList.toggle('inactive', off);
-    reason.textContent = off ? `Needs ${rels.map(need).join(' and ')}` : '';
-    if (off) input.setAttribute('aria-describedby', reason.id);
-    else input.removeAttribute('aria-describedby');
+    try {
+      const off = rels.map(holds).includes(false);
+      wrap.classList.toggle('inactive', off);
+      reason.textContent = off ? `Needs ${rels.map(need).join(' and ')}` : '';
+      if (off) input.setAttribute('aria-describedby', reason.id);
+      else input.removeAttribute('aria-describedby');
+    } catch (err) {
+      wrap.classList.remove('inactive');
+      reason.textContent = `Cannot tell whether this field is used: ${err.message}`;
+      input.setAttribute('aria-describedby', reason.id);
+    }
   }
 }
 
