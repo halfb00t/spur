@@ -46,6 +46,7 @@ from browser_session import (
     eval_str_list,
     expected_inactive,
     fixture_hashes,
+    flip_links,
     launch,
     serve,
     serve_stl_from,
@@ -89,6 +90,10 @@ TODAY = (
     "today's behaviour, filed as debt: "
     "docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md"
 )
+
+# The refused pair under a hex bore: a 422 naming the gate and both fields (23-RESEARCH,
+# reproduced), where `.invalid` and `.inactive` must coexist on the keyway fields (PD-07).
+REFUSED_LINK = "bore_hex=6&keyway_width=3&keyway_depth=1.4"
 
 MATE_VALUE = "() => document.querySelector('#mate-teeth').value"
 FRAGMENT = "() => location.hash.slice(1)"
@@ -664,6 +669,91 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     )
                 finally:
                     fresh.close()
+
+                # One link per gate condition, derived from the schema (D-15): the dimmed set
+                # must follow the fields and never the server's answer, so a flip the API
+                # refuses with a 422 is held to the evaluator too. The main page's fragment
+                # is empty here and its STL route serves the first build, so nothing builds.
+                default_dimmed = expected_inactive(properties, "")
+                links = flip_links(properties)
+                assert links, "inert fields: the schema yields no flip link"
+                gates = {link.split("=")[0] for link in links}
+                for link in links:
+                    sent = _follow_link(page, link)
+                    status, _ = _api_get(server, "/api/info", sent)
+                    flipped = expected_inactive(properties, link)
+                    assert flipped != default_dimmed, f"inert fields: #{link} flips nothing"
+                    got = eval_inactive(page)
+                    assert got == flipped, (
+                        f"inert fields: #{link} (API {status}): the page dims {got}, the "
+                        f"schema says {flipped}; the dim state follows the fields, not the "
+                        "server's answer"
+                    )
+                    print(f"inert fields: flip #{link}: API {status}, dimmed {sorted(got)}")
+
+                sent = _follow_link(page, REFUSED_LINK)
+                status, body = _api_get(server, "/api/info", sent)
+                assert status == 422, f"inert fields: #{REFUSED_LINK} answered {status}, not 422"
+                _, texts = _expected_422(properties, body)
+                expect(page.locator("#messages .error")).to_have_text(texts)
+                refused_invalid = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params label.field.invalid [name]')]"
+                    ".map(e => e.name)",
+                )
+                dimmed = eval_inactive(page)
+                assert dimmed == expected_inactive(properties, REFUSED_LINK), (
+                    f"inert fields, refused pair: the page dims {dimmed}"
+                )
+                both = sorted(set(refused_invalid) & set(dimmed))
+                assert both, (
+                    f"inert fields, refused pair: no field is both invalid {refused_invalid} and "
+                    f"dimmed {sorted(dimmed)}"
+                )
+                assert not gates & set(dimmed), "inert fields, refused pair: a gate is dimmed"
+                assert gates & set(refused_invalid), (
+                    f"inert fields, refused pair: no gate marked invalid among {refused_invalid}: "
+                    "the user could not see how to get back (D-20)"
+                )
+                print(
+                    f"inert fields: refused pair: invalid {sorted(refused_invalid)}, "
+                    f"dimmed and invalid {both}"
+                )
+
+                # The dim is shown (PD-06): a reason is displayed for exactly the dimmed
+                # fields, and their names are drawn in colours no live field's name uses.
+                shown = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params label.field')]"
+                    ".filter(l => getComputedStyle(l.querySelector('.reason')).display !== 'none')"
+                    ".map(l => l.querySelector('[name]').name)",
+                )
+                assert sorted(shown) == sorted(dimmed), (
+                    f"inert fields: reasons shown for {sorted(shown)}, dimmed {sorted(dimmed)}"
+                )
+                name_colours = (
+                    "() => [...new Set([...document.querySelectorAll("
+                    "'form#params label.field%s .name')].map(e => getComputedStyle(e).color))]"
+                )
+                dim_colours = eval_str_list(page, name_colours % ".inactive")
+                live_colours = eval_str_list(page, name_colours % ":not(.inactive)")
+                assert dim_colours, "inert fields: no dimmed name has a colour"
+                assert live_colours, "inert fields: no live name has a colour"
+                shared = set(dim_colours) & set(live_colours)
+                assert not shared, f"inert fields: dimmed and live names both use {sorted(shared)}"
+
+                # Reset from the refused state: the empty query, the default set, nothing
+                # left marked invalid.
+                with page.expect_request(
+                    lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                ) as reset_sent:
+                    page.locator("#reset").click()
+                reset_query = urllib.parse.urlsplit(reset_sent.value.url).query
+                assert reset_query == "", f"inert fields, Reset: the page sent {reset_query!r}"
+                assert eval_inactive(page) == default_dimmed, (
+                    "inert fields, Reset: the dimmed set is not the default one"
+                )
+                expect(page.locator("form#params label.field.invalid")).to_have_count(0)
 
             with step("download name"):
                 # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers

@@ -63,7 +63,10 @@ the STL header's count; that both `422` paths mark their fields; that the render
 equal `/api/info`'s; that the shareable link round-trips on load, on Reset and on
 `hashchange`; and that the query the page sends for each record of the regression fixture
 equals the pin in `tests/regression/golden_requests.json` (rewritten only by
-`make golden.regen`, in a commit of its own). `#root_shape=bogus` is pinned as today's
+`make golden.regen`, in a commit of its own). Beside each fixture link's query it compares the
+fields the page dims and their reasons with a Python evaluator over `/api/schema`, and does the
+same under one schema-derived link per gate condition, on the refused keyway pair and after
+Reset, and types into a dimmed field to see it sent (L41). `#root_shape=bogus` is pinned as today's
 behaviour and filed as debt. It runs inside `make verify` and CI's `test (3.12)`, which
 install the headless shell under `.venv` first; the commit-time `make verify.fast` never
 collects it.

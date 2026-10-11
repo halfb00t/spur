@@ -299,6 +299,15 @@ def eval_inactive(page: Page) -> dict[str, str]:
     return dict(eval_pairs(page, INACTIVE_PAIRS))
 
 
+def _holds(owner: str, op: object, have: float, wanted: float) -> bool:
+    """One relation condition's truth, the grammar's only two ops (D-02), shared by both users."""
+    if op == "eq":
+        return have == wanted
+    if op == "gt":
+        return have > wanted
+    raise AssertionError(f"{owner}: the op {op!r} is neither 'eq' nor 'gt' (D-02)")
+
+
 def expected_inactive(properties: Mapping[str, Mapping[str, object]], link: str) -> dict[str, str]:
     """The fields a link must leave dimmed, name -> reason, from the schema alone (D-14).
 
@@ -340,18 +349,49 @@ def expected_inactive(properties: Mapping[str, Mapping[str, object]], link: str)
             assert isinstance(gate, str), f"{name}: condition field {gate!r} is not a str"
             assert isinstance(wanted, int | float), f"{name}: condition value {wanted!r}"
             assert not isinstance(wanted, bool), f"{name}: condition value {wanted!r} is a bool"
-            have = number(gate)
-            if op == "eq":
-                holds.append(have == wanted)
-                needs.append(f"{title(gate)} = {wanted:g}")
-            elif op == "gt":
-                holds.append(have > wanted)
-                needs.append(f"{title(gate)} above {wanted:g}")
-            else:
-                raise AssertionError(f"{name}: the op {op!r} is neither 'eq' nor 'gt' (D-02)")
+            holds.append(_holds(name, op, number(gate), float(wanted)))
+            needs.append(f"{title(gate)} {'=' if op == 'eq' else 'above'} {wanted:g}")
         if False in holds:
             inactive[name] = "Needs " + " and ".join(needs)
     return inactive
+
+
+def flip_links(properties: Mapping[str, Mapping[str, object]]) -> list[str]:
+    """One link per distinct gate condition that makes it differ from the default, from the schema.
+
+    Names no field: for each distinct (field, op, value) across every property's
+    `enabled_when`, in order of first appearance, the gate's `minimum + step` and `maximum`
+    are tried and the first whose truth differs from the truth at the gate's default is the
+    link `field=value`. A fifth relation therefore adds its own link with no test edit (D-15).
+    """
+    links: list[str] = []
+    seen: set[tuple[str, object, float]] = set()
+    for owner, prop in properties.items():
+        conditions = prop.get("enabled_when")
+        if not isinstance(conditions, list):
+            continue
+        for condition in conditions:
+            assert isinstance(condition, dict), f"{owner}: condition {condition!r} is not an object"
+            gate, op, wanted = condition["field"], condition["op"], condition["value"]
+            assert isinstance(gate, str), f"{owner}: condition field {gate!r} is not a str"
+            assert isinstance(wanted, int | float), f"{owner}: condition value {wanted!r}"
+            if (gate, op, float(wanted)) in seen:
+                continue
+            seen.add((gate, op, float(wanted)))
+            bounds: dict[str, float] = {}
+            for key in ("minimum", "maximum", "step", "default"):
+                raw = properties[gate].get(key)
+                assert isinstance(raw, int | float), f"{gate}: {key} {raw!r} is not a number"
+                bounds[key] = float(raw)
+            at_default = _holds(owner, op, bounds["default"], float(wanted))
+            flips = [
+                candidate
+                for candidate in (bounds["minimum"] + bounds["step"], bounds["maximum"])
+                if _holds(owner, op, candidate, float(wanted)) != at_default
+            ]
+            assert flips, f"{gate}: neither minimum + step nor maximum flips {op} {wanted}"
+            links.append(f"{gate}={flips[0]:g}")
+    return links
 
 
 def serve_stl_from(page: Page, stl: bytes) -> None:
