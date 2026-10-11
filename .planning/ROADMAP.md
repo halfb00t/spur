@@ -299,11 +299,11 @@ fresh; nothing else blocks it, and it can move later in the milestone at no cost
 **Boundaries**: a suffix, not a prefix; nothing for a non-default root other than the trochoid
 exists to name, so no other root value is invented here.
 **Research flag**: No — standard patterns; the one small decision is above.
-**Plans**: 1/2 plans executed, in 2 waves (22-02 reads the step 22-01 commits, on the committed tree)
+**Plans**: 2/2 plans executed, in 2 waves (22-02 reads the step 22-01 commits, on the committed tree)
 - [x] 22-01-PLAN.md — Decision 12 in one commit (D-11): `slug()` ends `_trochoid` from L38's predicate; the STL/STEP
   header pins at 23 and 40 teeth, the flipped pin, the totality rows and the `build.failed` name rows, a real browser
   download on its own page; L40 with every consumer read at the base; the doc path corrected; the idea retired *(wave 1)*
-- [ ] 22-02-PLAN.md — The download step priced (D-06): three readings with host state in `bench/RESULTS.md`, the
+- [x] 22-02-PLAN.md — The download step priced (D-06): three readings with host state in `bench/RESULTS.md`, the
   `BUILD_WAIT_MS` comment, 22-01's red runs recorded, the kept logs, `make verify` green *(wave 2)*
 
 ### Phase 23: Conditional Form Fields

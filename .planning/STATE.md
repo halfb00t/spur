@@ -4,17 +4,17 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 22
 current_phase_name: Download Name Carries the Root
-status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-10-11T06:26:51.909Z"
+status: verifying
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-10-11T06:40:00.622Z"
 last_activity: 2026-10-11
 last_activity_desc: Phase 22 execution started
-state_head: e3b1181deab3f6b09c36a771026899e24ab0b0e5
+state_head: f905a25e8e319a27dbb889b22ebfcc71bbc575ec
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
   percent: 80
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 22 (Download Name Carries the Root) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-11 — Phase 22 execution started
 
 Progress: [████████░░] 80% (1 of 5 phases; Phase 24 is discretionary)
@@ -226,6 +226,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 21 P07 | 21min | 2 tasks | 3 files |
 | Phase 21 P08 | 25 min | 3 tasks | 7 files |
 | Phase 22 P01 | 12 min | 3 tasks | 12 files |
+| Phase 22 P02 | 6 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -415,6 +416,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 21]: `spike/21-linux-runner` (PR #32, draft, DO NOT MERGE) proved the Linux `--with-deps` install path on `ubuntu-latest` and was closed unmerged; the branch stays on origin until the human deletes it.
 - [Phase 21]: The 44 fixture records' requests are pinned in `tests/regression/golden_requests.json`, written by `make golden.regen` only; a regen is its own commit stating what moved (D-09). `#root_shape=bogus` loading a blank select is pinned as today's behaviour and filed as `must` debt, not fixed (T-21-12).
 - [Phase 22]: L40: the download name follows the root root_mode builds (not the root asked for); a refused or ignored request keeps the plain name, slug() has no guard, no cache is keyed by slug
+- [Phase 22]: 22-02: no bar set from the download name readings (3.56, 3.20, 1.13 s on Apple M2 Max); BUILD_WAIT_MS stays 45_000; Phase 25 re-sets the gate bar and absorbs the step (D-06)
 
 ### Pending Todos
 
@@ -651,8 +653,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T06:26:51.863Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-10-11T06:40:00.575Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
