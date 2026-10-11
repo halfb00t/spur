@@ -1,7 +1,8 @@
 {
   "workflow": {
     "_auto_chain_active": false,
-    "use_worktrees": false
+    "use_worktrees": false,
+    "ui_safety_gate": false
   },
   "git": {
     "branching_strategy": "phase"
