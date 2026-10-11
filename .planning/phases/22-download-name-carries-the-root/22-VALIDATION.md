@@ -19,20 +19,20 @@ created: "2026-10-11"
 
 | Property | Value |
 |----------|-------|
-| **Framework** | {pytest 7.x / jest 29.x / vitest / go test / other} |
-| **Config file** | {path or "none — Wave 0 installs"} |
-| **Quick run command** | `{quick command}` |
-| **Full suite command** | `{full command}` |
-| **Estimated runtime** | ~{N} seconds |
+| **Framework** | pytest 9.1.1 + pytest-xdist 3.8.0 + pytest-cov 7.1.0; Playwright 1.63.0 (Chrome Headless Shell) for `tests/test_browser.py` |
+| **Config file** | `pyproject.toml` (`filterwarnings = ["error", ...]`, `fail_under = 96`, mypy `strict` with `possibly-undefined`) |
+| **Quick run command** | `make verify.fast` (static steps + the commit slice; runs `tests/test_trochoid.py`, not the five heavy files) |
+| **Full suite command** | `make verify` (ruff, mypy `--strict`, import-linter, unfinished-work scan, pytest `-n 8` with coverage; includes `tests/test_api.py` and `tests/test_browser.py`) |
+| **Estimated runtime** | quick ~11-20 s; full ~190-240 s on this host; the browser file alone ~4-10 s at `-n0` |
 
 ---
 
 ## Sampling Rate
 
-- **After every task commit:** Run `{quick run command}`
-- **After every plan wave:** Run `{full suite command}`
+- **After every task:** the task's targeted runs (`make test PYTEST_ARGS="... -n0 --no-cov -q -k ..."`, `make test.fast PYTEST_ARGS="..."`); 22-01 makes one commit at Task 3 (D-11), and the pre-commit hook runs `make verify.fast` on it
+- **After every plan wave:** `make verify` (22-01 Task 3 before its commit; 22-02 Task 2 before its commit), log kept under `investigation/` ending `make verify exit N`
 - **Before `/gsd-verify-work`:** Full suite must be green
-- **Max feedback latency:** {N} seconds
+- **Max feedback latency:** ~60 s for a targeted run (the browser file builds one or two parts); ~240 s for the full gate
 
 ---
 
@@ -40,7 +40,15 @@ created: "2026-10-11"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| {N}-01-01 | 01 | 1 | REQ-{XX} | T-{N}-01 / — | {expected secure behavior or "N/A"} | unit | `{command}` | ✅ / ❌ W0 | ⬜ pending |
+| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-01, T-22-02 | the filename is built only from validated fields and the literal `_trochoid` chosen by `root_mode`; whole-header equality pins | integration (`TestClient`) | `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k 'download_name or root_shape_link or test_model_download'"` (7 passed) | ✅ file; tests written first in-task | ⬜ pending |
+| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-02 | the browser saves the server's name, `spur_z23_m1.75_pa25_trochoid.stl` | e2e (uvicorn + headless shell) | `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"` (1 passed, `step download name:` printed) | ✅ file; step written first in-task | ⬜ pending |
+| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | `slug()` calls the predicate with no guard and no helper; D-03 files and both fixtures unedited | static (AST + git) | `make lint typecheck` + the slug AST check + `git diff --exit-code` on app/records/model/cli/pool/app.js and the two fixtures + calc.py docstring-only AST check | ✅ | ⬜ pending |
+| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-02, T-22-03 | `slug()` total on refused and ignored requests; ignored rows red under the requested-root rule | unit (no kernel) | `make test.fast PYTEST_ARGS="tests/test_trochoid.py -n0 -q -k download_name_follows"` (6 passed) | ✅ file; rows written in-task | ⬜ pending |
+| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | the `build.failed` record carries the would-be name | integration (caplog) | `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k failed_build_records_the_name"` (2 passed) | ✅ file; rows written in-task | ⬜ pending |
+| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | no valid request makes `slug()` raise; name agrees with the predicate | one-off sweep | the `sweep_cases()` command in 22-01 Task 2 verify (17567 valid, 9954 `_trochoid`, none raised) | ✅ | ⬜ pending |
+| 22-01-03 | 01 | 1 | REQ-slug-consumers-read-first | T-22-04, T-22-05 | L40 lists every consumer at the parent sha and the cache keys; idea retired; one commit; fixtures unchanged | doc + git | the three Python/git checks in 22-01 Task 3 verify; `investigation/22-01-verify.log` ends `make verify exit 0` | n/a | ⬜ pending |
+| 22-02-01 | 02 | 2 | REQ-slug-carries-effective-root | T-22-06, T-22-07 | three readings on the committed tree, each under 15 s | measurement | the log-parsing check in 22-02 Task 1 verify | n/a | ⬜ pending |
+| 22-02-02 | 02 | 2 | REQ-slug-carries-effective-root | T-22-06, T-22-07 | readings equal their logs; `BUILD_WAIT_MS` unmoved, comment-only change; gate green | doc + git + full gate | the two checks in 22-02 Task 2 verify; `investigation/22-02-verify.log` ends `make verify exit 0` | n/a | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -48,11 +56,11 @@ created: "2026-10-11"
 
 ## Wave 0 Requirements
 
-- [ ] `{tests/test_file.py}` — stubs for REQ-{XX}
-- [ ] `{tests/conftest.py}` — shared fixtures
-- [ ] `{framework install}` — if no framework detected
-
-*If none: "Existing infrastructure covers all phase requirements."*
+Existing infrastructure covers all phase requirements: `tests/test_api.py`, `tests/test_trochoid.py` and
+`tests/test_browser.py` exist, and each new test function is written by its own task before the code it pins moves
+(22-01 PLAN, PD-10), so no task verifies against a test that does not exist yet. The headless shell installs through
+`make test`'s `$(BROWSER)` stamp (about 20 s the first time; absent on this host at research time). No new framework,
+config or fixture file.
 
 ---
 
@@ -60,9 +68,8 @@ created: "2026-10-11"
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| {behavior} | REQ-{XX} | {reason} | {steps} |
-
-*If none: "All phase behaviors have automated verification."*
+All phase behaviors have automated verification. Not automated here, by design: the step's reading on
+`ubuntu-latest` (RESEARCH assumptions A2, A3), read from the pull request's first CI run when the human pushes.
 
 ---
 
@@ -72,7 +79,7 @@ created: "2026-10-11"
 - [ ] Sampling continuity: no 3 consecutive tasks without automated verify
 - [ ] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
-- [ ] Feedback latency < {N}s
+- [ ] Feedback latency < 240s (the full gate; targeted runs under 60 s)
 - [ ] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** {pending / approved YYYY-MM-DD}
