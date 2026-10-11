@@ -3,9 +3,9 @@ phase: "22"
 slug: "download-name-carries-the-root"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-11"
 ---
 
@@ -40,15 +40,15 @@ created: "2026-10-11"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-01, T-22-02 | the filename is built only from validated fields and the literal `_trochoid` chosen by `root_mode`; whole-header equality pins | integration (`TestClient`) | `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k 'download_name or root_shape_link or test_model_download'"` (7 passed) | ✅ file; tests written first in-task | ⬜ pending |
-| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-02 | the browser saves the server's name, `spur_z23_m1.75_pa25_trochoid.stl` | e2e (uvicorn + headless shell) | `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"` (1 passed, `step download name:` printed) | ✅ file; step written first in-task | ⬜ pending |
-| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | `slug()` calls the predicate with no guard and no helper; D-03 files and both fixtures unedited | static (AST + git) | `make lint typecheck` + the slug AST check + `git diff --exit-code` on app/records/model/cli/pool/app.js and the two fixtures + calc.py docstring-only AST check | ✅ | ⬜ pending |
-| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-02, T-22-03 | `slug()` total on refused and ignored requests; ignored rows red under the requested-root rule | unit (no kernel) | `make test.fast PYTEST_ARGS="tests/test_trochoid.py -n0 -q -k download_name_follows"` (6 passed) | ✅ file; rows written in-task | ⬜ pending |
-| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | the `build.failed` record carries the would-be name | integration (caplog) | `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k failed_build_records_the_name"` (2 passed) | ✅ file; rows written in-task | ⬜ pending |
-| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | no valid request makes `slug()` raise; name agrees with the predicate | one-off sweep | the `sweep_cases()` command in 22-01 Task 2 verify (17567 valid, 9954 `_trochoid`, none raised) | ✅ | ⬜ pending |
-| 22-01-03 | 01 | 1 | REQ-slug-consumers-read-first | T-22-04, T-22-05 | L40 lists every consumer at the parent sha and the cache keys; idea retired; one commit; fixtures unchanged | doc + git | the three Python/git checks in 22-01 Task 3 verify; `investigation/22-01-verify.log` ends `make verify exit 0` | n/a | ⬜ pending |
-| 22-02-01 | 02 | 2 | REQ-slug-carries-effective-root | T-22-06, T-22-07 | three readings on the committed tree, each under 15 s | measurement | the log-parsing check in 22-02 Task 1 verify | n/a | ⬜ pending |
-| 22-02-02 | 02 | 2 | REQ-slug-carries-effective-root | T-22-06, T-22-07 | readings equal their logs; `BUILD_WAIT_MS` unmoved, comment-only change; gate green | doc + git + full gate | the two checks in 22-02 Task 2 verify; `investigation/22-02-verify.log` ends `make verify exit 0` | n/a | ⬜ pending |
+| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-01, T-22-02 | the filename is built only from validated fields and the literal `_trochoid` chosen by `root_mode`; whole-header equality pins | integration (`TestClient`) | `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k 'download_name or root_shape_link or test_model_download'"` (7 passed) | ✅ file; tests written first in-task | ✅ green |
+| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-02 | the browser saves the server's name, `spur_z23_m1.75_pa25_trochoid.stl` | e2e (uvicorn + headless shell) | `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"` (1 passed, `step download name:` printed) | ✅ file; step written first in-task | ✅ green |
+| 22-01-01 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | `slug()` calls the predicate with no guard and no helper; D-03 files and both fixtures unedited | static (AST + git) | `make lint typecheck` + the slug AST check + `git diff --exit-code` on app/records/model/cli/pool/app.js and the two fixtures + calc.py docstring-only AST check | ✅ | ✅ green |
+| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-02, T-22-03 | `slug()` total on refused and ignored requests; ignored rows red under the requested-root rule | unit (no kernel) | `make test.fast PYTEST_ARGS="tests/test_trochoid.py -n0 -q -k download_name_follows"` (6 passed) | ✅ file; rows written in-task | ✅ green |
+| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | the `build.failed` record carries the would-be name | integration (caplog) | `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k failed_build_records_the_name"` (2 passed) | ✅ file; rows written in-task | ✅ green |
+| 22-01-02 | 01 | 1 | REQ-slug-carries-effective-root | T-22-03 | no valid request makes `slug()` raise; name agrees with the predicate | one-off sweep | the `sweep_cases()` command in 22-01 Task 2 verify (17567 valid, 9954 `_trochoid`, none raised) | ✅ | ✅ green |
+| 22-01-03 | 01 | 1 | REQ-slug-consumers-read-first | T-22-04, T-22-05 | L40 lists every consumer at the parent sha and the cache keys; idea retired; one commit; fixtures unchanged | doc + git | the three Python/git checks in 22-01 Task 3 verify; `investigation/22-01-verify.log` ends `make verify exit 0` | n/a | ✅ green |
+| 22-02-01 | 02 | 2 | REQ-slug-carries-effective-root | T-22-06, T-22-07 | three readings on the committed tree, each under 15 s | measurement | the log-parsing check in 22-02 Task 1 verify | n/a | ✅ green |
+| 22-02-02 | 02 | 2 | REQ-slug-carries-effective-root | T-22-06, T-22-07 | readings equal their logs; `BUILD_WAIT_MS` unmoved, comment-only change; gate green | doc + git + full gate | the two checks in 22-02 Task 2 verify; `investigation/22-02-verify.log` ends `make verify exit 0` | n/a | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -75,11 +75,19 @@ All phase behaviors have automated verification. Not automated here, by design: 
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 240s (the full gate; targeted runs under 60 s)
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 240s (the full gate; targeted runs under 60 s)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** {pending / approved YYYY-MM-DD}
+**Approval:** approved 2026-10-11 — every behavior green under `make verify` on `3b71355` (1238 passed, 97.92% coverage)
+
+## Validation Audit 2026-10-11
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
