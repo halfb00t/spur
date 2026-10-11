@@ -209,6 +209,10 @@ def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
     are every `Literal` field, read from the model (REQ-root-mode-decided): a number
     field has a step, a choice field has an enum equal to its annotation's values. The
     list is pinned too, in model order, so a new choice field is a deliberate edit here.
+
+    The walk extends to every relation (L41): `enabled_when` reaches `/api/schema` exactly
+    when the model declares it, as the model wrote it, and gates on a field the form
+    renders. Which relations are the right ones is tests/test_relations.py's question.
     """
     names = list(GearParams.model_fields)
     literal_fields = [n for n, f in GearParams.model_fields.items()
@@ -222,6 +226,12 @@ def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
         assert "group" in prop, name
         assert "title" in prop, name
         assert "unit" in prop, name
+        extra = GearParams.model_fields[name].json_schema_extra
+        assert isinstance(extra, dict), name
+        assert ("enabled_when" in prop) == ("enabled_when" in extra), name
+        if "enabled_when" in extra:
+            assert prop["enabled_when"] == extra["enabled_when"], name
+            assert all(c["field"] in names for c in prop["enabled_when"]), name
         if name in literal_fields:
             assert "step" not in prop, name
             assert prop["enum"] == list(get_args(GearParams.model_fields[name].annotation)), name
