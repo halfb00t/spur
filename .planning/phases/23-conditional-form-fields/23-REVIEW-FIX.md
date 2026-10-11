@@ -73,7 +73,7 @@ Seen red on `app.js` (reverted after each), with the old pattern passing all fou
 
 On the test itself: dropping the `opacity` alternative fails the probe `x.style.opacity = '.5'`, and dropping `(?!=)` fails `if (x.hidden === y) return;`.
 
-### WR-03: The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents
+### WR-03: The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)
 
 **Files modified:** `tests/test_relations.py`
 **Commit:** ef5d4a7
