@@ -123,7 +123,7 @@ byte-identical to the `v0.4` tag.
 - [x] **Phase 22: Download Name Carries the Root** - A hob-root part downloads as (completed 2026-10-11)
       `..._trochoid`; every radial part, and every request whose trochoid is ignored, keeps
       today's name byte for byte, and the `Lxx` lists every consumer of the old names first
-- [ ] **Phase 23: Conditional Form Fields** - A field whose value would be ignored (or
+- [x] **Phase 23: Conditional Form Fields** - A field whose value would be ignored (or (completed 2026-10-11)
       refused) says so in the form before it is typed: an `enabled_when` relation on the
       model, proved against `calc`, rendered dimmed-and-editable by generic `app.js` code, the
       pins tightened and not removed
@@ -373,7 +373,7 @@ REQ-form-walk-proves-relations
 `app.js` as DIMS keys, so any new JS table is an object, not rows of that shape.
 **Research flag**: No — standard patterns. The parity proof will surface relation rows that are
 not inert; the plan budgets for dropping them.
-**Plans**: 4/4 plans executed, in 4 waves (sequential: each reads the tree the one before it commits)
+**Plans**: 4/4 plans complete, in 4 waves (sequential: each reads the tree the one before it commits)
 - [x] 23-01-PLAN.md — The tracer and the record in one commit (CF-1): `hub_d` under `spoke_count gt 0` from `when()`/`_extra()`
   through `/api/schema` to generic `applyRelations()`, dimmed, typed into and sent in a real browser; the visible dim; the
   `app.js` pins tightened; L41 *(wave 1)*
