@@ -16,6 +16,7 @@ the same commit as the file.
 | 2026-09-29 | [A teeth- or module-dependent honeycomb cell-count cap](2026-09-29-teeth-dependent-honeycomb-cap.md) | D-12 rejected it for one constant; revisit only if a small gear needs more cells and a sweep shows cost falling with gear size |
 | 2026-09-29 | [Conditional form fields ("disabled when")](2026-09-29-conditional-form-fields.md) | Judged "not taken" at Phase 12 (08 D-09 stands); a browser test now exists (L39) and Phase 23 takes it; otherwise revisit when a user reports the ignored-field warnings as insufficient |
 | 2026-10-03 | [Constrain `make venv` to the pinned closure, the way CI is](2026-10-03-constrain-make-venv-to-the-closure.md) | Phase 15 pins CI only (D-14); the closure was resolved on linux/amd64 and its arm64 wheel availability is unproven — revisit when a fresh constrained `make venv` passes `make verify` on this host |
+| 2026-10-11 | [The two relations calc does not back: recess_* under recess_sides=none, bore_flat at bore_d=0](2026-10-11-the-two-relations-calc-does-not-back.md) | A relation needs a calc warning first, which would rewrite warnings for 14 fixture records (kickoff decision 8); revisit when a user reports a recess or D-flat value that did nothing |
 
 ## Retired
 
