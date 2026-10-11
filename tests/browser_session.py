@@ -27,7 +27,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from pathlib import Path
 from typing import IO
 
@@ -264,11 +264,24 @@ def eval_str_list(page: Page, expression: str, arg: object = None) -> list[str]:
     return items
 
 
-def eval_pairs(page: Page) -> list[tuple[str, str]]:
-    """The form's (name, value) pairs in DOM order, each value the control's own string."""
-    value: object = page.evaluate(
-        "() => [...document.querySelectorAll('form#params [name]')].map(e => [e.name, e.value])"
-    )
+FORM_PAIRS = (
+    "() => [...document.querySelectorAll('form#params [name]')].map(e => [e.name, e.value])"
+)
+
+# Each dimmed field as [name, the text of its reason], in DOM order (L41).
+INACTIVE_PAIRS = (
+    "() => [...document.querySelectorAll('form#params label.field.inactive')]"
+    ".map(l => [l.querySelector('[name]').name, l.querySelector('.reason').textContent])"
+)
+
+
+def eval_pairs(page: Page, expression: str = FORM_PAIRS) -> list[tuple[str, str]]:
+    """The form's (name, value) pairs in DOM order, each value the control's own string.
+
+    `expression` returns a list of two-string lists; the default is the form's controls, and
+    `eval_inactive` reads the dimmed fields through the same narrowing.
+    """
+    value: object = page.evaluate(expression)
     assert isinstance(value, list), f"the form's pairs came back as {value!r}, not a list"
     pairs: list[tuple[str, str]] = []
     for item in value:
@@ -279,6 +292,66 @@ def eval_pairs(page: Page) -> list[tuple[str, str]]:
         assert isinstance(field_value, str), f"a form pair whose value is not a str: {item!r}"
         pairs.append((name, field_value))
     return pairs
+
+
+def eval_inactive(page: Page) -> dict[str, str]:
+    """The fields the page dims right now, name -> the reason text it shows (L41)."""
+    return dict(eval_pairs(page, INACTIVE_PAIRS))
+
+
+def expected_inactive(properties: Mapping[str, Mapping[str, object]], link: str) -> dict[str, str]:
+    """The fields a link must leave dimmed, name -> reason, from the schema alone (D-14).
+
+    The deliberate second implementation of `applyRelations()` in app.js, and it names no
+    field: every property's `enabled_when` is read off `/api/schema`, so a relation declared
+    later is expected here with no edit. Two evaluators that share no code agreeing over every
+    state is the proof. The Phase 21 D-09 rejection of a Python predictor does not apply:
+    that was a predictor of what the SERVER answers, where the grammar (D-01..D-03) is the
+    spec of this one.
+
+    A field the link omits, or leaves blank, reads as its schema default (D-18: the value the
+    page sends). Every condition of a relation is evaluated (PD-05), `eq` and `gt` are the
+    only ops, and any other op raises naming it (D-02), as the page's `holds()` does.
+    """
+    # parse_qsl drops blank values, so an emptied box reads as the default (D-18).
+    given = dict(urllib.parse.parse_qsl(link))
+
+    def number(name: str) -> float:
+        raw: object = given.get(name, properties[name].get("default"))
+        assert isinstance(raw, str | int | float), f"{name}: {raw!r} is not a number"
+        assert not isinstance(raw, bool), f"{name}: {raw!r} is a bool, not a number"
+        return float(raw)
+
+    def title(name: str) -> str:
+        # app.js buildForm(): `prop.title ?? name`.
+        found = properties[name].get("title")
+        return name if found is None else str(found)
+
+    inactive: dict[str, str] = {}
+    for name, prop in properties.items():
+        conditions = prop.get("enabled_when")
+        if not isinstance(conditions, list) or not conditions:
+            continue
+        holds: list[bool] = []
+        needs: list[str] = []
+        for condition in conditions:
+            assert isinstance(condition, dict), f"{name}: condition {condition!r} is not an object"
+            gate, op, wanted = condition["field"], condition["op"], condition["value"]
+            assert isinstance(gate, str), f"{name}: condition field {gate!r} is not a str"
+            assert isinstance(wanted, int | float), f"{name}: condition value {wanted!r}"
+            assert not isinstance(wanted, bool), f"{name}: condition value {wanted!r} is a bool"
+            have = number(gate)
+            if op == "eq":
+                holds.append(have == wanted)
+                needs.append(f"{title(gate)} = {wanted:g}")
+            elif op == "gt":
+                holds.append(have > wanted)
+                needs.append(f"{title(gate)} above {wanted:g}")
+            else:
+                raise AssertionError(f"{name}: the op {op!r} is neither 'eq' nor 'gt' (D-02)")
+        if False in holds:
+            inactive[name] = "Needs " + " and ".join(needs)
+    return inactive
 
 
 def serve_stl_from(page: Page, stl: bytes) -> None:

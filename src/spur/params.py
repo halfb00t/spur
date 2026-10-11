@@ -1,8 +1,8 @@
 """Gear parameters: one validated, hashable model shared by the API, web UI and CLI.
 
-All lengths are millimetres, angles are degrees. Field metadata (group, unit, step)
-is exported through the JSON schema and drives the web form, so a new field added
-here shows up in the UI and CLI automatically.
+All lengths are millimetres, angles are degrees. Field metadata (group, unit, step,
+enabled_when) is exported through the JSON schema and drives the web form, so a new
+field added here shows up in the UI and CLI automatically.
 """
 
 from __future__ import annotations
@@ -14,13 +14,38 @@ from pydantic.config import JsonDict
 from pydantic_core import PydanticCustomError
 
 
-def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
-          unit: str = "", step: float | None = None, help: str = "") -> T:
+def when(field: str, op: Literal["eq", "gt"], value: float) -> JsonDict:
+    """One condition of a field's `enabled_when` relation (L41).
+
+    The grammar is a bare list of these and the list is the AND: every condition must hold
+    for the field to do anything. `op` is `eq` or `gt` only, `value` a number and `field` a
+    numeric `GearParams` field, compared as a number. An OR, another op or a non-number is a
+    stop-and-ask, not an extension (D-02): `Literal` makes a bad op a `mypy --strict` error
+    at the call site, and the form's `holds()` throws on one it does not know.
+    """
+    return {"field": field, "op": op, "value": value}
+
+
+def _extra(group: str, unit: str = "", step: float | None = None,
+           enabled_when: list[JsonDict] | None = None) -> JsonDict:
+    """The `json_schema_extra` every field carries, so a number field and a `Literal` field
+    emit their metadata, a relation included, through one path."""
     extra: JsonDict = {"group": group, "unit": unit}
     if step is not None:
         extra["step"] = step
+    if enabled_when is not None:
+        # The copy is the type fix: `list[JsonDict]` is not a `JsonValue` by list
+        # invariance, so assigning it directly fails `mypy --strict`; `list(...)` of it
+        # passes (23-RESEARCH Pitfall 1, measured).
+        extra["enabled_when"] = list(enabled_when)
+    return extra
+
+
+def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
+          unit: str = "", step: float | None = None, help: str = "",
+          enabled_when: list[JsonDict] | None = None) -> T:
     return Field(default, ge=ge, le=le, title=title, description=help,
-                 json_schema_extra=extra)
+                 json_schema_extra=_extra(group, unit, step, enabled_when))
 
 
 class GearParams(BaseModel):
@@ -62,7 +87,7 @@ class GearParams(BaseModel):
                     "below the base circle. trochoid is the root a hob with tip radius "
                     "root_fillet cuts, used where the base circle lies above the root "
                     "circle and warned about elsewhere.",
-        json_schema_extra={"group": "Teeth", "unit": ""})
+        json_schema_extra=_extra("Teeth"))
 
     # --- Body ------------------------------------------------------------------
     face_width: float = _f(7.5, 1, 100, title="Face width", group="Body", unit="mm",
@@ -101,7 +126,7 @@ class GearParams(BaseModel):
     # --- Recess ----------------------------------------------------------------
     recess_sides: Literal["both", "top", "bottom", "none"] = Field(
         "both", title="Recess sides", description="Which faces get an annular groove.",
-        json_schema_extra={"group": "Recess", "unit": ""})
+        json_schema_extra=_extra("Recess"))
     recess_depth: float = _f(2.0, 0, 50, title="Recess depth", group="Recess", unit="mm",
                              step=0.1, help="Depth of each groove.")
     recess_width: float = _f(6.0, 0, 100, title="Recess width", group="Recess", unit="mm",
@@ -135,7 +160,8 @@ class GearParams(BaseModel):
                             step=0.05,
                             help="Width of each arm, the same along its whole length.")
     hub_d: float = _f(0.0, 0, 400, title="Hub Ø", group="Spokes", unit="mm", step=0.05,
-                      help="Outer diameter of the hub ring the arms start from.")
+                      help="Outer diameter of the hub ring the arms start from.",
+                      enabled_when=[when("spoke_count", "gt", 0)])
     rim_wall: float = _f(0.0, 0, 100, title="Rim wall", group="Spokes", unit="mm",
                          step=0.05,
                          help="Radial thickness of the rim ring, measured inward from "

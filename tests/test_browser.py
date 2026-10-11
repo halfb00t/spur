@@ -5,7 +5,8 @@ page the product ships, in Chrome Headless Shell, against a real `uvicorn`, and 
 only a browser can: that WebGL2 exists (without it the page builds no form at all,
 app.js:229), that the first part is actually drawn, that the scene holds as many triangles
 as the STL it was fed, that the download link appears only after the model was shown, and that
-a click on `#dl-stl` saves the file under the name the server gives the part.
+a click on `#dl-stl` saves the file under the name the server gives the part, and that a field
+the model says is inert is dimmed with its reason and is still typed into and sent (L41).
 
 It runs inside `make verify`'s `test` -- so also the pre-push hook, `make worktree.land` and
 CI's `test (3.12)` -- and is excluded by name from `make verify.fast` and `make test-image`
@@ -36,11 +37,14 @@ from browser_session import (
     GOLDEN_PATH,
     PNG_RATIO_BAR,
     STL_ROUTE,
+    eval_bool,
+    eval_inactive,
     eval_int,
     eval_opt_str,
     eval_pairs,
     eval_str,
     eval_str_list,
+    expected_inactive,
     fixture_hashes,
     launch,
     serve,
@@ -554,6 +558,91 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 assert not moved, f"golden sweep: the form sends other queries: {detail}"
                 print(f"golden sweep: {len(swept)} records, {len(set(swept.values()))} distinct")
+
+            with step("inert fields"):
+                # The roadmap's own link: #spoke_count=0&hub_d=40, a value the model says does
+                # nothing, shared and opened fresh (L41, D-17). A fresh page, because a fragment
+                # assigned after the load can be erased before buildForm() returns (22-RESEARCH
+                # Pitfall 2), so it rides the goto URL; serve_stl_from, so nothing builds.
+                # What must hold is that the field is dimmed AND still a field: visible,
+                # editable, holding the link's value, and sent. The expected set comes from
+                # /api/schema through the Python evaluator, never a literal (D-14).
+                fresh = browser.new_page()
+                try:
+                    serve_stl_from(fresh, stl)
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as loaded:
+                        fresh.goto(server + "/#spoke_count=0&hub_d=40")
+                    load_query = urllib.parse.urlsplit(loaded.value.url).query
+                    assert load_query == "hub_d=40", (
+                        f"inert fields, fresh load: the page sent {load_query!r}, not the "
+                        "link's hub_d=40 (spoke_count=0 is the default and is dropped)"
+                    )
+
+                    want = expected_inactive(properties, "spoke_count=0&hub_d=40")
+                    got = eval_inactive(fresh)
+                    assert "hub_d" in want, "inert fields: the link's own field is not dimmed"
+                    assert got == want, f"inert fields: the page dims {got}, the schema says {want}"
+                    for name, reason in sorted(got.items()):
+                        print(f"inert fields: {name}: {reason}")
+
+                    hub_d = fresh.locator("form#params [name=hub_d]")
+                    expect(hub_d).to_be_visible()
+                    expect(hub_d).to_be_editable()
+                    expect(hub_d).to_have_value("40")
+
+                    # A real keystroke into the dimmed field reaches the request.
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as typed:
+                        hub_d.fill("41")
+                    typed_query = urllib.parse.urlsplit(typed.value.url).query
+                    assert typed_query == "hub_d=41", (
+                        f"inert fields, typed into the dimmed field: the page sent {typed_query!r}"
+                    )
+                    assert "hub_d" in eval_inactive(fresh), "inert fields: typing made hub_d live"
+
+                    # The gate going live: read in the same JS task as the event, before the
+                    # 350 ms debounce (23-RESEARCH Pitfall 8), so only the input
+                    # listener's own call can have changed it.
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as gated:
+                        still_dimmed = eval_bool(
+                            fresh,
+                            """() => {
+                              const gate = document.querySelector('form#params [name=spoke_count]');
+                              gate.value = '4';
+                              gate.dispatchEvent(new Event('input', { bubbles: true }));
+                              return document.querySelector('form#params [name=hub_d]')
+                                .closest('label').classList.contains('inactive');
+                            }""",
+                        )
+                    assert not still_dimmed, (
+                        "inert fields: hub_d still dimmed right after spoke_count's input event, "
+                        "so the input listener did not re-evaluate before scheduleUpdate"
+                    )
+                    gated_query = urllib.parse.urlsplit(gated.value.url).query
+                    assert _pairs(gated_query) == _pairs("spoke_count=4&hub_d=41"), (
+                        f"inert fields, gate set: the debounced request was {gated_query!r}"
+                    )
+                    assert eval_inactive(fresh) == expected_inactive(
+                        properties, "spoke_count=4&hub_d=41"
+                    ), "inert fields: the dimmed set after the gate went live is not the schema's"
+
+                    # Reset: the empty query, and exactly the set the empty link gives.
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as reset_request:
+                        fresh.locator("#reset").click()
+                    reset_query = urllib.parse.urlsplit(reset_request.value.url).query
+                    assert reset_query == "", f"inert fields, Reset: the page sent {reset_query!r}"
+                    assert eval_inactive(fresh) == expected_inactive(properties, ""), (
+                        "inert fields, Reset: the dimmed set differs from the empty link's"
+                    )
+                finally:
+                    fresh.close()
 
             with step("download name"):
                 # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers

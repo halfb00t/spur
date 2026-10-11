@@ -7,7 +7,7 @@ import {
 const $ = (sel) => document.querySelector(sel);
 const form = $('#params');
 const mateInput = $('#mate-teeth');
-const fields = new Map(); // name -> { input, wrap, title }
+const fields = new Map(); // name -> { input, wrap, title, rels, reason }
 const defaults = {};
 
 const DIMS = [
@@ -84,12 +84,15 @@ async function buildForm() {
     const unit = Object.assign(document.createElement('span'), { className: 'unit', textContent: prop.unit ?? '' });
     const control = Object.assign(document.createElement('span'), { className: 'control' });
     control.append(input, unit);
-    wrap.append(nameEl, control);
+    // Why the field is dimmed, when it is (applyRelations). Its own row, after .control and
+    // never inside it or under the class `name`, which the browser test reads as the label.
+    const reason = Object.assign(document.createElement('span'), { className: 'reason', id: `reason-${name}` });
+    wrap.append(nameEl, control, reason);
     if (prop.description) {
       wrap.append(Object.assign(document.createElement('small'), { textContent: prop.description }));
     }
     groups.get(group).append(wrap);
-    fields.set(name, { input, wrap, title });
+    fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });
   }
 }
 
@@ -97,6 +100,7 @@ function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
   for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];
   mateInput.value = h.get('mate_teeth') ?? '';
+  applyRelations();
 }
 
 /** Query string with only the parameters that differ from the defaults. */
@@ -106,6 +110,49 @@ function gearQuery() {
     if (input.value !== '' && String(input.value) !== String(defaults[name])) q.set(name, input.value);
   }
   return q;
+}
+
+// ---------------------------------------------------------------- relations (L41)
+
+/** The value the page sends for a field: an emptied box is its default, as in gearQuery.
+ *  A gate that is not a field throws on the destructuring, loudly. */
+function effective(name) {
+  const { input } = fields.get(name);
+  return input.value === '' ? defaults[name] : input.value;
+}
+
+// A switch and not a lookup table: a table of rows shaped like `['eq', ...]` is harvested
+// as a DIMS key by test_api.py, and a plain-object lookup resolves `constructor`. An op the
+// schema carries that is not here is a stop-and-ask (D-02), so it throws and does not guess.
+function holds({ field, op, value }) {
+  const have = Number(effective(field));
+  switch (op) {
+    case 'eq': return have === value;
+    case 'gt': return have > value;
+    default: throw new Error(`Unknown enabled_when op: ${op}`);
+  }
+}
+
+/** What one condition asks of its gate, in the gate's own title: the reason states a need
+ *  and nothing about what the server does with the value (L02). */
+function need({ field, op, value }) {
+  const { title } = fields.get(field);
+  return op === 'eq' ? `${title} = ${value}` : `${title} above ${value}`;
+}
+
+// Dims a field whose relation does not hold, and says why. It never disables, hides or
+// clears the field: a shared link's value must load, be editable and be sent (L05).
+// Called from exactly three places, readHash, the form's input listener and #reset, and
+// never from a build's success: a 422 must leave the state the fields imply (CF-4).
+// Every condition is evaluated, so an unknown op anywhere in a list throws.
+function applyRelations() {
+  for (const { input, wrap, rels, reason } of fields.values()) {
+    const off = rels.map(holds).includes(false);
+    wrap.classList.toggle('inactive', off);
+    reason.textContent = off ? `Needs ${rels.map(need).join(' and ')}` : '';
+    if (off) input.setAttribute('aria-describedby', reason.id);
+    else input.removeAttribute('aria-describedby');
+  }
 }
 
 // ---------------------------------------------------------------- messages
@@ -337,7 +384,7 @@ function resize() {
 // ---------------------------------------------------------------- wiring
 
 form.addEventListener('submit', (e) => e.preventDefault());
-form.addEventListener('input', scheduleUpdate);
+form.addEventListener('input', () => { applyRelations(); scheduleUpdate(); });
 mateInput.addEventListener('input', scheduleUpdate);
 window.addEventListener('hashchange', () => { readHash(); update(); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -347,6 +394,7 @@ $('#fit').addEventListener('click', fit);
 $('#reset').addEventListener('click', () => {
   for (const [name, { input }] of fields) input.value = defaults[name];
   mateInput.value = '';
+  applyRelations();
   update();
 });
 $('#copy-link').addEventListener('click', async (e) => {

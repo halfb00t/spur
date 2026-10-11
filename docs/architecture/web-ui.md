@@ -14,7 +14,10 @@ parameter in the URL so a gear can be shared as a link.
   committed bytes differ from a fresh build.
 - The UI knows no gear geometry. The form is generated from `GET /api/schema`, including
   each field's group, unit and step, so a parameter added in `params.py` appears here
-  with no edit (L02).
+  with no edit (L02). The schema also carries each field's `enabled_when`, a list of
+  `{field, op, value}` conditions that generic `applyRelations()` evaluates to dim a field
+  the current values make inert, with its reason; the field is never disabled, hidden or
+  cleared and is still sent (L41).
 - All URLs are relative, so `SPUR_ROOT_PATH` works — with the caveat that the proxy must
   redirect `/spur` to `/spur/`, or the browser resolves `static/app.js` one level too
   high. That is documented in the README because it cannot be fixed from inside the app.
@@ -22,7 +25,8 @@ parameter in the URL so a gear can be shared as a link.
 ## Shape
 
 `app.js`, roughly in this order: build the form from the schema; read the hash into the
-inputs; on change, debounce, cancel the in-flight request (`AbortController`), fetch
+inputs and dim the fields whose relation does not hold (again on every input and on Reset,
+before the debounce); on change, debounce, cancel the in-flight request (`AbortController`), fetch
 `/api/info` and `/api/model.stl?quality=preview`, update the dimensions table, the
 warnings and the invalid-field marks, then load the STL into the scene. A `seq` counter
 drops responses that arrive out of order. The viewer is a `WebGLRenderer` with
@@ -37,7 +41,9 @@ makes the bundle small.
 
 `422` bodies are read back and rendered twice: the message in the messages strip, and the
 `detail[].ctx.fields` names as an `invalid` class on the inputs responsible. Warnings from
-`derive()` render in the same strip in a different tone.
+`derive()` render in the same strip in a different tone. An `invalid` field can also be
+`inactive` (the keyway pair under a hex bore): the two classes coexist, and the 422 mark is
+the stronger (L41).
 
 ## Known gap
 

@@ -60,6 +60,9 @@ def test_schema_drives_the_form() -> None:
     assert props["teeth"]["group"] == "Teeth"
     assert props["module"]["unit"] == "mm"
     assert props["recess_sides"]["enum"] == ["both", "top", "bottom", "none"]
+    # L41: a relation is schema metadata the form reads; hub_d does nothing under the
+    # default spoke_count of 0, and the schema says so exactly as the model wrote it.
+    assert props["hub_d"]["enabled_when"] == [{"field": "spoke_count", "op": "gt", "value": 0}]
 
 
 def test_openapi_documents_the_typed_contracts() -> None:
@@ -133,6 +136,14 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     dims_keys = re.findall(r"^\s*\['(\w+)',", source, re.MULTILINE)
     assert len(dims_keys) >= 15  # a regex that silently stopped matching must fail, not pass
 
+    # L41: under it every line of the `['word',` shape lies inside DIMS, so a new table
+    # written as rows (an operator table, Phase 24's option table) fails here even when
+    # its first word happens to be a DerivedDimensions field. Before L41 the whole-file
+    # harvest passed whatever such a line said.
+    dims_block = re.search(r"const DIMS = \[.*?\];", source, re.DOTALL)
+    assert dims_block  # a regex that silently stopped matching must fail, not pass
+    assert dims_keys == re.findall(r"^\s*\['(\w+)',", dims_block.group(0), re.MULTILINE)
+
     for read_form in (".span_teeth", "info.centre_distance", "info.warnings",
                      ".hex_cell_count"):
         assert read_form in source
@@ -162,7 +173,8 @@ def test_root_form_d_is_never_labelled_an_iso_form_diameter_where_a_user_reads_i
 def test_the_shareable_link_round_trips_every_field_through_generic_code() -> None:
     """D-11's static proof, the browser-test idea's own "cheaper first step": the
     hash -> form -> query path in app.js handles every `GearParams` field generically,
-    with no per-field code (D-12; 08 D-09 stands). A renamed or added field cannot
+    with no per-field code (D-12; L41 supersedes 08 D-09: a relation is schema metadata
+    that generic code reads). A renamed or added field cannot
     silently break the shareable-link round trip without this catching it. The browser
     itself is checked by hand at gsd-verify-work, against the checklist in
     12-07-PLAN.md's `<verification>`.
@@ -183,15 +195,33 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # builds the shareable hash from that query and writes it with history.
     # replaceState(); the copy-link handler copies the resulting location.href; and
     # hashchange re-reads the hash on navigation (e.g. the copied link opened fresh).
+    #
+    # L41 rewrote the `fields.set` token (the entry now carries the property's own
+    # relation and its reason span) and added the rest of the tail: the three call sites
+    # of applyRelations() (the end of readHash(), the input listener before
+    # scheduleUpdate, Reset), the effective-value rule gearQuery() sends (D-18), the
+    # evaluator's own shape (D-02, D-03) and the loop that writes the dim. The
+    # `hashchange` token and every other token are as they were; none was removed.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
-        "fields.set(name, { input, wrap, title });",
+        "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
         "for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];",
+        "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); }",
         "q.set(name, input.value)",
         "const infoQ = new URLSearchParams(q);",
         "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
         "navigator.clipboard.writeText(location.href)",
         "window.addEventListener('hashchange', () => { readHash(); update(); });",
+        "form.addEventListener('input', () => { applyRelations(); scheduleUpdate(); });",
+        "mateInput.value = ''; applyRelations(); update();",
+        "return input.value === '' ? defaults[name] : input.value;",
+        "const have = Number(effective(field));",
+        "default: throw new Error(",
+        "for (const { input, wrap, rels, reason } of fields.values()) {",
+        "const off = rels.map(holds).includes(false);",
+        "wrap.classList.toggle('inactive', off);",
+        "reason.textContent = off ?",
+        "input.setAttribute('aria-describedby', reason.id)",
     ):
         assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 
@@ -216,6 +246,19 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         # A field name read off an object as `something.<field>` -- per-field property
         # access, the shape a conditional-field or bore-selector patch would add.
         assert not re.search(r"\." + re.escape(name) + r"\b", rest), name
+
+    # L41: an inert field stays a field. A relation dims the field and says why; it never
+    # disables, hides, clears or rewrites it, because a shared link such as
+    # #spoke_count=0&hub_d=40 must load a value the user can edit and send (L05). The
+    # pattern needs a property access or an attribute call, so prose in a comment cannot
+    # trip it, and markup is never written (the reason is `textContent`, T-23-01).
+    writes_a_field_shut = (
+        r"\.disabled\s*=|setAttribute\(\s*['\"](?:disabled|hidden)['\"]|\.hidden\s*="
+        r"|\.innerHTML\b|insertAdjacentHTML|\.style\.(?:display|visibility)\b"
+    )
+    # A regex that silently stopped matching must fail, not pass.
+    assert re.search(writes_a_field_shut, "x.hidden = true")
+    assert not re.search(writes_a_field_shut, source)
 
 
 def test_info_reports_the_mate() -> None:
