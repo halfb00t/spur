@@ -44,6 +44,11 @@ STL_ROUTE = "**/api/model.stl*"
 # load 3-5) and 4.75 s on ubuntu-latest (21-02, run 38044109910, 4 vCPU, the tracer running
 # inside `make verify` beside three other xdist workers). Neither is over 15 s, so PD-04 leaves
 # the 45 s it started from.
+# Phase 22 added the `download name` step (one hob-root build on its own page, then a fine
+# re-mesh): 3.56, 3.20 and 1.13 s on macOS (22-02, Apple M2 Max, 1-minute load 6.5-7.0,
+# 2026-10-11, `bench/RESULTS.md` "Download name carries the root (Phase 22)"), the slowest
+# build-bound step in two of the three runs, `first build drawn` (2.91-2.98 s) in the third.
+# Each is under 15 s, so PD-04 still leaves 45 s. Not read on ubuntu-latest here.
 BUILD_WAIT_MS = 45_000
 
 # uvicorn plus the shipped pool of 2 workers (D-11, 21-RESEARCH Pattern 1). Seen before the
