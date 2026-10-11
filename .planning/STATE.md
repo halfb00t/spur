@@ -22,11 +22,11 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-10)
+See: .planning/PROJECT.md (updated 2026-10-11)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 22 — Download Name Carries the Root
+**Current focus:** Phase 23 — Conditional Form Fields
 
 ## Current Position
 
@@ -35,7 +35,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-11 — Phase 22 complete, transitioned to Phase 23
 
-Progress: [████████░░] 80% (1 of 5 phases; Phase 24 is discretionary)
+Progress: [████░░░░░░] 40% (2 of 5 v0.5 phases complete — 21, 22; Phase 24 is discretionary; 10/10 plans so far)
 
 ## Performance Metrics
 
@@ -419,12 +419,33 @@ pending; the next milestone starts this list fresh.
 - [Phase 22]: L40: the download name follows the root root_mode builds (not the root asked for); a refused or ignored request keeps the plain name, slug() has no guard, no cache is keyed by slug
 - [Phase 22]: 22-02: no bar set from the download name readings (3.56, 3.20, 1.13 s on Apple M2 Max); BUILD_WAIT_MS stays 45_000; Phase 25 re-sets the gate bar and absorbs the step (D-06)
 
+- [Phase 22]: L40 appended after L39 (0 deleted lines): `GearParams.slug()` ends `_trochoid` exactly when `root_mode` builds the hob root — the requested root rejected as the rule (a 40-tooth `root_shape=trochoid` request keeps `spur_z40_m1.75_pa25`: a name is a claim about the part, L08); no guard, no fallback; totality shown by six pure rows, two `build.failed` rows and a 17,567-case sweep (9,954 `_trochoid`, none raised); every consumer of the old names read at `5769ac0`; no cache keyed by slug.
+- [Phase 22]: D-11 held — the whole decision landed in one commit `e3b1181`: `slug()`, the header pins, the pure rows, the `build.failed` rows, the browser `download name` step, both docs, L40, the `docs/http-api.md` → `docs/architecture/http-api.md` correction in REQUIREMENTS/ROADMAP and the idea's retirement; `tests/regression/*` and the golden pin unchanged (L05).
+- [Phase 22]: 22-02 set no bar from its three readings (3.56 / 3.20 / 1.13 s, mean 2.63 s, under 21 PD-04's 15 s) — taken on a busy M2 Max (1-min load 6.5–7.0), so upper bounds; `BUILD_WAIT_MS` stays `45_000` (comment-only edit); Phase 25 re-sets the gate bar on its final HEAD and absorbs the step (D-06).
+- [Phase 22]: 22-01's Task 1 clean-tree precondition read against tracked files only after the orchestrator's phase-start `STATE.md`/`state.json` edits; the executor staged explicitly and flagged it (22-01-SUMMARY) — the commit slice is exactly the 11 planned files plus the rename.
+
 ### Pending Todos
 
 None yet.
 
 ### Blockers/Concerns
 
+- ℹ️ [Phase 22] Code review (`22-REVIEW-DISPOSITION.md`, 5 open): WR-01 `slug()` now runs `root_mode` while
+  `build.failed`/`queue.refused` records are built — a raise there would turn a 422 into a 500, and totality
+  rests on a one-off sweep, not a test (fix: a small seeded `slug()` test); WR-02 the `build.failed` test
+  depends on the module-level byte cache not holding its gear, enforced by a comment only; IN-01 the bore-off
+  field block duplicated in `tests/test_api.py` and `tests/test_trochoid.py`; IN-02 `serve_stl_from`'s
+  docstring ragged after the edit; IN-03 L40 quotes 1.13 s where `bench/RESULTS.md` reads 1.13–3.56 s.
+- ⚠️ [Phase 22] Security enforcement is on and `22-SECURITY.md` does not exist — `/gsd-secure-phase 22` is
+  owed before the phase ships.
+- ℹ️ [Phase 22] `phase.complete` could not parse the ROADMAP Phase 22 **Requirements** line (slug-style
+  `REQ-slug-…` ids, not `REQ-NN`) and marked nothing in REQUIREMENTS.md; 22-01 had already marked both rows
+  Complete (`REQUIREMENTS.md:252-253`). It also warned about SUMMARY paths written relative to the phase dir
+  (`investigation/*.log`) and the corrected `docs/http-api.md` mention. Record only.
+- ℹ️ [Phase 22] `verify.codebase-drift` advisory fired on both waves (53 structural elements since the last
+  mapping); `/gsd-map-codebase` still owed (the Phase 13 and 17 items stand).
+- ℹ️ [Phase 22] Commit trailers mixed again: executor commits `Claude Sonnet 5.5`, orchestrator commits
+  `Claude Fable 5.1`, gsd-tools state commits none. Not rewritten.
 - ⚠️ [Phase 21] CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the shell's `--with-deps`
   install has only run on 24.04 (`must`, `docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`).
   Read the first post-migration run's whole log before any fix; `runs-on: ubuntu-24.04` is the fallback.
@@ -654,13 +675,13 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-11T06:40:00.575Z
+Last session: 2026-10-11T06:53:22Z
 Stopped at: Phase 22 complete, ready to plan Phase 23
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: the roadmap is approved and committed (`7f761c9`); the start branch `gsd/milestone-v0.5-start` (4 commits) lands as its own PR through `make pr.land` (the v0.4 precedent, PR #26). Then `/gsd-discuss-phase 21` — decisions 1–4 (confirm the kickoff choices) and the Linux/WebGL spike as the first task.
+- Next: Phase 22 is complete on `gsd/phase-22-download-name-carries-the-root` (not pushed, no PR yet; 10 commits over `main`): run `/gsd-secure-phase 22` (owed — security enforcement is on), decide the five open review findings (`22-REVIEW-DISPOSITION.md`; `/gsd-code-review 22 --fix` or defer with a debt file), then ship (`/gsd-ship 22` — the Phase 21 precedent, PR #33), then `/gsd-discuss-phase 23`.
 - Done at roadmap time: the `v0.4` tag was missing locally and on `origin` (only `v0.1`–`v0.3` existed) although v0.5's fixture rule is stated against it; the human chose the close squash `b24287a` (the v0.2/v0.3 precedent) and the annotated tag was created and pushed 2026-10-10.
 - Open decision carried, now owned by Phase 25: re-set L34's 66 s gate bar from an idle-host reading under a rule written before the first reading (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar). The 401-position oracle count is not part of this milestone.
 - Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).

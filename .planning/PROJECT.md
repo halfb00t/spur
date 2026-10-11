@@ -519,6 +519,11 @@ pytest — L13). Full list with sources and acceptance evidence:
   its own `Lxx` with `make fixture.regen`; fixture byte-identical through the milestone)
 - ✓ A browser test proves the viewer's form, validation marks, warnings and STL load, and
   its place in `make verify` and CI is a logged decision with the measured cost (L39) — Phase 21
+- ✓ The download's file name tells a radial part from a trochoid one — Phase 22 (L40: `slug()`
+  ends `_trochoid` exactly when `root_mode` builds the hob root; a 23-tooth hob-root part is
+  `spur_z23_m1.75_pa25_trochoid`, the ignored 40-tooth request and every radial part keep today's
+  name byte for byte; fixture and golden pin unchanged; verified 15/15, Nyquist 0 gaps,
+  `make verify` 1238 tests at 97.92 %)
 
 ### Active
 
@@ -528,7 +533,6 @@ Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance 
 - [ ] The web form tells the user before they type that a field is inert — conditional
   fields from schema metadata, a bore-shape selector over the flat fields — with the API,
   CLI and URL contracts unchanged.
-- [ ] The download's file name tells a radial part from a trochoid one.
 - [ ] L34's gate bar is re-set from an idle-host reading under its own `Lxx`.
 - [ ] The three small ledger ideas (reverify recipe, Pi 5 claim, `make venv` constraint
   probe) are closed with a record each.
@@ -680,6 +684,7 @@ quick reference.
 | L37 | The heaviest allowed composed row's limit is documented behaviour, not a moved default (amends L31 and L32): the row (module 10, keyed bore, tip chamfer 3, `spoke_count` 32) builds in 29.42 s alone — 0.58 s of `SPUR_BUILD_TIMEOUT`'s 30 s — and under ten identical concurrent requests the slot-holder ends `503 timeout` at `duration_ms` 30004; the contract under contention is the documented 503, `SPUR_BUILD_TIMEOUT` stays 30 s and `spoke_count`'s `le` stays 32 (raising the default and a third `le` cut both rejected; L05, L08); the same-slot timeout race is fixed by the two-fact guard (`executor_for(p) is executor and executor._processes is not None`) and a `_closed` flag `recreate_for` honours, so a second same-slot timeout raises `BuildTimeout`, never `AttributeError` | ✓ Good — reproduced on attempt 1 (three `AttributeError` records), zero 500s after `0628182`; four tests red→green, 40/40 loops, `make verify` 2/3 (run 2 the resource-tracker flake, `proceed-as-known-flake`); `params.py` byte-identical, `app.py` comment-only; race debt retired `7af75af`; review WR-01: the README/L37 clause "a bigger host raises the variable" was backwards (slower or busier host), corrected in `9927f3c` with the other 11 review findings (`17-REVIEW-FIX.md`, `9927f3c`…`366d6d4`); the incremental re-review's four further items are being fixed now |
 | L38 | The hob-cut root is opt-in through `root_shape` (`radial` default, `trochoid`; a `Literal`, never a bool), `root_fillet` is the hob's tip radius under it, every number beside it is proved or warned (`root_form_d` the cutter-envelope junction, `root_waist` the narrowest arc under a 0.4 mm floor, `root_thickness`/`root_gap` null, the undercut sentence from the cutter with `x_min`), four structural guards and `ROOT_ARC_MIN` keep a broken outline out of the kernel, and the default does not move in v0.4 — Phase 20 skipped, the flip deferred to a real fit report or a mating-pair request below z_min, in one commit with `make fixture.regen` under its own `Lxx` (supersedes L10, amends L09 and L33) | ✓ Good — verified 5/5, Nyquist 0 gaps, security 22/22 closed; review CR-01 (`root_waist` read at the narrowest half-angle, 2–5 % high on crossing joins) and WR-01 fixed (`e733cc2`, `b51931c`), 4 info deferred; fixture byte-identical to `df4749e`; `make verify` 1220 tests at 97.92 %, 192.94 s mean against L34's 66 s (accepted, bar re-set open) |
 | L39 | A headless browser runs the shipped viewer inside `make verify` and CI, out of the commit slice, at a measured price (amends L13 and L36, restates L11): `playwright==1.63.0` in the dev extra only, Chrome Headless Shell under `.venv/ms-playwright` on SwiftShader; the server fixture on a `127.0.0.1` socket passed by descriptor, `SPUR_*` scrubbed, killed by process group with a floor of 3 live members before the kill; the drawn canvas judged by a PNG byte ratio bar of 4.9 and the triangle count the page reports against the STL header; the 44 fixture records' requests pinned in `tests/regression/golden_requests.json`, written by `make golden.regen` only; `make test` depends on the shell stamp, `test.fast` and `test-image` exclude the file, AST pins forbid any skip path; the human kept the test in the gate at 21-07's price decision (`accept`, O1); every figure cited to a SUMMARY sha or to `bench/RESULTS.md` "Browser test of the viewer (Phase 21)", none restated here | ✓ Good — verified 5/5, Nyquist 0 gaps, security 25/25 closed; CI run 38059369744 green (1226 passed) at `88df5cf`; review 0 critical, 3 warnings filed as debt (`fc53e5c`), 4 info open in `21-REVIEW-DISPOSITION.md`; `make verify` hung once at the 600 s limit with no failure (filed `must`, `068358c`); `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19 (filed `must`) |
+| L40 | The download name carries the root the part has: `GearParams.slug()` ends `_trochoid` exactly when L38's predicate (`root_mode`) builds the hob root — the requested root is rejected as the rule, a refused or ignored request keeps the plain name, no guard and no fallback (totality shown by six pure rows, two `build.failed` rows and a 17,567-case sweep: 9,954 `_trochoid`, none raised); every consumer of the old names read at `5769ac0` and no cache keyed by slug; the browser scenario gains a real `#dl-stl` download step (applies L05 and L08 to the file name; one commit, `e3b1181`) | ✓ Good — 15/15 must-haves; `make verify` 1238 tests at 97.92 %; fixture and golden pin byte-unchanged; the step reads 1.13–3.56 s on a busy M2 Max (no bar set — Phase 25's, D-06); review 2 warnings + 3 info open (`22-REVIEW-DISPOSITION.md`) |
 
 ## Success Metric (Milestone v0.1)
 
@@ -781,4 +786,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-10 after Phase 21.*
+*Last updated: 2026-10-11 after Phase 22.*
