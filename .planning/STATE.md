@@ -4,12 +4,11 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 23
 current_phase_name: Conditional Form Fields
-status: planning
+status: "Phase 22 shipped — PR #34"
 stopped_at: Phase 22 complete, ready to plan Phase 23
-last_updated: "2026-10-11T06:52:02.534Z"
+last_updated: "2026-10-11T07:20:01.653Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 22 complete, transitioned to Phase 23
-state_head: 51d64da7fa2def7bb00687a88c46bf15cf06fcdb
+state_head: 3df5fd2a57614d85e15fe6f460e9c45354bdcea6
 progress:
   total_phases: 5
   completed_phases: 4
@@ -32,10 +31,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 23 — Conditional Form Fields
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-11 — Phase 22 complete, transitioned to Phase 23
+Status: Phase 22 shipped — PR #34
+Last activity: 2026-10-11
 
-Progress: [████░░░░░░] 40% (2 of 5 v0.5 phases complete — 21, 22; Phase 24 is discretionary; 10/10 plans so far)
+Progress: [████████░░] 80% (2 of 5 v0.5 phases complete — 21, 22; Phase 24 is discretionary; 10/10 plans so far)
 
 ## Performance Metrics
 
