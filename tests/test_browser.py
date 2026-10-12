@@ -31,6 +31,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import Counter
 from collections.abc import Iterator
 
 import pytest
@@ -52,8 +53,10 @@ from browser_session import (
     expected_shown,
     fixture_hashes,
     flip_links,
+    foreign_keys,
     launch,
     negative_link,
+    record_api,
     serve,
     serve_stl_from,
     state_links,
@@ -423,15 +426,37 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
     selectors = _schema_selectors(server)
     field_count = len(properties)
     parked: list[Route] = []
+    seen: list[str] = []
 
     with sync_playwright() as pw:
         # In the body, not a fixture: a missing shell must be a FAILED test with the install
         # command in its message, not an ERROR and not a skip (D-02, D-07).
         browser = launch(pw)
         try:
-            page = browser.new_page()
+            page = record_api(browser.new_page(), seen)
 
-            with step("webgl2"):
+            # D-14, BS-2: no page may send, and no link may carry, a key the form does not own.
+            # `GearParams` is the form's whole vocabulary; the API takes two parameters beside
+            # it, `ModelQuery.quality` and `InfoQuery.mate_teeth` (app.py), and the hash carries
+            # `mate_teeth` but never `quality`. The rest is read from the schema, so a field
+            # added later is allowed with no edit here and a selector's state, which is not a
+            # field, is refused wherever it leaks.
+            allowed_query = set(properties) | {"quality", "mate_teeth"}
+            allowed_hash = set(properties) | {"mate_teeth"}
+
+            def no_foreign_key() -> None:
+                leaked = foreign_keys(seen, allowed_query)
+                assert not leaked, f"a request carried a key GearParams lacks: {leaked}"
+                keys = [
+                    key
+                    for key, _ in urllib.parse.parse_qsl(
+                        eval_str(page, FRAGMENT), keep_blank_values=True
+                    )
+                ]
+                stray = [key for key in keys if key not in allowed_hash]
+                assert not stray, f"the main page's hash carries {stray}, not a field of the form"
+
+            with step("webgl2", no_foreign_key):
                 renderer = eval_opt_str(page, WEBGL2_PROBE)
                 assert renderer is not None, (
                     "this browser gives no WebGL2 context: the viewer builds no form without "
@@ -444,7 +469,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
             page.route(STL_ROUTE, lambda route: parked.append(route))
             page.goto(server + "/")
 
-            with step("form built"):
+            with step("form built", no_foreign_key):
                 expect(page.locator("form#params [name]")).to_have_count(field_count)
                 _wait_until_parked(page, parked)
                 # The fresh default load: empty hash, readHash() and update() have run.
@@ -453,7 +478,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "the STL link has an href before any STL was shown"
                 )
 
-            with step("form from schema"):
+            with step("form from schema", no_foreign_key):
                 # Every expectation is the schema's, read above at test time. A property with
                 # no group sits under "Other" (app.js buildForm), and a group opens its
                 # fieldset at its first property, so two properties of one group are one legend.
@@ -489,7 +514,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     assert value != "", f"the custom property {variable} is empty on :root"
                 print(f"schema: {len(expected_names)} fields in {len(groups)} groups")
 
-            with step("first build drawn"):
+            with step("first build drawn", no_foreign_key):
                 canvas = page.locator("#canvas")
                 blank = canvas.screenshot()  # same element, same page, STL request parked
                 with page.expect_response(
@@ -518,7 +543,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"the scene holds {declared} triangles, the STL header declares {header}"
                 )
 
-            with step("href after showModel"):
+            with step("href after showModel", no_foreign_key):
                 # An STL too short to parse makes showModel throw. The link must still have
                 # no href: it is set only after showModel returns (app.js update()).
                 page.unroute(STL_ROUTE)
@@ -536,7 +561,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
 
             serve_stl_from(page, stl)
 
-            with step("invalid field marked"):
+            with step("invalid field marked", no_foreign_key):
                 # Both marking paths of app.js problems(): `bore_flat=3` is the single-field
                 # `infeasible` error (marked through ctx.fields), `teeth=2` a field-level range
                 # error (marked through loc[1]). The expectation is the API's own 422 body for
@@ -573,7 +598,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "a valid link left a field marked invalid"
                 )
 
-            with step("warning rendered"):
+            with step("warning rendered", no_foreign_key):
                 # Equality of ordered lists, against links whose API answer holds two warnings,
                 # one warning and none: the two-warning link is what separates "renders the
                 # list" from "renders something that contains the first warning". The STL is
@@ -614,7 +639,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     counts.append(len(warnings))
                 print(f"warnings per link (two, one, none expected): {counts}")
 
-            with step("link round trip"):
+            with step("link round trip", no_foreign_key):
                 # The three places app.js sets form values programmatically: the load
                 # (readHash), the `hashchange` listener and #reset. The wait on each is the
                 # /api/info request itself, captured around the action: readHash(), the
@@ -627,7 +652,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     assert status == 200, f"the link #{link} answers {status}, not 200"
 
                 # fresh load: a new page opened on the link.
-                page2 = browser.new_page()
+                page2 = record_api(browser.new_page(), seen)
                 try:
                     serve_stl_from(page2, stl)
                     with page2.expect_request(
@@ -687,7 +712,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"{_differing(after, default_pairs)}"
                 )
 
-            with step("golden sweep"):
+            with step("golden sweep", no_foreign_key):
                 # What only a browser can prove: the server's acceptance of every fixture
                 # record is tests/regression's, but what the form SENDS for each link is the
                 # page's. Each record's link goes through location.hash on one page whose STL
@@ -696,7 +721,11 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # file's diff empty (D-09). Beside the query, the fields the page dimmed for
                 # the link, with their reasons, must equal the Python evaluator's over
                 # /api/schema (23 D-14, D-16): two implementations that share no code agreeing
-                # on every record. The query pin is unchanged.
+                # on every record. The query pin is unchanged. L42, D-06, D-13: the option each
+                # selector shows is read in the same pass and must equal the schema's own
+                # derivation, so the shown option with the unchanged query pin is the proof that
+                # loading never writes (SC2): a page that wrote a field to make an option true
+                # would move a query.
                 pinned = _golden_records()
                 hashes = fixture_hashes()
                 assert set(pinned) == set(hashes), (
@@ -704,7 +733,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"the pin {sorted(set(pinned) - set(hashes))}, only in the fixture "
                     f"{sorted(set(hashes) - set(pinned))}; run `make golden.regen`"
                 )
-                sweep_page = browser.new_page()
+                sweep_page = record_api(browser.new_page(), seen)
                 try:
                     swept = sweep(sweep_page, server, hashes)
                 finally:
@@ -732,14 +761,34 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     if swept[name].inactive != want
                 )
                 assert not dim_differs, f"golden sweep: the dimmed sets differ: {dim_differs}"
+                wanted_shown = {
+                    name: expected_shown(selectors, properties, link)
+                    for name, link in hashes.items()
+                }
+                assert all(option for shown in wanted_shown.values() for option in shown), (
+                    "golden sweep: a fixture link derives no option for a selector, so the "
+                    "total grid of D-02 does not cover the fixture"
+                )
+                assert len(set(wanted_shown.values())) >= 2, (
+                    "golden sweep: every link derives the same option, so a select stuck on "
+                    "one option would pass this step"
+                )
+                shown_differs = "; ".join(
+                    f"{name}: the page shows {swept[name].shown}, the schema says {want}"
+                    for name, want in wanted_shown.items()
+                    if swept[name].shown != want
+                )
+                assert not shown_differs, f"golden sweep: the shown options differ: {shown_differs}"
                 distinct_queries = len({s.query for s in swept.values()})
                 distinct_dims = len({tuple(sorted(s.inactive.items())) for s in swept.values()})
                 print(
                     f"golden sweep: {len(swept)} records, {distinct_queries} distinct queries, "
                     f"{distinct_dims} distinct dimmed sets"
                 )
+                shown_counts = Counter(shown[0] for shown in wanted_shown.values())
+                print(f"golden sweep: shown {dict(sorted(shown_counts.items()))}")
 
-            with step("inert fields"):
+            with step("inert fields", no_foreign_key):
                 # The roadmap's own link: #spoke_count=0&hub_d=40, a value the model says does
                 # nothing, shared and opened fresh (L41, D-17). A fresh page, because a fragment
                 # assigned after the load can be erased before buildForm() returns (22-RESEARCH
@@ -747,7 +796,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # What must hold is that the field is dimmed AND still a field: visible,
                 # editable, holding the link's value, and sent. The expected set comes from
                 # /api/schema through the Python evaluator, never a literal (D-14).
-                fresh = browser.new_page()
+                fresh = record_api(browser.new_page(), seen)
                 try:
                     serve_stl_from(fresh, stl)
                     with fresh.expect_request(
@@ -938,7 +987,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 expect(page.locator("form#params label.field.invalid")).to_have_count(0)
 
-            with step("bore shape"):
+            with step("bore shape", no_foreign_key):
                 # L42: a bore shape is picked from a select the schema describes. Its own
                 # page with the STL route aborted, as in the sweep, so nothing builds; the
                 # fragment of a fresh load rides the goto URL (22-RESEARCH Pitfall 2). Every
@@ -959,7 +1008,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 pending = [label for label, pick in picks.items() if pick.sent is None]
                 assert writing, "bore shape: the schema yields no pick that writes"
                 assert pending, "bore shape: the schema yields no pick that stays pending"
-                bore = browser.new_page()
+                bore = record_api(browser.new_page(), seen)
                 try:
                     bore.route(STL_ROUTE, lambda route: route.abort())
                     link = shape_links[pending[0]]
@@ -1118,7 +1167,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 finally:
                     bore.close()
 
-            with step("unknown relation op"):
+            with step("unknown relation op", no_foreign_key):
                 # D-02: an op the page does not know is loud, never "active". WR-01: but loud
                 # on the field, not by stopping the page. A throw out of applyRelations()
                 # used to skip update() on every keystroke, so the part, the dimensions and
@@ -1155,7 +1204,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "unknown relation op: the Python oracle shows an option where two hold"
                 )
                 tampered["selectors"].append(twin)
-                bad = browser.new_page()
+                bad = record_api(browser.new_page(), seen)
                 try:
                     bad.route("**/api/schema", lambda route: route.fulfill(json=tampered))
                     bad.goto(server + "/#teeth=23")
@@ -1222,7 +1271,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "two holding options blank, the form still builds the part"
                 )
 
-            with step("download name"):
+            with step("download name", no_foreign_key):
                 # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers
                 # with the first build's bytes and no Content-Disposition, so a click there
                 # saves `model.stl` (22-RESEARCH Pitfall 1, reproduced): this step opens its
@@ -1231,7 +1280,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # fragment rides the goto URL, the way a shared link does. The href carries no
                 # `quality`, so the click asks ModelQuery's default `fine` (app.py:238-239):
                 # one 23-tooth hob-root build at load plus a fine re-mesh of the cached solid.
-                fresh = browser.new_page()
+                fresh = record_api(browser.new_page(), seen)
                 try:
                     fresh.goto(server + "/#teeth=23&root_shape=trochoid")
                     expect(fresh.locator("#dl-stl")).to_have_attribute(
@@ -1249,7 +1298,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"the download is named {name!r}, not the name the server gives this part"
                 )
 
-            with step("root_shape=bogus as today"):
+            with step("root_shape=bogus as today", no_foreign_key):
                 # Pinned as the page behaves, not fixed (REQUIREMENTS, Form follow-ups): the
                 # select takes a value it has no option for, so it reads '' with selectedIndex
                 # -1, gearQuery() drops it, and the page builds the default part with no word
@@ -1305,5 +1354,18 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"bogus: select {select_value!r} at {select_index}, sent {info_query!r}, "
                     f"API {status}"
                 )
+            # The sweep's page sends one api/info request per record by itself, so a recorder
+            # that missed any page but the main one would count fewer than that (24-RESEARCH
+            # Finding 9): the count is what shows every page was watched.
+            no_foreign_key()
+            info = [url for url in seen if urllib.parse.urlsplit(url).path == "/api/info"]
+            assert len(info) > len(fixture_hashes()), (
+                f"the recorder saw {len(info)} api/info requests, not more than the "
+                f"{len(fixture_hashes())} the sweep alone sends: a page went unwatched"
+            )
+            print(
+                f"request recorder: {len(seen)} /api requests ({len(info)} api/info) from "
+                "every page, every key a GearParams field, quality or mate_teeth"
+            )
         finally:
             browser.close()

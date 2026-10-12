@@ -27,13 +27,13 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterator, Mapping, Sequence
 from decimal import Decimal
 from pathlib import Path
 from typing import IO, NamedTuple
 
 import pytest
-from playwright.sync_api import Browser, Error, Page, Playwright
+from playwright.sync_api import Browser, Error, Page, Playwright, Request
 
 # Matches the page's own STL request, whatever its query string.
 STL_ROUTE = "**/api/model.stl*"
@@ -680,10 +680,12 @@ def fixture_hashes() -> dict[str, str]:
 
 
 class Swept(NamedTuple):
-    """What the page did for one link: the `api/info` query it sent and the fields it dimmed."""
+    """What the page did for one link: the `api/info` query it sent, the fields it dimmed and
+    the option each selector showed ('' for a blank select, L42)."""
 
     query: str
     inactive: dict[str, str]
+    shown: tuple[str, ...]
 
 
 def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, Swept]:
@@ -699,7 +701,9 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, Swept]:
     The dimmed set is read right after the link's own request, and that is the link's state:
     `readHash()` ends with `applyRelations()` and `update()` sends the request synchronously
     after it, so the state is set before the request this waits for and no response can have
-    changed it (23-RESEARCH Pitfall 7).
+    changed it (23-RESEARCH Pitfall 7). The select is read at the same moment and for the same
+    reason: `readHash()` ends with `applyRelations(); deriveSelectors();` before `update()`
+    sends, so the option read after the request is the link's own state, as the dimmed set is.
 
     A link equal to the live fragment fires no `hashchange`, and the wait would time out
     with a message that names nothing (21-RESEARCH Pitfall P5), so that case raises naming
@@ -715,9 +719,10 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, Swept]:
     swept: dict[str, Swept] = {}
     fresh_query = urllib.parse.urlsplit(fresh.value.url).query
     fresh_inactive = eval_inactive(page)
+    fresh_shown = eval_shown(page)
     for name, link in hashes.items():
         if link == "":
-            swept[name] = Swept(fresh_query, fresh_inactive)
+            swept[name] = Swept(fresh_query, fresh_inactive, fresh_shown)
             continue
         live = eval_str(page, "() => location.hash.slice(1)")
         if live == link:
@@ -729,16 +734,56 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, Swept]:
             lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
         ) as request:
             page.evaluate("link => { location.hash = link; }", link)
-        swept[name] = Swept(urllib.parse.urlsplit(request.value.url).query, eval_inactive(page))
+        swept[name] = Swept(
+            urllib.parse.urlsplit(request.value.url).query, eval_inactive(page), eval_shown(page)
+        )
     return swept
 
 
+def record_api(page: Page, seen: list[str]) -> Page:
+    """Append the URL of every `/api/` request `page` sends to `seen`, and return the page.
+
+    Each `browser.new_page()` is its own context and a listener sees only its own page's
+    requests (24-RESEARCH Finding 9), so the scenario wraps every page it opens in this, not
+    just the main one. A `request` event fires for an aborted STL request too, so the sweep's
+    page, which aborts every build, is still seen.
+    """
+
+    def note(request: Request) -> None:
+        if "/api/" in request.url:
+            seen.append(request.url)
+
+    page.on("request", note)
+    return page
+
+
+def foreign_keys(seen: Sequence[str], allowed: Collection[str]) -> list[str]:
+    """Every `"<url>: <key>"` for a query key of a recorded URL that is not in `allowed`.
+
+    Blank values are kept so that `?selector=` is a key like any other.
+    """
+    found: list[str] = []
+    for url in seen:
+        query = urllib.parse.urlsplit(url).query
+        for key, _ in urllib.parse.parse_qsl(query, keep_blank_values=True):
+            if key not in allowed:
+                found.append(f"{url}: {key}")
+    return found
+
+
 @contextlib.contextmanager
-def step(name: str) -> Iterator[None]:
-    """Time one scenario step, print its line, and name it on any failure (D-10)."""
+def step(name: str, *checks: Callable[[], None]) -> Iterator[None]:
+    """Time one scenario step, print its line, and name it on any failure (D-10).
+
+    Each check runs after the body, inside the same `try`, so a failing check carries the
+    `step: <name>` note like a failing body (D-14: the recorder's assertion runs after every
+    step, and a request that leaked a key is attributed to the step that sent it).
+    """
     started = time.monotonic()
     try:
         yield
+        for check in checks:
+            check()
     except BaseException as error:
         error.add_note(f"step: {name}")
         raise
