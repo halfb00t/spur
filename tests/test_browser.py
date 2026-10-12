@@ -817,9 +817,10 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                         "href", "api/model.stl?teeth=23", timeout=BUILD_WAIT_MS
                     )
                     broken_reason = bad.locator(f"label.field:has([name={broken}]) .reason")
-                    expect(broken_reason).to_have_text(
+                    unreadable = (
                         "Cannot tell whether this field is used: Unknown enabled_when op: ge"
                     )
+                    expect(broken_reason).to_have_text(unreadable)
                     others = {
                         name: why
                         for name, why in expected_inactive(properties, "teeth=23").items()
@@ -838,7 +839,19 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     expect(bad.locator("#dl-stl")).to_have_attribute(
                         "href", "api/model.stl?teeth=24", timeout=BUILD_WAIT_MS
                     )
-                    expect(broken_reason).to_have_count(1)
+                    # The row outlives the keystroke (applyRelations() comment): its text, not
+                    # its presence. A cleared span is still one node, `display: none`, so a
+                    # count of 1 held whether or not the error was still there (IN-10).
+                    expect(broken_reason).to_have_text(unreadable)
+                    others = {
+                        name: why
+                        for name, why in expected_inactive(properties, "teeth=24").items()
+                        if name != broken
+                    }
+                    assert eval_inactive(bad) == others, (
+                        f"unknown relation op, after a keystroke: the page dims "
+                        f"{eval_inactive(bad)}, the other fields' relations say {others}"
+                    )
                 finally:
                     bad.close()
                 print(f"unknown relation op: {broken} unreadable, the form still builds the part")
