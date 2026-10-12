@@ -436,8 +436,8 @@ phase the research flags as needing a human decision):
 changes; the select is not a field and never appears in the URL. Option tables, if the
 implementation has any, are objects and not `['word', ...]` rows (PITFALLS BS-4).
 **Research flag**: No — it needs the human decisions above, not research.
-**Plans**: 4 plans, in 4 waves (sequential: each reads the tree the one before it commits)
-- [ ] 24-01-PLAN.md — The tracer and the record in one commit (CF-1): the four D-02 options on `GearParams.model_config`
+**Plans**: 1/4 plans executed, in 4 waves (sequential: each reads the tree the one before it commits)
+- [x] 24-01-PLAN.md — The tracer and the record in one commit (CF-1): the four D-02 options on `GearParams.model_config`
   through `/api/schema` to generic `buildSelectors()`/`deriveSelectors()`/`pick()`, every path of a pick seen in a real
   browser, the pending style, the `app.js` pins tightened; L42 *(wave 1)*
 - [ ] 24-02-PLAN.md — `tests/test_selector.py` in the commit slice: the walk, the keyword check, the grid with its negative
@@ -446,6 +446,7 @@ implementation has any, are objects and not `['word', ...]` rows (PITFALLS BS-4)
   on every page, every pick from every state, the stash across links, the keyed bore; the idea retired, the hex-warning
   debt restated *(wave 3)*
 - [ ] 24-04-PLAN.md — The step and the commit slice priced: three readings each, seen red once, the kept logs *(wave 4)*
+
 **UI hint**: yes
 
 ### Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close

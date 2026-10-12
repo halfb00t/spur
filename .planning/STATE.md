@@ -4,18 +4,18 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 24
 current_phase_name: Bore-Shape Selector
-status: "Phase 23 shipped — PR #35"
-stopped_at: Phase 24 context gathered
-last_updated: "2026-10-12T14:51:04.058Z"
+status: executing
+stopped_at: Completed 24-01-PLAN.md
+last_updated: "2026-10-12T15:23:08.594Z"
 last_activity: 2026-10-12
-last_activity_desc: Phase 24 planning complete
-state_head: 3dfdd288aa395096e5e5ba5936c728aecaa7f59f
+last_activity_desc: Phase 24 execution started
+state_head: c0f831e1004c40cc099c4fcd66bc2d67b0f700e2
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 18
-  completed_plans: 14
-  percent: 78
+  completed_plans: 15
+  percent: 80
 ---
 
 # Project State
@@ -26,16 +26,16 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 24 — Bore-Shape Selector (discretionary; the skip decision is taken at its discuss-phase)
+**Current focus:** Phase 24 — Bore-Shape Selector
 
 ## Current Position
 
-Phase: 24 (Bore-Shape Selector) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 23 shipped — PR #35
-Last activity: 2026-10-12 — Phase 24 planning complete
+Phase: 24 (Bore-Shape Selector) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-10-12 — Phase 24 execution started
 
-Progress: [████████░░] 78% (3 of 5 v0.5 phases complete — 21, 22, 23; Phase 24 is discretionary; 14/14 plans so far)
+Progress: [████████░░] 80% (3 of 5 v0.5 phases complete — 21, 22, 23; Phase 24 is discretionary; 14/14 plans so far)
 
 ## Performance Metrics
 
@@ -233,6 +233,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 23 P02 | 11 min | 3 tasks | 7 files |
 | Phase 23 P03 | 25 min | 2 tasks | 6 files |
 | Phase 23 P04 | 15 min | 2 tasks | 27 files |
+| Phase 24 P01 | 22 min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -433,6 +434,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 23]: 23-02: the D-09 set is declared exactly (11 relations over 31 properties); a relation is true only if derive() moves nothing but warnings and a warning names the field; the keyway pair is refused under a hex bore, pinned in REFUSED, and gated on bore_hex only
 - [Phase 23]: 23-03: sweep() returns Swept(query, inactive); the regen script reads .query only so make golden.regen stays byte-identical
 - [Phase 23]: 23-04: a make verify red on the resource-tracker flake was classified against the open debt, kept as 23-04-red-1.log and re-run once on the identical tree; the fifth occurrence is recorded on the debt, isolation runs and fix plan left to the human
+- [Phase 24]: 24-01: the selectors key reaches /api/schema only; /openapi.json is byte-identical because FastAPI flattens InfoQuery and ModelQuery into parameters, so L42 corrects the CONTEXT text and pins both halves in test_openapi_documents_the_typed_contracts — Measured in 24-RESEARCH Finding 1; the pin makes a future FastAPI or pydantic change that starts carrying the key a decision for a new Lxx, not drift.
+- [Phase 24]: 24-01: deriveSelectors() sits beside applyRelations() at its three call sites (pin tokens 4, 10 and 11 tightened), a select shows an option only when exactly one holds (none or two is blank, caught per selector), and a pending pick calls stopPropagation while a writing pick lets the event bubble so the form listener sends the one debounced request — PD-03, PD-04 and PD-06: the relations section stays byte-identical, each call site count stays three, and each half was seen red (stopPropagation removed, first match wins, try/catch removed).
+- [Phase 24]: 24-01: make verify read the known resource-tracker flake once (tests/test_pool.py::test_health_reports_pool_state, host load 15.6) and 1295 passed on the one allowed re-run on the identical tree, coverage 97.99 percent — Matches docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md; no file this plan touches is in that test path; the debt stays active.
 
 ### Pending Todos
 
@@ -701,9 +705,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-12T12:46:44.938Z
-Stopped at: Phase 24 context gathered
-Resume file: .planning/phases/24-bore-shape-selector/24-CONTEXT.md
+Last session: 2026-10-12T15:22:58.494Z
+Stopped at: Completed 24-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
