@@ -1,0 +1,6 @@
+.venv/bin/python -m pytest -n 8 --no-cov \
+  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
+  --ignore=tests/test_api.py --ignore=tests/test_cli.py \
+  --ignore=tests/test_browser.py tests/test_selector.py -n0 -q
+................                                                         [100%]
+16 passed in 0.09s

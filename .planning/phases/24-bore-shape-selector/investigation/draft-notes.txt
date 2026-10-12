@@ -1,0 +1,16 @@
+BASE 07cba05
+Seen red (Task 1 step 3), command: make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k 'schema_drives_the_form or openapi_documents or every_key_the_ui_reads or shareable_link_round_trips or root_shape_link'" -> 3 failed, 2 passed in 4.39s
+  1. FAILED tests/test_api.py::test_schema_drives_the_form - KeyError: 'selectors'
+  2. FAILED tests/test_api.py::test_openapi_documents_the_typed_contracts - AssertionError: L42: /api/schema lost its selectors
+  3. FAILED tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code - AssertionError: mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }
+Seen red (Task 1 step 6), command: make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s" (model carries selectors, app.js unchanged) -> 1 failed, 1 passed in 7.45s; log 24-01-browser-red.log
+  AssertionError: bore shape, #bore_hex=0.05: the page shows ()   (assert () == ('Hex',)); note: step: bore shape
+One-off grid (24-01-grid-oneoff.log): grid: 8 of 8 cells hold exactly one option; defaults ['D-flat']; 27 cells: 13 hold none, 13 of them with a negative, 0 hold two
+Green (Task 1 step 8), host Apple (uptime 21:03 load 9.65 7.50 5.90): step golden sweep: 0.52 s; step inert fields: 1.51 s; bore shape: loaded #bore_hex=0.05: shows 'Hex'; bore shape: # + Round -> sent 'bore_flat=0'; step bore shape: 0.81 s; step unknown relation op: 5.19 s; 2 passed in 15.94s
+Green (Task 2 step 4), host load 3.28 5.76 5.49 (uptime 21:06): all bore shape: lines present in 24-01-browser-picks.log; step bore shape: 1.86 s; step unknown relation op: 4.09 s; step golden sweep: 0.37 s; step inert fields: 1.35 s; 2 passed in 14.01s
+Seen red (Task 2 step 5), each: make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s", 1 failed, 1 passed; app.js saved with cp before, restored with cp and cmp after (cmp silent); saved copy deleted after the fourth cmp.
+  a. stopPropagation line deleted from pend() (24-01-stop-red.log, 9.61 s): AssertionError: bore shape, pending Hex: the select snapped back to ('D-flat',); note: step: bore shape
+  b. restore branch unreachable, `stash.has(field) &&` -> `false &&` (24-01-restore-red.log, 8.47 s): AssertionError: bore shape, #bore_flat=0 + D-flat: the pick was left pending; note: step: bore shape
+  c. try/catch removed from deriveSelectors() (24-01-catch-red.log, 14.66 s): Locator expected to have JS Property '-1', Actual value: 0 (select #selector-0); note: step: unknown relation op
+  d. first match wins, `i === hits.lastIndexOf(true) ? i : -1` -> `i` (24-01-twin-red.log): AssertionError: unknown relation op: two holding options must leave the select blank, Expected '-1', Actual 0 (select #selector-1); note: step: unknown relation op
+openapi: no selectors

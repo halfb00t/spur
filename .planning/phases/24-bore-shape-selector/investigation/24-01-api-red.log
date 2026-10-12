@@ -1,0 +1,193 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_api.py -n0 --no-cov -q -k 'schema_drives_the_form or openapi_documents or every_key_the_ui_reads or shareable_link_round_trips or root_shape_link'
+FF.F.                                                                    [100%]
+=================================== FAILURES ===================================
+_________________________ test_schema_drives_the_form __________________________
+
+    def test_schema_drives_the_form() -> None:
+        schema = client.get("/api/schema").json()
+        props = schema["properties"]
+        assert props["teeth"]["group"] == "Teeth"
+        assert props["module"]["unit"] == "mm"
+        assert props["recess_sides"]["enum"] == ["both", "top", "bottom", "none"]
+        # L41: a relation is schema metadata the form reads; hub_d does nothing under the
+        # default spoke_count of 0, and the schema says so exactly as the model wrote it.
+        assert props["hub_d"]["enabled_when"] == [{"field": "spoke_count", "op": "gt", "value": 0}]
+        # L42: a selector is model-level metadata the form reads beside `properties` (D-05). The
+        # emitted list is the model's own, and the literal labels and the Hex condition pin the
+        # decision here the way the hub_d line above pins L41: the display order is Round,
+        # D-flat, Hex, No bore (D-02) and Hex holds exactly when the hex bore is above zero.
+>       assert schema["selectors"] == GearParams.model_json_schema()["selectors"]
+               ^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'selectors'
+
+tests/test_api.py:71: KeyError
+__________________ test_openapi_documents_the_typed_contracts __________________
+
+    def test_openapi_documents_the_typed_contracts() -> None:
+        """D-11, the info half (Plan 04-02 adds the health half to this same function).
+    
+        The field names are written out literally here, not derived from
+        DerivedDimensions.model_fields -- a renamed field, or a route that lost its typed
+        return annotation, must fail this test rather than pass tautologically.
+        """
+        schema = client.get("/openapi.json").json()
+    
+        info_response = schema["paths"]["/api/info"]["get"]["responses"]["200"]
+        assert info_response["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/DerivedDimensions"}
+    
+        fields = {
+            "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
+            "root_thickness", "root_gap", "root_fillet", "root_form_d", "root_waist",
+            "tip_chamfer_effective", "span_teeth",
+            "span", "bore_effective", "hex_across_flats", "hex_across_corners",
+            "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
+            "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall",
+            "spoke_fillet_effective", "hex_cell_effective", "hex_cell_count", "warnings",
+            "mate_teeth", "centre_distance",
+        }
+        component = schema["components"]["schemas"]["DerivedDimensions"]
+        assert set(component["properties"]) == fields
+        # The null-over-absent invariant (D-01): a field with a default drops out of
+        # `required` in OpenAPI (Pitfall 2), so a field that quietly regained one would show
+        # up here first.
+        assert set(component["required"]) == fields
+    
+        assert component["properties"]["pitch_d"]["unit"] == "mm"
+        assert component["properties"]["centre_distance"]["unit"] == "mm"  # nullable, still a length
+        assert component["properties"]["hex_across_flats"]["unit"] == "mm"
+        assert component["properties"]["hex_across_corners"]["unit"] == "mm"
+        assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
+        assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
+        assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
+        assert component["properties"]["root_form_d"]["unit"] == "mm"
+        assert component["properties"]["root_waist"]["unit"] == "mm"
+        assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
+        assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
+        assert component["properties"]["spoke_fillet_effective"]["unit"] == "mm"
+        assert component["properties"]["hex_cell_effective"]["unit"] == "mm"
+        assert "unit" not in component["properties"]["span_teeth"]
+        assert "unit" not in component["properties"]["hex_cell_count"]
+    
+        health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
+        assert health_response["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/HealthReport"}
+    
+        health_component = schema["components"]["schemas"]["HealthReport"]
+        assert set(health_component["required"]) == {"status", "version", "pool"}
+    
+        pool_component = schema["components"]["schemas"]["PoolState"]
+        assert set(pool_component["required"]) == {
+            "workers", "queue_available", "workers_replaced"}
+    
+        # L42, the goal's "API unchanged" half (L05): the bore-shape selectors reach the form
+        # through /api/schema and nowhere else. The first line makes the second non-vacuous
+        # (the key exists). 24-CONTEXT D-05 expected the key to reach the OpenAPI component
+        # schemas of InfoQuery and ModelQuery, which inherit it, and called that harmless;
+        # measured (24-RESEARCH Finding 1) FastAPI flattens both query models into
+        # `parameters`, so /openapi.json is byte-identical with and without the selectors. A
+        # FastAPI or pydantic change that starts carrying the key is a decision for a new Lxx,
+        # not drift.
+>       assert "selectors" in client.get("/api/schema").json(), "L42: /api/schema lost its selectors"
+E       AssertionError: L42: /api/schema lost its selectors
+E       assert 'selectors' in {'description': 'Involute spur gear with an optional tooth-tip chamfer, an optional hob-cut\n(trochoid) root, D-flat o...oot and moves the tip outward.', 'group': 'Teeth', 'maximum': 1.0, ...}, ...}, 'title': 'GearParams', 'type': 'object'}
+E        +  where {'description': 'Involute spur gear with an optional tooth-tip chamfer, an optional hob-cut\n(trochoid) root, D-flat o...oot and moves the tip outward.', 'group': 'Teeth', 'maximum': 1.0, ...}, ...}, 'title': 'GearParams', 'type': 'object'} = json()
+E        +    where json = <Response [200 OK]>.json
+E        +      where <Response [200 OK]> = get('/api/schema')
+E        +        where get = <starlette.testclient.TestClient object at 0x108daf410>.get
+
+tests/test_api.py:142: AssertionError
+_____ test_the_shareable_link_round_trips_every_field_through_generic_code _____
+
+    def test_the_shareable_link_round_trips_every_field_through_generic_code() -> None:
+        """D-11's static proof, the browser-test idea's own "cheaper first step": the
+        hash -> form -> query path in app.js handles every `GearParams` field generically,
+        with no per-field code (D-12; L41 supersedes 08 D-09: a relation is schema metadata
+        that generic code reads; L42: a model-level selector list that generic code reads,
+        derives and writes back as flat fields). A renamed or added field cannot
+        silently break the shareable-link round trip without this catching it. The browser
+        itself is checked by hand at gsd-verify-work, against the checklist in
+        12-07-PLAN.md's `<verification>`.
+        """
+        source = (STATIC / "app.js").read_text()
+    
+        # IN-04 (12-REVIEW.md): this proof is pinned to these exact tokens (D-4,
+        # 12-07-SUMMARY.md) -- a renamed variable or restructured loop must fail it -- but a
+        # whitespace-only reformat of app.js (indent width, a long line re-wrapped) proves
+        # nothing about field-genericity and must not fail it. Collapsing all whitespace runs
+        # to one space on both sides keeps the token-level proof and drops only the part that
+        # was never load-bearing.
+        collapsed_source = re.sub(r"\s+", " ", source)
+    
+        # The generic loops the round trip rests on: buildForm() reads every schema
+        # property and records it under its own name; readHash() writes the hash back into
+        # every recorded field; gearQuery() reads every field back into the query; update()
+        # builds the shareable hash from that query and writes it with history.
+        # replaceState(); the copy-link handler copies the resulting location.href; and
+        # hashchange re-reads the hash on navigation (e.g. the copied link opened fresh).
+        #
+        # L41 rewrote the `fields.set` token (the entry now carries the property's own
+        # relation and its reason span) and added the rest of the tail: the three call sites
+        # of applyRelations() (the end of readHash(), the input listener before
+        # scheduleUpdate, Reset), the effective-value rule gearQuery() sends (D-18), the
+        # evaluator's own shape (D-02, D-03) and the loop that writes the dim. The
+        # `hashchange` token and every other token are as they were; none was removed.
+        #
+        # L42 tightened three of them and added fourteen, and removed none. Tokens 4, 10 and 11
+        # gained `deriveSelectors();` at each of applyRelations()'s three call sites (11 also
+        # Reset's `stash.clear();`), so a derive moved out of a site goes red. The added tokens
+        # pin the selector loop over the schema's own list, the derivation through the
+        # relations' `holds()` (a select shows an option only when exactly one holds), the
+        # write rule (an `eq` condition gets the string 0, a `gt` one only its own stashed
+        # string back, otherwise the pick is pending), the stash, the pending pick's
+        # `stopPropagation` and its note. `fields.set(` is counted once below: the select adds
+        # no `fields` entry, so it is never sent and never in the hash.
+        for snippet in (
+            "for (const [name, prop] of Object.entries(schema.properties)) {",
+            "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
+            "for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];",
+            "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }",
+            "q.set(name, input.value)",
+            "const infoQ = new URLSearchParams(q);",
+            "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
+            "navigator.clipboard.writeText(location.href)",
+            "window.addEventListener('hashchange', () => { readHash(); update(); });",
+            # One exact token on one line, so a grep for it finds this pin: 108 columns.
+            "form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });",  # noqa: E501
+            "mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",
+            "return input.value === '' ? defaults[name] : input.value;",
+            "const have = Number(effective(field));",
+            "default: throw new Error(",
+            "for (const { input, wrap, rels, reason } of fields.values()) {",
+            "const off = rels.map(holds).includes(false);",
+            "wrap.classList.toggle('inactive', off);",
+            "reason.textContent = off ?",
+            "input.setAttribute('aria-describedby', reason.id)",
+            "buildSelectors(schema.selectors ?? [], groups);",
+            "for (const [i, { title, group, options }] of list.entries()) {",
+            "for (const { label } of options) select.add(new Option(label));",
+            "select.addEventListener('input', (event) => pick(s, event));",
+            "const hits = s.options.map((o) => !o.when.map(holds).includes(false));",
+            "s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;",
+            "if (holds(condition)) continue;",
+            "if (op === 'eq') writes.push([field, String(value), true]);",
+            "stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value",
+            "if (zeroed) stash.set(field, input.value);",
+            "input.value = to;",
+            "const stash = new Map();",
+            "event.stopPropagation();",
+            "reason.textContent = `${chosen.label} needs ${need(condition)}`;",
+        ):
+>           assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
+E           AssertionError: mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }
+E           assert "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }" in 'import { Color, DirectionalLight, EdgesGeometry, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh, ... (err) { showMessages([`Could not load the parameter schema: ${err.message}`]); return; } readHash(); update(); })(); '
+E            +  where "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }" = <function sub at 0x10748dd00>('\\s+', ' ', "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }")
+E            +    where <function sub at 0x10748dd00> = re.sub
+
+tests/test_api.py:273: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_schema_drives_the_form - KeyError: 'selectors'
+FAILED tests/test_api.py::test_openapi_documents_the_typed_contracts - Assert...
+FAILED tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code
+3 failed, 2 passed, 57 deselected in 4.39s
+make: *** [Makefile:170: test] Error 1
