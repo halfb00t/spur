@@ -264,6 +264,33 @@ def _wait_until_parked(page: Page, parked: list[Route]) -> None:
         page.evaluate("0")
 
 
+def test_the_oracle_reads_a_link_as_the_page_does() -> None:
+    """IN-06, IN-01: `expected_inactive` is the second evaluator, so it has to resolve a link
+    and word a reason exactly as app.js does. No browser: a hand-written schema, so a
+    repeated key or a threshold of 1e6 need not exist in the real one. Red on a last-wins
+    repeated key, a blank first value that is not the default, or a reason whose number
+    differs from JavaScript's `${value}`."""
+    properties: dict[str, dict[str, object]] = {
+        "gate": {"title": "Gate", "default": 0},
+        "tiny": {"title": "Tiny", "default": 0},
+        "huge": {"title": "Huge", "default": 0},
+        "dep": {"title": "Dep", "default": 1, "enabled_when": [
+            {"field": "gate", "op": "eq", "value": 0}]},
+    }
+    # URLSearchParams.get is first-wins: the page sees gate=0 and leaves dep live.
+    assert expected_inactive(properties, "gate=0&gate=6") == {}
+    assert expected_inactive(properties, "gate=6&gate=0") == {"dep": "Needs Gate = 0"}
+    # A blank first value is a present, empty box: the default (0), not the second pair.
+    assert expected_inactive(properties, "gate=&gate=6") == {}
+    assert expected_inactive(properties, "gate=6") == {"dep": "Needs Gate = 0"}
+    # Each pair was read from node: `${1e6}` is 1000000 and `${1e-5}` is 0.00001, where
+    # Python's `:g` wrote 1e+06 and 1e-05. JavaScript stays positional from 1e-6 up to 1e21.
+    for threshold, written in ((0, "0"), (1, "1"), (1.0, "1"), (0.05, "0.05"), (1e6, "1000000"),
+                               (1e-5, "0.00001"), (1e-6, "0.000001"), (1e16, "10000000000000000")):
+        properties["dep"]["enabled_when"] = [{"field": "gate", "op": "gt", "value": threshold}]
+        assert expected_inactive(properties, "gate=0") == {"dep": f"Needs Gate above {written}"}
+
+
 def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
     """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
     properties = _schema_properties(server)

@@ -28,6 +28,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterator, Mapping
+from decimal import Decimal
 from pathlib import Path
 from typing import IO, NamedTuple
 
@@ -308,6 +309,17 @@ def _holds(owner: str, op: object, have: float, wanted: float) -> bool:
     raise AssertionError(f"{owner}: the op {op!r} is neither 'eq' nor 'gt' (D-02)")
 
 
+def _js_number(value: float) -> str:
+    """`${value}` as JavaScript writes it, for the reason text app.js builds in need().
+
+    `:g` wrote 1e+06 and 1e-05 where JavaScript writes 1000000 and 0.00001. `repr` gives the
+    same shortest round-trip digits as JavaScript, and `Decimal(...).normalize()` formatted
+    with `f` keeps them positional, with `1.0` as `1`. Exact for 1e-6 <= |value| < 1e21; JavaScript
+    switches to an exponent outside that range, and no relation threshold is near it.
+    """
+    return format(Decimal(repr(float(value))).normalize(), "f")
+
+
 def expected_inactive(properties: Mapping[str, Mapping[str, object]], link: str) -> dict[str, str]:
     """The fields a link must leave dimmed, name -> reason, from the schema alone (D-14).
 
@@ -322,11 +334,16 @@ def expected_inactive(properties: Mapping[str, Mapping[str, object]], link: str)
     page sends). Every condition of a relation is evaluated (PD-05), `eq` and `gt` are the
     only ops, and any other op raises naming it (D-02), as the page's `holds()` does.
     """
-    # parse_qsl drops blank values, so an emptied box reads as the default (D-18).
-    given = dict(urllib.parse.parse_qsl(link))
+    # The page reads `URLSearchParams.get`: the FIRST pair of a repeated key, and a blank
+    # value is present and empty, which `effective()` turns into the default (D-18).
+    # `dict(parse_qsl(link))` was last-wins and dropped blanks, so `bore_hex=0&bore_hex=6`
+    # predicted a dimmed bore the page keeps live (IN-06).
+    given: dict[str, str] = {}
+    for key, value in urllib.parse.parse_qsl(link, keep_blank_values=True):
+        given.setdefault(key, value)
 
     def number(name: str) -> float:
-        raw: object = given.get(name, properties[name].get("default"))
+        raw: object = given.get(name) or properties[name].get("default")
         assert isinstance(raw, str | int | float), f"{name}: {raw!r} is not a number"
         assert not isinstance(raw, bool), f"{name}: {raw!r} is a bool, not a number"
         return float(raw)
@@ -350,7 +367,7 @@ def expected_inactive(properties: Mapping[str, Mapping[str, object]], link: str)
             assert isinstance(wanted, int | float), f"{name}: condition value {wanted!r}"
             assert not isinstance(wanted, bool), f"{name}: condition value {wanted!r} is a bool"
             holds.append(_holds(name, op, number(gate), float(wanted)))
-            needs.append(f"{title(gate)} {'=' if op == 'eq' else 'above'} {wanted:g}")
+            needs.append(f"{title(gate)} {'=' if op == 'eq' else 'above'} {_js_number(wanted)}")
         if False in holds:
             inactive[name] = "Needs " + " and ".join(needs)
     return inactive
