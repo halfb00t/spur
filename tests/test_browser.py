@@ -721,7 +721,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 sent = _follow_link(page, REFUSED_LINK)
                 status, body = _api_get(server, "/api/info", sent)
                 assert status == 422, f"inert fields: #{REFUSED_LINK} answered {status}, not 422"
-                _, texts = _expected_422(properties, body)
+                marked, texts = _expected_422(properties, body)
                 expect(page.locator("#messages .error")).to_have_text(texts)
                 refused_invalid = eval_str_list(
                     page,
@@ -732,10 +732,21 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert dimmed == expected_inactive(properties, REFUSED_LINK), (
                     f"inert fields, refused pair: the page dims {dimmed}"
                 )
+                # PD-07 is a claim about the whole pair, so the page must mark exactly what
+                # the server named (the gate and both keyway fields, calc.py REFUSED) and both
+                # keyway fields must carry .invalid and .inactive together. One in the
+                # intersection is not enough: a page that marked only keyway_width passed (IN-07).
+                invalid_titles = {_title(properties, n) for n in refused_invalid}
+                assert invalid_titles == marked, (
+                    f"inert fields, refused pair: marked {sorted(invalid_titles)}, "
+                    f"server named {sorted(marked)}"
+                )
                 both = sorted(set(refused_invalid) & set(dimmed))
-                assert both, (
-                    f"inert fields, refused pair: no field is both invalid {refused_invalid} and "
-                    f"dimmed {sorted(dimmed)}"
+                pair = set(urllib.parse.parse_qs(REFUSED_LINK)) - gates
+                assert len(pair) == 2, f"inert fields, refused pair: {REFUSED_LINK} names {pair}"
+                assert pair <= set(both), (
+                    f"inert fields, refused pair: {sorted(pair)} are not both invalid "
+                    f"{refused_invalid} and dimmed {sorted(dimmed)}"
                 )
                 assert not gates & set(dimmed), "inert fields, refused pair: a gate is dimmed"
                 assert gates & set(refused_invalid), (
