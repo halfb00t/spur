@@ -2598,13 +2598,13 @@ an import-time assertion after the class body (a second place in production code
 the refused class: under a hex bore each alone is a 422 and is never gated on the other (CF-2). Every driver is a
 pure driver (depth 1): no dependent is also a driver, and the form never dims a driver. Considered and not taken:
 `keyway_* <- bore_hex eq 0 AND bore_d gt 0` (calc-backed, but it makes `bore_d` both dependent and driver; the
-no-bore keyway stays a visible 422). This commit declares `hub_d` alone, whose parity with `calc` was read by a
+no-bore keyway stays a visible 422). 23-01 declared `hub_d` alone, whose parity with `calc` was read by a
 one-off command before it was declared (quoted from the 23-01 SUMMARY): with `spoke_count` 0, `hub_d` at 0.05 and
 at 400 changes only `warnings`, each to the one sentence `No spoke arms with spoke_count 0: hub_d (... mm) is
-ignored.` 23-02 declares the other ten after its proof module goes red and then green. Not declared: the two
-relations `calc` does not back (`recess_*` under `recess_sides=none`, `bore_flat` at `bore_d=0`), which 23-02 files
+ignored.` 23-02 declared the other ten after its proof module went red and then green. Not declared: the two
+relations `calc` does not back (`recess_*` under `recess_sides=none`, `bore_flat` at `bore_d=0`), which 23-02 filed
 as `docs/ideas/2026-10-11-the-two-relations-calc-does-not-back.md`; and the hex warning that names the default
-`bore_d` and `bore_flat`, which 23-02 files as
+`bore_d` and `bore_flat`, which 23-02 filed as
 `docs/tech_debt/active/2026-10-11-hex-bore-warns-about-default-bore-fields.md` (`nice`): a `calc` change that is
 never filtered in `app.js`.
 
