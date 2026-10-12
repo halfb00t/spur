@@ -1,0 +1,1 @@
+No external API integration: the phase adds a select to the project's own web form, read from its own `GET /api/schema` and sending its own `/api/info` and `/api/model.stl` requests; the detector matched the browser-test helper `record_api` that "wraps" each test page, not a third-party API, SDK or service.
