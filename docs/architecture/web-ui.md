@@ -71,7 +71,12 @@ equals the pin in `tests/regression/golden_requests.json` (rewritten only by
 `make golden.regen`, in a commit of its own). Beside each fixture link's query it compares the
 fields the page dims and their reasons with a Python evaluator over `/api/schema`, and does the
 same under one schema-derived link per gate condition, on the refused keyway pair and after
-Reset, and types into a dimmed field to see it sent (L41). `#root_shape=bogus` is pinned as today's
+Reset, and types into a dimmed field to see it sent (L41). The same sweep compares each fixture link's
+bore-shape option with a Python derivation over `/api/schema`; the `bore shape` step picks every
+option from every state and compares the sent query with a Python mirror of the write rule,
+follows the stash across Reset and links, and picks over a keyed bore, where the `422` stays
+the server's; and a recorder on every page asserts that no request or hash carries a key
+`GearParams` lacks (L42). `#root_shape=bogus` is pinned as today's
 behaviour and filed as debt. It runs inside `make verify` and CI's `test (3.12)`, which
 install the headless shell under `.venv` first; the commit-time `make verify.fast` never
 collects it.

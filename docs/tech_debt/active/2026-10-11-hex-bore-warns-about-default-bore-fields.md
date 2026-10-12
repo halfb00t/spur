@@ -6,7 +6,7 @@ Date: 2026-10-11
 Source: Phase 23 discuss-phase (`.planning/phases/23-conditional-form-fields/23-CONTEXT.md`) and REQUIREMENTS.md "Form follow-ups (v0.5.x)"
 Related files:
 - src/spur/calc.py:1166 (the "Hex bore replaces the round profile: ... ignored" sentence)
-- src/spur/params.py:102 (`bore_d` default 9.0) and src/spur/params.py:105 (`bore_flat` default 8.0)
+- src/spur/params.py:134 (`bore_d` default 9.0) and src/spur/params.py:137 (`bore_flat` default 8.0)
 - tests/test_browser.py, the `warning rendered` step (its `bore_hex=6` link; a step name does not rot as a line number does)
 
 ## Context
@@ -23,9 +23,9 @@ could not be computed honestly.
 A `calc` change, never a filter in `app.js`: name only the bore fields the request set. Two
 candidates for the human: `model_fields_set`, or a value that differs from its default. It
 rewrites `warnings` for every hex link that omits them, and the `warning rendered` step's
-`bore_hex=6` expectation (no fixture record sets `bore_hex`; re-check at the time). Revisit
-when Phase 24's bore-shape selector ships (choosing Hex leaves both defaults, so every hex
-part warns) or a user reports the warning as noise.
+`bore_hex=6` expectation (no fixture record sets `bore_hex`; re-check at the time).
+Trigger fired: the selector shipped in 470b78a (choosing Hex leaves bore_d and bore_flat at their
+defaults, so every selector-made hex part warns); fix as a /gsd-quick before Phase 25's reading.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

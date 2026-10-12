@@ -333,6 +333,30 @@ def _pending_pick(
     print(f"bore shape: #{current} + {label} -> pending: {rule.field}: {rule.note}")
 
 
+# The fields the page marks `.invalid`, by name, as the 422 path of app.js problems() sets them.
+INVALID_NAMES = (
+    "() => [...document.querySelectorAll('form#params label.field.invalid [name]')]"
+    ".map(e => e.name)"
+)
+
+
+def _named_fields(selector: dict[str, object]) -> set[str]:
+    """Every field any option of the selector names in a condition, read from the schema (L42)."""
+    options = selector["options"]
+    assert isinstance(options, list), f"the selector's options {options!r} are not a list"
+    named: set[str] = set()
+    for option in options:
+        assert isinstance(option, dict), f"an option that is not an object: {option!r}"
+        when = option["when"]
+        assert isinstance(when, list), f"an option whose when is {when!r}, not a list"
+        for condition in when:
+            assert isinstance(condition, dict), f"a condition that is not an object: {condition!r}"
+            field = condition["field"]
+            assert isinstance(field, str), f"a condition field that is not a str: {field!r}"
+            named.add(field)
+    return named
+
+
 def _golden_records() -> dict[str, str]:
     """The committed pin, read and never written: only `make golden.regen` writes it (D-09)."""
     document: object = json.loads(GOLDEN_PATH.read_text())
@@ -1164,6 +1188,101 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     assert eval_shown(bore)[0] == "", f"bore shape: #{below} still shows an option"
                     assert not eval_bool(bore, SELECTOR_PENDING), "bore shape: a blank select pends"
                     print(f"bore shape: loaded #{below}: shows ''")
+
+                    # D-07, D-09, D-13: every pick from every state. The sixteen picks, the
+                    # shown option included, are each compared with expected_pick(), the
+                    # schema's mirror of the write rule, from a page Reset and then taken to the
+                    # state's own link. A pick of the shown option writes nothing, so it must
+                    # send the query the page already had (Playwright's select_option fires
+                    # `input` even when the value is unchanged).
+                    for start, start_link in shape_links.items():
+                        for label in shape_links:
+                            reset_bore()
+                            if start_link != "":
+                                _follow_link(bore, start_link)
+                            assert eval_shown(bore)[0] == start, (
+                                f"bore shape: #{start_link} shows {eval_shown(bore)}, "
+                                f"not {start!r}"
+                            )
+                            rule = expected_pick(chooser, properties, label, start_link, {})
+                            if rule.sent is None:
+                                _pending_pick(bore, chooser, properties, label, start_link, {})
+                            else:
+                                _writing_pick(bore, chooser, properties, label, start_link, {})
+
+                    # D-19: the stash outlives hash navigations. The first pick zeroes a field
+                    # and stashes the user's number; two links later the pick back restores it
+                    # and sends the empty query. Only Reset clears the stash.
+                    reset_bore()
+                    _, carried = _writing_pick(bore, chooser, properties, writing[0], "", {})
+                    away, back = shape_links[pending[0]], shape_links[writing[0]]
+                    _follow_link(bore, away)
+                    _follow_link(bore, back)
+                    _writing_pick(bore, chooser, properties, default_label, back, carried)
+                    print(f"bore shape: the stash outlived #{away} and #{back}")
+
+                    # D-03, D-10: over a keyed bore every pick leaves the keyway fields as the
+                    # link set them, and a refusal stays the server's. `keyed` is the refused
+                    # link without the fields the selector names, so nothing of the selector's
+                    # own is in it. A writing pick must send the keyway pair unchanged; the
+                    # pending pick is completed by typing its value. The server's 422 for the
+                    # sent query is then fetched and the page must mark exactly what it names.
+                    chooser_fields = _named_fields(chooser)
+                    refused_pairs = urllib.parse.parse_qsl(REFUSED_LINK)
+                    keyed = urllib.parse.urlencode(
+                        [(k, v) for k, v in refused_pairs if k not in chooser_fields]
+                    )
+                    keyed_fields = {name for name, _ in _pairs(keyed)}
+                    assert len(keyed_fields) == 2, f"bore shape: {keyed!r} is not the keyway pair"
+                    refusals = 0
+                    for label in shape_links:
+                        reset_bore()
+                        _follow_link(bore, keyed)
+                        assert eval_shown(bore) == expected_shown(selectors, properties, keyed), (
+                            f"bore shape, keyed #{keyed}: shows {eval_shown(bore)}"
+                        )
+                        rule = expected_pick(chooser, properties, label, keyed, {})
+                        if rule.sent is not None:
+                            query, _ = _writing_pick(bore, chooser, properties, label, keyed, {})
+                        else:
+                            _pending_pick(bore, chooser, properties, label, keyed, {})
+                            typed_value = dict(urllib.parse.parse_qsl(shape_links[label]))[
+                                rule.field
+                            ]
+                            with bore.expect_request(
+                                lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                            ) as typed_info:
+                                bore.locator(f"form#params [name={rule.field}]").fill(typed_value)
+                            query = urllib.parse.urlsplit(typed_info.value.url).query
+                            assert _pairs(query) == sorted(
+                                [*_pairs(keyed), (rule.field, typed_value)]
+                            ), f"bore shape, keyed + {label}: typed {rule.field}, sent {query!r}"
+                        changed = set(_pairs(keyed)) - set(_pairs(query))
+                        assert not changed, (
+                            f"bore shape, keyed + {label}: the keyway pair {sorted(changed)} was "
+                            f"changed in {query!r}"
+                        )
+                        status, body = _api_get(server, "/api/info", query)
+                        print(f"bore shape: keyed + {label} -> {query!r}: API {status}")
+                        if status != 422:
+                            continue
+                        refusals += 1
+                        named, texts = _expected_422(properties, body)
+                        expect(bore.locator("#messages .error")).to_have_text(texts)
+                        marked_names = eval_str_list(bore, INVALID_NAMES)
+                        assert {_title(properties, n) for n in marked_names} == named, (
+                            f"bore shape, keyed + {label}: marked {sorted(marked_names)}, the 422 "
+                            f"names {sorted(named)}"
+                        )
+                        if rule.sent is None:
+                            # L41's PD-07 pair: the refused keyway fields are dimmed AND marked.
+                            dimmed_names = set(eval_inactive(bore))
+                            dimmed_marked = keyed_fields & dimmed_names & set(marked_names)
+                            assert dimmed_marked == keyed_fields, (
+                                f"bore shape, keyed + {label}: {sorted(keyed_fields)} are not "
+                                f"both dimmed and invalid; both: {sorted(dimmed_marked)}"
+                            )
+                    assert refusals, "bore shape: no keyed pick met a 422, the refusal went unseen"
                 finally:
                     bore.close()
 

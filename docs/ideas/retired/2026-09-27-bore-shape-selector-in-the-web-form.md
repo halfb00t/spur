@@ -1,6 +1,8 @@
 # A bore-shape selector in the web form
 
 Date: 2026-09-27
+Status: retired
+Retired in: test(24): every pick from every bore shape, the stash across links and the keyed bore -- retire the bore-shape idea
 Source: Phase 9 discussion — the human proposed a dropdown to pick round / D-flat / hex /
 keyway once four bore shapes exist
 Related files:
@@ -59,3 +61,12 @@ warnings as insufficient.
 
 The keyway is a modifier of round and D-flat, not a fifth shape, so a selector is
 four-plus-one shapes — why it is the largest of the deferred UI changes.
+
+## Outcome
+
+Phase 24 built the schema-carried route under L42, which follows L41 (the "08 D-09 stands" note above was
+superseded by L41, so the form may carry field relations that come from the model and not from `app.js`).
+The model carries a `selectors` list, not a `bore_type` field, so every published link means what it meant (L05):
+four options -- Round, D-flat, Hex, No bore -- in L41's condition vocabulary, each derived from the flat fields on
+load and written back as those same fields when picked. The keyway stays two fields, and the refusals it meets under
+Hex or No bore stay the server's `422`. The feature commit is `470b78a`.
