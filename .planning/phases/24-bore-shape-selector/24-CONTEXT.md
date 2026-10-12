@@ -211,6 +211,20 @@ follows, before Phase 25's gate reading).
   tests/regression/pre_v0_2.json tests/regression/golden_requests.json` is clean after every
   task.
 
+### Taken at plan-phase (research found the code disagrees with the text above)
+- **D-18:** **No option holds → a blank select, no throw, no write.** D-02's totality is
+  over non-negative triples; the form accepts `-1`, and 13 of 27 cells of a `{-1, 0, 6}`
+  grid match no option (MEASURED, 24-RESEARCH). `deriveSelectors()` is total and caught per
+  selector, as `applyRelations()` is per item: when `find()` returns nothing the select's
+  `selectedIndex` is `-1`, nothing is written, and `readHash()` goes on to `update()` (a
+  negative value is the server's 422, as today). The grid test (D-12 b) covers the negative
+  cells and the browser proves no throw. Rejected: keeping the last shown option (the select
+  would lie about the fields, BS-3, and needs state the derivation otherwise has none of).
+- **D-19:** **`hashchange` leaves the stash alone.** Only Reset and a reload clear it, exactly
+  as D-08 says; a hash navigation re-derives the shown option (D-06) and a later pick can
+  still restore a value the user typed. Rejected: clearing on `hashchange` (a fourth call
+  site for the stash rule and one more browser expectation, for no proof).
+
 ### Claude's Discretion
 - **The schema key and option shape.** Recommendation: `selectors: [{title: "Bore shape",
   group: "Bore", options: [{label, when}]}]` — a list so a second selector (the cutout
