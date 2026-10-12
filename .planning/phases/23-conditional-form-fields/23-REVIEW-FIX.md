@@ -53,6 +53,7 @@ The count is 1292 (iteration 1) plus 3 new tests: two IN-08 meta-tests and one o
 **Applied fix:** `reason.setAttribute('aria-hidden', 'true')` where the span is created in `buildForm()`, with a comment saying why. This takes the span out of the label's computed name only; a node an `aria-describedby` references is still read as the description. The `aria-describedby` line is unchanged (`input.setAttribute('aria-describedby', reason.id)` at both sites, byte for byte), and no CSS edit. WR-01's error row is covered by the same span.
 **Test and result:** the `inert fields` browser step now asserts every `.reason` carries `aria-hidden="true"` and that exactly the dimmed inputs carry `aria-describedby`. Red before the change (all 31 reasons listed as `reasons readable twice`), green after. `python -m pytest tests/test_browser.py tests/test_api.py -q`: `64 passed in 28.26s`; the static no-disable guard in `test_api.py` does not match `aria-hidden`, as predicted.
 **Status:** fixed: requires human verification. The attribute is proven; I did not listen to a screen reader, so the single announcement is the spec's behaviour for `aria-hidden` with `aria-describedby`, not something I heard.
+**Human verification (2026-10-12):** the developer opened `http://127.0.0.1:8000/#spoke_count=0` on the shipped tree (`21f6fb7`), tabbed to Hub diameter with VoiceOver and reported the reason row announced once. Closed.
 
 ### IN-03: A stale line reference in the new tech-debt item
 
