@@ -1,0 +1,357 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_browser.py -n0 --no-cov -q -s
+webgl2 renderer: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)
+step webgl2: 0.03 s
+step form built: 0.10 s
+schema: 31 fields in 7 groups
+step form from schema: 0.02 s
+canvas PNG blank 3917 B, drawn 38908 B, ratio 9.93 (bar 4.9); data-triangles 9066, STL header 9066
+step first build drawn: 2.85 s
+step href after showModel: 0.04 s
+422 #bore_flat=3: marked ['D-flat'], text ['D-flat must be between 4.5 and 9 mm (flat to opposite side).']
+422 #teeth=2: marked ['Teeth'], text ['Teeth: Input should be greater than or equal to 6']
+step invalid field marked: 0.11 s
+warnings per link (two, one, none expected): [2, 1, 0]
+step warning rendered: 0.27 s
+step link round trip: 0.38 s
+golden sweep: 44 records, 44 distinct
+step golden sweep: 0.26 s
+step inert fields: 0.12 s
+F
+=================================== FAILURES ===================================
+__________________ test_the_shipped_viewer_in_a_real_browser ___________________
+
+server = 'http://127.0.0.1:61883'
+
+    def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
+        """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
+        properties = _schema_properties(server)
+        field_count = len(properties)
+        parked: list[Route] = []
+    
+        with sync_playwright() as pw:
+            # In the body, not a fixture: a missing shell must be a FAILED test with the install
+            # command in its message, not an ERROR and not a skip (D-02, D-07).
+            browser = launch(pw)
+            try:
+                page = browser.new_page()
+    
+                with step("webgl2"):
+                    renderer = eval_opt_str(page, WEBGL2_PROBE)
+                    assert renderer is not None, (
+                        "this browser gives no WebGL2 context: the viewer builds no form without "
+                        "WebGL (app.js:229)"
+                    )
+                    print(f"webgl2 renderer: {renderer}")
+    
+                # A lambda, never the bound `parked.append`: Playwright rejects a builtin
+                # method as a handler at run time, although mypy accepts it.
+                page.route(STL_ROUTE, lambda route: parked.append(route))
+                page.goto(server + "/")
+    
+                with step("form built"):
+                    expect(page.locator("form#params [name]")).to_have_count(field_count)
+                    _wait_until_parked(page, parked)
+                    # The fresh default load: empty hash, readHash() and update() have run.
+                    default_pairs = eval_pairs(page)
+                    assert page.locator("#dl-stl").get_attribute("href") is None, (
+                        "the STL link has an href before any STL was shown"
+                    )
+    
+                with step("form from schema"):
+                    # Every expectation is the schema's, read above at test time. A property with
+                    # no group sits under "Other" (app.js buildForm), and a group opens its
+                    # fieldset at its first property, so two properties of one group are one legend.
+                    groups: dict[str, list[str]] = {}
+                    for name, prop in properties.items():
+                        group = prop.get("group")
+                        groups.setdefault("Other" if group is None else str(group), []).append(name)
+                    expected_names = [name for names in groups.values() for name in names]
+                    assert expected_names, "/api/schema holds no properties: nothing to compare"
+    
+                    # Lists, not sets: the order is the form's, and a reversed form is a bug.
+                    rendered = eval_str_list(
+                        page,
+                        "() => [...document.querySelectorAll('form#params [name]')].map(e => e.name)",
+                    )
+                    assert rendered == expected_names, (
+                        f"form fields {rendered} differ from the schema's, grouped: {expected_names}"
+                    )
+                    legends = page.locator("form#params legend").all_text_contents()
+                    assert legends == list(groups), (
+                        f"form legends {legends} differ from the schema's groups {list(groups)}"
+                    )
+                    shown = page.locator("form#params label.field .name").all_text_contents()
+                    titles = [_title(properties, name) for name in expected_names]
+                    assert shown == titles, f"field names {shown} differ from the titles {titles}"
+                    for variable in THEME_VARIABLES:
+                        value = eval_str(
+                            page,
+                            "(v) => getComputedStyle(document.documentElement)"
+                            ".getPropertyValue(v).trim()",
+                            variable,
+                        )
+                        assert value != "", f"the custom property {variable} is empty on :root"
+                    print(f"schema: {len(expected_names)} fields in {len(groups)} groups")
+    
+                with step("first build drawn"):
+                    canvas = page.locator("#canvas")
+                    blank = canvas.screenshot()  # same element, same page, STL request parked
+                    with page.expect_response(
+                        lambda response: "/api/model.stl" in response.url, timeout=BUILD_WAIT_MS
+                    ) as served:
+                        parked[0].continue_()
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"^api/model\.stl"), timeout=BUILD_WAIT_MS
+                    )
+                    drawn = canvas.screenshot()
+                    stl = served.value.body()
+    
+                    ratio = len(drawn) / len(blank)
+                    declared = canvas.get_attribute("data-triangles")
+                    header = stl_triangles(stl)
+                    print(
+                        f"canvas PNG blank {len(blank)} B, drawn {len(drawn)} B, ratio {ratio:.2f} "
+                        f"(bar {PNG_RATIO_BAR}); data-triangles {declared}, STL header {header}"
+                    )
+                    assert ratio >= PNG_RATIO_BAR, (
+                        f"the canvas looks undrawn: PNG {len(drawn)} B against a blank {len(blank)} B "
+                        f"is {ratio:.2f}x, bar {PNG_RATIO_BAR}"
+                    )
+                    assert declared is not None, "the scene reported no data-triangles"
+                    assert int(declared) == header, (
+                        f"the scene holds {declared} triangles, the STL header declares {header}"
+                    )
+    
+                with step("href after showModel"):
+                    # An STL too short to parse makes showModel throw. The link must still have
+                    # no href: it is set only after showModel returns (app.js update()).
+                    page.unroute(STL_ROUTE)
+                    page.route(STL_ROUTE, lambda route: route.fulfill(body=b"\0" * 10))
+                    page.evaluate("() => { location.hash = 'teeth=23'; }")
+                    expect(page.locator("#messages .error")).to_contain_text("Request failed")
+                    assert page.locator("#dl-stl").get_attribute("href") is None, (
+                        "the STL link has an href although showModel failed on the body"
+                    )
+                    assert page.locator("#dl-stl").get_attribute("aria-disabled") == "true"
+                    kept = canvas.get_attribute("data-triangles")
+                    assert kept == declared, (
+                        f"a failed build changed data-triangles from {declared} to {kept}"
+                    )
+    
+                serve_stl_from(page, stl)
+    
+                with step("invalid field marked"):
+                    # Both marking paths of app.js problems(): `bore_flat=3` is the single-field
+                    # `infeasible` error (marked through ctx.fields), `teeth=2` a field-level range
+                    # error (marked through loc[1]). The expectation is the API's own 422 body for
+                    # the very query the page sent, never a literal.
+                    for fragment in ("bore_flat=3", "teeth=2"):
+                        sent = _follow_link(page, fragment)
+                        status, body = _api_get(server, "/api/info", sent)
+                        assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                        marked, texts = _expected_422(properties, body)
+                        assert marked, f"/api/info?{sent} names no schema field: nothing to mark"
+                        for text in texts:
+                            assert any(title in text for title in marked), (
+                                f"the message {text!r} names none of {sorted(marked)}"
+                            )
+                        # On the text, never on the element count: the previous state's error is
+                        # still on screen until this one replaces it (21-RESEARCH P6).
+                        expect(page.locator("#messages .error")).to_have_text(texts)
+                        invalid = set(page.locator("label.field.invalid .name").all_text_contents())
+                        assert invalid == marked, (
+                            f"#{fragment}: marked {sorted(invalid)}, the 422 names {sorted(marked)}"
+                        )
+                        kept = canvas.get_attribute("data-triangles")
+                        assert kept == declared, (
+                            f"a 422 changed data-triangles from {declared} to {kept}"
+                        )
+                        print(f"422 #{fragment}: marked {sorted(marked)}, text {texts}")
+    
+                    # update() clears the class before each request, so a valid link leaves none.
+                    sent = _follow_link(page, "teeth=23")
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                    )
+                    assert page.locator("label.field.invalid").count() == 0, (
+                        "a valid link left a field marked invalid"
+                    )
+    
+                with step("warning rendered"):
+                    # Equality of ordered lists, against links whose API answer holds two warnings,
+                    # one warning and none: the two-warning link is what separates "renders the
+                    # list" from "renders something that contains the first warning". The STL is
+                    # fulfilled from the first build (serve_stl_from), so nothing here builds.
+                    counts: list[int] = []
+                    for fragment, at_least in (
+                        ("module=1&pressure_angle=14.5", 2),
+                        ("bore_hex=6", 1),
+                        ("teeth=23", 0),
+                    ):
+                        sent = _follow_link(page, fragment)
+                        status, body = _api_get(server, "/api/info", sent)
+                        assert status == 200, f"/api/info?{sent} answered {status}, not 200"
+                        assert isinstance(body, dict), f"/api/info?{sent} is not an object"
+                        warnings = body["warnings"]
+                        assert isinstance(warnings, list), f"/api/info?{sent} has no warnings list"
+                        if at_least == 0:
+                            assert warnings == [], f"/api/info?{sent} warns: {warnings}"
+                        else:
+                            assert len(warnings) >= at_least, (
+                                f"/api/info?{sent} holds {len(warnings)} warnings, "
+                                f"expected at least {at_least}"
+                            )
+                        # The page shows the warnings before it asks for the STL, so the href
+                        # for this very query means the whole update finished: the messages are
+                        # this link's, not an earlier or aborted one's.
+                        expect(page.locator("#dl-stl")).to_have_attribute(
+                            "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                        )
+                        rendered_warnings = page.locator("#messages .warning").all_text_contents()
+                        assert rendered_warnings == warnings, (
+                            f"#{fragment}: rendered warnings {rendered_warnings} differ from "
+                            f"the API's {warnings}"
+                        )
+                        assert page.locator("#messages .error").count() == 0, (
+                            f"#{fragment}: an error is shown beside the warnings"
+                        )
+                        counts.append(len(warnings))
+                    print(f"warnings per link (two, one, none expected): {counts}")
+    
+                with step("link round trip"):
+                    # The three places app.js sets form values programmatically: the load
+                    # (readHash), the `hashchange` listener and #reset. The wait on each is the
+                    # /api/info request itself, captured around the action: readHash(), the
+                    # fragment rewrite and the request all happen before any response, whereas an
+                    # empty #status or the mere presence of an href is already true before the
+                    # 350 ms debounce fires (21-RESEARCH P6).
+                    pairs_a, pairs_b = _pairs(LINK_A), _pairs(LINK_B)
+                    for link in (LINK_A, LINK_B):
+                        status, _ = _api_get(server, "/api/info", link)
+                        assert status == 200, f"the link #{link} answers {status}, not 200"
+    
+                    # fresh load: a new page opened on the link.
+                    page2 = browser.new_page()
+                    try:
+                        serve_stl_from(page2, stl)
+                        with page2.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as info_request:
+                            page2.goto(f"{server}/#{LINK_A}")
+                        _assert_link_applied(
+                            page2,
+                            "link round trip, fresh load",
+                            LINK_A,
+                            urllib.parse.urlsplit(info_request.value.url).query,
+                            default_pairs,
+                            pairs_a,
+                        )
+                    finally:
+                        page2.close()
+    
+                    # hashchange: a link assigned on the page that is already open. The fragment
+                    # must differ from the current one or no event fires (_follow_link asserts it).
+                    sent_b = _follow_link(page, LINK_B)
+                    _assert_link_applied(
+                        page, "link round trip, hashchange", LINK_B, sent_b, default_pairs, pairs_b
+                    )
+    
+                    # Default dropped: the link names `teeth` at its schema default beside a
+                    # non-default field. The form shows the default; the page does not send it.
+                    teeth_default = properties["teeth"]["default"]
+                    assert isinstance(teeth_default, int), f"teeth default {teeth_default!r}: no int"
+                    assert not isinstance(teeth_default, bool), "the teeth default is a bool"
+                    link_c = f"teeth={teeth_default}&{LINK_C_OTHER}"
+                    sent_c = _follow_link(page, link_c)
+                    assert "teeth" not in dict(_pairs(sent_c)), (
+                        f"link round trip, default dropped: the page sent the default {sent_c!r}"
+                    )
+                    _assert_link_applied(
+                        page,
+                        "link round trip, default dropped",
+                        link_c,
+                        sent_c,
+                        default_pairs,
+                        _pairs(LINK_C_OTHER),
+                    )
+    
+                    # Reset: back to exactly the fresh default load.
+                    assert eval_str(page, FRAGMENT) != "", "link round trip, Reset: nothing to clear"
+                    with page.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as info_request:
+                        page.locator("#reset").click()
+                    reset_query = urllib.parse.urlsplit(info_request.value.url).query
+                    assert reset_query == "", f"link round trip, Reset: the page sent {reset_query!r}"
+                    assert eval_str(page, FRAGMENT) == "", "link round trip, Reset: fragment left"
+                    assert eval_str(page, MATE_VALUE) == "", "link round trip, Reset: mate left"
+                    after = eval_pairs(page)
+                    assert after == default_pairs, (
+                        "link round trip, Reset: the form differs from the fresh default load on "
+                        f"{_differing(after, default_pairs)}"
+                    )
+    
+                with step("golden sweep"):
+                    # What only a browser can prove: the server's acceptance of every fixture
+                    # record is tests/regression's, but what the form SENDS for each link is the
+                    # page's. Each record's link goes through location.hash on one page whose STL
+                    # route is aborted, so nothing is built (D-08); the sent api/info query must
+                    # equal the committed pin. Phases 23-24 change the form and must leave this
+                    # file's diff empty (D-09).
+                    pinned = _golden_records()
+                    hashes = fixture_hashes()
+                    assert set(pinned) == set(hashes), (
+                        "golden sweep: the pin and the fixture name different records: only in "
+                        f"the pin {sorted(set(pinned) - set(hashes))}, only in the fixture "
+                        f"{sorted(set(hashes) - set(pinned))}; run `make golden.regen`"
+                    )
+                    sweep_page = browser.new_page()
+                    try:
+                        swept = sweep(sweep_page, server, hashes)
+                    finally:
+                        sweep_page.close()
+                    moved = {
+                        name: (pinned[name], swept[name])
+                        for name in hashes
+                        if swept[name] != pinned[name]
+                    }
+                    detail = "; ".join(
+                        f"{name}: expected {want!r}, sent {got!r}"
+                        for name, (want, got) in moved.items()
+                    )
+                    assert not moved, f"golden sweep: the form sends other queries: {detail}"
+                    print(f"golden sweep: {len(swept)} records, {len(set(swept.values()))} distinct")
+    
+                with step("inert fields"):
+                    # The roadmap's own link: #spoke_count=0&hub_d=40, a value the model says does
+                    # nothing, shared and opened fresh (L41, D-17). A fresh page, because a fragment
+                    # assigned after the load can be erased before buildForm() returns (22-RESEARCH
+                    # Pitfall 2), so it rides the goto URL; serve_stl_from, so nothing builds.
+                    # What must hold is that the field is dimmed AND still a field: visible,
+                    # editable, holding the link's value, and sent. The expected set comes from
+                    # /api/schema through the Python evaluator, never a literal (D-14).
+                    fresh = browser.new_page()
+                    try:
+                        serve_stl_from(fresh, stl)
+                        with fresh.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as loaded:
+                            fresh.goto(server + "/#spoke_count=0&hub_d=40")
+                        load_query = urllib.parse.urlsplit(loaded.value.url).query
+                        assert load_query == "hub_d=40", (
+                            f"inert fields, fresh load: the page sent {load_query!r}, not the "
+                            "link's hub_d=40 (spoke_count=0 is the default and is dropped)"
+                        )
+    
+                        want = expected_inactive(properties, "spoke_count=0&hub_d=40")
+                        got = eval_inactive(fresh)
+>                       assert "hub_d" in want, "inert fields: the link's own field is not expected dimmed"
+E                       AssertionError: inert fields: the link's own field is not expected dimmed
+E                       assert 'hub_d' in {}
+E                       step: inert fields
+
+tests/test_browser.py:585: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser - Ass...
+1 failed in 5.54s
+make: *** [Makefile:170: test] Error 1

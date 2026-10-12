@@ -115,5 +115,13 @@ New trigger: the next `make verify` failure, with its whole log kept (as 19-01 d
 localise the fix; or, if none by Phase 20 planning or the next milestone's start, whole-suite loops of
 `make test` at `-n 8 --cov` and `-n 8 --no-cov`.
 
+Fifth occurrence, 2026-10-11, Phase 23 plan 23-04's first `make verify` (`-n 8 --cov`, HEAD `b013c27`, Apple M2 Max,
+1-minute load about 2.5): `1 failed, 1247 passed in 293.27s`, in `tests/test_pool.py::test_health_reports_pool_state` on
+worker `gw1`, an `ExceptionGroup` of five reentrant-call warnings at the end of the call phase, the same chain; a test the
+earlier records had not named. One re-run of the identical tree read `1248 passed in 300.70s`. Whole log kept:
+`.planning/phases/23-conditional-form-fields/investigation/23-04-red-1.log`. The "next `make verify` failure" trigger above
+has fired; the isolation runs and the fix plan under Next step are a decision for the human and were not run by 23-04. This plan's two `make verify` runs read 1 red and 1 green; the
+phase's earlier gate runs (23-01, 23-02, 23-03) and the orchestrator's three `make test` runs between waves were green.
+
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

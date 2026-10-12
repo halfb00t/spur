@@ -113,6 +113,17 @@ legend {
   border-color: var(--accent);
   outline: 1px solid var(--accent);
 }
+/* A field the model says is inert (L41) is dimmed, with its reason in a row of its own. One
+   tone (--muted, a dashed control border) and only the custom properties both themes
+   already define. Deliberately no opacity: the refused keyway pair is inert and invalid
+   at once, and opacity would dim the accent outline above, which must stay the stronger
+   mark. Deliberately no pointer-events and no visibility change either: the field must
+   stay a field that a shared link's value loads into, that is typed into and is sent. */
+.field.inactive .name, .field.inactive .unit,
+.field.inactive input, .field.inactive select { color: var(--muted); }
+.field.inactive input, .field.inactive select { border-style: dashed; }
+.field .reason { grid-column: 1 / -1; font-size: .78rem; color: var(--fg); }
+.field .reason:empty { display: none; }
 
 .actions { display: flex; gap: .5rem; margin-top: 1.25rem; }
 

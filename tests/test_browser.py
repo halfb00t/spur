@@ -5,7 +5,8 @@ page the product ships, in Chrome Headless Shell, against a real `uvicorn`, and 
 only a browser can: that WebGL2 exists (without it the page builds no form at all,
 app.js:229), that the first part is actually drawn, that the scene holds as many triangles
 as the STL it was fed, that the download link appears only after the model was shown, and that
-a click on `#dl-stl` saves the file under the name the server gives the part.
+a click on `#dl-stl` saves the file under the name the server gives the part, and that a field
+the model says is inert is dimmed with its reason and is still typed into and sent (L41).
 
 It runs inside `make verify`'s `test` -- so also the pre-push hook, `make worktree.land` and
 CI's `test (3.12)` -- and is excluded by name from `make verify.fast` and `make test-image`
@@ -36,12 +37,16 @@ from browser_session import (
     GOLDEN_PATH,
     PNG_RATIO_BAR,
     STL_ROUTE,
+    eval_bool,
+    eval_inactive,
     eval_int,
     eval_opt_str,
     eval_pairs,
     eval_str,
     eval_str_list,
+    expected_inactive,
     fixture_hashes,
+    flip_links,
     launch,
     serve,
     serve_stl_from,
@@ -85,6 +90,10 @@ TODAY = (
     "today's behaviour, filed as debt: "
     "docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md"
 )
+
+# The refused pair under a hex bore: a 422 naming the gate and both fields (23-RESEARCH,
+# reproduced), where `.invalid` and `.inactive` must coexist on the keyway fields (PD-07).
+REFUSED_LINK = "bore_hex=6&keyway_width=3&keyway_depth=1.4"
 
 MATE_VALUE = "() => document.querySelector('#mate-teeth').value"
 FRAGMENT = "() => location.hash.slice(1)"
@@ -253,6 +262,33 @@ def _wait_until_parked(page: Page, parked: list[Route]) -> None:
             f"the page asked for no STL within {BUILD_WAIT_MS} ms of loading"
         )
         page.evaluate("0")
+
+
+def test_the_oracle_reads_a_link_as_the_page_does() -> None:
+    """IN-06, IN-01: `expected_inactive` is the second evaluator, so it has to resolve a link
+    and word a reason exactly as app.js does. No browser: a hand-written schema, so a
+    repeated key or a threshold of 1e6 need not exist in the real one. Red on a last-wins
+    repeated key, a blank first value that is not the default, or a reason whose number
+    differs from JavaScript's `${value}`."""
+    properties: dict[str, dict[str, object]] = {
+        "gate": {"title": "Gate", "default": 0},
+        "tiny": {"title": "Tiny", "default": 0},
+        "huge": {"title": "Huge", "default": 0},
+        "dep": {"title": "Dep", "default": 1, "enabled_when": [
+            {"field": "gate", "op": "eq", "value": 0}]},
+    }
+    # URLSearchParams.get is first-wins: the page sees gate=0 and leaves dep live.
+    assert expected_inactive(properties, "gate=0&gate=6") == {}
+    assert expected_inactive(properties, "gate=6&gate=0") == {"dep": "Needs Gate = 0"}
+    # A blank first value is a present, empty box: the default (0), not the second pair.
+    assert expected_inactive(properties, "gate=&gate=6") == {}
+    assert expected_inactive(properties, "gate=6") == {"dep": "Needs Gate = 0"}
+    # Each pair was read from node: `${1e6}` is 1000000 and `${1e-5}` is 0.00001, where
+    # Python's `:g` wrote 1e+06 and 1e-05. JavaScript stays positional from 1e-6 up to 1e21.
+    for threshold, written in ((0, "0"), (1, "1"), (1.0, "1"), (0.05, "0.05"), (1e6, "1000000"),
+                               (1e-5, "0.00001"), (1e-6, "0.000001"), (1e16, "10000000000000000")):
+        properties["dep"]["enabled_when"] = [{"field": "gate", "op": "gt", "value": threshold}]
+        assert expected_inactive(properties, "gate=0") == {"dep": f"Needs Gate above {written}"}
 
 
 def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
@@ -530,7 +566,10 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # page's. Each record's link goes through location.hash on one page whose STL
                 # route is aborted, so nothing is built (D-08); the sent api/info query must
                 # equal the committed pin. Phases 23-24 change the form and must leave this
-                # file's diff empty (D-09).
+                # file's diff empty (D-09). Beside the query, the fields the page dimmed for
+                # the link, with their reasons, must equal the Python evaluator's over
+                # /api/schema (23 D-14, D-16): two implementations that share no code agreeing
+                # on every record. The query pin is unchanged.
                 pinned = _golden_records()
                 hashes = fixture_hashes()
                 assert set(pinned) == set(hashes), (
@@ -544,16 +583,296 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 finally:
                     sweep_page.close()
                 moved = {
-                    name: (pinned[name], swept[name])
+                    name: (pinned[name], swept[name].query)
                     for name in hashes
-                    if swept[name] != pinned[name]
+                    if swept[name].query != pinned[name]
                 }
                 detail = "; ".join(
                     f"{name}: expected {want!r}, sent {got!r}"
                     for name, (want, got) in moved.items()
                 )
                 assert not moved, f"golden sweep: the form sends other queries: {detail}"
-                print(f"golden sweep: {len(swept)} records, {len(set(swept.values()))} distinct")
+                wanted_dim = {
+                    name: expected_inactive(properties, link) for name, link in hashes.items()
+                }
+                assert any(wanted_dim.values()), (
+                    "golden sweep: no record expects a dimmed field, so a schema with no "
+                    "relation would pass this step"
+                )
+                dim_differs = "; ".join(
+                    f"{name}: the page dims {swept[name].inactive}, the schema says {want}"
+                    for name, want in wanted_dim.items()
+                    if swept[name].inactive != want
+                )
+                assert not dim_differs, f"golden sweep: the dimmed sets differ: {dim_differs}"
+                distinct_queries = len({s.query for s in swept.values()})
+                distinct_dims = len({tuple(sorted(s.inactive.items())) for s in swept.values()})
+                print(
+                    f"golden sweep: {len(swept)} records, {distinct_queries} distinct queries, "
+                    f"{distinct_dims} distinct dimmed sets"
+                )
+
+            with step("inert fields"):
+                # The roadmap's own link: #spoke_count=0&hub_d=40, a value the model says does
+                # nothing, shared and opened fresh (L41, D-17). A fresh page, because a fragment
+                # assigned after the load can be erased before buildForm() returns (22-RESEARCH
+                # Pitfall 2), so it rides the goto URL; serve_stl_from, so nothing builds.
+                # What must hold is that the field is dimmed AND still a field: visible,
+                # editable, holding the link's value, and sent. The expected set comes from
+                # /api/schema through the Python evaluator, never a literal (D-14).
+                fresh = browser.new_page()
+                try:
+                    serve_stl_from(fresh, stl)
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as loaded:
+                        fresh.goto(server + "/#spoke_count=0&hub_d=40")
+                    load_query = urllib.parse.urlsplit(loaded.value.url).query
+                    assert load_query == "hub_d=40", (
+                        f"inert fields, fresh load: the page sent {load_query!r}, not the "
+                        "link's hub_d=40 (spoke_count=0 is the default and is dropped)"
+                    )
+
+                    want = expected_inactive(properties, "spoke_count=0&hub_d=40")
+                    got = eval_inactive(fresh)
+                    assert "hub_d" in want, "inert fields: the link's own field is not dimmed"
+                    assert got == want, f"inert fields: the page dims {got}, the schema says {want}"
+                    for name, reason in sorted(got.items()):
+                        print(f"inert fields: {name}: {reason}")
+
+                    hub_d = fresh.locator("form#params [name=hub_d]")
+                    expect(hub_d).to_be_visible()
+                    expect(hub_d).to_be_editable()
+                    expect(hub_d).to_have_value("40")
+
+                    # A real keystroke into the dimmed field reaches the request.
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as typed:
+                        hub_d.fill("41")
+                    typed_query = urllib.parse.urlsplit(typed.value.url).query
+                    assert typed_query == "hub_d=41", (
+                        f"inert fields, typed into the dimmed field: the page sent {typed_query!r}"
+                    )
+                    assert "hub_d" in eval_inactive(fresh), "inert fields: typing made hub_d live"
+
+                    # The gate going live: read in the same JS task as the event, before the
+                    # 350 ms debounce (23-RESEARCH Pitfall 8), so only the input
+                    # listener's own call can have changed it.
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as gated:
+                        still_dimmed = eval_bool(
+                            fresh,
+                            """() => {
+                              const gate = document.querySelector('form#params [name=spoke_count]');
+                              gate.value = '4';
+                              gate.dispatchEvent(new Event('input', { bubbles: true }));
+                              return document.querySelector('form#params [name=hub_d]')
+                                .closest('label').classList.contains('inactive');
+                            }""",
+                        )
+                    assert not still_dimmed, (
+                        "inert fields: hub_d still dimmed right after spoke_count's input event, "
+                        "so the input listener did not re-evaluate before scheduleUpdate"
+                    )
+                    gated_query = urllib.parse.urlsplit(gated.value.url).query
+                    assert _pairs(gated_query) == _pairs("spoke_count=4&hub_d=41"), (
+                        f"inert fields, gate set: the debounced request was {gated_query!r}"
+                    )
+                    assert eval_inactive(fresh) == expected_inactive(
+                        properties, "spoke_count=4&hub_d=41"
+                    ), "inert fields: the dimmed set after the gate went live is not the schema's"
+
+                    # Reset: the empty query, and exactly the set the empty link gives.
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as reset_request:
+                        fresh.locator("#reset").click()
+                    reset_query = urllib.parse.urlsplit(reset_request.value.url).query
+                    assert reset_query == "", f"inert fields, Reset: the page sent {reset_query!r}"
+                    assert eval_inactive(fresh) == expected_inactive(properties, ""), (
+                        "inert fields, Reset: the dimmed set differs from the empty link's"
+                    )
+                finally:
+                    fresh.close()
+
+                # One link per gate condition, derived from the schema (D-15): the dimmed set
+                # must follow the fields and never the server's answer, so a flip the API
+                # refuses with a 422 is held to the evaluator too. The main page's fragment
+                # is empty here and its STL route serves the first build, so nothing builds.
+                default_dimmed = expected_inactive(properties, "")
+                links = flip_links(properties)
+                assert links, "inert fields: the schema yields no flip link"
+                gates = {link.split("=")[0] for link in links}
+                for link in links:
+                    sent = _follow_link(page, link)
+                    status, _ = _api_get(server, "/api/info", sent)
+                    flipped = expected_inactive(properties, link)
+                    assert flipped != default_dimmed, f"inert fields: #{link} flips nothing"
+                    got = eval_inactive(page)
+                    assert got == flipped, (
+                        f"inert fields: #{link} (API {status}): the page dims {got}, the "
+                        f"schema says {flipped}; the dim state follows the fields, not the "
+                        "server's answer"
+                    )
+                    print(f"inert fields: flip #{link}: API {status}, dimmed {sorted(got)}")
+
+                sent = _follow_link(page, REFUSED_LINK)
+                status, body = _api_get(server, "/api/info", sent)
+                assert status == 422, f"inert fields: #{REFUSED_LINK} answered {status}, not 422"
+                marked, texts = _expected_422(properties, body)
+                expect(page.locator("#messages .error")).to_have_text(texts)
+                refused_invalid = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params label.field.invalid [name]')]"
+                    ".map(e => e.name)",
+                )
+                dimmed = eval_inactive(page)
+                assert dimmed == expected_inactive(properties, REFUSED_LINK), (
+                    f"inert fields, refused pair: the page dims {dimmed}"
+                )
+                # PD-07 is a claim about the whole pair, so the page must mark exactly what
+                # the server named (the gate and both keyway fields, calc.py REFUSED) and both
+                # keyway fields must carry .invalid and .inactive together. One in the
+                # intersection is not enough: a page that marked only keyway_width passed (IN-07).
+                invalid_titles = {_title(properties, n) for n in refused_invalid}
+                assert invalid_titles == marked, (
+                    f"inert fields, refused pair: marked {sorted(invalid_titles)}, "
+                    f"server named {sorted(marked)}"
+                )
+                both = sorted(set(refused_invalid) & set(dimmed))
+                pair = set(urllib.parse.parse_qs(REFUSED_LINK)) - gates
+                assert len(pair) == 2, f"inert fields, refused pair: {REFUSED_LINK} names {pair}"
+                assert pair <= set(both), (
+                    f"inert fields, refused pair: {sorted(pair)} are not both invalid "
+                    f"{refused_invalid} and dimmed {sorted(dimmed)}"
+                )
+                assert not gates & set(dimmed), "inert fields, refused pair: a gate is dimmed"
+                assert gates & set(refused_invalid), (
+                    f"inert fields, refused pair: no gate marked invalid among {refused_invalid}: "
+                    "the user could not see how to get back (D-20)"
+                )
+                print(
+                    f"inert fields: refused pair: invalid {sorted(refused_invalid)}, "
+                    f"dimmed and invalid {both}"
+                )
+
+                # The dim is shown (PD-06): a reason is displayed for exactly the dimmed
+                # fields, and their names are drawn in colours no live field's name uses.
+                shown = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params label.field')]"
+                    ".filter(l => getComputedStyle(l.querySelector('.reason')).display !== 'none')"
+                    ".map(l => l.querySelector('[name]').name)",
+                )
+                assert sorted(shown) == sorted(dimmed), (
+                    f"inert fields: reasons shown for {sorted(shown)}, dimmed {sorted(dimmed)}"
+                )
+                # The reason sits inside the wrapping <label>, so its text is already part of
+                # the input's accessible name; aria-describedby then reads it a second time.
+                # aria-hidden removes it from the name, and a node a describedby points at is
+                # still read as the description (IN-02).
+                unhidden = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params .reason')]"
+                    ".filter(r => r.getAttribute('aria-hidden') !== 'true').map(r => r.id)",
+                )
+                assert not unhidden, f"inert fields: reasons readable twice: {unhidden}"
+                described = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params [aria-describedby]')]"
+                    ".map(e => e.name)",
+                )
+                assert sorted(described) == sorted(dimmed), (
+                    f"inert fields: described {sorted(described)}, dimmed {sorted(dimmed)}"
+                )
+                name_colours = (
+                    "() => [...new Set([...document.querySelectorAll("
+                    "'form#params label.field%s .name')].map(e => getComputedStyle(e).color))]"
+                )
+                dim_colours = eval_str_list(page, name_colours % ".inactive")
+                live_colours = eval_str_list(page, name_colours % ":not(.inactive)")
+                assert dim_colours, "inert fields: no dimmed name has a colour"
+                assert live_colours, "inert fields: no live name has a colour"
+                shared = set(dim_colours) & set(live_colours)
+                assert not shared, f"inert fields: dimmed and live names both use {sorted(shared)}"
+
+                # Reset from the refused state: the empty query, the default set, nothing
+                # left marked invalid.
+                with page.expect_request(
+                    lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                ) as reset_sent:
+                    page.locator("#reset").click()
+                reset_query = urllib.parse.urlsplit(reset_sent.value.url).query
+                assert reset_query == "", f"inert fields, Reset: the page sent {reset_query!r}"
+                assert eval_inactive(page) == default_dimmed, (
+                    "inert fields, Reset: the dimmed set is not the default one"
+                )
+                expect(page.locator("form#params label.field.invalid")).to_have_count(0)
+
+            with step("unknown relation op"):
+                # D-02: an op the page does not know is loud, never "active". WR-01: but loud
+                # on the field, not by stopping the page. A throw out of applyRelations()
+                # used to skip update() on every keystroke, so the part, the dimensions and
+                # the download links stayed on the previous parameters while the form moved.
+                # The schema is served with the first related field's first op changed to
+                # one the page lacks; its own page, because the route replaces the schema.
+                status, schema = _api_get(server, "/api/schema", "")
+                assert status == 200, f"unknown relation op: /api/schema answered {status}"
+                assert isinstance(schema, dict), "unknown relation op: the schema is not an object"
+                tampered = json.loads(json.dumps(schema))
+                tampered_properties = tampered["properties"]
+                related = [n for n, prop in tampered_properties.items() if "enabled_when" in prop]
+                assert related, "unknown relation op: no field carries a relation to tamper with"
+                broken = related[0]
+                tampered_properties[broken]["enabled_when"][0]["op"] = "ge"
+                bad = browser.new_page()
+                try:
+                    bad.route("**/api/schema", lambda route: route.fulfill(json=tampered))
+                    bad.goto(server + "/#teeth=23")
+                    expect(bad.locator("#dl-stl")).to_have_attribute(
+                        "href", "api/model.stl?teeth=23", timeout=BUILD_WAIT_MS
+                    )
+                    broken_reason = bad.locator(f"label.field:has([name={broken}]) .reason")
+                    unreadable = (
+                        "Cannot tell whether this field is used: Unknown enabled_when op: ge"
+                    )
+                    expect(broken_reason).to_have_text(unreadable)
+                    others = {
+                        name: why
+                        for name, why in expected_inactive(properties, "teeth=23").items()
+                        if name != broken
+                    }
+                    assert eval_inactive(bad) == others, (
+                        f"unknown relation op: the page dims {eval_inactive(bad)}, the other "
+                        f"fields' relations say {others}"
+                    )
+                    with bad.expect_request(
+                        lambda request: "/api/info" in request.url
+                        and urllib.parse.urlsplit(request.url).query == "teeth=24",
+                        timeout=BUILD_WAIT_MS,
+                    ):
+                        bad.locator("[name=teeth]").fill("24")
+                    expect(bad.locator("#dl-stl")).to_have_attribute(
+                        "href", "api/model.stl?teeth=24", timeout=BUILD_WAIT_MS
+                    )
+                    # The row outlives the keystroke (applyRelations() comment): its text, not
+                    # its presence. A cleared span is still one node, `display: none`, so a
+                    # count of 1 held whether or not the error was still there (IN-10).
+                    expect(broken_reason).to_have_text(unreadable)
+                    others = {
+                        name: why
+                        for name, why in expected_inactive(properties, "teeth=24").items()
+                        if name != broken
+                    }
+                    assert eval_inactive(bad) == others, (
+                        f"unknown relation op, after a keystroke: the page dims "
+                        f"{eval_inactive(bad)}, the other fields' relations say {others}"
+                    )
+                finally:
+                    bad.close()
+                print(f"unknown relation op: {broken} unreadable, the form still builds the part")
 
             with step("download name"):
                 # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers

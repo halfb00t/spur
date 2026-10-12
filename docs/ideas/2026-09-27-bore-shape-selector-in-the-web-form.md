@@ -48,7 +48,7 @@ story for every existing link (aliases or a breaking change) and would be its ow
 ## Judged at Phase 12 (2026-09-30)
 
 Verdict: not taken; 08 D-09 stands (the form is generated from `/api/schema` and nothing
-else).
+else) (superseded by L41).
 
 Reason: a proof-and-measurement phase must not ship the first bore-specific field-relation
 logic in `app.js` with no UI test; the ignored-field warnings are the current, honest

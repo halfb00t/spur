@@ -36,6 +36,7 @@ Severity (grep-able `Severity:` field):
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
 | nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
 | nice | [Phase 19 code review: four info findings deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | `model.py`, `bench/trochoid_part.py` or the `DIMS` table is next touched (IN-01, IN-02, IN-04); the L34 bar is re-set under a new `Lxx` (IN-03) |
+| nice | [A hex bore warns that the default bore_d and bore_flat are ignored, on every hex link](active/2026-10-11-hex-bore-warns-about-default-bore-fields.md) | Phase 24's bore-shape selector ships (choosing Hex leaves bore_d and bore_flat at their defaults, so every hex part warns), or a user reports the warning as noise |
 
 ## Resolved
 

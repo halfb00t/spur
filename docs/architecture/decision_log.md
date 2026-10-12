@@ -2563,3 +2563,118 @@ Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand
 `playwright` 1.63.0, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Chrome Headless
 Shell 153.0.8010.12; the timeit, sweep and browser readings on 2026-10-11 about 12:15 to 12:30 local time
 (22-01), load average 5.2 to 6.5 (`uptime`).
+
+## L41 — A field the model says is inert is dimmed in the form and stays a field: enabled_when on GearParams, proved against calc (supersedes 08 D-09, keeps L02)
+
+Date: 2026-10-11.
+
+L02 (one parameter model, three front ends) stays and is the argument: the relation lives on the model and
+reaches the form through the schema, so `app.js` gains no per-field code. L03, L05, L08, L27, L30, L36 and L39
+stay as written. 08 D-09 ("No conditional form behaviour") is superseded: its own reason for refusing, a mechanism
+the schema does not carry, is answered by carrying it. The idea's trigger, a browser test that can see the
+dim state (L39), fired in Phase 21. Every figure below is cited to the 23-01 SUMMARY, to `23-RESEARCH.md` or to a
+named later plan. None is re-estimated here, and none is carried from one host to another.
+
+**The grammar** (D-01..D-04). A field's relation is one key, `enabled_when`, holding a bare JSON list of
+`{field, op, value}` objects, and the list is the AND: every condition must hold for the field to do anything.
+`op` is `eq` or `gt` and nothing else; `value` is a number; `field` is a numeric `GearParams` field compared as a
+number. An OR, another op or a non-number is a stop-and-ask for the human, not an extension. `when()` builds one
+condition and types `op` as `Literal["eq", "gt"]`, so a bad op fails `mypy --strict` at the call site; `_extra()`
+is the one builder of `json_schema_extra`, called by `_f()` and by the two `Literal` fields `root_shape` and
+`recess_sides`, so a relation on a `Literal` field cannot be dropped on one construction path (the schema output of
+both fields is unchanged: `{"group": "Teeth", "unit": ""}` and `{"group": "Recess", "unit": ""}`). Pydantic's
+`model_json_schema()` key-sorts the object keys and keeps list order, and nothing depends on either. The
+condition is the primary noun: Phase 24's selector options are written as `when()` conditions too and are not a
+second vocabulary. Rejected: `{"all": [...]}` (room for an OR nobody declares); a JSON Schema fragment such as
+`{"bore_hex": {"const": 0}}` (keywords inside a key that is not JSON Schema, which a consumer validating against
+`/api/schema` could read as constraints); raw dicts at the call sites (mypy sees `JsonDict` and cannot check `op`);
+an import-time assertion after the class body (a second place in production code that knows the grammar). Assigning
+`list[JsonDict]` into the extra directly fails `mypy --strict` by list invariance; `_extra()` copies it with
+`list(...)` (23-RESEARCH Pitfall 1). **Reversibility of the grammar: costly.**
+
+**The declared set** (D-09, D-20). Eleven rows: `bore_d` and `bore_flat` under `bore_hex eq 0`; `spoke_width`,
+`hub_d`, `rim_wall` and `spoke_fillet` under `spoke_count gt 0`; `hole_d` and `hole_circle_d` under
+`hole_count gt 0`; `hex_wall` under `hex_cell gt 0`; and `keyway_width` and `keyway_depth` under `bore_hex eq 0`,
+the refused class: under a hex bore each alone is a 422 and is never gated on the other (CF-2). Every driver is a
+pure driver (depth 1): no dependent is also a driver, and the form never dims a driver. Considered and not taken:
+`keyway_* <- bore_hex eq 0 AND bore_d gt 0` (calc-backed, but it makes `bore_d` both dependent and driver; the
+no-bore keyway stays a visible 422). 23-01 declared `hub_d` alone, whose parity with `calc` was read by a
+one-off command before it was declared (quoted from the 23-01 SUMMARY): with `spoke_count` 0, `hub_d` at 0.05 and
+at 400 changes only `warnings`, each to the one sentence `No spoke arms with spoke_count 0: hub_d (... mm) is
+ignored.` 23-02 declared the other ten after its proof module went red and then green. Not declared: the two
+relations `calc` does not back (`recess_*` under `recess_sides=none`, `bore_flat` at `bore_d=0`), which 23-02 filed
+as `docs/ideas/2026-10-11-the-two-relations-calc-does-not-back.md`; and the hex warning that names the default
+`bore_d` and `bore_flat`, which 23-02 filed as
+`docs/tech_debt/active/2026-10-11-hex-bore-warns-about-default-bore-fields.md` (`nice`): a `calc` change that is
+never filtered in `app.js`.
+
+**The proof** (D-10..D-13). `tests/test_relations.py` (23-02), kernel-free and in the commit slice: forward parity
+at `minimum + step` and at `maximum` per dependent, with an extra check that the warning names the field
+(23-RESEARCH Pitfall 2: `bore_chamfer` under a hex bore changes nothing in `derive()`, so an unchanged `derive()`
+alone proves too little); reverse coverage, so a field `calc` calls ignored with no relation goes red; the refused
+class pinned as a construction error naming `bore_hex`, `keyway_width` and `keyway_depth`; the
+wrong-relation evidence kept as meta-tests. A relation is declared only after its parity row is green.
+
+**The form** (D-05..D-08, D-17..D-19). `.field.inactive` dims the label with `--muted` text and a dashed control
+border; the reason is a `<span class="reason" id="reason-NAME">` of its own, a full row after `.control`, linked
+to the input by `aria-describedby` and shown only while filled. It states the need and not the consequence, built
+from the gate's schema title: `Needs {gate title} = 0` for `eq 0` and `Needs {gate title} above 0` for `gt 0`,
+several conditions joined with ` and ` in declaration order (today `Needs Hex bore A/F = 0`, `Needs Spoke arms above
+0`, `Needs Lightening holes above 0`, `Needs Honeycomb cell A/F above 0`). The server's warning or 422 stays the
+authority on what happens to the value. The field is never `disabled`, hidden or cleared and is still sent, so a
+shared link such as `#spoke_count=0&hub_d=40` loads a value the user can edit (L05). The value a condition reads is
+the one `gearQuery()` sends: an emptied box reads as the default. `applyRelations()` is called from three places
+and no others: the end of `readHash()` (the fresh load and `hashchange`), the form `input` listener before
+`scheduleUpdate`, and `#reset` before `update()`; never from a build's success, so a 422 leaves the state the
+fields imply (CF-4). It evaluates every condition (`rels.map(holds).includes(false)`), so an unknown op anywhere in
+a list throws and is not short-circuited past. The throw is caught per field in `applyRelations()` and nowhere
+else: that field stays undimmed with its own reason row (`Cannot tell whether this field is used: ...`), and the other
+fields and the build are unaffected (WR-01, `cea8c54`). `holds()` is a `switch` and not a table, because a row-shaped table
+is harvested as a `DIMS` key and a plain-object lookup resolves `constructor`. `.invalid` and `.inactive` coexist
+on the keyway pair under a hex bore: `problems()` owns the first, `applyRelations()` the second, and the CSS leaves
+the accent border and outline over the dashed style, so the 422 mark is the stronger. There is no opacity (it would
+dim that outline), no `pointer-events` and no `visibility`.
+
+**The pins** (CF-1). Each change is stricter and none is deleted or allow-listed. In
+`test_the_shareable_link_round_trips_every_field_through_generic_code` the token
+`fields.set(name, { input, wrap, title });` becomes
+`fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });`, and tokens are added for the
+three call sites, the effective-value rule, the `Number(effective(field))` comparison, the throwing `default`, the
+loop that writes the dim and `aria-describedby`; the docstring clause "08 D-09 stands" becomes "L41 supersedes 08
+D-09". A new static assertion finds no disabled, hidden or markup write anywhere in `app.js`, written so prose in
+a comment cannot trip it. In `test_every_key_the_ui_reads_is_a_derived_dimensions_field` the whole-file `['word',`
+harvest must equal the harvest of the `DIMS` block alone. `test_schema_drives_the_form` gains one relation
+assertion. The `gearQuery()` pin in `test_a_root_shape_link_is_served_with_the_root_it_cut` and the `hashchange`
+token are not touched; the no-field-name rule is unchanged and now also covers `applyRelations()` and the rest. The
+`DIMS` block, `gearQuery()` and the `if (prop.enum)` branch are byte-identical to their previous text (compared in
+the 23-01 verify), so the `root_shape=bogus` debt trigger and Phase 19's IN-04 trigger did not fire.
+
+**The browser proof** (D-14..D-17). The scenario gains one step, `inert fields`, between `golden sweep` and
+`download name`: a fresh page opened on `#spoke_count=0&hub_d=40` with the fragment in the `goto` URL and the STL
+served from the first build, so nothing builds. It asserts the sent query is `hub_d=40`, that `hub_d` is dimmed
+with `Needs Spoke arms above 0`, visible, editable and holding 40, that a real `fill` of 41 reaches the next
+`api/info` request and leaves it dimmed, that setting `spoke_count` makes `hub_d` live in the same JS task as the
+`input` event and before the 350 ms debounce, and that Reset sends the empty query and restores the dimmed set
+the empty link gives. The expected set is never a literal: `expected_inactive()` in `tests/browser_session.py` is a
+second evaluator written from D-01..D-03 over `/api/schema`, and two evaluators that share no code agreeing is the
+proof. The step read 1.13 to 1.15 s beside `step golden sweep` at 0.26 to 0.37 s (23-01 SUMMARY), and was seen red
+three ways: against the unchanged model (`hub_d` absent from the dimmed set), against the unchanged `app.js` token
+pin, and with the `input` listener put back (`hub_d` still dimmed right after `spoke_count`'s input event). 23-03
+extends the golden sweep to compare each record's dimmed set and adds one flip link per distinct gate condition,
+the refused pair and the `hashchange` path; 23-04 adds three readings under `bench/RESULTS.md`
+`## Conditional form fields (Phase 23)`. `gearQuery()` is not touched, so `tests/regression/pre_v0_2.json` and
+`tests/regression/golden_requests.json` show an empty diff.
+
+**Reversibility.** D-01 is **costly**: changing the shape later moves two evaluators, the walk, the browser
+evaluator and Phase 24's selector metadata together, and L41 names the vocabulary. The reason wording, the visual
+and the step are reversible in a commit of their own.
+
+Reason: a field the server ignores or refuses is now said to be inert before it is typed, and the server stays the
+authority on what it does with the value (L02, L08). Nothing a user did not set changes (L05): no `GearParams`
+field is added, no default, bound or type moves, every link that omits a field builds the part it built, and the
+field keeps whatever a shared link put in it.
+Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string hw.memsize`, read
+2026-10-11); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.13,
+`playwright` 1.63.0, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Chrome Headless
+Shell 153.0.8010.12; the browser readings on 2026-10-11 about 18:11 to 18:15 local time (23-01), load average 3.8
+to 5.3 (`uptime`).

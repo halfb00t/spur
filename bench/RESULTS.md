@@ -5314,3 +5314,107 @@ rule was in place, and the first failure line is copied from 22-01's SUMMARY and
 | 22-01 | `download name` step in `tests/test_browser.py` | none: the step ran against the unchanged `slug()`. `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, log `investigation/22-01-browser-red.log` | `1 failed`: `AssertionError: the download is named 'spur_z23_m1.75_pa25.stl', not the name the server gives this part`, note `step: download name`, `tests/test_browser.py:581` | n/a, `slug()` then moved; the green run is `investigation/22-01-browser-green.log` |
 | 22-01 | `tests/test_trochoid.py::test_the_download_name_follows_the_root_root_mode_builds`, the ignored and refused rows | the condition in `slug()` changed to `self.root_shape == "trochoid"` (the rejected requested-root rule) for one run. `make test.fast PYTEST_ARGS="tests/test_trochoid.py -n0 -q --tb=line -k download_name_follows"` | `3 failed, 3 passed` (`27-ignored-first`, `40-ignored`, `tip-land-gone-refused`): `tests/test_trochoid.py:234`, `AssertionError: assert ('nothing rad...a25_trochoid') == ('nothing rad...7_m1.75_pa25')` | yes, the AST check printed `slug(): local calc import, root_mode on the request, no guard` after the restore |
 | 22-01 | `tests/test_api.py::test_a_failed_build_records_the_name_of_the_part_it_would_have_been`, the refused row | the same requested-root condition. `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q --tb=line -k failed_build_records_the_name"` | `1 failed, 1 passed` (`refused`): `tests/test_api.py:1147`, `AssertionError: assert 'spur_z19_m1....33.5_trochoid' == 'spur_z19_m1.75_pa33.5'` | yes, the same AST check after the restore |
+
+## Conditional form fields (Phase 23)
+
+What is priced here is what Phase 23 added to the gate and to the commit slice: the `inert fields` step in `tests/test_browser.py`
+(a fresh page on `#spoke_count=0&hub_d=40`, a keystroke, Reset, four schema-derived flip links and the refused keyway pair, all
+with the STL served from the first build, so the step builds nothing), the `golden sweep` step, which now also reads the set of
+fields the page dims under each of the 44 fixture links, and the commit slice (`make verify.fast`), which now holds
+`tests/test_relations.py`. The choice was the steps' own timing over a full-gate A/B (CONTEXT discretion, following 22 D-06): the
+phase adds about one second to one browser run, which a six-run A/B of a gate near 290 s could not resolve. No bar is set here:
+Phase 25 re-sets the gate bar on its final HEAD and absorbs these steps. The readings are this host's and are not compared with
+other hosts', nor with the earlier readings quoted below, which were taken at other HEADs and loads. Every run is at HEAD
+`b013c27`, which contains the phase's five code and record commits: `e09f834` (the tracer, the dim, L41), `fb97ba2` (the ten
+other relations and the proof module), `d11af97` (the idea and the debt filed), `4c1eba3` (the golden sweep reads the dim state)
+and `e4f63ff` (the flip links, the refused pair and Reset). `git status --porcelain --untracked-files=no` printed nothing
+(`.planning/STATE.md` and `.planning/state.json` excluded) before the first run and after the last; the only untracked paths were
+`.planning/milestone.lock` and the kept logs. L41 in `docs/architecture/decision_log.md` cites this section.
+
+### The inert-fields step, priced (23-04)
+
+Three readings of `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, one at a time in the foreground, nothing
+else started by this plan in between, `uptime` before and after each. The Makefile's own `-n 8` precedes the mode and the later
+`-n0` wins; `-s` prints the `step` lines because the test then runs in the main process. Each run's whole output is kept as
+`.planning/phases/23-conditional-form-fields/investigation/23-04-reading-N.log` and every figure below is copied from it.
+
+#### Host state
+
+- Machine: `bench.machine_facts()` reads `12 CPUs, arm64, 32.0 GiB RAM`; chip Apple M2 Max (`sysctl -n machdep.cpu.brand_string`),
+  macOS 27.0.1, Darwin 27.0.0, arm64
+- Python 3.12.13 (`.venv`), playwright 1.63.0, pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0, `PYTEST_WORKERS` 8 (overridden
+  to `-n0` by the command)
+- HEAD `b013c27`; the phase's commits `e09f834`, `fb97ba2`, `d11af97`, `4c1eba3`, `e4f63ff`
+- Read 2026-10-11: host state at 13:04:34Z (load averages 3.24 7.15 7.55), browser runs started 13:04:41Z, 13:04:52Z and
+  13:05:03Z, commit-slice runs 13:05:13Z, 13:05:31Z and 13:05:49Z (the last read-out at 13:06Z)
+- Not an idle host, and the load was falling: the 1-minute load read 3.2 at the first run and 2.4 to 2.7 by the last browser run,
+  its 15-minute load still 7.3 to 7.6 from earlier work this plan did not do. At the start `ps` listed `WindowServer` at 28 % CPU
+  and an OrbStack helper at 27 % (38 % and 11 % after the last run), none started by this plan, and the `claude` process that
+  drives this session at 15 %. So every wall figure below is an upper bound for an idle host and none is a bar
+
+#### Readings
+
+| Run | Result line | `step inert fields` (s) | `step golden sweep` (s) | `step first build drawn` (s) | 1-minute load before -> after | UTC start |
+|---|---|---|---|---|---|---|
+| 1 | `1 passed in 8.08s` | 1.31 | 0.37 | 2.99 | 3.22 -> 3.11 | 13:04:41Z |
+| 2 | `1 passed in 7.49s` | 1.33 | 0.32 | 2.90 | 2.86 -> 2.71 | 13:04:52Z |
+| 3 | `1 passed in 7.45s` | 1.33 | 0.30 | 2.88 | 2.57 -> 2.45 | 13:05:03Z |
+
+The other steps, run 1 / 2 / 3, in seconds: `webgl2` 0.03 / 0.01 / 0.01; `form built` 0.10 / 0.07 / 0.07; `form from schema` 0.01 /
+0.03 / 0.02; `href after showModel` 0.04 / 0.04 / 0.04; `invalid field marked` 0.11 / 0.12 / 0.11; `warning rendered` 0.28 / 0.28 /
+0.27; `link round trip` 0.34 / 0.37 / 0.38; `download name` 1.15 / 1.15 / 1.12; `root_shape=bogus as today` 0.09 / 0.09 / 0.03. The
+logs are `23-04-reading-1.log`, `23-04-reading-2.log` and `23-04-reading-3.log`.
+
+`step inert fields` read 1.32 s on average over the three runs, from 1.31 to 1.33 s. `step golden sweep` read 0.33 s on average,
+from 0.30 to 0.37 s. The slowest build-bound step in every run was `first build drawn` (2.99, 2.90 and 2.88 s), not `inert fields`,
+which builds nothing; all are far under 21 PD-04's 15 s, so `BUILD_WAIT_MS` stays at 45 s. Other readings of these steps exist and
+are quoted, not compared: 23-RESEARCH read the browser file at 6.50 s with `golden sweep` 0.28 s (HEAD `fed44fe`, before the sweep
+read dim state; load 3.57 -> 7.36); 23-01 read `inert fields` 1.15 s, 1.13 s and 1.13 s and `golden sweep` 0.26 s, 0.27 s and
+0.37 s (`23-01-browser-green.log`, `23-01-browser-styled.log`, with one relation declared); 23-02 read `inert fields` 1.15 s with
+the seven cutout fields dimmed (`23-02-browser.log`); 23-03 read `golden sweep` 0.35 s and `inert fields` 1.33 s with the flip
+links and the refused pair in the step (`23-03-browser-sweep.log`, `23-03-browser-flips.log`). The `ubuntu-latest` reading of
+the steps comes from the pull request's first CI run and is not taken here.
+
+### The commit slice with the proof module (23-04)
+
+Three readings of `/usr/bin/time -p make verify.fast`, the command the pre-commit hook runs (L36 kills it at 30 s), one at a time in
+the foreground, `uptime` before and after each, on the same HEAD and host as above. Each run's whole output is kept as
+`23-04-slice-N.log`, ending `make verify.fast exit 0`, and every figure below is copied from it.
+
+| Run | `make verify.fast` result line | `real` (s) | 1-minute load before -> after | UTC start |
+|---|---|---|---|---|
+| 1 | `850 passed in 14.44s` | 15.05 | 2.33 -> 2.38 | 13:05:13Z |
+| 2 | `850 passed in 14.68s` | 15.24 | 2.38 -> 2.67 | 13:05:31Z |
+| 3 | `850 passed in 14.59s` | 15.14 | 2.54 -> 4.39 | 13:05:49Z |
+
+`real` read 15.14 s on average, from 15.05 to 15.24 s; every reading is under L36's 30 s kill, with about 15 s of headroom. Other
+readings are quoted, not compared: 23-RESEARCH read `840 passed in 17.06s`, 17.866 s wall, at HEAD `fed44fe` (load 3.57 -> 7.36),
+before `tests/test_relations.py` existed; 23-02 read 14.85 s (`840 passed in 14.30s`, HEAD `8f7e1c9`, no proof module) before and
+14.92 s (`850 passed in 14.35s`, relations declared) after, load 4.04 and 2.45 (`23-02-fast-before.log`, `23-02-fast-after.log`).
+The proof module is the 10 tests that make 850 from 840.
+
+### Seen red once (Phase 23)
+
+These are the phase's deliberate reds (PD-10): each pin or step was run red before the code it pins existed, or with one call
+site or one relation broken on purpose, and the first failure line is copied from the plan's SUMMARY and its kept log. Logs are
+under `.planning/phases/23-conditional-form-fields/investigation/`. The `tests/test_api.py` pin run kept no log; its lines are
+from 23-01's SUMMARY.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 23-01 | `tests/test_api.py::test_schema_drives_the_form` | none: the pin was written before `enabled_when` existed, so it ran against the unchanged `params.py`. `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k 'schema_drives_the_form or openapi_documents or every_key_the_ui_reads or shareable_link_round_trips or root_shape_link'"` (`2 failed, 3 passed`; no kept log) | `KeyError: 'enabled_when'` | n/a, `enabled_when` and `hub_d`'s relation then written |
+| 23-01 | `tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code` | none: the tightened `fields.set` token pin ran against the unchanged `app.js`; the same command and run (no kept log) | `AssertionError: fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });` | n/a, `applyRelations()` and the `fields.set` change then written |
+| 23-01 | `inert fields` step in `tests/test_browser.py` | none: the step ran against the unchanged code. `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, log `23-01-browser-red.log` | `1 failed`: `AssertionError: inert fields: the link's own field is not expected dimmed`, note `step: inert fields`, `tests/test_browser.py:585` | n/a, the code then written; the green run is `23-01-browser-green.log` |
+| 23-01 | `inert fields` step, the input path | the listener put back to `form.addEventListener('input', scheduleUpdate);`, same browser command, log `23-01-browser-input-red.log` | `1 failed`: `AssertionError: inert fields: hub_d still dimmed right after spoke_count's input event, so the input listener did not re-evaluate before scheduleUpdate`, `tests/test_browser.py:622` | yes, the line edited back; `cmp` against a copy saved before the break read identical and the token pin passed again (`5 passed`) |
+| 23-02 | `tests/test_relations.py::test_the_keyway_pair_is_refused_under_a_hex_bore_alone_and_together` | none: the proof module ran against the one-relation model (`hub_d` only). `make test.fast PYTEST_ARGS="tests/test_relations.py -n0 -q -rf"`, log `23-02-relations-red.log` (`3 failed, 7 passed in 0.11s`) | `tests/test_relations.py:317`, `AssertionError: ['keyway_depth', 'keyway_width']` | n/a, the ten relations then declared |
+| 23-02 | `tests/test_relations.py::test_every_field_calc_ignores_is_declared` | none: the same run and log | `tests/test_relations.py:218`, `AssertionError: bore_hex=0.05: calc says 'Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored.', naming bore_d, but no relation declares bore_d` | n/a, the ten relations then declared |
+| 23-02 | `tests/test_relations.py::test_an_ignored_field_without_its_relation_goes_red` | none: the same run and log | `tests/test_relations.py:218`, the same `bore_hex=0.05 ... but no relation declares bore_d` line, from its first (non-vacuity) call | n/a, the ten relations then declared |
+| 23-02 | `tests/test_relations.py::test_with_its_relation_false_a_dependent_moves_only_the_warning_that_names_it`, on the real model | `enabled_when=[when("bore_hex", "eq", 0)]` added to `bore_chamfer`. `make test.fast PYTEST_ARGS="tests/test_relations.py -n0 -q -rf"`, log `23-02-wrong-relation-red.log` (`1 failed, 9 passed in 0.08s`) | `tests/test_relations.py:188`, `AssertionError: bore_chamfer=0.05 with bore_hex=0.05: no warning names bore_chamfer (0.05 mm): calc does not say it is ignored` | yes, the saved good `params.py` copied back; `cmp` read identical and `grep -c 'enabled_when=\[when(' src/spur/params.py` read 11 again |
+| 23-03 | `golden sweep` step in `tests/test_browser.py` | `applyRelations();` deleted from `readHash()` in `src/spur/static/app.js`. The browser command above, log `23-03-readhash-red.log` | `1 failed`: `AssertionError: golden sweep: the dimmed sets differ: README:export-defaults: the page dims {}, the schema says {'spoke_width': 'Needs Spoke arms above 0', 'hub_d': ...`, note `step: golden sweep`, `tests/test_browser.py:575` | yes, `git checkout -- src/spur/static/app.js`; `git diff --exit-code -- src/spur/static/app.js` clean |
+| 23-03 | `inert fields` step, Reset | `applyRelations();` deleted from the `#reset` handler. The browser command above, log `23-03-reset-red.log` (a first attempt deleted the wrong line, passed, and was redone; its log was overwritten) | `1 failed`: `AssertionError: inert fields, Reset: the dimmed set differs from the empty link's`, note `step: inert fields`, `tests/test_browser.py:667` (the fresh-page Reset check from 23-01 fails first, so the Reset-from-refused-state check was not separately seen red) | yes, `git checkout -- src/spur/static/app.js`; `git diff --exit-code -- src/spur/static/app.js` clean |
+
+One red run that is not a deliberate break: this plan's first `make verify` on the committed tree read `1 failed, 1247 passed in
+293.27s` (`TOTAL 97.99 %`), `tests/test_pool.py::test_health_reports_pool_state` on worker `gw1`, an `ExceptionGroup` of five
+`ReentrantCallError` warnings from `multiprocessing.resource_tracker` (the open debt `2026-10-06-resource-tracker-flake-fails-the-gate`,
+a fifth occurrence, in a test that debt had not yet named). Its whole log is kept as `23-04-red-1.log`; the one re-run on the same tree
+read `1248 passed in 300.70s (0:05:00)`, `make verify exit 0` (`23-04-verify.log`). Nothing in the tree changed between the two runs.

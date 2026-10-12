@@ -1,0 +1,76 @@
+.venv/bin/python -m pytest -n 8 --no-cov \
+  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
+  --ignore=tests/test_api.py --ignore=tests/test_cli.py \
+  --ignore=tests/test_browser.py tests/test_relations.py -n0 -q -rf
+....F.....                                                               [100%]
+=================================== FAILURES ===================================
+_ test_with_its_relation_false_a_dependent_moves_only_the_warning_that_names_it _
+
+    def test_with_its_relation_false_a_dependent_moves_only_the_warning_that_names_it() -> None:
+        """SC2, D-10, D-11: forward parity over every declared relation. Red on a relation
+        `derive()` contradicts, one `calc` never calls ignored, or a keyway field that is
+        refused where a relation says it is ignored."""
+        relations = _relations()
+        perturbations = 2 * sum(len(conditions) for conditions in relations.values())
+        assert perturbations > 0
+>       assert _assert_relations_hold_in_calc(relations) == perturbations
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_relations.py:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+relations = {'bore_d': [('bore_hex', 'eq', 0.0)], 'bore_flat': [('bore_hex', 'eq', 0.0)], 'keyway_width': [('bore_hex', 'eq', 0.0)], 'keyway_depth': [('bore_hex', 'eq', 0.0)], ...}
+
+    def _assert_relations_hold_in_calc(relations: Mapping[str, Sequence[Condition]]) -> int:
+        """Forward parity. With each dependent's relation false, at `minimum + step` and at
+        `maximum` of its schema bounds: a refused field is one of `REFUSED` and the refusal
+        names the gate; any other changes nothing in `derive()` but `warnings`, and a warning
+        names it. Returns the number of perturbations made.
+    
+        Derive-invariance alone proves too little (23-RESEARCH Pitfall 2): `bore_chamfer`
+        shapes the hex bore mouth yet moves nothing `derive()` reports, so it would pass. What
+        makes a relation true is that `calc` says the field is ignored, hence the warning
+        check. It is a membership test on the field's own fragment, never the whole sentence:
+        a sibling at its default is named too (Pitfall 3).
+        """
+        props = _properties()
+        checked = 0
+        for dep, conditions in relations.items():
+            prop = props[dep]
+            unit = prop["unit"]
+            assert isinstance(unit, str), dep
+            low, step = _number(prop, "minimum"), _number(prop, "step")
+            high, default = _number(prop, "maximum"), _number(prop, "default")
+            for gate, op, threshold in conditions:
+                closed = _closed(gate, op, threshold)
+                base = derive(GearParams.model_validate({gate: closed})).model_dump()
+                for value in (low + step, high):
+                    assert value != default, f"{dep}={value:g} is its default: a no-op proves nothing"
+                    checked += 1
+                    where = f"{dep}={value:g} with {gate}={closed:g}"
+                    try:
+                        gear = GearParams.model_validate({gate: closed, dep: value})
+                    except ValidationError as error:
+                        assert dep in REFUSED, f"{where}: refused, but {dep} is not in REFUSED"
+                        named = _named_fields(error)
+                        assert {gate} | REFUSED <= named, f"{where}: the refusal names only {named}"
+                        continue
+                    assert dep not in REFUSED, f"{where}: accepted, but {dep} is in REFUSED"
+                    doc = derive(gear).model_dump()
+                    moved = sorted(key for key in doc if doc[key] != base[key])
+                    assert set(moved) <= {"warnings"}, f"{where}: derive() changed {moved}"
+                    warnings = doc["warnings"]
+                    assert isinstance(warnings, list | tuple), where
+                    fragment = f"{dep} ({value:g} {unit})"
+>                   assert fragment in " ".join(warnings), (
+                        f"{where}: no warning names {fragment}: calc does not say it is ignored")
+E                   AssertionError: bore_chamfer=0.05 with bore_hex=0.05: no warning names bore_chamfer (0.05 mm): calc does not say it is ignored
+E                   assert 'bore_chamfer (0.05 mm)' in 'Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored.'
+E                    +  where 'Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored.' = <built-in method join of str object at 0x1014ec718>(('Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored.',))
+E                    +    where <built-in method join of str object at 0x1014ec718> = ' '.join
+
+tests/test_relations.py:188: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_relations.py::test_with_its_relation_false_a_dependent_moves_only_the_warning_that_names_it
+1 failed, 9 passed in 0.08s
+make: *** [Makefile:194: test.fast] Error 1

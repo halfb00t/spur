@@ -14,7 +14,10 @@ parameter in the URL so a gear can be shared as a link.
   committed bytes differ from a fresh build.
 - The UI knows no gear geometry. The form is generated from `GET /api/schema`, including
   each field's group, unit and step, so a parameter added in `params.py` appears here
-  with no edit (L02).
+  with no edit (L02). The schema also carries each field's `enabled_when`, a list of
+  `{field, op, value}` conditions that generic `applyRelations()` evaluates to dim a field
+  the current values make inert, with its reason; the field is never disabled, hidden or
+  cleared and is still sent (L41).
 - All URLs are relative, so `SPUR_ROOT_PATH` works — with the caveat that the proxy must
   redirect `/spur` to `/spur/`, or the browser resolves `static/app.js` one level too
   high. That is documented in the README because it cannot be fixed from inside the app.
@@ -22,7 +25,8 @@ parameter in the URL so a gear can be shared as a link.
 ## Shape
 
 `app.js`, roughly in this order: build the form from the schema; read the hash into the
-inputs; on change, debounce, cancel the in-flight request (`AbortController`), fetch
+inputs and dim the fields whose relation does not hold (again on every input and on Reset,
+before the debounce); on change, debounce, cancel the in-flight request (`AbortController`), fetch
 `/api/info` and `/api/model.stl?quality=preview`, update the dimensions table, the
 warnings and the invalid-field marks, then load the STL into the scene. A `seq` counter
 drops responses that arrive out of order. The viewer is a `WebGLRenderer` with
@@ -37,7 +41,9 @@ makes the bundle small.
 
 `422` bodies are read back and rendered twice: the message in the messages strip, and the
 `detail[].ctx.fields` names as an `invalid` class on the inputs responsible. Warnings from
-`derive()` render in the same strip in a different tone.
+`derive()` render in the same strip in a different tone. An `invalid` field can also be
+`inactive` (the keyway pair under a hex bore): the two classes coexist, and the 422 mark is
+the stronger (L41).
 
 ## Known gap
 
@@ -57,7 +63,10 @@ the STL header's count; that both `422` paths mark their fields; that the render
 equal `/api/info`'s; that the shareable link round-trips on load, on Reset and on
 `hashchange`; and that the query the page sends for each record of the regression fixture
 equals the pin in `tests/regression/golden_requests.json` (rewritten only by
-`make golden.regen`, in a commit of its own). `#root_shape=bogus` is pinned as today's
+`make golden.regen`, in a commit of its own). Beside each fixture link's query it compares the
+fields the page dims and their reasons with a Python evaluator over `/api/schema`, and does the
+same under one schema-derived link per gate condition, on the refused keyway pair and after
+Reset, and types into a dimmed field to see it sent (L41). `#root_shape=bogus` is pinned as today's
 behaviour and filed as debt. It runs inside `make verify` and CI's `test (3.12)`, which
 install the headless shell under `.venv` first; the commit-time `make verify.fast` never
 collects it.

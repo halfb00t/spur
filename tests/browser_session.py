@@ -27,9 +27,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
+from decimal import Decimal
 from pathlib import Path
-from typing import IO
+from typing import IO, NamedTuple
 
 import pytest
 from playwright.sync_api import Browser, Error, Page, Playwright
@@ -264,11 +265,24 @@ def eval_str_list(page: Page, expression: str, arg: object = None) -> list[str]:
     return items
 
 
-def eval_pairs(page: Page) -> list[tuple[str, str]]:
-    """The form's (name, value) pairs in DOM order, each value the control's own string."""
-    value: object = page.evaluate(
-        "() => [...document.querySelectorAll('form#params [name]')].map(e => [e.name, e.value])"
-    )
+FORM_PAIRS = (
+    "() => [...document.querySelectorAll('form#params [name]')].map(e => [e.name, e.value])"
+)
+
+# Each dimmed field as [name, the text of its reason], in DOM order (L41).
+INACTIVE_PAIRS = (
+    "() => [...document.querySelectorAll('form#params label.field.inactive')]"
+    ".map(l => [l.querySelector('[name]').name, l.querySelector('.reason').textContent])"
+)
+
+
+def eval_pairs(page: Page, expression: str = FORM_PAIRS) -> list[tuple[str, str]]:
+    """The form's (name, value) pairs in DOM order, each value the control's own string.
+
+    `expression` returns a list of two-string lists; the default is the form's controls, and
+    `eval_inactive` reads the dimmed fields through the same narrowing.
+    """
+    value: object = page.evaluate(expression)
     assert isinstance(value, list), f"the form's pairs came back as {value!r}, not a list"
     pairs: list[tuple[str, str]] = []
     for item in value:
@@ -279,6 +293,122 @@ def eval_pairs(page: Page) -> list[tuple[str, str]]:
         assert isinstance(field_value, str), f"a form pair whose value is not a str: {item!r}"
         pairs.append((name, field_value))
     return pairs
+
+
+def eval_inactive(page: Page) -> dict[str, str]:
+    """The fields the page dims right now, name -> the reason text it shows (L41)."""
+    return dict(eval_pairs(page, INACTIVE_PAIRS))
+
+
+def _holds(owner: str, op: object, have: float, wanted: float) -> bool:
+    """One relation condition's truth, the grammar's only two ops (D-02), shared by both users."""
+    if op == "eq":
+        return have == wanted
+    if op == "gt":
+        return have > wanted
+    raise AssertionError(f"{owner}: the op {op!r} is neither 'eq' nor 'gt' (D-02)")
+
+
+def _js_number(value: float) -> str:
+    """`${value}` as JavaScript writes it, for the reason text app.js builds in need().
+
+    `:g` wrote 1e+06 and 1e-05 where JavaScript writes 1000000 and 0.00001. `repr` gives the
+    same shortest round-trip digits as JavaScript, and `Decimal(...).normalize()` formatted
+    with `f` keeps them positional, with `1.0` as `1`. Exact for 1e-6 <= |value| < 1e21; JavaScript
+    switches to an exponent outside that range, and no relation threshold is near it.
+    """
+    return format(Decimal(repr(float(value))).normalize(), "f")
+
+
+def expected_inactive(properties: Mapping[str, Mapping[str, object]], link: str) -> dict[str, str]:
+    """The fields a link must leave dimmed, name -> reason, from the schema alone (D-14).
+
+    The deliberate second implementation of `applyRelations()` in app.js, and it names no
+    field: every property's `enabled_when` is read off `/api/schema`, so a relation declared
+    later is expected here with no edit. Two evaluators that share no code agreeing over every
+    state is the proof. The Phase 21 D-09 rejection of a Python predictor does not apply:
+    that was a predictor of what the SERVER answers, where the grammar (D-01..D-03) is the
+    spec of this one.
+
+    A field the link omits, or leaves blank, reads as its schema default (D-18: the value the
+    page sends). Every condition of a relation is evaluated (PD-05), `eq` and `gt` are the
+    only ops, and any other op raises naming it (D-02), as the page's `holds()` does.
+    """
+    # The page reads `URLSearchParams.get`: the FIRST pair of a repeated key, and a blank
+    # value is present and empty, which `effective()` turns into the default (D-18).
+    # `dict(parse_qsl(link))` was last-wins and dropped blanks, so `bore_hex=0&bore_hex=6`
+    # predicted a dimmed bore the page keeps live (IN-06).
+    given: dict[str, str] = {}
+    for key, value in urllib.parse.parse_qsl(link, keep_blank_values=True):
+        given.setdefault(key, value)
+
+    def number(name: str) -> float:
+        raw: object = given.get(name) or properties[name].get("default")
+        assert isinstance(raw, str | int | float), f"{name}: {raw!r} is not a number"
+        assert not isinstance(raw, bool), f"{name}: {raw!r} is a bool, not a number"
+        return float(raw)
+
+    def title(name: str) -> str:
+        # app.js buildForm(): `prop.title ?? name`.
+        found = properties[name].get("title")
+        return name if found is None else str(found)
+
+    inactive: dict[str, str] = {}
+    for name, prop in properties.items():
+        conditions = prop.get("enabled_when")
+        if not isinstance(conditions, list) or not conditions:
+            continue
+        holds: list[bool] = []
+        needs: list[str] = []
+        for condition in conditions:
+            assert isinstance(condition, dict), f"{name}: condition {condition!r} is not an object"
+            gate, op, wanted = condition["field"], condition["op"], condition["value"]
+            assert isinstance(gate, str), f"{name}: condition field {gate!r} is not a str"
+            assert isinstance(wanted, int | float), f"{name}: condition value {wanted!r}"
+            assert not isinstance(wanted, bool), f"{name}: condition value {wanted!r} is a bool"
+            holds.append(_holds(name, op, number(gate), float(wanted)))
+            needs.append(f"{title(gate)} {'=' if op == 'eq' else 'above'} {_js_number(wanted)}")
+        if False in holds:
+            inactive[name] = "Needs " + " and ".join(needs)
+    return inactive
+
+
+def flip_links(properties: Mapping[str, Mapping[str, object]]) -> list[str]:
+    """One link per distinct gate condition that makes it differ from the default, from the schema.
+
+    Names no field: for each distinct (field, op, value) across every property's
+    `enabled_when`, in order of first appearance, the gate's `minimum + step` and `maximum`
+    are tried and the first whose truth differs from the truth at the gate's default is the
+    link `field=value`. A fifth relation therefore adds its own link with no test edit (D-15).
+    """
+    links: list[str] = []
+    seen: set[tuple[str, object, float]] = set()
+    for owner, prop in properties.items():
+        conditions = prop.get("enabled_when")
+        if not isinstance(conditions, list):
+            continue
+        for condition in conditions:
+            assert isinstance(condition, dict), f"{owner}: condition {condition!r} is not an object"
+            gate, op, wanted = condition["field"], condition["op"], condition["value"]
+            assert isinstance(gate, str), f"{owner}: condition field {gate!r} is not a str"
+            assert isinstance(wanted, int | float), f"{owner}: condition value {wanted!r}"
+            if (gate, op, float(wanted)) in seen:
+                continue
+            seen.add((gate, op, float(wanted)))
+            bounds: dict[str, float] = {}
+            for key in ("minimum", "maximum", "step", "default"):
+                raw = properties[gate].get(key)
+                assert isinstance(raw, int | float), f"{gate}: {key} {raw!r} is not a number"
+                bounds[key] = float(raw)
+            at_default = _holds(owner, op, bounds["default"], float(wanted))
+            flips = [
+                candidate
+                for candidate in (bounds["minimum"] + bounds["step"], bounds["maximum"])
+                if _holds(owner, op, candidate, float(wanted)) != at_default
+            ]
+            assert flips, f"{gate}: neither minimum + step nor maximum flips {op} {wanted}"
+            links.append(f"{gate}={flips[0]:g}")
+    return links
 
 
 def serve_stl_from(page: Page, stl: bytes) -> None:
@@ -336,8 +466,15 @@ def fixture_hashes() -> dict[str, str]:
     return hashes
 
 
-def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
-    """The `api/info` query string the page sends for each link, name -> query (D-08).
+class Swept(NamedTuple):
+    """What the page did for one link: the `api/info` query it sent and the fields it dimmed."""
+
+    query: str
+    inactive: dict[str, str]
+
+
+def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, Swept]:
+    """The `api/info` query the page sends for each link and the fields it dims, name -> Swept.
 
     Builds no part: the STL route is aborted, so a link costs one `hashchange` and one
     info request, not a CAD build. `hashchange` calls `readHash(); update()` directly, no
@@ -345,6 +482,11 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
     21-RESEARCH read 0.09-0.15 s for each of the 43 hash-driven records. The empty link
     cannot be reached that way (an empty fragment is the fresh load's own), so its query is
     the fresh load's request, which is the empty string today.
+
+    The dimmed set is read right after the link's own request, and that is the link's state:
+    `readHash()` ends with `applyRelations()` and `update()` sends the request synchronously
+    after it, so the state is set before the request this waits for and no response can have
+    changed it (23-RESEARCH Pitfall 7).
 
     A link equal to the live fragment fires no `hashchange`, and the wait would time out
     with a message that names nothing (21-RESEARCH Pitfall P5), so that case raises naming
@@ -357,11 +499,12 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
         lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
     ) as fresh:
         page.goto(base + "/")
+    swept: dict[str, Swept] = {}
     fresh_query = urllib.parse.urlsplit(fresh.value.url).query
-    sent: dict[str, str] = {}
+    fresh_inactive = eval_inactive(page)
     for name, link in hashes.items():
         if link == "":
-            sent[name] = fresh_query
+            swept[name] = Swept(fresh_query, fresh_inactive)
             continue
         live = eval_str(page, "() => location.hash.slice(1)")
         if live == link:
@@ -373,8 +516,8 @@ def sweep(page: Page, base: str, hashes: dict[str, str]) -> dict[str, str]:
             lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
         ) as request:
             page.evaluate("link => { location.hash = link; }", link)
-        sent[name] = urllib.parse.urlsplit(request.value.url).query
-    return sent
+        swept[name] = Swept(urllib.parse.urlsplit(request.value.url).query, eval_inactive(page))
+    return swept
 
 
 @contextlib.contextmanager

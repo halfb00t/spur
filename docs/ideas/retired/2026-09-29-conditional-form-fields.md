@@ -1,6 +1,8 @@
 # Conditional form fields ("disabled when")
 
 Date: 2026-09-29
+Status: retired
+Retired in: test(23): one flip link per gate, the refused pair and Reset -- retire the conditional-fields idea
 Source: Phase 11 discuss-phase (11-CONTEXT.md Deferred Ideas)
 Related files:
 - src/spur/static/app.js (schema-driven group renderer)
@@ -44,3 +46,10 @@ warnings as insufficient.
 If taken, the schema-driven route is a `json_schema_extra` key on the model (on the order
 of `enabled_when`), not relations hard-coded in `app.js`, superseding 08 D-09 with a new
 `Lxx`.
+
+## Outcome
+
+Phase 23 built the route the Phase 12 judgement named -- an `enabled_when` key on the model, not relations in
+`app.js` -- under L41, which supersedes 08 D-09. Eleven fields dim in the states calc warns about or refuses,
+dimmed and editable, never disabled or hidden, still sent. The two relations calc does not back stayed out and
+are filed as `docs/ideas/2026-10-11-the-two-relations-calc-does-not-back.md`.

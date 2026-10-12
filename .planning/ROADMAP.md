@@ -123,7 +123,7 @@ byte-identical to the `v0.4` tag.
 - [x] **Phase 22: Download Name Carries the Root** - A hob-root part downloads as (completed 2026-10-11)
       `..._trochoid`; every radial part, and every request whose trochoid is ignored, keeps
       today's name byte for byte, and the `Lxx` lists every consumer of the old names first
-- [ ] **Phase 23: Conditional Form Fields** - A field whose value would be ignored (or
+- [x] **Phase 23: Conditional Form Fields** - A field whose value would be ignored (or (completed 2026-10-11)
       refused) says so in the form before it is typed: an `enabled_when` relation on the
       model, proved against `calc`, rendered dimmed-and-editable by generic `app.js` code, the
       pins tightened and not removed
@@ -373,7 +373,16 @@ REQ-form-walk-proves-relations
 `app.js` as DIMS keys, so any new JS table is an object, not rows of that shape.
 **Research flag**: No — standard patterns. The parity proof will surface relation rows that are
 not inert; the plan budgets for dropping them.
-**Plans**: TBD
+**Plans**: 4/4 plans complete, in 4 waves (sequential: each reads the tree the one before it commits)
+- [x] 23-01-PLAN.md — The tracer and the record in one commit (CF-1): `hub_d` under `spoke_count gt 0` from `when()`/`_extra()`
+  through `/api/schema` to generic `applyRelations()`, dimmed, typed into and sent in a real browser; the visible dim; the
+  `app.js` pins tightened; L41 *(wave 1)*
+- [x] 23-02-PLAN.md — `tests/test_relations.py` first (red against one relation), then the other ten D-09 rows (green), the
+  CLI walk, a wrong relation seen red; the unbacked-relations idea and the hex-warning debt filed *(wave 2)*
+- [x] 23-03-PLAN.md — The browser proof: the golden sweep compares each record's dimmed set, one schema-derived flip per
+  gate, the refused pair, Reset, the visible dim; the regen proved byte-identical; the idea retired *(wave 3)*
+- [x] 23-04-PLAN.md — The step and the commit slice priced: three readings each, seen red once, the kept logs *(wave 4)*
+
 **UI hint**: yes
 
 ### Phase 24: Bore-Shape Selector

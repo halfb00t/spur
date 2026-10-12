@@ -1,8 +1,8 @@
 """Gear parameters: one validated, hashable model shared by the API, web UI and CLI.
 
-All lengths are millimetres, angles are degrees. Field metadata (group, unit, step)
-is exported through the JSON schema and drives the web form, so a new field added
-here shows up in the UI and CLI automatically.
+All lengths are millimetres, angles are degrees. Field metadata (group, unit, step,
+enabled_when) is exported through the JSON schema and drives the web form, so a new
+field added here shows up in the UI and CLI automatically.
 """
 
 from __future__ import annotations
@@ -14,13 +14,38 @@ from pydantic.config import JsonDict
 from pydantic_core import PydanticCustomError
 
 
-def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
-          unit: str = "", step: float | None = None, help: str = "") -> T:
+def when(field: str, op: Literal["eq", "gt"], value: float) -> JsonDict:
+    """One condition of a field's `enabled_when` relation (L41).
+
+    The grammar is a bare list of these and the list is the AND: every condition must hold
+    for the field to do anything. `op` is `eq` or `gt` only, `value` a number and `field` a
+    numeric `GearParams` field, compared as a number. An OR, another op or a non-number is a
+    stop-and-ask, not an extension (D-02): `Literal` makes a bad op a `mypy --strict` error
+    at the call site, and the form's `holds()` throws on one it does not know.
+    """
+    return {"field": field, "op": op, "value": value}
+
+
+def _extra(group: str, unit: str = "", step: float | None = None,
+           enabled_when: list[JsonDict] | None = None) -> JsonDict:
+    """The `json_schema_extra` every field carries, so a number field and a `Literal` field
+    emit their metadata, a relation included, through one path."""
     extra: JsonDict = {"group": group, "unit": unit}
     if step is not None:
         extra["step"] = step
+    if enabled_when is not None:
+        # The copy is the type fix: `list[JsonDict]` is not a `JsonValue` by list
+        # invariance, so assigning it directly fails `mypy --strict`; `list(...)` of it
+        # passes (23-RESEARCH Pitfall 1, measured).
+        extra["enabled_when"] = list(enabled_when)
+    return extra
+
+
+def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
+          unit: str = "", step: float | None = None, help: str = "",
+          enabled_when: list[JsonDict] | None = None) -> T:
     return Field(default, ge=ge, le=le, title=title, description=help,
-                 json_schema_extra=extra)
+                 json_schema_extra=_extra(group, unit, step, enabled_when))
 
 
 class GearParams(BaseModel):
@@ -62,30 +87,39 @@ class GearParams(BaseModel):
                     "below the base circle. trochoid is the root a hob with tip radius "
                     "root_fillet cuts, used where the base circle lies above the root "
                     "circle and warned about elsewhere.",
-        json_schema_extra={"group": "Teeth", "unit": ""})
+        json_schema_extra=_extra("Teeth"))
 
     # --- Body ------------------------------------------------------------------
     face_width: float = _f(7.5, 1, 100, title="Face width", group="Body", unit="mm",
                            step=0.1, help="Overall thickness of the gear.")
 
     # --- Bore ------------------------------------------------------------------
+    # The four relations below are ones calc already backs, each proved by
+    # tests/test_relations.py (L41): a hex bore replaces the round profile, and derive()
+    # says bore_d and bore_flat are ignored. The keyway pair is refused under a hex bore
+    # rather than ignored -- each field alone is a 422 naming bore_hex and both keyway
+    # fields -- so the two are gated on bore_hex and never on each other (CF-2).
     bore_d: float = _f(9.0, 0, 200, title="Bore Ø", group="Bore", unit="mm", step=0.05,
-                       help="Round part of the bore. 0 = no round bore.")
+                       help="Round part of the bore. 0 = no round bore.",
+                       enabled_when=[when("bore_hex", "eq", 0)])
     bore_flat: float = _f(8.0, 0, 200, title="D-flat", group="Bore", unit="mm", step=0.05,
-                          help="Flat to opposite side of the bore. 0 = round bore.")
+                          help="Flat to opposite side of the bore. 0 = round bore.",
+                          enabled_when=[when("bore_hex", "eq", 0)])
     keyway_width: float = _f(0.0, 0, 200, title="Keyway width", group="Bore",
                              unit="mm", step=0.05,
                              help="Width of a keyway slot in a round or D-flat bore, "
                                   "cut a quarter turn from the D-flat; bore_clearance "
                                   "is added. Its edges stay sharp: bore_chamfer "
-                                  "chamfers the round part only. 0 = no keyway.")
+                                  "chamfers the round part only. 0 = no keyway.",
+                             enabled_when=[when("bore_hex", "eq", 0)])
     keyway_depth: float = _f(0.0, 0, 200, title="Keyway depth", group="Bore",
                              unit="mm", step=0.05,
                              help="Depth from the as-cut bore wall (bore clearance "
                                   "included) to the keyway floor: the DIN 6885 / ISO "
                                   "R773 t2 convention. ANSI B17.1's T is measured "
                                   "across the bore and is a different number. "
-                                  "0 = no keyway.")
+                                  "0 = no keyway.",
+                             enabled_when=[when("bore_hex", "eq", 0)])
     bore_hex: float = _f(0.0, 0, 200, title="Hex bore A/F", group="Bore", unit="mm",
                          step=0.05,
                          help="Across-flats of a hex bore; replaces the round bore and "
@@ -101,7 +135,7 @@ class GearParams(BaseModel):
     # --- Recess ----------------------------------------------------------------
     recess_sides: Literal["both", "top", "bottom", "none"] = Field(
         "both", title="Recess sides", description="Which faces get an annular groove.",
-        json_schema_extra={"group": "Recess", "unit": ""})
+        json_schema_extra=_extra("Recess"))
     recess_depth: float = _f(2.0, 0, 50, title="Recess depth", group="Recess", unit="mm",
                              step=0.1, help="Depth of each groove.")
     recess_width: float = _f(6.0, 0, 100, title="Recess width", group="Recess", unit="mm",
@@ -131,19 +165,25 @@ class GearParams(BaseModel):
                                "ring; the sectors between them are cut through the "
                                "full face width. Arm 0 is centred on +X. 0 = no "
                                "spokes.")
+    # Arm width, hub_d, rim_wall and spoke_fillet are ignored at spoke_count 0 (the "No spoke
+    # arms" sentence in derive()), so each is gated on spoke_count gt 0 (L41).
     spoke_width: float = _f(0.0, 0, 100, title="Arm width", group="Spokes", unit="mm",
                             step=0.05,
-                            help="Width of each arm, the same along its whole length.")
+                            help="Width of each arm, the same along its whole length.",
+                            enabled_when=[when("spoke_count", "gt", 0)])
     hub_d: float = _f(0.0, 0, 400, title="Hub Ø", group="Spokes", unit="mm", step=0.05,
-                      help="Outer diameter of the hub ring the arms start from.")
+                      help="Outer diameter of the hub ring the arms start from.",
+                      enabled_when=[when("spoke_count", "gt", 0)])
     rim_wall: float = _f(0.0, 0, 100, title="Rim wall", group="Spokes", unit="mm",
                          step=0.05,
                          help="Radial thickness of the rim ring, measured inward from "
-                              "the root circle.")
+                              "the root circle.",
+                         enabled_when=[when("spoke_count", "gt", 0)])
     spoke_fillet: float = _f(0.0, 0, 5, title="Spoke fillet", group="Spokes", unit="mm",
                              step=0.05,
                              help="Radius rounding the corners of each cut-out "
-                                  "sector, capped to fit. 0 = sharp.")
+                                  "sector, capped to fit. 0 = sharp.",
+                             enabled_when=[when("spoke_count", "gt", 0)])
 
     # --- Holes -------------------------------------------------------------------
     # D-18's `le` lowered 200 -> 60 (11-06-PLAN.md Task 2's gate; bench/RESULTS.md "Body
@@ -156,11 +196,14 @@ class GearParams(BaseModel):
                          help="Number of equal round holes cut through the full face "
                               "width, evenly spaced on the hole circle with hole 0 "
                               "centred on +X. 0 = no holes.")
+    # hole_d and hole_circle_d are ignored at hole_count 0 (derive() says so): gated on it.
     hole_d: float = _f(0.0, 0, 100, title="Hole Ø", group="Holes", unit="mm", step=0.05,
-                       help="Diameter of each lightening hole.")
+                       help="Diameter of each lightening hole.",
+                       enabled_when=[when("hole_count", "gt", 0)])
     hole_circle_d: float = _f(0.0, 0, 400, title="Hole circle Ø", group="Holes",
                               unit="mm", step=0.05,
-                              help="Diameter of the circle the hole centres sit on.")
+                              help="Diameter of the circle the hole centres sit on.",
+                              enabled_when=[when("hole_count", "gt", 0)])
 
     # --- Honeycomb -----------------------------------------------------------------
     hex_cell: float = _f(0.0, 0, 100, title="Honeycomb cell A/F", group="Honeycomb",
@@ -170,10 +213,12 @@ class GearParams(BaseModel):
                               "mouth and the root circle; the cell count is derived "
                               "and capped, and above the cap the cell size is raised "
                               "until it fits. 0 = no honeycomb.")
+    # hex_wall is ignored at hex_cell 0 ("No honeycomb" in derive()): gated on it.
     hex_wall: float = _f(0.0, 0, 100, title="Honeycomb wall", group="Honeycomb",
                          unit="mm", step=0.05,
                          help="Wall between cells, and between the cells and both "
-                              "the bore mouth and the root circle.")
+                              "the bore mouth and the root circle.",
+                         enabled_when=[when("hex_cell", "gt", 0)])
 
     @model_validator(mode="after")
     def _feasible(self) -> GearParams:
