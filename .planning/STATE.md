@@ -4,17 +4,17 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 24
 current_phase_name: Bore-Shape Selector
-status: executing
-stopped_at: Completed 24-03-PLAN.md
-last_updated: "2026-10-12T16:06:35.920Z"
+status: verifying
+stopped_at: Completed 24-04-PLAN.md
+last_updated: "2026-10-12T16:25:14.804Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 24 execution started
-state_head: 2364a4accba04c7bb141bdecce43afc7c6f5ee71
+state_head: c0675b9ad550fdea5a0db028d681b28a48428986
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 18
-  completed_plans: 17
+  completed_plans: 18
   percent: 80
 ---
 
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 24 (Bore-Shape Selector) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-12 — Phase 24 execution started
 
 Progress: [████████░░] 80% (3 of 5 v0.5 phases complete — 21, 22, 23; Phase 24 is discretionary; 14/14 plans so far)
@@ -236,6 +236,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 24 P01 | 22 min | 3 tasks | 10 files |
 | Phase 24 P02 | 8 min | 2 tasks | 1 files |
 | Phase 24 P03 | 17 min | 2 tasks | 7 files |
+| Phase 24 P04 | 9 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -442,6 +443,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 24]: 24-02: tests/test_selector.py holds the model-side selector proof in the commit slice; each doctored case matches its own message, and the module reuses _number from tests/test_relations.py
 - [Phase 24]: 24-03: a recorder on all seven pages is checked after every step and at the end, and the api/info count above the sweep's 44 proves no page went unwatched — Each page is its own browser context, so a listener on the main page misses the sweep, which sends one api/info per record by itself; the count only a fully watched scenario reaches (260 requests, 140 api/info against 44) is the proof
 - [Phase 24]: 24-03: the bore-shape idea is retired and the hex-bore warning debt stays active with its trigger fired in 470b78a, to be fixed as a /gsd-quick before Phase 25's reading — D-17: the debt's trigger was the selector shipping; restating it keeps the fix scheduled without resolving what the selector made more visible (every selector-made hex part warns about untouched defaults)
+- [Phase 24]: 24-04: no gate bar is set for the bore shape step (8.55 s mean) or the commit slice (15.60 s mean); Phase 25 re-sets the bar on its final HEAD (D-15)
 
 ### Pending Todos
 
@@ -710,8 +712,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-12T16:06:27.927Z
-Stopped at: Completed 24-03-PLAN.md
+Last session: 2026-10-12T16:25:14.729Z
+Stopped at: Completed 24-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
