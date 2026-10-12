@@ -3,6 +3,14 @@ phase: 23
 review: 23-REVIEW.md
 titles: json
 findings:
+  - id: IN-08
+    severity: info
+    disposition: open
+    title: "The driver check cannot tell `hex_cell eq 0.05` from `hex_cell gt 0`; only the forward check's incidental `ValidationError` catches it"
+  - id: IN-11
+    severity: info
+    disposition: open
+    title: "`_js_number` returns a string JavaScript would not write for -0.0 and outside 1e-6 <= |x| < 1e21, and nothing guards the range"
   - id: IN-01
     severity: info
     disposition: fixed
@@ -31,10 +39,6 @@ findings:
     severity: info
     disposition: fixed
     title: "The refused-pair step does not require both keyway fields to be marked invalid (external: codex)"
-  - id: IN-08
-    severity: info
-    disposition: fixed
-    title: "The driver check cannot tell `spoke_count eq 1` from `spoke_count gt 0`; the docstring's residual does not say so"
   - id: IN-09
     severity: info
     disposition: fixed
@@ -55,25 +59,26 @@ findings:
     severity: warning
     disposition: fixed
     title: "The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)"
-open: 0
-total: 13
-recorded: 2026-10-12T02:58:43.097Z
+open: 2
+total: 14
+recorded: 2026-10-12T03:11:19.882Z
 ---
 
 # Phase 23: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-01 | info | fixed | 23-REVIEW-FIX.md |
-| IN-02 | info | fixed | 23-REVIEW-FIX.md |
-| IN-03 | info | fixed | 23-REVIEW-FIX.md |
-| IN-04 | info | fixed | 23-REVIEW-FIX.md |
-| IN-05 | info | fixed | 23-REVIEW-FIX.md |
-| IN-06 | info | fixed | 23-REVIEW-FIX.md |
-| IN-07 | info | fixed | 23-REVIEW-FIX.md |
-| IN-08 | info | fixed | 23-REVIEW-FIX.md |
-| IN-09 | info | fixed | 23-REVIEW-FIX.md |
-| IN-10 | info | fixed | 23-REVIEW-FIX.md |
+| IN-08 | info | open | - |
+| IN-11 | info | open | - |
+| IN-01 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-02 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-03 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-04 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-05 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-06 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-07 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-09 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
+| IN-10 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
 | WR-01 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
 | WR-03 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
