@@ -7,7 +7,7 @@ Source: Phase 23 discuss-phase (`.planning/phases/23-conditional-form-fields/23-
 Related files:
 - src/spur/calc.py:1166 (the "Hex bore replaces the round profile: ... ignored" sentence)
 - src/spur/params.py:102 (`bore_d` default 9.0) and src/spur/params.py:105 (`bore_flat` default 8.0)
-- tests/test_browser.py:425 (the `warning rendered` step's `bore_hex=6` link)
+- tests/test_browser.py, the `warning rendered` step (its `bore_hex=6` link; a step name does not rot as a line number does)
 
 ## Context
 `?bore_hex=6` answers `Hex bore replaces the round profile: bore_d (9 mm) and bore_flat
