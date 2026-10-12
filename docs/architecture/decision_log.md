@@ -2627,7 +2627,9 @@ the one `gearQuery()` sends: an emptied box reads as the default. `applyRelation
 and no others: the end of `readHash()` (the fresh load and `hashchange`), the form `input` listener before
 `scheduleUpdate`, and `#reset` before `update()`; never from a build's success, so a 422 leaves the state the
 fields imply (CF-4). It evaluates every condition (`rels.map(holds).includes(false)`), so an unknown op anywhere in
-a list throws and is not short-circuited past; `holds()` is a `switch` and not a table, because a row-shaped table
+a list throws and is not short-circuited past. The throw is caught per field in `applyRelations()` and nowhere
+else: that field stays undimmed with its own reason row (`Cannot tell whether this field is used: ...`), and the other
+fields and the build are unaffected (WR-01, `cea8c54`). `holds()` is a `switch` and not a table, because a row-shaped table
 is harvested as a `DIMS` key and a plain-object lookup resolves `constructor`. `.invalid` and `.inactive` coexist
 on the keyway pair under a hex bore: `problems()` owns the first, `applyRelations()` the second, and the CSS leaves
 the accent border and outline over the dashed style, so the 422 mark is the stronger. There is no opacity (it would
