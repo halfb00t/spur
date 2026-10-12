@@ -5,16 +5,16 @@ milestone_name: Honest Form
 current_phase: 24
 current_phase_name: Bore-Shape Selector
 status: executing
-stopped_at: Completed 24-01-PLAN.md
-last_updated: "2026-10-12T15:23:08.594Z"
+stopped_at: Completed 24-02-PLAN.md
+last_updated: "2026-10-12T15:43:25.865Z"
 last_activity: 2026-10-12
 last_activity_desc: Phase 24 execution started
-state_head: c0f831e1004c40cc099c4fcd66bc2d67b0f700e2
+state_head: 6b7088ef863abbbd7176cb77422e6c1fb64aa199
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
   percent: 80
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 24 (Bore-Shape Selector) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-10-12 — Phase 24 execution started
 
@@ -234,6 +234,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 23 P03 | 25 min | 2 tasks | 6 files |
 | Phase 23 P04 | 15 min | 2 tasks | 27 files |
 | Phase 24 P01 | 22 min | 3 tasks | 10 files |
+| Phase 24 P02 | 8 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -437,6 +438,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 24]: 24-01: the selectors key reaches /api/schema only; /openapi.json is byte-identical because FastAPI flattens InfoQuery and ModelQuery into parameters, so L42 corrects the CONTEXT text and pins both halves in test_openapi_documents_the_typed_contracts — Measured in 24-RESEARCH Finding 1; the pin makes a future FastAPI or pydantic change that starts carrying the key a decision for a new Lxx, not drift.
 - [Phase 24]: 24-01: deriveSelectors() sits beside applyRelations() at its three call sites (pin tokens 4, 10 and 11 tightened), a select shows an option only when exactly one holds (none or two is blank, caught per selector), and a pending pick calls stopPropagation while a writing pick lets the event bubble so the form listener sends the one debounced request — PD-03, PD-04 and PD-06: the relations section stays byte-identical, each call site count stays three, and each half was seen red (stopPropagation removed, first match wins, try/catch removed).
 - [Phase 24]: 24-01: make verify read the known resource-tracker flake once (tests/test_pool.py::test_health_reports_pool_state, host load 15.6) and 1295 passed on the one allowed re-run on the identical tree, coverage 97.99 percent — Matches docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md; no file this plan touches is in that test path; the debt stays active.
+- [Phase 24]: 24-02: tests/test_selector.py holds the model-side selector proof in the commit slice; each doctored case matches its own message, and the module reuses _number from tests/test_relations.py
 
 ### Pending Todos
 
@@ -705,8 +707,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-12T15:22:58.494Z
-Stopped at: Completed 24-01-PLAN.md
+Last session: 2026-10-12T15:43:25.805Z
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

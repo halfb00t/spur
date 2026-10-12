@@ -137,7 +137,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 
 ### Bore-shape selector — pick the shape, keep the flat contract
 
-- [ ] **REQ-selector-schema-carried**: the selector's options (round / D-flat / hex — a
+- [x] **REQ-selector-schema-carried**: the selector's options (round / D-flat / hex — a
   fifth "no bore" entry and the keyway's place outside the select decided at discuss-phase)
   live on the model as schema metadata in the same condition vocabulary as `enabled_when`;
   `app.js` renders it from the schema with no bore field name in JS, so the existing
@@ -255,7 +255,7 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-relations-calc-backed | Phase 23 | Complete |
 | REQ-dim-and-editable | Phase 23 | Complete |
 | REQ-form-walk-proves-relations | Phase 23 | Complete |
-| REQ-selector-schema-carried | Phase 24 | Pending |
+| REQ-selector-schema-carried | Phase 24 | Complete |
 | REQ-selector-derives-and-writes-through | Phase 24 | Pending |
 | REQ-selector-round-trips-per-state | Phase 24 | Pending |
 | REQ-gate-rule-pre-registered | Phase 25 | Pending |
