@@ -5,43 +5,43 @@ titles: json
 findings:
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The reason text is formatted differently in the two \"independent\" evaluators for non-trivial values"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: fixed
     title: "A dimmed field's accessible name now contains its own reason, which `aria-describedby` repeats"
   - id: IN-03
     severity: info
-    disposition: open
+    disposition: fixed
     title: "A stale line reference in the new tech-debt item"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: fixed
     title: "A verdict that \"08 D-09 stands\" remains in the ideas index after L41 superseded it"
   - id: IN-05
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The L41 text is in two tenses about what the commit declares"
   - id: IN-06
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The browser oracle resolves a repeated parameter last-wins where the page resolves it first-wins (external: codex)"
   - id: IN-07
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The refused-pair step does not require both keyway fields to be marked invalid (external: codex)"
   - id: IN-08
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The driver check cannot tell `spoke_count eq 1` from `spoke_count gt 0`; the docstring's residual does not say so"
   - id: IN-09
     severity: info
-    disposition: open
+    disposition: fixed
     title: "L41 and the threat model still describe an unknown op as an uncaught throw"
   - id: IN-10
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The last assertion of the `unknown relation op` step does not check what its comment claims"
   - id: WR-01
     severity: warning
@@ -55,25 +55,25 @@ findings:
     severity: warning
     disposition: fixed
     title: "The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)"
-open: 10
+open: 0
 total: 13
-recorded: 2026-10-11T16:26:46.802Z
+recorded: 2026-10-12T02:58:43.097Z
 ---
 
 # Phase 23: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
-| IN-06 | info | open | - |
-| IN-07 | info | open | - |
-| IN-08 | info | open | - |
-| IN-09 | info | open | - |
-| IN-10 | info | open | - |
+| IN-01 | info | fixed | 23-REVIEW-FIX.md |
+| IN-02 | info | fixed | 23-REVIEW-FIX.md |
+| IN-03 | info | fixed | 23-REVIEW-FIX.md |
+| IN-04 | info | fixed | 23-REVIEW-FIX.md |
+| IN-05 | info | fixed | 23-REVIEW-FIX.md |
+| IN-06 | info | fixed | 23-REVIEW-FIX.md |
+| IN-07 | info | fixed | 23-REVIEW-FIX.md |
+| IN-08 | info | fixed | 23-REVIEW-FIX.md |
+| IN-09 | info | fixed | 23-REVIEW-FIX.md |
+| IN-10 | info | fixed | 23-REVIEW-FIX.md |
 | WR-01 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
 | WR-03 | warning | fixed | 23-REVIEW-FIX.md (not in the current review) |
