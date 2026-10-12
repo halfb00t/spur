@@ -135,7 +135,7 @@ Interactive docs are at `/docs`.
 | `GET /api/model.stl?…&quality=preview\|fine` | Binary STL |
 | `GET /api/model.step?…` | STEP solid |
 | `GET /api/info?…[&mate_teeth=N]` | Derived dimensions, measurement aids, warnings |
-| `GET /api/schema` | JSON schema of the parameters (the UI form is built from it); a field's `enabled_when` lists the `{field, op, value}` conditions under which it does anything |
+| `GET /api/schema` | JSON schema of the parameters (the UI form is built from it); a field's `enabled_when` lists the `{field, op, value}` conditions under which it does anything, and a top-level `selectors` list describes the form's bore-shape select in the same vocabulary |
 | `GET /api/health` | Liveness |
 
 ```sh

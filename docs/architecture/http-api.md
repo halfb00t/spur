@@ -38,7 +38,7 @@ own: how much work it is willing to accept at once.
 |---|---|
 | `GET /` | the UI (`static/index.html`) |
 | `GET /api/health` | a `HealthReport`: `{"status": "ok", "version": ..., "pool": {"workers": N, "queue_available": M, "workers_replaced": R}}`, with `pool` `null` only when the app runs without its lifespan |
-| `GET /api/schema` | `GearParams.model_json_schema()` — the form is built from this; a field's `enabled_when` is a list of `{field, op, value}` conditions (`op` `eq` or `gt`, all must hold) under which it does anything — display metadata, not validation (`L41`) |
+| `GET /api/schema` | `GearParams.model_json_schema()` — the form is built from this; a field's `enabled_when` is a list of `{field, op, value}` conditions (`op` `eq` or `gt`, all must hold) under which it does anything — display metadata, not validation (`L41`); a top-level `selectors` list, each `{title, group, options: [{label, when}]}` with `when` in the same `{field, op, value}` vocabulary, is display metadata too, and is not in `/openapi.json` (`L42`) |
 | `GET /api/info?…[&mate_teeth=N]` | `derive(params, mate_teeth=…)` → a `DerivedDimensions` document; every key always present, `null` where a value does not apply |
 | `GET /api/model.{stl,step}?…` | the bytes, with `Content-Disposition` from `params.slug()`: `spur_z{teeth}_m{module}_pa{pressure_angle}`, with `_trochoid` appended exactly when the hob root is what the part is built with (`L40`); a radial part, and a `root_shape=trochoid` request `calc.root_mode` ignores or refuses, keep the plain name |
 

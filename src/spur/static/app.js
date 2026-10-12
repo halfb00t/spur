@@ -98,6 +98,8 @@ async function buildForm() {
     groups.get(group).append(wrap);
     fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });
   }
+
+  buildSelectors(schema.selectors ?? [], groups);
 }
 
 function readHash() {
@@ -105,6 +107,7 @@ function readHash() {
   for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];
   mateInput.value = h.get('mate_teeth') ?? '';
   applyRelations();
+  deriveSelectors();
 }
 
 /** Query string with only the parameters that differ from the defaults. */
@@ -286,6 +289,128 @@ const scheduleUpdate = () => {
   debounce = setTimeout(update, 350);
 };
 
+// ---------------------------------------------------------------- selectors (L42)
+
+// Field name -> the string its box held when a pick zeroed it. A later pick that needs the
+// field above its threshold puts the user's own string back and never invents one: a flat
+// the user did not type would be a number the tool printed and nobody chose (L08). Memory
+// only. Reset clears it and so does a reload; a hash navigation leaves it, so a value typed
+// before a link was opened can still come back (D-08, D-19). A restore keeps the entry, and
+// the next zeroing pick overwrites it (PD-08).
+const stash = new Map();
+
+// One record per selector the schema carries: { select, wrap, reason, options, note }.
+// `note` is the pending pick's edit of one field's reason row, { input, reason, was }, or null.
+const selectors = [];
+
+// A selector is a view of fields and never a field: its row is not `label.field`, its select
+// has no `name`, and nothing here touches `fields`, so gearQuery() cannot send it and update()
+// cannot put it in the hash (L05, D-04). Its title, labels and conditions come from the schema
+// alone, as text only (L02, BS-4).
+function buildSelectors(list, groups) {
+  for (const [i, { title, group, options }] of list.entries()) {
+    const fs = groups.get(group);
+    if (!fs) throw new Error(`Selector "${title}" names the group "${group}", which no field has`);
+    const select = document.createElement('select');
+    select.id = `selector-${i}`;
+    for (const { label } of options) select.add(new Option(label));
+    const nameEl = Object.assign(document.createElement('span'), { className: 'name', textContent: title });
+    const control = Object.assign(document.createElement('span'), { className: 'control' });
+    control.append(select);
+    // Filled only when the options cannot be read; aria-hidden like every reason row (a
+    // describedby still announces it).
+    const reason = Object.assign(document.createElement('span'), { className: 'reason', id: `reason-selector-${i}` });
+    reason.setAttribute('aria-hidden', 'true');
+    const wrap = document.createElement('label');
+    wrap.className = 'selector';
+    wrap.append(nameEl, control, reason);
+    fs.insertBefore(wrap, fs.querySelector('label.field'));
+    const s = { select, wrap, reason, options, note: null };
+    select.addEventListener('input', (event) => pick(s, event));
+    selectors.push(s);
+  }
+}
+
+// Shows the one option whose conditions all hold, through the relations' own holds(). It is
+// derived and never written: loading a link must send what it sent before the select
+// existed (L05, D-06). Called from exactly the three places applyRelations() is, and never
+// from a build response, so the select follows the fields under a 422.
+// An option is shown only when exactly one holds. None holding is the blank select (selectedIndex
+// -1): the model makes exactly one hold for every non-negative value, but the form accepts a
+// negative, and 13 of the 27 cells of {-1, 0, 6} match none (24-RESEARCH Finding 5). Two holding
+// is blank too, because a select that picked the first would claim a shape the fields do not
+// single out (PD-06). Caught per selector, as applyRelations() is per field: an uncaught throw
+// skipped scheduleUpdate()/update() at every call site (the WR-01 incident), so an option the
+// page cannot read blanks its own select and says so in its own row.
+function deriveSelectors() {
+  for (const s of selectors) {
+    s.wrap.classList.remove('pending');
+    s.note = null;
+    try {
+      const hits = s.options.map((o) => !o.when.map(holds).includes(false));
+      const i = hits.indexOf(true);
+      s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;
+      s.reason.textContent = '';
+      s.select.removeAttribute('aria-describedby');
+    } catch (err) {
+      s.select.selectedIndex = -1;
+      s.reason.textContent = `Cannot tell which option holds: ${err.message}`;
+      s.select.setAttribute('aria-describedby', s.reason.id);
+    }
+  }
+}
+
+// A pick writes the minimum that makes the chosen option hold. It plans first and writes after,
+// so a pick that cannot be made true writes nothing: writing as it walked would have zeroed
+// fields under a pick that then went pending (24-RESEARCH Finding 10). Only the chosen option's
+// own false conditions are written. An `eq` field gets the string 0, never an empty box (an
+// emptied box reads as the field's default, so it would not be a zero, BS-1), and its old string
+// is stashed. A `gt` field gets its own stashed string back when that string clears the
+// threshold; otherwise the pick is pending (D-07..D-09). The keyway is left to the server's 422
+// (D-10). An op holds() does not know throws before any write.
+// No update() here and no stopPropagation(): this runs on the select's input, which then
+// bubbles to the form's listener, whose derive lands the select on the chosen option (its
+// conditions now hold) and whose scheduleUpdate() sends the one request (PD-04).
+function pick(s, event) {
+  const chosen = s.options[s.select.selectedIndex];
+  const writes = [];
+  for (const condition of chosen.when) {
+    if (holds(condition)) continue;
+    const { field, op, value } = condition;
+    const kept = stash.get(field);
+    if (op === 'eq') writes.push([field, String(value), true]);
+    else if (stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value) writes.push([field, kept, false]);
+    else return pend(s, chosen, condition, event);
+  }
+  for (const [field, to, zeroed] of writes) {
+    const { input } = fields.get(field);
+    if (zeroed) stash.set(field, input.value);
+    input.value = to;
+  }
+}
+
+// The pick cannot be made true without a number the user has not typed: nothing is written,
+// the select keeps what was asked for, and the field that needs a number says so in its own
+// reason row and takes the focus. stopPropagation() keeps the form's listener from deriving
+// the select back to the fields' state and from scheduling a request for a part that did not
+// change (MEASURED, 24-RESEARCH Finding 4: both happened without it). Pending ends at the next
+// derive: a typed number lands on the chosen option, anything else shows the fields' state.
+// applyRelations() is not called here, so a second pending pick first puts the earlier note's
+// text back; deriveSelectors() drops the record because the call before it rewrote every row.
+function pend(s, chosen, condition, event) {
+  event.stopPropagation();
+  if (s.note) {
+    s.note.reason.textContent = s.note.was;
+    if (s.note.was === '') s.note.input.removeAttribute('aria-describedby');
+  }
+  const { input, reason } = fields.get(condition.field);
+  s.note = { input, reason, was: reason.textContent };
+  reason.textContent = `${chosen.label} needs ${need(condition)}`;
+  input.setAttribute('aria-describedby', reason.id);
+  s.wrap.classList.add('pending');
+  input.focus();
+}
+
 // ---------------------------------------------------------------- 3D view
 
 const canvas = $('#canvas');
@@ -400,7 +525,7 @@ function resize() {
 // ---------------------------------------------------------------- wiring
 
 form.addEventListener('submit', (e) => e.preventDefault());
-form.addEventListener('input', () => { applyRelations(); scheduleUpdate(); });
+form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });
 mateInput.addEventListener('input', scheduleUpdate);
 window.addEventListener('hashchange', () => { readHash(); update(); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -410,7 +535,9 @@ $('#fit').addEventListener('click', fit);
 $('#reset').addEventListener('click', () => {
   for (const [name, { input }] of fields) input.value = defaults[name];
   mateInput.value = '';
+  stash.clear();
   applyRelations();
+  deriveSelectors();
   update();
 });
 $('#copy-link').addEventListener('click', async (e) => {

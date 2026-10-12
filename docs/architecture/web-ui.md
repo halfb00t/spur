@@ -18,6 +18,11 @@ parameter in the URL so a gear can be shared as a link.
   `{field, op, value}` conditions that generic `applyRelations()` evaluates to dim a field
   the current values make inert, with its reason; the field is never disabled, hidden or
   cleared and is still sent (L41).
+- The schema also carries a top-level `selectors` list. Generic `buildSelectors()` renders each as
+  a select in its group, derived from the fields at the same three places as the dim and never
+  written on load, and a pick writes only the flat fields its option needs (the string `0`, or a
+  value the user typed, put back from memory) or waits, pending, for one. The select is never a
+  field, never sent and never in the URL (L42).
 - All URLs are relative, so `SPUR_ROOT_PATH` works — with the caveat that the proxy must
   redirect `/spur` to `/spur/`, or the browser resolves `static/app.js` one level too
   high. That is documented in the README because it cannot be fixed from inside the app.
@@ -25,8 +30,8 @@ parameter in the URL so a gear can be shared as a link.
 ## Shape
 
 `app.js`, roughly in this order: build the form from the schema; read the hash into the
-inputs and dim the fields whose relation does not hold (again on every input and on Reset,
-before the debounce); on change, debounce, cancel the in-flight request (`AbortController`), fetch
+inputs, dim the fields whose relation does not hold and show the option each selector's fields
+single out (again on every input and on Reset, before the debounce); on change, debounce, cancel the in-flight request (`AbortController`), fetch
 `/api/info` and `/api/model.stl?quality=preview`, update the dimensions table, the
 warnings and the invalid-field marks, then load the STL into the scene. A `seq` counter
 drops responses that arrive out of order. The viewer is a `WebGLRenderer` with
