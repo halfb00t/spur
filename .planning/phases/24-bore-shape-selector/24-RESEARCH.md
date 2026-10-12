@@ -476,7 +476,7 @@ Applying the D-02 options to `fixture_hashes()` (default-filled like `expected_i
 - `<specifics>` sketches the rule as "write `eq` conditions, then for each `gt` with `Number(effective(field)) === 0` restore the stash or mark pending". D-09 says a pending pick "writes nothing", and D-12(c) says "when a `gt` field is 0 the rule writes nothing and the state is unchanged". Example where the orders differ: link `#bore_hex=6&bore_d=0`, pick Round: the `eq` writes would zero `bore_hex` (and `bore_flat` if set) while `bore_d` has no stash, leaving a changed part (it becomes the No bore state) under a "pending Round". The plan-then-write order (decide pending from the `gt` conditions first, then perform any writes) is the one D-09/D-12 require. The Python mirror in `test_selector.py` must be written in the same order; its "pending leaves the flats unchanged" assertion is what fails the sketch's order.
 - Options' `eq` and `gt` field sets are disjoint per option (Round: eq `bore_hex`, `bore_flat` / gt `bore_d`; D-flat: eq `bore_hex` / gt `bore_d`, `bore_flat`; Hex: gt `bore_hex`; No bore: eq `bore_hex`, `bore_d`), so one pick never zeroes a field it then needs. A walk assertion for that disjointness is cheap and keeps it true for a future selector.
 - The restore must be checked against the condition: a stash holding `'-1'` or `'0.0'`, restored into a `gt 0` field, still leaves the option false. Use `stash.has(field)` (a stashed `''` from an emptied box is falsy but restores correctly to the default) and re-test `Number(value) > condition.value` after choosing the stash string; otherwise treat as pending.
-- D-08 clears the stash on Reset only. `hashchange` and `readHash()` do not clear it, so a stash taken under link A survives into link B (for example Round stashes `bore_flat='8'`; the user opens `#bore_flat=0&teeth=24`; picking D-flat restores `8`, a value link B never contained). This is a permitted-but-surprising reading of D-08, not a contradiction of it; see Open Question 2.
+- D-08 clears the stash on Reset only. `hashchange` and `readHash()` do not clear it, so a stash taken under link A survives into link B (for example Round stashes `bore_flat='8'`; the user opens `#bore_flat=0&teeth=24`; picking D-flat restores `8`, a value link B never contained). This is a permitted-but-surprising reading of D-08, not a contradiction of it; see Open Question 2 (RESOLVED by D-19: kept).
 - Pick -> request: a pick that writes calls `applyRelations()`, `deriveSelectors()` and `update()` directly; `update()` rewrites the hash with `history.replaceState` (no `hashchange`), and `gearQuery()` keeps `bore_flat=0` because `String('0') !== String(8)` (`app.js:114`), giving `#bore_flat=0` as D-07 states.
 
 ### Finding 11: pending state wiring [READ]
@@ -610,22 +610,31 @@ SELECTED_OPTION = (
 | A2 | The new step's cost on `ubuntu-latest` is not measured here (the step builds nothing; macOS reading only) | Validation Architecture | A CI-only slowness would show on the PR's first CI run, not in the local readings |
 | A3 | A recorder via a shared `browser.new_context()` does not change the behaviour of the existing steps (each currently runs in an isolated context) | Finding 9 | A step that relied on a fresh cookie/storage state could behave differently; option (b) (a helper that attaches the recorder to each independent page) avoids it |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All five were settled after this research was written: two by the human at plan-phase (D-18, D-19 in 24-CONTEXT.md,
+commit `40af4d1`), three by the planner (24-01-PLAN.md `## Planner decisions`, 24-03-PLAN.md). Each question keeps its
+text as researched; the `RESOLVED` line under it names what decided it.
 
 1. **Where does `deriveSelectors()` sit relative to `applyRelations()`, and which pin tokens are rewritten?**
    - Known: beside it at three sites rewrites tokens 4, 10, 11; inside it rewrites none; D-06 and D-16 say three call sites and tightened pins.
    - Unclear: nothing contradicts; only the plan must pick and say so in L42.
    - Recommendation: follow D-06/D-16 (beside, three sites, tokens 4/10/11 rewritten longer, new tokens for the selector loop, write rule, stash, `stopPropagation`).
+   - RESOLVED by PD-03 (24-01): beside `applyRelations()` at its three call sites; tokens 4, 10 and 11 rewritten to their longer forms, new tokens added, none removed; L42 records it.
 2. **Does a `hashchange` (or any `readHash()`) clear the stash?**
    - Known: D-08 clears on Reset only; reload clears by being a reload (Finding 10).
    - Unclear: a stash from link A surviving into link B.
    - Recommendation: keep D-08 as written (smallest rule); if the human wants it cleared, a `stash.clear()` at the top of `readHash()` is one more token and one more browser assertion. Surface at plan check.
+   - RESOLVED by D-19 (the human, at plan-phase): `hashchange` leaves the stash alone; only Reset and a reload clear it. 24-01 puts no stash clear in `readHash()`; 24-03 proves the stash across hash navigations in the browser.
 3. **What does the select show for an out-of-range triple?**
    - Known: `selectedIndex = -1` is the blank state (Finding 5), and the server 422s the same link.
    - Unclear: blank versus an explicit extra option.
    - Recommendation: blank, uncaught-throw-free, with one browser assertion; an extra option is a fifth state to prove and is the human's call.
+   - RESOLVED by D-18 (the human, at plan-phase): a blank select (`selectedIndex` -1), no throw, no write; no extra option. 24-01's `bore shape` step loads the `minimum - step` link and reads the blank state.
 4. **Wrapper class (D-16 leaves it to Claude).** Recommendation: an own class (not `label.field`), so the two existing reads (`form from schema` titles, `inert fields` shown-reasons) stay byte-identical; share the grid/input rules in `style.css` by listing the new class in the `.field` selectors.
+   - RESOLVED by PD-05 (24-01): a `<label class="selector">` wrapper, listed beside `.field` in the `style.css` grid, name, control, select and reason rules.
 5. **Request recorder shape (Finding 9).** Recommendation: attach the recorder to every page via one helper or a shared context; choose in the plan, state in the step's comment which pages it covers.
+   - RESOLVED by 24-03 Task 1: one helper, `record_api(page, seen)` in `tests/browser_session.py`, wraps all seven `browser.new_page()` sites, and the scenario checks the recorded requests after every step and at the end.
 
 ## Environment Availability
 
@@ -765,7 +774,7 @@ The gate-cost reading follows 22 D-06 / 23-04 (`### The inert-fields step, price
 **Confidence breakdown:**
 - Standard stack: HIGH, nothing new; versions read from the venv.
 - Architecture: HIGH, measured emission/typing/events; the plan-then-write and no-match findings are derived from CONTEXT's own rules plus measured browser behaviour.
-- Pitfalls: HIGH for the five MEASURED ones (bubbling, negatives, derive blindness, per-page listener, OpenAPI); MEDIUM for hashchange/stash semantics (a reading of D-08, recorded as Open Question 2).
+- Pitfalls: HIGH for the five MEASURED ones (bubbling, negatives, derive blindness, per-page listener, OpenAPI); MEDIUM for hashchange/stash semantics (a reading of D-08, recorded as Open Question 2, RESOLVED by D-19).
 
 **Research date:** 2026-10-12
 **Valid until:** 2026-11-11 (stable local code; invalidated by any edit to `app.js`, `test_api.py`'s token list, `browser_session.py` or the pydantic/playwright pins)
