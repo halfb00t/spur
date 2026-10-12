@@ -87,6 +87,10 @@ async function buildForm() {
     // Why the field is dimmed, when it is (applyRelations). Its own row, after .control and
     // never inside it or under the class `name`, which the browser test reads as the label.
     const reason = Object.assign(document.createElement('span'), { className: 'reason', id: `reason-${name}` });
+    // It sits inside the wrapping <label>, so its text is already in the input's accessible
+    // name, and aria-describedby below reads it again. aria-hidden takes it out of the name
+    // only; a node a describedby points at is still announced as the description.
+    reason.setAttribute('aria-hidden', 'true');
     wrap.append(nameEl, control, reason);
     if (prop.description) {
       wrap.append(Object.assign(document.createElement('small'), { textContent: prop.description }));

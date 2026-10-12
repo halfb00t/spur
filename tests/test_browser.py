@@ -769,6 +769,24 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert sorted(shown) == sorted(dimmed), (
                     f"inert fields: reasons shown for {sorted(shown)}, dimmed {sorted(dimmed)}"
                 )
+                # The reason sits inside the wrapping <label>, so its text is already part of
+                # the input's accessible name; aria-describedby then reads it a second time.
+                # aria-hidden removes it from the name, and a node a describedby points at is
+                # still read as the description (IN-02).
+                unhidden = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params .reason')]"
+                    ".filter(r => r.getAttribute('aria-hidden') !== 'true').map(r => r.id)",
+                )
+                assert not unhidden, f"inert fields: reasons readable twice: {unhidden}"
+                described = eval_str_list(
+                    page,
+                    "() => [...document.querySelectorAll('form#params [aria-describedby]')]"
+                    ".map(e => e.name)",
+                )
+                assert sorted(described) == sorted(dimmed), (
+                    f"inert fields: described {sorted(described)}, dimmed {sorted(dimmed)}"
+                )
                 name_colours = (
                     "() => [...new Set([...document.querySelectorAll("
                     "'form#params label.field%s .name')].map(e => getComputedStyle(e).color))]"
