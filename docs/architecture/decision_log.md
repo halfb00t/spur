@@ -2801,3 +2801,24 @@ Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand
 `playwright` 1.63.0, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Chrome Headless
 Shell 153.0.8010.12; the browser readings on 2026-10-12 about 21:03 to 21:08 local time (UTC+6), load average 3.3
 to 9.7 (`uptime`; 24-01 SUMMARY).
+
+**Amended 2026-10-13, from the Codex cross-review of PR #36 (`24-CROSS-REVIEW.md`).** Two sentences above are
+superseded. A pending pick no longer ends at the next derive: it stays until the number it asked for is typed,
+when the pick's own plan runs again and writes what it held back (the `eq` zeros, a stashed `gt` string), or until
+anything else moves the fields (another field typed, another pick, Reset, a hash navigation), when the derive shows
+the fields' state. Before this, Round picked from `#bore_d=0` and completed by typing `bore_d` showed D-flat,
+because `bore_flat` stayed at 8 while the pick waited on `bore_d` (CX-01); the write rule of D-07..D-09 is
+unchanged, only when it runs. And a pending pick no longer focuses the field that needs a number: on Blink and
+Gecko on Windows and Linux an arrow key on the focused select commits the next option and fires `input`, so the
+focus moved off the select at the first pending step and the next arrow edited that number box (24 WR-01, traced
+by the review to both engines' select handlers). The field's reason row still carries the note and is the field's
+and the select's `aria-describedby`. The completion runs in a capture-phase `input` listener on the form, before
+the form's own listener, so the three call sites of `applyRelations()` and `deriveSelectors()` and the pinned
+tokens are unchanged; `plan()` and `write()` split the walk from the one write so the pick and the completion
+share one rule, and the selectors section still holds exactly one value write. Proved in the browser: every pending
+pick of the sixteen is completed by typing and lands on its label with the held-back writes sent; D-flat from
+`#bore_d=0&bore_flat=0` stays pending through the first number and completes on the second; a pending pick is
+ended by another field typed; the focus is on the select after every pending pick. No engine that commits an option
+per arrow key is driven by the test (Chrome Headless Shell on macOS opens the popup instead), so the keyboard walk
+itself stays a human check. The `bore shape` step read 12.26 s once on this host after the change, against 24-04's
+8.55 s mean, with more picks in it; Phase 25 re-sets the bar on its final `HEAD`.

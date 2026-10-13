@@ -56,6 +56,7 @@ from browser_session import (
     foreign_keys,
     launch,
     negative_link,
+    number_above,
     record_api,
     serve,
     serve_stl_from,
@@ -232,11 +233,19 @@ SELECTOR_PENDING = (
     "() => document.querySelector('form#params label.selector').classList.contains('pending')"
 )
 SELECT_BORDER = "() => getComputedStyle(document.querySelector('form#params label.selector select')).borderTopStyle"  # noqa: E501
+SELECT_FOCUSED = "() => document.activeElement === document.querySelector('form#params label.selector select')"  # noqa: E501
+SELECT_DESCRIBED_BY = (
+    "(f) => document.querySelector('form#params label.selector select').getAttribute("
+    "'aria-describedby') === document.querySelector("
+    "`form#params label.field:has([name=${f}]) .reason`).id"
+)
 
 
 def _pick(page: Page, label: str) -> None:
-    """Choose `label` in the first selector, as a user does: `input` then `change` fire."""
-    page.locator(SELECT).first.select_option(label=label)
+    """Choose `label` in the first selector as a user does: focus it; `input` then `change` fire."""
+    select = page.locator(SELECT).first
+    select.focus()
+    select.select_option(label=label)
 
 
 def _writing_pick(
@@ -294,9 +303,10 @@ def _pending_pick(
     """Pick `label` where the rule says it cannot be made true, and check nothing moved (D-09).
 
     Nothing is written and no request is awaited: the form's pairs and the fragment are what
-    they were. The select keeps the picked label under `.pending` with a dashed border, the
-    field that needs a number has the focus and says so in its own reason row, which is its
-    `aria-describedby`, and the relations still read the fields and not the select (D-11).
+    they were. The select keeps the picked label under `.pending` with a dashed border and
+    keeps the focus, the field that needs a number says so in its own reason row, which is its
+    `aria-describedby` and the select's, and the relations still read the fields and not the
+    select (D-11).
     """
     rule = expected_pick(chooser, properties, label, current, stash)
     assert rule.sent is None, f"bore shape, #{current} + {label}: the rule says it writes"
@@ -311,9 +321,17 @@ def _pending_pick(
         f"bore shape, pending {label}: the select snapped back to {eval_shown(page)}"
     )
     assert eval_bool(page, SELECTOR_PENDING), f"bore shape, pending {label}: wrapper not .pending"
-    focused = eval_str(page, "() => document.activeElement.name ?? ''")
-    assert focused == rule.field, (
-        f"bore shape, pending {label}: the focus is on {focused!r}, not {rule.field!r}"
+    # 24 WR-01: the focus stays on the select. A focus() onto the field ended a keyboard walk
+    # at the first pending step on Blink and Gecko (Windows, Linux), where an arrow key commits
+    # the option and fires `input`. The engines' arrow handling is not driven here (Chrome
+    # Headless Shell on macOS opens the popup instead); the property that is the page's to
+    # keep is.
+    assert eval_bool(page, SELECT_FOCUSED), (
+        f"bore shape, pending {label}: the focus left the select for "
+        f"{eval_str(page, '() => document.activeElement.name ?? document.activeElement.tagName')!r}"
+    )
+    assert eval_bool(page, SELECT_DESCRIBED_BY, rule.field), (
+        f"bore shape, pending {label}: the select is not described by {rule.field}'s reason row"
     )
     reason = page.locator(f"form#params label.field:has([name={rule.field}]) .reason")
     expect(reason).to_have_text(rule.note)
@@ -331,6 +349,122 @@ def _pending_pick(
         f"bore shape, pending {label}: the pending select is not drawn dashed"
     )
     print(f"bore shape: #{current} + {label} -> pending: {rule.field}: {rule.note}")
+
+
+def _complete_pending(
+    page: Page,
+    chooser: dict[str, object],
+    properties: dict[str, dict[str, object]],
+    label: str,
+    current: str,
+    stash: dict[str, str],
+) -> tuple[str, dict[str, str], int]:
+    """Type the number a pending pick of `label` asks for, until the pick writes (D-09, CX-01).
+
+    Each number typed clears the threshold the schema sets, through `number_above()`, never a
+    literal. A pick still short of another number stays pending on that field with its note,
+    and only the typed field moves; the pick that holds writes what it held back -- the zeros
+    and the stashed strings `expected_pick()` plans from the completed state -- sends that one
+    query, shows the label and leaves nothing pending. Returns the query sent, the stash and
+    how many numbers were typed.
+    """
+    typed_count = 0
+    while True:
+        rule = expected_pick(chooser, properties, label, current, stash)
+        assert rule.sent is None, f"bore shape, completing {label}: the rule says it writes"
+        typed_value = number_above(properties, rule.field, _threshold(chooser, label, rule.field))
+        completed = urllib.parse.urlencode(
+            [(k, v) for k, v in urllib.parse.parse_qsl(current) if k != rule.field]
+            + [(rule.field, typed_value)]
+        )
+        after = expected_pick(chooser, properties, label, completed, stash)
+        before = dict(eval_pairs(page))
+        with page.expect_request(
+            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+        ) as typed:
+            page.locator(f"form#params [name={rule.field}]").fill(typed_value)
+        typed_count += 1
+        sent = urllib.parse.urlsplit(typed.value.url).query
+        if after.sent is None:
+            moved = {name for name, value in eval_pairs(page) if before[name] != value}
+            assert moved == {rule.field}, (
+                f"bore shape, completing {label}: typed {rule.field}, but {sorted(moved)} moved"
+            )
+            assert eval_shown(page)[0] == label, (
+                f"bore shape, completing {label}: shows {eval_shown(page)} with {after.field} "
+                "still missing"
+            )
+            assert eval_bool(page, SELECTOR_PENDING), (
+                f"bore shape, completing {label}: not pending on {after.field}"
+            )
+            reason = page.locator(f"form#params label.field:has([name={after.field}]) .reason")
+            expect(reason).to_have_text(after.note)
+            print(
+                f"bore shape: typed {rule.field}={typed_value}, {label} still pending: "
+                f"{after.field}: {after.note}"
+            )
+            current = completed
+            continue
+        assert _pairs(sent) == _pairs(after.sent), (
+            f"bore shape, completing {label}: typed {rule.field}={typed_value}, the page sent "
+            f"{sent!r}, the rule says {after.sent!r}"
+        )
+        fragment = eval_str(page, FRAGMENT)
+        assert _pairs(fragment) == _pairs(after.sent), (
+            f"bore shape, completing {label}: the fragment is {fragment!r}, the rule says "
+            f"{after.sent!r}"
+        )
+        assert eval_shown(page)[0] == label, (
+            f"bore shape, completing {label}: shows {eval_shown(page)}"
+        )
+        assert not eval_bool(page, SELECTOR_PENDING), (
+            f"bore shape, completing {label}: the typed number left the select pending"
+        )
+        assert eval_str(page, SELECT_BORDER) != "dashed", (
+            f"bore shape, completing {label}: the typed number left the select drawn pending"
+        )
+        assert eval_inactive(page) == expected_inactive(properties, after.sent), (
+            f"bore shape, completing {label}: the dimmed set is not the fields'"
+        )
+        print(f"bore shape: completed {label} with {typed_count} number(s) -> sent {sent!r}")
+        return sent, dict(after.stash), typed_count
+
+
+def _gt_thresholds(selector: dict[str, object], label: str) -> list[tuple[str, str]]:
+    """The `gt` conditions of the option `label`, as (field, threshold) pairs the link can carry.
+
+    Read from the schema (L42), formatted with `:g` as `negative_link` is. A link made of them
+    leaves every one of those conditions false, so a pick of `label` from it must be typed
+    through each field in turn (CX-01).
+    """
+    options = selector["options"]
+    assert isinstance(options, list), f"the selector's options {options!r} are not a list"
+    for option in options:
+        assert isinstance(option, dict), f"an option that is not an object: {option!r}"
+        if option["label"] != label:
+            continue
+        when = option["when"]
+        assert isinstance(when, list), f"an option whose when is {when!r}, not a list"
+        pairs: list[tuple[str, str]] = []
+        for condition in when:
+            assert isinstance(condition, dict), f"a condition that is not an object: {condition!r}"
+            if condition["op"] != "gt":
+                continue
+            field, value = condition["field"], condition["value"]
+            assert isinstance(field, str), f"a condition field that is not a str: {field!r}"
+            assert isinstance(value, int | float), f"{label}: a threshold {value!r}, not a number"
+            assert not isinstance(value, bool), f"{label}: a gt threshold {value!r}, a bool"
+            pairs.append((field, f"{float(value):g}"))
+        return pairs
+    raise AssertionError(f"{label!r} is not an option of the selector")
+
+
+def _threshold(selector: dict[str, object], label: str, field: str) -> float:
+    """The `gt` threshold the option `label` sets on `field`, read from the schema (L42)."""
+    for name, value in _gt_thresholds(selector, label):
+        if name == field:
+            return float(value)
+    raise AssertionError(f"{label} sets no gt threshold on {field}")
 
 
 # The fields the page marks `.invalid`, by name, as the 422 path of app.js problems() sets them.
@@ -1114,35 +1248,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     # D-09: a pick that needs a number the user has not typed writes nothing.
                     _pending_pick(bore, chooser, properties, pending[0], current, stash)
 
-                    # D-09: the number typed into the focused field lands on the pick.
-                    pending_rule = expected_pick(chooser, properties, pending[0], current, stash)
-                    typed_value = dict(urllib.parse.parse_qsl(link))[pending_rule.field]
-                    with bore.expect_request(
-                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
-                    ) as typed:
-                        bore.locator(f"form#params [name={pending_rule.field}]").fill(typed_value)
-                    typed_query = urllib.parse.urlsplit(typed.value.url).query
-                    assert _pairs(typed_query) == _pairs(link), (
-                        f"bore shape, typed {pending_rule.field}={typed_value}: the page sent "
-                        f"{typed_query!r}, expected the link's {link!r}"
-                    )
-                    assert eval_shown(bore)[0] == pending[0], (
-                        f"bore shape, typed {pending_rule.field}={typed_value}: shows "
-                        f"{eval_shown(bore)}"
-                    )
-                    assert not eval_bool(bore, SELECTOR_PENDING), (
-                        "bore shape: the typed number left the select pending"
-                    )
-                    assert eval_str(bore, SELECT_BORDER) != "dashed", (
-                        "bore shape: the typed number left the select drawn pending"
-                    )
-                    assert eval_inactive(bore) == expected_inactive(properties, link), (
-                        f"bore shape, typed: the dimmed set is not #{link}'s"
-                    )
-                    print(
-                        f"bore shape: typed {pending_rule.field}={typed_value}: "
-                        f"shows {eval_shown(bore)[0]!r}"
-                    )
+                    # D-09: the number typed into the field the pick named completes the pick.
+                    _complete_pending(bore, chooser, properties, pending[0], current, stash)
 
                     # D-08: Reset clears the stash, so a pick after Reset and a link restores
                     # nothing and is pending (a page that kept the stash would restore).
@@ -1207,8 +1314,98 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                             rule = expected_pick(chooser, properties, label, start_link, {})
                             if rule.sent is None:
                                 _pending_pick(bore, chooser, properties, label, start_link, {})
+                                # CX-01 (PR #36, Codex): completing it writes what it held
+                                # back, the zeros included, and lands on the label.
+                                _complete_pending(bore, chooser, properties, label, start_link, {})
                             else:
                                 _writing_pick(bore, chooser, properties, label, start_link, {})
+
+                    # CX-01: a pick short of two numbers stays pending through the first and
+                    # completes on the second. The link puts every `gt` field of the option at
+                    # its threshold, so each is typed in turn; a page that ended the pick at the
+                    # first derive would show the fields' option instead.
+                    chains_seen = 0
+                    for label in shape_links:
+                        at_threshold = _gt_thresholds(chooser, label)
+                        if len(at_threshold) < 2:
+                            continue
+                        threshold_link = urllib.parse.urlencode(at_threshold)
+                        reset_bore()
+                        _follow_link(bore, threshold_link)
+                        assert eval_shown(bore) == expected_shown(
+                            selectors, properties, threshold_link
+                        ), f"bore shape: #{threshold_link} shows {eval_shown(bore)}"
+                        _pending_pick(bore, chooser, properties, label, threshold_link, {})
+                        _chain_sent, _chain_stash, typed_count = _complete_pending(
+                            bore, chooser, properties, label, threshold_link, {}
+                        )
+                        assert typed_count == len(at_threshold), (
+                            f"bore shape, {label} from #{threshold_link}: {typed_count} number(s) "
+                            f"typed, {len(at_threshold)} thresholds"
+                        )
+                        chains_seen += 1
+                    assert chains_seen, "bore shape: no option sets two gt thresholds"
+
+                    # CX-01: any other field moving ends the pending pick, and the select shows
+                    # the fields' state, not the asked-for one. The first pending pick whose
+                    # selector names another field is taken; that field gets a number above
+                    # the one its box holds.
+                    abandoned = False
+                    for start_link in shape_links.values():
+                        for label in shape_links:
+                            rule = expected_pick(chooser, properties, label, start_link, {})
+                            other_fields = sorted(_named_fields(chooser) - {rule.field})
+                            if rule.sent is not None or not other_fields:
+                                continue
+                            reset_bore()
+                            if start_link != "":
+                                _follow_link(bore, start_link)
+                            _pending_pick(bore, chooser, properties, label, start_link, {})
+                            boxes_before = dict(eval_pairs(bore))
+                            other_field = other_fields[0]
+                            held_text = boxes_before[other_field]
+                            held = held_text if held_text != "" else None
+                            typed_value = number_above(
+                                properties, other_field, float(held) if held is not None else -1.0
+                            )
+                            kept_pairs = [
+                                (k, v)
+                                for k, v in urllib.parse.parse_qsl(start_link)
+                                if k != other_field
+                            ]
+                            moved_link = urllib.parse.urlencode(
+                                [*kept_pairs, (other_field, typed_value)]
+                            )
+                            with bore.expect_request(
+                                lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                            ):
+                                bore.locator(f"form#params [name={other_field}]").fill(typed_value)
+                            moved_fields = {k for k, v in eval_pairs(bore) if boxes_before[k] != v}
+                            assert moved_fields == {other_field}, (
+                                f"bore shape, {label} abandoned: typed {other_field}, "
+                                f"{sorted(moved_fields)} moved"
+                            )
+                            assert eval_shown(bore) == expected_shown(
+                                selectors, properties, moved_link
+                            ), (
+                                f"bore shape, {label} abandoned by {other_field}={typed_value}: "
+                                f"shows {eval_shown(bore)}, not the fields' option"
+                            )
+                            assert not eval_bool(bore, SELECTOR_PENDING), (
+                                f"bore shape, {label} abandoned by {other_field}: still pending"
+                            )
+                            assert eval_str(bore, SELECT_BORDER) != "dashed", (
+                                f"bore shape, {label} abandoned by {other_field}: drawn pending"
+                            )
+                            print(
+                                f"bore shape: #{start_link} + {label} abandoned by "
+                                f"{other_field}={typed_value}: shows {eval_shown(bore)[0]!r}"
+                            )
+                            abandoned = True
+                            break
+                        if abandoned:
+                            break
+                    assert abandoned, "bore shape: no pending pick to abandon was found"
 
                     # D-19: the stash outlives hash navigations. The first pick zeroes a field
                     # and stashes the user's number; two links later the pick back restores it
@@ -1246,17 +1443,9 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                             query, _ = _writing_pick(bore, chooser, properties, label, keyed, {})
                         else:
                             _pending_pick(bore, chooser, properties, label, keyed, {})
-                            typed_value = dict(urllib.parse.parse_qsl(shape_links[label]))[
-                                rule.field
-                            ]
-                            with bore.expect_request(
-                                lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
-                            ) as typed_info:
-                                bore.locator(f"form#params [name={rule.field}]").fill(typed_value)
-                            query = urllib.parse.urlsplit(typed_info.value.url).query
-                            assert _pairs(query) == sorted(
-                                [*_pairs(keyed), (rule.field, typed_value)]
-                            ), f"bore shape, keyed + {label}: typed {rule.field}, sent {query!r}"
+                            query, _keyed_stash, _keyed_typed = _complete_pending(
+                                bore, chooser, properties, label, keyed, {}
+                            )
                         changed = set(_pairs(keyed)) - set(_pairs(query))
                         assert not changed, (
                             f"bore shape, keyed + {label}: the keyway pair {sorted(changed)} was "

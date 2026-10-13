@@ -21,8 +21,9 @@ parameter in the URL so a gear can be shared as a link.
 - The schema also carries a top-level `selectors` list. Generic `buildSelectors()` renders each as
   a select in its group, derived from the fields at the same three places as the dim and never
   written on load, and a pick writes only the flat fields its option needs (the string `0`, or a
-  value the user typed, put back from memory) or waits, pending, for one. The select is never a
-  field, never sent and never in the URL (L42).
+  value the user typed, put back from memory) or waits, pending, for one: the number typed into
+  the field it names completes the pick, anything else ends it, and the focus never leaves the
+  select. The select is never a field, never sent and never in the URL (L42, amended 2026-10-13).
 - All URLs are relative, so `SPUR_ROOT_PATH` works — with the caveat that the proxy must
   redirect `/spur` to `/spur/`, or the browser resolves `static/app.js` one level too
   high. That is documented in the README because it cannot be fixed from inside the app.

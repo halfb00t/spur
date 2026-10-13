@@ -558,12 +558,31 @@ def negative_link(
     return link
 
 
+def number_above(properties: Mapping[str, Mapping[str, object]], field: str, above: float) -> str:
+    """A string the page can hold for `field` that clears `above`: the schema default when it
+    does, else the first of `minimum + step` and `maximum` that does, as the page prints it.
+
+    What a test types to complete a pending pick: the number the pick asked for, chosen from
+    the schema and never a literal, so the step follows a changed bound.
+    """
+    default = _property_number(properties, field, "default")
+    if default > above:
+        return _js_number(default)
+    minimum = _property_number(properties, field, "minimum")
+    step = _property_number(properties, field, "step")
+    maximum = _property_number(properties, field, "maximum")
+    candidates = [c for c in (minimum + step, maximum) if c > above]
+    assert candidates, f"{field}: nothing the schema allows is above {above}"
+    return _js_number(candidates[0])
+
+
 class Pick(NamedTuple):
     """What a pick must do: the query it sends, the stash it leaves, the note when pending."""
 
     sent: str | None  # the next api/info query; None when the pick is pending and sends nothing
     stash: dict[str, str]  # the page's stash after the pick
-    field: str  # when pending: the field the page focuses; '' otherwise
+    field: str  # when pending: the field whose reason row carries the note and whose typed
+    # number completes the pick; '' otherwise. The focus stays on the select (24 WR-01).
     note: str  # when pending: the text of that field's reason row; '' otherwise
 
 
