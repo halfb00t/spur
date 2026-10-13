@@ -43,6 +43,16 @@ Verdict: APPROVE
 
 The one finding is recorded as CX-05 (info, open) in `24-REVIEW-DISPOSITION.md`.
 
+## Review of the fix commit 94bccc4
+
+Claude Code fixed the second internal review's WR-02 (an emptied box completed a pending pick with the field's default) in `94bccc4`. Codex reviewed that commit's diff and the fixed tree, read-only. Its last message follows verbatim.
+
+### Findings
+
+Verdict: APPROVE
+
+No finding. Every Codex finding on this pull request is now closed or recorded: CX-01, CX-02 and CX-04 fixed, CX-03 and CX-05 open as info in `24-REVIEW-DISPOSITION.md`.
+
 ## Prompt (first review)
 
 You are the second CLI in this repository's cross-CLI review (docs/HOW_TO_DEVELOP.md section 7): Claude Code wrote pull request #36 ("Phase 24: Bore-Shape Selector", branch gsd/phase-24-bore-shape-selector against main); you review it. Read AGENTS.md first. Its two standing rules (a printed number is a number someone will cut metal to, L08; a parameter the user did not set must never silently change the part, L05) and docs/CODING_VALUES.md are the standard.
@@ -84,5 +94,18 @@ What to check:
 1. Does completePending() now put the ended pick's row back and re-derive that selector on a pick in another selector, for both a pending and a writing pick in the other selector, and for a field typed while two selectors are pending? Is deriveSelector() equivalent to the loop body it replaced?
 2. Does the new browser step "twin selectors" prove the behaviour rather than restate it: the schema served with its selector list doubled, the pair of labels chosen from the schema, the first select back on the fields' option with its row restored, the second pending, no field written, no request sent. Name any expectation that is a tautology.
 3. Any regression to the pins in tests/test_api.py (exactly one value write in the selectors section, the tokens) or to the single-selector behaviour you reviewed before.
+
+Rules for your output: no praise and no summary of what the commit does. One finding per line in the form `path:line: SEVERITY: problem. Fix.` with SEVERITY one of CRITICAL, WARNING or INFO, citing the checked-out tree's file and line. End with one line `Verdict: APPROVE` or `Verdict: REVISE`; REVISE only when at least one CRITICAL or WARNING finding is real and reproducible from the cited lines. Do not modify any file.
+
+## Prompt (review of 94bccc4)
+
+You are the second CLI in this repository's cross-CLI review (docs/HOW_TO_DEVELOP.md section 7). You reviewed pull request #36 ("Phase 24: Bore-Shape Selector") and its fix commits faed50a and 9da4851 earlier today. A second internal code review then found WR-02: completePending() re-planned a pending pick through holds(), whose effective() reads an empty box as the field's default, so a Backspace or a leading "." in the asked field (bore_d, default 9) completed a pending Round or D-flat pick, wrote bore_flat=0 and sent a 9 mm bore nobody typed. Claude Code wrote one commit, 94bccc4, for it. Review that commit only.
+
+The diff is in <scratchpad>/fix-94bccc4.diff (src/spur/static/app.js, tests/test_browser.py, docs/architecture/decision_log.md). The checked-out tree at /Users/halfb00t/git/halfb00t/spur is the fixed head; read any file you need. AGENTS.md and docs/CODING_VALUES.md are the standard.
+
+What to check:
+1. Is an empty box the only unreadable state a type=number input reports as '' (a leading "-", ".", "e"), and does the fix hold for all of them? Is there any other path by which a pending pick completes on a value the user did not type (effective() elsewhere, a hash navigation, Reset)?
+2. The test: the every-state loop empties the asked field first only where the field's schema default clears the threshold (_default_clears), then asserts the pick stays pending with its note and only that field moved. Is the selection rule right, and does the assertion prove the fix rather than restate it?
+3. Any regression to the pins in tests/test_api.py (exactly one value write in the selectors section; the tokens) or to the single- and twin-selector behaviour you reviewed before.
 
 Rules for your output: no praise and no summary of what the commit does. One finding per line in the form `path:line: SEVERITY: problem. Fix.` with SEVERITY one of CRITICAL, WARNING or INFO, citing the checked-out tree's file and line. End with one line `Verdict: APPROVE` or `Verdict: REVISE`; REVISE only when at least one CRITICAL or WARNING finding is real and reproducible from the cited lines. Do not modify any file.
