@@ -2735,7 +2735,8 @@ Finding 10). Round from the default part sends exactly `bore_flat=0` and the has
 D-flat next puts `bore_flat` back to the exact string the box held. A pending pick keeps the select on what was
 asked for under `.pending` (the dimmed tone of L41 with a dashed border), focuses the field that needs a number and
 says so in that field's own reason row, which is its `aria-describedby`: `Hex needs Hex bore A/F above 0` from the
-default part. It sends no request and changes no hash. A pending pick calls `stopPropagation` on the select's
+default part. It sends no request and changes no hash. (The focus move and the end-at-next-derive rule of this
+paragraph are superseded by the amendment of 2026-10-13 at the end of this entry.) A pending pick calls `stopPropagation` on the select's
 `input` event, because the form listener would otherwise derive the select back and schedule a duplicate request
 (measured, 24-RESEARCH Finding 4); a writing pick lets the event bubble, so the form listener's `applyRelations();
 deriveSelectors(); scheduleUpdate();` is the one path, there are still exactly three call sites of each, and
@@ -2820,5 +2821,7 @@ pick of the sixteen is completed by typing and lands on its label with the held-
 `#bore_d=0&bore_flat=0` stays pending through the first number and completes on the second; a pending pick is
 ended by another field typed; the focus is on the select after every pending pick. No engine that commits an option
 per arrow key is driven by the test (Chrome Headless Shell on macOS opens the popup instead), so the keyboard walk
-itself stays a human check. The `bore shape` step read 12.26 s once on this host after the change, against 24-04's
-8.55 s mean, with more picks in it; Phase 25 re-sets the bar on its final `HEAD`.
+itself stays a human check. An emptied box is not a typed number: `effective()` reads it as the field's default,
+so the pick stays pending until the box holds a number (the second code review's WR-02, reproduced on a Backspace and
+on a leading `.`). The step's cost is not re-measured here (one reading of 12.26 s, not comparable with 24-04's
+three); Phase 25 re-sets the bar on its final `HEAD`.

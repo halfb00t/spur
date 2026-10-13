@@ -469,17 +469,21 @@ function endPending(s, restore) {
 // Anything else -- another field, or a pick on another selector -- ends the pick: its row is
 // put back and it is derived here, because another selector's pending pick stops its event
 // before the form's listener (the Codex re-review of PR #36, CX-04). The select's own event
-// is a new pick, which pick() handles.
+// is a new pick, which pick() handles. An empty box is not a typed number: effective() reads
+// it as the field's default, which would complete the pick and zero the other fields on a
+// Backspace or a leading `.` (24 WR-02, reproduced), so the pick stays pending until the box
+// holds a number.
 function completePending(event) {
   for (const s of selectors) {
     if (!s.pending || event.target === s.select) continue;
     const { chosen, condition } = s.pending;
-    if (event.target !== fields.get(condition.field).input) {
+    const { input } = fields.get(condition.field);
+    if (event.target !== input) {
       endPending(s, true);
       deriveSelector(s);
       continue;
     }
-    const next = plan(chosen);
+    const next = input.value === '' ? { writes: [], condition } : plan(chosen);
     endPending(s, false);
     if (next.condition) s.pending = { chosen, condition: next.condition, keep: true, was: null };
     else write(next.writes);

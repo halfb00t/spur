@@ -362,6 +362,7 @@ def _complete_pending(
     label: str,
     current: str,
     stash: dict[str, str],
+    empty_first: bool = False,
 ) -> tuple[str, dict[str, str], int]:
     """Type the number a pending pick of `label` asks for, until the pick writes (D-09, CX-01).
 
@@ -369,13 +370,35 @@ def _complete_pending(
     literal. A pick still short of another number stays pending on that field with its note,
     and only the typed field moves; the pick that holds writes what it held back -- the zeros
     and the stashed strings `expected_pick()` plans from the completed state -- sends that one
-    query, shows the label and leaves nothing pending. Returns the query sent, the stash and
-    how many numbers were typed.
+    query, shows the label and leaves nothing pending. With `empty_first`, the asked field is
+    first emptied: an empty box reads as the field's default (D-18), which is not a typed
+    number, so the pick must stay pending with its note and nothing else may move (WR-02).
+    Returns the query sent, the stash and how many numbers were typed.
     """
     typed_count = 0
     while True:
         rule = expected_pick(chooser, properties, label, current, stash)
         assert rule.sent is None, f"bore shape, completing {label}: the rule says it writes"
+        if empty_first:
+            empty_first = False
+            boxes = dict(eval_pairs(page))
+            with page.expect_request(
+                lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+            ):
+                page.locator(f"form#params [name={rule.field}]").fill("")
+            emptied = {name for name, value in eval_pairs(page) if boxes[name] != value}
+            assert emptied == {rule.field}, (
+                f"bore shape, {label} with {rule.field} emptied: {sorted(emptied)} moved"
+            )
+            assert eval_bool(page, SELECTOR_PENDING), (
+                f"bore shape, {label} with {rule.field} emptied: the pick completed on the default"
+            )
+            assert eval_shown(page)[0] == label, (
+                f"bore shape, {label} with {rule.field} emptied: shows {eval_shown(page)}"
+            )
+            reason = page.locator(f"form#params label.field:has([name={rule.field}]) .reason")
+            expect(reason).to_have_text(rule.note)
+            print(f"bore shape: {rule.field} emptied, {label} still pending")
         typed_value = number_above(properties, rule.field, _threshold(chooser, label, rule.field))
         completed = urllib.parse.urlencode(
             [(k, v) for k, v in urllib.parse.parse_qsl(current) if k != rule.field]
@@ -469,6 +492,21 @@ def _threshold(selector: dict[str, object], label: str, field: str) -> float:
         if name == field:
             return float(value)
     raise AssertionError(f"{label} sets no gt threshold on {field}")
+
+
+def _default_clears(
+    properties: dict[str, dict[str, object]], selector: dict[str, object], label: str, field: str
+) -> bool:
+    """Whether `field`'s schema default is above the threshold `label` sets on it.
+
+    Exactly then an emptied box, which the page reads as the default (D-18), would complete a
+    pending pick of `label` with a number nobody typed (WR-02); the case is worth driving only
+    where it can go wrong.
+    """
+    default = properties[field].get("default")
+    assert isinstance(default, int | float), f"{field}: default {default!r} is not a number"
+    assert not isinstance(default, bool), f"{field}: default {default!r} is a bool"
+    return float(default) > _threshold(selector, label, field)
 
 
 # The fields the page marks `.invalid`, by name, as the 422 path of app.js problems() sets them.
@@ -1319,8 +1357,20 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                             if rule.sent is None:
                                 _pending_pick(bore, chooser, properties, label, start_link, {})
                                 # CX-01 (PR #36, Codex): completing it writes what it held
-                                # back, the zeros included, and lands on the label.
-                                _complete_pending(bore, chooser, properties, label, start_link, {})
+                                # back, the zeros included, and lands on the label. WR-02:
+                                # where the field's default would clear the threshold, the
+                                # box is emptied first and the pick must stay pending.
+                                _complete_pending(
+                                    bore,
+                                    chooser,
+                                    properties,
+                                    label,
+                                    start_link,
+                                    {},
+                                    empty_first=_default_clears(
+                                        properties, chooser, label, rule.field
+                                    ),
+                                )
                             else:
                                 _writing_pick(bore, chooser, properties, label, start_link, {})
 
@@ -1485,8 +1535,9 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # fields' option -- although the second pick stops its event before the form's
                 # listener. The schema is served with its selector list doubled, so both
                 # selects derive the same option and either can go pending from one link;
-                # nothing else about the page changes. The twins_page is the first two labels that
-                # are pending from one state link on different fields, read from the schema.
+                # nothing else about the page changes. `pendings[0]` is the first state link
+                # with two labels pending on different fields, read from the schema;
+                # `twins_page` is the page served with the doubled list.
                 status, schema = _api_get(server, "/api/schema", "")
                 assert status == 200, f"twin selectors: /api/schema answered {status}"
                 assert isinstance(schema, dict), "twin selectors: the schema is not an object"
