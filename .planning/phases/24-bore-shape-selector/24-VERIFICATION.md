@@ -1,7 +1,7 @@
 ---
 phase: 24-bore-shape-selector
 verified: 2026-10-12T17:30:00Z
-status: human_needed
+status: passed
 score: 6/6 must-haves verified
 covered_files:
   - ".planning/phases/24-bore-shape-selector/24-01-PLAN.md"
