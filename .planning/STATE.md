@@ -4,12 +4,11 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
-status: planning
+status: "Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)"
 stopped_at: Phase 24 complete, ready to plan Phase 25
-last_updated: "2026-10-13T04:06:30.207Z"
+last_updated: "2026-10-13T04:15:32.017Z"
 last_activity: 2026-10-13
-last_activity_desc: Phase 24 complete, transitioned to Phase 25
-state_head: cd5771728901056f76750b5278c56060a2e55e01
+state_head: b323d8b9ea3f48cd6110a1ff0ca3c4b69471c00d
 progress:
   total_phases: 5
   completed_phases: 4
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 25 — Gate Bar Re-Set, Venv Probe, Ledger Close
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-13 — Phase 24 complete, transitioned to Phase 25
+Status: Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)
+Last activity: 2026-10-13
 
 Progress: [████████░░] 80% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
 
