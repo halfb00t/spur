@@ -32,6 +32,17 @@ Verdict: REVISE
 
 The one finding is recorded as CX-04 in `24-REVIEW-DISPOSITION.md` and fixed in the commit that carries this section: `completePending()` now puts the first selector's row back and re-derives it when another selector's pick ends its pending pick, and the browser step `twin selectors` proves it on a schema served with its selector list doubled.
 
+## Review of the fix commit 9da4851
+
+Claude Code fixed CX-04 in `9da4851`. Codex reviewed that commit's diff and the fixed tree, read-only. Its last message follows verbatim.
+
+### Findings
+
+tests/test_browser.py:1611: INFO: The request-count assertion can pass before a queued 350 ms debounce fires; closing the page then hides the request. Settle the initial load and observe beyond the debounce before asserting zero requests.
+Verdict: APPROVE
+
+The one finding is recorded as CX-05 (info, open) in `24-REVIEW-DISPOSITION.md`.
+
 ## Prompt (first review)
 
 You are the second CLI in this repository's cross-CLI review (docs/HOW_TO_DEVELOP.md section 7): Claude Code wrote pull request #36 ("Phase 24: Bore-Shape Selector", branch gsd/phase-24-bore-shape-selector against main); you review it. Read AGENTS.md first. Its two standing rules (a printed number is a number someone will cut metal to, L08; a parameter the user did not set must never silently change the part, L05) and docs/CODING_VALUES.md are the standard.
@@ -62,3 +73,16 @@ What to check:
 5. Comments and the L42 amendment: each says why with the constraint or measurement; the amendment's claims match the code.
 
 Rules for your output: no praise and no summary of what the fix does. One finding per line in the form `path:line: SEVERITY: problem. Fix.` with SEVERITY one of CRITICAL, WARNING or INFO, citing the checked-out tree's file and line. End with one line `Verdict: APPROVE` or `Verdict: REVISE`; REVISE only when at least one CRITICAL or WARNING finding is real and reproducible from the cited lines. Do not modify any file.
+
+## Prompt (review of 9da4851)
+
+You are the second CLI in this repository's cross-CLI review (docs/HOW_TO_DEVELOP.md section 7). Earlier today you reviewed pull request #36 ("Phase 24: Bore-Shape Selector") and then its fix commit faed50a, where you returned one finding: with two selectors, a pending pick in the second ended the first's pending pick without restoring its row or re-deriving it. Claude Code wrote one more commit, 9da4851, for that finding. Review that commit only.
+
+The diff is in <scratchpad>/fix-9da4851.diff (src/spur/static/app.js and tests/test_browser.py). The checked-out tree at /Users/halfb00t/git/halfb00t/spur is the fixed head; read any file you need. AGENTS.md and docs/CODING_VALUES.md are the standard.
+
+What to check:
+1. Does completePending() now put the ended pick's row back and re-derive that selector on a pick in another selector, for both a pending and a writing pick in the other selector, and for a field typed while two selectors are pending? Is deriveSelector() equivalent to the loop body it replaced?
+2. Does the new browser step "twin selectors" prove the behaviour rather than restate it: the schema served with its selector list doubled, the pair of labels chosen from the schema, the first select back on the fields' option with its row restored, the second pending, no field written, no request sent. Name any expectation that is a tautology.
+3. Any regression to the pins in tests/test_api.py (exactly one value write in the selectors section, the tokens) or to the single-selector behaviour you reviewed before.
+
+Rules for your output: no praise and no summary of what the commit does. One finding per line in the form `path:line: SEVERITY: problem. Fix.` with SEVERITY one of CRITICAL, WARNING or INFO, citing the checked-out tree's file and line. End with one line `Verdict: APPROVE` or `Verdict: REVISE`; REVISE only when at least one CRITICAL or WARNING finding is real and reproducible from the cited lines. Do not modify any file.
