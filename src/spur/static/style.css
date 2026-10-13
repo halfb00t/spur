@@ -88,16 +88,16 @@ legend {
   text-transform: uppercase;
 }
 
-.field {
+.field, .selector {
   display: grid;
   grid-template-columns: 1fr 8.5rem;
   gap: .1rem .5rem;
   align-items: center;
   margin: .5rem 0;
 }
-.field .name { font-weight: 500; }
-.field .control { display: flex; align-items: center; gap: .35rem; }
-.field input, .field select {
+.field .name, .selector .name { font-weight: 500; }
+.field .control, .selector .control { display: flex; align-items: center; gap: .35rem; }
+.field input, .field select, .selector select {
   width: 100%;
   padding: .3rem .45rem;
   font: inherit;
@@ -122,8 +122,14 @@ legend {
 .field.inactive .name, .field.inactive .unit,
 .field.inactive input, .field.inactive select { color: var(--muted); }
 .field.inactive input, .field.inactive select { border-style: dashed; }
-.field .reason { grid-column: 1 / -1; font-size: .78rem; color: var(--fg); }
-.field .reason:empty { display: none; }
+.field .reason, .selector .reason { grid-column: 1 / -1; font-size: .78rem; color: var(--fg); }
+.field .reason:empty, .selector .reason:empty { display: none; }
+/* A bore-shape pick that cannot be made true yet (L42) writes nothing, so the select only shows
+   what was asked for. It borrows the one dimmed tone above (--muted, a dashed control border)
+   and only custom properties both themes define. Deliberately nothing that would stop the
+   select being picked again: it stays a control, and a typed number ends the state. */
+.selector.pending .name, .selector.pending select { color: var(--muted); }
+.selector.pending select { border-style: dashed; }
 
 .actions { display: flex; gap: .5rem; margin-top: 1.25rem; }
 

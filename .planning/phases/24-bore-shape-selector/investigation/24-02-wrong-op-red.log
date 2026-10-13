@@ -1,0 +1,262 @@
+.venv/bin/python -m pytest -n 8 --no-cov \
+  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
+  --ignore=tests/test_api.py --ignore=tests/test_cli.py \
+  --ignore=tests/test_browser.py tests/test_selector.py -n0 -q -rf
+..FFFFFFF......F                                                         [100%]
+=================================== FAILURES ===================================
+_ test_exactly_one_option_holds_on_every_valid_cell_and_the_default_is_d_flat __
+
+    def test_exactly_one_option_holds_on_every_valid_cell_and_the_default_is_d_flat() -> None:
+        """SC2, D-02, D-18: totality and exclusivity. Red on a gap or an overlap on any
+        non-negative cell, two options on any cell, a no-match cell without a negative value, or a
+        default part that is not shown as D-flat. The literal pins the shipped default (D-02)."""
+        selectors = _model_selectors()
+>       assert _assert_exactly_one(selectors) == 8 + 27
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_selector.py:443: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+selectors = [{'title': 'Bore shape', 'group': 'Bore', 'options': [{'label': 'Round', 'when': [{'field': 'bore_hex', 'op': 'eq', 'v...l': 'No bore', 'when': [{'field': 'bore_hex', 'op': 'eq', 'value': 0}, {'field': 'bore_d', 'op': 'eq', 'value': 0}]}]}]
+
+    def _assert_exactly_one(selectors: Sequence[Mapping[str, object]]) -> int:
+        """Totality and exclusivity (D-02, D-18). Over `{0, positive}` per field exactly one option
+        holds. Over `{-1, 0, positive}` no cell has two, every cell with none has a negative value
+        in it, and at least one such cell exists, so the blank state is exercised. Returns the
+        number of cells checked."""
+        cells = 0
+        gaps = 0
+        for selector in selectors:
+            title = selector["title"]
+            for cell, held in _grid(selector, _non_negative):
+                cells += 1
+>               assert len(held) == 1, f"{title}: cell {cell} holds {held}, not exactly one option"
+E               AssertionError: Bore shape: cell (0.0, 9.0, 0.0) holds [], not exactly one option
+E               assert 0 == 1
+E                +  where 0 = len([])
+
+tests/test_selector.py:336: AssertionError
+_ test_each_pick_from_each_state_writes_the_minimum_and_matches_the_typed_path _
+
+    def test_each_pick_from_each_state_writes_the_minimum_and_matches_the_typed_path() -> None:
+        """SC3, D-07, D-08, D-09, D-12c: the round trip. Red on a pick that writes a field it need
+        not, leaves its option false, or builds a part (or a `derive()` document) the same flats
+        typed by hand would not. Both branches must be exercised or the proof is half empty."""
+>       writing, pending = _assert_round_trips(_model_selectors())
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_selector.py:451: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_selector.py:400: in _assert_round_trips
+    for start_label, start in _starts(options, _defaults()).items():
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+options = [('Round', [('bore_hex', 'eq', 0.0), ('bore_d', 'gt', 0.0), ('bore_flat', 'gt', 0.0)]), ('D-flat', [('bore_hex', 'eq',...flat', 'gt', 0.0)]), ('Hex', [('bore_hex', 'gt', 0.0)]), ('No bore', [('bore_hex', 'eq', 0.0), ('bore_d', 'eq', 0.0)])]
+defaults = {'teeth': 19.0, 'module': 1.75, 'pressure_angle': 25.0, 'profile_shift': 0.0, ...}
+
+    def _starts(
+        options: Sequence[tuple[str, Sequence[Condition]]], defaults: Mapping[str, float],
+    ) -> dict[str, Flat]:
+        """Per label, the minimal flats from the defaults that make it the one option that holds:
+        a false `eq` gets its value, a false `gt` the first of `minimum + step` and `maximum`
+        above its threshold. Today Round is `{bore_flat: 0}`, D-flat `{}` (the default part, D-02),
+        Hex `{bore_hex: 0.05}` and No bore `{bore_d: 0}`."""
+        props = _properties()
+        starts: dict[str, Flat] = {}
+        for label, conditions in options:
+            start: Flat = {}
+            for field, op, threshold in conditions:
+                if _condition_holds(op, _have(start, field, defaults), threshold):
+                    continue
+                if op == "eq":
+                    start[field] = threshold
+                    continue
+                low, step = _number(props[field], "minimum"), _number(props[field], "step")
+                above = [v for v in (low + step, _number(props[field], "maximum")) if v > threshold]
+                assert above, f"{label}: no value of {field} above {threshold:g} is in range"
+                start[field] = above[0]
+>           assert _holding(options, start, defaults) == [label], (label, start)
+E           AssertionError: ('Round', {})
+E           assert ['Round', 'D-flat'] == ['Round']
+E             
+E             Left contains one more item: 'D-flat'
+E             Use -v to get more diff
+
+tests/test_selector.py:221: AssertionError
+____ test_a_zeroed_value_comes_back_from_the_stash_and_never_from_a_starter ____
+
+    def test_a_zeroed_value_comes_back_from_the_stash_and_never_from_a_starter() -> None:
+        """D-08: after a pick zeroes a field, picking the first state back restores what the user
+        had, never a starter value, and with nothing stashed that pick is pending. Red when the
+        restore returns another number or the empty stash writes one."""
+        defaults = _defaults()
+        options = _options(_model_selectors()[0])
+        exercised = 0
+>       for label, start in _starts(options, defaults).items():
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_selector.py:463: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+options = [('Round', [('bore_hex', 'eq', 0.0), ('bore_d', 'gt', 0.0), ('bore_flat', 'gt', 0.0)]), ('D-flat', [('bore_hex', 'eq',...flat', 'gt', 0.0)]), ('Hex', [('bore_hex', 'gt', 0.0)]), ('No bore', [('bore_hex', 'eq', 0.0), ('bore_d', 'eq', 0.0)])]
+defaults = {'teeth': 19.0, 'module': 1.75, 'pressure_angle': 25.0, 'profile_shift': 0.0, ...}
+
+    def _starts(
+        options: Sequence[tuple[str, Sequence[Condition]]], defaults: Mapping[str, float],
+    ) -> dict[str, Flat]:
+        """Per label, the minimal flats from the defaults that make it the one option that holds:
+        a false `eq` gets its value, a false `gt` the first of `minimum + step` and `maximum`
+        above its threshold. Today Round is `{bore_flat: 0}`, D-flat `{}` (the default part, D-02),
+        Hex `{bore_hex: 0.05}` and No bore `{bore_d: 0}`."""
+        props = _properties()
+        starts: dict[str, Flat] = {}
+        for label, conditions in options:
+            start: Flat = {}
+            for field, op, threshold in conditions:
+                if _condition_holds(op, _have(start, field, defaults), threshold):
+                    continue
+                if op == "eq":
+                    start[field] = threshold
+                    continue
+                low, step = _number(props[field], "minimum"), _number(props[field], "step")
+                above = [v for v in (low + step, _number(props[field], "maximum")) if v > threshold]
+                assert above, f"{label}: no value of {field} above {threshold:g} is in range"
+                start[field] = above[0]
+>           assert _holding(options, start, defaults) == [label], (label, start)
+E           AssertionError: ('Round', {})
+E           assert ['Round', 'D-flat'] == ['Round']
+E             
+E             Left contains one more item: 'D-flat'
+E             Use -v to get more diff
+
+tests/test_selector.py:221: AssertionError
+_________________ test_a_wrong_option_goes_red[wrong field-1] __________________
+
+case = 'wrong field', bad = 1
+
+    @pytest.mark.parametrize(("case", "bad"),
+                             [("wrong field", 1), ("wrong op", 2), ("overlap", 1), ("gap", 2)])
+    def test_a_wrong_option_goes_red(case: str, bad: int) -> None:
+        """D-12d, 24-RESEARCH Finding 7: the cells that match not exactly one option of the eight
+        non-negative ones are 1, 2, 1 and 2 for the four doctored copies, and the checker raises.
+        The unedited model is the control, so a red here is the edit and not an unusable grid."""
+>       assert _bad_cells(_model_selectors(), _non_negative) == []
+E       AssertionError: assert [((0.0, 9.0, ...', 'D-flat'])] == []
+E         
+E         Left contains 2 more items, first extra item: ((0.0, 9.0, 0.0), [])
+E         Use -v to get more diff
+
+tests/test_selector.py:519: AssertionError
+___________________ test_a_wrong_option_goes_red[wrong op-2] ___________________
+
+case = 'wrong op', bad = 2
+
+    @pytest.mark.parametrize(("case", "bad"),
+                             [("wrong field", 1), ("wrong op", 2), ("overlap", 1), ("gap", 2)])
+    def test_a_wrong_option_goes_red(case: str, bad: int) -> None:
+        """D-12d, 24-RESEARCH Finding 7: the cells that match not exactly one option of the eight
+        non-negative ones are 1, 2, 1 and 2 for the four doctored copies, and the checker raises.
+        The unedited model is the control, so a red here is the edit and not an unusable grid."""
+>       assert _bad_cells(_model_selectors(), _non_negative) == []
+E       AssertionError: assert [((0.0, 9.0, ...', 'D-flat'])] == []
+E         
+E         Left contains 2 more items, first extra item: ((0.0, 9.0, 0.0), [])
+E         Use -v to get more diff
+
+tests/test_selector.py:519: AssertionError
+___________________ test_a_wrong_option_goes_red[overlap-1] ____________________
+
+case = 'overlap', bad = 1
+
+    @pytest.mark.parametrize(("case", "bad"),
+                             [("wrong field", 1), ("wrong op", 2), ("overlap", 1), ("gap", 2)])
+    def test_a_wrong_option_goes_red(case: str, bad: int) -> None:
+        """D-12d, 24-RESEARCH Finding 7: the cells that match not exactly one option of the eight
+        non-negative ones are 1, 2, 1 and 2 for the four doctored copies, and the checker raises.
+        The unedited model is the control, so a red here is the edit and not an unusable grid."""
+>       assert _bad_cells(_model_selectors(), _non_negative) == []
+E       AssertionError: assert [((0.0, 9.0, ...', 'D-flat'])] == []
+E         
+E         Left contains 2 more items, first extra item: ((0.0, 9.0, 0.0), [])
+E         Use -v to get more diff
+
+tests/test_selector.py:519: AssertionError
+_____________________ test_a_wrong_option_goes_red[gap-2] ______________________
+
+case = 'gap', bad = 2
+
+    @pytest.mark.parametrize(("case", "bad"),
+                             [("wrong field", 1), ("wrong op", 2), ("overlap", 1), ("gap", 2)])
+    def test_a_wrong_option_goes_red(case: str, bad: int) -> None:
+        """D-12d, 24-RESEARCH Finding 7: the cells that match not exactly one option of the eight
+        non-negative ones are 1, 2, 1 and 2 for the four doctored copies, and the checker raises.
+        The unedited model is the control, so a red here is the edit and not an unusable grid."""
+>       assert _bad_cells(_model_selectors(), _non_negative) == []
+E       AssertionError: assert [((0.0, 9.0, ...', 'D-flat'])] == []
+E         
+E         Left contains 2 more items, first extra item: ((0.0, 9.0, 0.0), [])
+E         Use -v to get more diff
+
+tests/test_selector.py:519: AssertionError
+____________________ test_writing_before_planning_goes_red _____________________
+
+    def test_writing_before_planning_goes_red() -> None:
+        """D-09, D-12d, 24-RESEARCH Finding 10: the mirror that writes each `eq` before it knows a
+        `gt` can be met leaves a changed part under a pending pick. From the No bore start, Round
+        needs a `bore_d` the user never typed: `_pick` writes nothing and `_pick_write_first`
+        zeroes `bore_flat`. The round trip raises on the second, and passes on the first."""
+        selectors = _model_selectors()
+>       _assert_round_trips(selectors)
+
+tests/test_selector.py:580: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_selector.py:400: in _assert_round_trips
+    for start_label, start in _starts(options, _defaults()).items():
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+options = [('Round', [('bore_hex', 'eq', 0.0), ('bore_d', 'gt', 0.0), ('bore_flat', 'gt', 0.0)]), ('D-flat', [('bore_hex', 'eq',...flat', 'gt', 0.0)]), ('Hex', [('bore_hex', 'gt', 0.0)]), ('No bore', [('bore_hex', 'eq', 0.0), ('bore_d', 'eq', 0.0)])]
+defaults = {'teeth': 19.0, 'module': 1.75, 'pressure_angle': 25.0, 'profile_shift': 0.0, ...}
+
+    def _starts(
+        options: Sequence[tuple[str, Sequence[Condition]]], defaults: Mapping[str, float],
+    ) -> dict[str, Flat]:
+        """Per label, the minimal flats from the defaults that make it the one option that holds:
+        a false `eq` gets its value, a false `gt` the first of `minimum + step` and `maximum`
+        above its threshold. Today Round is `{bore_flat: 0}`, D-flat `{}` (the default part, D-02),
+        Hex `{bore_hex: 0.05}` and No bore `{bore_d: 0}`."""
+        props = _properties()
+        starts: dict[str, Flat] = {}
+        for label, conditions in options:
+            start: Flat = {}
+            for field, op, threshold in conditions:
+                if _condition_holds(op, _have(start, field, defaults), threshold):
+                    continue
+                if op == "eq":
+                    start[field] = threshold
+                    continue
+                low, step = _number(props[field], "minimum"), _number(props[field], "step")
+                above = [v for v in (low + step, _number(props[field], "maximum")) if v > threshold]
+                assert above, f"{label}: no value of {field} above {threshold:g} is in range"
+                start[field] = above[0]
+>           assert _holding(options, start, defaults) == [label], (label, start)
+E           AssertionError: ('Round', {})
+E           assert ['Round', 'D-flat'] == ['Round']
+E             
+E             Left contains one more item: 'D-flat'
+E             Use -v to get more diff
+
+tests/test_selector.py:221: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_selector.py::test_exactly_one_option_holds_on_every_valid_cell_and_the_default_is_d_flat
+FAILED tests/test_selector.py::test_each_pick_from_each_state_writes_the_minimum_and_matches_the_typed_path
+FAILED tests/test_selector.py::test_a_zeroed_value_comes_back_from_the_stash_and_never_from_a_starter
+FAILED tests/test_selector.py::test_a_wrong_option_goes_red[wrong field-1] - ...
+FAILED tests/test_selector.py::test_a_wrong_option_goes_red[wrong op-2] - Ass...
+FAILED tests/test_selector.py::test_a_wrong_option_goes_red[overlap-1] - Asse...
+FAILED tests/test_selector.py::test_a_wrong_option_goes_red[gap-2] - Assertio...
+FAILED tests/test_selector.py::test_writing_before_planning_goes_red - Assert...
+8 failed, 8 passed in 0.13s
+make: *** [Makefile:194: test.fast] Error 1
+make test.fast exit 2

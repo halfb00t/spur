@@ -2,7 +2,8 @@
 
 All lengths are millimetres, angles are degrees. Field metadata (group, unit, step,
 enabled_when) is exported through the JSON schema and drives the web form, so a new
-field added here shows up in the UI and CLI automatically.
+field added here shows up in the UI and CLI automatically. The model-level `selectors`
+list (L42) travels the same way: a select the form builds from the schema, never a field.
 """
 
 from __future__ import annotations
@@ -41,6 +42,36 @@ def _extra(group: str, unit: str = "", step: float | None = None,
     return extra
 
 
+def _option(label: str, *conditions: JsonDict) -> JsonDict:
+    """One option of a selector (L42): a label and the `when()` conditions that, all holding,
+    make it the one the form shows. The vocabulary is L41's, so there is one evaluator in the
+    form and no second grammar. The `list(...)` copy is `_extra()`'s `mypy --strict` fix."""
+    return {"label": label, "when": list(conditions)}
+
+
+# The bore-shape select (L42) is a VIEW of bore_hex, bore_d and bore_flat and never a field:
+# adding one would move the part every shareable link that omits it builds (L05). Over every
+# non-negative triple exactly one option holds (a one-off grid of {0, positive}^3, 8 of 8
+# cells, and tests/test_selector.py from 24-02), so the order below is display order only and
+# the defaults (9, 8, 0) show D-flat. "No bore" exists because a zero bore with no hex is a
+# legal part with no warning; without it the select would show Round at a bore of 0. The
+# keyway stays two fields outside the select (D-03): it modifies Round and D-flat and the
+# server's 422 stays the authority on it. The key is `selectors`, an inline list, because a
+# pre-built `list[JsonDict]` variable fails `mypy --strict` (24-RESEARCH Finding 3).
+_BORE_SHAPE: JsonDict = {
+    "title": "Bore shape",
+    "group": "Bore",
+    "options": [
+        _option("Round", when("bore_hex", "eq", 0), when("bore_d", "gt", 0),
+                when("bore_flat", "eq", 0)),
+        _option("D-flat", when("bore_hex", "eq", 0), when("bore_d", "gt", 0),
+                when("bore_flat", "gt", 0)),
+        _option("Hex", when("bore_hex", "gt", 0)),
+        _option("No bore", when("bore_hex", "eq", 0), when("bore_d", "eq", 0)),
+    ],
+}
+
+
 def _f[T](default: T, ge: float, le: float, *, title: str, group: str,
           unit: str = "", step: float | None = None, help: str = "",
           enabled_when: list[JsonDict] | None = None) -> T:
@@ -53,7 +84,7 @@ class GearParams(BaseModel):
     (trochoid) root, D-flat or hex bore, a keyway, annular face recesses, a spoke
     pattern, a lightening-hole pattern and a honeycomb web."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, json_schema_extra={"selectors": [_BORE_SHAPE]})
 
     # --- Teeth -----------------------------------------------------------------
     teeth: int = _f(19, 6, 200, title="Teeth", group="Teeth", step=1,
@@ -98,7 +129,8 @@ class GearParams(BaseModel):
     # tests/test_relations.py (L41): a hex bore replaces the round profile, and derive()
     # says bore_d and bore_flat are ignored. The keyway pair is refused under a hex bore
     # rather than ignored -- each field alone is a 422 naming bore_hex and both keyway
-    # fields -- so the two are gated on bore_hex and never on each other (CF-2).
+    # fields -- so the two are gated on bore_hex and never on each other (CF-2). The bore-shape
+    # select (L42) is derived from bore_d, bore_flat and bore_hex and writes only those three.
     bore_d: float = _f(9.0, 0, 200, title="Bore Ø", group="Bore", unit="mm", step=0.05,
                        help="Round part of the bore. 0 = no round bore.",
                        enabled_when=[when("bore_hex", "eq", 0)])

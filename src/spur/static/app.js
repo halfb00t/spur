@@ -98,6 +98,8 @@ async function buildForm() {
     groups.get(group).append(wrap);
     fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });
   }
+
+  buildSelectors(schema.selectors ?? [], groups);
 }
 
 function readHash() {
@@ -105,6 +107,7 @@ function readHash() {
   for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];
   mateInput.value = h.get('mate_teeth') ?? '';
   applyRelations();
+  deriveSelectors();
 }
 
 /** Query string with only the parameters that differ from the defaults. */
@@ -286,6 +289,207 @@ const scheduleUpdate = () => {
   debounce = setTimeout(update, 350);
 };
 
+// ---------------------------------------------------------------- selectors (L42)
+
+// Field name -> the string its box held when a pick zeroed it. A later pick that needs the
+// field above its threshold puts the user's own string back and never invents one: a flat
+// the user did not type would be a number the tool printed and nobody chose (L08). Memory
+// only. Reset clears it and so does a reload; a hash navigation leaves it, so a value typed
+// before a link was opened can still come back (D-08, D-19). A restore keeps the entry, and
+// the next zeroing pick overwrites it (PD-08).
+const stash = new Map();
+
+// One record per selector the schema carries: { select, wrap, reason, options, pending }.
+// `pending` is a pick the fields cannot satisfy yet, or null: { chosen, condition, keep, was } --
+// the option asked for, the condition that needs a number the user has not typed, `keep` set by
+// completePending() for the one derive that must not end it, and `was` what showPending() found
+// in the field's reason row, put back when the pick ends with no derive to rewrite the row.
+const selectors = [];
+
+// A selector is a view of fields and never a field: its row is not `label.field`, its select
+// has no `name`, and nothing here touches `fields`, so gearQuery() cannot send it and update()
+// cannot put it in the hash (L05, D-04). Its title, labels and conditions come from the schema
+// alone, as text only (L02, BS-4).
+function buildSelectors(list, groups) {
+  for (const [i, { title, group, options }] of list.entries()) {
+    const fs = groups.get(group);
+    if (!fs) throw new Error(`Selector "${title}" names the group "${group}", which no field has`);
+    const select = document.createElement('select');
+    select.id = `selector-${i}`;
+    for (const { label } of options) select.add(new Option(label));
+    const nameEl = Object.assign(document.createElement('span'), { className: 'name', textContent: title });
+    const control = Object.assign(document.createElement('span'), { className: 'control' });
+    control.append(select);
+    // Filled only when the options cannot be read; aria-hidden like every reason row (a
+    // describedby still announces it).
+    const reason = Object.assign(document.createElement('span'), { className: 'reason', id: `reason-selector-${i}` });
+    reason.setAttribute('aria-hidden', 'true');
+    const wrap = document.createElement('label');
+    wrap.className = 'selector';
+    wrap.append(nameEl, control, reason);
+    fs.insertBefore(wrap, fs.querySelector('label.field'));
+    const s = { select, wrap, reason, options, pending: null };
+    select.addEventListener('input', (event) => pick(s, event));
+    selectors.push(s);
+  }
+}
+
+// Shows the one option whose conditions all hold, through the relations' own holds(). It is
+// derived and never written: loading a link must send what it sent before the select
+// existed (L05, D-06). Called from exactly the three places applyRelations() is, and never
+// from a build response, so the select follows the fields under a 422.
+// An option is shown only when exactly one holds. None holding is the blank select (selectedIndex
+// -1): the model makes exactly one hold for every non-negative value, but the form accepts a
+// negative, and 13 of the 27 cells of {-1, 0, 6} match none (24-RESEARCH Finding 5). Two holding
+// is blank too, because a select that picked the first would claim a shape the fields do not
+// single out (PD-06). Caught per selector, as applyRelations() is per field: an uncaught throw
+// skipped scheduleUpdate()/update() at every call site (the WR-01 incident), so an option the
+// page cannot read blanks its own select and says so in its own row.
+// A pending pick survives only the derive completePending() marked with `keep` (the number it
+// asked for was typed, or another is still missing); every other derive ends it, so Reset, a
+// hash navigation and any other field moving show the fields' state.
+function deriveSelectors() {
+  for (const s of selectors) deriveSelector(s);
+}
+
+function deriveSelector(s) {
+  if (s.pending?.keep) {
+    s.pending.keep = false;
+    showPending(s);
+    return;
+  }
+  endPending(s, false);
+  try {
+    const hits = s.options.map((o) => !o.when.map(holds).includes(false));
+    const i = hits.indexOf(true);
+    s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;
+    s.reason.textContent = '';
+    s.select.removeAttribute('aria-describedby');
+  } catch (err) {
+    s.select.selectedIndex = -1;
+    s.reason.textContent = `Cannot tell which option holds: ${err.message}`;
+    s.select.setAttribute('aria-describedby', s.reason.id);
+  }
+}
+
+// What a pick must write to make the chosen option hold, or the condition that stops it. It
+// plans and never writes, so a pick and the completion of a pending pick share one rule: for
+// each condition that does not hold, an `eq` field gets the string 0, never an empty box (an
+// emptied box reads as the field's default, so it would not be a zero, BS-1), and its old
+// string is stashed; a `gt` field gets its own stashed string back when that string clears the
+// threshold; otherwise the pick is pending (D-07..D-09). An op holds() does not know throws
+// before any write.
+function plan(chosen) {
+  const writes = [];
+  for (const condition of chosen.when) {
+    if (holds(condition)) continue;
+    const { field, op, value } = condition;
+    const kept = stash.get(field);
+    if (op === 'eq') writes.push([field, String(value), true]);
+    else if (stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value) writes.push([field, kept, false]);
+    else return { writes: [], condition };
+  }
+  return { writes, condition: null };
+}
+
+// The one statement in this section that writes a field (test_api.py counts it), and only
+// after the whole plan: writing as the walk went would have zeroed fields under a pick that
+// then went pending (24-RESEARCH Finding 10).
+function write(writes) {
+  for (const [field, to, zeroed] of writes) {
+    const { input } = fields.get(field);
+    if (zeroed) stash.set(field, input.value);
+    input.value = to;
+  }
+}
+
+// A pick writes the minimum that makes the chosen option hold, or goes pending. The keyway is
+// left to the server's 422 (D-10). No update() here and no stopPropagation() on a write: this
+// runs on the select's input, which then bubbles to the form's listener, whose derive lands
+// the select on the chosen option (its conditions now hold) and whose scheduleUpdate() sends
+// the one request (PD-04). A pick first ends the pending pick before it and puts that one's
+// row back, because no derive runs between two picks that both go pending.
+function pick(s, event) {
+  endPending(s, true);
+  const chosen = s.options[s.select.selectedIndex];
+  const { writes, condition } = plan(chosen);
+  if (condition) return pend(s, chosen, condition, event);
+  write(writes);
+}
+
+// The pick cannot be made true without a number the user has not typed: nothing is written,
+// the select keeps what was asked for, and the field that needs the number says so in its own
+// reason row, which describes that field and the select. The focus does not move: on Blink
+// and Gecko (Windows, Linux) an arrow key on the focused select commits the next option and
+// fires `input`, so a focus() here ended a keyboard walk at the first pending step, the next
+// arrow editing that number box instead (24 WR-01; the Codex review of PR #36 traced it to
+// both engines' select handlers). stopPropagation() keeps the form's listener from deriving
+// the select back to the fields' state and from scheduling a request for a part that did not
+// change (MEASURED, 24-RESEARCH Finding 4). The pick stays pending until the number it asked
+// for is typed, when completePending() writes what it held back, or until anything else moves
+// the fields, when the next derive shows their state.
+function pend(s, chosen, condition, event) {
+  event.stopPropagation();
+  s.pending = { chosen, condition, keep: false, was: null };
+  showPending(s);
+}
+
+// Renders the pending pick and remembers the row it overwrites. On a kept derive it runs after
+// applyRelations() has rewritten every row, so `was` is always the row's own text.
+function showPending(s) {
+  const { chosen, condition } = s.pending;
+  const { input, reason } = fields.get(condition.field);
+  s.pending.was = { input, reason, text: reason.textContent, by: input.getAttribute('aria-describedby') };
+  s.select.selectedIndex = s.options.indexOf(chosen);
+  s.wrap.classList.add('pending');
+  reason.textContent = `${chosen.label} needs ${need(condition)}`;
+  input.setAttribute('aria-describedby', reason.id);
+  s.select.setAttribute('aria-describedby', reason.id);
+}
+
+// Ends a pending pick. `restore` puts the field's row back as showPending() found it, for the
+// one path no derive follows (a new pick on the select); a derive rewrites every row itself.
+function endPending(s, restore) {
+  if (!s.pending) return;
+  if (restore && s.pending.was) {
+    const { input, reason, text, by } = s.pending.was;
+    reason.textContent = text;
+    if (by === null) input.removeAttribute('aria-describedby');
+    else input.setAttribute('aria-describedby', by);
+  }
+  s.wrap.classList.remove('pending');
+  s.select.removeAttribute('aria-describedby');
+  s.pending = null;
+}
+
+// A field changed under a pending pick. Runs in the capture phase, so before the form's own
+// listener derives. The field the pick asked for: the plan is run again, and one that holds
+// writes now what the pick held back (the zeros, a stashed string) so the derive that follows
+// shows the chosen option; one still short of a number keeps the pick pending on that field.
+// Anything else -- another field, or a pick on another selector -- ends the pick: its row is
+// put back and it is derived here, because another selector's pending pick stops its event
+// before the form's listener (the Codex re-review of PR #36, CX-04). The select's own event
+// is a new pick, which pick() handles. An empty box is not a typed number: effective() reads
+// it as the field's default, which would complete the pick and zero the other fields on a
+// Backspace or a leading `.` (24 WR-02, reproduced), so the pick stays pending until the box
+// holds a number.
+function completePending(event) {
+  for (const s of selectors) {
+    if (!s.pending || event.target === s.select) continue;
+    const { chosen, condition } = s.pending;
+    const { input } = fields.get(condition.field);
+    if (event.target !== input) {
+      endPending(s, true);
+      deriveSelector(s);
+      continue;
+    }
+    const next = input.value === '' ? { writes: [], condition } : plan(chosen);
+    endPending(s, false);
+    if (next.condition) s.pending = { chosen, condition: next.condition, keep: true, was: null };
+    else write(next.writes);
+  }
+}
+
 // ---------------------------------------------------------------- 3D view
 
 const canvas = $('#canvas');
@@ -400,7 +604,8 @@ function resize() {
 // ---------------------------------------------------------------- wiring
 
 form.addEventListener('submit', (e) => e.preventDefault());
-form.addEventListener('input', () => { applyRelations(); scheduleUpdate(); });
+form.addEventListener('input', completePending, true);
+form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });
 mateInput.addEventListener('input', scheduleUpdate);
 window.addEventListener('hashchange', () => { readHash(); update(); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
@@ -410,7 +615,9 @@ $('#fit').addEventListener('click', fit);
 $('#reset').addEventListener('click', () => {
   for (const [name, { input }] of fields) input.value = defaults[name];
   mateInput.value = '';
+  stash.clear();
   applyRelations();
+  deriveSelectors();
   update();
 });
 $('#copy-link').addEventListener('click', async (e) => {

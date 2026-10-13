@@ -5,8 +5,10 @@ page the product ships, in Chrome Headless Shell, against a real `uvicorn`, and 
 only a browser can: that WebGL2 exists (without it the page builds no form at all,
 app.js:229), that the first part is actually drawn, that the scene holds as many triangles
 as the STL it was fed, that the download link appears only after the model was shown, and that
-a click on `#dl-stl` saves the file under the name the server gives the part, and that a field
-the model says is inert is dimmed with its reason and is still typed into and sent (L41).
+a click on `#dl-stl` saves the file under the name the server gives the part, that a field
+the model says is inert is dimmed with its reason and is still typed into and sent (L41), and
+that a bore shape is picked from a select the schema describes, derived from the fields on
+load and written back as flat fields (L42).
 
 It runs inside `make verify`'s `test` -- so also the pre-push hook, `make worktree.land` and
 CI's `test (3.12)` -- and is excluded by name from `make verify.fast` and `make test-image`
@@ -29,6 +31,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import Counter
 from collections.abc import Iterator
 
 import pytest
@@ -42,14 +45,22 @@ from browser_session import (
     eval_int,
     eval_opt_str,
     eval_pairs,
+    eval_shown,
     eval_str,
     eval_str_list,
     expected_inactive,
+    expected_pick,
+    expected_shown,
     fixture_hashes,
     flip_links,
+    foreign_keys,
     launch,
+    negative_link,
+    number_above,
+    record_api,
     serve,
     serve_stl_from,
+    state_links,
     step,
     stl_triangles,
     sweep,
@@ -137,6 +148,19 @@ def _schema_properties(base: str) -> dict[str, dict[str, object]]:
     return properties
 
 
+def _schema_selectors(base: str) -> list[dict[str, object]]:
+    status, schema = _api_get(base, "/api/schema", "")
+    assert status == 200, f"/api/schema answered {status}"
+    assert isinstance(schema, dict), "/api/schema is not an object"
+    selectors = schema.get("selectors")
+    assert isinstance(selectors, list), "/api/schema has no `selectors` list (L42)"
+    found: list[dict[str, object]] = []
+    for selector in selectors:
+        assert isinstance(selector, dict), f"/api/schema selector {selector!r} is not an object"
+        found.append(selector)
+    return found
+
+
 def _title(properties: dict[str, dict[str, object]], name: str) -> str:
     # app.js buildForm(): `prop.title ?? name`.
     title = properties[name].get("title")
@@ -202,6 +226,311 @@ def _differing(
     """The (got, want) pairs that differ, so a failure names the fields and not the form."""
     assert len(got) == len(want), f"{len(got)} form fields where {len(want)} were expected"
     return [(have, expected) for have, expected in zip(got, want, strict=True) if have != expected]
+
+
+SELECT = "form#params label.selector select"
+SELECTOR_PENDING = (
+    "() => document.querySelector('form#params label.selector').classList.contains('pending')"
+)
+SELECT_BORDER = "() => getComputedStyle(document.querySelector('form#params label.selector select')).borderTopStyle"  # noqa: E501
+SELECT_FOCUSED = "() => document.activeElement === document.querySelector('form#params label.selector select')"  # noqa: E501
+PENDING_AT = (
+    "(i) => document.querySelectorAll('form#params label.selector')[i]"
+    ".classList.contains('pending')"
+)
+SELECT_DESCRIBED_BY = (
+    "(f) => document.querySelector('form#params label.selector select').getAttribute("
+    "'aria-describedby') === document.querySelector("
+    "`form#params label.field:has([name=${f}]) .reason`).id"
+)
+
+
+def _pick(page: Page, label: str) -> None:
+    """Choose `label` in the first selector as a user does: focus it; `input` then `change` fire."""
+    select = page.locator(SELECT).first
+    select.focus()
+    select.select_option(label=label)
+
+
+def _writing_pick(
+    page: Page,
+    chooser: dict[str, object],
+    properties: dict[str, dict[str, object]],
+    label: str,
+    current: str,
+    stash: dict[str, str],
+) -> tuple[str, dict[str, str]]:
+    """Pick `label` on a page showing `current` and check it did what the rule says (L42).
+
+    Returns the page's fragment afterwards and the stash the rule leaves. Every expectation is
+    `expected_pick()`'s, the schema's second implementation of `pick()`; the page must send the
+    one query it predicts, write the same fragment, show the label and dim what the fields say.
+    """
+    rule = expected_pick(chooser, properties, label, current, stash)
+    assert rule.sent is not None, f"bore shape, #{current} + {label}: the rule says pending"
+    with page.expect_request(
+        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+    ) as picked:
+        _pick(page, label)
+        # A fast red: the writes and the re-derive ran in the pick's own dispatch, so a page
+        # that left the pick pending fails here and not after BUILD_WAIT_MS.
+        assert not eval_bool(page, SELECTOR_PENDING), (
+            f"bore shape, #{current} + {label}: the pick was left pending"
+        )
+    sent = urllib.parse.urlsplit(picked.value.url).query
+    assert _pairs(sent) == _pairs(rule.sent), (
+        f"bore shape, #{current} + {label}: the page sent {sent!r}, the rule says {rule.sent!r}"
+    )
+    fragment = eval_str(page, FRAGMENT)
+    assert _pairs(fragment) == _pairs(rule.sent), (
+        f"bore shape, #{current} + {label}: the fragment is {fragment!r}, the rule says "
+        f"{rule.sent!r}"
+    )
+    assert eval_shown(page)[0] == label, (
+        f"bore shape, #{current} + {label}: shows {eval_shown(page)}"
+    )
+    assert eval_inactive(page) == expected_inactive(properties, fragment), (
+        f"bore shape, #{current} + {label}: the dimmed set is not the fields'"
+    )
+    print(f"bore shape: #{current} + {label} -> sent {sent!r}")
+    return fragment, dict(rule.stash)
+
+
+def _pending_pick(
+    page: Page,
+    chooser: dict[str, object],
+    properties: dict[str, dict[str, object]],
+    label: str,
+    current: str,
+    stash: dict[str, str],
+) -> None:
+    """Pick `label` where the rule says it cannot be made true, and check nothing moved (D-09).
+
+    Nothing is written and no request is awaited: the form's pairs and the fragment are what
+    they were. The select keeps the picked label under `.pending` with a dashed border and
+    keeps the focus, the field that needs a number says so in its own reason row, which is its
+    `aria-describedby` and the select's, and the relations still read the fields and not the
+    select (D-11).
+    """
+    rule = expected_pick(chooser, properties, label, current, stash)
+    assert rule.sent is None, f"bore shape, #{current} + {label}: the rule says it writes"
+    pairs_before = eval_pairs(page)
+    fragment_before = eval_str(page, FRAGMENT)
+    _pick(page, label)
+    assert eval_pairs(page) == pairs_before, f"bore shape, pending {label}: a field was written"
+    assert eval_str(page, FRAGMENT) == fragment_before, (
+        f"bore shape, pending {label}: the fragment moved"
+    )
+    assert eval_shown(page)[0] == label, (
+        f"bore shape, pending {label}: the select snapped back to {eval_shown(page)}"
+    )
+    assert eval_bool(page, SELECTOR_PENDING), f"bore shape, pending {label}: wrapper not .pending"
+    # 24 WR-01: the focus stays on the select. A focus() onto the field ended a keyboard walk
+    # at the first pending step on Blink and Gecko (Windows, Linux), where an arrow key commits
+    # the option and fires `input`. The engines' arrow handling is not driven here (Chrome
+    # Headless Shell on macOS opens the popup instead); the property that is the page's to
+    # keep is.
+    assert eval_bool(page, SELECT_FOCUSED), (
+        f"bore shape, pending {label}: the focus left the select for "
+        f"{eval_str(page, '() => document.activeElement.name ?? document.activeElement.tagName')!r}"
+    )
+    assert eval_bool(page, SELECT_DESCRIBED_BY, rule.field), (
+        f"bore shape, pending {label}: the select is not described by {rule.field}'s reason row"
+    )
+    reason = page.locator(f"form#params label.field:has([name={rule.field}]) .reason")
+    expect(reason).to_have_text(rule.note)
+    assert eval_bool(
+        page,
+        "(f) => document.querySelector(`form#params [name=${f}]`).getAttribute("
+        "'aria-describedby') === document.querySelector("
+        "`form#params label.field:has([name=${f}]) .reason`).id",
+        rule.field,
+    ), f"bore shape, pending {label}: {rule.field} is not described by its reason row"
+    assert eval_inactive(page) == expected_inactive(properties, current), (
+        f"bore shape, pending {label}: the select changed what the relations dim"
+    )
+    assert eval_str(page, SELECT_BORDER) == "dashed", (
+        f"bore shape, pending {label}: the pending select is not drawn dashed"
+    )
+    print(f"bore shape: #{current} + {label} -> pending: {rule.field}: {rule.note}")
+
+
+def _complete_pending(
+    page: Page,
+    chooser: dict[str, object],
+    properties: dict[str, dict[str, object]],
+    label: str,
+    current: str,
+    stash: dict[str, str],
+    empty_first: bool = False,
+) -> tuple[str, dict[str, str], int]:
+    """Type the number a pending pick of `label` asks for, until the pick writes (D-09, CX-01).
+
+    Each number typed clears the threshold the schema sets, through `number_above()`, never a
+    literal. A pick still short of another number stays pending on that field with its note,
+    and only the typed field moves; the pick that holds writes what it held back -- the zeros
+    and the stashed strings `expected_pick()` plans from the completed state -- sends that one
+    query, shows the label and leaves nothing pending. With `empty_first`, the asked field is
+    first emptied: an empty box reads as the field's default (D-18), which is not a typed
+    number, so the pick must stay pending with its note and nothing else may move (WR-02).
+    Returns the query sent, the stash and how many numbers were typed.
+    """
+    typed_count = 0
+    while True:
+        rule = expected_pick(chooser, properties, label, current, stash)
+        assert rule.sent is None, f"bore shape, completing {label}: the rule says it writes"
+        if empty_first:
+            empty_first = False
+            boxes = dict(eval_pairs(page))
+            with page.expect_request(
+                lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+            ):
+                page.locator(f"form#params [name={rule.field}]").fill("")
+            emptied = {name for name, value in eval_pairs(page) if boxes[name] != value}
+            assert emptied == {rule.field}, (
+                f"bore shape, {label} with {rule.field} emptied: {sorted(emptied)} moved"
+            )
+            assert eval_bool(page, SELECTOR_PENDING), (
+                f"bore shape, {label} with {rule.field} emptied: the pick completed on the default"
+            )
+            assert eval_shown(page)[0] == label, (
+                f"bore shape, {label} with {rule.field} emptied: shows {eval_shown(page)}"
+            )
+            reason = page.locator(f"form#params label.field:has([name={rule.field}]) .reason")
+            expect(reason).to_have_text(rule.note)
+            print(f"bore shape: {rule.field} emptied, {label} still pending")
+        typed_value = number_above(properties, rule.field, _threshold(chooser, label, rule.field))
+        completed = urllib.parse.urlencode(
+            [(k, v) for k, v in urllib.parse.parse_qsl(current) if k != rule.field]
+            + [(rule.field, typed_value)]
+        )
+        after = expected_pick(chooser, properties, label, completed, stash)
+        before = dict(eval_pairs(page))
+        with page.expect_request(
+            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+        ) as typed:
+            page.locator(f"form#params [name={rule.field}]").fill(typed_value)
+        typed_count += 1
+        sent = urllib.parse.urlsplit(typed.value.url).query
+        if after.sent is None:
+            moved = {name for name, value in eval_pairs(page) if before[name] != value}
+            assert moved == {rule.field}, (
+                f"bore shape, completing {label}: typed {rule.field}, but {sorted(moved)} moved"
+            )
+            assert eval_shown(page)[0] == label, (
+                f"bore shape, completing {label}: shows {eval_shown(page)} with {after.field} "
+                "still missing"
+            )
+            assert eval_bool(page, SELECTOR_PENDING), (
+                f"bore shape, completing {label}: not pending on {after.field}"
+            )
+            reason = page.locator(f"form#params label.field:has([name={after.field}]) .reason")
+            expect(reason).to_have_text(after.note)
+            print(
+                f"bore shape: typed {rule.field}={typed_value}, {label} still pending: "
+                f"{after.field}: {after.note}"
+            )
+            current = completed
+            continue
+        assert _pairs(sent) == _pairs(after.sent), (
+            f"bore shape, completing {label}: typed {rule.field}={typed_value}, the page sent "
+            f"{sent!r}, the rule says {after.sent!r}"
+        )
+        fragment = eval_str(page, FRAGMENT)
+        assert _pairs(fragment) == _pairs(after.sent), (
+            f"bore shape, completing {label}: the fragment is {fragment!r}, the rule says "
+            f"{after.sent!r}"
+        )
+        assert eval_shown(page)[0] == label, (
+            f"bore shape, completing {label}: shows {eval_shown(page)}"
+        )
+        assert not eval_bool(page, SELECTOR_PENDING), (
+            f"bore shape, completing {label}: the typed number left the select pending"
+        )
+        assert eval_str(page, SELECT_BORDER) != "dashed", (
+            f"bore shape, completing {label}: the typed number left the select drawn pending"
+        )
+        assert eval_inactive(page) == expected_inactive(properties, after.sent), (
+            f"bore shape, completing {label}: the dimmed set is not the fields'"
+        )
+        print(f"bore shape: completed {label} with {typed_count} number(s) -> sent {sent!r}")
+        return sent, dict(after.stash), typed_count
+
+
+def _gt_thresholds(selector: dict[str, object], label: str) -> list[tuple[str, str]]:
+    """The `gt` conditions of the option `label`, as (field, threshold) pairs the link can carry.
+
+    Read from the schema (L42), formatted with `:g` as `negative_link` is. A link made of them
+    leaves every one of those conditions false, so a pick of `label` from it must be typed
+    through each field in turn (CX-01).
+    """
+    options = selector["options"]
+    assert isinstance(options, list), f"the selector's options {options!r} are not a list"
+    for option in options:
+        assert isinstance(option, dict), f"an option that is not an object: {option!r}"
+        if option["label"] != label:
+            continue
+        when = option["when"]
+        assert isinstance(when, list), f"an option whose when is {when!r}, not a list"
+        pairs: list[tuple[str, str]] = []
+        for condition in when:
+            assert isinstance(condition, dict), f"a condition that is not an object: {condition!r}"
+            if condition["op"] != "gt":
+                continue
+            field, value = condition["field"], condition["value"]
+            assert isinstance(field, str), f"a condition field that is not a str: {field!r}"
+            assert isinstance(value, int | float), f"{label}: a threshold {value!r}, not a number"
+            assert not isinstance(value, bool), f"{label}: a gt threshold {value!r}, a bool"
+            pairs.append((field, f"{float(value):g}"))
+        return pairs
+    raise AssertionError(f"{label!r} is not an option of the selector")
+
+
+def _threshold(selector: dict[str, object], label: str, field: str) -> float:
+    """The `gt` threshold the option `label` sets on `field`, read from the schema (L42)."""
+    for name, value in _gt_thresholds(selector, label):
+        if name == field:
+            return float(value)
+    raise AssertionError(f"{label} sets no gt threshold on {field}")
+
+
+def _default_clears(
+    properties: dict[str, dict[str, object]], selector: dict[str, object], label: str, field: str
+) -> bool:
+    """Whether `field`'s schema default is above the threshold `label` sets on it.
+
+    Exactly then an emptied box, which the page reads as the default (D-18), would complete a
+    pending pick of `label` with a number nobody typed (WR-02); the case is worth driving only
+    where it can go wrong.
+    """
+    default = properties[field].get("default")
+    assert isinstance(default, int | float), f"{field}: default {default!r} is not a number"
+    assert not isinstance(default, bool), f"{field}: default {default!r} is a bool"
+    return float(default) > _threshold(selector, label, field)
+
+
+# The fields the page marks `.invalid`, by name, as the 422 path of app.js problems() sets them.
+INVALID_NAMES = (
+    "() => [...document.querySelectorAll('form#params label.field.invalid [name]')]"
+    ".map(e => e.name)"
+)
+
+
+def _named_fields(selector: dict[str, object]) -> set[str]:
+    """Every field any option of the selector names in a condition, read from the schema (L42)."""
+    options = selector["options"]
+    assert isinstance(options, list), f"the selector's options {options!r} are not a list"
+    named: set[str] = set()
+    for option in options:
+        assert isinstance(option, dict), f"an option that is not an object: {option!r}"
+        when = option["when"]
+        assert isinstance(when, list), f"an option whose when is {when!r}, not a list"
+        for condition in when:
+            assert isinstance(condition, dict), f"a condition that is not an object: {condition!r}"
+            field = condition["field"]
+            assert isinstance(field, str), f"a condition field that is not a str: {field!r}"
+            named.add(field)
+    return named
 
 
 def _golden_records() -> dict[str, str]:
@@ -294,17 +623,40 @@ def test_the_oracle_reads_a_link_as_the_page_does() -> None:
 def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
     """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
     properties = _schema_properties(server)
+    selectors = _schema_selectors(server)
     field_count = len(properties)
     parked: list[Route] = []
+    seen: list[str] = []
 
     with sync_playwright() as pw:
         # In the body, not a fixture: a missing shell must be a FAILED test with the install
         # command in its message, not an ERROR and not a skip (D-02, D-07).
         browser = launch(pw)
         try:
-            page = browser.new_page()
+            page = record_api(browser.new_page(), seen)
 
-            with step("webgl2"):
+            # D-14, BS-2: no page may send, and no link may carry, a key the form does not own.
+            # `GearParams` is the form's whole vocabulary; the API takes two parameters beside
+            # it, `ModelQuery.quality` and `InfoQuery.mate_teeth` (app.py), and the hash carries
+            # `mate_teeth` but never `quality`. The rest is read from the schema, so a field
+            # added later is allowed with no edit here and a selector's state, which is not a
+            # field, is refused wherever it leaks.
+            allowed_query = set(properties) | {"quality", "mate_teeth"}
+            allowed_hash = set(properties) | {"mate_teeth"}
+
+            def no_foreign_key() -> None:
+                leaked = foreign_keys(seen, allowed_query)
+                assert not leaked, f"a request carried a key GearParams lacks: {leaked}"
+                keys = [
+                    key
+                    for key, _ in urllib.parse.parse_qsl(
+                        eval_str(page, FRAGMENT), keep_blank_values=True
+                    )
+                ]
+                stray = [key for key in keys if key not in allowed_hash]
+                assert not stray, f"the main page's hash carries {stray}, not a field of the form"
+
+            with step("webgl2", no_foreign_key):
                 renderer = eval_opt_str(page, WEBGL2_PROBE)
                 assert renderer is not None, (
                     "this browser gives no WebGL2 context: the viewer builds no form without "
@@ -317,7 +669,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
             page.route(STL_ROUTE, lambda route: parked.append(route))
             page.goto(server + "/")
 
-            with step("form built"):
+            with step("form built", no_foreign_key):
                 expect(page.locator("form#params [name]")).to_have_count(field_count)
                 _wait_until_parked(page, parked)
                 # The fresh default load: empty hash, readHash() and update() have run.
@@ -326,7 +678,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "the STL link has an href before any STL was shown"
                 )
 
-            with step("form from schema"):
+            with step("form from schema", no_foreign_key):
                 # Every expectation is the schema's, read above at test time. A property with
                 # no group sits under "Other" (app.js buildForm), and a group opens its
                 # fieldset at its first property, so two properties of one group are one legend.
@@ -362,7 +714,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     assert value != "", f"the custom property {variable} is empty on :root"
                 print(f"schema: {len(expected_names)} fields in {len(groups)} groups")
 
-            with step("first build drawn"):
+            with step("first build drawn", no_foreign_key):
                 canvas = page.locator("#canvas")
                 blank = canvas.screenshot()  # same element, same page, STL request parked
                 with page.expect_response(
@@ -391,7 +743,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"the scene holds {declared} triangles, the STL header declares {header}"
                 )
 
-            with step("href after showModel"):
+            with step("href after showModel", no_foreign_key):
                 # An STL too short to parse makes showModel throw. The link must still have
                 # no href: it is set only after showModel returns (app.js update()).
                 page.unroute(STL_ROUTE)
@@ -409,7 +761,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
 
             serve_stl_from(page, stl)
 
-            with step("invalid field marked"):
+            with step("invalid field marked", no_foreign_key):
                 # Both marking paths of app.js problems(): `bore_flat=3` is the single-field
                 # `infeasible` error (marked through ctx.fields), `teeth=2` a field-level range
                 # error (marked through loc[1]). The expectation is the API's own 422 body for
@@ -446,7 +798,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "a valid link left a field marked invalid"
                 )
 
-            with step("warning rendered"):
+            with step("warning rendered", no_foreign_key):
                 # Equality of ordered lists, against links whose API answer holds two warnings,
                 # one warning and none: the two-warning link is what separates "renders the
                 # list" from "renders something that contains the first warning". The STL is
@@ -487,7 +839,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     counts.append(len(warnings))
                 print(f"warnings per link (two, one, none expected): {counts}")
 
-            with step("link round trip"):
+            with step("link round trip", no_foreign_key):
                 # The three places app.js sets form values programmatically: the load
                 # (readHash), the `hashchange` listener and #reset. The wait on each is the
                 # /api/info request itself, captured around the action: readHash(), the
@@ -500,7 +852,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     assert status == 200, f"the link #{link} answers {status}, not 200"
 
                 # fresh load: a new page opened on the link.
-                page2 = browser.new_page()
+                page2 = record_api(browser.new_page(), seen)
                 try:
                     serve_stl_from(page2, stl)
                     with page2.expect_request(
@@ -560,7 +912,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"{_differing(after, default_pairs)}"
                 )
 
-            with step("golden sweep"):
+            with step("golden sweep", no_foreign_key):
                 # What only a browser can prove: the server's acceptance of every fixture
                 # record is tests/regression's, but what the form SENDS for each link is the
                 # page's. Each record's link goes through location.hash on one page whose STL
@@ -569,7 +921,11 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # file's diff empty (D-09). Beside the query, the fields the page dimmed for
                 # the link, with their reasons, must equal the Python evaluator's over
                 # /api/schema (23 D-14, D-16): two implementations that share no code agreeing
-                # on every record. The query pin is unchanged.
+                # on every record. The query pin is unchanged. L42, D-06, D-13: the option each
+                # selector shows is read in the same pass and must equal the schema's own
+                # derivation, so the shown option with the unchanged query pin is the proof that
+                # loading never writes (SC2): a page that wrote a field to make an option true
+                # would move a query.
                 pinned = _golden_records()
                 hashes = fixture_hashes()
                 assert set(pinned) == set(hashes), (
@@ -577,7 +933,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"the pin {sorted(set(pinned) - set(hashes))}, only in the fixture "
                     f"{sorted(set(hashes) - set(pinned))}; run `make golden.regen`"
                 )
-                sweep_page = browser.new_page()
+                sweep_page = record_api(browser.new_page(), seen)
                 try:
                     swept = sweep(sweep_page, server, hashes)
                 finally:
@@ -605,14 +961,34 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     if swept[name].inactive != want
                 )
                 assert not dim_differs, f"golden sweep: the dimmed sets differ: {dim_differs}"
+                wanted_shown = {
+                    name: expected_shown(selectors, properties, link)
+                    for name, link in hashes.items()
+                }
+                assert all(option for shown in wanted_shown.values() for option in shown), (
+                    "golden sweep: a fixture link derives no option for a selector, so the "
+                    "total grid of D-02 does not cover the fixture"
+                )
+                assert len(set(wanted_shown.values())) >= 2, (
+                    "golden sweep: every link derives the same option, so a select stuck on "
+                    "one option would pass this step"
+                )
+                shown_differs = "; ".join(
+                    f"{name}: the page shows {swept[name].shown}, the schema says {want}"
+                    for name, want in wanted_shown.items()
+                    if swept[name].shown != want
+                )
+                assert not shown_differs, f"golden sweep: the shown options differ: {shown_differs}"
                 distinct_queries = len({s.query for s in swept.values()})
                 distinct_dims = len({tuple(sorted(s.inactive.items())) for s in swept.values()})
                 print(
                     f"golden sweep: {len(swept)} records, {distinct_queries} distinct queries, "
                     f"{distinct_dims} distinct dimmed sets"
                 )
+                shown_counts = Counter(shown[0] for shown in wanted_shown.values())
+                print(f"golden sweep: shown {dict(sorted(shown_counts.items()))}")
 
-            with step("inert fields"):
+            with step("inert fields", no_foreign_key):
                 # The roadmap's own link: #spoke_count=0&hub_d=40, a value the model says does
                 # nothing, shared and opened fresh (L41, D-17). A fresh page, because a fragment
                 # assigned after the load can be erased before buildForm() returns (22-RESEARCH
@@ -620,7 +996,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # What must hold is that the field is dimmed AND still a field: visible,
                 # editable, holding the link's value, and sent. The expected set comes from
                 # /api/schema through the Python evaluator, never a literal (D-14).
-                fresh = browser.new_page()
+                fresh = record_api(browser.new_page(), seen)
                 try:
                     serve_stl_from(fresh, stl)
                     with fresh.expect_request(
@@ -811,13 +1187,453 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 expect(page.locator("form#params label.field.invalid")).to_have_count(0)
 
-            with step("unknown relation op"):
+            with step("bore shape", no_foreign_key):
+                # L42: a bore shape is picked from a select the schema describes. Its own
+                # page with the STL route aborted, as in the sweep, so nothing builds; the
+                # fragment of a fresh load rides the goto URL (22-RESEARCH Pitfall 2). Every
+                # option, link, query, field and note comes from /api/schema through
+                # expected_shown(), state_links() and expected_pick(), never a literal (D-13).
+                # It sits after `inert fields` and before `unknown relation op`, the steps
+                # whose state it would disturb (22 D-07). One selector today: the schema's
+                # list is read at index 0.
+                chooser = selectors[0]
+                shape_links = state_links(chooser, properties)
+                default_label = expected_shown(selectors, properties, "")[0]
+                picks = {
+                    label: expected_pick(chooser, properties, label, "", {})
+                    for label in shape_links
+                    if label != default_label
+                }
+                writing = [label for label, pick in picks.items() if pick.sent is not None]
+                pending = [label for label, pick in picks.items() if pick.sent is None]
+                assert writing, "bore shape: the schema yields no pick that writes"
+                assert pending, "bore shape: the schema yields no pick that stays pending"
+                bore = record_api(browser.new_page(), seen)
+                try:
+                    bore.route(STL_ROUTE, lambda route: route.abort())
+                    link = shape_links[pending[0]]
+                    with bore.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as loaded:
+                        bore.goto(server + "/#" + link)
+                    load_query = urllib.parse.urlsplit(loaded.value.url).query
+                    assert _pairs(load_query) == _pairs(link), (
+                        f"bore shape, fresh load of #{link}: the page sent {load_query!r}"
+                    )
+                    now_shown = eval_shown(bore)
+                    assert now_shown == expected_shown(selectors, properties, link), (
+                        f"bore shape, #{link}: the page shows {now_shown}"
+                    )
+                    assert now_shown[0] == pending[0], (
+                        f"bore shape, #{link}: shows {now_shown}, expected {pending[0]!r}"
+                    )
+                    assert eval_inactive(bore) == expected_inactive(properties, link), (
+                        f"bore shape, #{link}: the select changed what the relations dim"
+                    )
+                    first_field = next(
+                        name for name, prop in properties.items()
+                        if prop.get("group") == chooser["group"]
+                    )
+                    place = eval_str(
+                        bore,
+                        """() => {
+                          const wrap = document.querySelector('form#params label.selector');
+                          return [
+                            wrap.closest('fieldset').querySelector('legend').textContent,
+                            wrap.previousElementSibling.tagName,
+                            wrap.nextElementSibling.querySelector('[name]').name,
+                            wrap.querySelector('.name').textContent,
+                          ].join('|');
+                        }""",
+                    )
+                    assert place == f"{chooser['group']}|LEGEND|{first_field}|{chooser['title']}", (
+                        f"bore shape: the row sits at {place!r}, not first in its fieldset (D-04)"
+                    )
+                    print(f"bore shape: loaded #{link}: shows {now_shown[0]!r}")
+
+                    def reset_bore() -> None:
+                        with bore.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as reset_sent:
+                            bore.locator("#reset").click()
+                        reset_query = urllib.parse.urlsplit(reset_sent.value.url).query
+                        assert reset_query == "", (
+                            f"bore shape, Reset: the page sent {reset_query!r}"
+                        )
+                        assert eval_shown(bore)[0] == default_label, (
+                            f"bore shape, Reset: shows {eval_shown(bore)}, not {default_label!r}"
+                        )
+
+                    reset_bore()
+                    current, stash = _writing_pick(
+                        bore, chooser, properties, writing[0], "", {}
+                    )
+
+                    # D-08: back to the part the user had, the box restored byte for byte from
+                    # the stash and not re-formatted (probe: write precision). The restore keeps
+                    # its stash entry (PD-08).
+                    before = dict(eval_pairs(bore))
+                    current, stash = _writing_pick(
+                        bore, chooser, properties, default_label, current, stash
+                    )
+                    restored = {
+                        name: value for name, value in eval_pairs(bore) if before[name] != value
+                    }
+                    assert restored, "bore shape: the restore changed no box"
+                    for name, value in restored.items():
+                        assert stash.get(name) == value, (
+                            f"bore shape: {name} holds {value!r}, the stash held "
+                            f"{stash.get(name)!r}"
+                        )
+                        print(f"bore shape: {name} back to {value!r} from the stash")
+
+                    # D-09: a pick that needs a number the user has not typed writes nothing.
+                    _pending_pick(bore, chooser, properties, pending[0], current, stash)
+
+                    # D-09: the number typed into the field the pick named completes the pick.
+                    _complete_pending(bore, chooser, properties, pending[0], current, stash)
+
+                    # D-08: Reset clears the stash, so a pick after Reset and a link restores
+                    # nothing and is pending (a page that kept the stash would restore).
+                    reset_bore()
+                    _writing_pick(bore, chooser, properties, writing[0], "", {})
+                    reset_bore()
+                    zeroed_link = shape_links[writing[0]]
+                    _follow_link(bore, zeroed_link)
+                    _pending_pick(bore, chooser, properties, default_label, zeroed_link, {})
+
+                    # D-06, D-13: every option's own link loads as that option, through
+                    # hashchange, and the dimmed set is the fields'.
+                    reset_bore()
+                    for label, state_link in shape_links.items():
+                        if state_link == "":
+                            continue
+                        _follow_link(bore, state_link)
+                        assert eval_shown(bore)[0] == label, (
+                            f"bore shape: #{state_link} shows {eval_shown(bore)}, not {label!r}"
+                        )
+                        assert eval_inactive(bore) == expected_inactive(properties, state_link), (
+                            f"bore shape: #{state_link} dims a set that is not the fields'"
+                        )
+                        print(f"bore shape: loaded #{state_link}: shows {label!r}")
+                    # Probe, precision: the zero written 0.0 is the same number, so the same
+                    # option (the comparison is numeric, never of strings).
+                    written = urllib.parse.urlencode(
+                        [(k, f"{float(v):.1f}") for k, v in urllib.parse.parse_qsl(zeroed_link)]
+                    )
+                    _follow_link(bore, written)
+                    assert eval_shown(bore)[0] == writing[0], (
+                        f"bore shape: #{written} shows {eval_shown(bore)}, not {writing[0]!r}"
+                    )
+                    print(f"bore shape: loaded #{written}: shows {writing[0]!r}")
+
+                    # D-18: a negative matches no option, so the select is blank, nothing is
+                    # written and the page still builds the part (the request is sent).
+                    below = negative_link(chooser, properties)
+                    _follow_link(bore, below)
+                    assert eval_shown(bore) == expected_shown(selectors, properties, below), (
+                        f"bore shape: #{below} shows {eval_shown(bore)}"
+                    )
+                    assert eval_shown(bore)[0] == "", f"bore shape: #{below} still shows an option"
+                    assert not eval_bool(bore, SELECTOR_PENDING), "bore shape: a blank select pends"
+                    print(f"bore shape: loaded #{below}: shows ''")
+
+                    # D-07, D-09, D-13: every pick from every state. The sixteen picks, the
+                    # shown option included, are each compared with expected_pick(), the
+                    # schema's mirror of the write rule, from a page Reset and then taken to the
+                    # state's own link. A pick of the shown option writes nothing, so it must
+                    # send the query the page already had (Playwright's select_option fires
+                    # `input` even when the value is unchanged).
+                    for start, start_link in shape_links.items():
+                        for label in shape_links:
+                            reset_bore()
+                            if start_link != "":
+                                _follow_link(bore, start_link)
+                            assert eval_shown(bore)[0] == start, (
+                                f"bore shape: #{start_link} shows {eval_shown(bore)}, "
+                                f"not {start!r}"
+                            )
+                            rule = expected_pick(chooser, properties, label, start_link, {})
+                            if rule.sent is None:
+                                _pending_pick(bore, chooser, properties, label, start_link, {})
+                                # CX-01 (PR #36, Codex): completing it writes what it held
+                                # back, the zeros included, and lands on the label. WR-02:
+                                # where the field's default would clear the threshold, the
+                                # box is emptied first and the pick must stay pending.
+                                _complete_pending(
+                                    bore,
+                                    chooser,
+                                    properties,
+                                    label,
+                                    start_link,
+                                    {},
+                                    empty_first=_default_clears(
+                                        properties, chooser, label, rule.field
+                                    ),
+                                )
+                            else:
+                                _writing_pick(bore, chooser, properties, label, start_link, {})
+
+                    # CX-01: a pick short of two numbers stays pending through the first and
+                    # completes on the second. The link puts every `gt` field of the option at
+                    # its threshold, so each is typed in turn; a page that ended the pick at the
+                    # first derive would show the fields' option instead.
+                    chains_seen = 0
+                    for label in shape_links:
+                        at_threshold = _gt_thresholds(chooser, label)
+                        if len(at_threshold) < 2:
+                            continue
+                        threshold_link = urllib.parse.urlencode(at_threshold)
+                        reset_bore()
+                        _follow_link(bore, threshold_link)
+                        assert eval_shown(bore) == expected_shown(
+                            selectors, properties, threshold_link
+                        ), f"bore shape: #{threshold_link} shows {eval_shown(bore)}"
+                        _pending_pick(bore, chooser, properties, label, threshold_link, {})
+                        _chain_sent, _chain_stash, typed_count = _complete_pending(
+                            bore, chooser, properties, label, threshold_link, {}
+                        )
+                        assert typed_count == len(at_threshold), (
+                            f"bore shape, {label} from #{threshold_link}: {typed_count} number(s) "
+                            f"typed, {len(at_threshold)} thresholds"
+                        )
+                        chains_seen += 1
+                    assert chains_seen, "bore shape: no option sets two gt thresholds"
+
+                    # CX-01: any other field moving ends the pending pick, and the select shows
+                    # the fields' state, not the asked-for one. The first pending pick whose
+                    # selector names another field is taken; that field gets a number above
+                    # the one its box holds.
+                    abandoned = False
+                    for start_link in shape_links.values():
+                        for label in shape_links:
+                            rule = expected_pick(chooser, properties, label, start_link, {})
+                            other_fields = sorted(_named_fields(chooser) - {rule.field})
+                            if rule.sent is not None or not other_fields:
+                                continue
+                            reset_bore()
+                            if start_link != "":
+                                _follow_link(bore, start_link)
+                            _pending_pick(bore, chooser, properties, label, start_link, {})
+                            boxes_before = dict(eval_pairs(bore))
+                            other_field = other_fields[0]
+                            held_text = boxes_before[other_field]
+                            held = held_text if held_text != "" else None
+                            typed_value = number_above(
+                                properties, other_field, float(held) if held is not None else -1.0
+                            )
+                            kept_pairs = [
+                                (k, v)
+                                for k, v in urllib.parse.parse_qsl(start_link)
+                                if k != other_field
+                            ]
+                            moved_link = urllib.parse.urlencode(
+                                [*kept_pairs, (other_field, typed_value)]
+                            )
+                            with bore.expect_request(
+                                lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                            ):
+                                bore.locator(f"form#params [name={other_field}]").fill(typed_value)
+                            moved_fields = {k for k, v in eval_pairs(bore) if boxes_before[k] != v}
+                            assert moved_fields == {other_field}, (
+                                f"bore shape, {label} abandoned: typed {other_field}, "
+                                f"{sorted(moved_fields)} moved"
+                            )
+                            assert eval_shown(bore) == expected_shown(
+                                selectors, properties, moved_link
+                            ), (
+                                f"bore shape, {label} abandoned by {other_field}={typed_value}: "
+                                f"shows {eval_shown(bore)}, not the fields' option"
+                            )
+                            assert not eval_bool(bore, SELECTOR_PENDING), (
+                                f"bore shape, {label} abandoned by {other_field}: still pending"
+                            )
+                            assert eval_str(bore, SELECT_BORDER) != "dashed", (
+                                f"bore shape, {label} abandoned by {other_field}: drawn pending"
+                            )
+                            print(
+                                f"bore shape: #{start_link} + {label} abandoned by "
+                                f"{other_field}={typed_value}: shows {eval_shown(bore)[0]!r}"
+                            )
+                            abandoned = True
+                            break
+                        if abandoned:
+                            break
+                    assert abandoned, "bore shape: no pending pick to abandon was found"
+
+                    # D-19: the stash outlives hash navigations. The first pick zeroes a field
+                    # and stashes the user's number; two links later the pick back restores it
+                    # and sends the empty query. Only Reset clears the stash.
+                    reset_bore()
+                    _, carried = _writing_pick(bore, chooser, properties, writing[0], "", {})
+                    away, back = shape_links[pending[0]], shape_links[writing[0]]
+                    _follow_link(bore, away)
+                    _follow_link(bore, back)
+                    _writing_pick(bore, chooser, properties, default_label, back, carried)
+                    print(f"bore shape: the stash outlived #{away} and #{back}")
+
+                    # D-03, D-10: over a keyed bore every pick leaves the keyway fields as the
+                    # link set them, and a refusal stays the server's. `keyed` is the refused
+                    # link without the fields the selector names, so nothing of the selector's
+                    # own is in it. A writing pick must send the keyway pair unchanged; the
+                    # pending pick is completed by typing its value. The server's 422 for the
+                    # sent query is then fetched and the page must mark exactly what it names.
+                    chooser_fields = _named_fields(chooser)
+                    refused_pairs = urllib.parse.parse_qsl(REFUSED_LINK)
+                    keyed = urllib.parse.urlencode(
+                        [(k, v) for k, v in refused_pairs if k not in chooser_fields]
+                    )
+                    keyed_fields = {name for name, _ in _pairs(keyed)}
+                    assert len(keyed_fields) == 2, f"bore shape: {keyed!r} is not the keyway pair"
+                    refusals = 0
+                    for label in shape_links:
+                        reset_bore()
+                        _follow_link(bore, keyed)
+                        assert eval_shown(bore) == expected_shown(selectors, properties, keyed), (
+                            f"bore shape, keyed #{keyed}: shows {eval_shown(bore)}"
+                        )
+                        rule = expected_pick(chooser, properties, label, keyed, {})
+                        if rule.sent is not None:
+                            query, _ = _writing_pick(bore, chooser, properties, label, keyed, {})
+                        else:
+                            _pending_pick(bore, chooser, properties, label, keyed, {})
+                            query, _keyed_stash, _keyed_typed = _complete_pending(
+                                bore, chooser, properties, label, keyed, {}
+                            )
+                        changed = set(_pairs(keyed)) - set(_pairs(query))
+                        assert not changed, (
+                            f"bore shape, keyed + {label}: the keyway pair {sorted(changed)} was "
+                            f"changed in {query!r}"
+                        )
+                        status, body = _api_get(server, "/api/info", query)
+                        print(f"bore shape: keyed + {label} -> {query!r}: API {status}")
+                        if status != 422:
+                            continue
+                        refusals += 1
+                        named, texts = _expected_422(properties, body)
+                        expect(bore.locator("#messages .error")).to_have_text(texts)
+                        marked_names = eval_str_list(bore, INVALID_NAMES)
+                        assert {_title(properties, n) for n in marked_names} == named, (
+                            f"bore shape, keyed + {label}: marked {sorted(marked_names)}, the 422 "
+                            f"names {sorted(named)}"
+                        )
+                        if rule.sent is None:
+                            # L41's PD-07 pair: the refused keyway fields are dimmed AND marked.
+                            dimmed_names = set(eval_inactive(bore))
+                            dimmed_marked = keyed_fields & dimmed_names & set(marked_names)
+                            assert dimmed_marked == keyed_fields, (
+                                f"bore shape, keyed + {label}: {sorted(keyed_fields)} are not "
+                                f"both dimmed and invalid; both: {sorted(dimmed_marked)}"
+                            )
+                    assert refusals, "bore shape: no keyed pick met a 422, the refusal went unseen"
+                finally:
+                    bore.close()
+
+            with step("twin selectors", no_foreign_key):
+                # CX-04 (PR #36, Codex re-review): a pending pick in one selector is ended by
+                # a pending pick in another -- its row put back, its select re-derived to the
+                # fields' option -- although the second pick stops its event before the form's
+                # listener. The schema is served with its selector list doubled, so both
+                # selects derive the same option and either can go pending from one link;
+                # nothing else about the page changes. `pendings[0]` is the first state link
+                # with two labels pending on different fields, read from the schema;
+                # `twins_page` is the page served with the doubled list.
+                status, schema = _api_get(server, "/api/schema", "")
+                assert status == 200, f"twin selectors: /api/schema answered {status}"
+                assert isinstance(schema, dict), "twin selectors: the schema is not an object"
+                doubled = json.loads(json.dumps(schema))
+                doubled["selectors"].append(json.loads(json.dumps(doubled["selectors"][0])))
+                chooser = selectors[0]
+                shape_links = state_links(chooser, properties)
+                pendings = [
+                    (start_link, a, b)
+                    for start_link in shape_links.values()
+                    for a in shape_links
+                    for b in shape_links
+                    if a != b
+                    and expected_pick(chooser, properties, a, start_link, {}).sent is None
+                    and expected_pick(chooser, properties, b, start_link, {}).sent is None
+                    and expected_pick(chooser, properties, a, start_link, {}).field
+                    != expected_pick(chooser, properties, b, start_link, {}).field
+                ]
+                assert pendings, "twin selectors: no two picks pend on different fields"
+                link, first, second = pendings[0]
+                first_rule = expected_pick(chooser, properties, first, link, {})
+                second_rule = expected_pick(chooser, properties, second, link, {})
+                shown_at_link = expected_shown([chooser], properties, link)[0]
+                twins_page = record_api(browser.new_page(), seen)
+                try:
+                    twins_page.route("**/api/schema", lambda route: route.fulfill(json=doubled))
+                    twins_page.route(STL_ROUTE, lambda route: route.abort())
+                    with twins_page.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ):
+                        twins_page.goto(server + "/#" + link)
+                    assert eval_shown(twins_page) == (shown_at_link, shown_at_link), (
+                        f"twin selectors: #{link} shows {eval_shown(twins_page)}"
+                    )
+                    pairs_before = eval_pairs(twins_page)
+                    requests_before = len(seen)
+                    first_reason = twins_page.locator(
+                        f"form#params label.field:has([name={first_rule.field}]) .reason"
+                    )
+                    second_reason = twins_page.locator(
+                        f"form#params label.field:has([name={second_rule.field}]) .reason"
+                    )
+                    first_select = twins_page.locator("#selector-0")
+                    first_select.focus()
+                    first_select.select_option(label=first)
+                    assert eval_bool(twins_page, PENDING_AT, 0), (
+                        f"twin selectors: {first} not pending"
+                    )
+                    expect(first_reason).to_have_text(first_rule.note)
+                    second_select = twins_page.locator("#selector-1")
+                    second_select.focus()
+                    second_select.select_option(label=second)
+                    # The first pick is over: wrapper plain, select back on the fields' option,
+                    # its field's row back to what the relations say; the second is pending.
+                    assert not eval_bool(twins_page, PENDING_AT, 0), (
+                        f"twin selectors: {first} still pending after {second} in the other"
+                    )
+                    assert eval_bool(twins_page, PENDING_AT, 1), (
+                        f"twin selectors: {second} not pending"
+                    )
+                    assert eval_shown(twins_page) == (shown_at_link, second), (
+                        f"twin selectors: shows {eval_shown(twins_page)}, expected "
+                        f"{(shown_at_link, second)}"
+                    )
+                    row_back = expected_inactive(properties, link).get(first_rule.field, "")
+                    expect(first_reason).to_have_text(row_back)
+                    expect(second_reason).to_have_text(second_rule.note)
+                    assert eval_pairs(twins_page) == pairs_before, (
+                        "twin selectors: a field was written"
+                    )
+                    assert len(seen) == requests_before, (
+                        f"twin selectors: {len(seen) - requests_before} request(s) sent by two "
+                        "pending picks"
+                    )
+                finally:
+                    twins_page.close()
+                print(
+                    f"twin selectors: #{link} + {first} in one, then {second} in the other: "
+                    f"the first back to {shown_at_link!r}, the second pending on "
+                    f"{second_rule.field}"
+                )
+
+            with step("unknown relation op", no_foreign_key):
                 # D-02: an op the page does not know is loud, never "active". WR-01: but loud
                 # on the field, not by stopping the page. A throw out of applyRelations()
                 # used to skip update() on every keystroke, so the part, the dimensions and
                 # the download links stayed on the previous parameters while the form moved.
                 # The schema is served with the first related field's first op changed to
                 # one the page lacks; its own page, because the route replaces the schema.
+                # L42: the same holds for a bore-shape option the page cannot read: it is
+                # caught per selector, as a relation is per field, so that select goes blank
+                # and says why in its own row while the part still builds. And a selector on
+                # which two options hold shows none, because a select that picked the first
+                # would claim a shape the fields do not single out (PD-06, BS-3): a twin
+                # selector is served beside it with one option's conditions copied onto
+                # another.
                 status, schema = _api_get(server, "/api/schema", "")
                 assert status == 200, f"unknown relation op: /api/schema answered {status}"
                 assert isinstance(schema, dict), "unknown relation op: the schema is not an object"
@@ -827,10 +1643,35 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert related, "unknown relation op: no field carries a relation to tamper with"
                 broken = related[0]
                 tampered_properties[broken]["enabled_when"][0]["op"] = "ge"
-                bad = browser.new_page()
+                # The first condition of the first option of the first selector: names no field.
+                tampered["selectors"][0]["options"][0]["when"][0]["op"] = "ge"
+                twin = json.loads(json.dumps(selectors[0]))
+                twin_labels = [option["label"] for option in twin["options"]]
+                twin_shown = expected_shown([selectors[0]], properties, "teeth=23")[0]
+                holder = twin_labels.index(twin_shown)
+                other = next(i for i in range(len(twin_labels)) if i != holder)
+                twin["options"][other]["when"] = json.loads(
+                    json.dumps(twin["options"][holder]["when"])
+                )
+                assert expected_shown([twin], properties, "teeth=23") == ("",), (
+                    "unknown relation op: the Python oracle shows an option where two hold"
+                )
+                tampered["selectors"].append(twin)
+                bad = record_api(browser.new_page(), seen)
                 try:
                     bad.route("**/api/schema", lambda route: route.fulfill(json=tampered))
                     bad.goto(server + "/#teeth=23")
+                    # The selectors are read through their ids: two of them would make a
+                    # class locator ambiguous.
+                    unreadable_option = (
+                        "Cannot tell which option holds: Unknown enabled_when op: ge"
+                    )
+                    expect(bad.locator("#selector-0")).to_have_js_property("selectedIndex", -1)
+                    expect(bad.locator("#reason-selector-0")).to_have_text(unreadable_option)
+                    expect(
+                        bad.locator("#selector-1"),
+                        "unknown relation op: two holding options must leave the select blank",
+                    ).to_have_js_property("selectedIndex", -1)
                     expect(bad.locator("#dl-stl")).to_have_attribute(
                         "href", "api/model.stl?teeth=23", timeout=BUILD_WAIT_MS
                     )
@@ -861,6 +1702,12 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     # its presence. A cleared span is still one node, `display: none`, so a
                     # count of 1 held whether or not the error was still there (IN-10).
                     expect(broken_reason).to_have_text(unreadable)
+                    # The input listener re-derived both selectors: still blank, still said.
+                    expect(bad.locator("#reason-selector-0")).to_have_text(unreadable_option)
+                    expect(
+                        bad.locator("#selector-1"),
+                        "unknown relation op: two holding options must leave the select blank",
+                    ).to_have_js_property("selectedIndex", -1)
                     others = {
                         name: why
                         for name, why in expected_inactive(properties, "teeth=24").items()
@@ -872,9 +1719,12 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     )
                 finally:
                     bad.close()
-                print(f"unknown relation op: {broken} unreadable, the form still builds the part")
+                print(
+                    f"unknown relation op: {broken} unreadable, the bore-shape select blank, "
+                    "two holding options blank, the form still builds the part"
+                )
 
-            with step("download name"):
+            with step("download name", no_foreign_key):
                 # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers
                 # with the first build's bytes and no Content-Disposition, so a click there
                 # saves `model.stl` (22-RESEARCH Pitfall 1, reproduced): this step opens its
@@ -883,7 +1733,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 # fragment rides the goto URL, the way a shared link does. The href carries no
                 # `quality`, so the click asks ModelQuery's default `fine` (app.py:238-239):
                 # one 23-tooth hob-root build at load plus a fine re-mesh of the cached solid.
-                fresh = browser.new_page()
+                fresh = record_api(browser.new_page(), seen)
                 try:
                     fresh.goto(server + "/#teeth=23&root_shape=trochoid")
                     expect(fresh.locator("#dl-stl")).to_have_attribute(
@@ -901,7 +1751,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"the download is named {name!r}, not the name the server gives this part"
                 )
 
-            with step("root_shape=bogus as today"):
+            with step("root_shape=bogus as today", no_foreign_key):
                 # Pinned as the page behaves, not fixed (REQUIREMENTS, Form follow-ups): the
                 # select takes a value it has no option for, so it reads '' with selectedIndex
                 # -1, gearQuery() drops it, and the page builds the default part with no word
@@ -957,5 +1807,18 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"bogus: select {select_value!r} at {select_index}, sent {info_query!r}, "
                     f"API {status}"
                 )
+            # The sweep's page sends one api/info request per record by itself, so a recorder
+            # that missed any page but the main one would count fewer than that (24-RESEARCH
+            # Finding 9): the count is what shows every page was watched.
+            no_foreign_key()
+            info = [url for url in seen if urllib.parse.urlsplit(url).path == "/api/info"]
+            assert len(info) > len(fixture_hashes()), (
+                f"the recorder saw {len(info)} api/info requests, not more than the "
+                f"{len(fixture_hashes())} the sweep alone sends: a page went unwatched"
+            )
+            print(
+                f"request recorder: {len(seen)} /api requests ({len(info)} api/info) from "
+                "every page, every key a GearParams field, quality or mate_teeth"
+            )
         finally:
             browser.close()

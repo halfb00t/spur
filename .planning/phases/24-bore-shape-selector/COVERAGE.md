@@ -1,0 +1,1 @@
+No external API integration: the select reads the project's own `GET /api/schema` and sends its own `/api/info` and `/api/model.stl` requests; the detector matched the browser-test helper `record_api`, not a third-party API.

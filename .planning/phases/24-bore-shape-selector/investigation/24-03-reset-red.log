@@ -1,0 +1,713 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_browser.py -n0 --no-cov -q -s
+.webgl2 renderer: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)
+step webgl2: 0.01 s
+step form built: 0.07 s
+schema: 31 fields in 7 groups
+step form from schema: 0.02 s
+canvas PNG blank 3917 B, drawn 38908 B, ratio 9.93 (bar 4.9); data-triangles 9066, STL header 9066
+step first build drawn: 2.83 s
+step href after showModel: 0.04 s
+422 #bore_flat=3: marked ['D-flat'], text ['D-flat must be between 4.5 and 9 mm (flat to opposite side).']
+422 #teeth=2: marked ['Teeth'], text ['Teeth: Input should be greater than or equal to 6']
+step invalid field marked: 0.11 s
+warnings per link (two, one, none expected): [2, 1, 0]
+step warning rendered: 0.30 s
+step link round trip: 0.36 s
+golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets
+golden sweep: shown {'D-flat': 32, 'No bore': 8, 'Round': 4}
+step golden sweep: 0.59 s
+inert fields: hex_wall: Needs Honeycomb cell A/F above 0
+inert fields: hole_circle_d: Needs Lightening holes above 0
+inert fields: hole_d: Needs Lightening holes above 0
+inert fields: hub_d: Needs Spoke arms above 0
+inert fields: rim_wall: Needs Spoke arms above 0
+inert fields: spoke_fillet: Needs Spoke arms above 0
+inert fields: spoke_width: Needs Spoke arms above 0
+inert fields: flip #bore_hex=0.05: API 200, dimmed ['bore_d', 'bore_flat', 'hex_wall', 'hole_circle_d', 'hole_d', 'hub_d', 'keyway_depth', 'keyway_width', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: flip #spoke_count=1: API 422, dimmed ['hex_wall', 'hole_circle_d', 'hole_d']
+inert fields: flip #hole_count=1: API 422, dimmed ['hex_wall', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: flip #hex_cell=0.05: API 422, dimmed ['hole_circle_d', 'hole_d', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: refused pair: invalid ['bore_hex', 'keyway_depth', 'keyway_width'], dimmed and invalid ['keyway_depth', 'keyway_width']
+step inert fields: 1.30 s
+bore shape: loaded #bore_hex=0.05: shows 'Hex'
+step bore shape: 0.22 s
+F
+=================================== FAILURES ===================================
+__________________ test_the_shipped_viewer_in_a_real_browser ___________________
+
+server = 'http://127.0.0.1:50077'
+
+    def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
+        """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
+        properties = _schema_properties(server)
+        selectors = _schema_selectors(server)
+        field_count = len(properties)
+        parked: list[Route] = []
+        seen: list[str] = []
+    
+        with sync_playwright() as pw:
+            # In the body, not a fixture: a missing shell must be a FAILED test with the install
+            # command in its message, not an ERROR and not a skip (D-02, D-07).
+            browser = launch(pw)
+            try:
+                page = record_api(browser.new_page(), seen)
+    
+                # D-14, BS-2: no page may send, and no link may carry, a key the form does not own.
+                # `GearParams` is the form's whole vocabulary; the API takes two parameters beside
+                # it, `ModelQuery.quality` and `InfoQuery.mate_teeth` (app.py), and the hash carries
+                # `mate_teeth` but never `quality`. The rest is read from the schema, so a field
+                # added later is allowed with no edit here and a selector's state, which is not a
+                # field, is refused wherever it leaks.
+                allowed_query = set(properties) | {"quality", "mate_teeth"}
+                allowed_hash = set(properties) | {"mate_teeth"}
+    
+                def no_foreign_key() -> None:
+                    leaked = foreign_keys(seen, allowed_query)
+                    assert not leaked, f"a request carried a key GearParams lacks: {leaked}"
+                    keys = [
+                        key
+                        for key, _ in urllib.parse.parse_qsl(
+                            eval_str(page, FRAGMENT), keep_blank_values=True
+                        )
+                    ]
+                    stray = [key for key in keys if key not in allowed_hash]
+                    assert not stray, f"the main page's hash carries {stray}, not a field of the form"
+    
+                with step("webgl2", no_foreign_key):
+                    renderer = eval_opt_str(page, WEBGL2_PROBE)
+                    assert renderer is not None, (
+                        "this browser gives no WebGL2 context: the viewer builds no form without "
+                        "WebGL (app.js:229)"
+                    )
+                    print(f"webgl2 renderer: {renderer}")
+    
+                # A lambda, never the bound `parked.append`: Playwright rejects a builtin
+                # method as a handler at run time, although mypy accepts it.
+                page.route(STL_ROUTE, lambda route: parked.append(route))
+                page.goto(server + "/")
+    
+                with step("form built", no_foreign_key):
+                    expect(page.locator("form#params [name]")).to_have_count(field_count)
+                    _wait_until_parked(page, parked)
+                    # The fresh default load: empty hash, readHash() and update() have run.
+                    default_pairs = eval_pairs(page)
+                    assert page.locator("#dl-stl").get_attribute("href") is None, (
+                        "the STL link has an href before any STL was shown"
+                    )
+    
+                with step("form from schema", no_foreign_key):
+                    # Every expectation is the schema's, read above at test time. A property with
+                    # no group sits under "Other" (app.js buildForm), and a group opens its
+                    # fieldset at its first property, so two properties of one group are one legend.
+                    groups: dict[str, list[str]] = {}
+                    for name, prop in properties.items():
+                        group = prop.get("group")
+                        groups.setdefault("Other" if group is None else str(group), []).append(name)
+                    expected_names = [name for names in groups.values() for name in names]
+                    assert expected_names, "/api/schema holds no properties: nothing to compare"
+    
+                    # Lists, not sets: the order is the form's, and a reversed form is a bug.
+                    rendered = eval_str_list(
+                        page,
+                        "() => [...document.querySelectorAll('form#params [name]')].map(e => e.name)",
+                    )
+                    assert rendered == expected_names, (
+                        f"form fields {rendered} differ from the schema's, grouped: {expected_names}"
+                    )
+                    legends = page.locator("form#params legend").all_text_contents()
+                    assert legends == list(groups), (
+                        f"form legends {legends} differ from the schema's groups {list(groups)}"
+                    )
+                    shown = page.locator("form#params label.field .name").all_text_contents()
+                    titles = [_title(properties, name) for name in expected_names]
+                    assert shown == titles, f"field names {shown} differ from the titles {titles}"
+                    for variable in THEME_VARIABLES:
+                        value = eval_str(
+                            page,
+                            "(v) => getComputedStyle(document.documentElement)"
+                            ".getPropertyValue(v).trim()",
+                            variable,
+                        )
+                        assert value != "", f"the custom property {variable} is empty on :root"
+                    print(f"schema: {len(expected_names)} fields in {len(groups)} groups")
+    
+                with step("first build drawn", no_foreign_key):
+                    canvas = page.locator("#canvas")
+                    blank = canvas.screenshot()  # same element, same page, STL request parked
+                    with page.expect_response(
+                        lambda response: "/api/model.stl" in response.url, timeout=BUILD_WAIT_MS
+                    ) as served:
+                        parked[0].continue_()
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"^api/model\.stl"), timeout=BUILD_WAIT_MS
+                    )
+                    drawn = canvas.screenshot()
+                    stl = served.value.body()
+    
+                    ratio = len(drawn) / len(blank)
+                    declared = canvas.get_attribute("data-triangles")
+                    header = stl_triangles(stl)
+                    print(
+                        f"canvas PNG blank {len(blank)} B, drawn {len(drawn)} B, ratio {ratio:.2f} "
+                        f"(bar {PNG_RATIO_BAR}); data-triangles {declared}, STL header {header}"
+                    )
+                    assert ratio >= PNG_RATIO_BAR, (
+                        f"the canvas looks undrawn: PNG {len(drawn)} B against a blank {len(blank)} B "
+                        f"is {ratio:.2f}x, bar {PNG_RATIO_BAR}"
+                    )
+                    assert declared is not None, "the scene reported no data-triangles"
+                    assert int(declared) == header, (
+                        f"the scene holds {declared} triangles, the STL header declares {header}"
+                    )
+    
+                with step("href after showModel", no_foreign_key):
+                    # An STL too short to parse makes showModel throw. The link must still have
+                    # no href: it is set only after showModel returns (app.js update()).
+                    page.unroute(STL_ROUTE)
+                    page.route(STL_ROUTE, lambda route: route.fulfill(body=b"\0" * 10))
+                    page.evaluate("() => { location.hash = 'teeth=23'; }")
+                    expect(page.locator("#messages .error")).to_contain_text("Request failed")
+                    assert page.locator("#dl-stl").get_attribute("href") is None, (
+                        "the STL link has an href although showModel failed on the body"
+                    )
+                    assert page.locator("#dl-stl").get_attribute("aria-disabled") == "true"
+                    kept = canvas.get_attribute("data-triangles")
+                    assert kept == declared, (
+                        f"a failed build changed data-triangles from {declared} to {kept}"
+                    )
+    
+                serve_stl_from(page, stl)
+    
+                with step("invalid field marked", no_foreign_key):
+                    # Both marking paths of app.js problems(): `bore_flat=3` is the single-field
+                    # `infeasible` error (marked through ctx.fields), `teeth=2` a field-level range
+                    # error (marked through loc[1]). The expectation is the API's own 422 body for
+                    # the very query the page sent, never a literal.
+                    for fragment in ("bore_flat=3", "teeth=2"):
+                        sent = _follow_link(page, fragment)
+                        status, body = _api_get(server, "/api/info", sent)
+                        assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                        marked, texts = _expected_422(properties, body)
+                        assert marked, f"/api/info?{sent} names no schema field: nothing to mark"
+                        for text in texts:
+                            assert any(title in text for title in marked), (
+                                f"the message {text!r} names none of {sorted(marked)}"
+                            )
+                        # On the text, never on the element count: the previous state's error is
+                        # still on screen until this one replaces it (21-RESEARCH P6).
+                        expect(page.locator("#messages .error")).to_have_text(texts)
+                        invalid = set(page.locator("label.field.invalid .name").all_text_contents())
+                        assert invalid == marked, (
+                            f"#{fragment}: marked {sorted(invalid)}, the 422 names {sorted(marked)}"
+                        )
+                        kept = canvas.get_attribute("data-triangles")
+                        assert kept == declared, (
+                            f"a 422 changed data-triangles from {declared} to {kept}"
+                        )
+                        print(f"422 #{fragment}: marked {sorted(marked)}, text {texts}")
+    
+                    # update() clears the class before each request, so a valid link leaves none.
+                    sent = _follow_link(page, "teeth=23")
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                    )
+                    assert page.locator("label.field.invalid").count() == 0, (
+                        "a valid link left a field marked invalid"
+                    )
+    
+                with step("warning rendered", no_foreign_key):
+                    # Equality of ordered lists, against links whose API answer holds two warnings,
+                    # one warning and none: the two-warning link is what separates "renders the
+                    # list" from "renders something that contains the first warning". The STL is
+                    # fulfilled from the first build (serve_stl_from), so nothing here builds.
+                    counts: list[int] = []
+                    for fragment, at_least in (
+                        ("module=1&pressure_angle=14.5", 2),
+                        ("bore_hex=6", 1),
+                        ("teeth=23", 0),
+                    ):
+                        sent = _follow_link(page, fragment)
+                        status, body = _api_get(server, "/api/info", sent)
+                        assert status == 200, f"/api/info?{sent} answered {status}, not 200"
+                        assert isinstance(body, dict), f"/api/info?{sent} is not an object"
+                        warnings = body["warnings"]
+                        assert isinstance(warnings, list), f"/api/info?{sent} has no warnings list"
+                        if at_least == 0:
+                            assert warnings == [], f"/api/info?{sent} warns: {warnings}"
+                        else:
+                            assert len(warnings) >= at_least, (
+                                f"/api/info?{sent} holds {len(warnings)} warnings, "
+                                f"expected at least {at_least}"
+                            )
+                        # The page shows the warnings before it asks for the STL, so the href
+                        # for this very query means the whole update finished: the messages are
+                        # this link's, not an earlier or aborted one's.
+                        expect(page.locator("#dl-stl")).to_have_attribute(
+                            "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                        )
+                        rendered_warnings = page.locator("#messages .warning").all_text_contents()
+                        assert rendered_warnings == warnings, (
+                            f"#{fragment}: rendered warnings {rendered_warnings} differ from "
+                            f"the API's {warnings}"
+                        )
+                        assert page.locator("#messages .error").count() == 0, (
+                            f"#{fragment}: an error is shown beside the warnings"
+                        )
+                        counts.append(len(warnings))
+                    print(f"warnings per link (two, one, none expected): {counts}")
+    
+                with step("link round trip", no_foreign_key):
+                    # The three places app.js sets form values programmatically: the load
+                    # (readHash), the `hashchange` listener and #reset. The wait on each is the
+                    # /api/info request itself, captured around the action: readHash(), the
+                    # fragment rewrite and the request all happen before any response, whereas an
+                    # empty #status or the mere presence of an href is already true before the
+                    # 350 ms debounce fires (21-RESEARCH P6).
+                    pairs_a, pairs_b = _pairs(LINK_A), _pairs(LINK_B)
+                    for link in (LINK_A, LINK_B):
+                        status, _ = _api_get(server, "/api/info", link)
+                        assert status == 200, f"the link #{link} answers {status}, not 200"
+    
+                    # fresh load: a new page opened on the link.
+                    page2 = record_api(browser.new_page(), seen)
+                    try:
+                        serve_stl_from(page2, stl)
+                        with page2.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as info_request:
+                            page2.goto(f"{server}/#{LINK_A}")
+                        _assert_link_applied(
+                            page2,
+                            "link round trip, fresh load",
+                            LINK_A,
+                            urllib.parse.urlsplit(info_request.value.url).query,
+                            default_pairs,
+                            pairs_a,
+                        )
+                    finally:
+                        page2.close()
+    
+                    # hashchange: a link assigned on the page that is already open. The fragment
+                    # must differ from the current one or no event fires (_follow_link asserts it).
+                    sent_b = _follow_link(page, LINK_B)
+                    _assert_link_applied(
+                        page, "link round trip, hashchange", LINK_B, sent_b, default_pairs, pairs_b
+                    )
+    
+                    # Default dropped: the link names `teeth` at its schema default beside a
+                    # non-default field. The form shows the default; the page does not send it.
+                    teeth_default = properties["teeth"]["default"]
+                    assert isinstance(teeth_default, int), f"teeth default {teeth_default!r}: no int"
+                    assert not isinstance(teeth_default, bool), "the teeth default is a bool"
+                    link_c = f"teeth={teeth_default}&{LINK_C_OTHER}"
+                    sent_c = _follow_link(page, link_c)
+                    assert "teeth" not in dict(_pairs(sent_c)), (
+                        f"link round trip, default dropped: the page sent the default {sent_c!r}"
+                    )
+                    _assert_link_applied(
+                        page,
+                        "link round trip, default dropped",
+                        link_c,
+                        sent_c,
+                        default_pairs,
+                        _pairs(LINK_C_OTHER),
+                    )
+    
+                    # Reset: back to exactly the fresh default load.
+                    assert eval_str(page, FRAGMENT) != "", "link round trip, Reset: nothing to clear"
+                    with page.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as info_request:
+                        page.locator("#reset").click()
+                    reset_query = urllib.parse.urlsplit(info_request.value.url).query
+                    assert reset_query == "", f"link round trip, Reset: the page sent {reset_query!r}"
+                    assert eval_str(page, FRAGMENT) == "", "link round trip, Reset: fragment left"
+                    assert eval_str(page, MATE_VALUE) == "", "link round trip, Reset: mate left"
+                    after = eval_pairs(page)
+                    assert after == default_pairs, (
+                        "link round trip, Reset: the form differs from the fresh default load on "
+                        f"{_differing(after, default_pairs)}"
+                    )
+    
+                with step("golden sweep", no_foreign_key):
+                    # What only a browser can prove: the server's acceptance of every fixture
+                    # record is tests/regression's, but what the form SENDS for each link is the
+                    # page's. Each record's link goes through location.hash on one page whose STL
+                    # route is aborted, so nothing is built (D-08); the sent api/info query must
+                    # equal the committed pin. Phases 23-24 change the form and must leave this
+                    # file's diff empty (D-09). Beside the query, the fields the page dimmed for
+                    # the link, with their reasons, must equal the Python evaluator's over
+                    # /api/schema (23 D-14, D-16): two implementations that share no code agreeing
+                    # on every record. The query pin is unchanged. L42, D-06, D-13: the option each
+                    # selector shows is read in the same pass and must equal the schema's own
+                    # derivation, so the shown option with the unchanged query pin is the proof that
+                    # loading never writes (SC2): a page that wrote a field to make an option true
+                    # would move a query.
+                    pinned = _golden_records()
+                    hashes = fixture_hashes()
+                    assert set(pinned) == set(hashes), (
+                        "golden sweep: the pin and the fixture name different records: only in "
+                        f"the pin {sorted(set(pinned) - set(hashes))}, only in the fixture "
+                        f"{sorted(set(hashes) - set(pinned))}; run `make golden.regen`"
+                    )
+                    sweep_page = record_api(browser.new_page(), seen)
+                    try:
+                        swept = sweep(sweep_page, server, hashes)
+                    finally:
+                        sweep_page.close()
+                    moved = {
+                        name: (pinned[name], swept[name].query)
+                        for name in hashes
+                        if swept[name].query != pinned[name]
+                    }
+                    detail = "; ".join(
+                        f"{name}: expected {want!r}, sent {got!r}"
+                        for name, (want, got) in moved.items()
+                    )
+                    assert not moved, f"golden sweep: the form sends other queries: {detail}"
+                    wanted_dim = {
+                        name: expected_inactive(properties, link) for name, link in hashes.items()
+                    }
+                    assert any(wanted_dim.values()), (
+                        "golden sweep: no record expects a dimmed field, so a schema with no "
+                        "relation would pass this step"
+                    )
+                    dim_differs = "; ".join(
+                        f"{name}: the page dims {swept[name].inactive}, the schema says {want}"
+                        for name, want in wanted_dim.items()
+                        if swept[name].inactive != want
+                    )
+                    assert not dim_differs, f"golden sweep: the dimmed sets differ: {dim_differs}"
+                    wanted_shown = {
+                        name: expected_shown(selectors, properties, link)
+                        for name, link in hashes.items()
+                    }
+                    assert all(option for shown in wanted_shown.values() for option in shown), (
+                        "golden sweep: a fixture link derives no option for a selector, so the "
+                        "total grid of D-02 does not cover the fixture"
+                    )
+                    assert len(set(wanted_shown.values())) >= 2, (
+                        "golden sweep: every link derives the same option, so a select stuck on "
+                        "one option would pass this step"
+                    )
+                    shown_differs = "; ".join(
+                        f"{name}: the page shows {swept[name].shown}, the schema says {want}"
+                        for name, want in wanted_shown.items()
+                        if swept[name].shown != want
+                    )
+                    assert not shown_differs, f"golden sweep: the shown options differ: {shown_differs}"
+                    distinct_queries = len({s.query for s in swept.values()})
+                    distinct_dims = len({tuple(sorted(s.inactive.items())) for s in swept.values()})
+                    print(
+                        f"golden sweep: {len(swept)} records, {distinct_queries} distinct queries, "
+                        f"{distinct_dims} distinct dimmed sets"
+                    )
+                    shown_counts = Counter(shown[0] for shown in wanted_shown.values())
+                    print(f"golden sweep: shown {dict(sorted(shown_counts.items()))}")
+    
+                with step("inert fields", no_foreign_key):
+                    # The roadmap's own link: #spoke_count=0&hub_d=40, a value the model says does
+                    # nothing, shared and opened fresh (L41, D-17). A fresh page, because a fragment
+                    # assigned after the load can be erased before buildForm() returns (22-RESEARCH
+                    # Pitfall 2), so it rides the goto URL; serve_stl_from, so nothing builds.
+                    # What must hold is that the field is dimmed AND still a field: visible,
+                    # editable, holding the link's value, and sent. The expected set comes from
+                    # /api/schema through the Python evaluator, never a literal (D-14).
+                    fresh = record_api(browser.new_page(), seen)
+                    try:
+                        serve_stl_from(fresh, stl)
+                        with fresh.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as loaded:
+                            fresh.goto(server + "/#spoke_count=0&hub_d=40")
+                        load_query = urllib.parse.urlsplit(loaded.value.url).query
+                        assert load_query == "hub_d=40", (
+                            f"inert fields, fresh load: the page sent {load_query!r}, not the "
+                            "link's hub_d=40 (spoke_count=0 is the default and is dropped)"
+                        )
+    
+                        want = expected_inactive(properties, "spoke_count=0&hub_d=40")
+                        got = eval_inactive(fresh)
+                        assert "hub_d" in want, "inert fields: the link's own field is not dimmed"
+                        assert got == want, f"inert fields: the page dims {got}, the schema says {want}"
+                        for name, reason in sorted(got.items()):
+                            print(f"inert fields: {name}: {reason}")
+    
+                        hub_d = fresh.locator("form#params [name=hub_d]")
+                        expect(hub_d).to_be_visible()
+                        expect(hub_d).to_be_editable()
+                        expect(hub_d).to_have_value("40")
+    
+                        # A real keystroke into the dimmed field reaches the request.
+                        with fresh.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as typed:
+                            hub_d.fill("41")
+                        typed_query = urllib.parse.urlsplit(typed.value.url).query
+                        assert typed_query == "hub_d=41", (
+                            f"inert fields, typed into the dimmed field: the page sent {typed_query!r}"
+                        )
+                        assert "hub_d" in eval_inactive(fresh), "inert fields: typing made hub_d live"
+    
+                        # The gate going live: read in the same JS task as the event, before the
+                        # 350 ms debounce (23-RESEARCH Pitfall 8), so only the input
+                        # listener's own call can have changed it.
+                        with fresh.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as gated:
+                            still_dimmed = eval_bool(
+                                fresh,
+                                """() => {
+                                  const gate = document.querySelector('form#params [name=spoke_count]');
+                                  gate.value = '4';
+                                  gate.dispatchEvent(new Event('input', { bubbles: true }));
+                                  return document.querySelector('form#params [name=hub_d]')
+                                    .closest('label').classList.contains('inactive');
+                                }""",
+                            )
+                        assert not still_dimmed, (
+                            "inert fields: hub_d still dimmed right after spoke_count's input event, "
+                            "so the input listener did not re-evaluate before scheduleUpdate"
+                        )
+                        gated_query = urllib.parse.urlsplit(gated.value.url).query
+                        assert _pairs(gated_query) == _pairs("spoke_count=4&hub_d=41"), (
+                            f"inert fields, gate set: the debounced request was {gated_query!r}"
+                        )
+                        assert eval_inactive(fresh) == expected_inactive(
+                            properties, "spoke_count=4&hub_d=41"
+                        ), "inert fields: the dimmed set after the gate went live is not the schema's"
+    
+                        # Reset: the empty query, and exactly the set the empty link gives.
+                        with fresh.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as reset_request:
+                            fresh.locator("#reset").click()
+                        reset_query = urllib.parse.urlsplit(reset_request.value.url).query
+                        assert reset_query == "", f"inert fields, Reset: the page sent {reset_query!r}"
+                        assert eval_inactive(fresh) == expected_inactive(properties, ""), (
+                            "inert fields, Reset: the dimmed set differs from the empty link's"
+                        )
+                    finally:
+                        fresh.close()
+    
+                    # One link per gate condition, derived from the schema (D-15): the dimmed set
+                    # must follow the fields and never the server's answer, so a flip the API
+                    # refuses with a 422 is held to the evaluator too. The main page's fragment
+                    # is empty here and its STL route serves the first build, so nothing builds.
+                    default_dimmed = expected_inactive(properties, "")
+                    links = flip_links(properties)
+                    assert links, "inert fields: the schema yields no flip link"
+                    gates = {link.split("=")[0] for link in links}
+                    for link in links:
+                        sent = _follow_link(page, link)
+                        status, _ = _api_get(server, "/api/info", sent)
+                        flipped = expected_inactive(properties, link)
+                        assert flipped != default_dimmed, f"inert fields: #{link} flips nothing"
+                        got = eval_inactive(page)
+                        assert got == flipped, (
+                            f"inert fields: #{link} (API {status}): the page dims {got}, the "
+                            f"schema says {flipped}; the dim state follows the fields, not the "
+                            "server's answer"
+                        )
+                        print(f"inert fields: flip #{link}: API {status}, dimmed {sorted(got)}")
+    
+                    sent = _follow_link(page, REFUSED_LINK)
+                    status, body = _api_get(server, "/api/info", sent)
+                    assert status == 422, f"inert fields: #{REFUSED_LINK} answered {status}, not 422"
+                    marked, texts = _expected_422(properties, body)
+                    expect(page.locator("#messages .error")).to_have_text(texts)
+                    refused_invalid = eval_str_list(
+                        page,
+                        "() => [...document.querySelectorAll('form#params label.field.invalid [name]')]"
+                        ".map(e => e.name)",
+                    )
+                    dimmed = eval_inactive(page)
+                    assert dimmed == expected_inactive(properties, REFUSED_LINK), (
+                        f"inert fields, refused pair: the page dims {dimmed}"
+                    )
+                    # PD-07 is a claim about the whole pair, so the page must mark exactly what
+                    # the server named (the gate and both keyway fields, calc.py REFUSED) and both
+                    # keyway fields must carry .invalid and .inactive together. One in the
+                    # intersection is not enough: a page that marked only keyway_width passed (IN-07).
+                    invalid_titles = {_title(properties, n) for n in refused_invalid}
+                    assert invalid_titles == marked, (
+                        f"inert fields, refused pair: marked {sorted(invalid_titles)}, "
+                        f"server named {sorted(marked)}"
+                    )
+                    both = sorted(set(refused_invalid) & set(dimmed))
+                    pair = set(urllib.parse.parse_qs(REFUSED_LINK)) - gates
+                    assert len(pair) == 2, f"inert fields, refused pair: {REFUSED_LINK} names {pair}"
+                    assert pair <= set(both), (
+                        f"inert fields, refused pair: {sorted(pair)} are not both invalid "
+                        f"{refused_invalid} and dimmed {sorted(dimmed)}"
+                    )
+                    assert not gates & set(dimmed), "inert fields, refused pair: a gate is dimmed"
+                    assert gates & set(refused_invalid), (
+                        f"inert fields, refused pair: no gate marked invalid among {refused_invalid}: "
+                        "the user could not see how to get back (D-20)"
+                    )
+                    print(
+                        f"inert fields: refused pair: invalid {sorted(refused_invalid)}, "
+                        f"dimmed and invalid {both}"
+                    )
+    
+                    # The dim is shown (PD-06): a reason is displayed for exactly the dimmed
+                    # fields, and their names are drawn in colours no live field's name uses.
+                    shown = eval_str_list(
+                        page,
+                        "() => [...document.querySelectorAll('form#params label.field')]"
+                        ".filter(l => getComputedStyle(l.querySelector('.reason')).display !== 'none')"
+                        ".map(l => l.querySelector('[name]').name)",
+                    )
+                    assert sorted(shown) == sorted(dimmed), (
+                        f"inert fields: reasons shown for {sorted(shown)}, dimmed {sorted(dimmed)}"
+                    )
+                    # The reason sits inside the wrapping <label>, so its text is already part of
+                    # the input's accessible name; aria-describedby then reads it a second time.
+                    # aria-hidden removes it from the name, and a node a describedby points at is
+                    # still read as the description (IN-02).
+                    unhidden = eval_str_list(
+                        page,
+                        "() => [...document.querySelectorAll('form#params .reason')]"
+                        ".filter(r => r.getAttribute('aria-hidden') !== 'true').map(r => r.id)",
+                    )
+                    assert not unhidden, f"inert fields: reasons readable twice: {unhidden}"
+                    described = eval_str_list(
+                        page,
+                        "() => [...document.querySelectorAll('form#params [aria-describedby]')]"
+                        ".map(e => e.name)",
+                    )
+                    assert sorted(described) == sorted(dimmed), (
+                        f"inert fields: described {sorted(described)}, dimmed {sorted(dimmed)}"
+                    )
+                    name_colours = (
+                        "() => [...new Set([...document.querySelectorAll("
+                        "'form#params label.field%s .name')].map(e => getComputedStyle(e).color))]"
+                    )
+                    dim_colours = eval_str_list(page, name_colours % ".inactive")
+                    live_colours = eval_str_list(page, name_colours % ":not(.inactive)")
+                    assert dim_colours, "inert fields: no dimmed name has a colour"
+                    assert live_colours, "inert fields: no live name has a colour"
+                    shared = set(dim_colours) & set(live_colours)
+                    assert not shared, f"inert fields: dimmed and live names both use {sorted(shared)}"
+    
+                    # Reset from the refused state: the empty query, the default set, nothing
+                    # left marked invalid.
+                    with page.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as reset_sent:
+                        page.locator("#reset").click()
+                    reset_query = urllib.parse.urlsplit(reset_sent.value.url).query
+                    assert reset_query == "", f"inert fields, Reset: the page sent {reset_query!r}"
+                    assert eval_inactive(page) == default_dimmed, (
+                        "inert fields, Reset: the dimmed set is not the default one"
+                    )
+                    expect(page.locator("form#params label.field.invalid")).to_have_count(0)
+    
+                with step("bore shape", no_foreign_key):
+                    # L42: a bore shape is picked from a select the schema describes. Its own
+                    # page with the STL route aborted, as in the sweep, so nothing builds; the
+                    # fragment of a fresh load rides the goto URL (22-RESEARCH Pitfall 2). Every
+                    # option, link, query, field and note comes from /api/schema through
+                    # expected_shown(), state_links() and expected_pick(), never a literal (D-13).
+                    # It sits after `inert fields` and before `unknown relation op`, the steps
+                    # whose state it would disturb (22 D-07). One selector today: the schema's
+                    # list is read at index 0.
+                    chooser = selectors[0]
+                    shape_links = state_links(chooser, properties)
+                    default_label = expected_shown(selectors, properties, "")[0]
+                    picks = {
+                        label: expected_pick(chooser, properties, label, "", {})
+                        for label in shape_links
+                        if label != default_label
+                    }
+                    writing = [label for label, pick in picks.items() if pick.sent is not None]
+                    pending = [label for label, pick in picks.items() if pick.sent is None]
+                    assert writing, "bore shape: the schema yields no pick that writes"
+                    assert pending, "bore shape: the schema yields no pick that stays pending"
+                    bore = record_api(browser.new_page(), seen)
+                    try:
+                        bore.route(STL_ROUTE, lambda route: route.abort())
+                        link = shape_links[pending[0]]
+                        with bore.expect_request(
+                            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        ) as loaded:
+                            bore.goto(server + "/#" + link)
+                        load_query = urllib.parse.urlsplit(loaded.value.url).query
+                        assert _pairs(load_query) == _pairs(link), (
+                            f"bore shape, fresh load of #{link}: the page sent {load_query!r}"
+                        )
+                        now_shown = eval_shown(bore)
+                        assert now_shown == expected_shown(selectors, properties, link), (
+                            f"bore shape, #{link}: the page shows {now_shown}"
+                        )
+                        assert now_shown[0] == pending[0], (
+                            f"bore shape, #{link}: shows {now_shown}, expected {pending[0]!r}"
+                        )
+                        assert eval_inactive(bore) == expected_inactive(properties, link), (
+                            f"bore shape, #{link}: the select changed what the relations dim"
+                        )
+                        first_field = next(
+                            name for name, prop in properties.items()
+                            if prop.get("group") == chooser["group"]
+                        )
+                        place = eval_str(
+                            bore,
+                            """() => {
+                              const wrap = document.querySelector('form#params label.selector');
+                              return [
+                                wrap.closest('fieldset').querySelector('legend').textContent,
+                                wrap.previousElementSibling.tagName,
+                                wrap.nextElementSibling.querySelector('[name]').name,
+                                wrap.querySelector('.name').textContent,
+                              ].join('|');
+                            }""",
+                        )
+                        assert place == f"{chooser['group']}|LEGEND|{first_field}|{chooser['title']}", (
+                            f"bore shape: the row sits at {place!r}, not first in its fieldset (D-04)"
+                        )
+                        print(f"bore shape: loaded #{link}: shows {now_shown[0]!r}")
+    
+                        def reset_bore() -> None:
+                            with bore.expect_request(
+                                lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                            ) as reset_sent:
+                                bore.locator("#reset").click()
+                            reset_query = urllib.parse.urlsplit(reset_sent.value.url).query
+                            assert reset_query == "", (
+                                f"bore shape, Reset: the page sent {reset_query!r}"
+                            )
+                            assert eval_shown(bore)[0] == default_label, (
+                                f"bore shape, Reset: shows {eval_shown(bore)}, not {default_label!r}"
+                            )
+    
+>                       reset_bore()
+
+tests/test_browser.py:1091: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def reset_bore() -> None:
+        with bore.expect_request(
+            lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+        ) as reset_sent:
+            bore.locator("#reset").click()
+        reset_query = urllib.parse.urlsplit(reset_sent.value.url).query
+        assert reset_query == "", (
+            f"bore shape, Reset: the page sent {reset_query!r}"
+        )
+>       assert eval_shown(bore)[0] == default_label, (
+            f"bore shape, Reset: shows {eval_shown(bore)}, not {default_label!r}"
+        )
+E       AssertionError: bore shape, Reset: shows ('Hex',), not 'D-flat'
+E       assert 'Hex' == 'D-flat'
+E         
+E         - D-flat
+E         + Hex
+E       step: bore shape
+
+tests/test_browser.py:1087: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser - Ass...
+1 failed, 1 passed in 6.76s
+make: *** [Makefile:170: test] Error 1
+make test exit 2

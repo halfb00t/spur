@@ -5418,3 +5418,126 @@ One red run that is not a deliberate break: this plan's first `make verify` on t
 `ReentrantCallError` warnings from `multiprocessing.resource_tracker` (the open debt `2026-10-06-resource-tracker-flake-fails-the-gate`,
 a fifth occurrence, in a test that debt had not yet named). Its whole log is kept as `23-04-red-1.log`; the one re-run on the same tree
 read `1248 passed in 300.70s (0:05:00)`, `make verify exit 0` (`23-04-verify.log`). Nothing in the tree changed between the two runs.
+
+## Bore-shape selector (Phase 24)
+
+What is priced here is what Phase 24 added to the gate and to the commit slice: the `bore shape` step in `tests/test_browser.py`
+(its own page on the shipped viewer with the STL aborted, a fresh Hex load, every one of the four options picked from every one of
+the four states, the stash across Reset and across hash navigations, the picks over a keyed bore, and the negative link), the
+`golden sweep` step, which now also reads the select under each of the 44 fixture links in the same pass as the query and the
+dimmed set, the `unknown relation op` step, which now also tampers with the selector and adds a twin selector, and the commit slice
+(`make verify.fast`), which now holds `tests/test_selector.py`. The choice was the steps' own timing over a full-gate A/B (CONTEXT
+D-15, following 22 D-06 and 23-04): the phase adds about 8.5 s to one browser run, which a six-run A/B of a gate near 300 s could
+not resolve. No bar is set here: Phase 25 re-sets the gate bar on its final HEAD and absorbs these steps. The readings are this
+host's and are not compared with other hosts', nor with the earlier readings quoted below, which were taken at other HEADs and
+loads. Every run is at HEAD `917e306`, which contains the phase's four code and test commits: `470b78a` (the selector on the model,
+the generic code in `app.js`, the first `bore shape` step, L42), `505999e` (`tests/test_selector.py`), `f489d3d` (the golden sweep
+reads the select, a request recorder on every page) and `3a8028b` (every pick from every state, the stash, the keyed bore, the
+idea retired). `git status --porcelain --untracked-files=no` printed nothing (`.planning/STATE.md` and `.planning/state.json`
+excluded) before the first run and after the last; the only untracked paths were `.planning/milestone.lock` and the kept logs. L42
+in `docs/architecture/decision_log.md` cites this section.
+
+### The bore-shape step, priced (24-04)
+
+Three readings of `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, one at a time in the foreground, nothing else
+started by this plan in between, `uptime` before and after each. The Makefile's own `-n 8` precedes the mode and the later `-n0`
+wins; `-s` prints the `step` lines because the test then runs in the main process. Each run's whole output is kept as
+`.planning/phases/24-bore-shape-selector/investigation/24-04-reading-N.log` and every figure below is copied from it.
+
+#### Host state
+
+- Machine: `bench.machine_facts()` reads `12 CPUs, arm64, 32.0 GiB RAM`; chip Apple M2 Max (`sysctl -n machdep.cpu.brand_string`),
+  macOS 27.0.1, Darwin 27.0.0, arm64
+- Python 3.12.13 (`.venv`), playwright 1.63.0, pytest 9.1.1, `PYTEST_WORKERS` 8 (overridden to `-n0` by the command)
+- HEAD `917e306`; the phase's commits `470b78a`, `505999e`, `f489d3d`, `3a8028b`
+- Read 2026-10-12: host state at 16:14Z (`uptime` 22:14 local, load averages 2.76 6.12 7.62), browser runs started 16:14:44Z,
+  16:15:09Z and 16:15:32Z, commit-slice runs 16:15:56Z, 16:16:15Z and 16:16:36Z (the last read-out at 16:16Z)
+- Not an idle host: the 1-minute load read 2.60 to 3.37 before the browser runs and rose from 3.04 to 6.30 over the three slice runs,
+  which drive eight pytest workers themselves; its 5-minute and 15-minute loads (6.12 and 7.62 at the start) were still high from
+  the full test run made before this plan was dispatched, not from anything this plan started. At the start `ps -A -o %cpu=,comm=`
+  listed `iTerm2` at 31.8 %, `WindowServer` at 28.3 %, `claude` (the process that drives this session) at 25.4 %, `opencode` at
+  3.0 % and `zsh` at 2.8 %; nothing was above 50 % and nothing but the session itself was started by this plan. So every wall
+  figure below is an upper bound for an idle host and none is a bar
+
+#### Readings
+
+| Run | Result line | `step bore shape` (s) | `step golden sweep` (s) | `step unknown relation op` (s) | `step first build drawn` (s) | 1-minute load before -> after | UTC start |
+|---|---|---|---|---|---|---|---|
+| 1 | `2 passed in 20.47s` | 8.58 | 0.36 | 4.11 | 2.96 | 2.60 -> 3.21 | 16:14:44Z |
+| 2 | `2 passed in 18.56s` | 8.55 | 0.42 | 2.11 | 2.99 | 3.21 -> 3.58 | 16:15:09Z |
+| 3 | `2 passed in 20.48s` | 8.53 | 0.38 | 4.12 | 2.99 | 3.37 -> 3.22 | 16:15:32Z |
+
+The other steps, run 1 / 2 / 3, in seconds: `webgl2` 0.01 / 0.01 / 0.01; `form built` 0.09 / 0.08 / 0.07; `form from schema` 0.03 /
+0.02 / 0.03; `href after showModel` 0.04 / 0.04 / 0.04; `invalid field marked` 0.10 / 0.12 / 0.12; `warning rendered` 0.29 / 0.28 /
+0.28; `link round trip` 0.38 / 0.35 / 0.38; `inert fields` 1.33 / 1.35 / 1.31; `download name` 1.16 / 1.18 / 1.15;
+`root_shape=bogus as today` 0.10 / 0.09 / 0.10. The logs are `24-04-reading-1.log`, `24-04-reading-2.log` and
+`24-04-reading-3.log`.
+
+`step bore shape` read 8.55 s on average over the three runs, from 8.53 to 8.58 s. `step golden sweep` read 0.39 s on average, from
+0.36 to 0.42 s, and every run's log shows the select under all 44 links (`golden sweep: shown {'D-flat': 32, 'No bore': 8,
+'Round': 4}`). `step unknown relation op` read 4.11, 2.11 and 4.12 s. Run 2 is about two seconds under this step's other readings
+in this phase (4.09 to 5.19 s, quoted below) and under this plan's other two runs; the cause was not investigated, and the one
+difference the logs show is the line `.server group members before the kill`, which read 3 in run 2 and 4 in runs 1 and 3 (the floor
+is 3). It is recorded as read, not dropped. The slowest build-bound step in every run was `first build drawn` (2.96, 2.99 and
+2.99 s). `bore shape` builds nothing, since the STL is aborted on its page, so it is not a build-bound step and does not move 21
+PD-04's rule; all of its readings are far under the 15 s that would have meant something waits on a timeout, so `BUILD_WAIT_MS` stays
+at 45 s.
+
+Other readings of these steps exist and are quoted, not compared: 24-RESEARCH read, at HEAD `87462cb` before any of this phase's
+code (the browser file at load 4.74), the file at `2 passed in 13.09s` with `golden sweep` 0.32 s, `inert fields` 1.31 s, `first
+build drawn` 3.94 s and `unknown relation op` 4.10 s; 24-01 read `bore shape` 0.81 s, `golden sweep` 0.52 s, `first build drawn`
+3.41 s and `unknown relation op` 5.19 s (`24-01-browser-green.log`, `2 passed in 15.94s`, load 9.65 7.50 5.90), and `bore shape`
+1.86 s, `golden sweep` 0.37 s, `first build drawn` 3.02 s and `unknown relation op` 4.09 s (`24-01-browser-picks.log`, `2 passed in
+14.01s`, load 3.28 5.76 5.49); 24-03 read `bore shape` 1.89 s, `golden sweep` 0.38 s, `first build drawn` 3.00 s and `unknown
+relation op` 4.12 s with the select read under the 44 links (`24-03-browser-sweep.log`, `2 passed in 13.65s`, load 3.46 5.69 7.76),
+and then `bore shape` 8.65 s, `golden sweep` 0.35 s, `first build drawn` 2.98 s and `unknown relation op` 4.11 s with the sixteen
+picks, the stash and the keyed bore in the step (`24-03-browser-picks.log`, `2 passed in 20.37s`, load 2.89 4.50 6.78). So the
+step's growth from 1.89 s to about 8.6 s is 24-03's widening of it, and this plan's three readings agree with 24-03's last one. The
+`ubuntu-latest` reading of the steps comes from the pull request's first CI run and is not taken here.
+
+### The commit slice with the selector proofs (24-04)
+
+Three readings of `/usr/bin/time -p make verify.fast`, the command the pre-commit hook runs (L36 kills it at 30 s), one at a time in
+the foreground, `uptime` before and after each, on the same HEAD and host as above. Each run's whole output is kept as
+`24-04-slice-N.log`, ending `make verify.fast exit 0`, and every figure below is copied from it.
+
+| Run | `make verify.fast` result line | `real` (s) | 1-minute load before -> after | UTC start |
+|---|---|---|---|---|
+| 1 | `912 passed in 15.02s` | 15.66 | 3.04 -> 3.88 | 16:15:56Z |
+| 2 | `912 passed in 14.98s` | 15.57 | 3.81 -> 5.23 | 16:16:15Z |
+| 3 | `912 passed in 14.99s` | 15.57 | 5.21 -> 6.30 | 16:16:36Z |
+
+`real` read 15.60 s on average, from 15.57 to 15.66 s; every reading is under L36's 30 s kill, with about 14 s of headroom. Another
+reading is quoted, not compared: 24-RESEARCH read `896 passed in 15.49s`, 16.16 s `real`, at HEAD `87462cb` (load averages 2.45 4.47
+3.70), before `tests/test_selector.py` existed. The selector module is the 16 tests that make 912 from 896 and is not in
+`HEAVY_TEST_FILES`.
+
+### Seen red once (Phase 24)
+
+These are the phase's deliberate reds (PD-12): each pin or step was run red before the code it pins existed, or with one option, one
+call or one line broken on purpose, and the first failure line is copied from the kept log. Logs are under
+`.planning/phases/24-bore-shape-selector/investigation/`. The browser command is `make test PYTEST_ARGS="tests/test_browser.py -n0
+--no-cov -q -s"` and the module command is `make test.fast PYTEST_ARGS="tests/test_selector.py -n0 -q -rf"`.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 24-01 | `tests/test_api.py::test_schema_drives_the_form` | none: the pin was written before `selectors` existed, so it ran against the unchanged `params.py`. `make test PYTEST_ARGS="tests/test_api.py -n0 --no-cov -q -k 'schema_drives_the_form or openapi_documents or every_key_the_ui_reads or shareable_link_round_trips or root_shape_link'"`, log `24-01-api-red.log` (`3 failed, 2 passed, 57 deselected in 4.39s`) | `tests/test_api.py:71`, `KeyError: 'selectors'` | n/a, the `selectors` list then written (`470b78a`) |
+| 24-01 | `tests/test_api.py::test_openapi_documents_the_typed_contracts` | none: the same run and log | `tests/test_api.py:142`, `AssertionError: L42: /api/schema lost its selectors` | n/a, the `selectors` list then written |
+| 24-01 | `tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code` | none: the tightened `deriveSelectors()` token pin ran against the unchanged `app.js`; the same run and log | `tests/test_api.py:273`, `AssertionError: mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }` | n/a, the `deriveSelectors();` calls then written |
+| 24-01 | `bore shape` step in `tests/test_browser.py` | none: the model carried the key and `app.js` was unchanged. The browser command, log `24-01-browser-red.log` (`1 failed, 1 passed in 7.45s`) | `tests/test_browser.py:868`, `AssertionError: bore shape, #bore_hex=0.05: the page shows ()`, note `step: bore shape` | n/a, the generic code then written; the green runs are `24-01-browser-green.log` and `24-01-browser-picks.log` |
+| 24-01 | `bore shape` step, a pending pick | the `event.stopPropagation();` line deleted from `pend()` in `src/spur/static/app.js`. The browser command, log `24-01-stop-red.log` (`1 failed, 1 passed in 9.61s`) | `tests/test_browser.py:307`, `AssertionError: bore shape, pending Hex: the select snapped back to ('D-flat',)`, note `step: bore shape` | yes, `app.js` copied back from a copy saved before the break; `cmp` silent |
+| 24-01 | `bore shape` step, the restore | `stash.has(field) &&` replaced by `false &&` in `pick()`. The browser command, log `24-01-restore-red.log` (`1 failed, 1 passed in 8.47s`) | `tests/test_browser.py:261`, `AssertionError: bore shape, #bore_flat=0 + D-flat: the pick was left pending`, note `step: bore shape` | yes, copied back from the saved copy; `cmp` silent |
+| 24-01 | `unknown relation op` step, the catch | the `try`/`catch` removed from `deriveSelectors()`. The browser command, log `24-01-catch-red.log` (`1 failed, 1 passed in 14.66s`) | `tests/test_browser.py:1167`, `AssertionError: Locator expected to have JS Property '-1'`, actual value 0, note `step: unknown relation op` | yes, copied back from the saved copy; `cmp` silent |
+| 24-01 | `unknown relation op` step, the twin selector | `s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;` replaced by `= i;`, so the first match wins. The browser command, log `24-01-twin-red.log` (`1 failed, 1 passed in 19.87s`) | `tests/test_browser.py:1172`, `AssertionError: unknown relation op: two holding options must leave the select blank`, expected `'-1'`, actual 0, note `step: unknown relation op` | yes, copied back from the saved copy; `cmp` silent, and the saved copy deleted after this last restore |
+| 24-02 | `tests/test_selector.py`, a wrong field | D-flat's `when("bore_flat", "gt", 0)` became `when("bore_hex", "gt", 0)` in `_BORE_SHAPE`. The module command, log `24-02-wrong-field-red.log` (`15 failed, 1 passed in 0.21s`, `make test.fast exit 2`) | `tests/test_selector.py:310`, `AssertionError: selector 0, D-flat: ['bore_hex'] is under both eq and gt` (the walk), then `:336`, `AssertionError: Bore shape: cell (0.0, 9.0, 8.0) holds [], not exactly one option` (the grid) | yes, `src/spur/params.py` copied back from a saved copy; `git diff --exit-code -- src/spur/params.py` silent |
+| 24-02 | `tests/test_selector.py`, a wrong op | Round's `when("bore_flat", "eq", 0)` became `"gt"`. The module command, log `24-02-wrong-op-red.log` (`8 failed, 8 passed in 0.13s`, `make test.fast exit 2`) | `tests/test_selector.py:336`, `AssertionError: Bore shape: cell (0.0, 9.0, 0.0) holds [], not exactly one option` (the grid) | yes, copied back from the saved copy; `git diff --exit-code -- src/spur/params.py` silent |
+| 24-02 | `tests/test_selector.py`, an overlap on the real model | Round's `bore_flat eq 0` condition removed. The module command, log `24-02-overlap-red.log` (`8 failed, 8 passed in 0.13s`, `make test.fast exit 2`) | `tests/test_selector.py:336`, `AssertionError: Bore shape: cell (0.0, 9.0, 8.0) holds ['Round', 'D-flat'], not exactly one option` (the grid) | yes, copied back from the saved copy; `git diff --exit-code -- src/spur/params.py` silent; the saved copy `cmp`ed clean and deleted |
+| 24-03 | `golden sweep` step, `readHash()` | the `deriveSelectors();` line deleted from `readHash()` in `src/spur/static/app.js`. The browser command, log `24-03-readhash-red.log` (`1 failed, 1 passed in 5.65s`) | `tests/test_browser.py:781`, `AssertionError: golden sweep: the shown options differ: README:export-defaults: the page shows ('Round',), the schema says ('D-flat',); ...`, note `step: golden sweep` | yes, `git checkout -- src/spur/static/app.js`; `git diff --exit-code -- src/spur/static/app.js` silent |
+| 24-03 | `bore shape` step, Reset | the `deriveSelectors();` line deleted from the `#reset` handler. The browser command, log `24-03-reset-red.log` (`1 failed, 1 passed in 6.76s`) | `tests/test_browser.py:1087`, `AssertionError: bore shape, Reset: shows ('Hex',), not 'D-flat'`, note `step: bore shape` | yes, `git checkout -- src/spur/static/app.js`; `git diff --exit-code -- src/spur/static/app.js` and `git diff 470b78a --exit-code -- src/spur/static/app.js` both silent |
+
+One red run that is not a deliberate break: 24-01's first `make verify` on the committed tree read `1 failed, 1294 passed in 296.91s
+(0:04:56)` (`TOTAL 97.99 %`), `tests/test_pool.py::test_health_reports_pool_state`, an `ExceptionGroup` of
+`ReentrantCallError` warnings from `multiprocessing.resource_tracker` (the open debt
+`2026-10-06-resource-tracker-flake-fails-the-gate`), at a host load of 15.6. Its whole log is kept as `24-01-red-1.log`; the one
+re-run on the same tree read `1295 passed in 272.91s (0:04:32)`, `make verify exit 0` (`24-01-verify.log`). The gate was green on its
+first run in 24-02 (`1311 passed in 294.40s`, `24-02-verify.log`) and in 24-03 (`1311 passed in 336.15s`, `24-03-verify.log`).

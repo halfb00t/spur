@@ -127,7 +127,7 @@ byte-identical to the `v0.4` tag.
       refused) says so in the form before it is typed: an `enabled_when` relation on the
       model, proved against `calc`, rendered dimmed-and-editable by generic `app.js` code, the
       pins tightened and not removed
-- [ ] **Phase 24: Bore-Shape Selector** - Discretionary: a bore shape is picked, not inferred
+- [x] **Phase 24: Bore-Shape Selector** - Discretionary: a bore shape is picked, not inferred (completed 2026-10-13)
       from a warning: a schema-carried select derived from the flat fields on load, writing
       only the flat fields; skippable without breaking anything else
 - [ ] **Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close** - The gate is measured once on
@@ -436,7 +436,17 @@ phase the research flags as needing a human decision):
 changes; the select is not a field and never appears in the URL. Option tables, if the
 implementation has any, are objects and not `['word', ...]` rows (PITFALLS BS-4).
 **Research flag**: No — it needs the human decisions above, not research.
-**Plans**: TBD
+**Plans**: 4/4 plans complete, in 4 waves (sequential: each reads the tree the one before it commits)
+- [x] 24-01-PLAN.md — The tracer and the record in one commit (CF-1): the four D-02 options on `GearParams.model_config`
+  through `/api/schema` to generic `buildSelectors()`/`deriveSelectors()`/`pick()`, every path of a pick seen in a real
+  browser, the pending style, the `app.js` pins tightened; L42 *(wave 1)*
+- [x] 24-02-PLAN.md — `tests/test_selector.py` in the commit slice: the walk, the keyword check, the grid with its negative
+  cells, the round trip of every pick from every state against `GearParams` and `derive()`; three wrong options seen red *(wave 2)*
+- [x] 24-03-PLAN.md — The browser proof widened: the golden sweep reads the select under the 44 links, a request recorder
+  on every page, every pick from every state, the stash across links, the keyed bore; the idea retired, the hex-warning
+  debt restated *(wave 3)*
+- [x] 24-04-PLAN.md — The step and the commit slice priced: three readings each, seen red once, the kept logs *(wave 4)*
+
 **UI hint**: yes
 
 ### Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close

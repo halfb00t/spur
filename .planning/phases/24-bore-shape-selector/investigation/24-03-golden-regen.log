@@ -1,0 +1,3 @@
+.venv/bin/python tests/capture_requests.py
+wrote 44 records (44 distinct queries) to /Users/halfb00t/git/halfb00t/spur/tests/regression/golden_requests.json
+make golden.regen exit 0

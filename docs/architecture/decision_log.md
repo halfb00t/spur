@@ -2678,3 +2678,150 @@ Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand
 `playwright` 1.63.0, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Chrome Headless
 Shell 153.0.8010.12; the browser readings on 2026-10-11 about 18:11 to 18:15 local time (23-01), load average 3.8
 to 5.3 (`uptime`).
+
+## L42 — A bore shape is picked in the form and written back as flat fields: a model-level selectors list in L41's vocabulary (follows L41, keeps L02 and L05)
+
+Date: 2026-10-12.
+
+L02 (one parameter model, three front ends) stays and is the argument: the options live on the model and reach
+the form through the schema, so `app.js` names no bore field. L03, L05, L08, L27, L39 and L41 stay as written.
+L42 follows L41 and supersedes nothing: the selector is written in L41's condition vocabulary, which L41 said
+Phase 24 would do. The idea's trigger, a browser test that can see the form (L39), fired in Phase 21, and
+kickoff decision 9 (S1, the schema-carried route) is the one taken. Every figure below is cited to the 24-01
+SUMMARY, to `24-RESEARCH.md` or to a named later plan. None is re-estimated here, and none is carried from one
+host to another.
+
+**The carriage** (D-05). `GearParams.model_config` holds `json_schema_extra={"selectors": [_BORE_SHAPE]}`: a list
+of selector objects `{title, group, options: [{label, when}]}`, where `when` is a list of `when()` conditions, so
+there is one vocabulary and one evaluator (`holds()`) and no second grammar. `_option()`, called as
+`_option(label, *conditions)`, builds an option with the same `list(...)` copy `_extra()` uses for `mypy --strict`, and the list is written inline
+because a pre-built `list[JsonDict]` variable fails the type check (24-RESEARCH Finding 3). `/api/schema` gains
+that one top-level key and `properties` is unchanged. There is no `writes` or `clears` key: what a pick writes is
+derived from the option's own conditions. `InfoQuery` and `ModelQuery` inherit the key into their own
+`model_json_schema()`, but `/openapi.json` is byte-identical and carries no `selectors`, because FastAPI flattens the
+two query models into `parameters` (24-RESEARCH Finding 1). The 24-CONTEXT text that the key reaches the OpenAPI
+component schemas is corrected here, and `test_openapi_documents_the_typed_contracts` pins both halves: the key is
+in `/api/schema` and not in `/openapi.json`. A FastAPI or pydantic change that starts carrying it is a decision for
+a new Lxx, not drift. Rejected: a `BORE_SHAPES` constant in `app.js` (it would name three bore fields in the page,
+which the field-name pin forbids and L02 argues against), and any second condition grammar. **No `GearParams` field
+is added**: the select is a view of `bore_d`, `bore_flat` and `bore_hex`, never a field, so every link that omits
+a field builds the part it built (L05).
+
+**The four states** (D-02..D-04). Round (`bore_hex` eq 0, `bore_d` gt 0, `bore_flat` eq 0), D-flat (`bore_hex` eq 0,
+`bore_d` gt 0, `bore_flat` gt 0), Hex (`bore_hex` gt 0) and No bore (`bore_hex` eq 0, `bore_d` eq 0), in that
+display order. Exactly one holds on every non-negative triple, so the order is display only: the one-off grid
+over `{0, positive}` for the three fields held exactly one option in 8 of 8 cells and showed `['D-flat']` for the
+defaults (24-01 SUMMARY; `tests/test_selector.py` from 24-02 proves it on the real model). No bore is required by
+totality: a zero bore with no hex is a legal part with no warning, and without the option the select would show
+Round at a bore of 0. The keyway stays two fields outside the select (D-03): it modifies Round and D-flat, and
+composite options would need both its fields typed before they could hold. The row is a `label.selector`, first in
+the Bore fieldset right after the legend, titled by the metadata, with no `name` and no `fields` entry, built by
+`buildSelectors(...)` outside the loop over `schema.properties`. It is not a `label.field`, so `form built`,
+`form from schema`, `inert fields` and the two pair readers see exactly what they saw.
+
+**Derive, write, stash, pending** (D-06..D-09, D-11, D-18, D-19). The shown option is derived by
+`deriveSelectors()` through the relations' own `holds()`, at the three call sites of `applyRelations()` (the end of
+`readHash()`, the form `input` listener, `#reset`) and never from a build response, so the select follows the
+fields under a 422. Deriving never writes a field. An option is shown only when exactly one holds; none holding
+is a blank select, because the form accepts a negative and 13 of the 27 cells of `{-1, 0, positive}` match no
+option (24-RESEARCH Finding 5), and two holding is blank too, because a select that picked the first would claim a
+shape the fields do not single out. The derivation is caught per selector, as `applyRelations()` is per field, so an
+option the page cannot read blanks its own select, says why in its own row and does not skip `update()` (the WR-01
+class). A pick plans first and writes after: for each condition of the chosen option that does not hold, an `eq`
+field is written the string `0`, never an empty box, and its old string goes into the `stash`; a `gt` field gets its
+own stashed string back when that string clears the threshold; otherwise the pick is pending, and nothing at all is
+written, because writing as the walk went would have zeroed fields under a pick that then waited (24-RESEARCH
+Finding 10). Round from the default part sends exactly `bore_flat=0` and the hash becomes `#bore_flat=0`; picking
+D-flat next puts `bore_flat` back to the exact string the box held. A pending pick keeps the select on what was
+asked for under `.pending` (the dimmed tone of L41 with a dashed border), focuses the field that needs a number and
+says so in that field's own reason row, which is its `aria-describedby`: `Hex needs Hex bore A/F above 0` from the
+default part. It sends no request and changes no hash. (The focus move and the end-at-next-derive rule of this
+paragraph are superseded by the amendment of 2026-10-13 at the end of this entry.) A pending pick calls `stopPropagation` on the select's
+`input` event, because the form listener would otherwise derive the select back and schedule a duplicate request
+(measured, 24-RESEARCH Finding 4); a writing pick lets the event bubble, so the form listener's `applyRelations();
+deriveSelectors(); scheduleUpdate();` is the one path, there are still exactly three call sites of each, and
+exactly one debounced request is sent. The `stash` is in memory, cleared by Reset and by a reload and left alone by
+a hash navigation, and a restore keeps its entry. `applyRelations()` never reads the select (D-11): under a pending
+Hex, `bore_d` and `bore_flat` stay live until a number is typed, then dim as before.
+
+**The keyway left to the 422** (D-10). Picking Hex or No bore over a keyed bore leaves `keyway_width` and
+`keyway_depth` alone. The server's 422 marks them, as it does for the same link typed by hand, and the server stays
+the authority on refusals. The cost accepted is a red form until the keyway is zeroed; 24-03 proves it in the
+browser. Rejected: a `clears` key per option (a second vocabulary key the walk must separately prove), and zeroing
+every field whose relation turns false (it would zero the inert `bore_d` and `bore_flat` under Hex and lose the
+bore).
+
+**The pins** (D-16, CF-1). Each change is stricter and none is deleted or allow-listed. In
+`test_the_shareable_link_round_trips_every_field_through_generic_code`, token 4 gains `deriveSelectors();` after
+`applyRelations();` in `readHash()`, token 10 becomes
+`form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });` and token 11
+becomes `mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();`; fourteen tokens are
+added for the selector loop over the schema's own list, the options built with `new Option(label)`, the derivation
+through `holds()`, the blank-unless-exactly-one rule, the write rule, the stash and the pending pick's
+`stopPropagation` and note. `fields.set(` must occur once. A new assertion finds the section
+`-- selectors (L42)`, outside the span in which `writes_a_value` forbids writes, and requires exactly one value write
+in it, so a write added to `deriveSelectors()` goes red. `test_schema_drives_the_form` asserts the emitted
+selectors, the option labels in display order and the Hex condition. The field-name rule, `writes_a_field_shut`,
+`writes_a_value` and the `['word',` harvest are unchanged and pass. The `DIMS` block, `gearQuery()`, the
+`if (prop.enum)` branch, `hashchange`, `renderInfo()` and the relations section are byte-identical to their previous
+text (compared in the 24-01 verify), so the debt in
+`docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md` did not have its trigger fired, and
+`tests/regression/pre_v0_2.json` and `tests/regression/golden_requests.json` show an empty diff.
+
+**The proof** (D-12..D-15). 24-01 adds the `bore shape` step to `tests/test_browser.py`, between `inert fields`
+and `unknown relation op`: a fresh load of the Hex state link, the row's place, Reset, a writing pick, the restore,
+the pending pick, the number typed, Reset clearing the stash, every option's own link, the Round link with its zero
+written `0.0`, and the negative link; every expectation comes from `/api/schema` through `expected_shown()`,
+`state_links()` and `expected_pick()` in `tests/browser_session.py`, never a literal. `unknown relation op` also
+serves an unreadable option and a twin selector with two holding options, and both load blank. Four deliberate
+breaks were seen red once and restored (24-01 SUMMARY, `Seen red`). `tests/test_selector.py` (24-02) is the
+kernel-free proof on the real model; 24-03 reads the select under the 44 golden links, picks every option from
+every state, keeps the stash across hash navigations, loads the keyed bore and records every `/api/*` request on
+every page; 24-04 prices the step and the commit slice under `bench/RESULTS.md`
+`## Bore-shape selector (Phase 24)`.
+
+**Retired and restated** (D-17). The commit that closes the phase's feature work, in 24-03, retires
+`docs/ideas/2026-09-27-bore-shape-selector-in-the-web-form.md` to
+`docs/ideas/retired/2026-09-27-bore-shape-selector-in-the-web-form.md`, and restates the trigger of
+`docs/tech_debt/active/2026-10-11-hex-bore-warns-about-default-bore-fields.md`: it fires with this change, because
+a selector-made Hex part keeps `bore_d` and `bore_flat` at their defaults (D-11), so `/api/info` warns that both
+are ignored. The warning is calc debt, rendered unchanged by `renderInfo()`; the fix is a `calc` change and a
+separate task.
+
+**Reversibility.** D-02 and D-07 are **costly**: changing the option list or the write rule moves the model list,
+the two Python mirrors, the JS and the browser step together. D-01 was reversible until the commit that carries this
+entry and is now a revert of the phase. The pending wording, the visual and the step are reversible in a commit of
+their own.
+
+Reason: a bore shape is picked and shown, not inferred from a warning (PROJECT.md success metric 2), and the part
+the form describes is the part every link builds: a link the selector makes is one the typed fields could have
+made, and one that omits a field builds what it always built (L05). The server stays the authority on what a value
+does (L02, L08).
+Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string hw.memsize`, read
+2026-10-12); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.13,
+`playwright` 1.63.0, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1 (`importlib.metadata.version`), Chrome Headless
+Shell 153.0.8010.12; the browser readings on 2026-10-12 about 21:03 to 21:08 local time (UTC+6), load average 3.3
+to 9.7 (`uptime`; 24-01 SUMMARY).
+
+**Amended 2026-10-13, from the Codex cross-review of PR #36 (`24-CROSS-REVIEW.md`).** Two sentences above are
+superseded. A pending pick no longer ends at the next derive: it stays until the number it asked for is typed,
+when the pick's own plan runs again and writes what it held back (the `eq` zeros, a stashed `gt` string), or until
+anything else moves the fields (another field typed, another pick, Reset, a hash navigation), when the derive shows
+the fields' state. Before this, Round picked from `#bore_d=0` and completed by typing `bore_d` showed D-flat,
+because `bore_flat` stayed at 8 while the pick waited on `bore_d` (CX-01); the write rule of D-07..D-09 is
+unchanged, only when it runs. And a pending pick no longer focuses the field that needs a number: on Blink and
+Gecko on Windows and Linux an arrow key on the focused select commits the next option and fires `input`, so the
+focus moved off the select at the first pending step and the next arrow edited that number box (24 WR-01, traced
+by the review to both engines' select handlers). The field's reason row still carries the note and is the field's
+and the select's `aria-describedby`. The completion runs in a capture-phase `input` listener on the form, before
+the form's own listener, so the three call sites of `applyRelations()` and `deriveSelectors()` and the pinned
+tokens are unchanged; `plan()` and `write()` split the walk from the one write so the pick and the completion
+share one rule, and the selectors section still holds exactly one value write. Proved in the browser: every pending
+pick of the sixteen is completed by typing and lands on its label with the held-back writes sent; D-flat from
+`#bore_d=0&bore_flat=0` stays pending through the first number and completes on the second; a pending pick is
+ended by another field typed; the focus is on the select after every pending pick. No engine that commits an option
+per arrow key is driven by the test (Chrome Headless Shell on macOS opens the popup instead), so the keyboard walk
+itself stays a human check. An emptied box is not a typed number: `effective()` reads it as the field's default,
+so the pick stays pending until the box holds a number (the second code review's WR-02, reproduced on a Backspace and
+on a leading `.`). The step's cost is not re-measured here (one reading of 12.26 s, not comparable with 24-04's
+three); Phase 25 re-sets the bar on its final `HEAD`.

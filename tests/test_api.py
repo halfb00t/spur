@@ -56,13 +56,22 @@ def test_index_and_static() -> None:
 
 
 def test_schema_drives_the_form() -> None:
-    props = client.get("/api/schema").json()["properties"]
+    schema = client.get("/api/schema").json()
+    props = schema["properties"]
     assert props["teeth"]["group"] == "Teeth"
     assert props["module"]["unit"] == "mm"
     assert props["recess_sides"]["enum"] == ["both", "top", "bottom", "none"]
     # L41: a relation is schema metadata the form reads; hub_d does nothing under the
     # default spoke_count of 0, and the schema says so exactly as the model wrote it.
     assert props["hub_d"]["enabled_when"] == [{"field": "spoke_count", "op": "gt", "value": 0}]
+    # L42: a selector is model-level metadata the form reads beside `properties` (D-05). The
+    # emitted list is the model's own, and the literal labels and the Hex condition pin the
+    # decision here the way the hub_d line above pins L41: the display order is Round,
+    # D-flat, Hex, No bore (D-02) and Hex holds exactly when the hex bore is above zero.
+    assert schema["selectors"] == GearParams.model_json_schema()["selectors"]
+    options = schema["selectors"][0]["options"]
+    assert [option["label"] for option in options] == ["Round", "D-flat", "Hex", "No bore"]
+    assert options[2]["when"] == [{"field": "bore_hex", "op": "gt", "value": 0}]
 
 
 def test_openapi_documents_the_typed_contracts() -> None:
@@ -122,6 +131,18 @@ def test_openapi_documents_the_typed_contracts() -> None:
     assert set(pool_component["required"]) == {
         "workers", "queue_available", "workers_replaced"}
 
+    # L42, the goal's "API unchanged" half (L05): the bore-shape selectors reach the form
+    # through /api/schema and nowhere else. The first line makes the second non-vacuous
+    # (the key exists). 24-CONTEXT D-05 expected the key to reach the OpenAPI component
+    # schemas of InfoQuery and ModelQuery, which inherit it, and called that harmless;
+    # measured (24-RESEARCH Finding 1) FastAPI flattens both query models into
+    # `parameters`, so /openapi.json is byte-identical with and without the selectors. A
+    # FastAPI or pydantic change that starts carrying the key is a decision for a new Lxx,
+    # not drift.
+    assert "selectors" in client.get("/api/schema").json(), "L42: /api/schema lost its selectors"
+    assert "selectors" not in client.get("/openapi.json").text, (
+        "L42: the selectors reached /openapi.json, which carried none before the selector")
+
 
 def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     """D-12: a renamed or dropped field silently blanks a row of the UI, and there is no
@@ -174,7 +195,8 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     """D-11's static proof, the browser-test idea's own "cheaper first step": the
     hash -> form -> query path in app.js handles every `GearParams` field generically,
     with no per-field code (D-12; L41 supersedes 08 D-09: a relation is schema metadata
-    that generic code reads). A renamed or added field cannot
+    that generic code reads; L42: a model-level selector list that generic code reads,
+    derives and writes back as flat fields). A renamed or added field cannot
     silently break the shareable-link round trip without this catching it. The browser
     itself is checked by hand at gsd-verify-work, against the checklist in
     12-07-PLAN.md's `<verification>`.
@@ -202,18 +224,29 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # scheduleUpdate, Reset), the effective-value rule gearQuery() sends (D-18), the
     # evaluator's own shape (D-02, D-03) and the loop that writes the dim. The
     # `hashchange` token and every other token are as they were; none was removed.
+    #
+    # L42 tightened three of them and added fourteen, and removed none. Tokens 4, 10 and 11
+    # gained `deriveSelectors();` at each of applyRelations()'s three call sites (11 also
+    # Reset's `stash.clear();`), so a derive moved out of a site goes red. The added tokens
+    # pin the selector loop over the schema's own list, the derivation through the
+    # relations' `holds()` (a select shows an option only when exactly one holds), the
+    # write rule (an `eq` condition gets the string 0, a `gt` one only its own stashed
+    # string back, otherwise the pick is pending), the stash, the pending pick's
+    # `stopPropagation` and its note. `fields.set(` is counted once below: the select adds
+    # no `fields` entry, so it is never sent and never in the hash.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
         "for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];",
-        "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); }",
+        "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }",
         "q.set(name, input.value)",
         "const infoQ = new URLSearchParams(q);",
         "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
         "navigator.clipboard.writeText(location.href)",
         "window.addEventListener('hashchange', () => { readHash(); update(); });",
-        "form.addEventListener('input', () => { applyRelations(); scheduleUpdate(); });",
-        "mateInput.value = ''; applyRelations(); update();",
+        # One exact token on one line, so a grep for it finds this pin: 108 columns.
+        "form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });",  # noqa: E501
+        "mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",
         "return input.value === '' ? defaults[name] : input.value;",
         "const have = Number(effective(field));",
         "default: throw new Error(",
@@ -222,6 +255,20 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "wrap.classList.toggle('inactive', off);",
         "reason.textContent = off ?",
         "input.setAttribute('aria-describedby', reason.id)",
+        "buildSelectors(schema.selectors ?? [], groups);",
+        "for (const [i, { title, group, options }] of list.entries()) {",
+        "for (const { label } of options) select.add(new Option(label));",
+        "select.addEventListener('input', (event) => pick(s, event));",
+        "const hits = s.options.map((o) => !o.when.map(holds).includes(false));",
+        "s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;",
+        "if (holds(condition)) continue;",
+        "if (op === 'eq') writes.push([field, String(value), true]);",
+        "stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value",
+        "if (zeroed) stash.set(field, input.value);",
+        "input.value = to;",
+        "const stash = new Map();",
+        "event.stopPropagation();",
+        "reason.textContent = `${chosen.label} needs ${need(condition)}`;",
     ):
         assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 
@@ -246,6 +293,12 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         # A field name read off an object as `something.<field>` -- per-field property
         # access, the shape a conditional-field or bore-selector patch would add.
         assert not re.search(r"\." + re.escape(name) + r"\b", rest), name
+
+    # L42: the bore-shape select is built by its own function and is not a field. It has no
+    # `name` and no `fields` entry, so gearQuery() cannot send it and update() cannot put
+    # it in the hash (REQ-selector-derives-and-writes-through). One `fields.set(` is the
+    # buildForm() loop's; a second would be the select joining the form's values.
+    assert collapsed_source.count("fields.set(") == 1, "the select must not join `fields`"
 
     # L41: an inert field stays a field. A relation dims the field and says why; it never
     # disables, hides, clears or rewrites it, because a shared link such as
@@ -319,6 +372,18 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         assert writes_a_value.search(cleared), cleared
     assert not writes_a_value.search("if (input.value === '') return;")
     assert not writes_a_value.search(relations.group(1))
+
+    # L42: the selectors live in a section of their own, after every function they call and
+    # outside the span above (a pick writes a value, which the relations never do). A pick
+    # writes in exactly one statement and nothing else in the section writes a value, so a
+    # write added to deriveSelectors() (derivation never writes, L05) goes red here. The
+    # count reads comments too: no comment in the section spells a value assignment.
+    selectors = re.search(r"-- selectors \(L42\)\n(.*?)\n// -+ 3D view\n", source, re.DOTALL)
+    assert selectors, "the selectors section moved: this guard would read nothing"
+    assert "function deriveSelectors()" in selectors.group(1)
+    assert "function pick(" in selectors.group(1)
+    assert len(writes_a_value.findall(selectors.group(1))) == 1, (
+        "the selectors section must hold exactly one value write, in pick()")
 
 
 def test_info_reports_the_mate() -> None:
