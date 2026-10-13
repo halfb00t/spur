@@ -234,6 +234,10 @@ SELECTOR_PENDING = (
 )
 SELECT_BORDER = "() => getComputedStyle(document.querySelector('form#params label.selector select')).borderTopStyle"  # noqa: E501
 SELECT_FOCUSED = "() => document.activeElement === document.querySelector('form#params label.selector select')"  # noqa: E501
+PENDING_AT = (
+    "(i) => document.querySelectorAll('form#params label.selector')[i]"
+    ".classList.contains('pending')"
+)
 SELECT_DESCRIBED_BY = (
     "(f) => document.querySelector('form#params label.selector select').getAttribute("
     "'aria-describedby') === document.querySelector("
@@ -1474,6 +1478,96 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     assert refusals, "bore shape: no keyed pick met a 422, the refusal went unseen"
                 finally:
                     bore.close()
+
+            with step("twin selectors", no_foreign_key):
+                # CX-04 (PR #36, Codex re-review): a pending pick in one selector is ended by
+                # a pending pick in another -- its row put back, its select re-derived to the
+                # fields' option -- although the second pick stops its event before the form's
+                # listener. The schema is served with its selector list doubled, so both
+                # selects derive the same option and either can go pending from one link;
+                # nothing else about the page changes. The twins_page is the first two labels that
+                # are pending from one state link on different fields, read from the schema.
+                status, schema = _api_get(server, "/api/schema", "")
+                assert status == 200, f"twin selectors: /api/schema answered {status}"
+                assert isinstance(schema, dict), "twin selectors: the schema is not an object"
+                doubled = json.loads(json.dumps(schema))
+                doubled["selectors"].append(json.loads(json.dumps(doubled["selectors"][0])))
+                chooser = selectors[0]
+                shape_links = state_links(chooser, properties)
+                pendings = [
+                    (start_link, a, b)
+                    for start_link in shape_links.values()
+                    for a in shape_links
+                    for b in shape_links
+                    if a != b
+                    and expected_pick(chooser, properties, a, start_link, {}).sent is None
+                    and expected_pick(chooser, properties, b, start_link, {}).sent is None
+                    and expected_pick(chooser, properties, a, start_link, {}).field
+                    != expected_pick(chooser, properties, b, start_link, {}).field
+                ]
+                assert pendings, "twin selectors: no two picks pend on different fields"
+                link, first, second = pendings[0]
+                first_rule = expected_pick(chooser, properties, first, link, {})
+                second_rule = expected_pick(chooser, properties, second, link, {})
+                shown_at_link = expected_shown([chooser], properties, link)[0]
+                twins_page = record_api(browser.new_page(), seen)
+                try:
+                    twins_page.route("**/api/schema", lambda route: route.fulfill(json=doubled))
+                    twins_page.route(STL_ROUTE, lambda route: route.abort())
+                    with twins_page.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ):
+                        twins_page.goto(server + "/#" + link)
+                    assert eval_shown(twins_page) == (shown_at_link, shown_at_link), (
+                        f"twin selectors: #{link} shows {eval_shown(twins_page)}"
+                    )
+                    pairs_before = eval_pairs(twins_page)
+                    requests_before = len(seen)
+                    first_reason = twins_page.locator(
+                        f"form#params label.field:has([name={first_rule.field}]) .reason"
+                    )
+                    second_reason = twins_page.locator(
+                        f"form#params label.field:has([name={second_rule.field}]) .reason"
+                    )
+                    first_select = twins_page.locator("#selector-0")
+                    first_select.focus()
+                    first_select.select_option(label=first)
+                    assert eval_bool(twins_page, PENDING_AT, 0), (
+                        f"twin selectors: {first} not pending"
+                    )
+                    expect(first_reason).to_have_text(first_rule.note)
+                    second_select = twins_page.locator("#selector-1")
+                    second_select.focus()
+                    second_select.select_option(label=second)
+                    # The first pick is over: wrapper plain, select back on the fields' option,
+                    # its field's row back to what the relations say; the second is pending.
+                    assert not eval_bool(twins_page, PENDING_AT, 0), (
+                        f"twin selectors: {first} still pending after {second} in the other"
+                    )
+                    assert eval_bool(twins_page, PENDING_AT, 1), (
+                        f"twin selectors: {second} not pending"
+                    )
+                    assert eval_shown(twins_page) == (shown_at_link, second), (
+                        f"twin selectors: shows {eval_shown(twins_page)}, expected "
+                        f"{(shown_at_link, second)}"
+                    )
+                    row_back = expected_inactive(properties, link).get(first_rule.field, "")
+                    expect(first_reason).to_have_text(row_back)
+                    expect(second_reason).to_have_text(second_rule.note)
+                    assert eval_pairs(twins_page) == pairs_before, (
+                        "twin selectors: a field was written"
+                    )
+                    assert len(seen) == requests_before, (
+                        f"twin selectors: {len(seen) - requests_before} request(s) sent by two "
+                        "pending picks"
+                    )
+                finally:
+                    twins_page.close()
+                print(
+                    f"twin selectors: #{link} + {first} in one, then {second} in the other: "
+                    f"the first back to {shown_at_link!r}, the second pending on "
+                    f"{second_rule.field}"
+                )
 
             with step("unknown relation op", no_foreign_key):
                 # D-02: an op the page does not know is loud, never "active". WR-01: but loud

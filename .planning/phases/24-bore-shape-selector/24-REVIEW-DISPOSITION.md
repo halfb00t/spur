@@ -35,8 +35,12 @@ findings:
     severity: info
     disposition: open
     title: "A selector with no options, a null entry or an unknown group throws in buildForm(), so startup shows the schema message and never calls update() (Codex cross-review of PR #36; the same case as IN-02)"
+  - id: CX-04
+    severity: warning
+    disposition: fixed
+    title: "With two selectors, a pending pick in the second ends the first's pending pick without restoring its row or re-deriving it, because the second pick stops the event before the form's listener (Codex re-review of faed50a)"
 open: 5
-total: 8
+total: 9
 recorded: 2026-10-12T16:43:17.717Z
 ---
 
@@ -52,6 +56,7 @@ recorded: 2026-10-12T16:43:17.717Z
 | CX-01 | warning | fixed | `24-CROSS-REVIEW.md` finding 1: a pending pick now stays until its number is typed, then `completePending()` writes what it held back; proved for every pending pick, a two-number chain and an abandoned pick in `tests/test_browser.py`; L42 amended 2026-10-13 |
 | CX-02 | warning | fixed | `24-CROSS-REVIEW.md` finding 2, the same defect as WR-01 with the engine evidence; fixed with it |
 | CX-03 | info | open | `24-CROSS-REVIEW.md` finding 3, the same case as IN-02: fail-loud on the self-served schema; `tests/test_selector.py` and `test_schema_drives_the_form` catch a malformed entry before it ships |
+| CX-04 | warning | fixed | `24-CROSS-REVIEW.md` re-review of `faed50a`: `completePending()` puts the ended pick's row back and re-derives that selector (`deriveSelector()`); proved by the `twin selectors` browser step on a schema with its selector list doubled; latent today, the schema carries one selector |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.

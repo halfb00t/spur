@@ -21,7 +21,18 @@ src/spur/static/app.js:411: WARNING: WR-01 follows from [Blink](https://raw.gith
 src/spur/static/app.js:311: WARNING: Missing `options`, a null selector, or an unknown group throws during construction. Startup then returns before loading the hash or calling `update()`, leaving numeric fields blank. Isolate malformed selectors, report their errors, and continue initializing the form; add construction-failure coverage.
 Verdict: REVISE
 
-## Prompt
+## Re-review of the fix commit faed50a
+
+Claude Code fixed findings 1 and 2 in `faed50a` (`fix(24): a pending bore-shape pick completes when its number is typed and never moves the focus`). Codex reviewed that commit's diff and the fixed tree, read-only, with the second prompt kept below. Its last message follows verbatim.
+
+### Findings
+
+src/spur/static/app.js:474: WARNING: With two bore selectors, load `#bore_d=0`, pick Round in the first, then Hex in the second: the first loses `.pending` but still displays Round and leaves its reason text, although the fields imply No bore. The second pending pick suppresses the cleanup derive. Restore canceled rows and rederive canceled selectors on this path; add two-selector coverage.
+Verdict: REVISE
+
+The one finding is recorded as CX-04 in `24-REVIEW-DISPOSITION.md` and fixed in the commit that carries this section: `completePending()` now puts the first selector's row back and re-derives it when another selector's pick ends its pending pick, and the browser step `twin selectors` proves it on a schema served with its selector list doubled.
+
+## Prompt (first review)
 
 You are the second CLI in this repository's cross-CLI review (docs/HOW_TO_DEVELOP.md section 7): Claude Code wrote pull request #36 ("Phase 24: Bore-Shape Selector", branch gsd/phase-24-bore-shape-selector against main); you review it. Read AGENTS.md first. Its two standing rules (a printed number is a number someone will cut metal to, L08; a parameter the user did not set must never silently change the part, L05) and docs/CODING_VALUES.md are the standard.
 
@@ -36,3 +47,18 @@ What to check, in order of weight:
 6. Robustness of the schema-driven JS: a malformed selectors entry from /api/schema must not break the form or skip update().
 
 Rules for your output: no praise and no summary of what the PR does. One finding per line in the form `path:line: SEVERITY: problem. Fix.` with SEVERITY one of CRITICAL (a wrong number, a silent part change, data loss), WARNING (a correctness or maintainability defect) or INFO (minor). Cite the file and line of the checked-out tree, not the diff hunk. End with one line `Verdict: APPROVE` or `Verdict: REVISE`; REVISE only when at least one CRITICAL or WARNING finding is real and reproducible from the cited lines. Do not modify any file.
+
+## Prompt (re-review)
+
+You are the second CLI in this repository's cross-CLI review (docs/HOW_TO_DEVELOP.md section 7). You reviewed pull request #36 ("Phase 24: Bore-Shape Selector") earlier today and returned three findings; your last message is kept at .planning/phases/24-bore-shape-selector/24-CROSS-REVIEW.md in the checked-out tree. Claude Code then wrote one fix commit, faed50a, for your findings 1 and 2 (finding 3 was recorded as INFO and left as is). Review that fix.
+
+The diff of the fix is in <scratchpad>/fix-faed50a.diff (src/spur/static/app.js, tests/test_browser.py, tests/browser_session.py, docs/architecture/web-ui.md and the dated amendment at the end of L42 in docs/architecture/decision_log.md). The checked-out tree at /Users/halfb00t/git/halfb00t/spur is the fixed head; read any file you need. AGENTS.md and docs/CODING_VALUES.md are the standard.
+
+What to check:
+1. Does the fix close your finding 1? A pending pick now stays until the number it asked for is typed, when completePending() (a capture-phase input listener on the form) re-runs plan() and writes what the pick held back; any other field typed, another pick, Reset or a hash navigation ends it. Look for a sequence that still loses the pick or writes a field the user did not ask to change: the keep flag consumed by deriveSelectors(), the was record restored by endPending(), two selectors, a pending pick followed by a hash navigation, Reset, a negative typed into the asked field, typing the asked field to a value that clears the threshold while another condition's stash is stale.
+2. Does the fix close your finding 2? pend() no longer calls focus(); the field's reason row describes the field and the select. Is anything lost for keyboard or screen-reader users that the previous behaviour gave.
+3. Regressions: the pins in tests/test_api.py still hold (exactly one value write in the selectors section, the three call sites, the fourteen tokens); gearQuery(), the relations section and the regression fixtures untouched; one debounced request per pick and per completion.
+4. Test quality of the new browser coverage (_complete_pending, the chained case from a link with every gt field at its threshold, the abandon case, the focus assertion): does each prove behaviour, is any expectation a tautology, is the keyboard walk itself still unproved and said so.
+5. Comments and the L42 amendment: each says why with the constraint or measurement; the amendment's claims match the code.
+
+Rules for your output: no praise and no summary of what the fix does. One finding per line in the form `path:line: SEVERITY: problem. Fix.` with SEVERITY one of CRITICAL, WARNING or INFO, citing the checked-out tree's file and line. End with one line `Verdict: APPROVE` or `Verdict: REVISE`; REVISE only when at least one CRITICAL or WARNING finding is real and reproducible from the cited lines. Do not modify any file.

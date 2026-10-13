@@ -349,24 +349,26 @@ function buildSelectors(list, groups) {
 // asked for was typed, or another is still missing); every other derive ends it, so Reset, a
 // hash navigation and any other field moving show the fields' state.
 function deriveSelectors() {
-  for (const s of selectors) {
-    if (s.pending?.keep) {
-      s.pending.keep = false;
-      showPending(s);
-      continue;
-    }
-    endPending(s, false);
-    try {
-      const hits = s.options.map((o) => !o.when.map(holds).includes(false));
-      const i = hits.indexOf(true);
-      s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;
-      s.reason.textContent = '';
-      s.select.removeAttribute('aria-describedby');
-    } catch (err) {
-      s.select.selectedIndex = -1;
-      s.reason.textContent = `Cannot tell which option holds: ${err.message}`;
-      s.select.setAttribute('aria-describedby', s.reason.id);
-    }
+  for (const s of selectors) deriveSelector(s);
+}
+
+function deriveSelector(s) {
+  if (s.pending?.keep) {
+    s.pending.keep = false;
+    showPending(s);
+    return;
+  }
+  endPending(s, false);
+  try {
+    const hits = s.options.map((o) => !o.when.map(holds).includes(false));
+    const i = hits.indexOf(true);
+    s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;
+    s.reason.textContent = '';
+    s.select.removeAttribute('aria-describedby');
+  } catch (err) {
+    s.select.selectedIndex = -1;
+    s.reason.textContent = `Cannot tell which option holds: ${err.message}`;
+    s.select.setAttribute('aria-describedby', s.reason.id);
   }
 }
 
@@ -464,14 +466,17 @@ function endPending(s, restore) {
 // listener derives. The field the pick asked for: the plan is run again, and one that holds
 // writes now what the pick held back (the zeros, a stashed string) so the derive that follows
 // shows the chosen option; one still short of a number keeps the pick pending on that field.
-// Any other field: the pick ends and the derive shows the fields' state. The select's own
-// event is a new pick, which pick() handles.
+// Anything else -- another field, or a pick on another selector -- ends the pick: its row is
+// put back and it is derived here, because another selector's pending pick stops its event
+// before the form's listener (the Codex re-review of PR #36, CX-04). The select's own event
+// is a new pick, which pick() handles.
 function completePending(event) {
   for (const s of selectors) {
     if (!s.pending || event.target === s.select) continue;
     const { chosen, condition } = s.pending;
     if (event.target !== fields.get(condition.field).input) {
-      endPending(s, false);
+      endPending(s, true);
+      deriveSelector(s);
       continue;
     }
     const next = plan(chosen);
