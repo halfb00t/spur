@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Honest Form
-current_phase: 24
-current_phase_name: Bore-Shape Selector
-status: verifying
-stopped_at: Completed 24-04-PLAN.md
-last_updated: "2026-10-12T16:25:14.804Z"
-last_activity: 2026-10-12
-last_activity_desc: Phase 24 execution started
-state_head: c0675b9ad550fdea5a0db028d681b28a48428986
+current_phase: 25
+current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
+status: planning
+stopped_at: Phase 24 complete, ready to plan Phase 25
+last_updated: "2026-10-13T02:11:28.736Z"
+last_activity: 2026-10-13
+last_activity_desc: Phase 24 complete, transitioned to Phase 25
+state_head: cb889ceca7ce18bbc90f5b596cdce1530867f723
 progress:
   total_phases: 5
   completed_phases: 4
@@ -22,20 +22,20 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-11)
+See: .planning/PROJECT.md (updated 2026-10-13)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 24 — Bore-Shape Selector
+**Current focus:** Phase 25 — Gate Bar Re-Set, Venv Probe, Ledger Close
 
 ## Current Position
 
-Phase: 24 (Bore-Shape Selector) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-10-12 — Phase 24 execution started
+Phase: 25 — Gate Bar Re-Set, Venv Probe, Ledger Close
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-13 — Phase 24 complete, transitioned to Phase 25
 
-Progress: [████████░░] 80% (3 of 5 v0.5 phases complete — 21, 22, 23; Phase 24 is discretionary; 14/14 plans so far)
+Progress: [████████░░] 80% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Progress: [████████░░] 80% (3 of 5 v0.5 phases complete — 
 | 21 | 8 | - | - |
 | 22 | 2 | - | - |
 | 23 | 4 | - | - |
+| 24 | 4 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -451,13 +452,24 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 24] The resource-tracker flake hit 24-01's first `make verify` (`ReentrantCallError`, green on the one allowed
+  re-run; 24-04's ran green first time). The `must` debt's trigger has now fired in two phases running with no isolation run.
+- ℹ️ [Phase 24] Code review (`24-REVIEW-DISPOSITION.md`, 5 open): WR-01 the select listens on `input` only and `pend()` calls
+  `input.focus()` in the same handler, so on an engine that commits an option and fires `input` per arrow key the keyboard
+  walk leaves the select at the first pending step (confirmed on the wiring; UAT test 1 passed on the human's browser; not
+  reproduced in headless Chrome on macOS); IN-01…IN-04 info. Fix via `/gsd-code-review 24 --fix` or defer with a reason
+  before the milestone closes.
+- ℹ️ [Phase 24] The hex-bore warning debt's trigger fired in `470b78a` (24-03 D-17); fix as a `/gsd-quick` before Phase 25's
+  gate reading. `24-UI-REVIEW.md` scored 17/24, code-derived.
+- ℹ️ [Phase 24] Cross-CLI review owed before the PR (CLAUDE.md): all four executors and the reviewer were Claude (sonnet);
+  a Codex review of `gsd/phase-24-bore-shape-selector` has not run.
 - ⚠️ [Phase 23] The resource-tracker flake hit `make verify` a fifth time (23-04: `tests/test_pool.py::test_health_reports_pool_state`,
   `ReentrantCallError`; `investigation/23-04-red-1.log`, green on re-run). The `must` debt
   `docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md` names "the next `make verify` failure" as its
   trigger — it has fired; its isolation runs and fix plan are due, not re-deferrable without a new named trigger.
 - ℹ️ [Phase 23] Code review (`23-REVIEW-DISPOSITION.md`, 7 open): WR-01 `holds()` throws on an unknown `enabled_when` op before
-  `scheduleUpdate()` runs (unreachable today — `when()` types the op and the tests pin it — but triage before Phase 24 widens
-  the grammar); WR-02 the static no-disable guard in `tests/test_api.py` is narrower than L41's wording; IN-01 reason-text
+  `scheduleUpdate()` runs (unreachable today — `when()` types the op and the tests pin it — Phase 24 kept the grammar under L42; triage
+  still owed); WR-02 the static no-disable guard in `tests/test_api.py` is narrower than L41's wording; IN-01 reason-text
   number formatting differs between JS and Python at extreme thresholds; IN-02 the reason span sits inside `<label>`; IN-03
   a stale line number in the hex-bore debt; IN-04 `docs/ideas/INDEX.md:13` still says "08 D-09 stands"; IN-05 L41's
   "declared set" paragraph mixes plan-time and final-state wording.
@@ -465,8 +477,8 @@ None yet.
   a Codex review of `gsd/phase-23-conditional-form-fields` has not run.
 - ℹ️ [Phase 23] `workflow.ui_safety_gate` set to `false` (`8f7e1c9`): the gate demanded a UI-SPEC no phase of this repo has
   ever had; the form's design decisions live in the phase CONTEXT and the decision log. `ui-review` likewise skipped.
-- ℹ️ [Phase 23] `docs/ideas/2026-09-27-bore-shape-selector-in-the-web-form.md` still reads "(08 D-09 stands)" — superseded by
-  L41; restate at Phase 24's discuss-phase. `.planning/codebase/*.md` is stale (54 structural changes since the last map).
+- ℹ️ [Phase 23] `.planning/codebase/*.md` is stale (56 structural elements since `41d23c7` at Phase 24's last wave; the
+  bore-shape idea file was retired with its L42 note in 24-03).
 - ℹ️ [Phase 22] Code review (`22-REVIEW-DISPOSITION.md`, 5 open): WR-01 `slug()` now runs `root_mode` while
   `build.failed`/`queue.refused` records are built — a raise there would turn a 422 into a 500, and totality
   rests on a one-off sweep, not a test (fix: a small seeded `slug()` test); WR-02 the `build.failed` test
@@ -712,16 +724,16 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-12T16:25:14.729Z
-Stopped at: Completed 24-04-PLAN.md
+Last session: 2026-10-13T02:13:57Z
+Stopped at: Phase 24 complete, ready to plan Phase 25
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: Phase 23 is complete and verified on `gsd/phase-23-conditional-form-fields` (not pushed, no PR yet; 28 commits over
-  `main`). Owed before the PR: the Codex cross-review (CLAUDE.md), a decision on the resource-tracker debt whose trigger
-  fired, and WR-01's triage. Then `/gsd-discuss-phase 24` — Phase 24 is discretionary and its first decision (9) is
-  whether to build the selector at all; `/gsd-plan-phase 25` is the alternative if it is skipped.
+- Next: Phase 24 is complete and verified on `gsd/phase-24-bore-shape-selector` (not pushed, no PR yet; 28 commits over
+  `main`; Phase 23 landed as PR #35). Owed before the PR: the Codex cross-review (CLAUDE.md), WR-01's fix-or-defer in
+  `24-REVIEW-DISPOSITION.md`, and a decision on the resource-tracker debt whose trigger has fired twice. Then `/gsd-ship 24`,
+  and `/gsd-discuss-phase 25` after the merge — Phase 25 measures the shipped `HEAD`, so it is last.
 - Done at roadmap time: the `v0.4` tag was missing locally and on `origin` (only `v0.1`–`v0.3` existed) although v0.5's fixture rule is stated against it; the human chose the close squash `b24287a` (the v0.2/v0.3 precedent) and the annotated tag was created and pushed 2026-10-10.
 - Open decision carried, now owned by Phase 25: re-set L34's 66 s gate bar from an idle-host reading under a rule written before the first reading (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar). The 401-position oracle count is not part of this milestone.
 - Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
