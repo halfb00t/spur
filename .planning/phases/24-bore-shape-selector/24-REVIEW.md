@@ -1,126 +1,134 @@
 ---
 phase: 24-bore-shape-selector
-reviewed: 2026-10-12T17:00:00Z
+reviewed: 2026-10-13T09:00:00Z
 depth: standard
-files_reviewed: 16
+files_reviewed: 5
 files_reviewed_list:
-  - README.md
-  - bench/RESULTS.md
   - docs/architecture/decision_log.md
-  - docs/architecture/http-api.md
   - docs/architecture/web-ui.md
-  - docs/ideas/INDEX.md
-  - docs/ideas/retired/2026-09-27-bore-shape-selector-in-the-web-form.md
-  - docs/tech_debt/INDEX.md
-  - docs/tech_debt/active/2026-10-11-hex-bore-warns-about-default-bore-fields.md
-  - src/spur/params.py
   - src/spur/static/app.js
-  - src/spur/static/style.css
   - tests/browser_session.py
-  - tests/test_api.py
   - tests/test_browser.py
-  - tests/test_selector.py
 findings:
   critical: 0
   warning: 1
-  info: 4
-  total: 5
+  info: 6
+  total: 7
 status: issues_found
 ---
 
 # Phase 24: Code Review Report
 
-**Reviewed:** 2026-10-12
-**Depth:** standard (the phase diff `d8c5de8..HEAD`, read file by file, with the cross-references the selector needs)
-**Files Reviewed:** 16
+**Reviewed:** 2026-10-13
+**Depth:** standard (incremental: `git diff 0c2d639..HEAD` of the five files, with the whole of the selectors section, `buildForm()`, `applyRelations()`, the update loop and the wiring block read for grounding)
+**Files Reviewed:** 5
 **Status:** issues_found
 
 ## Summary
 
-I read the phase diff of `params.py`, `app.js` and `style.css` in full, the whole of `buildForm()`, `holds()`, `applyRelations()`, the update loop and the wiring block of `app.js` for context, the diffs of the four test files and the docs, and the first 200 lines of `tests/test_selector.py`. I did not read the remaining body of `tests/test_selector.py` or every line of the 575-line `tests/test_browser.py` diff.
+This round covers the two fix commits `faed50a` and `9da4851`. The earlier review (`0c2d639`, 16 files) is superseded by this file. Its findings IN-01..IN-04 name `src/spur/params.py`, `tests/test_api.py` and a tech-debt file that did not change since, so I did not re-read those. I carry the four forward with their ids and updated line numbers where the line is in `app.js`.
 
 What I ran:
 
-- `pytest tests/test_selector.py tests/test_api.py -n0 --no-cov -q` gave 78 passed.
+- `pytest tests/test_api.py tests/test_selector.py -n0 --no-cov -q` gave 78 passed. The token pins and the one-value-write pin hold.
+- `pytest tests/test_browser.py -n0 --no-cov -q` gave 2 passed in 25.54 s.
 - `ruff check src tests` was clean.
-- `mypy --strict src tests/test_selector.py tests/browser_session.py` reported no issues in 12 files.
-- I did not run `make verify` or `tests/test_browser.py`.
+- `mypy --strict tests/browser_session.py tests/test_browser.py` reported no issues.
+- Two Playwright probes against a local server, for WR-02 below.
+- I did not run `make verify` or `make check`.
 
-What I checked and found sound:
+**WR-01 (focus stolen by a pending pick): confirmed fixed.** There is no `.focus()` call left in `app.js`. `pend()` now only stops the event, records `pending` and calls `showPending()`. The select keeps the focus and is described by the field's reason row. The browser step asserts both after every pending pick (`SELECT_FOCUSED`, `SELECT_DESCRIBED_BY`). One limit stands, and the decision log states it: no test drives an engine that commits an option per arrow key, so the walk itself is unproven by the suite. I traced a keyboard walk through `pick()` by hand: each step calls `endPending(s, true)` and then plans again, so the row of the previous pending step is put back and nothing is written.
 
-- **The schema carriage.** `GearParams.model_json_schema()` returns a deep copy, so the module-level `_BORE_SHAPE` cannot be mutated through `/api/schema`. I changed the title in the returned schema and `_BORE_SHAPE` kept `Bore shape`.
-- **The option grid.** The four options hold exactly one at a time over every non-negative triple. No bore deliberately leaves `bore_flat` free, so `bore_d=0` with the default flat of 8 is a legal part with no warning (checked with `calc.derive`).
-- **The pick.** It plans before it writes. An unknown op throws inside the planning loop, before any write. `pend()` writes nothing and stashes nothing.
-- **Text only.** Titles, labels and error messages reach the DOM through `textContent` or `new Option(label)`, so there is no injection path from the schema.
-- **Not a field.** The select has no `name` and no `fields` entry, so `gearQuery()` cannot send it and `update()` cannot put it in the hash. The `fields.set(` count pin in `test_api.py` guards this.
+The new pending machinery is otherwise sound where I traced it:
 
-One keyboard concern from the UI review is confirmed on the wiring and reproduced in a simulation (WR-01). No critical finding.
+- **One pending pick at a time.** Any `input` on the form first ends a pending pick on another target. A pick on a second select ends the first's pending pick in the capture listener, so at most one pick is pending.
+- **The `keep` flag.** It is set only in the capture listener and consumed by the derive on the same event. If the event does not reach the form's bubble listener it would stay set. The only event that stops propagation is the select's own pending pick, and `completePending()` skips a selector's own select, so it cannot strand a flag.
+- **Stale row text.** `was` is read in `showPending()` after `applyRelations()` has rewritten every row, so `endPending(s, true)` never restores stale text.
+- **One value write.** `write()` is the only place a field value is set in the section, so the pin holds. Both `plan()` and `write()` run on the same state: `plan()` completes in the capture phase, before the derive.
+
+One new warning, six info items (four carried forward).
 
 ## Warnings
 
-### WR-01: A pending pick steals focus on every arrow-key step, so a keyboard user cannot walk the select, and the next arrow press edits a number nobody chose (confirms the unverified UI-review concern, with a platform caveat)
+### WR-02: A blank or unreadable number box completes a pending pick with the field's default, and writes the zeros, although no number was typed
 
-**File:** `src/spur/static/app.js:329` (the `input` listener in `buildSelectors`) and `src/spur/static/app.js:411` (`input.focus()` in `pend()`)
-**Issue:** The select listens on `input` only, and `pend()` calls `input.focus()` synchronously. In Firefox on every platform, and in Chrome on Windows and Linux, the arrow keys on a closed select commit the next option and fire `input` and `change` per step. So the first arrow step toward any pending option runs `pick()`, then `pend()`, which moves focus to the number box. The user's next arrow key goes to a `type=number` input, where Up and Down spin the value.
+**File:** `src/spur/static/app.js:473-486` (`completePending()`, the `plan(chosen)` call) with `src/spur/static/app.js:126-129` (`effective()`)
+**Issue:** `completePending()` re-runs `plan()` on the field the pick asked for, and `plan()` reads that field through `holds()`, which reads `effective()`. `effective()` turns an empty box into the field's default. So an empty box counts as a typed number whenever the default clears the threshold. `bore_d` has default 9 and `bore_flat` has default 8, so for Round and D-flat the empty box satisfies "above 0".
 
-The default part makes this the common case. Walking down from the default D-flat, the very first step, to Hex, is always pending: `bore_hex` has no stash entry until a pick has zeroed it, so a Hex pick from a part that never had a hex bore needs a typed number. Focus jumps to the Hex box on that first step, and the user can never arrow on to No bore from the select. Steps that write (Round from D-flat, and D-flat back from Round while the stash holds the flat) do not move focus, so the trap is specific to the pending options.
+An empty box is easy to reach without typing a number:
 
-I reproduced the mechanism with Playwright against a local server. I dispatched a single `input` event on the select after setting `selectedIndex = 2` (Hex), which is what one arrow step does on the affected platforms. I then pressed ArrowUp:
+- Select the pending box and press Backspace or Delete before retyping.
+- Type `.` or `-` first. A `type=number` box reports `''` while its text is not yet a number, so `.5` and `-5` both pass through `''`.
 
-- `document.activeElement` became `bore_hex` straight after the first step.
-- ArrowUp on that box turned `bore_hex` into `0.05`, which is its `step`.
-- After the debounce the hash read `#bore_hex=0.05` and a request for a 0.05 mm hex bore had been sent.
+The decision log amendment and `web-ui.md` both say the pick "stays until the number it asked for is typed". An empty box is not that.
 
-That is a number the tool built that the user never typed. It is also a change to the part that came from an arrow key meant to navigate a select. The user did press the key, so this is a keyboard-operability defect first and a standing-rule risk second.
+I reproduced both paths against a local server in headless Chrome 153. From `#bore_d=0`:
 
-What I could not confirm: arrow keys on a closed select in headless Chrome 153 on macOS did nothing at all (no value change, no `input`). They opened the popup instead, which is the usual macOS behaviour. So the problem does not reproduce on macOS Chrome. I could not run Firefox or Chrome on Windows or Linux here, and I did not reproduce real arrow-key navigation, only the equivalent `input` dispatch.
+- Pick D-flat (pending on `bore_d`), then `fill("")` on `bore_d`. Result: the select shows D-flat, `.pending` is gone, `bore_d` is `''`.
+- Pick Round (pending on `bore_d`), triple-click the box, press `.`. Result: Round shown, pending gone, `bore_d=''`, and `bore_flat` rewritten from `8` to `0` with `8` stashed. After the 350 ms debounce the hash read `#bore_flat=0`, and the page had requested a Round 9 mm bore.
 
-The test suite cannot see this. `_pick()` in `tests/test_browser.py` uses `select_option`, which sets the value and fires `input` once. No test presses a key on the select.
+The 9 is the page default and the user never typed it, and a keystroke that was not a number has already zeroed `bore_flat`. Under L05 (a parameter the user did not set must not silently change the part) and L08 (a number someone will cut metal to), a pick the user was still making should not complete and send. The user's next keystroke repairs the box, so the stuck state is short, but a pause of 350 ms sends the request. For `-5` the completion has already happened when the box becomes `-5`, so the pick ended on a number that is below the threshold and the select goes blank.
 
-**Fix:** Do not move focus when the pick came from the keyboard. The select already has the reason row on the target field and the `.pending` mark, so the note is not lost. One small way:
+The suite cannot see it. `_complete_pending()` always types `number_above()`, and no case types `''`.
+
+**Fix:** Treat an unreadable or empty box as "not yet typed" in `completePending()` and keep the pick pending on the same condition:
 
 ```js
-let byKey = false;
-select.addEventListener('keydown', () => { byKey = true; });
-select.addEventListener('input', (event) => { pick(s, event, byKey); byKey = false; });
-// in pend(s, chosen, condition, event, byKey): input.focus() only when !byKey
+const { input } = fields.get(condition.field);
+if (event.target !== input) { endPending(s, true); deriveSelector(s); continue; }
+const next = input.value === '' ? { condition } : plan(chosen);
+endPending(s, false);
+if (next.condition) s.pending = { chosen, condition: next.condition, keep: true, was: null };
+else write(next.writes);
 ```
 
-The alternative is to move focus on `change` after the select closes (`blur` or `Enter`), not on `input`. Add a browser step that presses ArrowDown twice on the focused select and asserts `document.activeElement` is still the select and no box changed. That test needs a Firefox or non-macOS-Chrome engine to be meaningful, so say in the step which engine it was seen red on.
+The pick is then still pending when the user finishes the number. Add a case to the `bore shape` step: after a pending pick, `fill('')` on the named field and assert the select is still `.pending`, no field other than the typed one moved and no request carries a zero the pick would write; then type a number and assert the completion as today.
 
 ## Info
 
 ### IN-01: The stash can restore a number older than what the user last typed, and the comment calls it "the user's own string" while it also holds page defaults
 
-**File:** `src/spur/static/app.js:292-300` (the `stash` comment) and `src/spur/static/app.js:382` (the restore in `pick()`)
-**Issue:** A zeroing pick records the box string at that moment. Nothing updates it when the user then edits the same field by hand, and hash navigation keeps it (D-19). Two concrete orders:
+**File:** `src/spur/static/app.js:292-300` (the `stash` comment) and `src/spur/static/app.js:401` (`stash.set` in `write()`)
+**Issue:** Unchanged by the fix commits, and now reached from two paths: a pick and the completion of a pending pick. A zeroing write records the box string at that moment. Nothing updates it when the user then edits the same field by hand, and hash navigation keeps it (D-19). Two orders:
 
-1. On the default part, pick Round (stash `bore_flat` = `'8'`, the page default, not something typed). Type `bore_flat` = 5, then type 0 by hand. Pick D-flat. The box returns to `8`, not the 5 the user last chose.
-2. Open a link with `bore_flat=3`, pick Round (stash `'3'`), then follow another link that has `bore_flat=0`. Pick D-flat. The box shows `3`, a value from a different gear.
+1. On the default part, pick Round (stash `bore_flat` = `'8'`, the page default, not something typed). Type `bore_flat` = 5, then 0 by hand. Pick D-flat. The box returns to `8`, not the 5 the user last chose.
+2. Open a link with `bore_flat=3`, pick Round (stash `'3'`), then follow another link with `bore_flat=0`. Pick D-flat. The box shows `3`, a value from a different gear.
 
-Both are visible in the box and sent, and D-19 accepts the second knowingly. But the comment "puts the user's own string back and never invents one" and "a flat the user did not type would be a number the tool printed and nobody chose" overstates it, since case 1 restores the default and case 2 restores a value typed for another part. Under L08 and L05 a number from another part is the kind of plausible value the project says to avoid.
-**Fix:** Either delete the stash entry for a field when its box is edited by hand (in the form `input` listener, `if (event.target.name) stash.delete(event.target.name)`, which leaves picks alone because the select has no `name`), or say in the comment that the stash can hold a page default and a value from an earlier link. The first costs one line and a test that case 1 now ends pending.
+Both are visible in the box and sent, and D-19 accepts the second knowingly. But the comment ("puts the user's own string back and never invents one", "a flat the user did not type would be a number the tool printed and nobody chose") overstates it: case 1 restores a default and case 2 restores a value typed for another part.
+**Fix:** Delete the stash entry for a field when its box is edited by hand (in `completePending()` or the form listener: `if (event.target.name) stash.delete(event.target.name)`; the selects have no `name` for selectors), or reword the comment to say the stash can hold a page default and a value from an earlier link.
 
 ### IN-02: A selector that names a group no field has fails with a message about the schema fetch and leaves a built but empty form
 
-**File:** `src/spur/static/app.js:313` (the `throw` in `buildSelectors`) and `src/spur/static/app.js:558-562` (the bootstrap `catch`)
-**Issue:** `buildSelectors()` throws after the fields are already in the DOM. The bootstrap `catch` then prints `Could not load the parameter schema: Selector "X" names the group "Y"...`, and returns before `readHash()` and `update()`. The schema loaded fine, so the prefix is wrong. The boxes sit blank (no defaults written), with no part, no dimensions and no download links. The failure is loud, which is better than silent, but it is not the state a user can recover from, and a model-side typo in a group name would only be caught by `test_selector.py` walking the list, not by the page.
-**Fix:** Reword the bootstrap message to `Could not build the form: ...`. If a half-built form is not wanted, build the selectors before appending any fieldset, or run `readHash()` and `update()` anyway and show the selector error in `#messages`.
+**File:** `src/spur/static/app.js:316` (the `throw` in `buildSelectors`) and `src/spur/static/app.js:633-638` (the bootstrap `catch`)
+**Issue:** Unchanged. `buildSelectors()` throws after the fields are in the DOM. The bootstrap `catch` prints `Could not load the parameter schema: ...` and returns before `readHash()` and `update()`. The schema loaded fine, so the prefix is wrong, and the form stays blank with no part and no download links. The disposition records this as CX-03 as well.
+**Fix:** Reword the bootstrap message to `Could not build the form: ...`, or run `readHash()` and `update()` anyway and show the selector error in `#messages`.
 
 ### IN-03: The OpenAPI pin is a substring test on the whole document
 
-**File:** `tests/test_api.py:142`
-**Issue:** `assert "selectors" not in client.get("/openapi.json").text` fails if any route description, field help string or future docstring contains the word "selectors" in prose. The test is meant to prove the key did not reach a schema, not that the word is absent. It is also coupled to the wording of `help=` strings in `params.py`, since those reach `parameters` descriptions.
-**Fix:** Parse the JSON and walk it for a dict key named `selectors`, for example `assert not _has_key(client.get("/openapi.json").json(), "selectors")`, with a small recursive helper.
+**File:** `tests/test_api.py:143`
+**Issue:** Carried forward, not re-read this round. `assert "selectors" not in client.get("/openapi.json").text` fails if any description contains the word in prose, and it is coupled to the wording of `help=` strings.
+**Fix:** Parse the JSON and walk it for a dict key named `selectors`.
 
 ### IN-04: Every selector-made Hex part prints a warning in snake_case field names the form does not show (already filed)
 
-**File:** `docs/tech_debt/active/2026-10-11-hex-bore-warns-about-default-bore-fields.md` (and `src/spur/calc.py`, which owns the sentence)
-**Issue:** The phase's own decision (D-11) leaves `bore_d` and `bore_flat` at their defaults when Hex is picked, so the headline path of the new feature always renders `Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored.` The form labels these boxes `Bore Ø` and `D-flat`, so the message names fields the user cannot find, about values they did not set. The debt file already records this, the trigger is marked fired, and the INDEX row says fix before Phase 25. I add only that the wording problem (field names, not titles) is separate from the "default values" problem and should be in the fix's scope. No new debt item is needed.
-**Fix:** When the `calc` change is made, name the fields by their form titles or drop the sentence unless the request set them, as the debt file proposes.
+**File:** `docs/tech_debt/active/2026-10-11-hex-bore-warns-about-default-bore-fields.md` (and `src/spur/calc.py`)
+**Issue:** Carried forward. Picking Hex leaves `bore_d` and `bore_flat` at their defaults (D-11), so the warning names `bore_d (9 mm)` and `bore_flat (8 mm)`, which the form labels `Bore Ø` and `D-flat`. The debt file records it; I add only that the field-name wording is separate from the default-values wording and should be in the fix's scope.
+**Fix:** When `calc` is changed, name fields by their form titles or drop the sentence unless the request set them.
+
+### IN-05: L42 still says a pending pick "focuses the field that needs a number" and ends at the next derive; the correction is an appended paragraph
+
+**File:** `docs/architecture/decision_log.md:2736` and `docs/architecture/decision_log.md:2805-2824`
+**Issue:** The amendment says "Two sentences above are superseded" and gives the new rule, but it leaves the superseded sentences in the entry body (line 2736 still reads "focuses the field that needs a number"). A reader of L42 from the top meets the old behaviour as the decision and finds the correction 70 lines later. The amendment names neither sentence by quoting it. The log already uses the "superseded" idiom for whole decisions, so this is a style choice and not an error, but the next reader of the log has to find the amendment. The amendment's last sentence ("the `bore shape` step read 12.26 s once ... against 24-04's 8.55 s mean") also compares a single reading with a mean of three; AGENTS.md asks for measured numbers, and one reading under a different load average does not support a "more picks" explanation. The amendment says "once", so it is honest, but it does not bound the claim.
+**Fix:** Edit the line-2736 sentence to point at the amendment, for example "(focus: see Amended 2026-10-13)", or quote the two superseded sentences in the amendment. For the timing, record three runs the way 24-04 did, or drop the comparison and leave only "Phase 25 re-sets the bar".
+
+### IN-06: A garbled comment in the `twin selectors` step
+
+**File:** `tests/test_browser.py:1488-1489`
+**Issue:** "The twins_page is the first two labels that are pending from one state link on different fields, read from the schema." The variable is a page; the sentence describes `pendings[0]`. A reader looking for what `twins_page` is gets a wrong answer.
+**Fix:** "`pendings[0]` is the first state link with two labels that are pending on different fields, read from the schema; `twins_page` is the page served with the selector list doubled."
 
 ---
 
-_Reviewed: 2026-10-12T17:00:00Z_
+_Reviewed: 2026-10-13T09:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
