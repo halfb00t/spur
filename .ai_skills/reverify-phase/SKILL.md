@@ -17,7 +17,8 @@ That is correct. Only the `gsd-verifier` agent writes the digest -- never hand-w
 
 ## Steps
 
-1. Read the state. `gsd_run` is `node "$HOME/.claude/gsd-core/bin/gsd-tools.cjs"`:
+1. Read the state. `gsd_run` is the gsd-tools shim your runtime installed (for Claude
+   Code, `node "$HOME/.claude/gsd-core/bin/gsd-tools.cjs"`):
    `gsd_run query verification.status <phase_dir>` -- note `status` and `next_command`.
 2. Run the `next_command` it names, `/gsd-execute-phase N`. Since GSD 1.16.0 (#4682) it
    resumes at the phase gates and re-runs the verifier. Phase 24 re-verified this way.
