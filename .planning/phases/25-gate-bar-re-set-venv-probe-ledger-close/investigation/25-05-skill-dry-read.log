@@ -1,0 +1,27 @@
+$ ls -l .claude/skills/reverify-phase/SKILL.md
+-rw-r--r--@ 1 half  staff  1612 Oct 14 20:16 .claude/skills/reverify-phase/SKILL.md
+
+$ head -5 .ai_skills/reverify-phase/SKILL.md
+---
+name: reverify-phase
+description: >-
+  Re-verify a phase whose VERIFICATION.md went stale. Use when /gsd-ship refuses because
+  the verification is stale, or after a fix landed on a verified phase (a code review, a
+
+$ wc -l .ai_skills/reverify-phase/SKILL.md
+      31 .ai_skills/reverify-phase/SKILL.md
+
+$ node "$HOME/.claude/gsd-core/bin/gsd-tools.cjs" query resolve-model gsd-verifier
+{
+  "model": "sonnet",
+  "profile": "balanced",
+  "effort": "high",
+  "tier": "sonnet"
+}
+$ node "$HOME/.claude/gsd-core/bin/gsd-tools.cjs" query verification.status .planning/phases/24-bore-shape-selector
+{
+  "status": "stale",
+  "next_action": "Verification is stale — covered source files changed after the verifier last ran. Re-run execute-phase for this phase: it resumes at the verification gates and re-runs the verifier, regenerating VERIFICATION.md and its digest. verify-work alone cannot refresh a stale report.",
+  "next_command": "/gsd-execute-phase 24",
+  "route": "execute-phase"
+}

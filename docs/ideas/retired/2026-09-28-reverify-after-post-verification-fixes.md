@@ -1,6 +1,8 @@
 # A recipe (or skill) for re-verifying a phase after post-verification fixes
 
 Date: 2026-09-28
+Status: retired
+Retired in: docs(25): add the reverify-phase skill and point HOW_TO_DEVELOP section 6 at it -- retire the reverify idea
 Source: shipping Phase 9 (PR #10) — `/gsd-ship` blocked twice on a stale `VERIFICATION.md`
 Related files:
 - `docs/HOW_TO_DEVELOP.md` §6 (the ship-note workaround lives there; this belongs next to it)
@@ -40,3 +42,12 @@ after verification re-stales the report; re-dispatch `gsd-verifier` with the del
 re-ship". If it happens a third time, encode it as `.ai_skills/reverify-phase` per
 `.ai_skills/README.md`'s "twice is a skill" rule. Revisit if a GSD update makes ship or
 verify-work dispatch the verifier itself.
+
+## Outcome
+
+The loop hit five times across four phases: Phase 9 twice on 2026-09-28 (this file's source), Phase 17
+(`0f1209f docs(17): re-verify the phase after the code review fixes`), Phase 23 and Phase 24 (each
+`VERIFICATION.md` reads `Re-verification: Yes`). That is past the "third time" rule, so it became a skill and
+not a paragraph: `.ai_skills/reverify-phase`, with a one-sentence pointer in `docs/HOW_TO_DEVELOP.md` section 6.
+GSD 1.16.0's #4682 route answers this file's own revisit trigger (execute-phase now re-runs the verifier for a
+stale report), so the skill leads with it and keeps the hand dispatch of `gsd-verifier` as the fallback.

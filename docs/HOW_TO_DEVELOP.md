@@ -147,6 +147,9 @@ then `git push`. The push starts one more CI run (~3 min) on the new PR HEAD —
 patched: the edit would be lost at the next gsd update and is invisible to this
 repository.
 
+A fix after verification re-stales `VERIFICATION.md` and `gsd-ship` refuses: `.ai_skills/reverify-phase`
+holds the route (re-run `/gsd-execute-phase N`, or re-dispatch `gsd-verifier` with the delta, commit, re-ship).
+
 The hook reads the message whole, together with the diff that `git commit -v` appends
 below the cut line: if that diff names a CI-skip token, the commit is refused — commit
 without `-v` or rephrase.
