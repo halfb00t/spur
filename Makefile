@@ -59,8 +59,8 @@ $(STAMP): pyproject.toml requirements.txt
 
 # D-06: a clone that forgot `pre-commit install` pushed unverified until CI, silently, so
 # the gate installs the hooks itself. The stamp depends on .pre-commit-config.yaml, so a
-# config change re-installs on the next gate run; $(STAMP) alone (pyproject.toml only)
-# never would.
+# config change re-installs on the next gate run; $(STAMP) alone (pyproject.toml and
+# requirements.txt) never would.
 #
 # Main checkout only. pre-commit 4.6.2 writes into `git rev-parse --git-common-dir`, which
 # every linked worktree shares, and bakes the installing venv's python into the shim
@@ -88,10 +88,11 @@ $(HOOKS): .pre-commit-config.yaml $(STAMP)
 
 # The headless shell for the browser test (D-06). 198 MB, 16.4 s on macOS arm64 and 67 s
 # through sudo with --with-deps in an ubuntu:24.04 container (21-RESEARCH, scratch runs).
-# It depends on $(STAMP), which depends on pyproject.toml: a playwright bump changes the
-# pin, so the next gate run installs the shell that wheel expects instead of launching a
-# stale revision (BT-8). It is a prerequisite of `test` only, never of verify.static or
-# test.fast, so the commit-time slice never downloads a browser (D-01).
+# It depends on $(STAMP), which depends on pyproject.toml and requirements.txt: a
+# playwright bump changes the pin, so the next gate run installs the shell that wheel
+# expects instead of launching a stale revision (BT-8). It is a prerequisite of `test`
+# only, never of verify.static or test.fast, so the commit-time slice never downloads a
+# browser (D-01).
 $(BROWSER): $(STAMP)
 	$(PY) -m playwright install $(BROWSER_INSTALL_ARGS) --only-shell chromium
 	@touch $@
