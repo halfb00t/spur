@@ -92,3 +92,11 @@ The register was authored at plan time (every PLAN carries a `<threat_model>` bl
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-10-14
+
+## Security Audit 2026-10-14
+
+| Metric | Count |
+|---|---|
+| Threats found | 23 |
+| Closed | 23 |
+| Open | 0 |
