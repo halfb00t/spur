@@ -845,7 +845,8 @@ The hex x keyway 422 moved to REQ-keyway-bore and Phase 9 (`fddf9b8`, 08-01). Re
 422 gated on `model_fields_set` (transport-coupled — a script sending the full form would
 be refused for a value it never chose); the 422 as written; one warning per field; a
 warning only for non-default fields; a union with the round bore (REQUIREMENTS.md "Out of
-Scope").
+Scope"). (The plain-hex-link example sentence and the rejected "warning only for
+non-default fields" are superseded by the amendment of 2026-10-14 at the end of this entry.)
 
 **The numbers** (D-04, D-05, D-06). `bore_effective` is `null` on a hex bore — a hexagon
 has no diameter. `DerivedDimensions` gains `hex_across_flats` (across-flats including
@@ -905,6 +906,34 @@ fewer) and the bench script.
 **Reason:** a hex bore is the first bore shape with points outside the round radius, so it
 is the first real test of L26's selector seam and of the recess datum. Both moved to the
 bore's true extent — the chamfered corner, not a round stand-in.
+
+**Amended 2026-10-14, from quick task 261014-jsp (`docs/tech_debt/resolved/2026-10-11-hex-bore-warns-about-default-bore-fields.md`).**
+D-02's main decision stands: a hex bore replaces the round profile and ignores `bore_d` and
+`bore_flat`, never refusing. What changes is when the warning names them. `bore_d` and
+`bore_flat` are named only when the value is non-zero and differs from the field's schema
+default, which `derive()` reads from the model (9.0 and 8.0 today) and never writes as a
+literal; when neither qualifies there is no warning. D-02's own words were "naming only the
+fields the user set away from 0", but `> 0` stood in for that and both defaults are
+non-zero, so `?bore_hex=6` and, since L42, every Hex pick in the selector warned "bore_d (9
+mm) and bore_flat (8 mm) are ignored." about values nobody set (PITFALLS M-7). That trains
+users to skip the list where L08 puts what could not be computed honestly. This adopts the
+alternative the "Replaces, never refuses" paragraph above lists as rejected, "a warning
+only for non-default fields". Phase 8 rejected it as needing `model_fields_set`
+(08-DISCUSSION-LOG.md), and a comparison of the value with the schema default needs no
+transport state. `model_fields_set` is still not used: `app.py`'s `_gear` rebuilds
+`GearParams` from a full `model_dump`, so the set is gone before `derive()` runs, and
+pydantic v2 equality includes `model_fields_set`, which would split the build caches' keys.
+The blind spot is recorded, not hidden: an explicit `?bore_hex=6&bore_d=9` is silent,
+because after validation a 9 that was sent equals a 9 that was omitted. The three
+interfaces agree on the rule: the form sends only the fields that differ from their
+defaults (`gearQuery()` in `src/spur/static/app.js`), the CLI drops flags that were not
+given (`_params` in `src/spur/cli.py`), and a query omits what it does not set. Only
+`warnings` text moved: no part, number, default or link changed (L05), and no fixture
+record sets `bore_hex`, so `pre_v0_2.json` and `golden_requests.json` are byte-identical.
+L41's relation still dims both fields under a hex bore at their defaults, because they
+are inert either way. The relation proofs now probe one schema step off a non-zero
+default, because a default is no longer what `calc` names. Reversible: it changes warning
+text only.
 
 ## L28 — A keyway is a slot cut after the bore's chamfer, its depth measured from the as-cut bore wall
 

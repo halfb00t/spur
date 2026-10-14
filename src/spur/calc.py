@@ -1158,9 +1158,19 @@ def derive(p: GearParams, mate_teeth: int | None = None,
 
     if p.bore_hex > 0:
         # D-02: a hex bore replaces the round profile (D-01); this is the one place
-        # that says so, naming only the fields the user set away from 0.
+        # that says so, naming only the fields the user set away from their defaults.
+        # D-02 first wrote this as "away from 0" and used `> 0`, but both defaults are
+        # non-zero (9 and 8 mm), so every hex link named values nobody set (L27, amended
+        # 2026-10-14). The value is compared with the schema default rather than read
+        # from `model_fields_set`: app.py's `_gear` rebuilds GearParams from a full
+        # model_dump, so the set is gone before this runs, and pydantic equality includes
+        # the set, which would split the build caches' keys. Blind spot: an explicit
+        # value equal to its default is silent. `type(p)` because this module imports
+        # GearParams only for type checking (params imports calc lazily) and the
+        # instance accessor `p.model_fields` is deprecated in pydantic 2.11.
         ignored = [f"{name} ({value:g} mm)" for name, value in
-                  (("bore_d", p.bore_d), ("bore_flat", p.bore_flat)) if value > 0]
+                  (("bore_d", p.bore_d), ("bore_flat", p.bore_flat))
+                  if value > 0 and value != type(p).model_fields[name].default]
         if ignored:
             warnings.append(
                 f"Hex bore replaces the round profile: {' and '.join(ignored)} "

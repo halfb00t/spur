@@ -14,7 +14,6 @@ from composition import (
     CUTOUT_REFUSAL_FAMILIES,
     CUTOUT_REFUSALS,
     CUTOUTS,
-    HEX_IGNORES_ROUND,
     RECESS_FIELDS,
     RECESSES,
     ROOT_FIELDS,
@@ -243,26 +242,35 @@ def test_a_hex_bore_skips_the_round_bore_rules() -> None:
 
 
 @pytest.mark.parametrize(("kw", "expected"), [
-    ({"bore_hex": 6},
-     "Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (8 mm) are ignored."),
-    ({"bore_hex": 6, "bore_flat": 0},
-     "Hex bore replaces the round profile: bore_d (9 mm) is ignored."),
-    ({"bore_hex": 6, "bore_d": 0},
-     "Hex bore replaces the round profile: bore_flat (8 mm) is ignored."),
-    ({"bore_hex": 6, "bore_d": 0, "bore_flat": 0}, None),
-    ({"bore_hex": 6, "bore_d": 12.7, "bore_flat": 11.5},
-     "Hex bore replaces the round profile: bore_d (12.7 mm) and bore_flat (11.5 mm) "
-     "are ignored."),
+    pytest.param({"bore_hex": 6}, None, id="defaults-silent"),
+    pytest.param({"bore_hex": 6, "bore_d": 9, "bore_flat": 8}, None,
+                 id="explicit-default-silent"),
+    pytest.param({"bore_hex": 6, "bore_d": 12},
+                 "Hex bore replaces the round profile: bore_d (12 mm) is ignored.",
+                 id="bore_d-set-named"),
+    pytest.param({"bore_hex": 6, "bore_flat": 3},
+                 "Hex bore replaces the round profile: bore_flat (3 mm) is ignored.",
+                 id="bore_flat-set-named"),
+    pytest.param({"bore_hex": 6, "bore_d": 0}, None, id="zero-bore_d-silent"),
+    pytest.param({"bore_hex": 6, "bore_flat": 0}, None, id="zero-bore_flat-silent"),
+    pytest.param({"bore_hex": 6, "bore_d": 0, "bore_flat": 0}, None,
+                 id="both-zero-silent"),
+    pytest.param({"bore_hex": 6, "bore_d": 0, "bore_flat": 3},
+                 "Hex bore replaces the round profile: bore_flat (3 mm) is ignored.",
+                 id="zero-beside-a-set-field-names-only-the-set-one"),
+    pytest.param({"bore_hex": 6, "bore_d": 12.7, "bore_flat": 11.5},
+                 "Hex bore replaces the round profile: bore_d (12.7 mm) and bore_flat "
+                 "(11.5 mm) are ignored.",
+                 id="both-set-named"),
 ])
-def test_a_hex_bore_warns_about_each_round_field_it_ignores(
+def test_a_hex_bore_names_only_the_round_fields_set_away_from_their_defaults(
         kw: dict[str, object], expected: str | None) -> None:
-    """D-02: one sentence, naming only the non-zero ignored fields with their values;
-    no warning at all when both round fields are zero."""
+    """D-02, as amended 2026-10-14 (L27): one sentence, naming an ignored round field
+    only when it is non-zero and differs from its schema default, with its value; no
+    warning at all when neither field qualifies."""
     d = derive(GearParams.model_validate(kw))
-    if expected is None:
-        assert not any(w.startswith("Hex bore replaces") for w in d.warnings)
-    else:
-        assert expected in d.warnings
+    hex_sentences = [w for w in d.warnings if w.startswith("Hex bore replaces")]
+    assert hex_sentences == ([] if expected is None else [expected])
 
 
 def test_a_keyway_reaches_its_floor_corner_and_the_recess_clears_it() -> None:
@@ -1443,7 +1451,8 @@ def test_every_bore_cutout_recess_and_tip_combination_derives_its_own_numbers(
     1.75, and every row with spokes prints a 1.0 mm spoke fillet, whatever else composes
     with it, in both roots. The keyed-round bore composed with spokes
     ("*-keyed-spokes-*") derives a 0.421 mm `cutout_hub_wall` -- 0.021 mm above MIN_WALL,
-    not a refusal (edge: adjacency) -- asserted on those rows explicitly.
+    not a refusal (edge: adjacency) -- asserted on those rows explicitly. A hex bore at
+    the default bore_d and bore_flat implies no warning (L27, amended 2026-10-14).
     """
     kw = {**ROOTS[root], **BORES[bore], **CUTOUTS[cutout], **RECESSES[recess],
           **TIPS[tip]}
@@ -1458,9 +1467,7 @@ def test_every_bore_cutout_recess_and_tip_combination_derives_its_own_numbers(
           if name != "warnings" and getattr(d, name) is not None}
     assert got == want
 
-    radial_warnings = (HEX_IGNORES_ROUND,) if bore == "hex" else ()
-    assert d.warnings == ((TROCHOID_THICKNESS,) if root == "trochoid" else ()) + \
-        radial_warnings
+    assert d.warnings == ((TROCHOID_THICKNESS,) if root == "trochoid" else ())
 
     if tip == "on":
         assert d.tip_chamfer_effective == pytest.approx(1.75)
