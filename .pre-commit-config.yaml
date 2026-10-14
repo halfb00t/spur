@@ -7,8 +7,9 @@
 #
 # Install by running `make venv` once in the main checkout: it installs all three hook
 # types, and the gate re-installs them when this file changes (the Makefile's $(HOOKS)
-# stamp). The push stage's cost is the gate's wall time: L43 sets its bar at 300 s on the
-# 18-CPU Apple M5 Max dev host (`-n 8` with coverage), read on 2026-10-14 under
+# stamp). The push stage's cost is the gate's wall time: L43 sets its bar at 300 s (a figure
+# the human set, not a reading) on the 18-CPU Apple M5 Max dev host (`-n 8` with coverage).
+# The two non-decisive readings of 2026-10-14, 179.21 s and 195.23 s, are in
 # bench/RESULTS.md, "The gate re-set (Phase 25)".
 # The CAD tests dominate it (tests/test_model.py is about three quarters of pytest's
 # seconds, section "Per-file share"). The first run after `make clean` pages in ~1.4 GB of
