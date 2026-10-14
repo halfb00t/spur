@@ -177,11 +177,12 @@ test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
 
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
-# whole gate's bar is 300 s on the 18-CPU Apple M5 Max (L43). Every test file but the five heavy ones, named by
-# exclusion -- never inclusion, never a marker -- so a new test file runs at commit until
-# someone names it heavy (`--strict-markers` is on and no marker is registered). The
-# first three, by share of pytest's seconds (L34, bench/RESULTS.md "Per-file share"):
-# tests/test_model.py 74.1 %, tests/test_pool.py 8.5 %, tests/test_api.py 4.8 %.
+# whole gate's bar is 300 s on the 18-CPU Apple M5 Max (L43).
+# Every test file but the five heavy ones, named by exclusion -- never inclusion, never a
+# marker -- so a new test file runs at commit until someone names it heavy
+# (`--strict-markers` is on and no marker is registered). The first three, by share of
+# pytest's seconds (L34, bench/RESULTS.md "Per-file share"): tests/test_model.py 74.1 %,
+# tests/test_pool.py 8.5 %, tests/test_api.py 4.8 %.
 # tests/test_cli.py (4.3 %) is the fourth by D-02, not by share: tests/regression/
 # test_pre_v0_2.py (7.8 %) ranks above it and stays in the slice on purpose, to keep the
 # fixture replay at the commit boundary (L36). tests/test_browser.py is the fifth by D-01
