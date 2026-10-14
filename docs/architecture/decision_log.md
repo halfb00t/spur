@@ -2892,14 +2892,16 @@ checkpoint, verbatim: "Let's set 300 s. IMHO it's a reasonable bar". It is read 
 those words, and recorded under `#### Gate decision`. The bar is **300 s** of `make verify` wall time on the 18-CPU Apple
 M5 Max, a recorded figure on that host and that `HEAD`, set by the human and not computed by any rule; it sits above both
 non-decisive readings (195.23 s, 179.21 s) and above the venv probe's 270.35 s (not a reading). It is not a ceiling the gate
-has been read under: this host has no loaded full-gate reading. The only loaded full-gate readings in `bench/RESULTS.md` are
+has been read under on an idle host: no run met the rule's idle clause, so n = 0 decisive. The M5 Max has loaded full-gate
+readings, none above 300 s: L38's 208.52, 161.71 and 208.60 s at loads 4 to 9 (1210 tests, `### The gate, priced (19-09)`)
+and the two non-decisive readings above at loads 4.18 to 7.33. The readings at or above 300 s in `bench/RESULTS.md` are
 Phase 24's (`## Bore-shape selector (Phase 24)`, `### Seen red once (Phase 24)`), taken during Phase 24 (merged 2026-10-13) on
 a 12-CPU Apple M2 Max (`24-01-SUMMARY.md` and `24-03-SUMMARY.md` name it; 24-02's names no host), at other HEADs and test
 counts, and as pytest's own seconds rather than `real`, so none is comparable with this host's (L08). They are quoted as read:
 a red run, `1 failed, 1294 passed in 296.91s` at a host load of 15.6; its green re-run, `1295 passed in 272.91s` (load not
 recorded); `1311 passed in 294.40s` (24-02, load not recorded); and `1311 passed in 336.15s` (24-03, load averages 5.36 4.71
-6.68 at the start). The last is above 300 s. So 300 s is a figure the human set, and what the gate reads on the M5 Max under
-load is unread. No check enforces it: a wall-time assertion on shared hardware flaps (ARCH 7.4; the Makefile bench
+6.68 at the start). The last is above 300 s. So 300 s is a figure the human set; it was not read as a ceiling, and no check
+enforces it: a wall-time assertion on shared hardware flaps (ARCH 7.4; the Makefile bench
 section's D-16), and the figure is not comparable with L34's 66 s, read on a 12-CPU Apple M2 Max under another method.
 
 **The knee** (D-08). `PYTEST_WORKERS` is 8, swept on 12 CPUs in Phase 15. This host has 18 and the knee was not re-swept;
