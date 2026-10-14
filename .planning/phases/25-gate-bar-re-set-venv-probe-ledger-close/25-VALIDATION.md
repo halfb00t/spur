@@ -3,9 +3,9 @@ phase: "25"
 slug: "gate-bar-re-set-venv-probe-ledger-close"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
+status: validated
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-10-14"
 ---
 
@@ -41,20 +41,20 @@ created: "2026-10-14"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 25-01-01 | 01 | 1 | REQ-gate-rule-pre-registered | T-25-03 | the recipe is rehearsed on `sleep`/`printenv` stand-ins; no gate runs before the rule commit | structural + rehearsal | 25-01 Task 1 heredoc: rule pins, both blocks, host line, the rehearsal logs (wait exit 3, cap 124, arm A spelling) | ❌ W0 (the task creates the section and `investigation/`) | ⬜ pending |
-| 25-01-02 | 01 | 1 | REQ-gate-rule-pre-registered | T-25-02 | the human sees every clause before the one-way commit | checkpoint:decision | human answer recorded verbatim | n/a | ⬜ pending |
-| 25-01-03 | 01 | 1 | REQ-gate-rule-pre-registered | T-25-01 | the rule lands alone, before any reading | git | 25-01 Task 3 heredoc: one commit by subject, only `bench/RESULTS.md`, the `git log -S'### The rule (25-01)'` anchor; no `25-02-*` log exists | ✅ | ⬜ pending |
-| 25-02-01 | 02 | 2 | REQ-gate-rule-pre-registered | T-25-04 | the executed recipe is the committed one | structural | 25-02 Task 1 heredoc: extracted scripts equal the rule commit's blocks; stamps fresh; only `.planning/` changed since the rule | ✅ | ⬜ pending |
-| 25-02-02 | 02 | 2 | REQ-gate-bar-reset | — | the host is quieted by the human, not by the agent | checkpoint:human-action | `go` recorded in `25-02-host-go.log` | n/a | ⬜ pending |
-| 25-02-03 | 02 | 2 | REQ-gate-bar-reset, REQ-gate-rule-pre-registered | T-25-05, T-25-06, T-25-07 | no reading dropped, no commit during the session, caps enforced | log protocol | 25-02 Task 3 heredoc: every log's run-record, idle releases, one HEAD, one host, order, no overlap, budgets, 3 h cap | ✅ | ⬜ pending |
-| 25-03-01 | 03 | 3 | REQ-gate-bar-reset | T-25-08 | every recorded figure is recomputed from its log | record recompute + git | 25-03 Task 1 heredocs: Runs rows vs run-records, per-arm cells and candidate recomputed; commit file set | ✅ | ⬜ pending |
-| 25-03-02 | 03 | 3 | REQ-venv-constraint-probe | T-25-09, T-25-10, T-25-12, T-25-SC | hook shims untouched; outcome from evidence | hash + record | 25-03 Task 2 heredoc: linked-worktree line, shim sha256 before = after, probe after the last reading, GREEN/RED recomputed, commit file set, no code moved | ✅ | ⬜ pending |
-| 25-03-03 | 03 | 3 | REQ-venv-constraint-probe | T-25-11 | no destructive git step without the human | checkpoint:decision | human answer recorded; branch state matches it | n/a | ⬜ pending |
-| 25-04-01 | 04 | 4 | REQ-gate-bar-reset | T-25-13 | the bar is the human's verbatim call | checkpoint:decision | human answer recorded before any edit | n/a | ⬜ pending |
-| 25-04-02 | 04 | 4 | REQ-gate-bar-reset, REQ-venv-constraint-probe | T-25-13, T-25-14, T-25-15 | L43's figures come from RESULTS.md; GREEN stamp seen red then green | record + make dry run + pytest | 25-04 Task 2 heredoc: Gate decision verbatim with its `Bar: <N> s` line (on a `none` candidate the human's `other <N> <reason>` gives the bar and L43 quotes the `none` line beside it), one L43 with its items, GREEN `make -n -W requirements.txt .venv/.installed`, `25-04-hooks-red.log` / `25-04-hooks.log` | ✅ | ⬜ pending |
-| 25-04-03 | 04 | 4 | REQ-gate-bar-reset | T-25-16 | no stale gate figure; IN-03 closed by subject | grep + git + gate | the negated stale-figure `grep -n -E` over the five files (25-04 Task 3, first verify); 25-04 Task 3 heredoc: L43 cited, IN-03, commit file set per fork, `25-04-verify.log` green | ✅ | ⬜ pending |
-| 25-05-01 | 05 | 5 | REQ-pi5-claim-softened | T-25-17 | no unmeasured hardware claim | doc + README pins | 25-05 Task 1 heredoc: hardware sentence, claim gone, README:96 unchanged, `25-05-readme.log` green, idea retired | ✅ | ⬜ pending |
-| 25-05-02 | 05 | 5 | REQ-reverify-recipe | T-25-18 | the skill never tells a reader to hand-write a digest | dry read + gate | 25-05 Task 2 heredoc: skill via `.claude/skills`, steps and order, §6 pointer, idea retired with the count, `25-05-verify.log` green | ✅ | ⬜ pending |
+| 25-01-01 | 01 | 1 | REQ-gate-rule-pre-registered | T-25-03 | the recipe is rehearsed on `sleep`/`printenv` stand-ins; no gate runs before the rule commit | structural + rehearsal | 25-01 Task 1 heredoc: rule pins, both blocks, host line, the rehearsal logs (wait exit 3, cap 124, arm A spelling) | ❌ W0 (the task creates the section and `investigation/`) | ✅ green (25-01 Task 1 heredoc passed; rehearsal logs kept) |
+| 25-01-02 | 01 | 1 | REQ-gate-rule-pre-registered | T-25-02 | the human sees every clause before the one-way commit | checkpoint:decision | human answer recorded verbatim | n/a | ✅ `commit` (verbatim, 25-01-SUMMARY) |
+| 25-01-03 | 01 | 1 | REQ-gate-rule-pre-registered | T-25-01 | the rule lands alone, before any reading | git | 25-01 Task 3 heredoc: one commit by subject, only `bench/RESULTS.md`, the `git log -S'### The rule (25-01)'` anchor; no `25-02-*` log exists | ✅ | ✅ green (`1d5ce8a` touches only bench/RESULTS.md; both heredocs passed) |
+| 25-02-01 | 02 | 2 | REQ-gate-rule-pre-registered | T-25-04 | the executed recipe is the committed one | structural | 25-02 Task 1 heredoc: extracted scripts equal the rule commit's blocks; stamps fresh; only `.planning/` changed since the rule | ✅ | ✅ green (recipe extracted from `1d5ce8a`, stamps fresh, snapshot in `25-02-host.log`) |
+| 25-02-02 | 02 | 2 | REQ-gate-bar-reset | — | the host is quieted by the human, not by the agent | checkpoint:human-action | `go` recorded in `25-02-host-go.log` | n/a | ✅ `go` twice, then a standing `go`, then the waiver `RUN ASAP` (all verbatim in 25-02-SUMMARY) |
+| 25-02-03 | 02 | 2 | REQ-gate-bar-reset, REQ-gate-rule-pre-registered | T-25-05, T-25-06, T-25-07 | no reading dropped, no commit during the session, caps enforced | log protocol | 25-02 Task 3 heredoc: every log's run-record, idle releases, one HEAD, one host, order, no overlap, budgets, 3 h cap | ✅ | ❌ as written: first block `AssertionError: ('25-02-B-1', 'no finished wait')` (waits WAIVED by the human, 8 slots missing); second block passed → manual-only |
+| 25-03-01 | 03 | 3 | REQ-gate-bar-reset | T-25-08 | every recorded figure is recomputed from its log | record recompute + git | 25-03 Task 1 heredocs: Runs rows vs run-records, per-arm cells and candidate recomputed; commit file set | ✅ | ❌ as written: first heredoc `IndexError: list index out of range` (WAIVED wait files, glob hits snapshot logs); second heredoc (commit file set) passed → manual-only |
+| 25-03-02 | 03 | 3 | REQ-venv-constraint-probe | T-25-09, T-25-10, T-25-12, T-25-SC | hook shims untouched; outcome from evidence | hash + record | 25-03 Task 2 heredoc: linked-worktree line, shim sha256 before = after, probe after the last reading, GREEN/RED recomputed, commit file set, no code moved | ✅ | ✅ green (probe GREEN recomputed; shims hash equal; commit `dbc50d9`) |
+| 25-03-03 | 03 | 3 | REQ-venv-constraint-probe | T-25-11 | no destructive git step without the human | checkpoint:decision | human answer recorded; branch state matches it | n/a | ✅ `delete` (branch gone; `8bb1a24`) |
+| 25-04-01 | 04 | 4 | REQ-gate-bar-reset | T-25-13 | the bar is the human's verbatim call | checkpoint:decision | human answer recorded before any edit | n/a | ✅ `Let's set 300 s. IMHO it's a reasonable bar` (verbatim; `Bar: 300 s`) |
+| 25-04-02 | 04 | 4 | REQ-gate-bar-reset, REQ-venv-constraint-probe | T-25-13, T-25-14, T-25-15 | L43's figures come from RESULTS.md; GREEN stamp seen red then green | record + make dry run + pytest | 25-04 Task 2 heredoc: Gate decision verbatim with its `Bar: <N> s` line (on a `none` candidate the human's `other <N> <reason>` gives the bar and L43 quotes the `none` line beside it), one L43 with its items, GREEN `make -n -W requirements.txt .venv/.installed`, `25-04-hooks-red.log` / `25-04-hooks.log` | ✅ | ❌ as written: `AssertionError: the candidate is none: only other <N> <reason> gives a bar` (the regex cannot read the free-text answer); rest of the script green in a scratch copy → manual-only |
+| 25-04-03 | 04 | 4 | REQ-gate-bar-reset | T-25-16 | no stale gate figure; IN-03 closed by subject | grep + git + gate | the negated stale-figure `grep -n -E` over the five files (25-04 Task 3, first verify); 25-04 Task 3 heredoc: L43 cited, IN-03, commit file set per fork, `25-04-verify.log` green | ✅ | ✅ green (stale-figure grep empty; `34270c8` : 16 paths) |
+| 25-05-01 | 05 | 5 | REQ-pi5-claim-softened | T-25-17 | no unmeasured hardware claim | doc + README pins | 25-05 Task 1 heredoc: hardware sentence, claim gone, README:96 unchanged, `25-05-readme.log` green, idea retired | ✅ | ✅ green (`92953bb`; README pins `make test exit 0`) |
+| 25-05-02 | 05 | 5 | REQ-reverify-recipe | T-25-18 | the skill never tells a reader to hand-write a digest | dry read + gate | 25-05 Task 2 heredoc: skill via `.claude/skills`, steps and order, §6 pointer, idea retired with the count, `25-05-verify.log` green | ✅ | ⚠️ first script green (`ac129dc`); second exited 1 on `.planning/milestone.lock` SDK churn, committed in `d32b64e`; condition holds |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -64,9 +64,9 @@ created: "2026-10-14"
 
 Existing infrastructure covers all phase requirements. No test stub, fixture or framework install is needed:
 
-- [ ] `bench/RESULTS.md` `## The gate re-set (Phase 25)` does not exist yet -- 25-01 Task 1 creates it (the tracer).
-- [ ] `.planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/investigation/` does not exist yet -- 25-01 Task 1 creates it; its logs are committed by 25-03.
-- [ ] On a GREEN probe only, `tests/test_hooks.py`'s two throwaway-repo fixtures need a `requirements.txt` (D-20) -- 25-04 Task 2 sees them red first, then fixes them.
+- [x] `bench/RESULTS.md` `## The gate re-set (Phase 25)` does not exist yet -- 25-01 Task 1 creates it (the tracer).
+- [x] `.planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/investigation/` does not exist yet -- 25-01 Task 1 creates it; its logs are committed by 25-03.
+- [x] On a GREEN probe only, `tests/test_hooks.py`'s two throwaway-repo fixtures need a `requirements.txt` (D-20) -- 25-04 Task 2 sees them red first, then fixes them.
 
 ---
 
@@ -78,6 +78,9 @@ Existing infrastructure covers all phase requirements. No test stub, fixture or 
 | The rule's wording before the one-way commit | REQ-gate-rule-pre-registered | the clauses are the human's decisions plus the planner's gap-fills | 25-01 Task 2: read the drafted section, answer `commit`, `amend: ...` or `stop` |
 | The bar | REQ-gate-bar-reset | the bar is a human call from the readings, never computed (SC2, L08, L34) | 25-04 Task 1: answer `accept` (not on a `none` candidate), `other <N> <reason>` or `no-bar <reason>`; recorded verbatim and checked by 25-04 Task 2's verify |
 | Deleting `agent/venv-probe` | REQ-venv-constraint-probe | destructive git step (CLAUDE.md) | 25-03 Task 3: answer `delete`, `force-remove-and-delete` or `keep` |
+| The ten idle readings' log protocol (25-02 Task 3, first block) | REQ-gate-bar-reset | the human waived the idle wait and cut the session to A1 + B1 (answers 5-8); the assertions presume `IDLE`/`GAVE_UP` wait ends and ten slots | read `25-02-session.log` and the `WAIVED` rows; the record names every missing slot as the human's decision |
+| The readings recompute (25-03 Task 1, first heredoc) | REQ-gate-bar-reset | same waiver; the heredoc indexes a wait file's last `IDLE`/`GAVE_UP` row | the three `#### Runs` rows were checked against their logs by a supplementary script (uncommitted); re-read `bench/RESULTS.md` against `investigation/25-02-*.log` run-records |
+| The bar verify's answer parse (25-04 Task 2) | REQ-gate-bar-reset | the human's free-text answer is recorded verbatim, not as `other <N> <reason>` | `#### Gate decision` holds the sentence and `Bar: 300 s`; L43 quotes `Candidate bar (D-05): none` beside it |
 | The reverify skill fires when a review finds something | REQ-reverify-recipe | not plannable in this phase (D-18) | proved by a dry read in 25-05 Task 2; exercised the next time ship refuses on a stale report |
 
 ---
@@ -123,4 +126,12 @@ sed -n '/^## Flagged assumptions/,/^<threat_model>/p' .planning/phases/25-gate-b
 - [ ] Feedback latency < 600 s (holds for every task but 25-02 Task 3, the readings themselves)
 - [ ] `nyquist_compliant: true` set in frontmatter (left for validate-phase)
 
-**Approval:** {pending / approved YYYY-MM-DD}
+**Approval:** approved 2026-10-14 (validate-phase, state A: 11 green, 3 manual-only by the human's waiver, `nyquist_compliant: false`)
+
+## Validation Audit 2026-10-14
+
+| Metric | Count |
+|---|---|
+| Gaps found | 3 |
+| Resolved | 0 |
+| Escalated | 3 |
