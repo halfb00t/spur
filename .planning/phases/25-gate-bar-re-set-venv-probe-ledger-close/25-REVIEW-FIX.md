@@ -3,8 +3,8 @@ phase: 25-gate-bar-re-set-venv-probe-ledger-close
 fixed_at: 2026-10-14T00:00:00Z
 review_path: .planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/25-REVIEW.md
 iteration: 1
-findings_in_scope: 8
-fixed: 8
+findings_in_scope: 9
+fixed: 9
 skipped: 0
 status: all_fixed
 ---
@@ -113,6 +113,16 @@ status: all_fixed
 - (b) Added "Bar amended by L43 (2026-10-14)." under L34's heading, after the `Date:` line, as its own paragraph. Nothing else in L34 changed.
 - Correction to the brief: it says `docs/ideas/retired/*.md` cite shas. They do not. Their `Retired in:` fields carry commit subjects (the same L43 subject appears in the retired venv idea). `docs/tech_debt/resolved/*.md` cite shas (`daeb284`, `4f7e8fe`, `2aadcea`, `21b8fe4`), and the tech-debt template asks for a sha, so I used the sha. I did not touch the retired idea files.
 **Verification:** `git diff` re-read: two files, 3 changed lines. Pre-commit `make verify.fast`: `Passed`. `make verify`: exit 0.
+
+### WR-04: L43 "The bar" says the M5 Max has no loaded full-gate reading; the record, including L43's own, says it has
+
+**Source:** the re-review of the fix pass (25-REVIEW.md as committed at 5293f67), raised against the WR-03 fix `f7ce3ab`.
+**Files modified:** `docs/architecture/decision_log.md` (L43 "The bar", lines 2894-2901)
+**Commit:** `11ac61f` (applied by the orchestrator, not the fixer agent)
+**Applied fix:** Replaced the three false claims with the reviewer's narrower wording. L43 now says no run met the idle clause (n = 0 decisive); that the M5 Max has loaded full-gate readings, none above 300 s (L38's 208.52, 161.71 and 208.60 s at loads 4 to 9, 1210 tests; the two non-decisive readings at loads 4.18 to 7.33); and that every reading at or above 300 s is Phase 24's, on the M2 Max. The Phase 24 quotation and its caveats are unchanged; "what the gate reads on the M5 Max under load is unread" is dropped.
+**Verification:**
+- Evidence re-read by the orchestrator before editing: `decision_log.md:2290` (L38, the three readings, `1210 passed` each), `bench/RESULTS.md:4614-4616` (loads 4.03 to 9.06), `decision_log.md:2882` (Phase 25 loads 4.18 to 7.33), `bench/RESULTS.md:4589` (the cited heading exists).
+- Not run: `make verify`. The pre-commit `make verify.fast` hook passed on the commit; this re-verification's regression gate runs the full suite on the same tree.
 
 ## Skipped Issues
 
