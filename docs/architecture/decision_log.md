@@ -2900,11 +2900,13 @@ the re-sweep stays in REQUIREMENTS.md "Form follow-ups". The bar describes the g
 under `PIP_CONSTRAINT=requirements.txt` exited 0, `make verify` exited 0 (`1317 passed`), `pip check` printed `No broken
 requirements found.`, and all 31 pins were installed at their pinned versions, with the four predicted moves in the freeze
 diff (`fastapi`, `starlette`, `uvicorn`, `fonttools`). So `$(STAMP)` gains `requirements.txt` as a prerequisite and
-`-c requirements.txt` on the one install line; `PIP_CONSTRAINT` and `-c` reach the same pip call, which is why the probe
-proves the adoption. L34's sentence about CI widens: every environment that claims to run the gate installs under the closure,
-CI by `PIP_CONSTRAINT` and `make venv` by `-c`. Caveat, from pip 26.2: constraints no longer reach isolated build
-environments, so `hatchling` builds unconstrained, and L34's "a conflicting pin fails closed" is evidence about runtime
-pins only. A macOS arm64 run does not show the `linux/arm64` image, a Pi 5 or a cold pip cache. An existing `.venv` keeps
+`-c requirements.txt` on the one install line. The probe set `PIP_CONSTRAINT` to an absolute path, on the Makefile as it stood
+before this change; the shipped recipe passes `-c` with a relative path. pip merges the two, so the shipped line is expected
+to behave as the probe did, but that is an inference: no probe ran `make venv` with `-c` as shipped. L34's sentence about CI widens: every environment that claims to run the gate installs under the closure,
+CI by `PIP_CONSTRAINT` and `make venv` by `-c`. Caveat, from pip 26.2: its news of 2026-07-29, cached in
+`.planning/research/PITFALLS.md`, says constraints no longer reach isolated build environments, so `hatchling` is expected
+to build unconstrained (the 25-03 logs hold no `hatchling` or build-isolation line, so the probe did not observe it), and
+L34's "a conflicting pin fails closed" is evidence about runtime pins only. A macOS arm64 run does not show the `linux/arm64` image, a Pi 5 or a cold pip cache. An existing `.venv` keeps
 its older resolve until `make clean && make venv` (D-13); `requirements.txt` and `docker/refresh-requirements.sh` are
 untouched. `tests/test_hooks.py`'s two throwaway-repo tests now write and `os.utime` a `requirements.txt`; without it
 both failed (`2 failed, 4 passed`, make's "No rule to make target 'requirements.txt'") and with it `6 passed`

@@ -5925,5 +5925,8 @@ found.`, every one of the 31 pins is installed at its pinned version, and the fr
 (an empty diff would not have been green). The 13 other lines in the diff are recorded as read above, not explained. On
 green, 25-04 adds `-c requirements.txt` and the stamp prerequisite to `$(STAMP)` and L43 widens L34's CI sentence.
 
-What a green run on macOS arm64 does not show: the `linux/arm64` image, a Pi 5, a cold pip cache, or build requirements under
-pip 26.2, which no longer applies constraints to isolated build environments, so `hatchling` built unconstrained here.
+What a green run on macOS arm64 does not show: the `linux/arm64` image, a Pi 5, a cold pip cache, the recipe as shipped
+(the probe set `PIP_CONSTRAINT`; the shipped line passes `-c requirements.txt`, which pip merges with it, so it is expected to
+behave the same and was not run by the probe), or build requirements under pip 26.2. pip's news of 2026-07-29 (cached in
+`.planning/research/PITFALLS.md`) says constraints no longer reach isolated build environments, so `hatchling` is expected to
+build unconstrained; the 25-03 logs hold no `hatchling` or build-isolation line, so this run did not observe it.
