@@ -3,12 +3,11 @@ gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Honest Form
 current_phase: 25
-status: completed
+status: "Phase 25 shipped — PR #38"
 stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-10-14T16:06:14.072Z"
-last_activity: 2026-10-14
-last_activity_desc: Phase 25 complete
-state_head: ffcc40eb81df701bddd78fa926cb0e304d2957fc
+last_updated: "2026-10-14T18:40:18.803Z"
+last_activity: 2026-10-15
+state_head: 8e294aed86db1fe932bafa0aab962970168b92fc
 progress:
   total_phases: 5
   completed_phases: 5
@@ -31,8 +30,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 25
 Plan: Not started
-Status: All phases complete
-Last activity: 2026-10-14 — Phase 25 complete
+Status: Phase 25 shipped — PR #38
+Last activity: 2026-10-15
 
 Progress: [██████████] 100% (5 of 5 v0.5 phases complete — 21, 22, 23, 24, 25; 23/23 plans)
 
