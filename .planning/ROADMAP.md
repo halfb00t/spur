@@ -523,9 +523,9 @@ measurement is taken (nobody has the board). The idea and debt files close only 
 that closes them.
 **Research flag**: No — standard patterns; the threshold, cool-down and N are decisions, not
 research.
-**Plans**: 5 plans, in 5 waves (sequential: the rule, then the readings, then the record and the probe after the last
+**Plans**: 1/5 plans executed, in 5 waves (sequential: the rule, then the readings, then the record and the probe after the last
 reading, then the bar and L43, then the ledger; nothing may load the host during a reading)
-- [ ] 25-01-PLAN.md — The tracer: the rule drafted with its wait and run blocks, both rehearsed on zero-cost stand-ins,
+- [x] 25-01-PLAN.md — The tracer: the rule drafted with its wait and run blocks, both rehearsed on zero-cost stand-ins,
   confirmed by the human at a one-way gate, committed alone before any reading (SC1) *(wave 1)*
 - [ ] 25-02-PLAN.md — The ten readings: the committed recipe extracted byte for byte, the stamps and host checked, the
   human quiets the host (D-09), then A1 B1 ... A5 B5 under the rule with every attempt kept; nothing committed *(wave 2)*

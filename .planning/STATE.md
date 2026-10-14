@@ -4,18 +4,18 @@ milestone: v0.5
 milestone_name: Honest Form
 current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
-status: "Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)"
-stopped_at: Phase 25 context gathered
-last_updated: "2026-10-14T10:29:02.858Z"
+status: executing
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-10-14T10:45:00.050Z"
 last_activity: 2026-10-14
-last_activity_desc: "Completed quick task 261014-jsp: hex bore warning names only the bore fields set away from their defaults"
-state_head: 61d8e5ae99c9825386da1a535509f1edaef8e128
+last_activity_desc: Phase 25 execution started
+state_head: 1d5ce8ad6f973b8b10d30e074a44d6c173b3caec
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 23
-  completed_plans: 18
-  percent: 78
+  completed_plans: 19
+  percent: 80
 ---
 
 # Project State
@@ -30,12 +30,12 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 25 (Gate Bar Re-Set, Venv Probe, Ledger Close) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)
-Last activity: 2026-10-14 - Completed quick task 261014-jsp: hex bore warning names only the bore fields set away from their defaults
+Phase: 25 (Gate Bar Re-Set, Venv Probe, Ledger Close) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-10-14 — Phase 25 execution started
 
-Progress: [████████░░] 78% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
+Progress: [████████░░] 80% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
 
 ## Performance Metrics
 
@@ -238,6 +238,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 24 P02 | 8 min | 2 tasks | 1 files |
 | Phase 24 P03 | 17 min | 2 tasks | 7 files |
 | Phase 24 P04 | 9 min | 2 tasks | 1 files |
+| Phase 25 P01 | 11 min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -445,6 +446,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 24]: 24-03: a recorder on all seven pages is checked after every step and at the end, and the api/info count above the sweep's 44 proves no page went unwatched — Each page is its own browser context, so a listener on the main page misses the sweep, which sends one api/info per record by itself; the count only a fully watched scenario reaches (260 requests, 140 api/info against 44) is the proof
 - [Phase 24]: 24-03: the bore-shape idea is retired and the hex-bore warning debt stays active with its trigger fired in 470b78a, to be fixed as a /gsd-quick before Phase 25's reading — D-17: the debt's trigger was the selector shipping; restating it keeps the fix scheduled without resolving what the selector made more visible (every selector-made hex part warns about untouched defaults)
 - [Phase 24]: 24-04: no gate bar is set for the bore shape step (8.55 s mean) or the commit slice (15.60 s mean); Phase 25 re-sets the bar on its final HEAD (D-15)
+- [Phase 25]: 25-01: gate re-set rule committed as drafted (1d5ce8a) on the human's answer 'commit' at the Task 2 gate; rehearsal logs stay untracked until 25-03
 
 ### Pending Todos
 
@@ -728,9 +730,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-14T08:09:27.336Z
-Stopped at: Phase 25 context gathered
-Resume file: .planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/25-CONTEXT.md
+Last session: 2026-10-14T10:45:00.013Z
+Stopped at: Completed 25-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
