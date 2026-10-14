@@ -5,7 +5,7 @@ milestone_name: Honest Form
 current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
 status: "Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)"
-stopped_at: Phase 24 complete, ready to plan Phase 25
+stopped_at: Phase 25 context gathered
 last_updated: "2026-10-14T08:44:29.557Z"
 last_activity: 2026-10-13
 state_head: c6ca194f2e931c802d97e8ded4c775cf198cc0cc
@@ -727,9 +727,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-13T04:07:09Z
-Stopped at: Phase 24 complete, ready to plan Phase 25
-Resume file: None
+Last session: 2026-10-14T08:09:27.336Z
+Stopped at: Phase 25 context gathered
+Resume file: .planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/25-CONTEXT.md
 
 ## Operator Next Steps
 
