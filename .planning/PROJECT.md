@@ -90,14 +90,18 @@ bar re-set from a measurement, and the three small ledger items closed — with 
   tests).
 - L34 gate-bar re-set (Phase 19 review IN-03;
   `docs/tech_debt/active/2026-10-09-phase-19-review-info-findings-deferred.md`) — an
-  idle-host reading before and after the browser test lands; one `Lxx` amends L34.
+  idle-host reading before and after the browser test lands; one `Lxx` amends L34. Shipped
+  in Phase 25 as L43 (two readings, the human's 300 s).
 - Reverify recipe (`2026-09-28-reverify-after-post-verification-fixes.md`) — one paragraph
   in `HOW_TO_DEVELOP.md` §6, or `.ai_skills/reverify-phase` if the loop has hit three times.
+  Shipped in Phase 25 (the skill; the loop had hit five times).
 - Soften the Pi 5 claim (`2026-09-22-measure-or-soften-the-pi5-claim.md`) — README states
-  the hardware the numbers came from; no measurement, nobody has the board.
+  the hardware the numbers came from; no measurement, nobody has the board. Shipped in
+  Phase 25.
 - Constrain `make venv` probe (`2026-10-03-constrain-make-venv-to-the-closure.md`) — a fresh
   venv under `PIP_CONSTRAINT=requirements.txt` on this arm64 host; adopt and amend L34 if
-  `make verify` passes, else record which pins lack arm64 wheels.
+  `make verify` passes, else record which pins lack arm64 wheels. Shipped in Phase 25 as
+  L43 (GREEN; `$(STAMP)` installs under `-c requirements.txt`).
 
 **Rules this milestone lives by:**
 - The form is generated from `/api/schema` and nothing else (L02, the spirit of 08 D-09): a
@@ -547,15 +551,33 @@ pytest — L13). Full list with sources and acceptance evidence:
   UAT 2/2, `make verify` 1311 passed; after the Codex cross-review of PR #36 the pending pick
   was made to persist until its number is typed and the focus no longer leaves the select,
   verification regenerated 8/8 on the fixed tree)
+- ✓ L34's gate bar is re-set under its own `Lxx` — Phase 25 (L43: a new idle-host rule
+  pre-registered and committed alone (`1d5ce8a`) before any reading — 1-min load under 1.5
+  for three samples, five green runs per arm interleaved A/B, candidate the largest
+  decisive B `real`; the host never held under 1.5 across seven 15-minute waits, the human
+  waived the wait and cut the session to one reading per arm (A1 195.23 s, B1 179.21 s,
+  both non-decisive, candidate `none`) and wrote the bar — 300 s, "IMHO it's a reasonable
+  bar"; the rule text unchanged, every override recorded verbatim in `bench/RESULTS.md`;
+  the stale 66 s / 64 s figures swept from `Makefile`, README, `HOW_TO_DEVELOP.md`,
+  `packaging.md`; REQ-gate-rule-pre-registered, REQ-gate-bar-reset; verified 5/5 with three
+  must-haves under the human's overrides; review 0 critical, 3 warnings open — WR-03: Phase
+  24 recorded green gate runs of 294–336 s on this host under load, not cited beside the bar)
+- ✓ The three small ledger ideas are closed with a record each — Phase 25 (the `make venv`
+  probe GREEN in a linked worktree under `PIP_CONSTRAINT`: 31/31 pins at their versions,
+  `pip check` clean, `make verify` 1317 passed, so `$(STAMP)` now installs under
+  `-c requirements.txt` and the `test_hooks.py` fixtures carry a `requirements.txt` (L43);
+  README names the 12-CPU Apple M2 Max and the 18-CPU Apple M5 Max behind every number and
+  makes no Pi 5 claim; `.ai_skills/reverify-phase/SKILL.md` with `docs/HOW_TO_DEVELOP.md`
+  §6 pointing at it; the three ideas retired into `docs/ideas/retired/`;
+  REQ-venv-constraint-probe, REQ-pi5-claim-softened, REQ-reverify-recipe)
 
 ### Active
 
 Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance live in
 `REQUIREMENTS.md`.
 
-- [ ] L34's gate bar is re-set from an idle-host reading under its own `Lxx`.
-- [ ] The three small ledger ideas (reverify recipe, Pi 5 claim, `make venv` constraint
-  probe) are closed with a record each.
+- (none) — Phase 25 closed the last two hypotheses (moved to Validated); the milestone is
+  ready to close.
 
 ### Out of Scope
 
@@ -707,6 +729,7 @@ quick reference.
 | L40 | The download name carries the root the part has: `GearParams.slug()` ends `_trochoid` exactly when L38's predicate (`root_mode`) builds the hob root — the requested root is rejected as the rule, a refused or ignored request keeps the plain name, no guard and no fallback (totality shown by six pure rows, two `build.failed` rows and a 17,567-case sweep: 9,954 `_trochoid`, none raised); every consumer of the old names read at `5769ac0` and no cache keyed by slug; the browser scenario gains a real `#dl-stl` download step (applies L05 and L08 to the file name; one commit, `e3b1181`) | ✓ Good — 15/15 must-haves; `make verify` 1238 tests at 97.92 %; fixture and golden pin byte-unchanged; the step reads 1.13–3.56 s on a busy M2 Max (no bar set — Phase 25's, D-06); review 2 warnings + 3 info open (`22-REVIEW-DISPOSITION.md`) |
 | L41 | A field the model says is inert is dimmed in the form and stays a field (supersedes 08 D-09, keeps L02): `enabled_when` is one key holding a bare JSON list of `{field, op, value}` conditions (`op` is `eq` or `gt`, the list is the AND; an OR or another op is a stop-and-ask), built by `when()` (`Literal["eq", "gt"]` so a bad op fails `mypy --strict`) and emitted by `_extra()`, the one builder of `json_schema_extra`; eleven rows declared, each only after `tests/test_relations.py` proves it forward (the dependent moves only the warning that names it) and reverse (every field `calc` ignores has a relation); `.field.inactive` dims with `--muted` text and a dashed border, the reason (`Needs {gate title} above 0`) is its own row linked by `aria-describedby`, the field is never `disabled`, hidden or cleared and is still sent; `applyRelations()` runs at `readHash()`, in the `input` listener before the debounce and at `#reset`, never on a build's success; two unbacked relations and the hex warning on default bore fields filed, not declared | ✓ Good — verified 4/4, UAT 2/2; `make verify` 1248 tests at 97.99 %; `inert fields` step 1.32 s mean, commit slice 15.14 s of L36's 30 s (`bench/RESULTS.md`); fixture and golden pin byte-unchanged; review 2 warnings + 5 info open (`23-REVIEW-DISPOSITION.md`, WR-01 to triage before Phase 24 widens the grammar); `workflow.ui_safety_gate` turned off for this repo (no UI-SPEC; design decisions live in CONTEXT and this log) |
 | L42 | A bore shape is picked in the form and written back as flat fields (follows L41, keeps L02 and L05): `GearParams.model_config` carries `selectors`, a list of `{title, group, options: [{label, when}]}` whose `when` is L41's `when()` list, so `holds()` is the one evaluator and `app.js` names no bore field; `/api/schema` gains that one key while `/openapi.json` stays byte-identical, and the pin asserts both halves; four options (Round, D-flat, Hex, No bore) of which exactly one holds on every non-negative triple — none or two holding leaves the select blank, the derivation caught per selector; `deriveSelectors()` runs at the three `applyRelations()` sites and never writes; a pick plans first and writes after — each unmet `eq` field is written the string `0` with its old string stashed, a `gt` field gets its stashed string back when it clears the threshold, otherwise the pick is pending (`.pending`, the needing field focused, its reason in the field's own row, no request, `stopPropagation`) and a writing pick bubbles so the form listener sends exactly one debounced request; the keyway is left to the server's 422; no `GearParams` field is added | ✓ Good — verified 6/6, UAT 2/2; `make verify` 1311 passed (288.08 s, 24-04); `bore shape` step 8.55 s mean, commit slice 15.60 s of L36's 30 s, no bar set (Phase 25 re-sets it); both regression files byte-unchanged; the Codex cross-review of PR #36 and a second internal review found and the branch fixed: the pending pick persisted until its number is typed (CX-01), the focus kept on the select (WR-01/CX-02), a pick on another selector restoring the ended one (CX-04), an emptied box kept pending (WR-02); L42 amended 2026-10-13, verification regenerated 8/8 |
+| L43 | The gate's bar is 300 s on the 18-CPU Apple M5 Max, set by the human from two non-decisive readings, and `make venv` installs under the closure (amends L34): a new idle-host method pre-registered before any reading (`1d5ce8a`: 1-min load under 1.5 for three samples 30 s apart, N = 5 green runs per arm interleaved A/B, candidate = `math.ceil` of the largest decisive B `real`, 900 s wait and run caps, 3 h session cap); the host never quieted (seven waits gave up, lowest load 1.60), the human waived the wait and cut the session to A1 195.23 s / B1 179.21 s (1315 / 1317 passed, both non-decisive, candidate `none`) and wrote `Bar: 300 s`; the venv probe GREEN in a linked worktree under `PIP_CONSTRAINT` (31/31 pins, `pip check` clean, 1317 passed), so `$(STAMP)` installs `-c requirements.txt`; no check enforces the bar (ARCH 7.4) | ✓ Recorded — verified 5/5 with three must-haves under the human's overrides; Nyquist 11 automated / 3 manual-only; security 23/23 closed; review 0 critical, 3 warnings, 5 info open (`25-REVIEW-DISPOSITION.md`); `make verify` 1317 passed on `ac129dc` (184.95 s); the bar's evidential weight is thin by L43's own wording, and WR-03 names 294–336 s green runs from Phase 24 on the same host under load |
 
 ## Success Metric (Milestone v0.1)
 
@@ -808,4 +831,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-13 after Phase 24 (post-review fixes).*
+*Last updated: 2026-10-14 after Phase 25.*
