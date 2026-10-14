@@ -1,0 +1,60 @@
+4c4
+< aiohttp==3.14.4
+---
+> aiohttp==3.14.5
+9c9
+< ast_serialize==0.12.1
+---
+> ast_serialize==0.13.0
+24,26c24,26
+< fastapi==0.142.4
+< filelock==4.0.12
+< fonttools==4.66.1
+---
+> fastapi==0.141.1
+> filelock==4.1.1
+> fonttools==4.65.0
+45c45
+< multidict==6.9.1
+---
+> multidict==7.1.0
+53d52
+< opentelemetry-api==1.45.1
+57c56
+< platformdirs==4.12.4
+---
+> platformdirs==4.13.0
+60c59
+< pre_commit==4.6.2
+---
+> pre_commit==4.7.0
+70c69
+< python-discovery==1.6.1
+---
+> python-discovery==1.6.2
+72c71
+< ruff==0.16.10
+---
+> ruff==0.17.0
+76c75
+< starlette==1.7.0
+---
+> starlette==1.6.0
+78c77
+< trame-common==1.2.8
+---
+> trame-common==1.2.9
+80c79
+< trame-server==4.0.0
+---
+> trame-server==4.1.0
+86,87c85,86
+< uvicorn==0.54.0
+< virtualenv==21.14.5
+---
+> uvicorn==0.53.0
+> virtualenv==21.14.7
+89c88
+< wslink==2.5.7
+---
+> wslink==2.6.0

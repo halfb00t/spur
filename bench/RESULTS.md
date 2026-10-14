@@ -5785,3 +5785,121 @@ wait 8 the human waived the wait for the session, so the wait file for A1 ends `
 load 4.18, and the wait-end cell for A1 in the Runs table reads `WAIVED`. B1's and A2's wait files hold one `WAIVED` row each
 (13:21:03Z at 6.07 and 13:24:09Z at 6.99). Waived waits never reached `IDLE` or `GAVE_UP`. The human decides at 25-04 what two
 non-decisive readings are worth; this record does not decide it.
+
+### The venv probe (25-03)
+
+What was probed: whether `make venv` still builds a working dev venv when `PIP_CONSTRAINT` points at `requirements.txt`, the
+31-pin closure the Docker image installs (the idea filed in `docs/ideas/2026-10-03-constrain-make-venv-to-the-closure.md`). It ran
+once, in the linked worktree `.claude/worktrees/venv-probe`, never in the main checkout, after the last reading: the last
+`run-record` above ends 13:26:04Z (A2, stopped at 13:26:07Z) and the probe started at 13:33:03Z. Its `make verify` wall is not a
+gate reading and never enters the bar. Every log is under
+`.planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/investigation/25-03-*`.
+
+#### Host state
+
+- Same host as the readings (`18 CPUs, arm64, 64.0 GiB RAM`, Apple M5 Max); pip 26.2.1 (probe venv, Python 3.12.15)
+- Worktree `/Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe`, branch `agent/venv-probe` made by `make worktree.new
+  SLUG=venv-probe`, base `1f7ce01` (the readings commit; the branch carried no commit of its own)
+- The main checkout's `.venv` was not touched; its freeze is the "main" side of the diff below
+- The pip cache was warm (`make venv` took 25 s: 13:33:12Z to 13:33:37Z), so this probe says nothing about a cold install's duration
+
+#### Readings
+
+- `PIP_CONSTRAINT` was `/Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe/requirements.txt`, set for the one `make venv`
+  command and never exported
+- `make venv` exit 0 (`25-03-venv.log`); it printed `make: a linked worktree -- the hooks live in the main checkout's .git/hooks;
+  run make venv there (L36).` and installed no hook
+- `make verify` (13:33:42Z to 13:38:13Z) exit 0: `1317 passed in 248.73s (0:04:08)`, coverage `TOTAL 1358 22 386 13 97.99%`, `real 270.35`.
+  Not a gate reading: the probe's host was not waited for and the run includes the headless-shell install, so it enters no
+  statistic and no bar (`25-03-verify.log`)
+- `pip check` printed `No broken requirements found.` (exit 0, `25-03-pip-check.log`)
+- Pin check (`25-03-pins.log`, names compared in PEP 503 normal form): `pins: 31 installed, 31 match, 0 absent`
+- Freeze diff (`25-03-freeze.diff`: main `.venv` first, probe second; `-e ` and `#` lines dropped, each side sorted under
+  `LC_ALL=C`). The four predicted moves are all there: `fastapi` 0.142.4 -> 0.141.1, `starlette` 1.7.0 -> 1.6.0, `uvicorn` 0.54.0
+  -> 0.53.0, `fonttools` 4.66.1 -> 4.65.0. The diff also holds 13 other packages, none of which is among the 31 pins, listed
+  here as read:
+
+```
+4c4
+< aiohttp==3.14.4
+---
+> aiohttp==3.14.5
+9c9
+< ast_serialize==0.12.1
+---
+> ast_serialize==0.13.0
+24,26c24,26
+< fastapi==0.142.4
+< filelock==4.0.12
+< fonttools==4.66.1
+---
+> fastapi==0.141.1
+> filelock==4.1.1
+> fonttools==4.65.0
+45c45
+< multidict==6.9.1
+---
+> multidict==7.1.0
+53d52
+< opentelemetry-api==1.45.1
+57c56
+< platformdirs==4.12.4
+---
+> platformdirs==4.13.0
+60c59
+< pre_commit==4.6.2
+---
+> pre_commit==4.7.0
+70c69
+< python-discovery==1.6.1
+---
+> python-discovery==1.6.2
+72c71
+< ruff==0.16.10
+---
+> ruff==0.17.0
+76c75
+< starlette==1.7.0
+---
+> starlette==1.6.0
+78c77
+< trame-common==1.2.8
+---
+> trame-common==1.2.9
+80c79
+< trame-server==4.0.0
+---
+> trame-server==4.1.0
+86,87c85,86
+< uvicorn==0.54.0
+< virtualenv==21.14.5
+---
+> uvicorn==0.53.0
+> virtualenv==21.14.7
+89c88
+< wslink==2.5.7
+---
+> wslink==2.6.0
+```
+
+- Hook shims, `.git/hooks/pre-commit`, `commit-msg` and `pre-push`, sha256 before and after, unchanged
+  (the hashes are in `25-03-shims-before.log` and `25-03-shims-after.log`: pre-commit
+  `fa3b3ab76e2143d2cf1518cd79b57b2150e771d674318daebb6107df46bec5e4`, commit-msg
+  `6dca5c451ab75d79384dcb2a8bcec51d6202a334cdb05366b6f7ad39d1ccea66`, pre-push
+  `22fcbf739b531b74332c2fe1a4d313ee0df0d102e1e15a564179c9f022c65e2e`). Line 6 of each reads
+  `INSTALL_PYTHON=/Users/half/git/halfb00t/spur/.venv/bin/python` before and after: unchanged
+- Probe window: 2026-10-14T13:33:03Z (start) to 13:38:32Z (end, after `git worktree remove` printed nothing and succeeded
+  without `--force`); `git worktree list` then listed only the main checkout. The branch `agent/venv-probe` still exists and
+  is the human's to delete
+
+#### Outcome
+
+Outcome: GREEN
+
+All four D-12 criteria hold in the logs: `make venv` and `make verify` exited 0, `pip check` printed `No broken requirements
+found.`, every one of the 31 pins is installed at its pinned version, and the freeze diff shows the four predicted moves
+(an empty diff would not have been green). The 13 other lines in the diff are recorded as read above, not explained. On
+green, 25-04 adds `-c requirements.txt` and the stamp prerequisite to `$(STAMP)` and L43 widens L34's CI sentence.
+
+What a green run on macOS arm64 does not show: the `linux/arm64` image, a Pi 5, a cold pip cache, or build requirements under
+pip 26.2, which no longer applies constraints to isolated build environments, so `hatchling` built unconstrained here.

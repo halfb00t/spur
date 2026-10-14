@@ -1,0 +1,42 @@
+$ date -u +%FT%TZ
+2026-10-14T13:33:03Z
+[rc 0]
+$ git rev-parse HEAD
+1f7ce01f9a8f2e398726b88b0433a755b78adaf8
+[rc 0]
+$ shims before -> 25-03-shims-before.log
+[rc 0]
+$ git rev-parse --verify --quiet agent/venv-probe
+[rc 1]
+$ make worktree.new SLUG=venv-probe
+Preparing worktree (new branch 'agent/venv-probe')
+HEAD is now at 1f7ce01 docs(25): record the idle gate readings under the 25-01 rule, with every kept log
+worktree .claude/worktrees/venv-probe on agent/venv-probe (base gsd/phase-25-gate-bar-re-set-venv-probe-ledger-close)
+run 'make venv' inside it, or 'make test-image' -- do NOT share the main
+.venv: its editable install resolves 'import spur' back to the main checkout,
+so the suite would silently test unmodified code.
+[rc 0]
+$ git worktree list
+/Users/half/git/halfb00t/spur                              1f7ce01 [gsd/phase-25-gate-bar-re-set-venv-probe-ledger-close]
+/Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe 1f7ce01 [agent/venv-probe]
+[rc 0]
+$ git -C .claude/worktrees/venv-probe rev-parse HEAD
+1f7ce01f9a8f2e398726b88b0433a755b78adaf8
+[rc 0]
+$ PIP_CONSTRAINT=/Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe/requirements.txt make -C /Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe venv   (start 2026-10-14T13:33:12Z)
+[rc 0] (end 2026-10-14T13:33:37Z)
+$ /usr/bin/time -p make -C /Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe verify   (start 2026-10-14T13:33:42Z)
+[rc 0] (end 2026-10-14T13:38:13Z)
+$ /Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe/.venv/bin/python -m pip --version
+pip 26.2.1 from /Users/half/git/halfb00t/spur/.claude/worktrees/venv-probe/.venv/lib/python3.12/site-packages/pip (python 3.12)
+Python 3.12.15
+$ pip check -> 25-03-pip-check.log [rc 0]
+$ freeze main/probe -> 25-03-freeze-*.txt, 25-03-freeze.diff
+$ pin check -> 25-03-pins.log [rc 0]
+$ shims after -> 25-03-shims-after.log [rc 0]
+$ git worktree remove .claude/worktrees/venv-probe
+[rc 0]
+/Users/half/git/halfb00t/spur 1f7ce01 [gsd/phase-25-gate-bar-re-set-venv-probe-ledger-close]
+$ date -u +%FT%TZ
+2026-10-14T13:38:32Z
+[rc 0]
