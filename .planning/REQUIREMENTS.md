@@ -173,9 +173,9 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   gains the constraint and L34's CI sentence widens in the same `Lxx` as the bar. Red: which
   pins fail is recorded and the idea stays filed. Either way `.git/hooks/pre-commit` still
   names `.venv/bin/python` afterwards, and the probe never runs during a gate reading.
-- [ ] **REQ-pi5-claim-softened**: README states the hardware every number came from and
+- [x] **REQ-pi5-claim-softened**: README states the hardware every number came from and
   makes no Raspberry Pi 5 claim without a measurement; the idea is retired.
-- [ ] **REQ-reverify-recipe**: one paragraph in `docs/HOW_TO_DEVELOP.md` §6 beside the
+- [x] **REQ-reverify-recipe**: one paragraph in `docs/HOW_TO_DEVELOP.md` §6 beside the
   ship-note workaround — a fix after verification re-stales the report; re-dispatch
   `gsd-verifier` with the delta, commit, re-ship — or `.ai_skills/reverify-phase` if the
   record shows the loop has hit three times; the idea is retired.
@@ -261,8 +261,8 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-gate-rule-pre-registered | Phase 25 | Pending |
 | REQ-gate-bar-reset | Phase 25 | Complete |
 | REQ-venv-constraint-probe | Phase 25 | Complete |
-| REQ-pi5-claim-softened | Phase 25 | Pending |
-| REQ-reverify-recipe | Phase 25 | Pending |
+| REQ-pi5-claim-softened | Phase 25 | Complete |
+| REQ-reverify-recipe | Phase 25 | Complete |
 
 **Coverage:**
 - v0.5 requirements: 24 total
