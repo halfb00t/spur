@@ -9,7 +9,6 @@ the same commit as the file.
 | Date | Item | Why it is not now |
 |---|---|---|
 | 2026-09-21 | [Trochoidal root fillets for undercut gears](2026-09-21-trochoidal-root-fillets.md) | The opt-in hob root shipped in Phase 19 (`root_shape`, L38); the default flip waits on a real fit report or a mating-pair request below `z_min` (D-09), because it would move every shared link's part |
-| 2026-09-22 | [Measure the Raspberry Pi 5 claim, or soften it](2026-09-22-measure-or-soften-the-pi5-claim.md) | Needs hardware nobody here has; Phase 2's numbers all come from a 12-core dev machine |
 | 2026-09-28 | [A recipe (or skill) for re-verifying a phase after post-verification fixes](2026-09-28-reverify-after-post-verification-fixes.md) | Process, not product; one HOW_TO_DEVELOP paragraph or a project skill once it repeats a third time |
 | 2026-09-29 | [A rotation field for spoke arms and lightening holes](2026-09-29-cutout-rotation-field.md) | D-03 fixes +X and nobody has asked for another angle yet; the additive field is the safe undo when someone does |
 | 2026-09-29 | [A teeth- or module-dependent honeycomb cell-count cap](2026-09-29-teeth-dependent-honeycomb-cap.md) | D-12 rejected it for one constant; revisit only if a small gear needs more cells and a sweep shows cost falling with gear size |
@@ -28,3 +27,4 @@ items: the file goes to `retired/` with `Status: retired` and `Retired in:` nami
 | 2026-09-29 | [Conditional form fields ("disabled when")](retired/2026-09-29-conditional-form-fields.md) | test(23): one flip link per gate, the refused pair and Reset -- retire the conditional-fields idea |
 | 2026-09-27 | [A bore-shape selector in the web form](retired/2026-09-27-bore-shape-selector-in-the-web-form.md) | test(24): every pick from every bore shape, the stash across links and the keyed bore -- retire the bore-shape idea |
 | 2026-10-03 | [Constrain `make venv` to the pinned closure, the way CI is](retired/2026-10-03-constrain-make-venv-to-the-closure.md) | docs(25): log L43 -- the gate bar re-set on an idle host amends L34, stale gate figures rewritten, IN-03 closed |
+| 2026-09-22 | [Measure the Raspberry Pi 5 claim, or soften it](retired/2026-09-22-measure-or-soften-the-pi5-claim.md) | docs(25): name the hardware behind every README number and make no Pi 5 claim -- retire the Pi 5 idea |
