@@ -5,16 +5,16 @@ milestone_name: Honest Form
 current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
 status: executing
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-10-14T10:45:00.050Z"
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-10-14T13:27:48.298Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 25 execution started
-state_head: 1d5ce8ad6f973b8b10d30e074a44d6c173b3caec
+state_head: 9b68f6ddd5b6a8eee40855eceff6c11b65d71e58
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 23
-  completed_plans: 19
+  completed_plans: 20
   percent: 80
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 25 (Gate Bar Re-Set, Venv Probe, Ledger Close) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 25 execution started
 
@@ -239,6 +239,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 24 P03 | 17 min | 2 tasks | 7 files |
 | Phase 24 P04 | 9 min | 2 tasks | 1 files |
 | Phase 25 P01 | 11 min | 3 tasks | 1 files |
+| Phase 25 P02 | 2h 40m | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -447,6 +448,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 24]: 24-03: the bore-shape idea is retired and the hex-bore warning debt stays active with its trigger fired in 470b78a, to be fixed as a /gsd-quick before Phase 25's reading — D-17: the debt's trigger was the selector shipping; restating it keeps the fix scheduled without resolving what the selector made more visible (every selector-made hex part warns about untouched defaults)
 - [Phase 24]: 24-04: no gate bar is set for the bore shape step (8.55 s mean) or the commit slice (15.60 s mean); Phase 25 re-sets the bar on its final HEAD (D-15)
 - [Phase 25]: 25-01: gate re-set rule committed as drafted (1d5ce8a) on the human's answer 'commit' at the Task 2 gate; rehearsal logs stay untracked until 25-03
+- [Phase 25]: 25-02: human waived idle waits and the A1 exception; the session took one reading per arm (A1 real 195.23 s, B1 real 179.21 s), both non-decisive; no decisive run, no candidate bar, human writes the bar at 25-04
 
 ### Pending Todos
 
@@ -730,8 +732,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-14T10:45:00.013Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-10-14T13:27:48.261Z
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
