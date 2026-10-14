@@ -1665,6 +1665,8 @@ the trigger; the cause was the headroom.
 
 Date: 2026-10-04.
 
+Bar amended by L43 (2026-10-14).
+
 L12 and L13 stay as written; this entry amends L13's "~11 s warm" and its unmeasured gate,
 and L12's "loose ranges for developer environments" as far as CI is concerned, with what
 Phase 15 measured, decided and proved.

@@ -14,7 +14,7 @@ Four `Info` findings from the Phase 19 review, none a defect in a printed number
 
 - **IN-01** `_build` says `root_mode` is asked once so the part and the numbers cannot name different roots, but `_chamfer_tips` re-runs `tip_chamfer_effective(p)` without `rm`, which re-solves the curve for a chamfered trochoid build. `root_mode` is pure, so the two answers cannot diverge today; the comment overstates the guarantee and the curve is solved twice.
 - **IN-02** `bench/trochoid_part.py` carries a stale "does not exist until 19-04" paragraph and re-solves the curve; its edge selector and oracle reading are near-copies of the ones in `tests/test_model.py`, so the "selector that must count" has two definitions that can drift.
-- **IN-03** The Makefile comment quotes L34's 63.555 s gate while the gate reads 161–240 s on this host (19-09, accepted as `accept-A`, recorded in L38). The comment is a claim the repo contradicts. Resolved in: docs(25): log L43 -- the gate bar re-set on an idle host amends L34, stale gate figures rewritten, IN-03 closed (L43 re-set the bar and the Makefile comment now cites it).
+- **IN-03** The Makefile comment quotes L34's 63.555 s gate while the gate reads 161–240 s on this host (19-09, accepted as `accept-A`, recorded in L38). The comment is a claim the repo contradicts. Resolved in: 34270c8 (L43 re-set the bar and the Makefile comment now cites it).
 - **IN-04** The UI result row labels `root_fillet` "Root fillet used" under a hob root, where the value is the hob's tip radius; `_host_state` crashes outside a git checkout instead of printing "unknown".
 
 ## Why it matters
