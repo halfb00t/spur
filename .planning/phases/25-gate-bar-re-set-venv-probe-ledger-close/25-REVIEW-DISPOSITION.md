@@ -5,15 +5,15 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "No test covers the shipped `-c requirements.txt` or the new stamp prerequisite"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "L43 and RESULTS word the adoption proof and the build-constraint caveat as observed when they are inferred"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The 300 s bar is stated without the same-host gate readings that exceed it"
   - id: IN-01
     severity: info
@@ -35,18 +35,18 @@ findings:
     severity: info
     disposition: open
     title: "Debt item carries a commit subject where convention asks for a sha; L34 has no forward pointer to L43"
-open: 8
+open: 5
 total: 8
-recorded: 2026-10-14T14:31:26.547Z
+recorded: 2026-10-14T15:06:46.341Z
 ---
 
 # Phase 25: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
+| WR-01 | warning | fixed | 25-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 25-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 25-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
