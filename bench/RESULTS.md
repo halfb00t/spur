@@ -5541,3 +5541,132 @@ One red run that is not a deliberate break: 24-01's first `make verify` on the c
 `2026-10-06-resource-tracker-flake-fails-the-gate`), at a host load of 15.6. Its whole log is kept as `24-01-red-1.log`; the one
 re-run on the same tree read `1295 passed in 272.91s (0:04:32)`, `make verify exit 0` (`24-01-verify.log`). The gate was green on its
 first run in 24-02 (`1311 passed in 294.40s`, `24-02-verify.log`) and in 24-03 (`1311 passed in 336.15s`, `24-03-verify.log`).
+
+## The gate re-set (Phase 25)
+
+What this section does: it re-reads the wall time of `make verify` on an idle host, ten times, so that the human can set
+the gate's bar again from readings taken under a rule that was written first. L34's 66 s bar was read on a 12-CPU Apple M2
+Max under load; L39 admitted `tests/test_browser.py` to the gate and left the bar to this phase. The rule below is the
+first thing committed in the phase and `git log` orders it before every reading (SC1).
+
+### The rule (25-01)
+
+This is a new method, not L34's. Phase 15 D-04 read the gate at 1-minute loads of 5 to 30 and took the largest of three
+runs, with no quiet host waited for. This rule reads the gate on an idle host, five green runs per arm, the two arms
+interleaved, and the human sets the bar at a checkpoint after the readings from a candidate the rule names now. The rule is
+committed alone, before any reading, and nothing in it changes once the first wait has started: a different rule is a new
+session of ten readings (L08, L34). Wall time only (D-06): no RSS sampler.
+
+1. **Host (D-21).** All ten runs, and every retry, are read on one host: the one `bench.machine_facts()` names as
+   `18 CPUs, arm64, 64.0 GiB RAM`, chip string `Apple M5 Max` (`sysctl -n machdep.cpu.brand_string`), model `Mac17,6`
+   (`sysctl -n hw.model`). Every run row carries the machine line. A run on another host voids the session. A bar read on
+   another host is quoted and never rescaled: L34's 66 s was read on a 12-CPU Apple M2 Max.
+2. **What is measured (D-07, D-08).** The phase branch after this commit, cut from `main` at `1864bcd`, which already holds
+   the hex-warning fix D-07 asked for. Every run row carries `git rev-parse --short HEAD`. Between this commit and the last
+   reading only `.planning/` may change, and nothing is committed from the first wait to the last run's end. `PYTEST_WORKERS`
+   stays 8: the xdist knee was swept on 12 CPUs and is not re-swept (D-08), so the bar describes the gate as shipped. The
+   dev venv under measurement is the one already installed, not a constrained one; the host-state record says so.
+3. **Quiet host (D-09).** Before A1 the executor prints `uptime`, `who | wc -l`, `ps -Ao pid,pcpu,comm -r | head -n 8` and
+   the R1 `pgrep` (Phase 15: `pgrep -fl '[p]ytest|[p]re_commit|[m]ake verify'` prints nothing). The human closes the other
+   agent sessions and the heavy processes and replies `go`. The snapshot taken before the reply and the one taken after it
+   both go in the host-state record. One `caffeinate -i -t 10800` runs for the session, started before the first wait and
+   never part of a measured command line, so that the machine does not sleep inside a `real`. The stamps are checked fresh
+   instead of by a warm-up run: `make -n verify` must print no `pip install`, `playwright install` or `pre-commit install`
+   (no warm-up run is taken, a choice made here before any reading).
+4. **Idle threshold and wait (D-01, D-02).** X = 1.5 on the 1-minute load, read with `sysctl -n vm.loadavg` (field 2 of
+   `{ 2.18 2.38 2.83 }`) at its two decimals and compared strictly: a load of exactly 1.50 is not idle and resets the
+   count. A run starts only after three consecutive samples 30 s apart read under 1.5 while R1 prints nothing. That wait is
+   the cool-down between runs, never a fixed number of minutes, and it runs before every run, A1 included. The load is read
+   before and after every run.
+5. **Give-up (D-04, D-21).** A wait gives up when its elapsed seconds reach 900. The run then goes ahead and is marked
+   non-decisive: it is recorded with its load, fills its slot, and never enters the statistics or the bar. The one exception
+   is the wait before A1: when it expires no run starts, and the executor returns to the D-09 checkpoint. The session cap is
+   3 h of wall, counted from the first sample of the A1 wait that releases. At the cap no new wait starts, a run already
+   started finishes under its own cap, and the record says which slots are missing.
+6. **The runs (D-03, D-21).** N = 5 green runs per arm, in the slot order A1 B1 A2 B2 A3 B3 A4 B4 A5 B5 (interleaved).
+   Arm A is `PYTEST_ADDOPTS="--ignore=tests/test_browser.py" make verify`; the hook pin reads the caller's `PYTEST_ARGS`, so
+   that spelling is never used. Arm B is `make verify`. Both run under `/usr/bin/time -p` and under `timeout -k 30 900`, the
+   recipe as committed (`-n 8 --cov`). A run that reaches 900 s of wall is killed (exit 124, or 137 after the 30 s KILL).
+7. **Green and red.** Green means `make verify exit 0` and a pytest summary line holding `1315 passed` (arm A) or
+   `1317 passed` (arm B) with no `failed`, `error` or `rerun`. Both counts were collected on this `HEAD` with
+   `pytest --collect-only -q` (1317 tests, 1315 without `tests/test_browser.py`), so a different count is a red run by
+   definition. Anything else is red. A red attempt keeps its whole log, is classified against the two debt files (the
+   resource-tracker flake: `grep -c -E 'resource_tracker|ReentrantCall|ExceptionGroup'` above 0; a run killed at the cap
+   against the 98 % hang), is listed under `#### Red runs` with its failing node ids, never counts toward N, and is followed
+   by a retry at its own slot. The attempt budget is 8 per arm, every attempt counted (red, non-decisive and decisive).
+   Past it the arm is short, its remaining slots are skipped, the other arm's slots run on in order, and the record says so.
+   A green run whose wait gave up fills its slot like any other green run and is not decisive.
+8. **The record (D-06).** Per run: the slot and attempt, the pytest summary line, the coverage `TOTAL`, `real`, the 1-minute
+   load before -> after, UTC start and end, `HEAD`, the machine line, and whether its wait released or gave up. The host
+   state carries `bench.machine_facts()`, the chip, the Python, cadquery, cadquery-ocp, pytest, xdist, cov and playwright
+   versions, `PYTEST_WORKERS`, pip's version, the `pip freeze` lines for `fastapi`, `starlette`, `uvicorn` and `fonttools`,
+   `pmset -g batt` and both D-09 snapshots. Every log stays untracked until the readings are committed. The venv probe runs
+   only after the last run's end (SC4).
+9. **Statistics and the candidate (D-05).** Per arm, over decisive green runs only: n, min, median, max and mean of `real`.
+   The median of an even count is the mean of the two middle values. An arm with no decisive green run prints "no decisive
+   run" and no figure. mean(B) - mean(A) is the browser file's idle cost. The candidate bar is the largest decisive B `real`
+   rounded up to a whole second with `math.ceil`: 169.00 stays 169 and 168.01 becomes 169. At the bar checkpoint the human
+   accepts the candidate or writes another number and the reason, recorded verbatim under `#### Gate decision`. If any wait
+   gave up, the record states that the host did not quiet and the human decides what that means, including whether the
+   decisive runs alone are enough. No check in the gate enforces the bar (ARCH 7.4: a wall-time assertion on shared hardware
+   flaps); it is a recorded figure.
+10. **Precision (D-05).** `real` is read at `/usr/bin/time -p`'s two decimals and the load at `sysctl`'s two. The only
+    rounding that feeds a result is the `math.ceil` of the candidate. Means are printed to two decimals for display and feed
+    nothing.
+
+The wait and the run are each one block, run with `bash` from the repo root with the inputs set in the environment: `S` is
+the absolute path of the investigation directory, `L` the run stem (for example `25-02-A-1` or `25-02-A-2-retry1`), `ARM` is
+`A` or `B`. The readings extract the two blocks from this commit and run exactly those. The wait appends one row per sample
+to `$S/$L.wait.tsv` (UTC, load, R1 count, consecutive count), then `IDLE` and exits 0, or `GAVE_UP` and exits 3. The run
+writes `$S/$L.log` by redirection, never through a pipe that would lose the exit status, and ends it with
+`make verify exit <status>` and one tab-separated `run-record` line.
+
+```sh
+# the wait (25-01)
+X=1.5
+CAP=900
+NEED=3
+EVERY=30
+ok=0
+t0=$(date +%s)
+while :; do
+  l1=$(sysctl -n vm.loadavg | awk '{print $2}')
+  busy=$(pgrep -fl '[p]ytest|[p]re_commit|[m]ake verify' | wc -l | tr -d ' ')
+  if awk -v l="$l1" -v x="$X" 'BEGIN{exit !(l<x)}' && [ "$busy" = 0 ]; then ok=$((ok+1)); else ok=0; fi
+  printf '%s\t%s\t%s\t%s\n' "$(date -u +%FT%TZ)" "$l1" "$busy" "$ok" >> "$S/$L.wait.tsv"
+  if [ "$ok" -ge "$NEED" ]; then
+    printf 'IDLE\t%s\n' "$(date -u +%FT%TZ)" >> "$S/$L.wait.tsv"
+    exit 0
+  fi
+  if [ $(( $(date +%s) - t0 )) -ge "$CAP" ]; then
+    printf 'GAVE_UP\t%s\n' "$(date -u +%FT%TZ)" >> "$S/$L.wait.tsv"
+    exit 3
+  fi
+  sleep "$EVERY"
+done
+```
+
+```sh
+# one run (25-01)
+LOG="$S/$L.log"
+l_before=$(sysctl -n vm.loadavg | awk '{print $2}')
+t_start=$(date -u +%FT%TZ)
+if [ "$ARM" = A ]; then
+  PYTEST_ADDOPTS=--ignore=tests/test_browser.py /usr/bin/time -p timeout -k 30 900 make verify > "$LOG" 2>&1
+else
+  /usr/bin/time -p timeout -k 30 900 make verify > "$LOG" 2>&1
+fi
+status=$?
+echo "make verify exit $status" >> "$LOG"
+t_end=$(date -u +%FT%TZ)
+l_after=$(sysctl -n vm.loadavg | awk '{print $2}')
+rev=$(git rev-parse --short HEAD)
+machine=$(.venv/bin/python -c 'import bench; print(bench.machine_facts())')
+printf 'run-record\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$L" "$ARM" "$status" "$t_start" "$t_end" "$l_before" "$l_after" "$rev" "$machine" >> "$LOG"
+exit 0
+```
+
+Both blocks were run before this commit on stand-ins that load nothing: the wait with `CAP=0` gave up after one sample and
+exited 3, the run with `sleep 1` in the place of the gate printed `real` and `make verify exit 0`, a 2 s cap over `sleep 10`
+read `make verify exit 124`, and `printenv PYTEST_ADDOPTS` showed arm A's spelling reaching the command and arm B's not.
+No `make verify` and no gate-shaped command ran before this commit.
