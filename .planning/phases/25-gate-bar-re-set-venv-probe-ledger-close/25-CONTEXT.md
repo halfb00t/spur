@@ -218,6 +218,36 @@ not re-swept; no Raspberry Pi is measured.
   short per `.ai_skills/README.md`. Rejected: exercising it in this phase (fires only if a
   review finds something; not plannable).
 
+### Planning-time amendments (2026-10-14; research findings, human answers at plan-phase)
+- **D-19:** The reverify skill leads with the route the record shows working: a stale
+  `VERIFICATION.md` is re-routed through `/gsd-execute-phase N` (GSD 1.16.0, #4682; Phase 24
+  used it). D-17's hand dispatch of `gsd-verifier` with the delta stays in the skill as the
+  fallback for when that route refuses. Amends D-17; the "five hits" count and the §6 sentence
+  stand.
+- **D-20:** On a green probe, the L43 commit also edits the `tests/test_hooks.py` fixtures that
+  copy the `Makefile` into a bare repo so they copy `requirements.txt` beside it; without that,
+  `$(STAMP): pyproject.toml requirements.txt` fails two of those tests with "No rule to make
+  target 'requirements.txt'" (reproduced in 25-RESEARCH.md). A test fixture edit is not
+  production code; `tests/regression/*.json` stay byte-unchanged. Amends D-12's "the only
+  recipe change" sentence.
+- **D-21:** Three additions to the rule, written in the rule commit before any reading: (1) all
+  ten runs on one host, named in the rule (Phases 22–24 were read on the 12-CPU M2 Max, 19/21 on
+  the M5 Max); (2) a 15-minute wall cap per gate run — a run past it is killed, red, kept and
+  classified against the 98 % hang debt, never decisive; (3) if A1's idle wait expires, the
+  executor returns to the D-09 quiet-host checkpoint instead of running non-decisive (later runs
+  keep D-04's shape). Amends D-02 to D-04.
+- **D-22:** IN-03 closes with the commit subject, not a sha — a commit cannot carry its own sha,
+  and the last three files in `docs/tech_debt/resolved/` used the subject. Amends D-14.
+- Settled from research without a human call: the probe runs before L43 (D-14 says L43 carries
+  the probe's outcome, so the discretion bullet's "then L43, then the probe" is superseded —
+  rule, readings, probe after the last reading, bar checkpoint, one L43 commit);
+  `docs/architecture/packaging.md:44` also quotes `~64 s` and joins the D-14 sweep and its
+  empty-search pin; `fonttools` 4.66.1 → 4.65.0 is a fourth predicted move beside `fastapi`,
+  `starlette` and `uvicorn`; D-13's sentence goes in `docs/HOW_TO_DEVELOP.md` §0's venv
+  bullet (no venv paragraph exists); D-07 is done — `1864bcd` (#37) is on `main` and is this
+  branch's merge-base. Expected result lines on this `HEAD`: `1315 passed` (arm A),
+  `1317 passed` (arm B).
+
 ### Claude's Discretion
 - The plan split (rule / readings and bar / L43 and stale figures / probe / ledger), with
   the ordering fixed by the roadmap: rule commit first, then readings, then the bar
