@@ -17,27 +17,27 @@ findings:
     title: "The 300 s bar is stated without the same-host gate readings that exceed it"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "Two Makefile comments still describe the stamp as depending on `pyproject.toml` only"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: fixed
     title: "Over-long comment line in `Makefile`"
   - id: IN-03
     severity: info
-    disposition: open
+    disposition: fixed
     title: "README says Apple silicon is \"not measured on\", then says the numbers were read on Apple silicon"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`reverify-phase` hard-codes a Claude-specific tool path in a tool-neutral directory"
   - id: IN-05
     severity: info
-    disposition: open
+    disposition: fixed
     title: "Debt item carries a commit subject where convention asks for a sha; L34 has no forward pointer to L43"
-open: 5
+open: 0
 total: 8
-recorded: 2026-10-14T15:06:46.341Z
+recorded: 2026-10-14T15:24:06.542Z
 ---
 
 # Phase 25: Code Review Disposition
@@ -47,11 +47,11 @@ recorded: 2026-10-14T15:06:46.341Z
 | WR-01 | warning | fixed | 25-REVIEW-FIX.md |
 | WR-02 | warning | fixed | 25-REVIEW-FIX.md |
 | WR-03 | warning | fixed | 25-REVIEW-FIX.md |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
+| IN-01 | info | fixed | 25-REVIEW-FIX.md |
+| IN-02 | info | fixed | 25-REVIEW-FIX.md |
+| IN-03 | info | fixed | 25-REVIEW-FIX.md |
+| IN-04 | info | fixed | 25-REVIEW-FIX.md |
+| IN-05 | info | fixed | 25-REVIEW-FIX.md |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
