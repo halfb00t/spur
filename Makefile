@@ -42,7 +42,11 @@ help:  ## list the targets
 
 # --- local python ------------------------------------------------------------------
 
-$(STAMP): pyproject.toml
+# L43: the dev venv installs under requirements.txt as a constraint (`-c`), the file CI's
+# PIP_CONSTRAINT already names (L34), so every environment that runs the gate resolves the
+# same 31 pins. An existing .venv keeps its older resolve until `make clean && make venv`;
+# a newer requirements.txt re-installs a clone's stamp, once.
+$(STAMP): pyproject.toml requirements.txt
 	@test -n "$(PYTHON)" || { \
 	  echo "make: no python3.12 on PATH."; \
 	  echo "      cadquery-ocp has no wheels past 3.12 and spur supports 3.12 only (L23)."; \
@@ -50,7 +54,7 @@ $(STAMP): pyproject.toml
 	  exit 1; }
 	$(PYTHON) -m venv $(VENV)
 	$(PY) -m pip install --quiet --upgrade pip
-	$(PY) -m pip install -e '.[dev]'
+	$(PY) -m pip install -e '.[dev]' -c requirements.txt
 	@touch $@
 
 # D-06: a clone that forgot `pre-commit install` pushed unverified until CI, silently, so
@@ -102,7 +106,9 @@ venv: $(STAMP) $(HOOKS)  ## create .venv with the dev extras, ~1.4 GB (override 
 # The commit stage is a named prefix of the gate, never a second list of checks (L13, L36):
 # `verify` and `verify.fast` both start at `verify.static` and each ends in one pytest
 # recipe, `test` and `test.fast`. `verify: verify.fast test` was rejected: it runs the
-# slice twice, taking the gate from about 64 s to about 75 s, over L34's 66 s bar.
+# slice twice, about 11 s of repeated work on L34's gate. The gate's bar is 300 s on the
+# 18-CPU Apple M5 Max, a figure the human set from two non-decisive readings (L43,
+# bench/RESULTS.md "The gate re-set (Phase 25)"); no check enforces it.
 verify.static: $(HOOKS) lint typecheck lint-imports no-fake-done  ## the gate's static steps: ruff, mypy, import boundaries, unfinished-work scan
 verify: verify.static test  ## the gate: lint, types, import boundaries, tests
 verify.fast: verify.static test.fast  ## the commit-time subset: the static steps + every test file but the five heavy ones, under 30 s (L36)
@@ -170,7 +176,7 @@ test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
 
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
-# whole gate is 63.555 s (L34). Every test file but the five heavy ones, named by
+# whole gate's bar is 300 s on the 18-CPU Apple M5 Max (L43). Every test file but the five heavy ones, named by
 # exclusion -- never inclusion, never a marker -- so a new test file runs at commit until
 # someone names it heavy (`--strict-markers` is on and no marker is registered). The
 # first three, by share of pytest's seconds (L34, bench/RESULTS.md "Per-file share"):

@@ -5786,6 +5786,30 @@ load 4.18, and the wait-end cell for A1 in the Runs table reads `WAIVED`. B1's a
 (13:21:03Z at 6.07 and 13:24:09Z at 6.99). Waived waits never reached `IDLE` or `GAVE_UP`. The human decides at 25-04 what two
 non-decisive readings are worth; this record does not decide it.
 
+#### Gate decision
+
+The human's verbatim answer to 25-04's bar checkpoint: "Let's set 300 s. IMHO it's a reasonable bar".
+
+Answered 2026-10-14 (the time of day was not recorded), after the checkpoint showed the host line, the Per arm table, the
+two non-decisive readings (A1 195.23 s, B1 179.21 s), the empty Red runs section, the eight waits that gave up and the venv
+probe's `Outcome: GREEN` as context. It is the plan's `other <N> <reason>`, with N = 300 and the reason being the sentence
+above, unparaphrased.
+
+Candidate bar (D-05): none
+
+Bar: 300 s
+
+Neither arm had a decisive green run, so there was no candidate to accept and the bar is the human's number, not the rule's
+(D-04). The give-ups and the short arms: the human's words on them are the ones quoted in this section above (the wait waived
+for the session, `I told you not to wait preconditions and ignore the load. RUN ASAP`, then one reading per arm) and in
+`### The host, before run 1 (25-02)` (`no. don't bother me with this questions anymore. go proceed without stopping`); at the
+bar checkpoint the human said nothing further on them and was not asked again. The two readings 195.23 s and 179.21 s enter
+no statistic; 300 s sits above both and above the probe's 270.35 s, which is not a reading. L34's 66 s is another host and
+another method and is not compared.
+
+The bar is a recorded figure for this host (18 CPUs, arm64, 64.0 GiB RAM, Apple M5 Max) on the measured `HEAD` `9b68f6d`;
+no check in the gate enforces it (ARCH 7.4).
+
 ### The venv probe (25-03)
 
 What was probed: whether `make venv` still builds a working dev venv when `PIP_CONSTRAINT` points at `requirements.txt`, the

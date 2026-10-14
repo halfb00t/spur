@@ -1,6 +1,8 @@
 # Constrain `make venv` to the pinned closure, the way CI is
 
 Date: 2026-10-03
+Status: retired
+Retired in: docs(25): log L43 -- the gate bar re-set on an idle host amends L34, stale gate figures rewritten, IN-03 closed
 Source: Phase 15 discuss-phase (15-CONTEXT.md D-14)
 Related files:
 - Makefile (`$(STAMP)`: `pip install -e '.[dev]'`)
@@ -32,3 +34,12 @@ unproven (vtk, casadi, nlopt are the likely gaps). If it does: `$(STAMP)` gains 
 constraint and `requirements.txt` as a prerequisite, and L34's sentence about CI widens
 to every environment, as an amendment. If it does not: record which pins have no arm64
 wheel and leave this filed.
+
+## Outcome
+
+Phase 25 probed it once, in a linked worktree on this host (macOS arm64, Apple M5 Max), after the gate readings:
+`make venv` under `PIP_CONSTRAINT=requirements.txt` exited 0, `make verify` exited 0 (`1317 passed`), `pip check` was
+clean and all 31 pins were installed at their pinned versions (`bench/RESULTS.md`, "The venv probe (25-03)", `Outcome:
+GREEN`); the arm64 wheel gap this item feared (vtk, casadi, nlopt) did not appear. `$(STAMP)` now depends on
+`requirements.txt` and installs with `-c requirements.txt`, and L43 widens L34's sentence about CI to every environment
+that claims to run the gate. An existing `.venv` keeps its resolve until `make clean && make venv`.

@@ -179,6 +179,7 @@ def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_
     main.mkdir()
     shutil.copy(REPO_ROOT / "Makefile", main / "Makefile")
     (main / "pyproject.toml").write_text("", encoding="utf-8")
+    (main / "requirements.txt").write_text("", encoding="utf-8")
     (main / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
     git = ["git", "-c", "user.name=probe", "-c", "user.email=probe@example.invalid"]
     subprocess.run(["git", "init", "-q"], cwd=main, env=env, check=True)
@@ -191,6 +192,7 @@ def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_
     for checkout in (main, worktree):
         # `$(STAMP)` up to date, so only `$(HOOKS)` has work to do.
         os.utime(checkout / "pyproject.toml", (1_000_000_000, 1_000_000_000))
+        os.utime(checkout / "requirements.txt", (1_000_000_000, 1_000_000_000))
         venv = checkout / ".venv"
         (venv / "bin").mkdir(parents=True)
         (venv / ".installed").write_text("", encoding="utf-8")
@@ -224,10 +226,12 @@ def test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set(tmp_path: Path)
     main.mkdir()
     shutil.copy(REPO_ROOT / "Makefile", main / "Makefile")
     (main / "pyproject.toml").write_text("", encoding="utf-8")
+    (main / "requirements.txt").write_text("", encoding="utf-8")
     (main / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
     subprocess.run(["git", "init", "-q"], cwd=main, env=env, check=True)
     subprocess.run(["git", "config", "core.hooksPath", "elsewhere"], cwd=main, env=env, check=True)
     os.utime(main / "pyproject.toml", (1_000_000_000, 1_000_000_000))
+    os.utime(main / "requirements.txt", (1_000_000_000, 1_000_000_000))
     venv = main / ".venv"
     (venv / "bin").mkdir(parents=True)
     (venv / ".installed").write_text("", encoding="utf-8")
