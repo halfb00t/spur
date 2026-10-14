@@ -5,7 +5,7 @@ milestone_name: Honest Form
 current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
 status: executing
-stopped_at: Completed 25-03 Tasks 1-2; Task 3 (agent/venv-probe branch decision) awaits the human
+stopped_at: Completed 25-03 (all 3 tasks; agent/venv-probe deleted at the human's word 2026-10-14T13:49:19Z); next 25-04
 last_updated: "2026-10-14T13:40:35.598Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 25 execution started

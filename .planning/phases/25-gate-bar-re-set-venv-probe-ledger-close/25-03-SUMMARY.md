@@ -16,7 +16,7 @@ affects: [25-04]
 
 actuals:
   tokens: 26400      # chars/4 over `git diff 861e2cc HEAD` (105651 chars; bench/RESULTS.md alone is 14672 chars, the rest are the committed logs)
-  tasks: 2           # Task 1 and Task 2 complete; Task 3 (the branch decision) awaits the human
+  tasks: 3           # Task 3 (the branch decision) answered `delete` at 2026-10-14T13:49:19Z; no commit of its own
   commits: 2         # measured: git rev-list --count 861e2cc..HEAD at SUMMARY write (the metadata commit comes after)
 plan_head_before: 861e2cca502419ad088d51d3c2f39332c95655f6
 plan_head_after: dbc50d991a145ae7001bc5f70b518abc376af698
@@ -52,14 +52,14 @@ status: complete
 
 # Phase 25 Plan 03: Record the readings, probe make venv under PIP_CONSTRAINT Summary
 
-**Two non-decisive readings (A1 195.23 s, B1 179.21 s) recorded with no candidate bar, plus a GREEN `make venv` probe under `PIP_CONSTRAINT=requirements.txt` in a linked worktree, both committed with every kept log; only the branch decision (Task 3) awaits the human.**
+**Two non-decisive readings (A1 195.23 s, B1 179.21 s) recorded with no candidate bar, plus a GREEN `make venv` probe under `PIP_CONSTRAINT=requirements.txt` in a linked worktree, both committed with every kept log; the probe branch `agent/venv-probe` deleted at the human's word.**
 
 ## Performance
 
 - **Duration:** about 13 min (start not recorded; the previous commit is at 13:28:02Z)
 - **Started:** 2026-10-14T13:28Z (approximate)
 - **Completed:** 2026-10-14T13:41Z (SUMMARY write)
-- **Tasks:** 2 of 3 complete; Task 3 is the human's checkpoint
+- **Tasks:** 3 of 3 complete (Task 3 answered at 2026-10-14T13:49:19Z)
 - **Files modified:** `bench/RESULTS.md` plus 29 new log files (30 paths in `git diff --stat 861e2cc HEAD`, 1880 insertions)
 
 ## Accomplishments
@@ -73,7 +73,7 @@ status: complete
 
 1. **Task 1: Record the readings** - `1f7ce01` (docs) -- `bench/RESULTS.md` plus 19 files (every `25-01-*` and `25-02-*`), 20 paths
 2. **Task 2: Probe make venv under PIP_CONSTRAINT** - `dbc50d9` (docs) -- `bench/RESULTS.md` plus the ten `25-03-*` files
-3. **Task 3: The branch decision** - not yet run; see "Task 3" below
+3. **Task 3: The branch decision** - `delete`; `git branch -d agent/venv-probe` run by the orchestrator at 2026-10-14T13:49:19Z, no commit of its own; see "Task 3" below
 
 **Plan metadata:** the docs(25-03) commit that carries this file, `STATE.md` and `ROADMAP.md`.
 
@@ -93,9 +93,9 @@ status: complete
 - Shim sha256 (unchanged): pre-commit `fa3b3ab7...5e4`, commit-msg `6dca5c45...66`, pre-push `22fcbf73...e2e` (full values in `25-03-shims-before.log`).
 - `Outcome: GREEN`. A green macOS arm64 run does not show the `linux/arm64` image, a Pi 5, a cold pip cache or build requirements under pip 26.2.
 
-## Task 3: the branch decision (awaiting the human)
+## Task 3: the branch decision (answered)
 
-`git worktree list` lists only the main checkout. `agent/venv-probe` exists at `1f7ce01`, the phase branch tip from before the probe commit, so `git branch -d agent/venv-probe` accepts it. Options: `delete` (`git branch -d`), `force-remove-and-delete` (not needed: the plain remove succeeded), `keep`. The human's answer, verbatim and with its UTC time, is recorded here by the continuation: **pending**.
+`git worktree list` lists only the main checkout. `agent/venv-probe` exists at `1f7ce01`, the phase branch tip from before the probe commit, so `git branch -d agent/venv-probe` accepts it. Options: `delete` (`git branch -d`), `force-remove-and-delete` (not needed: the plain remove succeeded), `keep`. The human's answer, verbatim: `delete` (2026-10-14T13:49:19Z). The orchestrator ran `git branch -d agent/venv-probe` inline (no fresh continuation, to save time at the human's request); output: `Deleted branch agent/venv-probe (was 1f7ce01).` Afterwards `git rev-parse --verify --quiet agent/venv-probe` prints nothing and `git worktree list` holds only the main checkout.
 
 ## Deviations from Plan
 
