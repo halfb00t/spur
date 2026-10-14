@@ -5670,3 +5670,118 @@ Both blocks were run before this commit on stand-ins that load nothing: the wait
 exited 3, the run with `sleep 1` in the place of the gate printed `real` and `make verify exit 0`, a 2 s cap over `sleep 10`
 read `make verify exit 124`, and `printenv PYTEST_ADDOPTS` showed arm A's spelling reaching the command and arm B's not.
 No `make verify` and no gate-shaped command ran before this commit.
+
+### The host, before run 1 (25-02)
+
+Read 2026-10-14 at 10:47:48Z, before any wait; every command and its output is in
+`.planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/investigation/25-02-host.log`.
+
+- Machine: `bench.machine_facts()` reads `18 CPUs, arm64, 64.0 GiB RAM`; chip Apple M5 Max (`sysctl -n machdep.cpu.brand_string`),
+  model `Mac17,6`, macOS 27.0.1 build 26A434, Darwin 27.0.0, arm64
+- Python 3.12.15 (`.venv`), cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0,
+  playwright 1.63.0, pip 26.2.1; `PYTEST_WORKERS` 8 (`make -n test` prints `.venv/bin/python -m pytest -n 8 --cov
+  --cov-report=term`); `timeout (GNU coreutils) 9.12`
+- Pre-adoption venv (the one already installed, not a constrained one): `fastapi==0.142.4`, `fonttools==4.66.1`,
+  `starlette==1.7.0`, `uvicorn==0.54.0`
+- Collected counts on this HEAD: 1317 tests, 1315 with `--ignore=tests/test_browser.py`
+- Power: `Now drawing from 'AC Power'` (`pmset -g batt`)
+- Rule commit `1d5ce8a`; measured HEAD `9b68f6d`. `git diff --name-only 1d5ce8a HEAD` lists `.planning/ROADMAP.md`,
+  `.planning/STATE.md`, `.planning/milestone.lock`, `.planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/25-01-SUMMARY.md`
+  and `.planning/state.json`, so only `.planning/` changed between them; `git status --porcelain --untracked-files=no`
+  (outside `STATE.md` and `state.json`) printed nothing
+- Stamps: `make -n verify | grep -E 'pip install|playwright install|pre-commit install'` printed nothing at 10:47Z and again at
+  13:17:29Z. No warm-up run was taken
+- First D-09 snapshot, 10:47:48Z: `vm.loadavg` `{ 2.46 2.57 2.69 }`, 11 users (`who | wc -l`), the top of `ps -Ao pid,pcpu,comm
+  -r` was WindowServer 37.6 %, iTerm2 19.4 %, `pi` 5.3 %; `pgrep -fl '[p]ytest|[p]re_commit|[m]ake verify'` printed nothing
+  (rc 1)
+- The human's first reply, verbatim (no UTC time recorded): `LA 2.46 indicates nothing. it's THE M5MAX.`
+- The human's `go`, verbatim, 2026-10-14T10:55:31Z (`go`; the human had been told X = 1.5 may be unreachable on this host and chose to let the A1
+  wait test it). Second snapshot, 10:56:45Z: `{ 2.58 2.55 2.60 }`, 11 users, WindowServer 42.4 %, iTerm2 28.9 %, `claude` 8.2 %;
+  `pgrep` empty. The later D-09 returns are in `25-02-host-go.log`: a second `go` at 11:31:57Z (load `{ 1.50 1.90 2.56 }` at
+  the answer), then `no. don't bother me with this questions anymore. go proceed without stopping` at 11:55:13Z (load
+  `{ 5.63 4.55 3.95 }`)
+- caffeinate: one `caffeinate -i -t 10800` started 11:57:16Z by the executor (pids 89827 and 89834) died when that executor
+  was stopped; the orchestrator started another (pid 66551) at 13:16:08Z, before any run, and it was no longer alive at
+  13:26:30Z. Neither is part of a measured command line. Two unrelated `caffeinate -i -t 300` processes (pids 20046 and 33624)
+  were running at close-out and were left alone
+- Not an idle host. Over the eight waits before A1, the 1-minute load read from 1.60 to 8.77 and never held under 1.5 for
+  three samples (see the last heading of this section). Other agent sessions (codex, pi, another claude) stayed open, a
+  `fleet-client-cli` process held about one core from 11:57Z to 12:58Z, and a Go `launcher.test` binary ran at 168 % at
+  13:12:59Z. The human held that the load is this machine's normal state and ordered the runs to go
+
+### The gate, idle, A/B interleaved (25-02)
+
+The method is 25-01's rule, run from the two blocks extracted byte for byte from the rule commit (`investigation/25-02-wait.sh`
+and `25-02-run.sh`, unedited). Arm A is `PYTEST_ADDOPTS="--ignore=tests/test_browser.py" make verify`, arm B is `make verify`.
+Each attempt's whole output is `investigation/<stem>.log` and its wait is `investigation/<stem>.wait.tsv`, and every figure
+below is copied from them. Read on 2026-10-14. Nothing was committed during the session. The session did not follow the rule's
+idle wait: after the wait before A1 gave up seven times and an eighth was aborted, the human waived the wait for the whole
+session (`I told you not to wait preconditions and ignore the load. RUN ASAP`) and later cut the session to one reading per
+arm (`1 per arm (A1 + B1)`, then `Run each arm once and don't waste any more time`). The rule section above was not edited:
+its clause 5 makes a run started without a released wait non-decisive, and that is how these runs are classed. The rule's
+A1 exception (no run after an expired A1 wait) was overridden by the human, not by the rule.
+
+#### Runs
+
+| Slot | Log | Wait | Result line | Coverage TOTAL | real (s) | 1-minute load before -> after | UTC start -> end | HEAD | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| A1 | `25-02-A-1.log` | WAIVED | `1315 passed in 194.33s (0:03:14)` | 97.99% | 195.23 | 4.18 -> 7.04 | 13:17:34Z -> 13:20:49Z | `9b68f6d` | non-decisive |
+| B1 | `25-02-B-1.log` | WAIVED | `1317 passed in 178.76s (0:02:58)` | 97.99% | 179.21 | 6.07 -> 7.33 | 13:21:03Z -> 13:24:02Z | `9b68f6d` | non-decisive |
+| A2 | `25-02-A-2.log` | WAIVED | none (stopped at about 98 %, `make verify exit 143`) | none | 115.20 | 6.99 -> 11.70 | 13:24:09Z -> 13:26:04Z | `9b68f6d` | aborted by the human's decision, not a reading |
+
+Every `run-record` carries the machine line `18 CPUs, arm64, 64.0 GiB RAM`. Wait `WAIVED` is a value the rule did not foresee:
+the wait file's last row for each of the three stems is `WAIVED`, not `IDLE` or `GAVE_UP`. A1 and B1 are green by clause 7
+(exit 0, `1315 passed` and `1317 passed`, no `failed`, `error` or `rerun`; the resource-tracker signature count is 0 in
+both logs), coverage `TOTAL 1358 22 386 13 97.99%` in both; they are non-decisive because their waits were waived. A2 was
+stopped by the orchestrator at 13:26:07Z, three seconds after its `run-record` end, on the human's order (`make: ***
+[Makefile:170: test] Terminated: 15`, `make verify exit 143`, signature count 0). It is neither red nor a reading, was not
+retried, and the 900 s cap (exit 124 or 137) did not cause it. Slots B2, A3, B3, A4, B4, A5 and B5 never ran: they are
+missing by the human's decision, not by the 3 h cap and not by the 8-attempt budget (arm A made 2 attempts, arm B made 1).
+
+#### Per arm
+
+| | A (no browser test) | B (`make verify`) |
+|---|---|---|
+| decisive runs (n) | 0 | 0 |
+| min real (s) | no decisive run | no decisive run |
+| median real (s) | no decisive run | no decisive run |
+| max real (s) | no decisive run | no decisive run |
+| mean real (s) | no decisive run | no decisive run |
+
+mean(B) - mean(A): none, the browser file's idle cost was not read (neither arm has a decisive run)
+
+Candidate bar (D-05): none
+
+Neither arm has a decisive green run, so by clause 9 no statistic and no candidate is printed. The two `real` values in the
+Runs table (195.23 s for A1, 179.21 s for B1) are quoted there as measured and enter no mean, median or candidate; they were
+read at loads of 4.18 to 7.33 on a host that never quieted. There is nothing to accept at 25-04: the human writes a number
+with a reason or sets no bar (D-04). L34's 66 s was read on a 12-CPU Apple M2 Max at loads of 5 to 30 and is quoted, not
+compared; 21-07's B mean 163.96 s was read on this host at loads 6 to 13 and is another session's reading. The session is
+short by the human's decision: 2 of 10 slots read, 8 missing, and the arms are not complete.
+
+#### Red runs
+
+No red run. A2 is not red: it is an attempt stopped on the human's order (see the Runs table).
+
+#### Waits that gave up
+
+Only the wait before A1 gave up. `investigation/25-02-A-1.wait.tsv` holds eight waits, each of at most 31 samples 30 s apart
+(a wait needs three consecutive samples under 1.5 with R1 empty); the host did not quiet before A1, so A1 is non-decisive.
+R1 (the `pgrep`) was non-empty in 16 samples of wait 2 and 2 of wait 3, from other work on the host, and empty in every other sample.
+
+| Wait | Ended | Result | Lowest -> highest 1-minute load |
+|---|---|---|---|
+| 1 | 2026-10-14T11:11:54Z | GAVE_UP | 2.13 -> 7.53 |
+| 2 | 2026-10-14T11:48:27Z | GAVE_UP | 1.60 -> 8.77 |
+| 3 | 2026-10-14T12:12:22Z | GAVE_UP | 2.16 -> 7.40 |
+| 4 | 2026-10-14T12:27:39Z | GAVE_UP | 1.64 -> 3.37 |
+| 5 | 2026-10-14T12:42:57Z | GAVE_UP | 2.17 -> 3.03 |
+| 6 | 2026-10-14T12:57:58Z | GAVE_UP | 2.33 -> 8.03 |
+| 7 | 2026-10-14T13:12:59Z | GAVE_UP | 2.91 -> 7.49 |
+| 8 | 2026-10-14T13:16:08Z | ABORTED on the human's order | 2.57 -> 3.73 (6 samples) |
+
+Each give-up returned the executor to the D-09 checkpoint (the human's replies are listed in the host record above). After
+wait 8 the human waived the wait for the session, so the wait file for A1 ends `ABORTED` and then `WAIVED` at 13:17:34Z with
+load 4.18, and the wait-end cell for A1 in the Runs table reads `WAIVED`. B1's and A2's wait files hold one `WAIVED` row each
+(13:21:03Z at 6.07 and 13:24:09Z at 6.99). Waived waits never reached `IDLE` or `GAVE_UP`. The human decides at 25-04 what two
+non-decisive readings are worth; this record does not decide it.

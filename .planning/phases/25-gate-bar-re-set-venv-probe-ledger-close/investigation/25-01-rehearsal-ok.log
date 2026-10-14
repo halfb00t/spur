@@ -1,0 +1,5 @@
+real 1.00
+user 0.00
+sys 0.00
+make verify exit 0
+run-record	25-01-rehearsal-ok	B	0	2026-10-14T10:36:48Z	2026-10-14T10:36:49Z	2.07	2.07	dc41527	18 CPUs, arm64, 64.0 GiB RAM
