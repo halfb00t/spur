@@ -3,6 +3,10 @@ phase: 25
 review: 25-REVIEW.md
 titles: json
 findings:
+  - id: WR-04
+    severity: warning
+    disposition: fixed
+    title: "L43 \"The bar\" says the M5 Max has no loaded full-gate reading; the record, including L43's own, says it has"
   - id: WR-01
     severity: warning
     disposition: fixed
@@ -36,22 +40,23 @@ findings:
     disposition: fixed
     title: "Debt item carries a commit subject where convention asks for a sha; L34 has no forward pointer to L43"
 open: 0
-total: 8
-recorded: 2026-10-14T15:24:06.542Z
+total: 9
+recorded: 2026-10-14T15:59:23.828Z
 ---
 
 # Phase 25: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 25-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 25-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 25-REVIEW-FIX.md |
-| IN-01 | info | fixed | 25-REVIEW-FIX.md |
-| IN-02 | info | fixed | 25-REVIEW-FIX.md |
-| IN-03 | info | fixed | 25-REVIEW-FIX.md |
-| IN-04 | info | fixed | 25-REVIEW-FIX.md |
-| IN-05 | info | fixed | 25-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 25-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 25-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 25-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 25-REVIEW-FIX.md (not in the current review) |
+| IN-01 | info | fixed | 25-REVIEW-FIX.md (not in the current review) |
+| IN-02 | info | fixed | 25-REVIEW-FIX.md (not in the current review) |
+| IN-03 | info | fixed | 25-REVIEW-FIX.md (not in the current review) |
+| IN-04 | info | fixed | 25-REVIEW-FIX.md (not in the current review) |
+| IN-05 | info | fixed | 25-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
