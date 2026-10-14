@@ -821,14 +821,18 @@ def test_a_hex_bore_chamfer_reaching_the_root_is_422_naming_both_fields() -> Non
     assert "Bore chamfer is too large for this hex bore" in detail["msg"]
 
 
-def test_a_hex_link_with_a_d_flat_builds_and_says_both_round_fields_are_ignored() -> None:
-    """D-01/D-02 over HTTP: a hex link that also carries a non-default bore_flat builds
-    (never a 422) and warns about both ignored round fields."""
+def test_a_hex_link_builds_and_names_only_the_round_fields_it_sets() -> None:
+    """D-01/D-02 over HTTP, as amended 2026-10-14 (L27): a plain hex link answers no
+    hex sentence; one that also carries a non-default bore_flat builds (never a 422)
+    and names exactly that field."""
+    r = client.get("/api/info", params={"bore_hex": 6})
+    assert r.status_code == 200
+    assert not any(w.startswith("Hex bore replaces") for w in r.json()["warnings"])
+
     r = client.get("/api/info", params={"bore_hex": 6, "bore_flat": 3})
     assert r.status_code == 200
-    warnings = r.json()["warnings"]
-    assert ("Hex bore replaces the round profile: bore_d (9 mm) and bore_flat (3 mm) "
-            "are ignored.") in warnings
+    assert [w for w in r.json()["warnings"] if w.startswith("Hex bore replaces")] == [
+        "Hex bore replaces the round profile: bore_flat (3 mm) is ignored."]
 
     r = client.get("/api/model.stl", params={"bore_hex": 6, "bore_flat": 3,
                                              "quality": "preview"})

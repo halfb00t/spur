@@ -806,7 +806,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 counts: list[int] = []
                 for fragment, at_least in (
                     ("module=1&pressure_angle=14.5", 2),
-                    ("bore_hex=6", 1),
+                    ("bore_hex=6&bore_d=12", 1),
                     ("teeth=23", 0),
                 ):
                     sent = _follow_link(page, fragment)

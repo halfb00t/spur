@@ -105,12 +105,6 @@ TIP_FIELDS: dict[str, frozenset[str]] = {
     "on": frozenset({"tip_chamfer_effective"}),
 }
 
-# The exact hex-replaces-round warning sentence at the default 9 mm bore_d / 8 mm
-# bore_flat (both nonzero, so both are named -- src/spur/calc.py's `p.bore_hex > 0`
-# branch, the module's own docstring naming which function it is in).
-HEX_IGNORES_ROUND = ("Hex bore replaces the round profile: bore_d (9 mm) and "
-                     "bore_flat (8 mm) are ignored.")
-
 # --- Every locked refusal x every other family switched on, at the calc level (D-08) --
 # The 9 bore refusals and 14 cutout refusals below are each an "alone" set that check()
 # already refuses on its own (the un-composed values `tests/test_calc.py`'s own

@@ -6,9 +6,9 @@ current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
 status: "Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)"
 stopped_at: Phase 24 complete, ready to plan Phase 25
-last_updated: "2026-10-13T04:15:32.017Z"
+last_updated: "2026-10-14T08:44:29.557Z"
 last_activity: 2026-10-13
-state_head: b323d8b9ea3f48cd6110a1ff0ca3c4b69471c00d
+state_head: c6ca194f2e931c802d97e8ded4c775cf198cc0cc
 progress:
   total_phases: 5
   completed_phases: 4
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 Phase: 25 — Gate Bar Re-Set, Venv Probe, Ledger Close
 Plan: Not started
 Status: Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)
-Last activity: 2026-10-13
+Last activity: 2026-10-14 - Completed quick task 261014-jsp: hex bore warning names only the bore fields set away from their defaults
 
 Progress: [████████░░] 80% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
 
@@ -697,6 +697,7 @@ None yet.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
+| 261014-jsp | hex bore warning names only the bore fields set away from their defaults | 2026-10-14 | c6ca194 | [261014-jsp-hex-bore-warning-names-only-the-bore-fie](./quick/261014-jsp-hex-bore-warning-names-only-the-bore-fie/) |
 
 ### Roadmap Evolution
 

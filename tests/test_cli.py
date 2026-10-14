@@ -112,8 +112,9 @@ def test_readme_export_examples_run(tmp_path: Path, capsys: pytest.CaptureFixtur
     hexgear = tmp_path / "hexgear.stl"
     cli.main(["export", "-o", str(hexgear), "--bore-hex", "6"])
     assert hexgear.stat().st_size > 1000
-    assert ("warning: Hex bore replaces the round profile: bore_d (9 mm) and bore_flat "
-            "(8 mm) are ignored.") in capsys.readouterr().err
+    # The example leaves both round fields at their defaults, so it warns nothing
+    # (L27, amended 2026-10-14).
+    assert "Hex bore replaces the round profile" not in capsys.readouterr().err
 
     keyed = tmp_path / "keyedgear.step"
     cli.main(["export", "-o", str(keyed), "--keyway-width", "3", "--keyway-depth", "1.4"])
@@ -283,16 +284,17 @@ def test_a_hex_bore_the_root_cannot_hold_exits_2_and_names_it(
 
 def test_cli_and_api_print_the_same_hex_bore_document(
         capsys: pytest.CaptureFixture[str]) -> None:
-    """REQ-cli-parity for a hex link: same document, same key order, same D-02
-    warning."""
+    """REQ-cli-parity for a hex link that sets a round field: same document, same key
+    order, same D-02 warning."""
     client = TestClient(spur.app.app)
 
-    cli.main(["info", "--bore-hex", "6"])
+    cli.main(["info", "--bore-hex", "6", "--bore-d", "12"])
     cli_out = json.loads(capsys.readouterr().out)
-    api_out = client.get("/api/info", params={"bore_hex": 6}).json()
+    api_out = client.get("/api/info", params={"bore_hex": 6, "bore_d": 12}).json()
     assert cli_out == api_out
     assert list(cli_out) == list(DerivedDimensions.model_fields)
-    assert any("Hex bore replaces the round profile" in w for w in cli_out["warnings"])
+    assert ("Hex bore replaces the round profile: bore_d (12 mm) is ignored."
+            in cli_out["warnings"])
 
 
 def test_a_keyway_the_root_cannot_hold_exits_2_and_names_it(

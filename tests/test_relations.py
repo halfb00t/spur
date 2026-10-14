@@ -197,10 +197,22 @@ def _assert_relations_hold_in_calc(relations: Mapping[str, Sequence[Condition]])
 
 def _assert_calc_ignores_only(declared: frozenset[str]) -> int:
     """Reverse coverage. Set each undeclared numeric field alone, at `minimum + step` and
-    at `maximum`, under defaults; every field an "ignored" sentence of `derive()` then
-    names must be declared. A request `check()` refuses names no ignored field and is
-    skipped. Returns the number of "ignored" sentences seen, so an empty scan is visible.
+    at `maximum`, on a base that holds every non-zero numeric default one schema step off
+    it; every field an "ignored" sentence of `derive()` then names must be declared. A
+    request `check()` refuses names no ignored field and is skipped. Returns the number of
+    "ignored" sentences seen, so an empty scan is visible.
     """
+    # L27's 2026-10-14 amendment: calc names bore_d and bore_flat under a hex bore only off
+    # their defaults. On the defaults the scan saw no sentence (measured: 0) and tripped its
+    # own empty-scan guard; on this stepped base a perturbed bore_hex draws the sentence
+    # again (measured: 1, as at HEAD). The base validates and warns nothing (measured
+    # 2026-10-14). It is built from the schema, never from `declared`: the meta-test drops
+    # bore_d and bore_flat from `declared`, and a base that followed it would lose them
+    # exactly when the scan needs them. Zero defaults stay 0, because set off 0 every
+    # perturbation would carry its own cutout sentence.
+    base = {name: _number(prop, "default") + _number(prop, "step")
+            for name, prop in _properties().items()
+            if prop.get("type") in ("number", "integer") and _number(prop, "default") != 0}
     seen = 0
     for name, prop in _properties().items():
         if name in declared or prop.get("type") not in ("number", "integer"):
@@ -211,7 +223,7 @@ def _assert_calc_ignores_only(declared: frozenset[str]) -> int:
             if value == default:
                 continue
             try:
-                gear = GearParams.model_validate({name: value})
+                gear = GearParams.model_validate({**base, name: value})
             except ValidationError:
                 continue
             for warning in derive(gear).warnings:
@@ -271,8 +283,9 @@ def _assert_relations_name_the_driver_calc_obeys(
     one with an extra gate beside the right one. Here a family's own fields are live in its
     own state, so a relation naming another driver is false where `calc` uses the field, and
     one that is true in another family's state is true where `calc` says ignored. The value
-    tried is the state's own, else the field's default, else `minimum + step`: a default
-    is what a hex bore says is ignored (bore_d (9 mm)), and 0 would be named by nothing.
+    tried is the state's own, else one schema step above the field's non-zero default, else
+    `minimum + step`: a hex bore names bore_d only off its default (L27, amended
+    2026-10-14), so the probe steps off it, and 0 would be named by nothing.
     Each count gate is probed at two open values (see CUTOUT_STATES), so `eq 1` and `gt 0`
     differ. A gate that never differs across valid parts (`spoke_count eq 0` beside `hole_count gt
     0`, since two patterns are refused) changes nothing a user can see and passes.
@@ -284,7 +297,8 @@ def _assert_relations_name_the_driver_calc_obeys(
         unit = prop["unit"]
         assert isinstance(unit, str), dep
         default = _number(prop, "default")
-        fallback = default if default != 0 else _number(prop, "minimum") + _number(prop, "step")
+        step = _number(prop, "step")
+        fallback = default + step if default != 0 else _number(prop, "minimum") + step
         for cutout, bore in ((c, b) for c in CUTOUT_STATES for b in BORE_STATES):
             state = {**CUTOUT_STATES[cutout], **BORE_STATES[bore]}
             where = f"{dep} in {cutout} + {bore}"
@@ -491,11 +505,14 @@ def test_a_relation_true_only_at_the_first_open_count_goes_red(dep: str, gate: s
         _assert_relations_name_the_driver_calc_obeys({dep: [(gate, "eq", 1.0)]})
 
 
-def test_an_ignored_field_without_its_relation_goes_red() -> None:
-    """RESEARCH Pitfall 2 (c): drop `spoke_fillet` from the declared set and its "ignored"
-    sentence is undeclared. The first call proves the full set passes, so the red below is
-    not an empty scan or an unrelated gap."""
+@pytest.mark.parametrize("dropped", ["spoke_fillet", "bore_d", "bore_flat"])
+def test_an_ignored_field_without_its_relation_goes_red(dropped: str) -> None:
+    """RESEARCH Pitfall 2 (c): drop a field from the declared set and its "ignored"
+    sentence is undeclared. spoke_fillet stands for the cutout sentences; bore_d and
+    bore_flat stand for the hex sentence, which only the stepped base keeps visible. The
+    first call proves the full set passes, so the red below is not an empty scan or an
+    unrelated gap."""
     declared = frozenset(_relations())
     assert _assert_calc_ignores_only(declared) > 0
-    with pytest.raises(AssertionError, match="no relation declares spoke_fillet"):
-        _assert_calc_ignores_only(declared - {"spoke_fillet"})
+    with pytest.raises(AssertionError, match=f"no relation declares {dropped}"):
+        _assert_calc_ignores_only(declared - {dropped})

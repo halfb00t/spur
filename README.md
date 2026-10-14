@@ -148,8 +148,8 @@ fields in `detail[].ctx.fields`. Dimensions that can be trimmed without contradi
 something you asked for are trimmed instead, and say so in `warnings`: the root fillet
 is capped to the tooth gap, the tip chamfer to what the tooth allows, and the face
 recess is narrowed to fit between the bore wall and the tooth rim. A hex bore replaces
-the round bore and D-flat, and `warnings` names
-any round-bore field it ignored. A keyway pushes the face recess outward to keep its
+the round bore and D-flat, and `warnings` names each ignored round-bore field you set
+away from its default; a field left at its default is ignored without a warning. A keyway pushes the face recess outward to keep its
 wall, and the recess is narrowed or dropped like any other trim; a keyway on a hex bore,
 one as wide as the bore, one that runs into the D-flat, or one whose floor comes too
 close to the root is refused. Body cutouts add their own refusals: two cutout patterns
