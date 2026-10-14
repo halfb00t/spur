@@ -5,10 +5,10 @@ milestone_name: Honest Form
 current_phase: 25
 status: completed
 stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-10-14T14:31:51.042Z"
+last_updated: "2026-10-14T16:06:14.072Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 25 complete
-state_head: b85655ed79ec0017262c8988828b01545748a116
+state_head: ffcc40eb81df701bddd78fa926cb0e304d2957fc
 progress:
   total_phases: 5
   completed_phases: 5
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-10-14)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Close milestone v0.5 (`/gsd-complete-milestone v0.5`); owed beside it: the Phase 25 review warnings WR-01…WR-03 (`25-REVIEW-DISPOSITION.md`) and the resource-tracker debt decision
+**Current focus:** Close milestone v0.5 (`/gsd-complete-milestone v0.5`); owed beside it: the resource-tracker debt decision. The Phase 25 review ledger is closed (`25-REVIEW-DISPOSITION.md`: 0 of 9 open)
 
 ## Current Position
 
@@ -746,8 +746,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-14T14:34:42Z
-Stopped at: Phase 25 complete, milestone v0.5 ready to close (`/gsd-complete-milestone v0.5`)
+Last session: 2026-10-14T16:07:03Z
+Stopped at: Phase 25 re-verified after the review-fix pass (WR-01…WR-04, IN-01…IN-05 fixed; VERIFICATION.md regenerated), milestone v0.5 ready to close (`/gsd-complete-milestone v0.5`)
 Resume file: None
 
 ## Operator Next Steps
