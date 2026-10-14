@@ -6,15 +6,16 @@ current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
 status: "Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)"
 stopped_at: Phase 25 context gathered
-last_updated: "2026-10-14T08:44:29.557Z"
-last_activity: 2026-10-13
-state_head: c6ca194f2e931c802d97e8ded4c775cf198cc0cc
+last_updated: "2026-10-14T10:29:02.858Z"
+last_activity: 2026-10-14
+last_activity_desc: "Completed quick task 261014-jsp: hex bore warning names only the bore fields set away from their defaults"
+state_head: 61d8e5ae99c9825386da1a535509f1edaef8e128
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 18
+  total_plans: 23
   completed_plans: 18
-  percent: 80
+  percent: 78
 ---
 
 # Project State
@@ -29,12 +30,12 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 25 — Gate Bar Re-Set, Venv Probe, Ledger Close
+Phase: 25 (Gate Bar Re-Set, Venv Probe, Ledger Close) — READY TO EXECUTE
 Plan: Not started
 Status: Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)
 Last activity: 2026-10-14 - Completed quick task 261014-jsp: hex bore warning names only the bore fields set away from their defaults
 
-Progress: [████████░░] 80% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
+Progress: [████████░░] 78% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
 
 ## Performance Metrics
 
