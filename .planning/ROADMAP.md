@@ -523,7 +523,7 @@ measurement is taken (nobody has the board). The idea and debt files close only 
 that closes them.
 **Research flag**: No — standard patterns; the threshold, cool-down and N are decisions, not
 research.
-**Plans**: 3/5 plans executed, in 5 waves (sequential: the rule, then the readings, then the record and the probe after the last
+**Plans**: 4/5 plans executed, in 5 waves (sequential: the rule, then the readings, then the record and the probe after the last
 reading, then the bar and L43, then the ledger; nothing may load the host during a reading)
 - [x] 25-01-PLAN.md — The tracer: the rule drafted with its wait and run blocks, both rehearsed on zero-cost stand-ins,
   confirmed by the human at a one-way gate, committed alone before any reading (SC1) *(wave 1)*
@@ -532,7 +532,7 @@ reading, then the bar and L43, then the ledger; nothing may load the host during
 - [x] 25-03-PLAN.md — The readings recorded and committed with every log (statistics and the candidate recomputed from
   them); then `make venv` probed under `PIP_CONSTRAINT` in a linked worktree, shims hashed before and after, GREEN/RED
   recorded; the branch deletion is the human's call (SC2 record, SC4) *(wave 3)*
-- [ ] 25-04-PLAN.md — The human sets the bar; one commit logs L43 (amends L34) with the bar, the probe's outcome (GREEN:
+- [x] 25-04-PLAN.md — The human sets the bar; one commit logs L43 (amends L34) with the bar, the probe's outcome (GREEN:
   the constrained `$(STAMP)` and its test fixtures), the stale gate figures rewritten in five files, IN-03 closed by
   subject (SC2, SC3) *(wave 4)*
 - [ ] 25-05-PLAN.md — The ledger: README names its hardware and makes no Pi 5 claim; `.ai_skills/reverify-phase` with

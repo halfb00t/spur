@@ -5,16 +5,16 @@ milestone_name: Honest Form
 current_phase: 25
 current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
 status: executing
-stopped_at: Completed 25-03 (all 3 tasks; agent/venv-probe deleted at the human's word 2026-10-14T13:49:19Z); next 25-04
-last_updated: "2026-10-14T13:40:35.598Z"
+stopped_at: Completed 25-04-PLAN.md
+last_updated: "2026-10-14T14:14:28.854Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 25 execution started
-state_head: dbc50d991a145ae7001bc5f70b518abc376af698
+state_head: 34270c8946f0bedb90920de6c79fd051ac326fdb
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 23
-  completed_plans: 21
+  completed_plans: 22
   percent: 80
 ---
 
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 25 (Gate Bar Re-Set, Venv Probe, Ledger Close) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 25 execution started
 
@@ -241,6 +241,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 25 P01 | 11 min | 3 tasks | 1 files |
 | Phase 25 P02 | 2h 40m | 2 tasks | 0 files |
 | Phase 25 P03 | 13 min | 2 tasks | 31 files |
+| Phase 25 P04 | 2h | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -452,6 +453,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 25]: 25-02: human waived idle waits and the A1 exception; the session took one reading per arm (A1 real 195.23 s, B1 real 179.21 s), both non-decisive; no decisive run, no candidate bar, human writes the bar at 25-04
 - [Phase 25]: 25-03: probe GREEN -- make venv under PIP_CONSTRAINT=requirements.txt works in a linked worktree (31 of 31 pins installed, pip check clean, make verify exit 0); the 13 non-pin freeze-diff lines are recorded as read
 - [Phase 25]: 25-03: readings recorded with no decisive run and Candidate bar none; the human writes the bar at 25-04
+- [Phase 25]: L43: gate bar 300 s on the 18-CPU Apple M5 Max, set by the human (candidate none); make venv installs under requirements.txt as a constraint (amends L34)
 
 ### Pending Todos
 
@@ -735,8 +737,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-14T13:40:35.561Z
-Stopped at: Completed 25-03 Tasks 1-2; Task 3 (agent/venv-probe branch decision) awaits the human
+Last session: 2026-10-14T14:14:28.815Z
+Stopped at: Completed 25-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
