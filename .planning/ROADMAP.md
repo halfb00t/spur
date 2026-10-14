@@ -130,7 +130,7 @@ byte-identical to the `v0.4` tag.
 - [x] **Phase 24: Bore-Shape Selector** - Discretionary: a bore shape is picked, not inferred (completed 2026-10-13)
       from a warning: a schema-carried select derived from the flat fields on load, writing
       only the flat fields; skippable without breaking anything else
-- [ ] **Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close** - The gate is measured once on
+- [x] **Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close** - The gate is measured once on (completed 2026-10-14)
       the shipped HEAD under a rule written first, the human sets the bar, L34 is amended
       once; `PIP_CONSTRAINT` is probed in a scratch checkout; the Pi 5 claim is softened and
       the reverify recipe written
@@ -523,7 +523,7 @@ measurement is taken (nobody has the board). The idea and debt files close only 
 that closes them.
 **Research flag**: No — standard patterns; the threshold, cool-down and N are decisions, not
 research.
-**Plans**: 5/5 plans executed, in 5 waves (sequential: the rule, then the readings, then the record and the probe after the last
+**Plans**: 5/5 plans complete, in 5 waves (sequential: the rule, then the readings, then the record and the probe after the last
 reading, then the bar and L43, then the ledger; nothing may load the host during a reading)
 - [x] 25-01-PLAN.md — The tracer: the rule drafted with its wait and run blocks, both rehearsed on zero-cost stand-ins,
   confirmed by the human at a one-way gate, committed alone before any reading (SC1) *(wave 1)*

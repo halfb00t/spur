@@ -154,7 +154,7 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 
 ### Gate bar, venv probe, ledger — measure the shipped gate once (last)
 
-- [ ] **REQ-gate-rule-pre-registered**: before any reading, `bench/RESULTS.md` carries the
+- [x] **REQ-gate-rule-pre-registered**: before any reading, `bench/RESULTS.md` carries the
   idle threshold (precedent: load < 1.5, Phase 12), the cool-down between runs, N ≥ 5 per
   arm, the give-up rule, and the A/B design — the full gate with and without
   `tests/test_browser.py`, interleaved. This is a new method, not L34's (Phase 15 D-04 read
@@ -258,7 +258,7 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-selector-schema-carried | Phase 24 | Complete |
 | REQ-selector-derives-and-writes-through | Phase 24 | Complete |
 | REQ-selector-round-trips-per-state | Phase 24 | Complete |
-| REQ-gate-rule-pre-registered | Phase 25 | Pending |
+| REQ-gate-rule-pre-registered | Phase 25 | Complete |
 | REQ-gate-bar-reset | Phase 25 | Complete |
 | REQ-venv-constraint-probe | Phase 25 | Complete |
 | REQ-pi5-claim-softened | Phase 25 | Complete |
