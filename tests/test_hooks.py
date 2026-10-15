@@ -122,6 +122,12 @@ def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() 
 
     assert through_worker_count(whole_pytest) == through_worker_count(fast_pytest)
     assert "--cov" in whole_pytest
+    # D-06 (26-05): every whole gate prints each test id at start and finish and the 25
+    # slowest durations, so a stalled run names its test; the commit slice stays lean.
+    assert "-v" in whole_pytest.split()
+    assert any(w.startswith("--durations=") for w in whole_pytest.split())
+    assert "-v" not in fast_pytest.split()
+    assert not any(w.startswith("--durations=") for w in fast_pytest.split())
     assert "--ignore=" not in whole_pytest
     assert "--no-cov" in fast_pytest
     # The whole set, not membership: a fifth `--ignore` would quietly stop the commit

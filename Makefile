@@ -173,8 +173,13 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN 2>/dev/null); \
                     [ "$$n" -ge 1 ] 2>/dev/null || n=1; echo $$(( n < w ? n : w )))
 
+# -v prints every test id at start and finish, so a stalled run names its test, and
+# --durations=25 is the reading faulthandler_timeout (pyproject.toml) is sized from. The
+# 2026-10-10 hang left neither (docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-
+# percent-with-no-failure.md). They sit after --cov-report=term and before $(PYTEST_ARGS),
+# so a caller's -q still cancels the -v. test.fast keeps its lean output on purpose.
 test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache, not the tests)
-	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
+	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term -v --durations=25 $(PYTEST_ARGS)
 
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
 # whole gate's bar is 300 s on the 18-CPU Apple M5 Max (L43).
