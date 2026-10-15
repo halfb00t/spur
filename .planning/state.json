@@ -31,7 +31,7 @@
     {
       "number": "26",
       "name": "Gate Fails With a Cause",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "27",
@@ -52,7 +52,7 @@
   "next": {
     "command": "/gsd-progress --next",
     "label": "Advance to the next step",
-    "reason": "Phase 1 of 4 · 14% · executing"
+    "reason": "Phase 1 of 4 · 29% · executing"
   },
-  "updated_at": "2026-10-15T10:48:13.069Z"
+  "updated_at": "2026-10-15T11:19:32.961Z"
 }

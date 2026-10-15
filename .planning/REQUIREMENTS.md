@@ -121,7 +121,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### CI — Ubuntu 26
 
-- [ ] **REQ-ubuntu26-preclassified**: a throwaway PR that changes only `runs-on` to
+- [x] **REQ-ubuntu26-preclassified**: a throwaway PR that changes only `runs-on` to
   `ubuntu-26.04` runs all three CI jobs before the `ubuntu-latest` rollout reaches the repo;
   its whole logs are classified in `bench/RESULTS.md` (`Image:` line, per-job result) before
   any `ci.yml` edit lands; nothing from the PR merges but the record.
@@ -178,7 +178,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-tracker-flake-fixed-from-repro | Phase 26 | Pending |
 | REQ-hang-leaves-evidence | Phase 26 | Pending |
 | REQ-test-image-runs-what-it-claims | Phase 26 | Pending |
-| REQ-ubuntu26-preclassified | Phase 26 | Pending |
+| REQ-ubuntu26-preclassified | Phase 26 | Complete |
 | REQ-slug-totality-guarded | Phase 27 | Pending |
 | REQ-failed-build-name-isolated | Phase 27 | Pending |
 | REQ-stop-group-signals-first | Phase 27 | Pending |
