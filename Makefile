@@ -222,16 +222,42 @@ check: verify smoke vendor-check  ## everything CI runs, locally (needs Docker)
 image:  ## build the container image
 	docker build $(PLATFORM_ARG) -t $(IMAGE) .
 
-# --ignore=tests/test_browser.py: the image installs only pytest and httpx, so that module
-# could not even import playwright here (D-01); tests/test_hooks.py reads this recipe.
+# What the image suite does not run, one --ignore per file, each traced to a red read on the
+# unfixed recipe (.planning/phases/26-gate-fails-with-a-cause/investigation/26-06-redset.md).
+# Whole files, not per-test --deselect ids: a renamed test would leave a stale id that fails
+# silently. The cost is passing tests dropped with them (47 in test_pr_land.py, 41 in
+# test_bench.py).
+# --ignore=tests/test_browser.py: the image installs only pytest and httpx plus the two
+# plugins below, so that module could not even import playwright here (D-01).
+# --ignore=tests/test_hooks.py: reads the Makefile and .pre-commit-config.yaml and runs make;
+# the image holds neither the files nor a make binary.
+# --ignore=tests/test_no_fake_done.py: runs make and git against the Makefile; the image
+# holds none of them.
+# --ignore=tests/test_browser_pins.py: reads the Dockerfile, which .dockerignore keeps out
+# of the image.
+# --ignore=tests/test_pr_land.py: reads .github/workflows/ci.yml and required-jobs.txt,
+# which the image does not hold.
+# --ignore=tests/test_bench.py: two of its tests run git (bench/build_time.py), and the
+# image has no git.
+# bench/ and scripts/ are mounted because tests import them (bench from test_calc.py and
+# test_trochoid.py, scripts from test_skip_tokens.py). PYTHONPATH's /app is redundant beside
+# `python -m pytest` with -w /app (the -m form puts the working directory on sys.path); the
+# mounts are what make the imports work. D-11 set it anyway, so a later reader does not
+# "fix" the wrong thing.
+# pytest-cov and pytest-xdist are installed for one test: the forced-GC test in test_pool.py
+# launches `pytest --no-cov -n0` in a subprocess, which fails "unrecognized arguments"
+# without them (26-06, human decision: option B). tests/test_hooks.py reads this recipe.
 test-image: image  ## run the test suite inside the image (needs no local python)
-	docker run --rm $(PLATFORM_ARG) --user root -e PYTHONPATH=/app/src \
+	docker run --rm $(PLATFORM_ARG) --user root -e PYTHONPATH=/app/src:/app \
 	  -v "$(CURDIR)/src:/app/src:ro" -v "$(CURDIR)/tests:/app/tests:ro" \
 	  -v "$(CURDIR)/pyproject.toml:/app/pyproject.toml:ro" \
+	  -v "$(CURDIR)/bench:/app/bench:ro" -v "$(CURDIR)/scripts:/app/scripts:ro" \
 	  -w /app --entrypoint sh $(IMAGE) \
-	  -c "pip install -q --root-user-action=ignore pytest httpx \
+	  -c "pip install -q --root-user-action=ignore pytest httpx pytest-cov pytest-xdist \
 	      && python -m pytest -q -p no:cacheprovider \
-	      --ignore=tests/test_browser.py $(PYTEST_ARGS)"
+	      --ignore=tests/test_browser.py --ignore=tests/test_hooks.py \
+	      --ignore=tests/test_no_fake_done.py --ignore=tests/test_browser_pins.py \
+	      --ignore=tests/test_pr_land.py --ignore=tests/test_bench.py $(PYTEST_ARGS)"
 
 smoke: image  ## exercise the kernel, both exporters and the ASGI app inside the image
 	docker run --rm $(PLATFORM_ARG) --entrypoint python $(IMAGE) docker/smoke.py

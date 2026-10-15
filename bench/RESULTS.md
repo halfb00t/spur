@@ -6312,3 +6312,101 @@ The timer is armed per test item. A stall after a worker's last test, in xdist's
 combine, leaves no dump and no test id: `-v` shows every test finished and the run still waiting. The hang item's
 runbook states this window and the operator step for it; the item stays active and no cause is claimed. The CI
 confirm of the 120 s value is 26-07's task.
+
+### make test-image (26-06)
+
+`make test-image` is documented as the way to run the suite without a local Python, and had never been read. It was run
+once on the unfixed recipe and its red set recorded before any fix. Host Darwin 27.0.0 arm64 (OrbStack), Docker server
+29.4.0, 2026-10-15, HEAD `febe0b9`. The image is **linux/amd64** (the shell exports `DOCKER_DEFAULT_PLATFORM=linux/amd64`
+and `PLATFORM` is unset), so it runs emulated on this arm64 host, and every wall below carries that cost. The container
+installs pytest 9.1.1; it holds neither pytest-cov nor pytest-xdist.
+
+#### The first run, unfixed
+
+`make test-image PYTEST_ARGS="-rs"` exited 2 in 125 s (image build 57 s of it): **5 errors in 4.20s**, `Interrupted: 5
+errors during collection` (`ModuleNotFoundError` for `bench` and `scripts`). A collection error stops the run, so no
+test-level red showed. The red set below is a second reading of the same image and command line with the `bench/` and
+`scripts/` mounts and `PYTHONPATH=/app/src:/app` applied by hand (Makefile unedited) and only
+`--ignore=tests/test_browser.py`: **29 failed, 1290 passed in 863.84s (0:14:23)**, exit 1, no `SKIPPED` line. Logs:
+`26-06-first.log`, `26-06-first-mounted.log` beside `26-06-redset.md` in the phase's `investigation/`.
+
+The research's static prediction named two `tests/test_bench.py` exit-128 tests; the reading is two `test_bench.py`
+tests that run `git` (`FileNotFoundError`), plus the rows below.
+
+| Test | Cause | Class |
+|---|---|---|
+| tests/test_bench.py (collection) | `ModuleNotFoundError: No module named 'bench'` | bench/scripts not mounted |
+| tests/test_calc.py (collection) | `ModuleNotFoundError: No module named 'bench'` | bench/scripts not mounted |
+| tests/test_trochoid.py (collection) | `ModuleNotFoundError: No module named 'bench'` | bench/scripts not mounted |
+| tests/test_pr_land.py (collection) | `ModuleNotFoundError: No module named 'scripts'` | bench/scripts not mounted |
+| tests/test_skip_tokens.py (collection) | `ModuleNotFoundError: No module named 'scripts'` | bench/scripts not mounted |
+| tests/test_bench.py::test_the_report_names_the_largest_fine_stl_and_breaks_a_tie_by_file_order | `bench/build_time.py:131` runs `git`: `FileNotFoundError: 'git'` | git |
+| tests/test_bench.py::test_the_report_prints_the_load_it_was_given_rather_than_reading_one_itself | `bench/build_time.py:131` runs `git`: `FileNotFoundError: 'git'` | git |
+| tests/test_browser_pins.py::test_playwright_is_pinned_exactly_in_dev_and_never_in_the_runtime_closure | `FileNotFoundError: /app/Dockerfile` | Dockerfile |
+| tests/test_hooks.py::test_the_commit_hook_runs_the_fast_prefix_and_the_push_hook_runs_the_whole_gate | `FileNotFoundError: /app/.pre-commit-config.yaml` | make |
+| tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_pin_ignores_pytest_args_set_in_the_environment | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_pin_ignores_pytest_args_handed_down_from_the_make_command_line | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_hooks.py::test_the_dev_venv_installs_under_the_closure_and_reinstalls_when_it_moves | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_image_suite_ignores_the_browser_test | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_hooks.py::test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_staged_file_with_both_markers_is_refused_with_each_line_named | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_markers_inside_longer_words_pass | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_no_space_type_ignore_under_src_spur_is_refused | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_whole_file_ignore_errors_in_an_untracked_module_is_refused | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_deliberate_suppression_outside_src_spur_passes | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_pr_land.py::test_required_jobs_file_matches_ci_yml_job_names | `FileNotFoundError: /app/.github/workflows/ci.yml` | .github |
+| tests/test_pr_land.py::test_a_job_name_override_moves_the_derived_required_set | `FileNotFoundError: /app/.github/workflows/ci.yml` | .github |
+| tests/test_pr_land.py::test_land_happy_path_returns_0_and_prints_the_run_url | `scripts/pr_land.py:212 required_jobs`: `FileNotFoundError: /app/.github/workflows/required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_reports_the_last_read_error_when_every_poll_failed | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_reports_no_run_observed_with_the_actions_url_when_reads_succeeded | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_names_a_skip_token_only_after_reading_it_from_the_squash_commit | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_local_tip_differs_keeps_the_branch | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_local_branch_absent_no_delete_no_error | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_refuses_a_token_hidden_below_a_git_cut_line_in_the_pr_body | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_gh_pr_merge_failure_returns_1_no_poll_no_follow_up | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_several_problems_at_once_prints_all_then_one_nothing_was_merged_line | same, `required-jobs.txt` | .github |
+| tests/test_pool.py::test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup | the test spawns `pytest ... --no-cov -n0` in a subprocess; the image holds neither pytest-cov nor pytest-xdist: `pytest.main(): error: unrecognized arguments: --no-cov -n0`, `check_alive calls: 0` (`tests/test_pool.py:773`) | other |
+
+Counts: 5 collection errors and 29 failures. By class: `bench/scripts not mounted` 5, `git` 2, `Dockerfile` 1, `make` 14,
+`.github` 11, `other` 1. 33 of 34 fit D-11's rule; the one that did not stopped the plan for the human.
+
+#### The D-11 checkpoint: one red outside the rule
+
+`tests/test_pool.py::test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup` (26-04, D-02) is not a
+host-file read: it launches a subprocess `pytest --no-cov -n0`, and the image lacks pytest-cov and pytest-xdist
+(`unrecognized arguments`). A probe in the same image with `pytest-cov 7.1.0` and `pytest-xdist 3.8.0` installed read
+`1 passed, 20 deselected in 24.28s` (`26-06-optB-probe.log`). The human chose **option B**: add both plugins to the
+recipe's `pip install` line, so the D-02 gate test runs in the image instead of being ignored. This is a
+**human-approved deviation from D-11's literal text** (D-11 names make, git, the Dockerfile, `.github` and the mounts as
+the only causes); it is recorded here and in the SUMMARY. `tests/test_pool.py` is not ignored.
+
+#### The fix
+
+- Mounts: `bench/` and `scripts/` read-only beside `src/`, `tests/` and `pyproject.toml` (five `:ro` mounts);
+  `PYTHONPATH=/app/src:/app` (the `/app` is redundant beside `python -m pytest` with `-w /app`; the mounts do the work,
+  the recipe comment says so).
+- `pip install pytest httpx pytest-cov pytest-xdist` (option B, above).
+- Whole-file `--ignore`s, each with its cause in a recipe comment: `tests/test_browser.py` (no playwright in the image,
+  D-01), `tests/test_hooks.py` (make; all 9 tests), `tests/test_no_fake_done.py` (make), `tests/test_browser_pins.py`
+  (Dockerfile; its only test), `tests/test_pr_land.py` (`.github`), `tests/test_bench.py` (git). Whole-file as D-11
+  writes it, not per-test `--deselect`: a renamed test leaves a stale `--deselect` id that fails silently.
+- The cost of whole-file: it drops passing tests with the red ones, **47** in `tests/test_pr_land.py` (11 of 58 fail)
+  and **41** in `tests/test_bench.py` (2 of 43 fail). Those run in `make verify`, which is the gate.
+- `tests/test_calc.py`, `tests/test_trochoid.py` and `tests/test_skip_tokens.py` stay in the image suite. No skip
+  marker was added to any test file.
+
+#### The after run
+
+`make test-image PYTEST_ARGS="-rs"` exited **0**: `1201 passed in 888.34s (0:14:48)`, 938.98 s wall (the image layers
+were cached, so the build is a few seconds of it). No `ERROR collecting` line and no `SKIPPED` line. The pin
+`test_the_image_suite_ignores_the_browser_test` (same name) now asserts the exact sets of mounts, `PYTHONPATH`, pip-installed
+tools and ignored files, and was seen red against the old recipe first (`26-06-pin-red.log`). Log: `26-06-after.log`.
+
+#### What the image suite does not run
+
+The image suite skips `tests/test_browser.py`, `tests/test_hooks.py`, `tests/test_no_fake_done.py`,
+`tests/test_browser_pins.py`, `tests/test_pr_land.py` and `tests/test_bench.py` entirely. `make verify` runs all of them
+on the host. Nothing runs `make test-image` in CI (filed as an idea).
