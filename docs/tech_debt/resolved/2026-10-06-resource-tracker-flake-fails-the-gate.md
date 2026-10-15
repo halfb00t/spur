@@ -1,14 +1,15 @@
 # A reentrant `resource_tracker` cleanup warning sometimes fails `make verify`
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: fix(26): collect the pool tests' cycles outside the resource tracker lock, located from a forced-GC reproduction
 Date: 2026-10-06
 Source: the pre-commit hook on the v0.4 start commit (`gsd/milestone-v0.4-start`), a run
 whose only change was under `.planning/`
 Related files:
 - `pyproject.toml` (`[tool.pytest.ini_options] filterwarnings = ["error", ...]`, and
   `[tool.coverage.run] concurrency = ["multiprocessing", "thread"]`)
-- `tests/test_pool.py`, `src/spur/pool.py` (the only spawned processes in the suite)
+- `tests/test_pool.py`, `src/spur/pool.py` (the only spawned processes in the suite; the fix is in the test file only)
 - `Makefile` (`test`: `pytest -n 8 --cov`)
 
 ## Context
@@ -122,6 +123,46 @@ earlier records had not named. One re-run of the identical tree read `1248 passe
 `.planning/phases/23-conditional-form-fields/investigation/23-04-red-1.log`. The "next `make verify` failure" trigger above
 has fired; the isolation runs and the fix plan under Next step are a decision for the human and were not run by 23-04. This plan's two `make verify` runs read 1 red and 1 green; the
 phase's earlier gate runs (23-01, 23-02, 23-03) and the orchestrator's three `make test` runs between waves were green.
+
+## Resolution (2026-10-15)
+
+Located and fixed from a reproduction. This does not say the flake is gone: a natural run on this host never printed it
+in the unfixed arm either.
+
+Mechanism. Three tests in `tests/test_pool.py` (`test_a_wedged_build_is_terminated_and_its_worker_replaced`,
+`test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error`,
+`test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`) keep `manager` and a held `pytest.raises`
+traceback in a cycle that holds the executor's five semaphores. Only the cyclic GC frees it, and an automatic pass that
+lands inside `ResourceTracker`'s lock finalises the semaphores re-entrantly (`ReentrantCallError`, `UserWarning:
+ResourceTracker called reentrantly`), which `filterwarnings = error` turns into a failure of whichever test is running (the
+victim, which is why five occurrences named five tests).
+
+Fix, in `tests/test_pool.py` only: a module-level autouse fixture `_collect_cycles_outside_the_resource_tracker_lock`
+(`gc.collect()` at each test's teardown) and `del manager` after the last use in the three producers. No change to
+`src/spur/pool.py`, no warning filter, no rerun plugin, no explicit executor or pool shutdown call, no dependency
+(`git diff --exit-code v0.5 -- src/spur/pool.py pyproject.toml requirements.txt` exits 0).
+
+Proof, `bench/RESULTS.md` `### The resource-tracker flake (26-04)`. The stdlib reproduction re-run on this host: `5` in 5 of
+5 runs, `0` in both controls (3 of 3 each). The forced-GC gate test
+`test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup` (a `gc.collect()` forced inside the tracker's
+lock, the three producers then the victim, in a fresh interpreter), three runs per arm on this host:
+
+| Arm | Change | Forced-GC red |
+|---|---|---|
+| A | none (unfixed) | 3 of 3 (always `test_a_closed_pool_never_builds_a_replacement_worker`, the victim) |
+| B | autouse fixture only | 0 of 3 |
+| C | three `del manager` only | 0 of 3 |
+| B + C | both, as committed | 0 of 3 |
+
+The 10 + 10 natural run, interleaved, under a rule committed before run A1 (`957539c`): `make test` on
+`tests/test_pool.py tests/test_api.py -k 'not forced_gc'`, `-n 8 --cov`: 0 of 10 flake reds before, 0 of 10 after, no other
+red. Consistent, not conclusive: the before arm did not reproduce it either, and at the 1 in 5 to 10 rate STACK saw in a
+Linux container 0 of 10 by luck is 15 to 30 %. The gate test is the standing proof and runs inside `make verify`
+(`make verify`: `1321 passed`, exit 0).
+
+Not proven: that no other path leaves an executor's semaphores to the cyclic GC, in this file or another; and the
+natural rate on `ubuntu-latest` CI, which is read from the next `make verify` failure, if any, with its whole log kept.
+If the chain appears again, reopen this item with that log.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

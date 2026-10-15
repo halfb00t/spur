@@ -11,12 +11,17 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import gc
 import logging
 import multiprocessing as mp
 import os
+import re
 import signal
+import subprocess
+import sys
 import threading
 import time
+from collections.abc import Iterator
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
@@ -30,6 +35,29 @@ from spur.app import ModelQuery, _gear, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
 from spur.params import GearParams
 from spur.pool import BuildPool
+
+
+@pytest.fixture(autouse=True)
+def _collect_cycles_outside_the_resource_tracker_lock() -> Iterator[None]:
+    """Free each test's cyclic garbage at its own teardown, with the tracker lock not held.
+
+    The producer tests below keep `manager` and a `pytest.raises` traceback in a cycle
+    that holds the executor's five semaphores. Only the cyclic GC frees that, and an
+    automatic pass that lands inside `ResourceTracker`'s lock finalises the semaphores
+    re-entrantly (`UserWarning: ResourceTracker called reentrantly`); `filterwarnings =
+    error` then fails whichever test is running, never the producer. Collecting here
+    frees them with the lock not held.
+
+    Measured on the dev host, 2026-10-15, with a collection forced inside the tracker's
+    lock (`test_forced_gc_inside_...` below), 3 runs each: unfixed file red 3 of 3
+    (always `test_a_closed_pool_never_builds_a_replacement_worker`, a victim); this
+    fixture alone 0 of 3; `del manager` alone 0 of 3; both 0 of 3. `del manager` fixes the
+    three cycles we know; this fixture also covers a future test that keeps the same
+    pattern. Its cost was not re-measured here; the research read about 10 ms per test
+    (the file 19.7 s -> 19.9 s, on another host).
+    """
+    yield
+    gc.collect()
 
 
 def _sleep_past_timeout(seconds: float) -> bytes:
@@ -192,6 +220,7 @@ def test_a_wedged_build_is_terminated_and_its_worker_replaced(
         # assignment (Codex re-review of ae052f8: `exitcode=None`, errno ECHILD).
         manager.join(timeout=5)
         assert not manager.is_alive(), "executor manager thread did not finish shutdown"
+        del manager  # breaks the cycle at its source: `manager` holds the executor's queues
         assert proc.exitcode == -signal.SIGTERM
         assert pool.replaced == replaced_before + 1
 
@@ -579,6 +608,7 @@ def test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error(
         proc.terminate()
         manager.join(timeout=5)
         assert not manager.is_alive(), "executor manager thread did not finish shutdown"
+        del manager  # as in the wedged-build test
         assert proc.exitcode == -signal.SIGTERM
 
 
@@ -636,6 +666,7 @@ def test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal(
         # read from the process table and the exit code, not from psutil.
         manager.join(timeout=5)
         assert not manager.is_alive(), "executor manager thread did not finish shutdown"
+        del manager  # as in the wedged-build test
         assert proc.exitcode == -signal.SIGTERM
         assert pool.executor_for(params).submit(os.getpid).result() != worker_pid_before
 
@@ -663,6 +694,86 @@ def test_a_closed_pool_never_builds_a_replacement_worker() -> None:
         # filterwarnings = error: an executor this test left running would be a failure
         for each in pool._executors:
             each.shutdown(wait=True)
+
+
+_FORCED_GC_IDS = (
+    "tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced",
+    "tests/test_pool.py::test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error",
+    "tests/test_pool.py::test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal",
+    "tests/test_pool.py::test_a_closed_pool_never_builds_a_replacement_worker",
+)
+
+# Run with `python -c`, never from a script file: `spawn` re-imports a script's main
+# module in every pool worker (RESEARCH measured 58-72 patched calls and nonsense output
+# that way). `orig = ...` raises AttributeError if CPython ever removes `_check_alive`,
+# so a rename is loud, never a vacuous pass.
+_FORCED_GC = """
+import gc
+import multiprocessing.resource_tracker as rt
+import sys
+
+import pytest
+
+orig = rt.ResourceTracker._check_alive
+calls = 0
+
+
+def forced(self):
+    global calls
+    calls += 1
+    gc.collect()  # under the tracker's RLock, where an automatic pass would land
+    return orig(self)
+
+
+rt.ResourceTracker._check_alive = forced
+code = pytest.main(["-p", "no:cacheprovider", "--no-cov", "-n0", "-q", *sys.argv[1:]])
+print(f"check_alive calls: {calls}")
+sys.exit(code)
+"""
+
+
+def test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup() -> None:
+    """The proof for the `resource_tracker` flake: run the three tests that leave an
+    executor's semaphores to the cyclic GC, then the test that gets blamed for it, with
+    a collection forced inside the tracker's lock every time it is entered.
+
+    An executor that is cyclic garbage is finalised by whichever automatic GC pass runs
+    next; if that pass lands inside `ResourceTracker`'s lock the finaliser re-enters it
+    (`ReentrantCallError`, `UserWarning: ResourceTracker called reentrantly`), and
+    `filterwarnings = error` fails the test that happens to be running -- the victim,
+    never the producer. Forcing the pass makes the window deterministic, so the natural
+    rate (1 in 5-10 on a loaded host) stops being luck. Each producer's `manager` and
+    its `pytest.raises` traceback were the cycle; the autouse fixture
+    `_collect_cycles_outside_the_resource_tracker_lock` and the three `del manager` lines
+    are the fix this test pins.
+
+    A fresh interpreter, because the patch must not reach another test on this xdist
+    worker; the producers run right before the victim there, in that order. `-c` and
+    never a script file: see `_FORCED_GC`. The environment drops `PYTEST_ADDOPTS` and
+    `PYTEST_ARGS` because an inherited `--ignore` would silently drop a producer.
+    It lives here, not in its own file, because `HEAVY_TEST_FILES` keeps this file out
+    of the 30 s commit slice; the test costs 11-13 s on its own (dev host, three runs,
+    2026-10-15, load around 7) and the whole file 33 s with it.
+    """
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTEST_ADDOPTS", "PYTEST_ARGS")}
+    done = subprocess.run(
+        [sys.executable, "-c", _FORCED_GC, *_FORCED_GC_IDS],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    tail = (
+        "\n".join(done.stdout.splitlines()[-40:])
+        + "\n--- stderr ---\n"
+        + "\n".join(done.stderr.splitlines()[-40:])
+    )
+    assert done.returncode == 0, tail
+    found = re.search(r"check_alive calls: (\d+)", done.stdout)
+    assert found, "the child printed no `check_alive calls` line"
+    assert int(found.group(1)) > 0, "the patched _check_alive was never called"
 
 
 def _timeout_handler(source: str) -> ast.ExceptHandler:

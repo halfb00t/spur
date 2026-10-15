@@ -6160,3 +6160,78 @@ The proof is the forced-GC gate test, which removes the luck; the natural rate o
    `N workers` line), the load; once per session `pip freeze` filtered to pytest, pytest-xdist, pytest-cov and coverage.
 8. **Reading.** Zero flake reds in the after arm reads "consistent, not conclusive": at the 1-in-5-to-10 rate STACK saw in
    a Linux container, 0 of 10 by luck alone is 15 to 30 %. The forced-GC gate test is the proof.
+
+#### Readings (26-04)
+
+Host `18 CPUs, arm64, 64.0 GiB RAM`, Python 3.12.15, 2026-10-15; the dev host was shared with other sessions (1-minute load
+5.9 to 15.3 during the acceptance runs, 6.9 at the reproduction). Logs: `.planning/phases/26-gate-fails-with-a-cause/investigation/26-04-*`.
+
+**The stdlib reproduction was re-run before any fix (D-03).** STACK's `rt_repro.py` (forced `gc.collect()` inside
+`ResourceTracker._check_alive`, an executor made cyclic garbage, `filterwarnings = error`), stdout count only:
+5 of 5 runs printed `5` (five unraisable `ResourceTracker called reentrantly` warnings, one executor's semaphores). Control 1
+(`gc.collect()` before the patch): `0` in 3 of 3. Control 2 (no `ex.me = ex` cycle): `0` in 3 of 3. Until this run every
+STACK figure was READ-from-STACK; these are MEASURED here (`26-04-repro.log`).
+
+**The forced-GC gate test, per arm** (`test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup`, three
+producers then the victim in a fresh interpreter, a `gc.collect()` forced inside the tracker's lock on every entry; this
+host, three runs per arm):
+
+| Arm | Change | Forced-GC, 3 runs (this host) | STACK (macOS, `-n0 --no-cov`) |
+|---|---|---|---|
+| A | none (unfixed `tests/test_pool.py`) | red 3 of 3 | FAILED 3 of 3 |
+| B | autouse fixture, teardown `gc.collect()` | red 0 of 3 | 0 of 3 |
+| C | `del manager` after the last use in the three producers | red 0 of 3 | 0 of 3 |
+| B + C | both (the fix as committed) | red 0 of 3 | not run in STACK |
+
+The red text, from `26-04-gate-A-1.log`: the child pytest reads `1 failed, 3 passed in 10.11s`, the failure is
+`FAILED tests/test_pool.py::test_a_closed_pool_never_builds_a_replacement_worker` (the victim, never a producer), with
+`multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker` raised from
+`ensure_running` -> `_reentrant_call_error`, then `UserWarning: ResourceTracker called reentrantly for resource cleanup,
+which is unsupported. The semaphore object '/mp-8ax0ao_6' might leak.`, ending in `PytestUnraisableExceptionWarning:
+Exception ignored in: <Finalize object, dead>`. `check_alive calls: 94` in all three red runs, so the patch ran (the
+test asserts the count is above 0).
+
+**The gate test's cost.** Alone (`-n0 --no-cov`, the pytest `in N s` of the outer run): 11.27 to 13.14 s over the three
+green runs of the fix (arm A, red, 10.49 to 10.60 s). The whole `tests/test_pool.py` (21 tests with it) reads 31.17 and
+32.86 s at `-n0 --no-cov`. Inside the gate (`make verify`, `-n 8 --cov`, durations block of `26-04-verify.log`): 10.58 s.
+The file is in `HEAVY_TEST_FILES`, so none of it runs in the commit-time slice.
+
+**The 10 + 10 natural run**, under the rule committed in `957539c` at 2026-10-15T11:50:18Z (first run, A1, started
+11:50:47Z), interleaved A1 B1 ... A10 B10, `make test PYTEST_ARGS="tests/test_pool.py tests/test_api.py -k 'not forced_gc'
+--cov-fail-under=0"`, effective `-n 8` (`8 workers [82 items]` in all 20 logs), pytest 9.1.1, pytest-xdist 3.8.0,
+pytest-cov 7.1.0, coverage 7.16.2. Arm hashes checked before and after every run, all equal to the rule's:
+
+| Run | Arm | UTC start | Wall (s) | Exit | Result line | Workers | Load before -> after | Class |
+|---|---|---|---|---|---|---|---|---|
+| A1 | before | 2026-10-15T11:50:47Z | 13 | 0 | 82 passed in 13.34s | 8 | 5.90 -> 6.48 | green |
+| B1 | after | 2026-10-15T11:51:01Z | 13 | 0 | 82 passed in 13.67s | 8 | 6.48 -> 6.75 | green |
+| A2 | before | 2026-10-15T11:51:14Z | 14 | 0 | 82 passed in 13.75s | 8 | 6.75 -> 8.44 | green |
+| B2 | after | 2026-10-15T11:51:28Z | 14 | 0 | 82 passed in 13.66s | 8 | 8.44 -> 10.86 | green |
+| A3 | before | 2026-10-15T11:51:42Z | 14 | 0 | 82 passed in 13.72s | 8 | 10.86 -> 10.45 | green |
+| B3 | after | 2026-10-15T11:51:56Z | 14 | 0 | 82 passed in 13.74s | 8 | 10.45 -> 9.81 | green |
+| A4 | before | 2026-10-15T11:52:10Z | 14 | 0 | 82 passed in 13.70s | 8 | 9.81 -> 9.13 | green |
+| B4 | after | 2026-10-15T11:52:24Z | 14 | 0 | 82 passed in 13.83s | 8 | 9.13 -> 11.46 | green |
+| A5 | before | 2026-10-15T11:52:38Z | 15 | 0 | 82 passed in 14.45s | 8 | 11.46 -> 14.01 | green |
+| B5 | after | 2026-10-15T11:52:53Z | 14 | 0 | 82 passed in 13.80s | 8 | 14.01 -> 15.29 | green |
+| A6 | before | 2026-10-15T11:53:07Z | 14 | 0 | 82 passed in 13.80s | 8 | 15.29 -> 15.34 | green |
+| B6 | after | 2026-10-15T11:53:21Z | 14 | 0 | 82 passed in 13.99s | 8 | 15.34 -> 13.66 | green |
+| A7 | before | 2026-10-15T11:53:35Z | 14 | 0 | 82 passed in 14.10s | 8 | 13.66 -> 12.37 | green |
+| B7 | after | 2026-10-15T11:53:49Z | 15 | 0 | 82 passed in 13.97s | 8 | 12.37 -> 12.37 | green |
+| A8 | before | 2026-10-15T11:54:04Z | 13 | 0 | 82 passed in 13.77s | 8 | 12.37 -> 15.00 | green |
+| B8 | after | 2026-10-15T11:54:18Z | 14 | 0 | 82 passed in 13.99s | 8 | 15.00 -> 14.11 | green |
+| A9 | before | 2026-10-15T11:54:32Z | 14 | 0 | 82 passed in 14.02s | 8 | 14.11 -> 13.59 | green |
+| B9 | after | 2026-10-15T11:54:46Z | 14 | 0 | 82 passed in 14.01s | 8 | 13.59 -> 12.17 | green |
+| A10 | before | 2026-10-15T11:55:00Z | 14 | 0 | 82 passed in 13.96s | 8 | 12.17 -> 10.67 | green |
+| B10 | after | 2026-10-15T11:55:14Z | 15 | 0 | 82 passed in 14.28s | 8 | 10.67 -> 11.98 | green |
+
+Flake reds: 0 of 10 in the before arm, 0 of 10 in the after arm; no other red, no killed run. The before arm did not
+reproduce the flake either, so this table does not separate the arms: it is **consistent, not conclusive**. At the 1 in 5
+to 10 rate STACK saw in a Linux container, 0 of 10 by luck alone is 15 to 30 %, and on this macOS host the rate was 0 of 60
+on 2026-10-09 with the unfixed file. The forced-GC gate test, red 3 of 3 before and green 3 of 3 after, is the proof; the
+flake is **located and fixed from a reproduction**, not shown to be gone.
+
+Plan text that did not hold: the plan expects `19 passed` for `tests/test_pool.py`; the file has 19 test functions with the
+gate test, one of them parametrised three ways, so 21 collected items (20 without it), and all 21 pass.
+
+**The gate.** `make verify PYTEST_ARGS="--durations=0 --durations-min=5.0"`: exit 0, `1321 passed in 185.61s (0:03:05)`,
+`TOTAL 1358 22 386 13 97.99%`, `Required test coverage of 96.0% reached` (`26-04-verify.log`).

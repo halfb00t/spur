@@ -1,0 +1,91 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup __
+
+    def test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup() -> None:
+        """The proof for the `resource_tracker` flake: run the three tests that leave an
+        executor's semaphores to the cyclic GC, then the test that gets blamed for it, with
+        a collection forced inside the tracker's lock every time it is entered.
+    
+        An executor that is cyclic garbage is finalised by whichever automatic GC pass runs
+        next; if that pass lands inside `ResourceTracker`'s lock the finaliser re-enters it
+        (`ReentrantCallError`, `UserWarning: ResourceTracker called reentrantly`), and
+        `filterwarnings = error` fails the test that happens to be running -- the victim,
+        never the producer. Forcing the pass makes the window deterministic, so the natural
+        rate (1 in 5-10 on a loaded host) stops being luck. Each producer's `manager` and
+        its `pytest.raises` traceback were the cycle; `_collect_cycles_...` and
+        `del manager` are the fix this test pins.
+    
+        A fresh interpreter, because the patch must not reach another test on this xdist
+        worker; the producers run right before the victim there, in that order. `-c` and
+        never a script file: see `_FORCED_GC`. The environment drops `PYTEST_ADDOPTS` and
+        `PYTEST_ARGS` because an inherited `--ignore` would silently drop a producer.
+        It lives here, not in its own file, because `HEAVY_TEST_FILES` keeps this file out
+        of the 30 s commit slice and this test costs about 10 s of it.
+        """
+        env = {k: v for k, v in os.environ.items() if k not in ("PYTEST_ADDOPTS", "PYTEST_ARGS")}
+        done = subprocess.run(
+            [sys.executable, "-c", _FORCED_GC, *_FORCED_GC_IDS],
+            cwd=Path(__file__).resolve().parents[1],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        tail = (
+            "\n".join(done.stdout.splitlines()[-40:])
+            + "\n--- stderr ---\n"
+            + "\n".join(done.stderr.splitlines()[-40:])
+        )
+>       assert done.returncode == 0, tail
+E       AssertionError:     | Enable tracemalloc to get traceback where the object was allocated.
+E             | See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+E             +---------------- 5 ----------------
+E             | Traceback (most recent call last):
+E             |   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 207, in _send
+E             |     self.ensure_running()
+E             |   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 126, in ensure_running
+E             |     return self._reentrant_call_error()
+E             |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             |   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 70, in _reentrant_call_error
+E             |     raise ReentrantCallError(
+E             | multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker
+E             | 
+E             | During handling of the above exception, another exception occurred:
+E             | 
+E             | Traceback (most recent call last):
+E             |   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/util.py", line 227, in __call__
+E             |     res = self._callback(*self._args, **self._kwargs)
+E             |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             |   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/synchronize.py", line 88, in _cleanup
+E             |     unregister(name, "semaphore")
+E             |   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 203, in unregister
+E             |     self._send('UNREGISTER', name, rtype)
+E             |   File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py", line 213, in _send
+E             |     warnings.warn(
+E             | UserWarning: ResourceTracker called reentrantly for resource cleanup, which is unsupported. The semaphore object '/mp-snncda15' might leak.
+E             | 
+E             | The above exception was the direct cause of the following exception:
+E             | 
+E             | Traceback (most recent call last):
+E             |   File "/Users/half/git/halfb00t/spur/.venv/lib/python3.12/site-packages/_pytest/unraisableexception.py", line 67, in collect_unraisable
+E             |     warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+E             | pytest.PytestUnraisableExceptionWarning: Exception ignored in: <Finalize object, dead>
+E             | Enable tracemalloc to get traceback where the object was allocated.
+E             | See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+E             +------------------------------------
+E         =========================== short test summary info ============================
+E         FAILED tests/test_pool.py::test_a_closed_pool_never_builds_a_replacement_worker
+E         1 failed, 3 passed in 10.06s
+E         check_alive calls: 94
+E         --- stderr ---
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/Users/half/git/halfb00t/spur/.venv/bin/python', '-c', '\nimport gc\nimport multiprocessing.re...est_a_closed_pool_never_builds_a_replacement_worker\n1 failed, 3 passed in 10.06s\ncheck_alive calls: 94\n', stderr='').returncode
+
+tests/test_pool.py:743: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_pool.py::test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup
+1 failed, 20 deselected in 10.49s
+exit 1
