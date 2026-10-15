@@ -244,7 +244,16 @@ retired in the commit that fixes it. **Phase close**: `make verify` result line 
 **Research flag**: No research phase. Three first measurements, each the first task of its
 item: the `make test-image` red set (never run in research), the CI `--durations` that sets the
 timeout, and the flake reproduction re-run on this host.
-**Plans**: TBD
+**Plans**: 7 plans
+
+Plans:
+- [ ] 26-01-PLAN.md — hook pin ignores the caller's `PYTEST_ARGS`: both forms red, `_make_env()` strips it, item retired
+- [ ] 26-02-PLAN.md — Ubuntu 26 pre-classified: spike branch from `v0.5`, the human pushes, whole logs classified (D-16 branch written)
+- [ ] 26-03-PLAN.md — twin selectors: real-app arms first (SC2 wording corrected on record), STL-request baseline + settle, CX-05, IN-04a, 20 runs
+- [ ] 26-04-PLAN.md — resource-tracker flake: reproduction re-run, forced-GC gate test red then green, B + C, 10 + 10 under a committed rule
+- [ ] 26-05-PLAN.md — hang evidence: `-v --durations=25`, `faulthandler_timeout` from a reading, throwaway stall, 3 + 3 cost, runbook
+- [ ] 26-06-PLAN.md — `make test-image`: first red set recorded, mounts + named ignores, pin tightened, item retired, CI idea filed
+- [ ] 26-07-PLAN.md — phase close gate and the phase's first CI run: D-07's durations rule, the twin step on CI, D-16 follow-through
 
 ### Phase 27: Ledger Tests and Harness
 
