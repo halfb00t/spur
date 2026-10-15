@@ -2,38 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Honest Form
-current_phase: 25
-status: "Phase 25 shipped — PR #38"
-stopped_at: Phase 25 complete — all phases complete
-last_updated: "2026-10-14T18:40:18.803Z"
+status: Awaiting next milestone
+stopped_at: Milestone v0.5 closed and archived — awaiting next milestone
+last_updated: "2026-10-15T03:40:31.413Z"
 last_activity: 2026-10-15
-state_head: 8e294aed86db1fe932bafa0aab962970168b92fc
+last_activity_desc: Milestone v0.5 completed and archived
+state_head: 4ef9f159e5418e9e1ccf728402f5c3a833964be8
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 23
   completed_plans: 23
   percent: 100
+current_phase: 25
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-14)
+See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Close milestone v0.5 (`/gsd-complete-milestone v0.5`); owed beside it: the resource-tracker debt decision. The Phase 25 review ledger is closed (`25-REVIEW-DISPOSITION.md`: 0 of 9 open)
+**Current focus:** Planning the next milestone (`/gsd-new-milestone`). Owed at its start: the resource-tracker debt's fallback trigger; due 2026-10-19: the Ubuntu 26 runner migration. Close PR for v0.5 on `gsd/milestone-v0.5-close`; the `v0.5` tag goes on its squash commit on `main`.
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
-Status: Phase 25 shipped — PR #38
-Last activity: 2026-10-15
-
-Progress: [██████████] 100% (5 of 5 v0.5 phases complete — 21, 22, 23, 24, 25; 23/23 plans)
+Phase: Milestone v0.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-15 — Milestone v0.5 completed and archived
 
 ## Performance Metrics
 
@@ -715,7 +714,6 @@ None yet.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 261014-jsp | hex bore warning names only the bore fields set away from their defaults | 2026-10-14 | c6ca194 | [261014-jsp-hex-bore-warning-names-only-the-bore-fie](./quick/261014-jsp-hex-bore-warning-names-only-the-bore-fie/) |
 
 ### Roadmap Evolution
 
@@ -745,14 +743,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-14T16:07:03Z
-Stopped at: Phase 25 re-verified after the review-fix pass (WR-01…WR-04, IN-01…IN-05 fixed; VERIFICATION.md regenerated), milestone v0.5 ready to close (`/gsd-complete-milestone v0.5`)
+Last session: 2026-10-15
+Stopped at: Milestone v0.5 archived on `gsd/milestone-v0.5-close` (audit `tech_debt`, override closeout; Phase 22 WR-01/WR-02 filed as `must` debt in `4ef9f15`)
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: `/gsd-complete-milestone v0.5` (every v0.5 phase is complete). Then the Phase 25 PR (`gsd/phase-25-gate-bar-re-set-venv-probe-ledger-close` → `main`) with the cross-CLI review per CLAUDE.md; triage `25-REVIEW-DISPOSITION.md` first (WR-03 and the `.pre-commit-config.yaml` "read on" wording are ledger-truth items — the 300 s was set, not read). Still owed: the resource-tracker debt decision (trigger fired in Phases 23 and 24; no red run in Phase 25).
-- Done at roadmap time: the `v0.4` tag was missing locally and on `origin` (only `v0.1`–`v0.3` existed) although v0.5's fixture rule is stated against it; the human chose the close squash `b24287a` (the v0.2/v0.3 precedent) and the annotated tag was created and pushed 2026-10-10.
-- Closed in Phase 25: L34's bar re-set as L43 — 300 s, the human's number over two non-decisive readings (A1 195.23 s, B1 179.21 s) after the idle-host rule's wait never released; the rule stands for a future decisive session. The 401-position oracle count was not part of this milestone.
-- Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
-- Still open: Phase 18's IN-01…IN-08 (`milestones/v0.4-phases/18-trochoid-maths-proved/18-REVIEW-DISPOSITION.md`), Phase 19's IN-01…IN-04 (debt item), the resource-tracker flake (`must`; trigger: the next `make verify` failure with its whole log kept, else whole-suite loops at the next milestone's start).
+- Start the next milestone with /gsd-new-milestone

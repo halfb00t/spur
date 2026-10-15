@@ -307,6 +307,52 @@
 
 ---
 
+## Milestone: v0.5 — Honest Form
+
+**Shipped:** 2026-10-15
+**Phases:** 5 (21–25; Phase 24 discretionary, executed) | **Plans:** 23 | **Sessions:** not tracked
+
+### What Was Built
+- A real headless browser test of the shipped `app.js` (Playwright 1.63.0, real uvicorn) inside `make verify`, the pre-push hook and CI; the query of each of the 44 fixture links pinned in `golden_requests.json` before any form change landed; no gate cost above noise in a six-run A/B (L39).
+- The download name carries the root the part has: `slug()` ends `_trochoid` exactly when `root_mode` builds the hob root (L40).
+- Eleven `enabled_when` relations in one `when()` vocabulary, dimmed-and-editable by generic `applyRelations()`, each proved against `calc` in both directions (L41); a schema-carried Bore shape select in the same vocabulary that writes only the flat fields (L42).
+- The gate bar re-set to 300 s by the human under a rule committed before the first reading; `make venv` under the closure after a green probe in a linked worktree (L43); README names its hardware; `.ai_skills/reverify-phase`.
+- Quick fix #37: a hex bore names only the bore fields set away from their defaults (L27 amended).
+
+### What Worked
+- Pin the requests before changing the form: Phase 21's golden pin let Phases 23 and 24 prove "the same fields are sent" as an empty diff, and the sweep grew to read the dimmed set and the select under the same 44 links.
+- One condition vocabulary, one evaluator: `when()`/`holds()` from Phase 23 carried the Phase 24 selector with no second grammar; the integration checker found no drift.
+- The Codex cross-review on Phase 24 found real behaviour bugs the internal review had not (a pending pick showing the wrong option, focus moving on arrow keys in Blink/Gecko, twin selectors) — fixed on the branch, each seen red first.
+- A debt trigger that names an event fired and was acted on: the hex-bore warning's trigger fired when the selector shipped and was fixed as a quick task before Phase 25's reading.
+- A shared-state probe made safe by construction: the `make venv` probe ran in a linked worktree with the hook shims hashed before and after.
+
+### What Was Inefficient
+- The gate re-set did not get its measurement: across eight waits (900 s cap each; some given up, some aborted) the shared dev host never held load under 1.5; the human waived the wait and cut the session to one reading per arm, so the bar sits on a `none` candidate from two non-decisive readings. The rule was sound; the host could not satisfy it.
+- Phase 22's two review warnings sat at disposition `open` through verification, ship and two later phases; only the milestone audit surfaced them, and they were filed as `must` debt at the close.
+- Verifier digests read `stale` on Phases 21–24, the fifth close in a row with the same cause (later squashes touching shared files); proved per file again.
+- The ship workflow's ship-note commit carries a CI skip token the repo's own hook rejects; worked around by hand again at Phase 25.
+- Commit trailers mixed again (orchestrator `Fable 5.1`, then `Opus 5.5` after a model switch mid-close).
+
+### Patterns Established
+- A golden request pin captured by the real page (`make golden.regen`) as the contract a UI change must leave byte-identical.
+- UI behaviour as schema metadata (`enabled_when`, `selectors`) evaluated in Python by the tests and in JS by the page from the same `/api/schema`.
+- A request recorder on every browser page asserting no key `GearParams` lacks reaches the API or the hash.
+- A measurement rule committed alone before any reading, with its recipe extracted byte for byte by the run — and the human's override recorded verbatim beside the rule's own result when the rule cannot produce one.
+- A process loop that recurred five times promoted to a project skill (`.ai_skills/reverify-phase`), its idea retired with the count read from the record.
+
+### Key Lessons
+- An idle-host rule needs a host that can be idle: on a shared developer machine, either schedule the reading on a dedicated or CI runner, or pre-register a loaded-host method — do not pre-register a precondition the environment cannot meet.
+- A review finding left `open` is invisible until an audit reads the disposition file; triage every warning to `fixed`, `deferred` (with a debt file) or `skipped` before the phase ships.
+- Debt triggers that name a phase lapse with it (the `root_shape=bogus` item names Phases 23/24, now done) — the v0.4 lesson again; restate triggers as events.
+- A model switch mid-session changes the commit trailer; note it rather than mixing silently.
+
+### Cost Observations
+- Model mix: orchestrator Fable 5.1 through Phase 25 and the start of the close, Opus 5.5 for the ship and close; integration checker sonnet; ~0 % haiku
+- Sessions: not tracked
+- Notable: Phase 25's readings cost more wall time in waiting for an idle host (eight waits, up to 15 min each) than in running the gate (195 s and 179 s).
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -316,6 +362,7 @@
 | v0.1 | n/a | 5 | Phase branches + PR + `make pr.land` replaced direct pushes to `main`; ruleset on `main` |
 | v0.2 | n/a | 6 | Build-time gates as human checkpoints with probe-derived offers; cross-CLI (Codex) review lane on the last phase; Nyquist + security audits at verify:post |
 | v0.4 | n/a | 3 (+1 skipped) | Spikes before schema with human-set bars; an opt-in geometry field under L05 with the flip deferred under its own `Lxx`; a conditional phase skipped by decision; gate cost as a checkpoint; fix-now at the review gate |
+| v0.5 | n/a | 5 | A headless browser test in the gate with the 44 links' requests pinned first; UI behaviour as schema metadata proved in Python and JS; Codex cross-review finding behaviour bugs; a measurement rule pre-registered alone, its precondition unmet and overridden on the record; a recurring loop promoted to a project skill |
 | v0.3 | n/a | 4 | Debt-only milestone scoped from the ledger and the v0.2 audit; pre-registered measurement campaigns; UAT gap-closure plan (14-04); a draft PR mid-phase to read CI (15-05); retroactive Nyquist on archived phases |
 
 ### Cumulative Quality
@@ -325,11 +372,12 @@
 | v0.1 | 191 | not measured (no coverage floor — `nice` debt) | 0 — `pyproject.toml` deps unchanged, `requirements.txt` 31 → 31 pins |
 | v0.2 | 907 | not measured | 0 — 31 → 31 pins; `bench/export_cost.py` stdlib only |
 | v0.4 | 1,220 | 97.92 % against `fail_under = 96`; `make verify` 192.94 s mean vs the 66 s bar (accepted) | 0 — 31 → 31 pins; stdlib maths only under `src/spur/` |
+| v0.5 | 1,318 | 97.99 % against `fail_under = 96`; `make verify` bar re-set to 300 s (L43), readings 195.23 s / 179.21 s | 0 — 31 → 31 pins; `playwright` pinned in `[dev]` only |
 | v0.3 | 929 | 97.24 % against `fail_under = 96` (L34) | 0 — 31 → 31 pins; `pytest-xdist`, `pytest-cov` in `[dev]` only |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Verifier digests go stale for reasons that are not unverified code (v0.1: STATE.md fingerprinted; v0.2 and v0.3: shared files changed by a later phase) — prove the cause from the artefact and record the override, do not re-stamp. Three closes, three overrides.
+1. Verifier digests go stale for reasons that are not unverified code (v0.1: STATE.md fingerprinted; v0.2 and v0.3: shared files changed by a later phase) — prove the cause from the artefact and record the override, do not re-stamp. Five closes, five overrides (v0.4 and v0.5: later squashes touching covered files).
 2. Measurement before knobs held across all three milestones: every runtime bound (`mem_limit`, timeout, gzip level, `le`s, `HEX_CELL_CAP`) cites the run that set it, the two bounds that moved in v0.2 moved on a probe's number, and v0.3's gate bar and coverage floor were set from a profile the human read first.
 3. A bar the instrument cannot resolve is not a bar, and a bar it can resolve is demonstrable: v0.1 waived the ≤2.00× latency bar at a 0.1 ms floor; v0.3 ruled the floor real by a pre-registered campaign and then demonstrated the same bar on the same harness behind a quiet gate (L32). The fix was the measurement protocol, not the server.
 

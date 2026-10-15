@@ -18,6 +18,10 @@ either computed honestly or reported as a warning, never guessed (L08). Everythi
 
 ## Current State
 
+**Shipped: v0.5 Honest Form (2026-10-15).** The web form tells the user up front what each field does, and a real browser proves it: a headless test of the shipped `app.js` runs inside `make verify` and CI against a real uvicorn, with the request of each of the 44 fixture links pinned (L39); a hob-root part downloads as `..._trochoid` (L40); eleven `enabled_when` relations dim a field whose value would be ignored, each proved against `calc` in both directions (L41); a schema-carried Bore shape select writes only the flat fields (L42); the gate bar re-set to 300 s by the human under a rule committed before the first reading, and `make venv` installs under the closure after a green probe (L43); README names its hardware, the reverify loop is `.ai_skills/reverify-phase`; a hex bore warns only about bore fields set away from their defaults (#37, L27 amended). No new `GearParams` field; the 44-record fixture and `requirements.txt` byte-identical to the `v0.4` tag. One debt item retired, eleven filed (two `must` at the close: Phase 22's untriaged review warnings). Record: `.planning/MILESTONES.md`, `milestones/v0.5-ROADMAP.md`, `milestones/v0.5-MILESTONE-AUDIT.md` (status `tech_debt`: 24/24 requirements, 8/8 integration, 5/5 flows, 22 active debt items with triggers, 8 `must`).
+
+Codebase at `cbbe730`: 4,145 lines of package Python, 16,560 of tests, 4,544 of bench, 645 lines of hand-written UI JS, 1,318 tests, 31 pinned runtime packages (unchanged since v0), `make verify` green at 97.99 % coverage under L43's 300 s bar on the 18-CPU M5 Max.
+
 **Shipped: v0.4 True Root (2026-10-09).** The last two `must` debts retired by measurement and decision — the commit gate split into `make verify.fast` at pre-commit and the whole gate at pre-push, proved by a live SDK commit (L36); the same-slot timeout race reproduced on attempt 1, fixed by a two-fact guard and `_closed`, the heaviest composed row's limit recorded as documented behaviour (L37) — then the hob-cut trochoid root: the cutter defined once, the envelope generated or honestly refused by one predicate, proven against a swept-cutter oracle sharing no code with `calc`, freecad.gears and KISSsoft (Phase 18); in the part as the opt-in `root_shape=trochoid` through one `makeSpline` per side with four structural guards, every number beside it proved or warned (`root_form_d`, `root_waist` at the narrowest arc, null thickness/gap, the undercut sentence from the cutter), parity on all three interfaces, the default unmoved and Phase 20 skipped with the flip deferred to a named trigger (L38 supersedes L10, amends L09 and L33). The 44-record fixture byte-identical to the `v0.3` tag. Two `must` retired, four debt items filed (one `must`: the resource-tracker flake). Record: `.planning/MILESTONES.md`, `milestones/v0.4-ROADMAP.md`, `milestones/v0.4-MILESTONE-AUDIT.md` (status `tech_debt`: 14/14 requirements, 15/15 integration, 8/8 flows, 12 active debt items with triggers, 1 `must`).
 
 Codebase at `767317b`: 4,040 lines of package Python, 12,268 of tests, 4,544 of bench, 372 lines of hand-written UI JS, 1,220 tests, 31 pinned runtime packages (unchanged since v0), `make verify` green at 97.92 % coverage — 162–240 s on the 18-CPU M5 Max against L34's 66 s bar, accepted (`accept-A`, L38) with the bar's re-set an open decision.
@@ -64,7 +68,17 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Current Milestone: v0.5 Honest Form
+## Next Milestone
+
+Not set — `/gsd-new-milestone`. Carried in: the `resource_tracker` flake's fallback trigger
+("the next milestone's start") falls due; the Ubuntu 26 `ubuntu-latest` migration fires
+2026-10-19. Candidates: the gear family (helical first, Out of Scope below), the hob-root
+default flip on D-09's trigger, the open review info findings of Phases 21–24, Phase 22's two
+`must` debts.
+
+<details>
+<summary>v0.5 Honest Form — scope as set at kickoff (shipped 2026-10-15)</summary>
+
 
 **Goal:** The web form tells the user up front what each field does and a browser proves
 it — the deferred UI ideas taken in dependency order behind a real viewer test, the gate
@@ -296,6 +310,8 @@ Picked 2026-09-25 from the candidates gathered at v0.1 kickoff
 internal / rack — re-derives module, span and centre distance, the riskiest surface in
 the product, and rack needs a second parameter model) and "precision" (trochoidal fillet
 plus the waived latency bar — no trigger has fired). Both stay candidates for v0.3.
+
+</details>
 
 </details>
 
@@ -560,8 +576,8 @@ pytest — L13). Full list with sources and acceptance evidence:
   bar"; the rule text unchanged, every override recorded verbatim in `bench/RESULTS.md`;
   the stale 66 s / 64 s figures swept from `Makefile`, README, `HOW_TO_DEVELOP.md`,
   `packaging.md`; REQ-gate-rule-pre-registered, REQ-gate-bar-reset; verified 5/5 with three
-  must-haves under the human's overrides; review 0 critical, 3 warnings open — WR-03: Phase
-  24 recorded green gate runs of 294–336 s on this host under load, not cited beside the bar)
+  must-haves under the human's overrides; review 9 findings, all fixed before the land — WR-03
+  cites Phase 24's loaded same-host runs of 294–336 s beside the bar in L43)
 - ✓ The three small ledger ideas are closed with a record each — Phase 25 (the `make venv`
   probe GREEN in a linked worktree under `PIP_CONSTRAINT`: 31/31 pins at their versions,
   `pip check` clean, `make verify` 1317 passed, so `$(STAMP)` now installs under
@@ -573,11 +589,8 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance live in
-`REQUIREMENTS.md`.
-
-- (none) — Phase 25 closed the last two hypotheses (moved to Validated); the milestone is
-  ready to close.
+- (none) — v0.5 shipped 2026-10-15 with every hypothesis validated; the next milestone's
+  hypotheses are set by `/gsd-new-milestone` (its `REQUIREMENTS.md` is written fresh).
 
 ### Out of Scope
 
@@ -591,7 +604,7 @@ Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance 
   the three `docs/ideas/` items v0.5 left filed: each has a named trigger that has not fired
   (D-09; a real part; D-12 plus a measured sweep), and taking one would supersede a logged
   decision on no evidence.
-- Twelve `docs/tech_debt/active/` items at the v0.4 close (one `must`: the resource-tracker flake, filed 17-04, re-deferred 18-05 and 19-03 with a named trigger; eleven `nice`, three of them filed in v0.4 — the wedged worker, the xdist worker segfault at exit, the Phase 19 review deferral — each with its trigger; `milestones/v0.4-MILESTONE-AUDIT.md`). At the v0.4 start: ten `docs/tech_debt/active/` items (after the 2026-10-06 ledger pass,
+- Twenty-two `docs/tech_debt/active/` items at the v0.5 close (eight `must`: the resource-tracker flake, the four Phase 21 browser-harness items — `stop_group`, the group floor, the end-of-run hang, the Ubuntu 26 runner — the `root_shape=bogus` blank select, and Phase 22's `slug()` totality and cache-order test; fourteen `nice`; eleven filed in v0.5, one retired — the hex-bore warning, #37; `milestones/v0.5-MILESTONE-AUDIT.md`). Twelve at the v0.4 close (one `must`: the resource-tracker flake, filed 17-04, re-deferred 18-05 and 19-03 with a named trigger; eleven `nice`, three of them filed in v0.4 — the wedged worker, the xdist worker segfault at exit, the Phase 19 review deferral — each with its trigger; `milestones/v0.4-MILESTONE-AUDIT.md`). At the v0.4 start: ten `docs/tech_debt/active/` items (after the 2026-10-06 ledger pass,
   PRs #23–#25). The two `must` — the same-slot timeout-cleanup race (`pool.py:204`, D-17)
   and gsd's 30 s commit timeout against the ~64 s hook (trigger fired at L34) — retired in Phase 17
   (`c06749d` L36, `7af75af` L37). Eight `nice` stay deferred with their triggers: server-side
@@ -611,7 +624,7 @@ Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance 
 
 - **This product already ships.** `spur` is a working generator with a web UI, HTTP API,
   and CLI; `make verify` passes at the current commit. This PROJECT.md documents the
-  shipped baseline (v0, v0.1, v0.2, v0.3) and the next milestone's candidates.
+  shipped baseline (v0 through v0.5) and the next milestone's candidates.
 - The 2026-09-21 audit (`docs/review-2026-09-21.md`, findings F1–F8) is history: every
   finding — the unguarded Newton `centre_distance` solver, unbounded-by-bytes caches,
   infeasible absolute-mm defaults, no admission control, an under-pinned dependency
@@ -624,17 +637,16 @@ Milestone v0.5 Honest Form — hypotheses until shipped; REQ-IDs and acceptance 
 - Ingest intel: `.planning/intel/SYNTHESIS.md` (entry point), `decisions.md`,
   `requirements.md`, `constraints.md`, `context.md`; conflict report at
   `.planning/INGEST-CONFLICTS.md` (0 blockers, 0 warnings, 5 info).
-- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 12 active at the v0.5 start — 1
-  `must` (the resource-tracker flake, 17-04) and 11 `nice`; 24 resolved (10 in v0.1, 4 in
-  v0.2, 6 in v0.3, 2 between v0.3 and v0.4, 2 in v0.4). Ideas backlog: `docs/ideas/` — 10
-  items at the v0.5 start, 7 of them v0.5's scope (browser test for the viewer, conditional
-  form fields, a bore-shape selector, the download name, a re-verification recipe, the Pi 5
-  claim, constraining `make venv` to the closure) and 3 left filed with their triggers
-  (trochoidal-root default flip, a cutout rotation field, a teeth-dependent honeycomb cap).
+- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 22 active at the v0.5 close — 8
+  `must` and 14 `nice`; 25 resolved (10 in v0.1, 4 in v0.2, 6 in v0.3, 2 between v0.3 and
+  v0.4, 2 in v0.4, 1 in v0.5). Ideas backlog: `docs/ideas/` — 5 items at the v0.5 close: the
+  3 left filed at the v0.5 start with their triggers (trochoidal-root default flip, a cutout
+  rotation field, a teeth-dependent honeycomb cap) and 2 filed in v0.5 (the two relations
+  `calc` does not back, the hex warning naming fields by form title); v0.5 retired its 7.
 - Process since v0.1: phases run on `gsd/phase-NN-*` branches cut from `origin/main` and
   land only through `make pr.land PR=N` (L22/L25); `.planning/` rides the same PR as the
   code; the milestone close is its own PR and the tag sits on its squash. Every close so far
-  (v0.1, v0.2, v0.3) was an `override_closeout` on proven-identical trees — the verifier's
+  (v0.1 through v0.5) was an `override_closeout` on proven-identical trees — the verifier's
   digests go stale when STATE.md is rewritten (v0.1) or when a later phase legitimately
   changes a shared file an earlier report covers (v0.2, v0.3); the cause is recorded per
   phase in `MILESTONES.md`.
@@ -800,7 +812,13 @@ Cost recorded, not hidden: `make verify` 52.89 s → 192.94 s mean on the M5 Max
 
 ## Success Metric (Milestone v0.5)
 
-Derived from the kickoff summary the human confirmed 2026-10-10; read at the close.
+Derived from the kickoff summary the human confirmed 2026-10-10. Outcome at close
+(2026-10-15, `milestones/v0.5-MILESTONE-AUDIT.md`): all three met — (1) `tests/test_browser.py`
+in `make verify` and CI under L39, its cost measured A/B and the bar re-set beside it (L43);
+(2) eleven relations dim an ignored field before it is typed (L41), the Bore shape select
+picks the shape (L42), the field walk and the 44 golden requests unchanged; (3) the fixture
+byte-identical to `v0.4`, no `GearParams` field added, the seven ideas taken each retired in
+its closing commit.
 
 1. **The browser sees it.** A browser-driven test exercises the shipped `app.js` — the form
    builds from `/api/schema`, an invalid field is marked, a warning renders, the STL loads —
@@ -831,4 +849,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-14 after Phase 25.*
+*Last updated: 2026-10-15 after v0.5 milestone.*

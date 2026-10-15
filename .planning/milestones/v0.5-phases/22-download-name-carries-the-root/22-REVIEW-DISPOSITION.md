@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: deferred
     title: "`slug()` totality is unguarded in CI and the function now runs inside failure-record paths"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: deferred
     title: "`test_a_failed_build_records_the_name_of_the_part_it_would_have_been` depends on no other test requesting the same gear"
   - id: IN-01
     severity: info
@@ -23,7 +23,7 @@ findings:
     severity: info
     disposition: open
     title: "L40 quotes the best-case reading of the new step as its cost"
-open: 5
+open: 3
 total: 5
 recorded: 2026-10-11T06:51:09.210Z
 ---
@@ -32,8 +32,8 @@ recorded: 2026-10-11T06:51:09.210Z
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
+| WR-01 | warning | deferred | filed as must debt at the v0.5 close: docs/tech_debt/active/2026-10-15-slug-totality-is-not-guarded-in-the-gate.md |
+| WR-02 | warning | deferred | filed as must debt at the v0.5 close: docs/tech_debt/active/2026-10-15-failed-build-name-test-depends-on-cache-order.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |

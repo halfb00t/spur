@@ -36,6 +36,8 @@ Severity (grep-able `Severity:` field):
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
 | nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
 | nice | [Phase 19 code review: four info findings deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | `model.py`, `bench/trochoid_part.py` or the `DIMS` table is next touched (IN-01, IN-02, IN-04) |
+| must | [`slug()` totality is not guarded in the gate, and it runs inside failure-record paths](active/2026-10-15-slug-totality-is-not-guarded-in-the-gate.md) | `calc.root_mode`, `cutter`, `_junction` or `_root_curve` next changes, or any response or record shows an exception raised from `slug()` |
+| must | [A failed-build name test passes only while no other test downloads the same gear](active/2026-10-15-failed-build-name-test-depends-on-cache-order.md) | `tests/test_api.py` next gains a download test, or this test reads 200 instead of 422 |
 
 ## Resolved
 
