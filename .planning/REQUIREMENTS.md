@@ -45,7 +45,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   baseline is taken after the page's own STL request has settled past the 350 ms debounce;
   a delayed-route proof shows the old step red and the new one green. Filed as `must` debt and
   retired in the fixing commit; folds in info findings 24 CX-05 and 21 IN-04a.
-- [ ] **REQ-tracker-flake-fixed-from-repro**: STACK's stdlib reproduction and forced-GC check
+- [x] **REQ-tracker-flake-fixed-from-repro**: STACK's stdlib reproduction and forced-GC check
   are re-run on this host before any fix (READ-from-STACK until then). The fix is in
   `tests/test_pool.py` only (no `src/spur/pool.py` change, no warning filter). Acceptance:
   forced-GC check red → green, plus one before/after run whose cap and arms are committed
@@ -175,7 +175,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 |-------------|-------|--------|
 | REQ-hook-pin-ignores-caller-args | Phase 26 | Complete |
 | REQ-twin-selectors-race-fixed | Phase 26 | Pending |
-| REQ-tracker-flake-fixed-from-repro | Phase 26 | Pending |
+| REQ-tracker-flake-fixed-from-repro | Phase 26 | Complete |
 | REQ-hang-leaves-evidence | Phase 26 | Pending |
 | REQ-test-image-runs-what-it-claims | Phase 26 | Pending |
 | REQ-ubuntu26-preclassified | Phase 26 | Complete |
