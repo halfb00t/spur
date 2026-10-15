@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
 status: planning
-last_updated: "2026-10-15T04:41:40.850Z"
+last_updated: "2026-10-15T08:08:52.000Z"
 last_activity: 2026-10-15
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,14 +21,16 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.6 Clean Ledger — defining requirements. The `v0.5` tag is on `26ddd74`; the fixture baseline is that tag. Due 2026-10-19: the Ubuntu 26 runner migration.
+**Current focus:** Milestone v0.6 Clean Ledger — roadmap created (Phases 26–29, 17/17 requirements mapped); Phase 26 (Gate Fails With a Cause) is next. The `v0.5` tag is on `26ddd74`; the fixture baseline is that tag. Due 2026-10-19: the Ubuntu 26 runner migration begins (Phase 26 pre-classifies it on a throwaway PR first; Phase 29 reads the first migrated run).
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 26 of 29 (Gate Fails With a Cause) — not started, ready to plan
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-15 — Milestone v0.6 started
+Status: Ready to plan
+Last activity: 2026-10-15 — v0.6 roadmap created (Phases 26–29)
+
+Progress: [░░░░░░░░░░] 0% (0 of 4 phases)
 
 ## Performance Metrics
 
@@ -462,6 +464,10 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 begins 2026-10-19 and runs to 2026-11-19: Phase 26's
+  throwaway-PR pre-classification must have run its three jobs before it reaches the repo (the human pushes the
+  PR). Until Phase 26 lands, `main` CI is red on 2 of the last 8 runs at the browser step "twin selectors"
+  (`docs/tech_debt/active/2026-10-15-twin-selectors-step-reds-main.md`, `must`).
 - ⚠️ [Phase 25] The 300 s bar rests on two non-decisive readings under load 4–7 (L43 says so). Review WR-03: Phase 24 recorded green gate runs of 296.91 s, 294.40 s and 336.15 s on this host under higher load, not cited beside the bar; the `.pre-commit-config.yaml` comment says the 300 s was "read on 2026-10-14" when it was set by the human. WR-01: no test pins the `requirements.txt` stamp dependency or the `-c requirements.txt` line. WR-02: the probe used an absolute `PIP_CONSTRAINT`, not the shipped relative `-c`. All open in `25-REVIEW-DISPOSITION.md`.
 - ℹ️ [Phase 25] The idle-host method never got an idle host: seven A1 waits gave up (lowest 1-min load 1.60 with other agent sessions open). A decisive re-read needs the other sessions closed or a new rule; the rule text stands for a future session.
 - ℹ️ [Phase 25] The resource-tracker flake did not fire in this phase's four green `make verify` runs (A1, B1, probe, 25-05); the `must` debt's decision is still owed from Phases 23 and 24.
@@ -730,6 +736,7 @@ None yet.
 - v0.4 roadmap created: Phases 17–20 (Debt First — Commit Gate and Pool Race; Trochoid Maths, Proved; The Trochoid in the Part; The Flip, conditional) — 14/14 v0.4 requirements mapped, 0 orphans, numbering continues from Phase 16; Phase 20 is skipped, never deleted, if the root-mode `Lxx` is O3 or O4 with the flip deferred
 - Phase 20 skipped (O4, flip deferred) under L38, 2026-10-09: the hob root is opt-in through root_shape; the flip waits on a real fit report or a mating-pair request below z_min (D-09).
 - v0.5 roadmap created: Phases 21–25 (Browser Test of the Viewer; Download Name Carries the Root; Conditional Form Fields; Bore-Shape Selector, discretionary; Gate Bar Re-Set, Venv Probe, Ledger Close) — 24/24 v0.5 requirements mapped, 0 orphans, numbering continues from Phase 20; Phase 24 is skipped, never deleted, if the human cuts it (its three requirements then move to Future Requirements by an explicit edit)
+- v0.6 roadmap created: Phases 26–29 (Gate Fails With a Cause; Ledger Tests and Harness; Refuse the Bad Link; Ubuntu 26 Final Reading, date-gated) — 17/17 v0.6 requirements mapped, 0 orphans, numbering continues from Phase 25; Phase 29 may close with its item still active (trigger restated, REQ-ubuntu26-classified-on-migration then moves to Future Requirements by an explicit edit with the human) and is never deleted
 
 ## Deferred Items
 
@@ -740,9 +747,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-15
-Stopped at: Milestone v0.5 archived on `gsd/milestone-v0.5-close` (audit `tech_debt`, override closeout; Phase 22 WR-01/WR-02 filed as `must` debt in `4ef9f15`)
+Stopped at: v0.6 roadmap written on `gsd/milestone-v0.6-start` (ROADMAP.md, STATE.md, REQUIREMENTS.md traceability), uncommitted, awaiting the human's approval
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Approve the v0.6 roadmap (the orchestrator commits it), then /gsd-discuss-phase 26 (the `make test-image` mount-or-exclude decision waits on the first run's red set) or /gsd-plan-phase 26

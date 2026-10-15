@@ -166,15 +166,41 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ## Traceability
 
-Filled by the roadmap.
+Filled by the roadmap (2026-10-15). Phase numbers continue from v0.5's Phase 25. Phase 29 is
+date-gated: if no `ubuntu-latest` run names Ubuntu 26.04 by the milestone close, it closes with
+its item `active` and `REQ-ubuntu26-classified-on-migration` moves to Future Requirements by an
+explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| REQ-hook-pin-ignores-caller-args | Phase 26 | Pending |
+| REQ-twin-selectors-race-fixed | Phase 26 | Pending |
+| REQ-tracker-flake-fixed-from-repro | Phase 26 | Pending |
+| REQ-hang-leaves-evidence | Phase 26 | Pending |
+| REQ-test-image-runs-what-it-claims | Phase 26 | Pending |
+| REQ-ubuntu26-preclassified | Phase 26 | Pending |
+| REQ-slug-totality-guarded | Phase 27 | Pending |
+| REQ-failed-build-name-isolated | Phase 27 | Pending |
+| REQ-stop-group-signals-first | Phase 27 | Pending |
+| REQ-group-floor-recorded-true | Phase 27 | Pending |
+| REQ-launch-message-true | Phase 27 | Pending |
+| REQ-bad-link-refused | Phase 28 | Pending |
+| REQ-bad-link-decision-logged | Phase 28 | Pending |
+| REQ-root-fillet-label-follows-root | Phase 28 | Pending |
+| REQ-info-findings-triaged | Phase 28 | Pending |
+| REQ-old-info-findings-triaged | Phase 28 | Pending |
+| REQ-ubuntu26-classified-on-migration | Phase 29 | Pending |
+
+Individual info-finding fixes ride the phase that touches their file (Phase 26: 24 CX-05, 21
+IN-04a; Phase 27: 21 IN-01..03, 22 IN-01..03, 23 IN-08, 23 IN-11, 24 IN-03, 19 IN-01/02; Phase 28:
+24 IN-01, 24 IN-02/CX-03); the triage requirements are assigned to Phase 28, where the last
+disposition closes.
 
 **Coverage:**
 - v0.6 requirements: 17 total
-- Mapped to phases: 0 (pending roadmap)
+- Mapped to phases: 17 (Phase 26: 6, Phase 27: 5, Phase 28: 5, Phase 29: 1)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-15*
-*Last updated: 2026-10-15 after kickoff*
+*Last updated: 2026-10-15 after roadmap creation*
