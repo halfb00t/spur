@@ -247,12 +247,25 @@ timeout, and the flake reproduction re-run on this host.
 **Plans**: 7 plans
 
 Plans:
+**Wave 1**
 - [ ] 26-01-PLAN.md — hook pin ignores the caller's `PYTEST_ARGS`: both forms red, `_make_env()` strips it, item retired
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 26-02-PLAN.md — Ubuntu 26 pre-classified: spike branch from `v0.5`, the human pushes, whole logs classified (D-16 branch written)
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 26-03-PLAN.md — twin selectors: real-app arms first (SC2 wording corrected on record), STL-request baseline + settle, CX-05, IN-04a, 20 runs
+
+**Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 26-04-PLAN.md — resource-tracker flake: reproduction re-run, forced-GC gate test red then green, B + C, 10 + 10 under a committed rule
+
+**Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 26-05-PLAN.md — hang evidence: `-v --durations=25`, `faulthandler_timeout` from a reading, throwaway stall, 3 + 3 cost, runbook
+
+**Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 26-06-PLAN.md — `make test-image`: first red set recorded, mounts + named ignores, pin tightened, item retired, CI idea filed
+
+**Wave 7** *(blocked on Wave 6 completion)*
 - [ ] 26-07-PLAN.md — phase close gate and the phase's first CI run: D-07's durations rule, the twin step on CI, D-16 follow-through
 
 ### Phase 27: Ledger Tests and Harness
