@@ -2,9 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
+current_phase: 26
+current_phase_name: Gate Fails With a Cause
 status: planning
-last_updated: "2026-10-15T08:08:52.000Z"
+stopped_at: Phase 26 context gathered
+last_updated: "2026-10-15T09:25:22.849Z"
 last_activity: 2026-10-15
+last_activity_desc: v0.6 roadmap created (Phases 26–29)
+state_head: 17620b5bc022a34e18dd8f4f3a98ecfb0a86d969
 progress:
   total_phases: 4
   completed_phases: 0
@@ -746,9 +751,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15
-Stopped at: v0.6 roadmap written on `gsd/milestone-v0.6-start` (ROADMAP.md, STATE.md, REQUIREMENTS.md traceability), uncommitted, awaiting the human's approval
-Resume file: None
+Last session: 2026-10-15T09:25:22.830Z
+Stopped at: Phase 26 context gathered
+Resume file: .planning/phases/26-gate-fails-with-a-cause/26-CONTEXT.md
 
 ## Operator Next Steps
 
