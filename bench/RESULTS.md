@@ -5976,3 +5976,80 @@ start goes through (`_dry_run`, the two `-W` dry runs, and the hook-stamp tests 
 caller's flag still wins over the recipe's. What this does not show: a narrowed full `make verify PYTEST_ARGS=...` was not
 run end to end here; the make-command-line row runs `make test` over `tests/test_hooks.py` only, which is the form that
 failed in 21-07 reduced to the file that holds the pin.
+
+### Ubuntu 26.04, pre-classified (26-02)
+
+SC5: the shipped tree on the image `ubuntu-latest` is about to become, read before the rollout. `ubuntu-latest` begins moving to
+Ubuntu 26.04 on 2026-10-19 (`actions/runner-images#14748`); today is 2026-10-15. The agent cut `spike/26-ubuntu-26` from the `v0.5`
+tag (`26ddd74`) with one commit, `21c0346`, whose diff from `v0.5` is the three `runs-on: ubuntu-latest` lines of
+`.github/workflows/ci.yml` changed to `runs-on: ubuntu-26.04` and nothing else, and stopped. The human told the agent to push, and
+the push and the draft PR #40 (`spike(26): ubuntu-26.04 pre-classification -- DO NOT MERGE`, base `main`) were made on that
+instruction; the pre-push hook's `make verify` passed first. The agent then only read the run with `gh`. The whole per-job logs
+are kept under `.planning/phases/26-gate-fails-with-a-cause/investigation/` as `26-02-run-38724011970-test.log` (786 lines),
+`26-02-run-38724011970-vendor-bundle.log` (193) and `26-02-run-38724011970-image.log` (1,715), each from
+`gh run view 38724011970 --log --job {id}`, not `--log-failed`.
+
+| Run | Conclusion | Classification |
+|---|---|---|
+| [38724011970](https://github.com/halfb00t/spur/actions/runs/38724011970) (`ci`, event `pull_request`, attempt 1, head `21c0346761098769029cc98b2f7ebdfe4ae3294f`, created 2026-10-15 10:58:19Z) | success: `test (3.12)`, `vendor-bundle` and `image` all green | `test (3.12)` green; `vendor-bundle` green; `image` green. Nothing red, so nothing to classify as known or new; one attempt, no re-run |
+
+The run's `headSha` is the spike commit. A first-attempt green run means the `twin selectors` race (a main-only red) and the
+resource-tracker flake did not show here; both are intermittent, so this run does not clear them. `grep -ciE 'FAILED|resource_tracker|ResourceTracker|ReentrantCall|ExceptionGroup|twin selectors|rerun|Traceback'`
+prints 0 on each of the three logs.
+
+#### Host state (the runner)
+
+- All three jobs: `Image: ubuntu-26.04`, `Version: 20261012.163.1`, runner 2.337.0, provisioner `20261012.601`, operating
+  system `Ubuntu 26.04.1 LTS` (the `Set up job` group); apt mirrors name the codename `resolute`
+- `test (3.12)`: `pytest -n 4` (`4 workers [1318 items]`), so the runner had 4 CPUs as on 24.04; Python 3.12.15
+  (`actions/setup-python@v5`), pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0, `playwright` 1.63.0
+  (`manylinux1_x86_64` wheel, 48.2 MB), cadquery 2.8.0 with cadquery-ocp 7.9.3.1.1 (the `kernel pair this run resolved` step),
+  Chrome Headless Shell 153.0.8010.12 (`playwright chromium-headless-shell v1243`)
+- `image`: Docker 29.4.2 under `docker/setup-buildx-action@v3`; the in-image `docker/smoke.py` printed
+  `smoke: kernel, exports, ASGI stack and validation all live`
+- Read 2026-10-15 11:12 to 11:20 UTC. A shared runner: load is not observable from the log, so every wall figure is one sample
+
+#### Readings
+
+The 24.04 column is 21-08's run 38059369744 (2026-10-10, image `ubuntu-24.04` `20261004.327.1`, head `88df5cf`). That tree held
+1226 tests; this one holds 1318, so the pytest wall and the coverage rows are not like for like, and the install rows are.
+
+| Reading | Ubuntu 26.04, this run | Ubuntu 24.04, 21-08 |
+|---|---|---|
+| `test (3.12)` job wall time | **13 min 54 s** (834 s): `startedAt` 10:58:23Z, `completedAt` 11:12:17Z | 16 min 8 s |
+| Result line | `1318 passed in 754.49s (0:12:34)`; no failure, no `rerun` | `1226 passed in 887.92s (0:14:47)` |
+| Coverage TOTAL | `1358 21 386 13 98.05%` against the 96.0 % floor (`Required test coverage of 96.0% reached`) | `1346 21 384 14 97.98%` |
+| Import contracts | `Contracts: 5 kept, 0 broken.` | the same line |
+| Install, `playwright install --with-deps --only-shell chromium` | **14.44 s** from the command line (10:59:21.507) to the pytest command's line (10:59:35.948): `Switching to root user to install dependencies...`, `0 upgraded, 9 newly installed`, 21.9 MB of archives, 80.2 MB of additional disk; the shell download 10:59:32.252 to 10:59:35.474 (3.22 s), ffmpeg to 10:59:35.919 | 13.97 s, `1 upgraded, 9 newly installed`, 21.5 MB, 79.5 MB, shell download 3.44 s |
+| Install path | `/home/runner/work/spur/spur/.venv/ms-playwright/chromium_headless_shell-1243` and `.../ffmpeg-1011` | the same |
+| Renderer string, `twin selectors:` line | not printed: the workflow runs `make verify` without `-s` or `-v`, so no per-test line is in the log | not printed either |
+| Other jobs | `image` success 10:58:23Z to 11:00:18Z (1 min 55 s); `vendor-bundle` success 10:58:23Z to 10:58:41Z (18 s) | `image` 2 min 13 s; `vendor-bundle` 12 s |
+| UTC start and finish of the run | first job start 10:58:23Z, last job finish 11:12:17Z | 14:22:50Z to 14:38:58Z |
+
+The browser test is in the 1318 passed: it has no skip path and fails closed on a missing shell (`tests/test_browser_pins.py`),
+so a pass is a launched headless shell on Ubuntu 26.04 with the `--with-deps` set above installed by apt.
+
+#### The ordering against the rollout
+
+This run started at 10:58:23Z on 2026-10-15. The newest `ci` runs before it all read `Image: ubuntu-24.04` in their `Set up job`:
+38680454993 (`main`, 04:14Z), 38678227683 (03:49Z), 38673037695 (02:49Z), 38617655448 and 38617083596 (2026-10-14). No
+`ubuntu-latest` run of this repository named 26.04 before the spike's jobs started, so SC5's ordering holds on what can be read
+today. The run is on a pinned `ubuntu-26.04` label, not on `ubuntu-latest`, so whether the migrated label resolves to this same
+image version (`20261012.163.1` or a later one) is confirmed only when the first `ubuntu-latest` run naming 26.04 exists; Phase 29
+orders that run against the start and finish times above.
+
+#### What the log does and does not show
+
+One run is not the migration. It shows that the shipped `v0.5` tree, with `runs-on` the only difference, builds, installs the
+browser with `--with-deps` through apt on `resolute`, passes all 1318 tests at 98.05 % coverage, passes the vendored-bundle byte
+check, and builds and smoke-tests the container, once, on image `20261012.163.1`. It does not show how often the intermittent
+twin-selectors red and the resource-tracker flake occur on 26.04 against 24.04: both are expected classes on this tree, and one
+green run cannot rank them. It does not show a later image version, since GitHub revises the image weekly. Phase 29 reads the first
+migrated `ubuntu-latest` run against this one.
+
+#### Outcome
+
+**SC5 is met**: the throwaway PR changed only the three `runs-on` lines, its three jobs ran on `ubuntu-26.04` before the rollout
+reached this repository, each whole log is kept, and every job is classified here before any `ci.yml` edit lands anywhere. All
+three are green; nothing goes to the human as options. The PR is closed unmerged and the remote branch is left for the human to
+delete. No `runs-on: ubuntu-24.04` pin is made.
