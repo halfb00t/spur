@@ -36,7 +36,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Gate — fails with a cause or passes
 
-- [ ] **REQ-hook-pin-ignores-caller-args**: `tests/test_hooks.py`'s shared-recipe pin passes
+- [x] **REQ-hook-pin-ignores-caller-args**: `tests/test_hooks.py`'s shared-recipe pin passes
   when the caller sets `PYTEST_ARGS`, in both the environment and the `make` command-line form;
   the new test is red for both forms before the fix
   (`docs/tech_debt/active/2026-10-10-hook-pin-reads-the-callers-pytest-args.md`).
@@ -173,7 +173,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-hook-pin-ignores-caller-args | Phase 26 | Pending |
+| REQ-hook-pin-ignores-caller-args | Phase 26 | Complete |
 | REQ-twin-selectors-race-fixed | Phase 26 | Pending |
 | REQ-tracker-flake-fixed-from-repro | Phase 26 | Pending |
 | REQ-hang-leaves-evidence | Phase 26 | Pending |

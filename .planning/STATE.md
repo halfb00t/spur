@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 26
 current_phase_name: Gate Fails With a Cause
 status: executing
-stopped_at: Phase 26 context gathered
-last_updated: "2026-10-15T10:28:19.753Z"
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-10-15T10:48:13.663Z"
 last_activity: 2026-10-15
-last_activity_desc: v0.6 roadmap created (Phases 26–29)
-state_head: 05a34e2a1a6eb610803ad60c2f96c6191d14bb36
+last_activity_desc: Phase 26 execution started
+state_head: 95967ca413a19d45a575da636ebec5f64d78c8c3
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 5
   total_plans: 7
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 14
 ---
 
 # Project State
@@ -26,16 +26,16 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.6 Clean Ledger — roadmap created (Phases 26–29, 17/17 requirements mapped); Phase 26 (Gate Fails With a Cause) is next. The `v0.5` tag is on `26ddd74`; the fixture baseline is that tag. Due 2026-10-19: the Ubuntu 26 runner migration begins (Phase 26 pre-classifies it on a throwaway PR first; Phase 29 reads the first migrated run).
+**Current focus:** Phase 26 — Gate Fails With a Cause
 
 ## Current Position
 
-Phase: 26 (Gate Fails With a Cause) — READY TO EXECUTE
-Plan: —
+Phase: 26 (Gate Fails With a Cause) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-10-15 — v0.6 roadmap created (Phases 26–29)
+Last activity: 2026-10-15 — Phase 26 execution started
 
-Progress: [░░░░░░░░░░] 0% (0 of 4 phases)
+Progress: [█░░░░░░░░░] 14% (0 of 4 phases)
 
 ## Performance Metrics
 
@@ -244,6 +244,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 25 P03 | 13 min | 2 tasks | 31 files |
 | Phase 25 P04 | 2h | 3 tasks | 12 files |
 | Phase 25 P05 | 45 min | 2 tasks | 9 files |
+| Phase 26 P01 | 8 min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -462,6 +463,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 25]: The bar is the human's number on a `none` candidate — `Let's set 300 s. IMHO it's a reasonable bar` — recorded under `#### Gate decision` and in L43 (amends L34); no check enforces it (ARCH 7.4); the stale 66 s / 64 s lines swept.
 - [Phase 25]: The venv probe was GREEN in a linked worktree under `PIP_CONSTRAINT` (31/31 pins, `pip check` clean, 1317 passed), so `$(STAMP)` now installs under `-c requirements.txt`; `agent/venv-probe` deleted at the human's `delete`.
 - [Phase 25]: At the human's `don't waste any more time` the post-merge and regression test gates were satisfied by the executors' logged `make verify` runs on the committed trees (last: `ac129dc`, 1317 passed) rather than re-run, and the code review and the goal verifier ran in parallel.
+- [Phase 26]: 26-01: _make_env() strips PYTEST_ARGS with make's own flags (one place covers every make a hook test starts); both caller forms seen red first, the empty form recorded as a run, not a test
 
 ### Pending Todos
 
@@ -751,9 +753,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15T09:25:22.830Z
-Stopped at: Phase 26 context gathered
-Resume file: .planning/phases/26-gate-fails-with-a-cause/26-CONTEXT.md
+Last session: 2026-10-15T10:48:13.643Z
+Stopped at: Completed 26-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
