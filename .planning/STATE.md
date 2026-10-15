@@ -1,20 +1,16 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.5
-milestone_name: Honest Form
-status: Awaiting next milestone
-stopped_at: Milestone v0.5 closed and archived — awaiting next milestone
-last_updated: "2026-10-15T03:40:31.413Z"
+milestone: v0.6
+milestone_name: Clean Ledger
+status: planning
+last_updated: "2026-10-15T04:41:40.850Z"
 last_activity: 2026-10-15
-last_activity_desc: Milestone v0.5 completed and archived
-state_head: 4ef9f159e5418e9e1ccf728402f5c3a833964be8
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 23
-  completed_plans: 23
-  percent: 100
-current_phase: 25
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,14 +21,14 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`). Owed at its start: the resource-tracker debt's fallback trigger; due 2026-10-19: the Ubuntu 26 runner migration. Close PR for v0.5 on `gsd/milestone-v0.5-close`; the `v0.5` tag goes on its squash commit on `main`.
+**Current focus:** Milestone v0.6 Clean Ledger — defining requirements. The `v0.5` tag is on `26ddd74`; the fixture baseline is that tag. Due 2026-10-19: the Ubuntu 26 runner migration.
 
 ## Current Position
 
-Phase: Milestone v0.5 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-15 — Milestone v0.5 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-15 — Milestone v0.6 started
 
 ## Performance Metrics
 
