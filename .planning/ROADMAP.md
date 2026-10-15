@@ -244,7 +244,7 @@ retired in the commit that fixes it. **Phase close**: `make verify` result line 
 **Research flag**: No research phase. Three first measurements, each the first task of its
 item: the `make test-image` red set (never run in research), the CI `--durations` that sets the
 timeout, and the flake reproduction re-run on this host.
-**Plans**: 4/7 plans executed
+**Plans**: 5/7 plans executed
 
 Plans:
 **Wave 1**
@@ -260,7 +260,7 @@ Plans:
 - [x] 26-04-PLAN.md — resource-tracker flake: reproduction re-run, forced-GC gate test red then green, B + C, 10 + 10 under a committed rule
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 26-05-PLAN.md — hang evidence: `-v --durations=25`, `faulthandler_timeout` from a reading, throwaway stall, 3 + 3 cost, runbook
+- [x] 26-05-PLAN.md — hang evidence: `-v --durations=25`, `faulthandler_timeout` from a reading, throwaway stall, 3 + 3 cost, runbook
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 26-06-PLAN.md — `make test-image`: first red set recorded, mounts + named ignores, pin tightened, item retired, CI idea filed
@@ -478,7 +478,7 @@ empty.
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
-| 26. Gate Fails With a Cause | v0.6 | 4/7 | In Progress | - |
+| 26. Gate Fails With a Cause | v0.6 | 5/7 | In Progress | - |
 | 27. Ledger Tests and Harness | v0.6 | 0/? | Not started | - |
 | 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |

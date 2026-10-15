@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 26
 current_phase_name: Gate Fails With a Cause
 status: executing
-stopped_at: Completed 26-04-PLAN.md
-last_updated: "2026-10-15T12:02:16.877Z"
+stopped_at: Completed 26-05-PLAN.md
+last_updated: "2026-10-15T12:35:01.422Z"
 last_activity: 2026-10-15
 last_activity_desc: Phase 26 execution started
-state_head: 474c0da1cfac7ae428ad88ef586291277f8df857
+state_head: 75b43cbc46c3af785386d771e4574cfcdcdcb83c
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 7
-  completed_plans: 4
-  percent: 57
+  completed_plans: 5
+  percent: 71
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 26 (Gate Fails With a Cause) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-10-15 — Phase 26 execution started
 
-Progress: [██████░░░░] 57% (0 of 4 phases)
+Progress: [███████░░░] 71% (0 of 4 phases)
 
 ## Performance Metrics
 
@@ -248,6 +248,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 26 P02 | 29min | 3 tasks | 5 files |
 | Phase 26 P03 | 22min | 3 tasks | 38 files |
 | Phase 26 P04 | 19 min | 3 tasks | 4 files |
+| Phase 26 P05 | 32 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -470,6 +471,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 26]: 26-02: Ubuntu 26.04 pre-classification green (run 38724011970, image 20261012.163.1); no ubuntu-24.04 pin made; debt item stays active for Phase 29
 - [Phase 26]: 26-03: the twin step's race is the /api/info response, not a delayed STL route: the real-app arms (parked STL green 3/3, parked /api/info red 3/3, new baseline green 3/3) corrected SC2's wording; the baseline waits for the link's own /api/model.stl request and a 1000 ms settle, and the zero-request assertion settles again (CX-05, stray request read at 354 ms)
 - [Phase 26]: 26-04: resource-tracker flake located and fixed from a forced-GC reproduction (autouse teardown gc.collect fixture + del manager in tests/test_pool.py); 10+10 natural run 0 of 10 each arm, consistent not conclusive
+- [Phase 26]: 26-05: faulthandler_timeout stays 120 (slowest phase 32.33 s locally, 2 x S = 64.66 s); the -v --durations=25 flags cost -0.51 % over 3 + 3 interleaved gate runs (206.87 s vs 205.81 s, L43 bar 300 s); hang item stays active with a runbook
 
 ### Pending Todos
 
@@ -759,8 +761,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15T12:02:16.857Z
-Stopped at: Completed 26-04-PLAN.md
+Last session: 2026-10-15T12:35:01.400Z
+Stopped at: Completed 26-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
