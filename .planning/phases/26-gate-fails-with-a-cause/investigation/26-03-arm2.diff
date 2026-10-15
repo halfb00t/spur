@@ -1,0 +1,29 @@
+diff --git a/tests/test_browser.py b/tests/test_browser.py
+index 05082f2..aa242a8 100644
+--- a/tests/test_browser.py
++++ b/tests/test_browser.py
+@@ -1562,13 +1562,16 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
+                 second_rule = expected_pick(chooser, properties, second, link, {})
+                 shown_at_link = expected_shown([chooser], properties, link)[0]
+                 twins_page = record_api(browser.new_page(), seen)
++                info_parked: list[Route] = []
+                 try:
+                     twins_page.route("**/api/schema", lambda route: route.fulfill(json=doubled))
+                     twins_page.route(STL_ROUTE, lambda route: route.abort())
++                    twins_page.route("**/api/info*", lambda route: info_parked.append(route))
+                     with twins_page.expect_request(
+                         lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                     ):
+                         twins_page.goto(server + "/#" + link)
++                    _wait_until_parked(twins_page, info_parked)
+                     assert eval_shown(twins_page) == (shown_at_link, shown_at_link), (
+                         f"twin selectors: #{link} shows {eval_shown(twins_page)}"
+                     )
+@@ -1580,6 +1583,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
+                     second_reason = twins_page.locator(
+                         f"form#params label.field:has([name={second_rule.field}]) .reason"
+                     )
++                    info_parked[0].continue_()
+                     first_select = twins_page.locator("#selector-0")
+                     first_select.focus()
+                     first_select.select_option(label=first)

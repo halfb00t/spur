@@ -67,6 +67,12 @@ from browser_session import (
 )
 from playwright.sync_api import Page, Route, expect, sync_playwright
 
+# app.js's scheduleUpdate() sends its request 350 ms after the event (`setTimeout(update, 350)`,
+# app.js:289), so a request count taken sooner can pass before a stray request is sent (24
+# CX-05). The settle is that debounce plus margin for a runner about twice as slow as the dev
+# host. The CX-05 control (26-03) read the stray /api/info request 354 ms after its event here.
+DEBOUNCE_SETTLE_MS = 1_000
+
 # The four custom properties app.js reads for the scene (applyTheme, placeGrid): a rename in
 # style.css leaves the page loading and the scene silently unthemed.
 THEME_VARIABLES = ("--view-bg", "--grid", "--mesh", "--edge")
@@ -210,7 +216,9 @@ def _follow_link(page: Page, fragment: str) -> str:
     """
     current = eval_str(page, "() => location.hash.slice(1)")
     assert current != fragment, f"the page is already on #{fragment}: no hashchange would fire"
-    with page.expect_request(lambda request: "/api/info" in request.url) as sent:
+    with page.expect_request(
+        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+    ) as sent:
         page.evaluate("(f) => { location.hash = f; }", fragment)
     return urllib.parse.urlsplit(sent.value.url).query
 
@@ -1558,6 +1566,13 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 ]
                 assert pendings, "twin selectors: no two picks pend on different fields"
                 link, first, second = pendings[0]
+                # app.js returns before the STL fetch when /api/info refuses the link, so the
+                # STL wait below would time out on a misleading cause.
+                info_status, _ = _api_get(server, "/api/info", link)
+                assert info_status == 200, (
+                    f"twin selectors: /api/info answered {info_status} for #{link}, so the page "
+                    "would send no STL request"
+                )
                 first_rule = expected_pick(chooser, properties, first, link, {})
                 second_rule = expected_pick(chooser, properties, second, link, {})
                 shown_at_link = expected_shown([chooser], properties, link)[0]
@@ -1565,10 +1580,21 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 try:
                     twins_page.route("**/api/schema", lambda route: route.fulfill(json=doubled))
                     twins_page.route(STL_ROUTE, lambda route: route.abort())
+                    # The link's own build sends /api/info and, after that response,
+                    # /api/model.stl (app.js:262-272). The baseline once waited only for the
+                    # info request, so on a slow runner the STL request landed inside the
+                    # counted window (main runs 38347283201 and 38680454993, one request
+                    # each). Measured on the real app (26-03 arms): a parked STL route left
+                    # that baseline green, a parked /api/info turned it red, waiting for the
+                    # STL request turned it green -- the info response is the lever, not the
+                    # STL route.
                     with twins_page.expect_request(
-                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                        lambda request: "/api/model.stl" in request.url, timeout=BUILD_WAIT_MS
                     ):
                         twins_page.goto(server + "/#" + link)
+                    # No timer is pending at load (app.js:643-644); the settle keeps the
+                    # baseline true for any scheduleUpdate() a future load path queues.
+                    twins_page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                     assert eval_shown(twins_page) == (shown_at_link, shown_at_link), (
                         f"twin selectors: #{link} shows {eval_shown(twins_page)}"
                     )
@@ -1608,6 +1634,9 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     assert eval_pairs(twins_page) == pairs_before, (
                         "twin selectors: a field was written"
                     )
+                    # CX-05: a stray scheduleUpdate() sends its request 350 ms later, so a count
+                    # taken at once passes before it can fail.
+                    twins_page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                     assert len(seen) == requests_before, (
                         f"twin selectors: {len(seen) - requests_before} request(s) sent by two "
                         "pending picks"

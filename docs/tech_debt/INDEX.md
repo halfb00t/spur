@@ -37,12 +37,13 @@ Severity (grep-able `Severity:` field):
 | nice | [Phase 19 code review: four info findings deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | `model.py`, `bench/trochoid_part.py` or the `DIMS` table is next touched (IN-01, IN-02, IN-04) |
 | must | [`slug()` totality is not guarded in the gate, and it runs inside failure-record paths](active/2026-10-15-slug-totality-is-not-guarded-in-the-gate.md) | `calc.root_mode`, `cutter`, `_junction` or `_root_curve` next changes, or any response or record shows an exception raised from `slug()` |
 | must | [A failed-build name test passes only while no other test downloads the same gear](active/2026-10-15-failed-build-name-test-depends-on-cache-order.md) | `tests/test_api.py` next gains a download test, or this test reads 200 instead of 422 |
-| must | [The browser step "twin selectors" reds `main` CI with one extra request](active/2026-10-15-twin-selectors-step-reds-main.md) | v0.6 REQ-twin-selectors-race-fixed (Phase 26), or the next `main` run red on this step |
+| must | [The twin-selectors fix has not yet been read on a `main` run](active/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md) | the first `main` CI run after `make pr.land` lands Phase 26: read `test (3.12)` at step `twin selectors` (green -> retire; red -> re-open the twin item, stop and ask) |
 
 ## Resolved
 
 | Item | Resolved in |
 |---|---|
+| [The browser step "twin selectors" reds `main` CI with one extra request](resolved/2026-10-15-twin-selectors-step-reds-main.md) | fix(26): take the twin-selectors baseline after the link's own STL request and settle past the debounce — see the file's own `Resolved in:` field |
 | [The shared-recipe hook pin reads the caller's `PYTEST_ARGS`, so `make verify PYTEST_ARGS="--ignore=..."` fails it](resolved/2026-10-10-hook-pin-reads-the-callers-pytest-args.md) | test(26): the hook pins read the Makefile, not the caller's PYTEST_ARGS — see the file's own `Resolved in:` field |
 | [A hex bore warns that the default bore_d and bore_flat are ignored, on every hex link](resolved/2026-10-11-hex-bore-warns-about-default-bore-fields.md) | fix(calc): name only the hex-ignored bore fields set away from their defaults — see the file's own `Resolved in:` field |
 | [A same-slot timeout cleanup race produces an undocumented 500 instead of a 503](resolved/2026-10-02-same-slot-timeout-cleanup-race-produces-undocumented-500.md) | `0628182` and `7af75af` — see the file's own `Resolved in:` field |

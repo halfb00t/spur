@@ -1,0 +1,21 @@
+--- a/tests/test_browser.py
++++ b/tests/test_browser.py
+@@ -1634,6 +1634,18 @@
+                     assert eval_pairs(twins_page) == pairs_before, (
+                         "twin selectors: a field was written"
+                     )
++                    dispatched = [time.monotonic()]
++
++                    def stray_info(request: object) -> None:
++                        if "/api/info" in getattr(request, "url", ""):
++                            print(f"CX05-STRAY-INFO-MS {(time.monotonic() - dispatched[0]) * 1000:.0f}")
++
++                    twins_page.on("request", stray_info)
++                    dispatched[0] = time.monotonic()
++                    twins_page.evaluate(
++                        "() => document.querySelector('form#params input')"
++                        ".dispatchEvent(new Event('input', {bubbles: true}))"
++                    )
+                     # CX-05: a stray scheduleUpdate() sends its request 350 ms later, so a count
+                     # taken at once passes before it can fail.
+                     twins_page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
