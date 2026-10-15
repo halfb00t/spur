@@ -54,14 +54,14 @@ stays active until a stall is captured; no cause is claimed.
 ## Runbook (Phase 26)
 
 The gate now runs `pytest -n 8 --cov --cov-report=term -v --durations=25`, and
-`pyproject.toml` sets `faulthandler_timeout = 120`, dump-only (the run carries on). Proved
+`pyproject.toml` sets `faulthandler_timeout = 170`, dump-only (the run carries on). Proved
 once with a throwaway 30 s test at `-n 8 --cov` and a 5 s timeout
 (`.planning/phases/26-gate-fails-with-a-cause/investigation/26-05-stall.log`).
 
 ### What a stalled gate prints
 - Each test's start line from `-v`, `path::test_name`, with no worker id.
 - Each finish line as `[gwN] [ NN%] PASSED <id>`; they arrive out of order across workers.
-- After 120 s inside one test item, a `Timeout (0:02:00)!` dump from the stalled worker on
+- After 170 s inside one test item, a `Timeout (0:02:50)!` dump from the stalled worker on
   stderr: every thread's stack, with `File ".../test_x.py", line N in test_name`. It names
   the function, not the parametrize id, and it may begin mid-line, glued to a controller line
   that was being written.
