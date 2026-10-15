@@ -1,0 +1,193 @@
+vendor-bundle	Set up job	﻿2026-10-15T14:17:31.7202509Z Current runner version: '2.337.0'
+vendor-bundle	Set up job	2026-10-15T14:17:31.7228874Z ##[group]Runner Image Provisioner
+vendor-bundle	Set up job	2026-10-15T14:17:31.7230196Z Hosted Compute Agent
+vendor-bundle	Set up job	2026-10-15T14:17:31.7230827Z Version: 20261002.596
+vendor-bundle	Set up job	2026-10-15T14:17:31.7231458Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+vendor-bundle	Set up job	2026-10-15T14:17:31.7232287Z Build Date: 2026-10-02T22:28:27Z
+vendor-bundle	Set up job	2026-10-15T14:17:31.7233045Z Worker ID: {f4f57eda-ccb7-4da4-9ba9-6df764df41f7}
+vendor-bundle	Set up job	2026-10-15T14:17:31.7233892Z Region: eastus
+vendor-bundle	Set up job	2026-10-15T14:17:31.7234510Z Cloud: Azure
+vendor-bundle	Set up job	2026-10-15T14:17:31.7235106Z ##[endgroup]
+vendor-bundle	Set up job	2026-10-15T14:17:31.7237149Z ##[group]Operating System
+vendor-bundle	Set up job	2026-10-15T14:17:31.7237838Z Ubuntu
+vendor-bundle	Set up job	2026-10-15T14:17:31.7238482Z 24.04.5
+vendor-bundle	Set up job	2026-10-15T14:17:31.7239036Z LTS
+vendor-bundle	Set up job	2026-10-15T14:17:31.7239937Z ##[endgroup]
+vendor-bundle	Set up job	2026-10-15T14:17:31.7240655Z ##[group]Runner Image
+vendor-bundle	Set up job	2026-10-15T14:17:31.7241326Z Image: ubuntu-24.04
+vendor-bundle	Set up job	2026-10-15T14:17:31.7241928Z Version: 20261004.327.1
+vendor-bundle	Set up job	2026-10-15T14:17:31.7243122Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+vendor-bundle	Set up job	2026-10-15T14:17:31.7244988Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+vendor-bundle	Set up job	2026-10-15T14:17:31.7246045Z ##[endgroup]
+vendor-bundle	Set up job	2026-10-15T14:17:31.7247432Z ##[group]GITHUB_TOKEN Permissions
+vendor-bundle	Set up job	2026-10-15T14:17:31.7249880Z Contents: read
+vendor-bundle	Set up job	2026-10-15T14:17:31.7250793Z Metadata: read
+vendor-bundle	Set up job	2026-10-15T14:17:31.7251700Z Packages: read
+vendor-bundle	Set up job	2026-10-15T14:17:31.7252324Z ##[endgroup]
+vendor-bundle	Set up job	2026-10-15T14:17:31.7254652Z Secret source: Actions
+vendor-bundle	Set up job	2026-10-15T14:17:31.7255642Z Cache mode: write
+vendor-bundle	Set up job	2026-10-15T14:17:31.7256735Z Prepare workflow directory
+vendor-bundle	Set up job	2026-10-15T14:17:31.7602989Z Prepare all required actions
+vendor-bundle	Set up job	2026-10-15T14:17:31.7652061Z Getting action download info
+vendor-bundle	Set up job	2026-10-15T14:17:32.0321294Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+vendor-bundle	Set up job	2026-10-15T14:17:32.1429553Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+vendor-bundle	Set up job	2026-10-15T14:17:32.3345486Z Complete job name: vendor-bundle
+vendor-bundle	Run actions/checkout@v4	﻿2026-10-15T14:17:32.4120725Z ##[group]Run actions/checkout@v4
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4121651Z with:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4122110Z   repository: halfb00t/spur
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4126148Z   token: ***
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4126601Z   ssh-strict: true
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4127055Z   ssh-user: git
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4127515Z   persist-credentials: true
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4128013Z   clean: true
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4128463Z   sparse-checkout-cone-mode: true
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4129001Z   fetch-depth: 1
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4129650Z   fetch-tags: false
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4130118Z   show-progress: true
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4130572Z   lfs: false
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4131036Z   submodules: false
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4131494Z   set-safe-directory: true
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4132014Z   allow-unsafe-pr-checkout: false
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.4132802Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5191343Z Syncing repository: halfb00t/spur
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5193922Z ##[group]Getting Git version info
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5194661Z Working directory is '/home/runner/work/spur/spur'
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5195813Z [command]/usr/bin/git version
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5311408Z git version 2.55.0
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5340527Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5348578Z Temporarily overriding HOME='/home/runner/work/_temp/654b3783-447d-46d2-abe9-69f1257c0076' before making global git config changes
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5350874Z Adding repository directory to the temporary git global config as a safe directory
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5352324Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/spur/spur
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5407650Z Deleting the contents of '/home/runner/work/spur/spur'
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5412312Z ##[group]Initializing the repository
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5418605Z [command]/usr/bin/git init /home/runner/work/spur/spur
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5539792Z hint: Using 'master' as the name for the initial branch. This default branch name
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5541570Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5543030Z hint: to use in all of your new repositories, which will suppress this warning,
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5543933Z hint: call:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5544437Z hint:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5545081Z hint: 	git config --global init.defaultBranch <name>
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5545858Z hint:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5546581Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5547755Z hint: 'development'. The just-created branch can be renamed via this command:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5548696Z hint:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5549622Z hint: 	git branch -m <name>
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5550251Z hint:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5551031Z hint: Disable this message with "git config set advice.defaultBranchName false"
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5557161Z Initialized empty Git repository in /home/runner/work/spur/spur/.git/
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5568660Z [command]/usr/bin/git remote add origin https://github.com/halfb00t/spur
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5748636Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5750337Z ##[group]Disabling automatic garbage collection
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5753724Z [command]/usr/bin/git config --local gc.auto 0
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5794890Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5796415Z ##[group]Setting up auth
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5805313Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.5845813Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6219596Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6257763Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6493715Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6534197Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6769286Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6812474Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6813548Z ##[group]Fetching the repository
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:32.6823338Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f1fd75185d504ff0dade2f9e3492aa644ea7151e:refs/remotes/pull/41/merge
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0748908Z From https://github.com/halfb00t/spur
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0751146Z  * [new ref]         f1fd75185d504ff0dade2f9e3492aa644ea7151e -> pull/41/merge
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0755994Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0758025Z ##[group]Determining the checkout info
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0760382Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0761846Z [command]/usr/bin/git sparse-checkout disable
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0814019Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0856134Z ##[group]Checking out the ref
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.0860047Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/41/merge
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3247682Z Note: switching to 'refs/remotes/pull/41/merge'.
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3248416Z 
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3248789Z You are in 'detached HEAD' state. You can look around, make experimental
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3249563Z changes and commit them, and you can discard any commits you make in this
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3250135Z state without impacting any branches by switching back to a branch.
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3250441Z 
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3250707Z If you want to create a new branch to retain commits you create, you may
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3251211Z do so (now or later) by using -c with the switch command. Example:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3251497Z 
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3251642Z   git switch -c <new-branch-name>
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3251878Z 
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3252327Z Or undo this operation with:
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3252550Z 
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3252664Z   git switch -
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3252841Z 
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3253115Z Turn off this advice by setting config variable advice.detachedHead to false
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3253461Z 
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3253912Z HEAD is now at f1fd751 Merge 6c0e57b6324ec2a9574aa2425eefcbaee439026c into 26ddd74b52ec91981c88773e1c2e2974d084d034
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3274335Z ##[endgroup]
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3322239Z [command]/usr/bin/git log -1 --format=%H
+vendor-bundle	Run actions/checkout@v4	2026-10-15T14:17:34.3350715Z f1fd75185d504ff0dade2f9e3492aa644ea7151e
+vendor-bundle	Run actions/setup-node@v4	﻿2026-10-15T14:17:34.3636451Z ##[group]Run actions/setup-node@v4
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3636835Z with:
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3637086Z   node-version: 22
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3637334Z   cache: npm
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3637620Z   cache-dependency-path: web/package-lock.json
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3637983Z   always-auth: false
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3638246Z   check-latest: false
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3641371Z   token: ***
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.3641671Z ##[endgroup]
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.5178981Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.5182603Z (node:2315) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.5183445Z (Use `node --trace-deprecation ...` to show where the warning was created)
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.5186305Z ##[group]Environment details
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.9337039Z node: v22.23.3
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.9337527Z npm: 10.9.9
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.9337738Z yarn: 1.22.22
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.9338621Z ##[endgroup]
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:34.9361113Z [command]/opt/hostedtoolcache/node/22.23.3/x64/bin/npm config get cache
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:35.0542975Z /home/runner/.npm
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:35.1429719Z Cache hit for: node-cache-Linux-x64-npm-807e779eb7bd14fad6239560660c016f5da0e97cbc3c0f50444b1d6ab8dc86c9
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:35.1540105Z (node:2315) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:36.0887161Z Received 9080163 of 9080163 (100.0%), 10.8 MBs/sec
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:36.0888275Z Cache Size: ~9 MB (9080163 B)
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:36.0916762Z [command]/usr/bin/tar -xf /home/runner/work/_temp/12a36d1b-8e65-4bc1-aae3-0f8675c6a90c/cache.tzst -P -C /home/runner/work/spur/spur --use-compress-program unzstd
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:36.1110838Z Cache restored successfully
+vendor-bundle	Run actions/setup-node@v4	2026-10-15T14:17:36.1119615Z Cache restored from key: node-cache-Linux-x64-npm-807e779eb7bd14fad6239560660c016f5da0e97cbc3c0f50444b1d6ab8dc86c9
+vendor-bundle	Run npm ci	﻿2026-10-15T14:17:36.1282888Z ##[group]Run npm ci
+vendor-bundle	Run npm ci	2026-10-15T14:17:36.1283210Z ^[[36;1mnpm ci^[[0m
+vendor-bundle	Run npm ci	2026-10-15T14:17:36.1576645Z shell: /usr/bin/bash -e {0}
+vendor-bundle	Run npm ci	2026-10-15T14:17:36.1577006Z ##[endgroup]
+vendor-bundle	Run npm ci	2026-10-15T14:17:37.7454321Z 
+vendor-bundle	Run npm ci	2026-10-15T14:17:37.7464146Z added 3 packages, and audited 4 packages in 2s
+vendor-bundle	Run npm ci	2026-10-15T14:17:37.7464892Z 
+vendor-bundle	Run npm ci	2026-10-15T14:17:37.7465205Z found 0 vulnerabilities
+vendor-bundle	Run npm run build	﻿2026-10-15T14:17:37.7925882Z ##[group]Run npm run build
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.7926209Z ^[[36;1mnpm run build^[[0m
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.7991361Z shell: /usr/bin/bash -e {0}
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.7991644Z ##[endgroup]
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.8991071Z 
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.8991507Z > build
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.8992775Z > esbuild entry.js --bundle --format=esm --minify --legal-comments=eof --outfile=../src/spur/static/vendor/three.bundle.min.js && cp node_modules/three/LICENSE ../src/spur/static/vendor/three.LICENSE
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.8993639Z 
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.9867018Z 
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.9868070Z   ../src/spur/static/vendor/three.bundle.min.js  554.5kb
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.9868568Z 
+vendor-bundle	Run npm run build	2026-10-15T14:17:37.9868931Z ⚡ Done in 81ms
+vendor-bundle	bundle matches web/	﻿2026-10-15T14:17:37.9985323Z ##[group]Run git diff --exit-code -- src/spur/static/vendor
+vendor-bundle	bundle matches web/	2026-10-15T14:17:37.9985807Z ^[[36;1mgit diff --exit-code -- src/spur/static/vendor^[[0m
+vendor-bundle	bundle matches web/	2026-10-15T14:17:38.0052283Z shell: /usr/bin/bash -e {0}
+vendor-bundle	bundle matches web/	2026-10-15T14:17:38.0052572Z ##[endgroup]
+vendor-bundle	Post Run actions/setup-node@v4	﻿2026-10-15T14:17:38.2252560Z Post job cleanup.
+vendor-bundle	Post Run actions/setup-node@v4	2026-10-15T14:17:38.3487402Z (node:2415) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+vendor-bundle	Post Run actions/setup-node@v4	2026-10-15T14:17:38.3489081Z (Use `node --trace-deprecation ...` to show where the warning was created)
+vendor-bundle	Post Run actions/setup-node@v4	2026-10-15T14:17:38.3491943Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-807e779eb7bd14fad6239560660c016f5da0e97cbc3c0f50444b1d6ab8dc86c9, not saving cache.
+vendor-bundle	Post Run actions/checkout@v4	﻿2026-10-15T14:17:38.3646819Z Post job cleanup.
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4510425Z [command]/usr/bin/git version
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4554840Z git version 2.55.0
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4598242Z Temporarily overriding HOME='/home/runner/work/_temp/35da1c2b-a959-4657-bf4c-8d0ea73930a1' before making global git config changes
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4600560Z Adding repository directory to the temporary git global config as a safe directory
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4604661Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/spur/spur
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4660280Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4682508Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4951000Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.4989901Z http.https://github.com/.extraheader
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.5002538Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.5045790Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.5298661Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+vendor-bundle	Post Run actions/checkout@v4	2026-10-15T14:17:38.5340518Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+vendor-bundle	Complete job	﻿2026-10-15T14:17:38.5746045Z Cleaning up orphan processes
+vendor-bundle	Complete job	2026-10-15T14:17:38.6028190Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

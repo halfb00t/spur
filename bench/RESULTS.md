@@ -6410,3 +6410,75 @@ tools and ignored files, and was seen red against the old recipe first (`26-06-p
 The image suite skips `tests/test_browser.py`, `tests/test_hooks.py`, `tests/test_no_fake_done.py`,
 `tests/test_browser_pins.py`, `tests/test_pr_land.py` and `tests/test_bench.py` entirely. `make verify` runs all of them
 on the host. Nothing runs `make test-image` in CI (filed as an idea).
+
+### The phase's first CI run (26-07)
+
+Run [38750065494](https://github.com/halfb00t/spur/actions/runs/38750065494), workflow `ci`, event `pull_request`, draft
+PR [#41](https://github.com/halfb00t/spur/pull/41), head sha `6c0e57b6324ec2a9574aa2425eefcbaee439026c` (the phase tree
+as the close gate ran it, with `faulthandler_timeout = 120`), created 2026-10-15T14:17:27Z, all three jobs `success`. Whole
+job logs: `investigation/26-07-run-38750065494-{test,vendor-bundle,image}.log`.
+
+| Job | `Image:` / runner version | Result | Wall |
+|---|---|---|---|
+| `test (3.12)` | `ubuntu-24.04` / `20261002.596` (image `20261004.327.1`) | success | 13 m 59 s (pytest 754.03 s) |
+| `vendor-bundle` | `ubuntu-24.04` / `20261002.596` (image `20261004.327.1`) | success | 10 s |
+| `image` | `ubuntu-24.04` / `20261012.601` (image `20261012.334.1`) | success | 1 m 56 s |
+
+No `Image:` line names 26.04, so this is not the first migrated run: nothing is recorded for Phase 29 from it, and the
+spike's 26.04 record in 26-02 stands. 26-02 classified its spike (all green) and closed PR #40, so D-16's late reading
+does not apply.
+
+#### test (3.12)
+
+`4 workers [1321 items]` (the runner's 4 vCPUs clamp `PYTEST_WORKERS` to `-n 4`), `1321 passed in 754.03s (0:12:34)`,
+coverage `TOTAL 1358 21 386 13 98.05%` ("Required test coverage of 96.0% reached"), kernel pair `cadquery 2.8.0
+cadquery-ocp 7.9.3.1.1`. The `-v` ids are in the log (`[gwN] [ NN%] PASSED tests/...` per test). No `Timeout (` dump
+appears anywhere in the log; the seven lines that match `resource_tracker|Traceback|rerun` are test names.
+
+The 25 slowest durations, top 10 (all `call`; the 25th is 19.94 s):
+
+| # | Seconds | Test |
+|---|---|---|
+| 1 | 83.55 | `tests/test_model.py::test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root` |
+| 2 | 72.27 | `tests/test_model.py::test_the_kernel_tier_proof_fails_when_the_printed_tip_radius_is_off_by_0_05_mm` |
+| 3 | 51.32 | `tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[19t-m1.75-25deg-x0]` |
+| 4 | 47.67 | `tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` |
+| 5 | 44.46 | `tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-holes]` |
+| 6 | 40.62 | same test, `[trochoid-round-holes]` |
+| 7 | 40.45 | same test, `[trochoid-hex-holes]` |
+| 8 | 40.30 | same test, `[trochoid-hex-cells]` |
+| 9 | 40.11 | same test, `[trochoid-keyed-holes]` |
+| 10 | 39.68 | same test, `[trochoid-round-spokes]` |
+
+#### D-07's rule applied
+
+**S_ci = 83.55 s** (`call` of the hob-root oracle test, under `-n 4` and `--cov`). The committed value was 120 s, sized
+from the local reading's slowest phase (32.33 s, `tests/test_browser.py`, Apple M5 Max). Twice S_ci is 167.1 s, which
+exceeds 120 s, so the rule changes the value: **`faulthandler_timeout = 170`** (167.1 s rounded up to the next 10 s), in the
+`fix(26)` commit that touches `pyproject.toml` (its comment now names S_ci, the test, the run id and the date) and the
+two lines of the hang item's runbook that quote the value and the dump header (`Timeout (0:02:50)`). The local and CI
+slowest phases are different tests, so no local-to-CI ratio is claimed. The reading that decided it is this run's
+durations block, recorded above. The run itself used 120, which no test reached (83.55 s was the longest phase and no dump
+fired). The new value is not yet on the remote: the draft PR needs one more push before ship, which is the human's.
+
+#### The twin step on ubuntu-latest (D-05's pre-merge CI reading, supporting only)
+
+`test_the_shipped_viewer_in_a_real_browser`, which holds the `twin selectors` step (`tests/test_browser.py:1540`), PASSED
+on `gw2` at 50 % (47.67 s `call`), on the first attempt. The step's own `twin selectors:` print lines and the renderer
+string are not in the log: the workflow runs `make verify` without `-s`, so pytest captures a passing test's output (the
+same observation as the spike run in 26-02). The reading is therefore the test's PASS, not a printed step line. This is
+supporting only: a `pull_request` run, and both red `main` trees were green on their PR runs too. It does not close D-05.
+
+#### The carried D-05 post-merge read
+
+D-05's own evidence is the first `main` run after `make pr.land`, which cannot exist inside this phase. It is held by the
+active `must` item `docs/tech_debt/active/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md` (still
+`Status: active`, its Active INDEX row present). After `make pr.land PR=41`, on the next phase branch:
+
+```
+gh run list --branch main --workflow ci --limit 1 --json databaseId,headSha,conclusion
+gh run view {id} --log --job {test-job-id} > investigation/{run}-test.log
+grep -c 'PASSED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser' investigation/{run}-test.log
+```
+
+then append the run id, head sha and result under a dated heading in this file; that append retires the item.
