@@ -13,6 +13,7 @@ the same commit as the file.
 | 2026-09-29 | [A teeth- or module-dependent honeycomb cell-count cap](2026-09-29-teeth-dependent-honeycomb-cap.md) | D-12 rejected it for one constant; revisit only if a small gear needs more cells and a sweep shows cost falling with gear size |
 | 2026-10-11 | [The two relations calc does not back: recess_* under recess_sides=none, bore_flat at bore_d=0](2026-10-11-the-two-relations-calc-does-not-back.md) | A relation needs a calc warning first, which would rewrite warnings for 14 fixture records (kickoff decision 8); revisit when a user reports a recess or D-flat value that did nothing |
 | 2026-10-14 | [The hex-bore warning names its fields by form title](2026-10-14-hex-warning-names-fields-by-form-title.md) | A warning text that reads the schema titles couples `calc` to form metadata, and it was outside quick task 261014-jsp's locked scope |
+| 2026-10-15 | [Run `make test-image` in CI](2026-10-15-run-make-test-image-in-ci.md) | A new required job on every PR; out of Phase 26's scope by the human's decision (CONTEXT Deferred Ideas) |
 
 ## Retired
 
