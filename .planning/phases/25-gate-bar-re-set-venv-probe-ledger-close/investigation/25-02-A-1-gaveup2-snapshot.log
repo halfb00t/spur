@@ -1,0 +1,14 @@
+
+$ snapshot after second GAVE_UP
+2026-10-14T11:48:35Z
+{ 3.69 4.40 3.68 }
+17:48  up 1 day,  8:47, 11 users, load averages: 3.69 4.40 3.68
+  PID  %CPU COMM
+  401  33.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+58844  20.0 /Applications/iTerm.app/Contents/MacOS/iTerm2
+68065  14.0 claude
+  848   6.4 Contents/Resources/iStat Menus Menubar.app/Contents/MacOS/iStat Menus Menubar
+  405   4.7 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+  402   4.0 /System/Library/PrivateFrameworks/TCC.framework/Support/tccd
+  480   3.7 /usr/libexec/syspolicyd
+pgrep rc 1

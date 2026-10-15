@@ -36,8 +36,11 @@ docker run --rm -p 127.0.0.1:8000:8000 spur
 
 The image is about 1.7 GB, most of it OpenCascade and VTK;
 `docker/refresh-requirements.sh` keeps the rest of cadquery's dependency tree out of
-it. It builds for `linux/amd64` and `linux/arm64`, so Apple silicon, Graviton and a
-Raspberry Pi 5 all work:
+it. It builds for `linux/amd64` and `linux/arm64`. Graviton and a Raspberry Pi 5 are
+targets the image is built for and not measured on: every performance number in this
+README and in `bench/RESULTS.md` was read on the dev hosts named there, a 12-CPU Apple
+M2 Max and an 18-CPU Apple M5 Max, and none on a Raspberry Pi, Graviton or another
+arm64 server or board:
 
 ```sh
 docker buildx build --platform linux/amd64,linux/arm64 -t registry.example.com/spur:0.1.0 --push .
@@ -304,7 +307,7 @@ while a bore too wide for the root is still refused.
 
 ```sh
 make venv        # .venv with the dev extras (needs CPython 3.12; see below)
-make verify      # the gate: ruff, mypy --strict, import boundaries, pytest (~64 s warm on a 12-core dev host, no Docker)
+make verify      # the gate: ruff, mypy --strict, import boundaries, pytest (bar 300 s on an 18-CPU Apple M5 Max, L43; no Docker)
 make up          # build the image and wait for the service on :8000
 make check       # verify + the image smoke test + the vendored-bundle check (needs Docker)
 ```

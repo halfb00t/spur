@@ -1665,6 +1665,8 @@ the trigger; the cause was the headroom.
 
 Date: 2026-10-04.
 
+Bar amended by L43 (2026-10-14).
+
 L12 and L13 stay as written; this entry amends L13's "~11 s warm" and its unmeasured gate,
 and L12's "loose ranges for developer environments" as far as CI is concerned, with what
 Phase 15 measured, decided and proved.
@@ -2854,3 +2856,89 @@ itself stays a human check. An emptied box is not a typed number: `effective()` 
 so the pick stays pending until the box holds a number (the second code review's WR-02, reproduced on a Backspace and
 on a leading `.`). The step's cost is not re-measured here (one reading of 12.26 s, not comparable with 24-04's
 three); Phase 25 re-sets the bar on its final `HEAD`.
+
+## L43 — The gate's bar is 300 s on the 18-CPU Apple M5 Max, set by the human from two non-decisive readings, and `make venv` installs under the closure (amends L34)
+
+Date: 2026-10-14.
+
+L34 stays as written. L43 amends its 66 s bar and its loaded method for this host, and, because the venv probe was green,
+its sentence about CI: the pin is no longer CI-only. L36 (the 30 s kill of the commit slice and the `verify.fast` shape)
+is unchanged, and L13's "~11 s warm" stays as history. L39 said "Phase 25 sets the bar": this entry does it. Every figure
+below is cited to a named section of `bench/RESULTS.md` under `## The gate re-set (Phase 25)`; none is re-estimated here
+and none is carried from one host to another (L08).
+
+**The method** (D-01..D-06, D-21). The rule was committed alone, before any reading, as `1d5ce8a`, subject `docs(25):
+pre-register the gate re-set rule -- idle below 1.5, five runs per arm, interleaved A/B` (`### The rule (25-01)`). It is a
+new method against L34's loaded one: Phase 15 D-04 read the gate at 1-minute loads of 5 to 30 and took the largest of three
+runs with no quiet host waited for, while this rule reads an idle host (three consecutive 30 s samples of the 1-minute load
+under 1.5, strictly), five green runs per arm, arm A (`PYTEST_ADDOPTS="--ignore=tests/test_browser.py" make verify`) and
+arm B (`make verify`) interleaved, a 900 s cap on every wait and every run, the A1 exception (no run after an expired A1
+wait) and a 3 h session cap, all on the one host named by `bench.machine_facts()` (D-21). It was not run as written: the
+wait before A1 gave up eight times and the human waived the wait for the session, then cut the session to one reading per
+arm. By the rule's own clause 5 a run started without a released wait is non-decisive, and that is how both readings are
+classed (`### The gate, idle, A/B interleaved (25-02)`, `#### Waits that gave up`).
+
+**The readings.** Host: `18 CPUs, arm64, 64.0 GiB RAM`, Apple M5 Max, model `Mac17,6`; measured `HEAD` `9b68f6d`; the two
+runs were read on 2026-10-14 from 13:17:34Z to 13:24:02Z at 1-minute loads of 4.18 to 7.33 (`#### Runs`). Per arm, over
+decisive green runs: n = 0 for arm A and n = 0 for arm B, so min, median, max and mean are each "no decisive run" and
+mean(B) - mean(A), the browser file's idle cost, is none: it was not read (`#### Per arm`). The two non-decisive green
+readings are quoted as measured and enter nothing: A1 195.23 s (`1315 passed`) and B1 179.21 s (`1317 passed`), coverage
+`TOTAL` 97.99 % in both. A2 was stopped on the human's order and is neither red nor a reading; there is no red run
+(`#### Red runs`); the seven slots B2, A3, B3, A4, B4, A5 and B5 never ran, by the human's decision and not by either cap.
+
+**The bar.** `Candidate bar (D-05): none` (`#### Per arm`): arm B has no decisive green run, so the rule's candidate, the
+largest decisive B `real` rounded up, does not exist and there is nothing to accept (D-04). The human's answer to the bar
+checkpoint, verbatim: "Let's set 300 s. IMHO it's a reasonable bar". It is read as `other 300 <reason>`, the reason being
+those words, and recorded under `#### Gate decision`. The bar is **300 s** of `make verify` wall time on the 18-CPU Apple
+M5 Max, a recorded figure on that host and that `HEAD`, set by the human and not computed by any rule; it sits above both
+non-decisive readings (195.23 s, 179.21 s) and above the venv probe's 270.35 s (not a reading). It is not a ceiling the gate
+has been read under on an idle host: no run met the rule's idle clause, so n = 0 decisive. The M5 Max has loaded full-gate
+readings, none above 300 s: L38's 208.52, 161.71 and 208.60 s at loads 4 to 9 (1210 tests, `### The gate, priced (19-09)`)
+and the two non-decisive readings above at loads 4.18 to 7.33. The readings at or above 300 s in `bench/RESULTS.md` are
+Phase 24's (`## Bore-shape selector (Phase 24)`, `### Seen red once (Phase 24)`), taken during Phase 24 (merged 2026-10-13) on
+a 12-CPU Apple M2 Max (`24-01-SUMMARY.md` and `24-03-SUMMARY.md` name it; 24-02's names no host), at other HEADs and test
+counts, and as pytest's own seconds rather than `real`, so none is comparable with this host's (L08). They are quoted as read:
+a red run, `1 failed, 1294 passed in 296.91s` at a host load of 15.6; its green re-run, `1295 passed in 272.91s` (load not
+recorded); `1311 passed in 294.40s` (24-02, load not recorded); and `1311 passed in 336.15s` (24-03, load averages 5.36 4.71
+6.68 at the start). The last is above 300 s. So 300 s is a figure the human set; it was not read as a ceiling, and no check
+enforces it: a wall-time assertion on shared hardware flaps (ARCH 7.4; the Makefile bench
+section's D-16), and the figure is not comparable with L34's 66 s, read on a 12-CPU Apple M2 Max under another method.
+
+**The knee** (D-08). `PYTEST_WORKERS` is 8, swept on 12 CPUs in Phase 15. This host has 18 and the knee was not re-swept;
+the re-sweep stays in REQUIREMENTS.md "Form follow-ups". The bar describes the gate as shipped.
+
+**The venv probe** (D-10..D-13, D-20; `### The venv probe (25-03)`). `Outcome: GREEN`: in a linked worktree, `make venv`
+under `PIP_CONSTRAINT=requirements.txt` exited 0, `make verify` exited 0 (`1317 passed`), `pip check` printed `No broken
+requirements found.`, and all 31 pins were installed at their pinned versions, with the four predicted moves in the freeze
+diff (`fastapi`, `starlette`, `uvicorn`, `fonttools`). So `$(STAMP)` gains `requirements.txt` as a prerequisite and
+`-c requirements.txt` on the one install line. The probe set `PIP_CONSTRAINT` to an absolute path, on the Makefile as it stood
+before this change; the shipped recipe passes `-c` with a relative path. pip merges the two, so the shipped line is expected
+to behave as the probe did, but that is an inference: no probe ran `make venv` with `-c` as shipped. L34's sentence
+about CI widens: every environment that claims to run the gate installs under the closure,
+CI by `PIP_CONSTRAINT` and `make venv` by `-c`. Caveat, from pip 26.2: its news of 2026-07-29, cached in
+`.planning/research/PITFALLS.md`, says constraints no longer reach isolated build environments, so `hatchling` is expected
+to build unconstrained (the 25-03 logs hold no `hatchling` or build-isolation line, so the probe did not observe it), and
+L34's "a conflicting pin fails closed" is evidence about runtime pins only. A macOS arm64 run does not show the
+`linux/arm64` image, a Pi 5 or a cold pip cache. An existing `.venv` keeps
+its older resolve until `make clean && make venv` (D-13); `requirements.txt` and `docker/refresh-requirements.sh` are
+untouched. `tests/test_hooks.py`'s two throwaway-repo tests now write and `os.utime` a `requirements.txt`; without it
+both failed (`2 failed, 4 passed`, make's "No rule to make target 'requirements.txt'") and with it `6 passed`
+(`investigation/25-04-hooks-red.log`, `25-04-hooks.log`). The idea `docs/ideas/2026-10-03-constrain-make-venv-to-the-closure.md`
+is retired in this commit.
+
+**What else this commit rewrites** (D-14, D-22). The stale gate-time sentences in `Makefile` (the `verify` and `test.fast`
+comments), `.pre-commit-config.yaml`, `docs/HOW_TO_DEVELOP.md`, `README.md` and `docs/architecture/packaging.md` now cite
+L43 and its bar with its host, and IN-03 of the Phase 19 review debt is closed by this commit's subject.
+
+**Reversibility.** Costly (D-05, D-07): a reading is bound to its host, its `HEAD` and its session, and a new bar needs a
+new rule and a new session of readings, and a second amendment of L34. The venv adoption is one Makefile line and two
+fixtures.
+
+Reason: L39 admitted a browser test to the gate and left the bar to this phase; the repository still quoted a 63.555 s
+gate, measured on another host under another method, that it contradicted. The bar is now a number the human set from the
+readings that exist, with the missing statistics said to be missing, and the dev venv resolves what CI and the image do.
+Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand_string hw.memsize`, read 2026-10-14;
+`bench.machine_facts()` prints `18 CPUs, arm64, 64.0 GiB RAM`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel
+27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, pytest 9.1.1 (`importlib.metadata.version`);
+the readings on 2026-10-14 from 13:17Z to 13:24Z at 1-minute loads of 4.18 to 7.33 (A2, stopped, ran to 11.70); the waits
+before A1 read 1.60 to 8.77 (`sysctl -n vm.loadavg`).

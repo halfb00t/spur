@@ -1,0 +1,237 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_hooks.py -n0 --no-cov -q
+....FF                                                                   [100%]
+=================================== FAILURES ===================================
+_ test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree _
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-62/test_the_hook_stamp_installs_f0')
+
+    def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree(
+        tmp_path: Path,
+    ) -> None:
+        env = _clean_git_env()
+        main = tmp_path / "main"
+        main.mkdir()
+        shutil.copy(REPO_ROOT / "Makefile", main / "Makefile")
+        (main / "pyproject.toml").write_text("", encoding="utf-8")
+        (main / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
+        git = ["git", "-c", "user.name=probe", "-c", "user.email=probe@example.invalid"]
+        subprocess.run(["git", "init", "-q"], cwd=main, env=env, check=True)
+        subprocess.run(["git", "add", "."], cwd=main, env=env, check=True)
+        subprocess.run([*git, "commit", "-q", "-m", "probe"], cwd=main, env=env, check=True)
+        worktree = tmp_path / "wt"
+        subprocess.run(["git", "worktree", "add", "-q", str(worktree)], cwd=main, env=env, check=True)
+    
+        marker = tmp_path / "installs.txt"
+        for checkout in (main, worktree):
+            # `$(STAMP)` up to date, so only `$(HOOKS)` has work to do.
+            os.utime(checkout / "pyproject.toml", (1_000_000_000, 1_000_000_000))
+            venv = checkout / ".venv"
+            (venv / "bin").mkdir(parents=True)
+            (venv / ".installed").write_text("", encoding="utf-8")
+            shim = venv / "bin" / "pre-commit"
+            shim.write_text(f'#!/bin/sh\necho "install $(pwd)" >> "{marker}"\n', encoding="utf-8")
+            shim.chmod(0o755)
+    
+>       main_run = subprocess.run(
+            ["make", "-C", str(main), ".venv/.hooks-installed"],
+            env=env, capture_output=True, text=True, check=True,
+        )
+
+tests/test_hooks.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['make', '-C', '/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-62/test_the_hook_stamp_installs_f0/main', '.venv/.hooks-installed'],)
+kwargs = {'env': {'CLAUDE_PID': '68065', 'LC_TERMINAL': 'iTerm2', 'CLAUDE_CODE_EXECPATH': '/opt/homebrew/Caskroom/claude-code/2.1.286/claude', 'LC_ALL': 'en_US.UTF-8', ...}, 'text': True, 'stdout': -1, 'stderr': -1}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['make', '-C', '/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-62/test_the_hook_stamp_installs_f0/main', '.venv/.hooks-installed']' returned non-zero exit status 2.
+
+/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py:571: CalledProcessError
+_________ test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set _________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-62/test_the_hook_stamp_skips_loud0')
+
+    def test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set(tmp_path: Path) -> None:
+        """pre-commit refuses to install under `core.hooksPath`, which would turn the gate red
+        for a reason no code change fixes. The stamp is left untouched so the message repeats."""
+        env = _clean_git_env()
+        main = tmp_path / "main"
+        main.mkdir()
+        shutil.copy(REPO_ROOT / "Makefile", main / "Makefile")
+        (main / "pyproject.toml").write_text("", encoding="utf-8")
+        (main / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q"], cwd=main, env=env, check=True)
+        subprocess.run(["git", "config", "core.hooksPath", "elsewhere"], cwd=main, env=env, check=True)
+        os.utime(main / "pyproject.toml", (1_000_000_000, 1_000_000_000))
+        venv = main / ".venv"
+        (venv / "bin").mkdir(parents=True)
+        (venv / ".installed").write_text("", encoding="utf-8")
+        marker = tmp_path / "installs.txt"
+        shim = venv / "bin" / "pre-commit"
+        shim.write_text(f'#!/bin/sh\necho "install" >> "{marker}"\n', encoding="utf-8")
+        shim.chmod(0o755)
+    
+>       run = subprocess.run(
+            ["make", "-C", str(main), ".venv/.hooks-installed"],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+tests/test_hooks.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['make', '-C', '/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-62/test_the_hook_stamp_skips_loud0/main', '.venv/.hooks-installed'],)
+kwargs = {'env': {'CLAUDE_PID': '68065', 'LC_TERMINAL': 'iTerm2', 'CLAUDE_CODE_EXECPATH': '/opt/homebrew/Caskroom/claude-code/2.1.286/claude', 'LC_ALL': 'en_US.UTF-8', ...}, 'text': True, 'stdout': -1, 'stderr': -1}
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['make', '-C', '/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-62/test_the_hook_stamp_skips_loud0/main', '.venv/.hooks-installed']' returned non-zero exit status 2.
+
+/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py:571: CalledProcessError
+=========================== short test summary info ============================
+FAILED tests/test_hooks.py::test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree
+FAILED tests/test_hooks.py::test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set
+2 failed, 4 passed in 0.23s
+make: *** [Makefile:174: test] Error 1
+make test exit 2
+
+# pytest hides make's stderr (CalledProcessError names only the exit status 2); the same throwaway repo without requirements.txt, run by hand:
+make: Entering directory '/private/tmp/claude-501/-Users-half-git-halfb00t-spur/bd8f8250-8fae-4cc0-bc75-0b5bef8edfa1/scratchpad/tmp.bKvV322Dns'
+make: *** No rule to make target 'requirements.txt', needed by '.venv/.installed'.  Stop.
+make: Leaving directory '/private/tmp/claude-501/-Users-half-git-halfb00t-spur/bd8f8250-8fae-4cc0-bc75-0b5bef8edfa1/scratchpad/tmp.bKvV322Dns'
+make exit 2

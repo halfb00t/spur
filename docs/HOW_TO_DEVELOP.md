@@ -18,8 +18,9 @@ Before talking about the cycle — here is what already stands in the repository
 works, so that raw work does not slip through:
 
 - `make verify` — the single gate: ruff, mypy `--strict`, the import-boundary contracts,
-  the unfinished-work scan (`TODO`/`FIXME`/`NotImplementedError`), pytest. ~64 s on a warm
-  cache (12-core dev host, `bench/RESULTS.md`, Phase 15).
+  the unfinished-work scan (`TODO`/`FIXME`/`NotImplementedError`), pytest. Its bar is 300 s
+  on the 18-CPU Apple M5 Max dev host, a recorded figure no check enforces (`L43`,
+  `bench/RESULTS.md`, "The gate re-set (Phase 25)").
 - The same `make verify` runs in the pre-push hook, in CI (on every push to `main` and
   on every PR, Python 3.12) and inside `make worktree.land` before landing. One
   definition of "passed" in three places. The pre-commit hook runs `make verify.fast`:
@@ -29,7 +30,9 @@ works, so that raw work does not slip through:
   gate, but `--no-verify`, `SKIP=` or pushing a ref other than the checked-out one skips
   it, so CI and the ruleset are the wall (`L36`). Run
   `make venv` once in the main checkout and it installs all three hooks, unless
-  `core.hooksPath` is set: then the gate prints a message and installs nothing.
+  `core.hooksPath` is set: then the gate prints a message and installs nothing. `make venv`
+  installs under `requirements.txt` as a constraint (`L43`), and an existing `.venv` keeps
+  its older resolve until `make clean && make venv`.
 - `gsd-ship` will not create a PR until the phase's verification is `passed`, the tree is
   clean, and the phase's `SECURITY.md` states `threats_open: 0`. A gate, not a reminder.
 - Three newer guarantees (`L22`): the `commit-msg` hook refuses a commit carrying any of
@@ -126,7 +129,7 @@ the PR: `gsd-secure-phase N` (produces `SECURITY.md`; without it ship will not p
 ## 6. PR
 
 Run `make verify` before every push, then push: the pre-push hook runs the whole gate
-(about 64 s warm), and the explicit run warms the page cache and shows the result.
+(bar 300 s on the 18-CPU Apple M5 Max, `L43`), and the explicit run warms the page cache and shows the result.
 
 ```sh
 /gsd-ship N
@@ -143,6 +146,9 @@ then `git push`. The push starts one more CI run (~3 min) on the new PR HEAD —
 `make pr.land` requires. The global `~/.claude/gsd-core/workflows/ship.md` is not
 patched: the edit would be lost at the next gsd update and is invisible to this
 repository.
+
+A fix after verification re-stales `VERIFICATION.md` and `gsd-ship` refuses: `.ai_skills/reverify-phase`
+holds the route (re-run `/gsd-execute-phase N`, or re-dispatch `gsd-verifier` with the delta, commit, re-ship).
 
 The hook reads the message whole, together with the diff that `git commit -v` appends
 below the cut line: if that diff names a CI-skip token, the commit is refused — commit

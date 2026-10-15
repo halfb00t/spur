@@ -1,0 +1,6 @@
+fa3b3ab76e2143d2cf1518cd79b57b2150e771d674318daebb6107df46bec5e4  .git/hooks/pre-commit
+6dca5c451ab75d79384dcb2a8bcec51d6202a334cdb05366b6f7ad39d1ccea66  .git/hooks/commit-msg
+22fcbf739b531b74332c2fe1a4d313ee0df0d102e1e15a564179c9f022c65e2e  .git/hooks/pre-push
+pre-commit line 6: INSTALL_PYTHON=/Users/half/git/halfb00t/spur/.venv/bin/python
+commit-msg line 6: INSTALL_PYTHON=/Users/half/git/halfb00t/spur/.venv/bin/python
+pre-push line 6: INSTALL_PYTHON=/Users/half/git/halfb00t/spur/.venv/bin/python

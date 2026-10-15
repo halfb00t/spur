@@ -1,0 +1,40 @@
+# 25-01 rehearsal transcript, 2026-10-14T10:36:41Z, host: 18 CPUs, arm64, 64.0 GiB RAM
+# blocks extracted from bench/RESULTS.md (comment line to closing fence); no make verify, no gate
+# (a) wait: substitution  CAP=900 -> CAP=0 ; S=/Users/half/git/halfb00t/spur/.planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/investigation L=25-01-rehearsal-wait
+wait exit 3
+2026-10-14T10:36:41Z	1.91	0	0
+GAVE_UP	2026-10-14T10:36:41Z
+# (b) run: substitution  'timeout -k 30 900 make verify' -> 'timeout -k 30 900 sleep 1' ; ARM=B L=25-01-rehearsal-ok
+run-ok block exit 0
+# (c) run: substitution  'timeout -k 30 900 make verify' -> 'timeout -k 1 2 sleep 10' ; ARM=B L=25-01-rehearsal-cap
+run-cap block exit 0
+# (d) run: substitution  'timeout -k 30 900 make verify' -> 'timeout -k 30 900 printenv PYTEST_ADDOPTS' ; ARM=A L=25-01-rehearsal-armA, ARM=B L=25-01-rehearsal-armB
+run-armA block exit 0
+run-armB block exit 0
+--- 25-01-rehearsal-ok.log
+real 1.00
+user 0.00
+sys 0.00
+make verify exit 0
+run-record	25-01-rehearsal-ok	B	0	2026-10-14T10:36:48Z	2026-10-14T10:36:49Z	2.07	2.07	dc41527	18 CPUs, arm64, 64.0 GiB RAM
+--- 25-01-rehearsal-cap.log
+real 2.00
+user 0.00
+sys 0.00
+make verify exit 124
+run-record	25-01-rehearsal-cap	B	124	2026-10-14T10:36:49Z	2026-10-14T10:36:51Z	2.07	2.07	dc41527	18 CPUs, arm64, 64.0 GiB RAM
+--- 25-01-rehearsal-armA.log
+--ignore=tests/test_browser.py
+real 0.00
+user 0.00
+sys 0.00
+make verify exit 0
+run-record	25-01-rehearsal-armA	A	0	2026-10-14T10:36:52Z	2026-10-14T10:36:52Z	2.07	2.07	dc41527	18 CPUs, arm64, 64.0 GiB RAM
+--- 25-01-rehearsal-armB.log
+real 0.00
+user 0.00
+sys 0.00
+make verify exit 1
+run-record	25-01-rehearsal-armB	B	1	2026-10-14T10:36:52Z	2026-10-14T10:36:52Z	2.07	2.07	dc41527	18 CPUs, arm64, 64.0 GiB RAM
+2026-10-14T10:36:41Z	1.91	0	0
+GAVE_UP	2026-10-14T10:36:41Z

@@ -1,0 +1,98 @@
+$ date -u +%FT%TZ
+2026-10-14T10:47:48Z
+[rc 0]
+$ echo "R=$R"; git log -1 --format=%ct "$R"
+R=1d5ce8ad6f973b8b10d30e074a44d6c173b3caec
+1791974637
+[rc 0]
+$ git rev-parse --short HEAD
+9b68f6d
+[rc 0]
+$ git diff --name-only "$R" HEAD
+.planning/ROADMAP.md
+.planning/STATE.md
+.planning/milestone.lock
+.planning/phases/25-gate-bar-re-set-venv-probe-ledger-close/25-01-SUMMARY.md
+.planning/state.json
+[rc 0]
+$ git status --porcelain --untracked-files=no -- . ':!.planning/STATE.md' ':!.planning/state.json'
+[rc 0]
+$ .venv/bin/python -c "import bench; print(bench.machine_facts())"
+18 CPUs, arm64, 64.0 GiB RAM
+[rc 0]
+$ sysctl -n machdep.cpu.brand_string
+Apple M5 Max
+[rc 0]
+$ sysctl -n hw.model
+Mac17,6
+[rc 0]
+$ sw_vers -productVersion
+27.0.1
+[rc 0]
+$ sw_vers -buildVersion
+26A434
+[rc 0]
+$ uname -r
+27.0.0
+[rc 0]
+$ .venv/bin/python -c "
+import importlib.metadata as m, sys
+print(\"python\", sys.version.split()[0])
+for p in (\"cadquery\",\"cadquery-ocp\",\"pytest\",\"pytest-xdist\",\"pytest-cov\",\"playwright\"):
+    print(p, m.version(p))"
+python 3.12.15
+cadquery 2.8.0
+cadquery-ocp 7.9.3.1.1
+pytest 9.1.1
+pytest-xdist 3.8.0
+pytest-cov 7.1.0
+playwright 1.63.0
+[rc 0]
+$ .venv/bin/python -m pip --version
+pip 26.2.1 from /Users/half/git/halfb00t/spur/.venv/lib/python3.12/site-packages/pip (python 3.12)
+[rc 0]
+$ make -n test
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term 
+[rc 0]
+$ make -n verify | grep -E 'pip install|playwright install|pre-commit install'
+[rc 1]
+$ .venv/bin/python -m pytest --collect-only -q | tail -1
+1317 tests collected in 1.53s
+[rc 0]
+$ .venv/bin/python -m pytest --collect-only -q --ignore=tests/test_browser.py | tail -1
+1315 tests collected in 1.55s
+[rc 0]
+$ timeout --version | head -1
+timeout (GNU coreutils) 9.12
+[rc 0]
+$ .venv/bin/python -m pip freeze | grep -i -E '^(fastapi|starlette|uvicorn|fonttools)=='
+fastapi==0.142.4
+fonttools==4.66.1
+starlette==1.7.0
+uvicorn==0.54.0
+[rc 0]
+$ pmset -g batt | head -1
+Now drawing from 'AC Power'
+[rc 0]
+$ sysctl -n vm.loadavg
+{ 2.46 2.57 2.69 }
+[rc 0]
+$ uptime
+16:47  up 1 day,  7:46, 11 users, load averages: 2.46 2.57 2.69
+[rc 0]
+$ who | wc -l
+      11
+[rc 0]
+$ ps -Ao pid,pcpu,comm -r | head -n 8
+  PID  %CPU COMM
+  401  37.6 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+58844  19.4 /Applications/iTerm.app/Contents/MacOS/iTerm2
+69710   5.3 pi
+ 9499   2.3 /Applications/Claude.app/Contents/MacOS/Claude
+ 9621   1.5 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)
+  599   1.2 /System/Library/DriverExtensions/AppleCentauriAlpha.dext/AppleCentauriAlpha
+  405   1.1 /System/Library/CoreServices/loginwindow.app/Contents/MacOS/loginwindow
+[rc 0]
+$ pgrep -fl '[p]ytest|[p]re_commit|[m]ake verify'; echo "pgrep rc $?"
+pgrep rc 1
+[rc 0]

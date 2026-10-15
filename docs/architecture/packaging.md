@@ -15,7 +15,8 @@ both halves of that sentence automatically.
   (`docker/refresh-requirements.sh`); never hand-edit a line, because with `--no-deps`
   pip will not tell you when a bumped version breaks the closure. `pyproject.toml` keeps
   loose ranges for developer environments. Since Phase 15 the same file is also pip's
-  constraint file for CI's `make verify` (`PIP_CONSTRAINT`, L34): a `make lock` that moves
+  constraint file for CI's `make verify` (`PIP_CONSTRAINT`, L34), and since Phase 25 for
+  `make venv` (`-c`, L43): a `make lock` that moves
   `cadquery`/`cadquery-ocp` moves CI's kernel with it and needs `make fixture.regen` in the
   same change.
 - **The image drops what it does not import.** ~440 MB of `trame*`, `matplotlib`,
@@ -41,7 +42,7 @@ both halves of that sentence automatically.
 ## The gate (L13)
 
 ```
-make verify   ruff + mypy --strict + import-linter + unfinished-work scan + pytest   (~64 s warm on the 12-core dev host, `-n 8` with coverage; no Docker)
+make verify   ruff + mypy --strict + import-linter + unfinished-work scan + pytest   (bar 300 s on the 18-CPU Apple M5 Max dev host, `-n 8` with coverage, L43; no Docker)
 make verify.fast   the same static steps + every test file but test_model/test_pool/test_api/test_cli, `--no-cov`, under 30 s (the pre-commit hook)
 make check    verify + the in-image smoke test + the vendored-bundle byte check      (needs Docker)
 make bench    bench.latency (host) + bench.memory (Docker) -- NOT part of the gate

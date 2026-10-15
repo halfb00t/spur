@@ -159,6 +159,25 @@ def test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does() -
         assert [ln for ln in lines if "playwright" in ln] == [], commit_stage
 
 
+def test_the_dev_venv_installs_under_the_closure_and_reinstalls_when_it_moves() -> None:
+    """L43: `-c requirements.txt` keeps `make venv` on the pins CI resolves, and the stamp
+    depending on that file is what carries a `make lock` to a clone's venv. Drop either and
+    the dev venv quietly goes back to an unconstrained resolve (the L34 gap). `-W` pretends
+    requirements.txt just changed: the stamp recipe is printed only if it is a prerequisite."""
+    lines = subprocess.run(
+        ["make", "-n", "--no-print-directory", "-W", "requirements.txt", ".venv/.installed"],
+        cwd=REPO_ROOT,
+        env=_make_env(),
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    install = next((ln for ln in lines if " -m pip install -e " in ln), None)
+    assert install is not None, "a changed requirements.txt must re-install the venv stamp"
+    assert install.split().count("-c") == 1
+    assert "-c requirements.txt" in install, install
+
+
 def test_the_image_suite_ignores_the_browser_test() -> None:
     """The image installs only pytest and httpx, so the browser test could not even import
     there. A dry run builds and runs nothing; it prints the recipe."""
@@ -179,6 +198,7 @@ def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_
     main.mkdir()
     shutil.copy(REPO_ROOT / "Makefile", main / "Makefile")
     (main / "pyproject.toml").write_text("", encoding="utf-8")
+    (main / "requirements.txt").write_text("", encoding="utf-8")
     (main / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
     git = ["git", "-c", "user.name=probe", "-c", "user.email=probe@example.invalid"]
     subprocess.run(["git", "init", "-q"], cwd=main, env=env, check=True)
@@ -191,6 +211,7 @@ def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_
     for checkout in (main, worktree):
         # `$(STAMP)` up to date, so only `$(HOOKS)` has work to do.
         os.utime(checkout / "pyproject.toml", (1_000_000_000, 1_000_000_000))
+        os.utime(checkout / "requirements.txt", (1_000_000_000, 1_000_000_000))
         venv = checkout / ".venv"
         (venv / "bin").mkdir(parents=True)
         (venv / ".installed").write_text("", encoding="utf-8")
@@ -224,10 +245,12 @@ def test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set(tmp_path: Path)
     main.mkdir()
     shutil.copy(REPO_ROOT / "Makefile", main / "Makefile")
     (main / "pyproject.toml").write_text("", encoding="utf-8")
+    (main / "requirements.txt").write_text("", encoding="utf-8")
     (main / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
     subprocess.run(["git", "init", "-q"], cwd=main, env=env, check=True)
     subprocess.run(["git", "config", "core.hooksPath", "elsewhere"], cwd=main, env=env, check=True)
     os.utime(main / "pyproject.toml", (1_000_000_000, 1_000_000_000))
+    os.utime(main / "requirements.txt", (1_000_000_000, 1_000_000_000))
     venv = main / ".venv"
     (venv / "bin").mkdir(parents=True)
     (venv / ".installed").write_text("", encoding="utf-8")

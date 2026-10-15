@@ -154,17 +154,17 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
 
 ### Gate bar, venv probe, ledger — measure the shipped gate once (last)
 
-- [ ] **REQ-gate-rule-pre-registered**: before any reading, `bench/RESULTS.md` carries the
+- [x] **REQ-gate-rule-pre-registered**: before any reading, `bench/RESULTS.md` carries the
   idle threshold (precedent: load < 1.5, Phase 12), the cool-down between runs, N ≥ 5 per
   arm, the give-up rule, and the A/B design — the full gate with and without
   `tests/test_browser.py`, interleaved. This is a new method, not L34's (Phase 15 D-04 read
   loads 5–30 and took the largest of three — READ, ARCH §7.1 / PITFALLS GB-1); the `Lxx` says
   so.
-- [ ] **REQ-gate-bar-reset**: the readings are recorded with load, machine and `HEAD`; the
+- [x] **REQ-gate-bar-reset**: the readings are recorded with load, machine and `HEAD`; the
   human sets the bar from them; one `Lxx` amends L34; the stale `63.555 s` / `~64 s`
   sentences in `Makefile`, `.pre-commit-config.yaml` and `docs/HOW_TO_DEVELOP.md` are
   rewritten and IN-03 is retired in the same commit.
-- [ ] **REQ-venv-constraint-probe**: in a linked worktree or scratch clone — never the main
+- [x] **REQ-venv-constraint-probe**: in a linked worktree or scratch clone — never the main
   checkout, where `make venv VENV=…` runs `pre-commit install` and bakes that venv's python
   into the shared hook shim (READ, PITFALLS VP-1) — `make venv` under
   `PIP_CONSTRAINT=requirements.txt` is run and `make verify`'s result line, `pip check` and
@@ -173,9 +173,9 @@ REQ-IDs continue the project's `REQ-slug` convention (`milestones/v0.4-REQUIREME
   gains the constraint and L34's CI sentence widens in the same `Lxx` as the bar. Red: which
   pins fail is recorded and the idea stays filed. Either way `.git/hooks/pre-commit` still
   names `.venv/bin/python` afterwards, and the probe never runs during a gate reading.
-- [ ] **REQ-pi5-claim-softened**: README states the hardware every number came from and
+- [x] **REQ-pi5-claim-softened**: README states the hardware every number came from and
   makes no Raspberry Pi 5 claim without a measurement; the idea is retired.
-- [ ] **REQ-reverify-recipe**: one paragraph in `docs/HOW_TO_DEVELOP.md` §6 beside the
+- [x] **REQ-reverify-recipe**: one paragraph in `docs/HOW_TO_DEVELOP.md` §6 beside the
   ship-note workaround — a fix after verification re-stales the report; re-dispatch
   `gsd-verifier` with the delta, commit, re-ship — or `.ai_skills/reverify-phase` if the
   record shows the loop has hit three times; the idea is retired.
@@ -258,11 +258,11 @@ Filled by the roadmap (2026-10-10). Every requirement maps to exactly one phase.
 | REQ-selector-schema-carried | Phase 24 | Complete |
 | REQ-selector-derives-and-writes-through | Phase 24 | Complete |
 | REQ-selector-round-trips-per-state | Phase 24 | Complete |
-| REQ-gate-rule-pre-registered | Phase 25 | Pending |
-| REQ-gate-bar-reset | Phase 25 | Pending |
-| REQ-venv-constraint-probe | Phase 25 | Pending |
-| REQ-pi5-claim-softened | Phase 25 | Pending |
-| REQ-reverify-recipe | Phase 25 | Pending |
+| REQ-gate-rule-pre-registered | Phase 25 | Complete |
+| REQ-gate-bar-reset | Phase 25 | Complete |
+| REQ-venv-constraint-probe | Phase 25 | Complete |
+| REQ-pi5-claim-softened | Phase 25 | Complete |
+| REQ-reverify-recipe | Phase 25 | Complete |
 
 **Coverage:**
 - v0.5 requirements: 24 total

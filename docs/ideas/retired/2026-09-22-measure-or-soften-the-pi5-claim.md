@@ -1,6 +1,8 @@
 # Measure the Raspberry Pi 5 claim, or soften it
 
 Date: 2026-09-22
+Status: retired
+Retired in: docs(25): name the hardware behind every README number and make no Pi 5 claim -- retire the Pi 5 idea
 Source: Phase 2 discussion (`.planning/phases/02-cad-off-the-event-loop/02-CONTEXT.md`)
 Related files:
 - README.md
@@ -24,3 +26,10 @@ Revisit when someone actually has a Pi 5 (or another arm64 SBC) in hand: run the
 bench harness on it, record the numbers next to the dev-machine ones, and either keep the
 claim with evidence or soften the README to state the hardware the numbers came from.
 Roughly a one-line README edit if nobody ever runs one.
+
+## Outcome
+
+Nobody has a Pi 5, so the soften branch was taken. The README now says the image is built for, not
+measured on, `linux/amd64` and `linux/arm64`, and names the two hosts every number came from: a 12-CPU Apple
+M2 Max and an 18-CPU Apple M5 Max (the CPU counts `bench.machine_facts()` recorded). The clause that called
+Apple silicon, Graviton and the Pi "all work" is gone. A Pi measurement would reopen this as a new idea.

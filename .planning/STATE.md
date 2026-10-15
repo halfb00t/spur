@@ -3,38 +3,37 @@ gsd_state_version: "1.0"
 milestone: v0.5
 milestone_name: Honest Form
 current_phase: 25
-current_phase_name: Gate Bar Re-Set, Venv Probe, Ledger Close
-status: "Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)"
-stopped_at: Phase 24 complete, ready to plan Phase 25
-last_updated: "2026-10-14T08:44:29.557Z"
-last_activity: 2026-10-13
-state_head: c6ca194f2e931c802d97e8ded4c775cf198cc0cc
+status: "Phase 25 shipped — PR #38"
+stopped_at: Phase 25 complete — all phases complete
+last_updated: "2026-10-14T18:40:18.803Z"
+last_activity: 2026-10-15
+state_head: 8e294aed86db1fe932bafa0aab962970168b92fc
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 18
-  completed_plans: 18
-  percent: 80
+  completed_phases: 5
+  total_plans: 23
+  completed_plans: 23
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-13)
+See: .planning/PROJECT.md (updated 2026-10-14)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 25 — Gate Bar Re-Set, Venv Probe, Ledger Close
+**Current focus:** Close milestone v0.5 (`/gsd-complete-milestone v0.5`); owed beside it: the resource-tracker debt decision. The Phase 25 review ledger is closed (`25-REVIEW-DISPOSITION.md`: 0 of 9 open)
 
 ## Current Position
 
-Phase: 25 — Gate Bar Re-Set, Venv Probe, Ledger Close
+Phase: 25
 Plan: Not started
-Status: Phase 24 shipped — PR #36 (re-shipped after the post-review fixes)
-Last activity: 2026-10-14 - Completed quick task 261014-jsp: hex bore warning names only the bore fields set away from their defaults
+Status: Phase 25 shipped — PR #38
+Last activity: 2026-10-15
 
-Progress: [████████░░] 80% (4 of 5 v0.5 phases complete — 21, 22, 23, 24; 18/18 plans so far)
+Progress: [██████████] 100% (5 of 5 v0.5 phases complete — 21, 22, 23, 24, 25; 23/23 plans)
 
 ## Performance Metrics
 
@@ -74,6 +73,7 @@ Progress: [████████░░] 80% (4 of 5 v0.5 phases complete — 
 | 22 | 2 | - | - |
 | 23 | 4 | - | - |
 | 24 | 4 | - | - |
+| 25 | 5 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -237,6 +237,11 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 24 P02 | 8 min | 2 tasks | 1 files |
 | Phase 24 P03 | 17 min | 2 tasks | 7 files |
 | Phase 24 P04 | 9 min | 2 tasks | 1 files |
+| Phase 25 P01 | 11 min | 3 tasks | 1 files |
+| Phase 25 P02 | 2h 40m | 2 tasks | 0 files |
+| Phase 25 P03 | 13 min | 2 tasks | 31 files |
+| Phase 25 P04 | 2h | 3 tasks | 12 files |
+| Phase 25 P05 | 45 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -444,6 +449,17 @@ pending; the next milestone starts this list fresh.
 - [Phase 24]: 24-03: a recorder on all seven pages is checked after every step and at the end, and the api/info count above the sweep's 44 proves no page went unwatched — Each page is its own browser context, so a listener on the main page misses the sweep, which sends one api/info per record by itself; the count only a fully watched scenario reaches (260 requests, 140 api/info against 44) is the proof
 - [Phase 24]: 24-03: the bore-shape idea is retired and the hex-bore warning debt stays active with its trigger fired in 470b78a, to be fixed as a /gsd-quick before Phase 25's reading — D-17: the debt's trigger was the selector shipping; restating it keeps the fix scheduled without resolving what the selector made more visible (every selector-made hex part warns about untouched defaults)
 - [Phase 24]: 24-04: no gate bar is set for the bore shape step (8.55 s mean) or the commit slice (15.60 s mean); Phase 25 re-sets the bar on its final HEAD (D-15)
+- [Phase 25]: 25-01: gate re-set rule committed as drafted (1d5ce8a) on the human's answer 'commit' at the Task 2 gate; rehearsal logs stay untracked until 25-03
+- [Phase 25]: 25-02: human waived idle waits and the A1 exception; the session took one reading per arm (A1 real 195.23 s, B1 real 179.21 s), both non-decisive; no decisive run, no candidate bar, human writes the bar at 25-04
+- [Phase 25]: 25-03: probe GREEN -- make venv under PIP_CONSTRAINT=requirements.txt works in a linked worktree (31 of 31 pins installed, pip check clean, make verify exit 0); the 13 non-pin freeze-diff lines are recorded as read
+- [Phase 25]: 25-03: readings recorded with no decisive run and Candidate bar none; the human writes the bar at 25-04
+- [Phase 25]: L43: gate bar 300 s on the 18-CPU Apple M5 Max, set by the human (candidate none); make venv installs under requirements.txt as a constraint (amends L34)
+
+- [Phase 25]: The gate rule was pre-registered and committed alone (`1d5ce8a`) before any reading and its text was never edited; every later override is recorded in the readings sections and the SUMMARYs, not in the rule (L08, L34).
+- [Phase 25]: The human waived the idle wait (rule clause 4) and the A1 exception (clause 5) after the host never held under 1.5 across seven 15-minute waits (lowest load 1.60), then cut the session to one reading per arm — A1 195.23 s, B1 179.21 s, both non-decisive, A2 aborted mid-run; all eight answers verbatim in `25-02-SUMMARY.md`.
+- [Phase 25]: The bar is the human's number on a `none` candidate — `Let's set 300 s. IMHO it's a reasonable bar` — recorded under `#### Gate decision` and in L43 (amends L34); no check enforces it (ARCH 7.4); the stale 66 s / 64 s lines swept.
+- [Phase 25]: The venv probe was GREEN in a linked worktree under `PIP_CONSTRAINT` (31/31 pins, `pip check` clean, 1317 passed), so `$(STAMP)` now installs under `-c requirements.txt`; `agent/venv-probe` deleted at the human's `delete`.
+- [Phase 25]: At the human's `don't waste any more time` the post-merge and regression test gates were satisfied by the executors' logged `make verify` runs on the committed trees (last: `ac129dc`, 1317 passed) rather than re-run, and the code review and the goal verifier ran in parallel.
 
 ### Pending Todos
 
@@ -451,6 +467,10 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 25] The 300 s bar rests on two non-decisive readings under load 4–7 (L43 says so). Review WR-03: Phase 24 recorded green gate runs of 296.91 s, 294.40 s and 336.15 s on this host under higher load, not cited beside the bar; the `.pre-commit-config.yaml` comment says the 300 s was "read on 2026-10-14" when it was set by the human. WR-01: no test pins the `requirements.txt` stamp dependency or the `-c requirements.txt` line. WR-02: the probe used an absolute `PIP_CONSTRAINT`, not the shipped relative `-c`. All open in `25-REVIEW-DISPOSITION.md`.
+- ℹ️ [Phase 25] The idle-host method never got an idle host: seven A1 waits gave up (lowest 1-min load 1.60 with other agent sessions open). A decisive re-read needs the other sessions closed or a new rule; the rule text stands for a future session.
+- ℹ️ [Phase 25] The resource-tracker flake did not fire in this phase's four green `make verify` runs (A1, B1, probe, 25-05); the `must` debt's decision is still owed from Phases 23 and 24.
+- ℹ️ [Phase 25] `.planning/milestone.lock` had been committed by an executor in `9b68f6d` and churned per session until `phase.complete` removed it; it should be gitignored. The 25-02/25-04 key_links `from:` entries are prose, not paths (`verify.key-links` cannot read them).
 - ⚠️ [Phase 24] The resource-tracker flake hit 24-01's first `make verify` (`ReentrantCallError`, green on the one allowed
   re-run; 24-04's ran green first time). The `must` debt's trigger has now fired in two phases running with no isolation run.
 - ℹ️ [Phase 24] Code review and Codex cross-review (`24-REVIEW-DISPOSITION.md`, 6 open, all info): WR-01 (focus moved off
@@ -460,8 +480,6 @@ None yet.
   selector, same as IN-02), CX-05 (a settle before the twin-selectors zero-request assertion). No engine that commits an
   option per arrow key is driven by the browser test; the keyboard walk rests on the human's UAT pass and the focus
   assertion.
-- ℹ️ [Phase 24] The hex-bore warning debt's trigger fired in `470b78a` (24-03 D-17); fix as a `/gsd-quick` before Phase 25's
-  gate reading. `24-UI-REVIEW.md` scored 17/24, code-derived.
 - ✓ [Phase 24] Cross-CLI review done (CLAUDE.md, HOW_TO_DEVELOP §7): Codex (`gpt-6.1-sol`) reviewed PR #36 and each fix
   commit; verdicts and prompts in `24-CROSS-REVIEW.md`. `bench/RESULTS.md`'s seen-red table does not list the three
   post-ship fixes' reds (verifier advisory; the reds are in the commit messages and `24-VERIFICATION.md`).
@@ -727,17 +745,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-13T04:07:09Z
-Stopped at: Phase 24 complete, ready to plan Phase 25
+Last session: 2026-10-14T16:07:03Z
+Stopped at: Phase 25 re-verified after the review-fix pass (WR-01…WR-04, IN-01…IN-05 fixed; VERIFICATION.md regenerated), milestone v0.5 ready to close (`/gsd-complete-milestone v0.5`)
 Resume file: None
 
 ## Operator Next Steps
 
-- Next: PR #36 (`gsd/phase-24-bore-shape-selector` → `main`) is open with the Codex cross-review done and its findings
-  fixed; verification regenerated `passed` 8/8 on the fixed tree. Merge when CI is green on the final head, then
-  `/gsd-discuss-phase 25` — Phase 25 measures the shipped `HEAD`, so it is last. Still owed: a decision on the
-  resource-tracker debt whose trigger has fired twice (Phases 23 and 24).
+- Next: `/gsd-complete-milestone v0.5` (every v0.5 phase is complete). Then the Phase 25 PR (`gsd/phase-25-gate-bar-re-set-venv-probe-ledger-close` → `main`) with the cross-CLI review per CLAUDE.md; triage `25-REVIEW-DISPOSITION.md` first (WR-03 and the `.pre-commit-config.yaml` "read on" wording are ledger-truth items — the 300 s was set, not read). Still owed: the resource-tracker debt decision (trigger fired in Phases 23 and 24; no red run in Phase 25).
 - Done at roadmap time: the `v0.4` tag was missing locally and on `origin` (only `v0.1`–`v0.3` existed) although v0.5's fixture rule is stated against it; the human chose the close squash `b24287a` (the v0.2/v0.3 precedent) and the annotated tag was created and pushed 2026-10-10.
-- Open decision carried, now owned by Phase 25: re-set L34's 66 s gate bar from an idle-host reading under a rule written before the first reading (the gate reads ~193 s; `accept-A` recorded the cost, not a new bar). The 401-position oracle count is not part of this milestone.
+- Closed in Phase 25: L34's bar re-set as L43 — 300 s, the human's number over two non-decisive readings (A1 195.23 s, B1 179.21 s) after the idle-host rule's wait never released; the rule stands for a future decisive session. The 401-position oracle count was not part of this milestone.
 - Open question carried: which command, cwd and venv ran 2026-10-09 07:19–08:36 (`docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md`).
 - Still open: Phase 18's IN-01…IN-08 (`milestones/v0.4-phases/18-trochoid-maths-proved/18-REVIEW-DISPOSITION.md`), Phase 19's IN-01…IN-04 (debt item), the resource-tracker flake (`must`; trigger: the next `make verify` failure with its whole log kept, else whole-suite loops at the next milestone's start).
