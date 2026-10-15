@@ -58,7 +58,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   the gate's cost is measured against the 300 s bar (L43). The hang item stays `active` with
   a runbook that states what the evidence cannot see (a stall after the last test)
   (`2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md`).
-- [ ] **REQ-test-image-runs-what-it-claims**: `make test-image` is run once and its red set
+- [x] **REQ-test-image-runs-what-it-claims**: `make test-image` is run once and its red set
   recorded before any fix; afterwards it passes, and every test it skips is skipped by a named
   reason, not by collection failure
   (`2026-10-10-test-image-collects-tests-that-read-host-files.md`).
@@ -177,7 +177,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-twin-selectors-race-fixed | Phase 26 | Pending |
 | REQ-tracker-flake-fixed-from-repro | Phase 26 | Complete |
 | REQ-hang-leaves-evidence | Phase 26 | Pending |
-| REQ-test-image-runs-what-it-claims | Phase 26 | Pending |
+| REQ-test-image-runs-what-it-claims | Phase 26 | Complete |
 | REQ-ubuntu26-preclassified | Phase 26 | Complete |
 | REQ-slug-totality-guarded | Phase 27 | Pending |
 | REQ-failed-build-name-isolated | Phase 27 | Pending |
