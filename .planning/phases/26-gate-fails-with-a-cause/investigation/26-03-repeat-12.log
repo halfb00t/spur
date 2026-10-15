@@ -1,0 +1,10 @@
+17:32  up 2 days,  8:31, 10 users, load averages: 4.53 4.78 5.97
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_browser.py tests/test_browser_pins.py --no-cov -q
+bringing up nodes...
+bringing up nodes...
+
+.....                                                                    [100%]
+5 passed in 23.90s
+wall 24s
+exit 0
+17:33  up 2 days,  8:31, 10 users, load averages: 4.30 4.71 5.91

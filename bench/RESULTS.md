@@ -6053,3 +6053,76 @@ migrated `ubuntu-latest` run against this one.
 reached this repository, each whole log is kept, and every job is classified here before any `ci.yml` edit lands anywhere. All
 three are green; nothing goes to the human as options. The PR is closed unmerged and the remote branch is left for the human to
 delete. No `runs-on: ubuntu-24.04` pin is made.
+
+### Twin selectors (26-03)
+
+Date 2026-10-15. Fix commit `6ff1269`. Host: 18 CPUs, arm64, 64.0 GiB RAM (`bench.machine_facts()`). pytest 9.1.1, pytest-xdist 3.8.0,
+playwright 1.63.0; the `make test` recipe's own `-n 8` stood for every run (`make -n test` prints `pytest -n 8 --cov --cov-report=term`).
+
+#### The lever is the `/api/info` response, not the STL route
+
+SC2 and the debt item said a delayed STL route makes the old step red. On the real app it does not: `app.js` issues
+`/api/model.stl` only after the `/api/info` response (`update()`, `app.js:262-274`), and the old baseline was taken after the
+info *request*, before that response was acted on. A parked STL route therefore leaves the old step green; a parked
+`/api/info` released after the old baseline puts the STL request inside the counted window. The 350 ms debounce does not bear
+on the baseline at load (`update()` runs directly, `app.js:643-644`, so no timer is pending); it bears on the zero-request
+assertion, which needs a settle past 350 ms after the two picks (24 CX-05). The arms below were run before any edit to the
+step (SC2's escape clause: the real app could have disagreed with the stand-in; it did not).
+
+| Arm | Change | Runs | Result | Failure text |
+|---|---|---|---|---|
+| 1, delayed STL route | the STL route parks its route, never released; `/api/info` not routed; old baseline | 3 | green 3 of 3 (`1 passed in 21.79s`, `21.56s`, `20.16s`) | none |
+| 2, parked /api/info, old baseline | `/api/info` parked; old `expect_request("/api/info")` and baseline; released before the first pick | 3 | red 3 of 3 (`1 failed in 18.02s`, `18.04s`, `18.01s`) | `AssertionError: twin selectors: 1 request(s) sent by two pending picks` (`assert 279 == 278`) |
+| 3, parked /api/info, new baseline | as arm 2; released inside `expect_request` on `/api/model.stl`; baseline after it | 3 | green 3 of 3 (`1 passed in 21.51s`, `21.76s`, `21.55s`) | none |
+
+Whole logs, diffs and the table with load figures: `.planning/phases/26-gate-fails-with-a-cause/investigation/26-03-arm{1,2,3}.diff`, `26-03-arm{1,2,3}-run{1,2,3}.log`,
+`26-03-arms.md`. Each arm's patch was applied with `git apply` and reverted with `git apply -R`; the tree read clean after each.
+No sleep in any route handler: the delay is a parked route released from the test.
+
+#### The CX-05 control
+
+After the second pick, a throwaway patch dispatches a bubbling `input` event on the first form input (the form's listener
+calls `scheduleUpdate()`). On the fixed step with the final settle removed (assert at once) the step passes
+(`1 passed in 22.66s`, the vacuous pass CX-05 names). With the settle it is red, `AssertionError: twin selectors: 2 request(s)
+sent by two pending picks` (the stray update sends `/api/info`, then the aborted STL request, so the count is 2, not the 1 a
+bare info request would give), and the stray `/api/info` request event arrived **354 ms** after the dispatch (`CX05-STRAY-INFO-MS 354`,
+one run). The committed settle is `DEBOUNCE_SETTLE_MS = 1_000`. Logs: `26-03-cx05-old.log`, `26-03-cx05-new.log`, with
+`26-03-cx05-old.diff` and `26-03-cx05-new.diff`.
+
+#### 20 runs at -n 8
+
+Pre-registered by the plan's text (committed before execution): 20 runs, sequential, no early stop, no retry, a red classified by
+its `step:` note and kept. `make test PYTEST_ARGS="tests/test_browser.py tests/test_browser_pins.py --no-cov -q"`, one-minute
+load average before -> after each run, logs `26-03-repeat-1.log` to `26-03-repeat-20.log`.
+
+| Run | Exit | Result line | Wall (s) | Load before -> after |
+|---|---|---|---|---|
+| 1 | 0 | `5 passed in 23.64s` | 24s | 5.38 -> 4.66 |
+| 2 | 0 | `5 passed in 23.76s` | 24s | 4.66 -> 5.01 |
+| 3 | 0 | `5 passed in 23.82s` | 24s | 5.01 -> 4.63 |
+| 4 | 0 | `5 passed in 22.22s` | 22s | 4.63 -> 4.56 |
+| 5 | 0 | `5 passed in 23.67s` | 24s | 4.56 -> 3.96 |
+| 6 | 0 | `5 passed in 23.54s` | 24s | 3.96 -> 4.38 |
+| 7 | 0 | `5 passed in 23.56s` | 23s | 4.38 -> 3.79 |
+| 8 | 0 | `5 passed in 23.65s` | 24s | 3.79 -> 3.84 |
+| 9 | 0 | `5 passed in 23.76s` | 24s | 3.84 -> 3.62 |
+| 10 | 0 | `5 passed in 24.22s` | 25s | 3.62 -> 4.53 |
+| 11 | 0 | `5 passed in 23.92s` | 24s | 4.53 -> 4.53 |
+| 12 | 0 | `5 passed in 23.90s` | 24s | 4.53 -> 4.30 |
+| 13 | 0 | `5 passed in 24.90s` | 25s | 4.30 -> 4.68 |
+| 14 | 0 | `5 passed in 23.89s` | 24s | 4.68 -> 4.25 |
+| 15 | 0 | `5 passed in 23.66s` | 24s | 4.25 -> 4.00 |
+| 16 | 0 | `5 passed in 24.25s` | 24s | 4.00 -> 4.10 |
+| 17 | 0 | `5 passed in 24.12s` | 24s | 4.10 -> 4.45 |
+| 18 | 0 | `5 passed in 23.79s` | 24s | 4.45 -> 4.87 |
+| 19 | 0 | `5 passed in 24.50s` | 25s | 4.87 -> 6.76 |
+| 20 | 0 | `5 passed in 22.34s` | 22s | 6.76 -> 5.54 |
+
+**20 of 20 green** (`5 passed` each, exit 0; no `step:` note in any log).
+
+What this does and does not show: the browser files pass 20 of 20 on this host at `-n 8`. The old step was not run 20 times
+here, so this count alone does not separate the fix from the host being fast; the old step failed on `main` CI (a runner about
+twice as slow) in 2 of 8 runs. The proof of the mechanism is the arms above (red under a parked `/api/info`, green with the new
+baseline), not this count. The draft phase PR's CI run is read in 26-07 (supporting only: a `pull_request` run, green on both
+red `main` trees too). The post-merge `main` run (D-05) can only be read after `make pr.land`; it is carried to land time by
+`docs/tech_debt/active/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md`.
