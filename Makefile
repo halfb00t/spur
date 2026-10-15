@@ -178,6 +178,9 @@ PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN 2>/dev/null); \
 # 2026-10-10 hang left neither (docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-
 # percent-with-no-failure.md). They sit after --cov-report=term and before $(PYTEST_ARGS),
 # so a caller's -q still cancels the -v. test.fast keeps its lean output on purpose.
+# Cost, 3 + 3 interleaved on the M5 Max, 2026-10-15 (load 4.7-10.5): mean wall 206.87 s
+# without the flags and the ini timer, 205.81 s with them, -0.51 % (bench/RESULTS.md, "Hang
+# evidence (26-05)"); against L43's 300 s bar, and inside Phase 25's ~8 % run-to-run spread.
 test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache, not the tests)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term -v --durations=25 $(PYTEST_ARGS)
 

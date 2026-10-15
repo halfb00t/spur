@@ -6235,3 +6235,80 @@ gate test, one of them parametrised three ways, so 21 collected items (20 withou
 
 **The gate.** `make verify PYTEST_ARGS="--durations=0 --durations-min=5.0"`: exit 0, `1321 passed in 185.61s (0:03:05)`,
 `TOTAL 1358 22 386 13 97.99%`, `Required test coverage of 96.0% reached` (`26-04-verify.log`).
+
+### Hang evidence (26-05)
+
+Plan 26-05 puts `-v --durations=25` on the `test` recipe, `faulthandler_timeout = 120` in the ini, proves with a
+throwaway stalled test that a stall names itself, and measures the gate's cost of the flags. The 2026-10-10 hang left
+neither a test id nor a stack because the gate ran without `-v` or a per-test timeout (the hang item).
+
+#### The timeout, from a local reading
+
+`make test PYTEST_ARGS="--durations=25"` before any edit, 2026-10-15, Apple M5 Max, 1-minute load 11.27 at the end
+(`investigation/26-05-durations-local.log`): `1321 passed in 196.96s`, exit 0. The ten slowest phases (all `call`):
+
+```
+32.33s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+31.36s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-keyed-cells]
+29.82s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-holes]
+21.31s call     tests/test_model.py::test_the_kernel_tier_proof_fails_when_the_printed_tip_radius_is_off_by_0_05_mm
+16.42s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-spokes]
+14.63s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-round-holes]
+14.04s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-round-spokes]
+13.96s call     tests/test_model.py::test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root
+13.89s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-cells]
+13.40s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-keyed-holes]
+```
+
+The slowest single phase S is **32.33 s** (`tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser`). Rule: the
+timeout is 120 s unless 2 x S exceeds 120, then 2 x S rounded up to the next 10 s. 2 x 32.33 = 64.66, below 120, so
+`faulthandler_timeout = 120`. STACK's CI estimate for the slowest test is about 52 s. CI's `--durations` and the x2 rule
+on its numbers: 26-07. The key is dump-only (`faulthandler_exit_on_timeout` stays off until a first captured hang).
+
+#### The stall proof
+
+A throwaway `tests/test_zz_stall_probe.py` (one test, `test_stalls`, sleeping 30 s; deleted before the change commit,
+never committed) was run once through `make test PYTEST_ARGS="tests/test_zz_stall_probe.py -o faulthandler_timeout=5
+--cov-fail-under=0"`, that is `-n 8 --cov -v --durations=25` (`investigation/26-05-stall.log`). The log holds, in order:
+
+```
+tests/test_zz_stall_probe.py::test_stalls /Users/half/git/halfb00t/spur/.venv/lib/python3.12/site-packages/coverage/control.py:967: CoverageWarning: ...
+Timeout (0:00:05)!
+  File "/Users/half/git/halfb00t/spur/tests/test_zz_stall_probe.py", line 5 in test_stalls
+...
+============================== 1 passed in 30.58s ==============================
+```
+
+The start line names the test (no worker id), the dump names the file, line and function, and the run carries on to a
+pass (dump-only). The dump's first line was glued to a controller line already half written, as RESEARCH measured.
+
+#### The cost of the flags: 3 + 3, interleaved A B A B A B
+
+Arm A is the recipe before the change (`git show 70609110:Makefile`, kept as `investigation/26-05-Makefile.A.mk`) run
+as `make -f ... test PYTEST_ARGS="-o faulthandler_timeout=0"` (no `-v`, no `--durations`, ini timer off). Arm B is
+`make test` on the committed recipe and ini. Same tree, venv, stamps and browser; one run at a time, no idle wait, each
+run's 1-minute load logged before and after; this plan's text, committed before execution, is the pre-registration.
+Wall is two clock reads around the make call.
+
+| Run | Arm | Wall | pytest s | Load before -> after | Exit |
+|-----|-----|------|----------|----------------------|------|
+| A1 | before (old recipe, ini timer off) | 207.21 s | 207.00 s | 4.67 -> 7.93 | 0 |
+| B1 | after (committed recipe and ini) | 218.94 s | 218.66 s | 7.93 -> 7.59 | 0 |
+| A2 | before (old recipe, ini timer off) | 211.07 s | 210.79 s | 7.59 -> 7.68 | 0 |
+| B2 | after (committed recipe and ini) | 208.50 s | 208.28 s | 7.68 -> 9.62 | 0 |
+| A3 | before (old recipe, ini timer off) | 202.32 s | 201.83 s | 9.62 -> 10.12 | 0 |
+| B3 | after (committed recipe and ini) | 189.99 s | 189.28 s | 10.12 -> 10.45 | 0 |
+
+Mean wall: A **206.87 s**, B **205.81 s**, delta **-0.51 %**. L43's bar is 300 s: every run is
+at most 218.94 s. The 5 % stop rule (D-09) did not trip. The load rose from 4.7 to 10.5 over the six runs (the host
+was shared), and the per-pair deltas are +5.7 %, -1.2 % and -6.1 %: the run-to-run spread, which Phase 25 read at about
+8 % on 195.23 s and 179.21 s, is larger than the effect, so the table says the flags cost nothing measurable, not that
+they are free. Every arm-B run exited 0 and none printed a `Timeout (` line, so the dump-only timeout changes nothing
+when nothing stalls. All six runs read `1321 passed`.
+
+#### What the evidence does not show
+
+The timer is armed per test item. A stall after a worker's last test, in xdist's worker shutdown or in pytest-cov's
+combine, leaves no dump and no test id: `-v` shows every test finished and the run still waiting. The hang item's
+runbook states this window and the operator step for it; the item stays active and no cause is claimed. The CI
+confirm of the 120 s value is 26-07's task.
