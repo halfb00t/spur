@@ -10,7 +10,7 @@ on:
 # together; tests/test_pr_land.py fails when they disagree.
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -58,7 +58,7 @@ jobs:
   vendor-bundle:
     # The committed three.js bundle must stay reproducible from web/, or nobody can
     # tell what is in the 568 KB blob the browser executes.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,7 +74,7 @@ jobs:
         run: git diff --exit-code -- src/spur/static/vendor
 
   image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
