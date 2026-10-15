@@ -6126,3 +6126,37 @@ twice as slow) in 2 of 8 runs. The proof of the mechanism is the arms above (red
 baseline), not this count. The draft phase PR's CI run is read in 26-07 (supporting only: a `pull_request` run, green on both
 red `main` trees too). The post-merge `main` run (D-05) can only be read after `make pr.land`; it is carried to land time by
 `docs/tech_debt/active/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md`.
+
+### The resource-tracker flake (26-04)
+
+#### The rule (26-04)
+
+This rule is committed alone, before run A1, and nothing in it changes once A1 has started: a different rule is a new
+session of twenty runs, and a red run is kept, never dropped or retried (D-04, L08). The 10 + 10 is a consistency check.
+The proof is the forced-GC gate test, which removes the luck; the natural rate on macOS was 0 of 60 two-file loops on
+2026-10-09, so a quiet 10 + 10 here proves little and is recorded as such.
+
+1. **Host.** All twenty runs are read on one host: `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`). The branch
+   is `gsd/phase-26-gate-fails-with-a-cause`; the runs are not on a quiet host and no quiet host is waited for, so the
+   1-minute load is a covariate, not a gate.
+2. **One run.** `make test PYTEST_ARGS="tests/test_pool.py tests/test_api.py -k 'not forced_gc' --cov-fail-under=0"`,
+   the gate's own `-n 8 --cov` recipe. `-k 'not forced_gc'` keeps the gate test out of both arms, so both read the
+   natural rate only. `--cov-fail-under=0` because a partial `--cov` run otherwise ends on the coverage floor
+   (`Required test coverage of 96.0% not reached`, exit 1), which is not the flake.
+3. **Arms, by content.** Arm A (before) is HEAD's `tests/test_pool.py`: unfixed, no gate test, sha256
+   `d88ba80e08cfcaf0c522ca0d688d246e02eda31dc3c234eb4cab90eaa3ab8b3b`, frozen as
+   `investigation/26-04-arm-before.test_pool.py.txt`. Arm B (after) is the fix plus the gate test, sha256
+   `b56df86990cb4a5547bc776b0979355b4b3e5927c522a5a11f43e03c1dc01ba5`, frozen as
+   `investigation/26-04-arm-after.test_pool.py.txt`. The arm's file is copied over `tests/test_pool.py` before each run
+   and its hash checked before and after; nothing else differs between arms.
+4. **Order.** A1 B1 A2 B2 ... A10 B10, one at a time, never concurrent, no idle wait. The 1-minute load before and after
+   each run is recorded.
+5. **Cap.** 20 runs, no early stop, no retry. Each run is killed at 600 s by `timeout`; a killed run is its own row,
+   classified `killed`.
+6. **Signature.** A red counts as the flake only if its log holds `ReentrantCallError` or
+   `ResourceTracker called reentrantly`. Any other red (a coverage line, a timeout, an unrelated failure) is its own row,
+   kept, not counted.
+7. **Recorded per run:** UTC start and end, wall seconds, exit, the pytest result line, the effective `-n` (the
+   `N workers` line), the load; once per session `pip freeze` filtered to pytest, pytest-xdist, pytest-cov and coverage.
+8. **Reading.** Zero flake reds in the after arm reads "consistent, not conclusive": at the 1-in-5-to-10 rate STACK saw in
+   a Linux container, 0 of 10 by luck alone is 15 to 30 %. The forced-GC gate test is the proof.
