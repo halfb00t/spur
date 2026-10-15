@@ -5930,3 +5930,49 @@ What a green run on macOS arm64 does not show: the `linux/arm64` image, a Pi 5, 
 behave the same and was not run by the probe), or build requirements under pip 26.2. pip's news of 2026-07-29 (cached in
 `.planning/research/PITFALLS.md`) says constraints no longer reach isolated build environments, so `hatchling` is expected to
 build unconstrained; the 25-03 logs hold no `hatchling` or build-isolation line, so this run did not observe it.
+
+## Gate fails with a cause (Phase 26)
+
+What this section does: v0.6's first phase removes the gate's false reds from reproductions and makes a stall leave its
+cause. Every whole log is under `.planning/phases/26-gate-fails-with-a-cause/investigation/`. Readings are appended per
+plan, never rewritten.
+
+### The hook pin and the caller's PYTEST_ARGS (26-01)
+
+The shared-recipe pin (`tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`)
+dry-runs `make -n verify` and `make -n verify.fast` and asserts `"--ignore=" not in whole_pytest`. `_make_env()` stripped
+make's own flags from the child's environment but not `PYTEST_ARGS`, which the Makefile reads through `PYTEST_ARGS ?=`, so
+a caller narrowing the gate put its own `--ignore=` into the recipe the pin compares. The debt item is
+`2026-10-10-hook-pin-reads-the-callers-pytest-args` (it cost 21-07 one 165 s run).
+
+- Host: `bench.machine_facts()` reads `18 CPUs, arm64, 64.0 GiB RAM`; GNU Make 4.4.1, pytest 9.1.1
+- Read 2026-10-15 on HEAD `73cbddd` (the before-runs ran on that tree, `tests/test_hooks.py` unedited); `-n0 --no-cov
+  -p no:cacheprovider` throughout, so each pin run is a dry run of `make -n` and takes well under a second
+
+| Form | Command | Before | After | Log |
+|---|---|---|---|---|
+| environment | `PYTEST_ARGS="--ignore=tests/test_browser.py" pytest <pin>` | `1 failed in 0.03s`, exit 1 | `1 passed in 0.03s`, exit 0 | `26-01-env-before.log`, `26-01-env-after.log` |
+| make command line | `make test PYTEST_ARGS="--ignore=tests/test_browser.py tests/test_hooks.py -n0 --no-cov -q -p no:cacheprovider"` | `1 failed, 6 passed in 0.59s`, `make: *** [Makefile:177: test] Error 1`, exit 2 | `9 passed in 0.48s`, exit 0 | `26-01-make-before.log`, `26-01-make-after.log` |
+| empty | `PYTEST_ARGS= pytest <pin>` | `1 passed in 0.02s`, exit 0 | `1 passed in 0.03s`, exit 0 | `26-01-empty-before.log`, `26-01-empty-after.log` |
+| new test, environment | `-k ignores_pytest_args` (`test_the_pin_ignores_pytest_args_set_in_the_environment`) | red (below) | passes in the file's `9 passed` | `26-01-tests-red.log` |
+| new test, make command line | `-k ignores_pytest_args` (`test_the_pin_ignores_pytest_args_handed_down_from_the_make_command_line`) | red (below) | passes in the file's `9 passed` | `26-01-tests-red.log` |
+
+The empty form is a recorded run, not a committed test: `PYTEST_ARGS ?=` takes an empty value as unset, so it reads the same
+recipe before and after and cannot be red. The two new tests were run against the unfixed `_make_env()` and read
+`2 failed, 7 deselected in 0.06s`, both on the assertion the debt item named:
+
+```
+>       assert "--ignore=" not in whole_pytest
+E       AssertionError: assert '--ignore=' not in '.venv/bin/p...t_browser.py'
+E
+E         '--ignore=' is contained here:
+E           port=term --ignore=tests/test_browser.py
+```
+
+The fix is one word, `"PYTEST_ARGS"` added to `_MAKE_VARIABLES`. `_make_env()` is the one place every `make` the hook tests
+start goes through (`_dry_run`, the two `-W` dry runs, and the hook-stamp tests through `_clean_git_env`); the other shape,
+`PYTEST_ARGS=` on the dry run's command line, would have to be repeated at each call site. `Makefile` is unchanged
+(`git diff --exit-code v0.5 -- Makefile` exits 0), so `$(PYTEST_ARGS)` stays the last word of the `test` recipe and a
+caller's flag still wins over the recipe's. What this does not show: a narrowed full `make verify PYTEST_ARGS=...` was not
+run end to end here; the make-command-line row runs `make test` over `tests/test_hooks.py` only, which is the form that
+failed in 21-07 reduced to the file that holds the pin.

@@ -19,9 +19,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-_MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL")
+_MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL", "PYTEST_ARGS")
 HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli", "test_browser")
 # The browser stamp, the Makefile's `BROWSER := $(VENV)/.browser`. The commit slice never
 # builds it, so on a checkout where it is missing or older than `$(STAMP)` a dry run of
@@ -33,7 +35,10 @@ BROWSER_STAMP = ".venv/.browser"
 
 def _make_env() -> dict[str, str]:
     """The gate runs this test from inside `make`: the parent's flags and jobserver
-    must not leak into the `make` this test starts."""
+    must not leak into the `make` this test starts. Nor may a caller's `PYTEST_ARGS`: a
+    caller narrowing the gate sets it in its environment or on the make command line (which
+    make exports to the recipe), and a dry run would print it into the recipe these pins
+    compare."""
     return {k: v for k, v in os.environ.items() if k not in _MAKE_VARIABLES}
 
 
@@ -126,6 +131,32 @@ def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() 
         w.removeprefix("--ignore=") for w in fast_pytest.split() if w.startswith("--ignore=")
     }
     assert ignored == {f"tests/{n}.py" for n in HEAVY_TEST_FILES}
+
+
+def test_the_pin_ignores_pytest_args_set_in_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A narrowed gate must not turn this pin red (debt item
+    2026-10-10-hook-pin-reads-the-callers-pytest-args). `PYTEST_ARGS` in the caller's
+    environment reaches the dry run through the Makefile's `PYTEST_ARGS ?=`, so the pin
+    compared the caller's flags instead of the recipe; it cost 21-07 one 165 s run."""
+    monkeypatch.setenv("PYTEST_ARGS", "--ignore=tests/test_browser.py")
+    test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe()
+
+
+def test_the_pin_ignores_pytest_args_handed_down_from_the_make_command_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`make verify PYTEST_ARGS="--ignore=..."` exports the variable to the recipe, so the
+    pin runs with it set. These four are exactly what GNU Make 4.4.1 hands a recipe for a
+    command-line variable (measured, 26-RESEARCH Item 1). `_make_env` already strips the
+    MAKEFLAGS trio, so this case documents the shape make hands down; `PYTEST_ARGS` is the
+    carrier that turns the pin red."""
+    monkeypatch.setenv("PYTEST_ARGS", "--ignore=tests/test_browser.py")
+    monkeypatch.setenv("MAKEFLAGS", " -- PYTEST_ARGS=--ignore=tests/test_browser.py")
+    monkeypatch.setenv("MAKELEVEL", "1")
+    monkeypatch.setenv("MFLAGS", "")
+    test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe()
 
 
 def test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does() -> None:

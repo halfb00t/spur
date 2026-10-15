@@ -1,0 +1,43 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe ___
+
+    def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() -> None:
+        whole = _dry_run("verify")
+        fast = _dry_run("verify.fast")
+    
+        def split(lines: list[str]) -> tuple[list[str], str]:
+            pytest_lines = [ln for ln in lines if " -m pytest " in ln]
+            assert len(pytest_lines) == 1, pytest_lines
+            at = lines.index(pytest_lines[0])
+            # `make -n` prints a backslash-continued recipe as several lines: rejoin it.
+            end = at
+            while lines[end].endswith("\\"):
+                end += 1
+            return lines[:at], " ".join(ln.rstrip("\\").strip() for ln in lines[at : end + 1])
+    
+        whole_static, whole_pytest = split(whole)
+        fast_static, fast_pytest = split(fast)
+        assert whole_static == fast_static
+        static = "\n".join(whole_static)
+        for needle in ("-m ruff check", "-m mypy", "lint-imports", "git grep"):
+            assert needle in static, needle
+    
+        def through_worker_count(line: str) -> str:
+            words = line.split()
+            return " ".join(words[: words.index("-n") + 2])
+    
+        assert through_worker_count(whole_pytest) == through_worker_count(fast_pytest)
+        assert "--cov" in whole_pytest
+>       assert "--ignore=" not in whole_pytest
+E       AssertionError: assert '--ignore=' not in '.venv/bin/p...t_browser.py'
+E         
+E         '--ignore=' is contained here:
+E           port=term --ignore=tests/test_browser.py
+E         ?           +++++++++
+
+tests/test_hooks.py:120: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe
+1 failed in 0.03s
+exit 1

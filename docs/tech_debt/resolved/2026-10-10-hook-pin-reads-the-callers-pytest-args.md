@@ -1,12 +1,13 @@
 # The shared-recipe hook pin reads the caller's `PYTEST_ARGS`, so `make verify PYTEST_ARGS="--ignore=..."` fails it
 
 Severity: nice
-Status: active
+Status: resolved
 Date: 2026-10-10
+Resolved in: test(26): the hook pins read the Makefile, not the caller's PYTEST_ARGS
 Source: 21-07, A/B arm A's first attempt (`.planning/phases/21-browser-test-of-the-viewer/investigation/21-07-A-1.log`)
 Related files:
-- `tests/test_hooks.py:34` (`_make_env`), `tests/test_hooks.py:58` (`_dry_run`), `tests/test_hooks.py:90` (`assert "--ignore=" not in whole_pytest`)
-- `Makefile:6` (`PYTEST_ARGS ?=`), `Makefile:170` (the `test` recipe)
+- `tests/test_hooks.py:36` (`_make_env`), `tests/test_hooks.py:63` (`_dry_run`), `tests/test_hooks.py:125` (`assert "--ignore=" not in whole_pytest`)
+- `Makefile:6` (`PYTEST_ARGS ?=`), `Makefile:177` (the `test` recipe)
 
 ## Context
 `test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe` runs `make -n verify` and
@@ -26,5 +27,18 @@ Drop `PYTEST_ARGS` from `_make_env()`'s result (or pass `PYTEST_ARGS=` on the dr
 runs the pin with the variable set. Revisit when `tests/test_hooks.py` is next touched or the next time a narrowed
 `make verify` is wanted.
 
-<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
-     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
+## Resolution (2026-10-15)
+
+`_MAKE_VARIABLES` in `tests/test_hooks.py` gained `"PYTEST_ARGS"`, so `_make_env()` drops a caller's flags with make's own
+and every `make` the hook tests start reads the Makefile's recipe. Two tests pin it, each seen red against the unfixed
+`_make_env()` first (`2 failed, 7 deselected`):
+`test_the_pin_ignores_pytest_args_set_in_the_environment` and
+`test_the_pin_ignores_pytest_args_handed_down_from_the_make_command_line`. `Makefile` is unchanged.
+
+| Form | Before | After |
+|---|---|---|
+| environment (`PYTEST_ARGS=--ignore=tests/test_browser.py pytest <pin>`) | `1 failed` | `1 passed` |
+| make command line (`make test PYTEST_ARGS="--ignore=tests/test_browser.py tests/test_hooks.py ..."`) | `1 failed, 6 passed`, `Error 1` | `9 passed` |
+| empty (`PYTEST_ARGS=`) | `1 passed` | `1 passed` |
+
+The reading and the whole logs: `bench/RESULTS.md`, "The hook pin and the caller's PYTEST_ARGS (26-01)".
