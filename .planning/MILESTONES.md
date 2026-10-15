@@ -1,5 +1,35 @@
 # Milestones
 
+## v0.5 Honest Form (Shipped: 2026-10-15)
+
+**Delivered:** The web form tells the user up front what each field does, and a real browser proves it — a headless test of the shipped `app.js` inside `make verify` and CI with the request of every one of the 44 fixture links pinned (L39), the hob-root part downloading as `..._trochoid` (L40), eleven `enabled_when` relations dimming an ignored field before it is typed, each proved against `calc` (L41), and a schema-carried Bore shape select that writes only the flat fields (L42); then the gate bar re-set by the human under a rule committed before the first reading and `make venv` installing under the closure (L43), with the Pi 5 claim softened and the reverify loop made a skill — no new `GearParams` field, the 44-record fixture and `requirements.txt` byte-identical to the `v0.4` tag.
+
+**Phases completed:** 21–25 (23 plans, 54 tasks); Phase 24 (discretionary) executed.
+
+**Key accomplishments:**
+- Browser test (Phase 21): `playwright` 1.63.0 pinned with its headless shell under `.venv`, a real uvicorn on a pre-bound socket; the form proven equal to `/api/schema`, both 422 marking paths, the rendered warnings and the link round trip, each assertion seen red once; the query of each of the 44 fixture links pinned in `tests/regression/golden_requests.json`; inside `make verify`, the pre-push hook and CI, green on a real `ubuntu-latest` run (38059369744, `1226 passed`); no gate cost above noise in a six-run interleaved A/B (B − A = −2.47 s) (L39).
+- Download name (Phase 22): `GearParams.slug()` appends `_trochoid` exactly when `calc.root_mode` builds the hob root; radial parts and ignored trochoid requests keep today's name byte for byte; L40 lists every consumer of the old names; pinned by header, pure, record and real-browser tests.
+- Conditional fields (Phase 23): eleven relations declared on `GearParams` in one `when()` vocabulary, carried in `/api/schema`, rendered dimmed-and-editable by generic `applyRelations()`; `tests/test_relations.py` proves each against `calc` in both directions at commit time; the golden sweep compares the dimmed set under all 44 links (L41).
+- Bore-shape selector (Phase 24): a model-level `selectors` list reaching `/api/schema` only, built, derived and written back by generic `app.js` code; `tests/test_selector.py` proves totality, exclusivity and the per-state round trip; a request recorder on every page finds no key `GearParams` lacks; Codex cross-review findings fixed before the land (L42).
+- Gate and ledger (Phase 25): the idle-host rule committed alone (`1d5ce8a`) before any reading; the host never quieted, the human waived the wait and set 300 s on the rule's `none` candidate from two non-decisive readings (A1 195.23 s, B1 179.21 s) (L43 amends L34); a GREEN `make venv` probe under `PIP_CONSTRAINT` in a linked worktree adopted; README names its two dev hosts and makes no Pi 5 claim; `.ai_skills/reverify-phase` from a five-hit count.
+- Quick fix (#37) and close: a hex bore names only the bore fields set away from their defaults (L27 amended); the milestone audit read 24/24 requirements, 8/8 integration seams, 5/5 flows, security clean on all five phases; Phase 22's two untriaged review warnings filed as `must` debt at the close (`4ef9f15`).
+
+**Stats:**
+- 273 files changed (+55,043 / −1,256) from the `v0.4` tag to the last squash; 52 outside `.planning/` (+7,360 / −152), 22 of them code, tests, bench or config (+6,105 / −119)
+- 4,145 lines of package Python, 16,560 of tests, 4,544 of bench, 645 of hand-written UI JS; 1,318 tests in `make verify` (1,220 at v0.4), 97.99 % coverage against the 96 % floor
+- 5 phases, 23 plans, 54 tasks; 6 PRs (#33–#38, #37 a quick fix) through `make pr.land` after the start PR #31
+- 5 days from the milestone start commit (2026-10-10) to the last squash (2026-10-15)
+- 0 runtime dependencies added (`requirements.txt` 31 → 31 pins); `playwright` pinned exactly in the `[dev]` extra
+- `make verify` bar 66 s → 300 s on the 18-CPU M5 Max (L43); readings 195.23 s and 179.21 s, non-decisive
+
+**Git range:** `a310cd3` (Milestone v0.5: Honest Form — start (#31)) → `cbbe730` (Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close (#38))
+
+**Closeout:** `override_closeout` in the tooling's terms — Phases 21–24 project `verification_status: stale` because later squashes (#34–#38, #37) changed files their reports cover (all four reports `passed`; per-file cause and no-regression evidence in `milestones/v0.5-MILESTONE-AUDIT.md`, status `tech_debt`); Phase 25 `passed` with three human-accepted overrides and Nyquist partial by the same waiver. Known verification overrides: 0 newly acknowledged, 0 carried forward.
+
+**What's next:** `/gsd-new-milestone` — the `resource_tracker` flake's fallback trigger falls due at its start; the Ubuntu 26 runner migration fires 2026-10-19; candidates: the gear family (helical first), the hob-root default flip on D-09's trigger, the open review info findings of Phases 21–24.
+
+---
+
 ## v0.4 True Root (Shipped: 2026-10-09)
 
 **Delivered:** The hob-cut trochoid root in the part as an opt-in — `root_shape=trochoid` builds the root a hob with tip radius `root_fillet` cuts, proven against an independent swept-cutter oracle at the calc tier and on the built solid, every number printed beside it proved or warned, parity on the web form, the API and the CLI, the default unmoved and the 44-record fixture byte-identical to the `v0.3` tag (L38); before it, the last two `must` debts retired — the commit gate split and proved by a live SDK commit (L36), the same-slot timeout race reproduced, fixed and ended as a documented 503 with the worst row's margin logged (L37).
