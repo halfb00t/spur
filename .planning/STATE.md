@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 26
 current_phase_name: Gate Fails With a Cause
 status: executing
-stopped_at: Completed 26-02-PLAN.md
-last_updated: "2026-10-15T11:19:33.539Z"
+stopped_at: Completed 26-03-PLAN.md
+last_updated: "2026-10-15T11:42:57.717Z"
 last_activity: 2026-10-15
 last_activity_desc: Phase 26 execution started
-state_head: f30402f1c719b8666b9303ad60f2a7df6e61f57b
+state_head: f0417f6243f73b0076b65b3a0d15c583e31dbc84
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 7
-  completed_plans: 2
-  percent: 29
+  completed_plans: 3
+  percent: 43
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 26 (Gate Fails With a Cause) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-10-15 — Phase 26 execution started
 
-Progress: [███░░░░░░░] 29% (0 of 4 phases)
+Progress: [████░░░░░░] 43% (0 of 4 phases)
 
 ## Performance Metrics
 
@@ -246,6 +246,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 25 P05 | 45 min | 2 tasks | 9 files |
 | Phase 26 P01 | 8 min | 2 tasks | 12 files |
 | Phase 26 P02 | 29min | 3 tasks | 5 files |
+| Phase 26 P03 | 22min | 3 tasks | 38 files |
 
 ## Accumulated Context
 
@@ -466,6 +467,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 25]: At the human's `don't waste any more time` the post-merge and regression test gates were satisfied by the executors' logged `make verify` runs on the committed trees (last: `ac129dc`, 1317 passed) rather than re-run, and the code review and the goal verifier ran in parallel.
 - [Phase 26]: 26-01: _make_env() strips PYTEST_ARGS with make's own flags (one place covers every make a hook test starts); both caller forms seen red first, the empty form recorded as a run, not a test
 - [Phase 26]: 26-02: Ubuntu 26.04 pre-classification green (run 38724011970, image 20261012.163.1); no ubuntu-24.04 pin made; debt item stays active for Phase 29
+- [Phase 26]: 26-03: the twin step's race is the /api/info response, not a delayed STL route: the real-app arms (parked STL green 3/3, parked /api/info red 3/3, new baseline green 3/3) corrected SC2's wording; the baseline waits for the link's own /api/model.stl request and a 1000 ms settle, and the zero-request assertion settles again (CX-05, stray request read at 354 ms)
 
 ### Pending Todos
 
@@ -755,8 +757,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15T11:19:33.518Z
-Stopped at: Completed 26-02-PLAN.md
+Last session: 2026-10-15T11:42:57.697Z
+Stopped at: Completed 26-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
