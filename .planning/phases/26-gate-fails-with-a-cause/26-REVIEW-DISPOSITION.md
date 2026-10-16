@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The hang item names two different `faulthandler_timeout` values"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The two twin-selectors records disagree on whether the 20 local runs are proof"
   - id: IN-01
     severity: info
@@ -31,17 +31,17 @@ findings:
     severity: info
     disposition: open
     title: "The autouse fixture's cost is an unmeasured figure from another host"
-open: 7
+open: 5
 total: 7
-recorded: 2026-10-15T14:50:33.493Z
+recorded: 2026-10-16T05:34:05.220Z
 ---
 
 # Phase 26: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
+| WR-01 | warning | fixed | 26-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 26-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
