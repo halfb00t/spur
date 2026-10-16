@@ -48,8 +48,10 @@ wedged-worker item's trigger), since a wedged pool worker holding a pytest proce
 the one mechanism already on file that produces exactly this shape.
 
 2026-10-15 (26-05): the evidence is now on for every `make verify`: `-v` names each test and
-`faulthandler_timeout = 120` dumps a stalled test's stack (see the runbook below). The item
-stays active until a stall is captured; no cause is claimed.
+`faulthandler_timeout = 170` dumps a stalled test's stack (see the runbook below). The value
+was first 120, sized from a local reading; commit faf376b raised it to 170 after the first CI
+`--durations` reading (run 38750065494, slowest phase 83.55 s). The item stays active until a
+stall is captured; no cause is claimed.
 
 ## Runbook (Phase 26)
 
