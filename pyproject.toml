@@ -123,6 +123,13 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 addopts = "--strict-markers --strict-config"
 xfail_strict = true
+# Dump-only: faulthandler prints every thread's stack when one test item runs past 120 s
+# and the run carries on (no exit on timeout until a first captured hang). The timer is
+# per test item, so a stall after a worker's last test is not covered (the hang item's
+# runbook). Sized at twice the slowest phase of the local --durations reading (32.33 s,
+# tests/test_browser.py, Apple M5 Max, 2026-10-15) with headroom, and STACK's ~52 s CI
+# estimate; confirmed against the first CI --durations in 26-07.
+faulthandler_timeout = 120
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning:starlette.*",

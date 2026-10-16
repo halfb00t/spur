@@ -1,263 +1,164 @@
 # Project Research Summary
 
-**Project:** spur, milestone v0.5 "Honest Form" (a subsequent milestone on a shipping app; the research covers only the new work)
-**Researched:** 2026-10-10
-**Confidence:** MEDIUM-HIGH. Repo and macOS arm64 claims are HIGH (MEASURED or READ). Linux and GitHub-runner claims are MEDIUM or UNVERIFIED.
+**Project:** spur — milestone v0.6 Clean Ledger (debt sweep)
+**Domain:** verification gate, test harness, CI and one form behaviour of a shipped parametric gear generator
+**Researched:** 2026-10-15
+**Confidence:** MEDIUM-HIGH (mechanisms and repo facts HIGH; the 98 % hang and Ubuntu 26 on a real runner unresolved by design)
 
-Evidence tags carry through from the four files. MEASURED means run on the dev host (M5 Max, macOS arm64, Python 3.12.15, Playwright 1.63.0). READ means a repo file or upstream source. DOCS means vendor documentation fetched. UNVERIFIED and ASSUMPTION mean inference. [judgement] means a FEATURES.md call.
+Tags follow the inputs: **MEASURED** (run 2026-10-15 by a researcher), **READ** (source/repo/fetched page), **UNVERIFIED** (inference). **READ-from-STACK** marks a STACK.md MEASURED claim the synthesis did not re-run.
 
 ## Executive Summary
 
-v0.5 adds no geometry and no `GearParams` field. It makes the form honest about what each field does, and it puts a real browser behind that claim. The work is:
-- a headless-browser test of the viewer;
-- `enabled_when` relations in `json_schema_extra`, rendered by generic `app.js` code;
-- a bore-shape selector;
-- a `_trochoid` suffix on the download name;
-- a measured re-set of the L34 gate bar;
-- three ledger items.
+v0.6 adds no feature and no `GearParams` field. It makes the gate fail with a cause or pass, retires the open `must` debt, triages every open review info finding, and changes exactly one behaviour: a bogus shared link is refused instead of silently building the default part. Every valid link, the 44-record fixture and `tests/regression/*.json` stay byte-identical to `v0.5` (L05, L26). Nothing new is installed; Playwright stays 1.63.0 and Python 3.12 (L23).
 
-All four files agree on the architecture. `/api/schema` is `GearParams.model_json_schema()` untransformed (READ, `app.py:373`). So `app.py`, `records.py`, `calc.py`, `model.py`, `pool.py` and `cli.py` need no edit.
+Central result: the `resource_tracker` flake is no longer a "run loops and hope" item. STACK located the cause (READ-from-STACK): three `tests/test_pool.py` tests leave one executor's five semaphores to cyclic garbage; a GC pass landing inside the tracker lock turns the CPython 3.12 reentrancy warning into five unraisable errors under `filterwarnings = error`. Test hygiene — not xdist, coverage or `src/spur`. A 12-line stdlib script reproduces it on demand, and a forced-GC check separated the fix arms. The 98 % hang stays evidence-capture only (dump-only `faulthandler_timeout` plus `-v --durations`), no guessed fix.
 
-The recommended approach:
-- **Browser test:** Playwright (Python, sync API) with the default Chrome Headless Shell. WebGL2 comes through SwiftShader with no flags (MEASURED). It runs against a real uvicorn subprocess, sits inside `make verify` and CI, and is excluded from `verify.fast` by name (L36). It fails closed if the browser is missing.
-- **Relations:** a project-defined data structure evaluated by about 15 lines of vanilla JS.
-- **Inert fields:** dimmed and still editable, never natively `disabled`.
-- **Order:** browser test, then the form work in dependency order, then one closing phase that measures the shipped gate once and amends L34 once.
+Main risks are over-claiming and pin breakage. Mitigations: tag every claim; never write "flake gone" — write "located, fixed from a reproduction, acceptance recorded"; see each new guard test red first; edit `app.js` around `tests/test_api.py`'s token pins; keep the date-gated Ubuntu 26 item from blocking the close.
 
-The main risks are about honesty (L08):
-1. Every declared relation must be backed by `calc`, so a parity test is mandatory. Some proposed relations will fail it.
-2. hex × keyway is a 422, not an ignored field.
-3. The existing test `test_the_shareable_link_round_trips_every_field_through_generic_code` forbids field names in `app.js`, and the selector collides with it unless its logic is schema-carried.
-4. L34 was not set on an idle host.
-5. A skipped browser test gives a green gate with no UI coverage.
+One recurring defect is on nobody's list. **`main` CI is red on 2 of the last 8 runs** (orchestrator-verified: 38347283201 at 94dfc19, 38680454993 at 26ddd74 = the v0.5 tag), both at browser step "twin selectors"; PR runs of the same commits were green. Not filed in `docs/tech_debt`. It joins the gate-reliability phase.
+
+## Conflicts Between the Four Files — Resolved
+
+| # | Conflict | Winner | Why |
+|---|---|---|---|
+| C1 | **Flake plan.** PITFALLS/ARCHITECTURE: whole-suite `-n 8 --cov` vs `--no-cov` loops with a pre-committed stop rule. STACK: located cause, reproduction, forced-GC check. | **STACK** (READ-from-STACK) | A deterministic reproduction satisfies L08. STACK explains why loops cannot separate arms: 2026-10-09 isolation read 0/60 because garbage only matters when GC lands in a µs lock window. `--no-cov` also fails (1/1 whole-suite, 1/4 two-file, `ubuntu:26.04` container), so coverage is not necessary. Loops demoted to one before/after acceptance run keeping PITFALLS' discipline (committed cap and arms, signature-classified reds, no "resolved" on a quiet fortnight). PITFALLS' `gc.set_threshold` amplifier dropped (STACK: 0/6, hides the bug). ARCHITECTURE's test `shutdown(wait=True)` superseded by STACK's arms. |
+| C2 | **Hang evidence.** STACK: `faulthandler_timeout=120` + `-v --durations`. PITFALLS: flushed per-worker journal. `tests/test_hooks.py` pins the recipe. | **STACK by default, journal as fallback** | STACK MEASURED under xdist + cov that `-v` prints controller-side test ids on start and finish and worker stack dumps reach the terminal; PITFALLS had both UNVERIFIED/wrong. ARCHITECTURE READ the pin: it compares the two pytest lines only through `-n <N>`, so a flag after the worker count is safe; an ini option in `pyproject.toml` applies to both targets with no recipe fork. Journal (~10 lines in `conftest.py`, timestamps, survives SIGTERM) only if `-v` proves insufficient. All three agree `faulthandler_timeout` cannot see a post-last-test stall. |
+| C3 | **Phase labels.** ARCHITECTURE 26–29; PITFALLS A–F. | **ARCHITECTURE numbering** | Continues from Phase 25. PITFALLS' letters kept as scope tags. |
+| C4 | **Slug totality scope.** Milestone/FEATURES: "every refusal reason". ARCHITECTURE/PITFALLS: 2 of 6 reasons (`bracket degenerate`, `curve invalid`) are unreachable by validated parameters. | **ARCHITECTURE + PITFALLS** (both MEASURED; `tests/test_calc.py:1603-1604`) | Real seeded cases for reachable reasons with per-bucket non-empty asserts; the two unreachable forced by patching `spur.calc._root_curve` and labelled forced. PITFALLS: uniform draws hit the cheap branch 89 %, so stratify to the undercut region. The milestone sentence is met in a qualified form. |
+| C5 | **Failed-build name test.** FEATURES: private key (`face_width=7.7`). ARCHITECTURE/PITFALLS: `monkeypatch.setattr` a fresh `_BlobCache`. | **monkeypatch** | `_BlobCache` has no `clear()`; a unique-key convention is the hand-kept rule being removed. |
+| C6 | **Bogus-link breadth.** FEATURES (MEASURED in a real browser): general — enums plus non-numeric text in number boxes. ARCHITECTURE: enums in, number boxes filed. PITFALLS: enums only, empty-string policy undecided. | **FEATURES for the facts; scope is a human decision** | Only FEATURES ran it: `teeth=abc`, `mate_teeth=abc` silently build the default today. `recess_sides=bogus` is the same defect regardless, so the fix must be generic over enums (L02; `test_api.py:277-283` forbids per-field code). |
+| C7 | **Info 19 IN-01/02.** FEATURES/ARCHITECTURE: fix (one `model.py` line + bench cleanup). PITFALLS: refactor, defer. | **FEATURES + ARCHITECTURE, guarded** | Cheap; the fixture proves no number moves. Own commit; `tests/test_model.py:899` patches `_chamfer_tips` with a 3-arg lambda and must change with the signature. Lowest-risk row to drop if the human wants no `model.py` diff. |
+| C8 | **Launch-failure message.** STACK: run `playwright install` on every `make test` (0.24 s when present). Others: message-only. | **Message-only** | Smaller; no `Makefile` stamp change, no `tests/test_hooks.py` pin churn. File STACK's idea in `docs/ideas/`. Keep the literal `playwright install --only-shell chromium` `test_browser_pins.py:105-127` requires. |
+| C9 | **Hook pin fix.** ARCHITECTURE: strip `PYTEST_ARGS` in `_make_env()`. STACK: `PYTEST_ARGS=` on the dry-run command line. | **Either; test both forms** | STACK MEASURED both work on GNU Make 4.4.1. PITFALLS: the command-line form is what bit 21-07, so the new test must be red for both forms before the fix. |
+| C10 | **Ubuntu 26 timing.** STACK: pre-classify now on a throwaway `runs-on: ubuntu-26.04` PR. ARCHITECTURE: optional. PITFALLS: human decision. | **Recommend, flagged for the human** | The label exists today; the rollout runs 2026-10-19 → 2026-11-19, so "first run naming 26" is not a clean date. STACK's container run passed the Playwright install and the browser test (5 passed). A real runner is unproven. Pinning `ubuntu-24.04` stays the human's call. |
 
 ## Key Findings
 
 ### Stack (STACK.md)
-- **`playwright` 1.63.0 in `[dev]`.**
-  - Pure wheels for macOS arm64 and manylinux, no sdist, so it installs under `PIP_CONSTRAINT`.
-  - It bundles a 130-135 MB Node driver, so no system Node is needed and L11 is untouched.
-  - MEASURED: the dry-run resolved with 0 errors.
-- **Chrome Headless Shell 153.0.8010.12 (revision 1243)** via `playwright install --only-shell chromium`. About 195 MB on macOS arm64, against 556 MB for the full browser (MEASURED).
-- **`json_schema_extra` nested relation.** Pydantic 2.13.5 emits nested dicts and lists verbatim, key-sorted at every level (MEASURED). `JsonDict` passes `mypy --strict`. DOCS only say "a dict or callable", so the merge behaviour comes from the run, not from a promise.
-- **No new library** for the evaluator, the selector, the slug or the server fixture. Do not use Pydantic `if/then` or `dependentSchemas`.
-- **Runtime closure unchanged.** The 31 pins, the Dockerfile and `refresh-requirements.sh` do not move (READ).
-- **WebGL is load-bearing.** `app.js:229` builds `WebGLRenderer` at module top level, so without WebGL the whole page is dead, form included (READ; PITFALLS MEASURED 0 form fields under `--disable-3d-apis`).
-- **Use the default shell, never `channel="chromium"`.** The shell renders on SwiftShader on both OSes. New headless uses the host GPU (Apple Metal here), so dev and CI would draw differently (MEASURED).
-- **Four-test scenario:** 3.21 s serial, 3.80 s at `-n 2` (MEASURED).
-- **Item 6 probe, resolution only:** none of the 31 pins lacks a macOS arm64 cp312 wheel (MEASURED, two checks). The real delta of adopting the constraint is that `fastapi`, `starlette` and `uvicorn` get downgraded to the pins.
+
+Add nothing. Hold pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0, `playwright==1.63.0` (1.64.0 out 2026-10-13 would move the headless-shell revision and the canvas-PNG bar), CPython 3.12. 3.12 is security-only, so gh-131788 will not arrive there — fix in tests.
+
+- **Flake fix (READ-from-STACK):** module-level autouse fixture in `tests/test_pool.py` whose teardown calls `gc.collect()` (arm B, 4 lines); optionally `del manager` in the three producer tests (arm C, 3 lines). Forced-GC check: baseline fails 3/3, B and C 0/3. Container natural loop: baseline 1/10, B and C 0/10 — consistent, not conclusive. Cost ~10 ms/test in one file. Do not touch `src/spur/pool.py`; do not filter the warning.
+- **Producers:** `test_a_wedged_build_is_terminated_and_its_worker_replaced`, `test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error`, `test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`. The failing test is a victim of whichever GC pass fired, never the producer.
+- **Hang:** `faulthandler_timeout = 120` in `[tool.pytest.ini_options]` (dump-only) and `-v --durations=25` in the `test` recipe. 120 s ≈ 2.3× the estimated CI slowest test (~52 s); re-read from the first CI `--durations` (UNVERIFIED for CI). Evidence runs go through `make` — only `make` exports `PLAYWRIGHT_BROWSERS_PATH`.
+- **Small-item facts (MEASURED):** `BuildPool` slots by `hash(p) % workers` with a per-process hash seed, so after two builds the group is uvicorn + `resource_tracker` + 1 or 2 workers — the floor of 3 is a valid non-vacuity bound. `make test-image` has no `.git`, so two `tests/test_bench.py` tests fail with exit 128. `GET /api/info?root_shape=bogus` already answers 422 `literal_error`, so the bogus-link fix is client-side only.
 
 ### Features (FEATURES.md)
-**Must have:**
-- **Browser test:** server fixture, form built from the schema (counts read from `/api/schema`, never hard-coded), `#dl-stl` href after the first build, non-blank canvas, invalid field marked, warning text equal to `/api/info`, link round trip, CSS custom properties non-empty, and a loud failure if the browser is missing.
-- **Conditional fields:** `enabled_when` metadata, a generic evaluator, dim-and-editable, a reason derived from the gate field's `title`, re-evaluation on `input`, `readHash`, Reset and `hashchange`, and a calc parity test.
-- **Download name:** radial keeps today's name; trochoid gets a `_trochoid` suffix (suffix, not prefix).
 
-**Should have:** the bore-shape selector (P2, "the most discretionary item", defer if the budget is short) and stash/restore of zeroed keyway values.
+**Must have (table stakes):**
+- **Bogus link refused** through the existing field-agnostic 422 path (`problems()`/`fail()`): server text (L02), fragment keeps the offending token, no STL request, editing the field or Reset clears it, valid links send exactly what they sent. Pin `root_shape=bogus as today` flips in the same commit (`tests/test_browser.py:1754-1808`, `BOGUS_LINK`/`TODAY` `:97-103`); new `L44`; debt file to `resolved/` in that commit.
+- The two Phase 22 `must` tests; `stop_group` signal-before-`ps`; group-floor comment + dated corrections under the two `bench/RESULTS.md` rows (readings never rewritten).
+- Flake outcome recorded; hang evidence armed (item stays `active`); Ubuntu 26 classified from the whole log.
+- Every open info finding of Phases 19, 21–24 dispositioned: 19 rows, 16 distinct (19 IN-03 already resolved; 24 IN-04 already filed; 24 CX-03 duplicates 24 IN-02). ≈15 FIX, 6 CLOSE with a written reason, 1 FILE (stash invalidation, the behavioural half of 24 IN-01).
+- The three `nice` items.
 
-**Defer:**
-- stale-response test;
-- refused-vs-inert styling;
-- calc warnings for the silent relations;
-- the hex-warning-on-defaults noise (reproduced: `?bore_hex=6` warns every time; `app.js` must not filter it);
-- the cutout "pick one" lock.
+**Defer / reject:** client-written error wording; refusing blank values; `type=text` number inputs; refusing unknown keys; a fallback-to-default banner; Phase 10 IN-02 (changes a printed value); hex-warning titles (already an idea); marking the mate box on a `mate_teeth` 422 (file as idea).
 
-**Findings the roadmap must know:**
-1. hex × keyway is a 422 (reproduced, `calc.py` ~653). The inventory has two classes: inert (warned) and refused (422).
-2. `root_shape=trochoid` is a no-op at z=30, 41 and 60 (reproduced), so a name from the request can name a root the part lacks.
-3. `gearQuery()` reads `input.value`, not `FormData` (READ), so dim, disable and hide all leave the URL contract (L05) untouched.
+**Info findings that are not cosmetic** (PITFALLS: the test can pass vacuously): 24 CX-05 (zero-request assert can pass before the 350 ms debounce), 23 IN-08 (`CUTOUT_STATES` gives the honeycomb gate one open value), 23 IN-11 (`_js_number` range, `-0.0`), 21 IN-03, 21 IN-04.
 
 ### Architecture (ARCHITECTURE.md)
-- **Pattern:** metadata on the model, one generic consumer in `app.js`, relations evaluated against the value `gearQuery()` sends.
-- **Files:**
-  - `params.py`: `_f(enabled_when)`, selector metadata, `slug()`.
-  - `app.js` and `style.css`: `applyRelations()` and `.field.inactive`.
-  - `tests/test_browser.py`: new, heavy tier.
-  - `tests/test_params_relations.py`: new, light tier, the one-directional inertness proof (relation false means changing the dependent changes only `warnings`).
-  - Makefile: `$(BROWSER)` stamp and `test.ui`.
-  - CI: browser install inside `test (3.12)`.
-  - Up to five new `Lxx`.
-- **Server fixture:** a subprocess on a pre-bound socket with `--fd`. An in-process thread is rejected because `app` is a singleton (lifespans collide, queue constants are fixed at import, `dependency_overrides` is shared).
-- **Gate placement:** option O1 (inside `test`, excluded from `test.fast`) is recommended. O3 breaks `test_hooks.py:92`. O4 needs `required-jobs.txt` and the GitHub ruleset.
 
-### Pitfalls (PITFALLS.md), top six
-1. **BT-1: no WebGL kills the form.** Use the default shell, assert `getContext('webgl2')` first, and spike Linux on CI.
-2. **BT-2 / BT-3: the slice and the vacuous skip.**
-   - A new test file joins the 30 s slice by default.
-   - Add `--ignore` in the same commit, and a test that enforces it.
-   - Never `importorskip`.
-   - `make test-image` needs the ignore too (ARCHITECTURE and PITFALLS agree).
-3. **BT-4 / BT-5: server isolation.**
-   - Use a subprocess with a pre-bound `127.0.0.1` socket, `start_new_session=True` and `killpg`.
-   - MEASURED: pool children survived a server `SIGKILL` for 6 s.
-   - MEASURED: `--fd` works with a TCP socket on uvicorn 0.54.0.
-4. **CF-1 / CF-2: the pins and the refusals.**
-   - Never delete a pin; tighten it under the `Lxx`.
-   - `test_every_key_the_ui_reads_is_a_derived_dimensions_field` harvests `['word',` lines as DIMS keys.
-   - MEASURED: `keyway_width` alone and `keyway_depth` alone are both 422, so gating each on the other deadlocks both.
-   - MEASURED: `recess_*` at `none` and `bore_d=0, bore_flat=5` return 200 with `warnings: []`.
-5. **VP-1: venv hook clobbering.** `make venv VENV=.venv-proof` in the main checkout runs `pre-commit install`, which bakes that venv's python into the shared shim (READ: `INSTALL_PYTHON` in `.git/hooks/pre-commit`). Use a scratch clone or a linked worktree.
-6. **GB-1 / GB-2: no idle host, and the spread beats the effect.** Three runs read 208.52, 161.71 and 208.60 s (READ, 19-09). Fix the rule before the first reading.
+No new component. The only runtime edit is one generic branch in `src/spur/static/app.js` (`readHash`/`gearQuery`); everything else is the verification chain.
 
-## Where the Four Files Disagree
+**Constraints the plans must carry:**
+1. `tests/test_api.py:240-241` pins exact lines: the `readHash` line `input.value = h.get(name) ?? defaults[name]`, the `readHash` end, the `gearQuery` token, the Reset line. `test_api.py:277-283` forbids quoted field names outside `DIMS`. The bogus-link code is a pre-pass around the pinned lines, generic over `prop.enum`. A new row-shaped `['word',` table is harvested as a `DIMS` key.
+2. `tests/test_hooks.py` pins the recipe prefix, the five heavy files, the `test-image` `--ignore`, the stamps. Hook pin goes first.
+3. `tests/test_browser_pins.py::_scan_set()` globs `tests/*browser*.py` with a no-skip spelling scan, so the new `stop_group` unit test lives in a file without `browser` in its name (e.g. `tests/test_group_teardown.py`), well under a second for `make verify.fast`.
+4. `git diff --exit-code tests/regression/` empty at every phase close; `bench/RESULTS.md` append-only with dated corrections; next free decision id `L44`; L40 takes a dated amendment, not a rewrite.
+5. `make no-fake-done` greps `TODO|FIXME|XXX|HACK|NotImplementedError` as whole words in `*.py *.js *.sh`; `mypy --strict` covers `tests bench scripts docker`; `verify.fast` is killed at 30 s (≈11 s used), so new commit-slice tests must be milliseconds.
 
-None of these is resolved here.
+### Critical Pitfalls (PITFALLS.md, filtered by the resolutions above)
 
-| # | Topic | What each file says |
-|---|---|---|
-| 1 | Selector logic home (known tension 1) | PROJECT.md says both "UI-only select in `app.js`" and "relation lives in schema metadata, never hard-coded in `app.js`". FEATURES finding 3 and ARCH §5.1 say these cannot both hold. FEATURES: Option A (metadata) or defer; a second `.js` file is gaming the pin. ARCH: S1, a model-level `selectors` entry in the same condition vocabulary; S2 needs an allow-list that weakens the pin. PITFALLS BS-4: a `BORE_SHAPES` constant in `app.js` under an `Lxx`, plus a model-driven round-trip test against `calc`. |
-| 2 | "Idle-host" re-set vs how L34 was set (known tension 2) | PROJECT.md says "idle-host". ARCH §7.1 and PITFALLS GB-1 correct it from `bench/RESULTS.md` (READ): Phase 15 D-04 set the bar with no quiet host, loads 5.3-30. The bar is the largest of three `-n 8 --cov` runs (65.83 s) rounded to 66 s, then mean(B) = 63.555 s. The quiet-host precedent is Phase 12 (load below 1.5). An idle re-set is a new method. STACK only says "measure idle after the browser test lands". |
-| 3 | Slug: requested vs effective (known tension 3) | FEATURES, ARCH and PITFALLS recommend effective (`calc.root_mode`). STACK takes no side. Cost: `slug()` depends on a solver, about 10-30 µs (MEASURED, 19-09). PITFALLS SL-2: `slug()` is called inside failure-path records, so it must be total. |
-| 4 | Dim-and-editable vs `disabled` (known tension 4) | All three recommend dim-and-editable. ARCH §4.3 allows `disabled` only for fields at their default. A disabled field cannot be cleared, so a value in a shared link such as `#spoke_count=0&hub_d=40` would be stuck. |
-| 5 | Keyway in the relation system | FEATURES and ARCH include `keyway_*` (FEATURES calls it the "refused" class). PITFALLS CF-2 says `enabled_when` should cover "ignored" cases only, so refusals stay visible 422s. |
-| 6 | Unbacked relations (`recess_*`, `bore_flat` at `bore_d` 0) | FEATURES: leave out and file an idea. ARCH: includes the recess row, to be settled by the proof. PITFALLS: a human decision. |
-| 7 | Relation grammar | STACK: nested `all/any`. FEATURES: a JSON-Schema-flavoured fragment (`{"const": 0}`). ARCH: a list of `{field, op, value}` with `op` in `eq, ne, gt, ge`. PITFALLS: `{field, gt}` or `{field, eq}` plus `all`. All say AND-only suffices. |
-| 8 | Asserting "STL in the scene" | STACK and FEATURES: `#dl-stl` href plus a canvas check (PNG size ratio 3,393 vs 38,908 bytes, or 11,478 distinct pixels, both MEASURED). ARCH adds an init-script draw count (VERIFY IN SPIKE). PITFALLS BT-7 proposes a production line `canvas.dataset.triangles`, the only production change any file suggests. |
-| 9 | WebGL flags | ARCH: pass CPU-render args (LOW). STACK (MEASURED) and PITFALLS (READ: Playwright already adds `--enable-unsafe-swiftshader`): none needed. |
-| 10 | Server port and worker cost | STACK: "free port". ARCH and PITFALLS: pre-bound socket with `--fd`. ARCH: `xdist_group` with `--dist loadgroup`. PITFALLS (DOCS): the mark is a no-op under the current `--dist load`, and changing suite scheduling is a gate-time change, so it prefers one scenario test. |
-| 11 | Playwright pin and plugin | STACK: `playwright>=1.63`; `pytest-playwright` optional, pin 0.10.0 exactly if used. PITFALLS: pin `playwright` exactly; avoid `pytest-playwright`. |
-| 12 | CI browser cache | ARCH: cache `ms-playwright`. STACK and PITFALLS (DOCS): caching is not recommended. |
-| 13 | Selector write-through | FEATURES: zero the keyway pair on Hex or None, with a stash. ARCH: writes switch-offs only, no keyway zeroing. PITFALLS BS-1: minimum fields, explicit `"0"` never `''`, remember typed values, never write on load. |
-| 14 | Gate-reading N | ARCH: N=3, the bar is the largest run rounded up. PITFALLS GB-2: N≥5 per arm, interleaved A/B, min/median/max. |
-| 15 | Missing-browser opt-out | ARCH and FEATURES: fail loudly, no skip. PITFALLS: no skip, but a printed `SPUR_NO_BROWSER=1` opt-out refused when `CI` is set. |
-
-## Decisions Reserved for the Human (discuss-phase)
-
-1. Does a headless browser belong in `make verify`? Options: O1 (recommended by all four), O2, O3, O4. STACK prices O1 at +3.2-3.8 s on a 192.94 s mean (MEASURED). One `Lxx` amends L11, L13 and L36.
-2. Missing browser: hard fail, or hard fail plus a printed, CI-refused opt-out.
-3. Whether to add the one production line `canvas.dataset.triangles`.
-4. Whether to adopt `pytest-playwright`.
-5. Dim-and-editable, or `disabled` limited to default values.
-6. Relation grammar scope.
-7. Whether keyway gets a relation, and a separate "refused" style.
-8. Whether unbacked relations stay undimmed or get a warning first.
-9. Selector logic home: schema (S1) or a `BORE_SHAPES` constant (S2). Also whether to defer the selector at all.
-10. A fifth "No bore" option, with keyway kept outside the select.
-11. What Hex or D-flat writes when the matching field is 0: a pending UI state (all files lean this way) or a starter value (`bore_flat` default is 8).
-12. Slug by requested or effective root.
-13. The idle threshold X (precedent 1.5), cool-down, N, and the give-up rule, all fixed before any reading. The human then sets the bar.
-14. Whether to re-sweep the xdist knee on the 18-CPU host (the N=8 knee was swept on 12 CPUs).
-15. Whether to adopt `PIP_CONSTRAINT` in `make venv` if the probe passes.
+1. **Declaring the flake gone on a quiet run.** Zero reds in N only bounds the rate near 3/N. The fix rests on the captured reproduction; the acceptance run has its cap and arms committed before it starts; the success line says "located and fixed from a reproduction".
+2. **Symptom fixes.** No `filterwarnings` entry, no blanket `ignore::pytest.PytestUnraisableExceptionWarning`, no `shutdown(wait=True)` in `BuildPool`, no rerun plugin. Call arm B a mitigation of the precondition, not a removal of the warning.
+3. **Vacuous guard tests.** Slug totality: stratified undercut draws, per-bucket non-empty asserts, local `random.Random(n)`, red against a patched `_junction`/`_root_curve`. Name test: `monkeypatch` self-restores; prove it by pre-seeding the cache so the old test reds.
+4. **`stop_group` reorder hazards.** No `proc.poll()`/`wait()` before the signals (PID reuse); keep the SIGTERM grace; a failed `ps` means "survivors unknown" and still fails; the leader-only break (`bench/RESULTS.md` row 21-01) must still red; the unit test cleans up its own group.
+5. **L05 trap and pin flip.** Fixture and golden byte-identical to `v0.5`; old pin seen red against the fix, new pin seen red with the fix reverted, both recorded in "Seen red once".
+6. **Ubuntu 26.** No fix before classification; one run is not the migration; record the `Image:` line per run in the window; read all three jobs (`test (3.12)`, `vendor-bundle`, `image`); classification table in `bench/RESULTS.md` before any `ci.yml` edit.
+7. **Info triage without reasons.** One disposition per finding in its `*-REVIEW-DISPOSITION.md`: `fixed` + sha, `deferred` + path, or `skipped` + one-line reason. Zero `open` at close.
 
 ## Implications for Roadmap
 
-Five phases, numbered from 21.
+Phase numbers continue at 26. PITFALLS' scope letters in brackets. One concern per commit; each debt item retired in its fixing commit.
 
-**Phase 21: Browser Test of the Viewer**
-- **Why first:** both UI ideas named "a browser test exists" as their trigger. It is the only thing that can see dim, derive and write-through behaviour. It carries the golden baselines: request sets for the 44 records, the hex-link warning, and the `root_shape=bogus` blank-select behaviour.
-- **Delivers:**
-  - the WebGL and CI spike as the first task;
-  - the subprocess server fixture;
-  - scenarios for all three programmatic-value paths (fresh load, Reset, `hashchange`);
-  - gate admission: `test.fast --ignore`, `HEAVY_TEST_FILES`, the `$(BROWSER)` stamp, `test.ui`, the CI install, the `test-image` ignore, and a `.gitignore` entry for browser artifacts;
-  - the isolated price of the file;
-  - one `Lxx` amending L11, L13 and L36;
-  - the reverify paragraph in `HOW_TO_DEVELOP.md` §6 (cheapest early, PITFALLS M-5).
-- **Install constraint:** the browser install must be a Makefile step, because `.venv` does not exist before `make verify`. Isolate `PLAYWRIGHT_BROWSERS_PATH` or pass `--no-remove`, because this host holds `chromium-1228` and Playwright's browser GC could delete another project's browser.
-- **Avoids:** BT-1 to BT-11, M-1 to M-4.
+### Phase 26: Gate Fails With a Cause [A + F1 + cheap gate items]
+**Rationale:** the flake, the "twin selectors" red and the hook-pin failure pollute every later gate reading with false reds. Touches `Makefile`, `pyproject.toml`, `tests/test_hooks.py`, `tests/test_pool.py`, `tests/test_browser.py`.
+**Delivers, in order:**
+1. Hook pin ignores the caller's `PYTEST_ARGS` (env-var and command-line forms both red first).
+2. **Twin-selectors race** (runs 38347283201, 38680454993): wait for the STL request, settle past the 350 ms debounce, then take the baseline. Folds in 24 CX-05 and 21 IN-04a (`_follow_link` → `BUILD_WAIT_MS`). File the debt item and retire it in the fixing commit. The mechanism is ARCHITECTURE's ASSUMPTION from two logs with no local reproduction; logs plus a delayed-route red proof serve as the capture.
+3. **Flake:** arm B (optionally C) in `tests/test_pool.py` from STACK's reproduction. Acceptance: forced-GC red → green, plus one interleaved before/after run with a pre-committed cap; record effective `-n`, tool versions and signature-classified reds in `bench/RESULTS.md`; retire the item quoting the table.
+4. **Hang evidence:** `faulthandler_timeout` + `-v --durations`; one `--durations` reading sets the final timeout; cost priced against the 300 s bar (L43). The item stays `active` and gains a runbook stating the exit-window limit.
+5. **`make test-image`:** run it first, read the reds, then the option the human picks.
+6. Ubuntu 26 pre-classification on a throwaway PR before 2026-10-19, if the human agrees.
 
-**Phase 22: Download Name Carries `root_shape`**
-- **Why here:** independent of the form work and low-risk. It reuses Phase 21's `expect_download` harness while it is fresh, and it can move later at no cost.
-- **Delivers:**
-  - a suffix only for a non-default root, so the `test_api.py:720` pin stays;
-  - a deliberate flip of the `test_api.py:411-412` assertion;
-  - `http-api.md:43` updated;
-  - an `Lxx` listing what pinned the old names, and recording that no cache is keyed by slug (READ).
-- **Avoids:** SL-1, SL-2. Test z=23 (applies) and z=40 (ignored).
+**Avoids:** pitfalls 1, 2, 3 (first part), 6 (partly), 16, 17.
 
-**Phase 23: Conditional Form Fields**
-- **Why before the selector:** it needs Phase 21 as its regression net, and it defines the evaluator the selector reuses. Building them separately gives two statements of "hex wins" (PITFALLS BS-4).
-- **Delivers:**
-  - `_f(enabled_when)`, and the same key on the two bare-`Field` Literal fields;
-  - `applyRelations()` with dim-and-editable and a reason built from the gate field's `title`;
-  - the calc parity test;
-  - the model-driven field-walk extension;
-  - a keyword-collision test;
-  - the pins rewritten stricter under an `Lxx` that supersedes 08 D-09 (L02 kept).
-- **Avoids:** CF-1 to CF-4, M-3, M-7. Budget for dropping rows that fail the parity proof. File the hex-warning noise as debt.
+### Phase 27: Ledger Tests and Harness [B + C + F]
+**Rationale:** test-only plus one `model.py` line — low behaviour risk; finish before 2026-10-19 where small. `stop_group` must precede Phase 28, whose red-first protocol runs the browser repeatedly.
+**Delivers:** slug totality and failed-build name tests (22 IN-01, 24 IN-03 in the same files); `stop_group` fix with a non-browser unit test; group-floor comment and dated corrections under both RESULTS rows (macOS listing MEASURED today: 2 → 3 → 4; Linux listing from a member-command print in the next CI log); text-only launch message; info 21 IN-01/02/03, 22 IN-02, 23 IN-08, 23 IN-11; 19 IN-01/02 and `_host_state`; L40 dated amendment (22 IN-03); draft triage table.
+**Avoids:** pitfalls 3 (second part), 4, 7, 8, 12, 13, 15.
 
-**Phase 24: Bore-Shape Selector**
-- **Why here:** it needs Phase 21 (trigger) and Phase 23 (shared evaluator). It is the largest UX risk and the most discretionary item, so it can be cut without breaking anything else. It needs the human decision on logic location before planning.
-- **Delivers:**
-  - a `<select>` over hex, D-flat, round and none;
-  - no entry in the `fields` map and none in the URL;
-  - stash and restore of typed values;
-  - a model-driven round-trip test per state;
-  - browser tests for the 44-record request-set comparison and for "no non-field key in any `/api/*` request or hash".
-- **Avoids:** BS-1 to BS-4. Write option tables as objects, not `['x', ...]` rows.
+### Phase 28: Refuse the Bogus Link [D]
+**Rationale:** the only user-visible change, so it needs a decision record (`L44`); edits the most-pinned file. Discuss-phase first with the open decisions below.
+**Delivers:** generic `readHash`/`gearQuery` pre-pass (shared `rejected` map per FEATURES, or a stray option per ARCHITECTURE — settled at discuss-phase); `problems()`/`fail()` unchanged; browser step rewritten with both reds recorded; `L44`; `docs/architecture/web-ui.md:80` rewritten; debt item retired. Same file, separate commits: 24 IN-02 wording ("Could not build the form"), 24 IN-01 comment, optionally the 19 IN-04a label. Phase close: `git diff --exit-code tests/regression/` empty; info triage zero `open`.
+**Avoids:** pitfalls 5, 12.
 
-**Phase 25: Gate Bar Re-Set, Venv Probe, Ledger Close**
-- **Why last:** the re-set must measure the shipped `HEAD`, so it needs Phases 21-24 landed. The re-set and the `PIP_CONSTRAINT` probe both amend L34, so they share this phase and L34 is amended once.
-- **Probe constraints:**
-  - It must not run during a gate measurement, because it loads the host.
-  - It must not run in the main checkout. `make venv VENV=...` runs `pre-commit install` and rewrites the shared hook shim (READ, `Makefile:51`, `.git/hooks/pre-commit`).
-  - Use a scratch clone or a linked worktree. The Makefile detects worktrees and skips the install (READ, `Makefile:71`).
-  - Afterwards confirm that `.git/hooks/pre-commit` still names `.venv/bin/python`.
-- **Delivers:**
-  - the rule and threshold written into `bench/RESULTS.md` before any reading;
-  - idle-host readings with load, machine and `HEAD`;
-  - the human sets the bar;
-  - one `Lxx` amending L34;
-  - the stale `63.555 s` / `~64 s` comments in `Makefile`, `.pre-commit-config.yaml` and `HOW_TO_DEVELOP.md` rewritten, with IN-03 retired in the same commit;
-  - the probe result (`make verify` result line, `pip check`, freeze diff);
-  - the README Pi 5 sentence stating only the hardware the numbers came from.
-- **Avoids:** GB-1 to GB-3, VP-1, M-6.
+### Phase 29: Ubuntu 26 Final Reading [E] — date-gated, last
+**Rationale:** cannot be scheduled; the rollout runs 2026-10-19 → 2026-11-19.
+**Delivers:** starting at the first `ubuntu-latest` run whose `Set up job` names 26.04, classification from the whole log of all three jobs before any `ci.yml` edit. Green → dated `bench/RESULTS.md` reading, item resolved. Red → offer `runs-on: ubuntu-24.04` to the human only. If no 26.04 run by the close, the milestone closes with the item open and its trigger restated.
 
-**Ordering rationale**
-- BT comes first because both UI ideas named it as their trigger.
-- CF comes before BS because the selector reuses the relation evaluation pass.
-- SL is movable anywhere after BT.
-- The gate re-set and the venv probe come last, together, to measure the shipped gate once.
-- The 44-record fixture stays byte-identical because no phase touches `GearParams` fields or `derive()`. The slug is not in the fixture (READ: `pre_v0_2.json` has no `spur_z` string).
+### Research Flags
 
-**Research flags**
-- **Phase 21 needs a spike:**
-  - Linux CI: the headless shell on `ubuntu-latest`, `--with-deps` via `sudo`, and the apt libraries.
-  - Strict mypy on the Playwright-typed file.
-  - Gate cost under eight-worker load on a 4-vCPU runner.
-- **Phase 24** needs a human decision before planning.
-- **Phase 22** has one small decision (requested vs effective).
-- **Phase 23** uses standard patterns, but the parity proof will surface relation rows that are not inert.
-- **Phase 25** uses standard patterns, but the idle threshold, cool-down and N must be fixed before any run.
+- **Needs discuss-phase, not more research:** Phase 28 (scope, label, mechanism); Phase 26 `test-image`.
+- **Needs a first real measurement before planning:** `make test-image` (never run in research); CI `--durations` for the timeout; a real Ubuntu 26 runner.
+- **Standard patterns (skip research-phase):** Phase 27; Phase 26 items 1–3; Phase 29 (procedure fixed by the debt file).
 
-## Confidence
+## Open Human Decisions (listed, not decided)
+
+1. **Bogus-link scope.** (a) Enum-only (`root_shape`, `recess_sides`) vs also non-numeric number-box text (`teeth=abc`, `mate_teeth=abc`) — FEATURES recommends including number boxes, MEASURED as silently building the default. (b) Blank (`root_shape=`, `teeth=`): keep "blank means default" (FEATURES recommends; the page defines it today) or refuse (the API answers 422). `L44` must state whichever boundary is chosen.
+2. **IN-04a label change.** Make `['root_fillet', 'Root fillet used']` a function of the document while a hob root is in force. Text-only — no part, number or request moves — but a second visible change beside the bogus link. Fix, or close with a reason?
+3. **Phase 18 and Phase 10 info findings — in or out.** Outside the milestone text, still `open`: Phase 18 IN-01..08, Phase 10 IN-01/02. FEATURES recommends closing 18 IN-02, IN-06 (overtaken), fixing the IN-07 docstring line, filing the rest as one `nice` item (trigger: `bench/trochoid.py` or `calc.cutter` next touched), and filing Phase 10 IN-02 as a decision (it changes a printed value). Liveness of most rows UNVERIFIED.
+4. **`faulthandler_exit_on_timeout` — now or later.** Turns a hang into a named failure (MEASURED under xdist + cov) but changes gate semantics, raises the dev floor to `pytest>=9`, and drops coverage data (so `fail_under = 96` adds a second failure line). STACK recommends dump-only now; decide after the first captured hang.
+5. **`make test-image` — mount `bench/` and `scripts/`, or exclude by name.** Excluding `tests/test_calc.py` and `tests/test_trochoid.py` (both import `bench`) would gut the image suite. ARCHITECTURE/PITFALLS recommend mounting read-only with `PYTHONPATH=/app/src:/app` and `--ignore` only for files needing `make`/git/Dockerfile/`.github`. Run `make test-image` once first.
+
+Non-blocking, also the human's call: the Ubuntu 26 pre-classification PR (C10); keeping the group floor at 3 with a comment-only fix vs forcing a second build; the `model.py` touch in 19 IN-01/02 (C7).
+
+## Confidence Assessment
 
 | Area | Confidence | Notes |
 |---|---|---|
-| Stack | HIGH on macOS arm64; MEDIUM on Linux CI | Linux was an `ubuntu:24.04` container, not a GitHub runner. |
-| Features | MEDIUM-HIGH | Repo claims were reproduced. UX conventions are MEDIUM. FEATURES rated Linux WebGL as LOW; STACK later measured the container. |
-| Architecture | MEDIUM | Claims about existing code are HIGH. ARCH says nothing in it was run; STACK and PITFALLS have since measured several of its assumptions. |
-| Pitfalls | HIGH for MEASURED and READ; MEDIUM for DOCS; LOW for UNVERIFIED | No Linux host, Docker daemon or runner was available. |
+| Stack | HIGH | Mechanism READ in installed CPython/pytest source; reproduction and arm table are STACK's, not re-run by the synthesis. MEDIUM on Ubuntu 26.04 (container only). |
+| Features | HIGH | Browser and API probes MEASURED; info inventory re-read against HEAD. MEDIUM on other URL-state libraries (search snippets). |
+| Architecture | HIGH | File/line facts and pins READ at `3726242`. Debt-file line numbers are stale (ARCHITECTURE F8) — plan from ARCHITECTURE §3. LOW on the twin-selectors mechanism. |
+| Pitfalls | MEDIUM-HIGH | Repo-specific parts HIGH; its hang-evidence claims and loop-heavy flake plan superseded by STACK. |
 
-**Gaps:**
-- **CI Linux:** unmeasured.
-- **Browser-test gate cost under load:** ARCH's 10-25 s is an ASSUMPTION; STACK's 3.2-3.8 s is the isolated MEASURED figure.
-- **Strict mypy:** `page.evaluate` returns `Any`, so it needs typed wrapper helpers.
-- **Gate re-set spread:** the 19-09 spread is larger than any single effect. At N around 10, 2 failures in 12 runs has a 95% Wilson interval of about 5-45% (calculated).
-- **`make verify` under `PIP_CONSTRAINT`:** only resolution was probed. Also, pip 26.2 no longer applies `PIP_CONSTRAINT` to build isolation (DOCS), and macOS arm64 green says nothing about the Docker `linux/arm64` image or the Pi 5.
-- **Resource-tracker flake (a `must` debt):** keep every failed gate log during Phase 21 and classify it against the four recorded occurrences. Add no `filterwarnings` entry.
-- **Existing silent behaviour to pin and file, not fix:** `#root_shape=bogus` becomes the default via the blank select, where the API returns 422 (MEASURED).
-- **Other UNVERIFIED items:** the `expect` default timeout, canvas readback without `preserveDrawingBuffer`, coverage behaviour on a `SIGKILL`ed child, FastAPI's handling of a nested extra in `/openapi.json`, and same-document `goto` semantics in Playwright.
-- **Ledger hygiene:** retire each idea or debt item in the commit that closes it (status, sha, `git mv`, INDEX row).
+**Overall:** MEDIUM-HIGH.
+
+### Gaps to Address
+
+- Flake fix natural-loop acceptance is consistent, not conclusive (0/10 has a 15–30 % chance by luck); the forced-GC result is the proof. Re-run STACK's reproduction and arm table before landing.
+- 98 % hang: no reproduction. STACK's arithmetic (~23 outstanding of ~1220 fits a global stall better than one stuck worker) is UNVERIFIED; `faulthandler_timeout` does not cover the post-last-test window; `kill -ABRT <pid>` on a stalled worker UNVERIFIED (not run, to avoid muddying the xdist OCCT segfault investigation); a shared root with the tracker flake is UNVERIFIED.
+- Twin-selectors mechanism rests on two CI logs; no local reproduction.
+- Unmeasured: `make test-image` red list; Linux process-group listing; a real Ubuntu 26 runner image.
+- Number-box garbage MEASURED only by FEATURES; ARCHITECTURE/PITFALLS inferred.
+- `faulthandler_timeout = 120` sized from local timings and one CI wall time; confirm against the first CI `--durations`.
+- Which 3.12.x first carried the reentrancy guard is unchecked; quote no version in a decision.
+- `tests/test_api.py` regexes guarding `app.js` not fully read; run that file early in Phase 28.
 
 ## Sources
-Only what the four files cite:
-- **HIGH (local runs and repo reads):**
-  - pip dry-run under `PIP_CONSTRAINT`, Playwright installs, WebGL probes, the four-test scenario, reproduced API behaviours, `--fd` and `SIGKILL` experiments.
-  - PyPI JSON for the 31 pins, `playwright`, `pytest-playwright` and `selenium`.
-  - Repo files: `app.js`, `params.py`, `calc.py`, `app.py`, `records.py`, `cli.py`, `tests/test_api.py`, `test_cli.py`, `test_hooks.py`, `Makefile`, `pyproject.toml`, `ci.yml`, `.pre-commit-config.yaml`, `.git/hooks/pre-commit`, `decision_log.md`, `bench/RESULTS.md`, `docs/ideas/*`, `docs/tech_debt/active/*`, `PROJECT.md`.
-  - Upstream source: Playwright `chromium.ts`, uvicorn `config.py`.
-  - OpenSCAD Customizer manual.
-- **MEDIUM:**
-  - `ubuntu:24.04` container run.
-  - Playwright browsers, CI, intro and clock docs.
-  - Pydantic `json_schema_extra` docs.
-  - pytest-xdist distribution and how-to pages.
-  - coverage.py config, pytest-cov 7.0.0 changelog, pip 26.2 release notes.
-  - JSON Schema conditionals, JSON Forms rules, rjsf dependencies.
-  - kittygiraudel on `disabled` vs `aria-disabled`, MDN `inert`, hidde.blog, GOV.UK radios.
-  - RFC 6266.
-- **LOW:**
-  - Chromium SwiftShader docs (two revisions cited).
-  - microlink.io on WebGL without a GPU.
-  - pytest-xdist scheduling guarantees (via web search).
+
+### Primary (HIGH)
+- Installed CPython 3.12.15 `multiprocessing/{resource_tracker,synchronize}.py`; pytest 9.1.1 `_pytest/{unraisableexception,faulthandler}.py`; pytest-xdist 3.8.0, execnet 2.1.2, coverage 7.16.2, pytest-cov 7.1.0 sources; Playwright 1.63.0 driver `coreBundle.js` and `browsers.json`.
+- Repo at `3726242`: `app.js`, `params.py`, `pool.py`, `app.py`, `Makefile`, `pyproject.toml`, `ci.yml`, `tests/*`, `bench/RESULTS.md`, `decision_log.md`, `docs/tech_debt/active/*`, v0.5 phase REVIEW and DISPOSITION files (21–24).
+- GitHub Actions runs 38347283201, 38680454993; orchestrator-verified red count on `main`.
+- Each researcher's MEASURED probes of 2026-10-15 (forced-GC reproduction, `ubuntu:26.04` container runs, browser/API probe table, slug reason counts, process-group listing).
+
+### Secondary (MEDIUM)
+- cpython#109629, #131788 / PR #131787 (reentrancy; not backported to 3.12; 3.13 backport reverted); halfb00t/screw PR #7 (same cause, `del manager`); devguide.python.org/versions; GitHub changelog 2026-09-17 and actions/runner-images#14748, #14226; microsoft/playwright#40117 (Ubuntu 26.04 from 1.61.0); `actions/python-versions` manifest.
+
+### Tertiary (LOW)
+- TanStack Router, nuqs, react-jsonschema-form docs (search snippets; convention only).
+
+---
+*Research completed: 2026-10-15*
+*Ready for roadmap: yes, after the five open decisions go to the human; Phases 26, 27 and 29 can be planned without them.*

@@ -1,20 +1,21 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.5
-milestone_name: Honest Form
-status: Awaiting next milestone
-stopped_at: Milestone v0.5 closed and archived — awaiting next milestone
-last_updated: "2026-10-15T03:40:31.413Z"
+milestone: v0.6
+milestone_name: Clean Ledger
+current_phase: 26
+current_phase_name: Gate Fails With a Cause
+status: executing
+stopped_at: Completed 26-06-PLAN.md
+last_updated: "2026-10-15T13:26:20.946Z"
 last_activity: 2026-10-15
-last_activity_desc: Milestone v0.5 completed and archived
-state_head: 4ef9f159e5418e9e1ccf728402f5c3a833964be8
+last_activity_desc: Phase 26 execution started
+state_head: d9904e41bf9a8b986f368dc0441f7b79beee8bbc
 progress:
-  total_phases: 5
+  total_phases: 4
   completed_phases: 5
-  total_plans: 23
-  completed_plans: 23
-  percent: 100
-current_phase: 25
+  total_plans: 7
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State
@@ -25,14 +26,16 @@ See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`). Owed at its start: the resource-tracker debt's fallback trigger; due 2026-10-19: the Ubuntu 26 runner migration. Close PR for v0.5 on `gsd/milestone-v0.5-close`; the `v0.5` tag goes on its squash commit on `main`.
+**Current focus:** Phase 26 — Gate Fails With a Cause
 
 ## Current Position
 
-Phase: Milestone v0.5 complete
-Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-15 — Milestone v0.5 completed and archived
+Phase: 26 (Gate Fails With a Cause) — EXECUTING
+Plan: 7 of 7
+Status: Ready to execute
+Last activity: 2026-10-15 — Phase 26 execution started
+
+Progress: [█████████░] 86% (0 of 4 phases)
 
 ## Performance Metrics
 
@@ -241,6 +244,12 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 25 P03 | 13 min | 2 tasks | 31 files |
 | Phase 25 P04 | 2h | 3 tasks | 12 files |
 | Phase 25 P05 | 45 min | 2 tasks | 9 files |
+| Phase 26 P01 | 8 min | 2 tasks | 12 files |
+| Phase 26 P02 | 29min | 3 tasks | 5 files |
+| Phase 26 P03 | 22min | 3 tasks | 38 files |
+| Phase 26 P04 | 19 min | 3 tasks | 4 files |
+| Phase 26 P05 | 32 min | 3 tasks | 6 files |
+| Phase 26 P06 | 40min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -459,6 +468,13 @@ pending; the next milestone starts this list fresh.
 - [Phase 25]: The bar is the human's number on a `none` candidate — `Let's set 300 s. IMHO it's a reasonable bar` — recorded under `#### Gate decision` and in L43 (amends L34); no check enforces it (ARCH 7.4); the stale 66 s / 64 s lines swept.
 - [Phase 25]: The venv probe was GREEN in a linked worktree under `PIP_CONSTRAINT` (31/31 pins, `pip check` clean, 1317 passed), so `$(STAMP)` now installs under `-c requirements.txt`; `agent/venv-probe` deleted at the human's `delete`.
 - [Phase 25]: At the human's `don't waste any more time` the post-merge and regression test gates were satisfied by the executors' logged `make verify` runs on the committed trees (last: `ac129dc`, 1317 passed) rather than re-run, and the code review and the goal verifier ran in parallel.
+- [Phase 26]: 26-01: _make_env() strips PYTEST_ARGS with make's own flags (one place covers every make a hook test starts); both caller forms seen red first, the empty form recorded as a run, not a test
+- [Phase 26]: 26-02: Ubuntu 26.04 pre-classification green (run 38724011970, image 20261012.163.1); no ubuntu-24.04 pin made; debt item stays active for Phase 29
+- [Phase 26]: 26-03: the twin step's race is the /api/info response, not a delayed STL route: the real-app arms (parked STL green 3/3, parked /api/info red 3/3, new baseline green 3/3) corrected SC2's wording; the baseline waits for the link's own /api/model.stl request and a 1000 ms settle, and the zero-request assertion settles again (CX-05, stray request read at 354 ms)
+- [Phase 26]: 26-04: resource-tracker flake located and fixed from a forced-GC reproduction (autouse teardown gc.collect fixture + del manager in tests/test_pool.py); 10+10 natural run 0 of 10 each arm, consistent not conclusive
+- [Phase 26]: 26-05: faulthandler_timeout stays 120 (slowest phase 32.33 s locally, 2 x S = 64.66 s); the -v --durations=25 flags cost -0.51 % over 3 + 3 interleaved gate runs (206.87 s vs 205.81 s, L43 bar 300 s); hang item stays active with a runbook
+- [Phase 26]: 26-06: pytest-cov and pytest-xdist added to the test-image pip install so the forced-GC test runs in the image (human option B, deviation from D-11 literal text)
+- [Phase 26]: 26-06: test-image ignores six files whole, not per-test --deselect (stale ids fail silently); drops 47 + 41 passing tests from the image suite
 
 ### Pending Todos
 
@@ -466,6 +482,10 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 begins 2026-10-19 and runs to 2026-11-19: Phase 26's
+  throwaway-PR pre-classification must have run its three jobs before it reaches the repo (the human pushes the
+  PR). Until Phase 26 lands, `main` CI is red on 2 of the last 8 runs at the browser step "twin selectors"
+  (`docs/tech_debt/active/2026-10-15-twin-selectors-step-reds-main.md`, `must`).
 - ⚠️ [Phase 25] The 300 s bar rests on two non-decisive readings under load 4–7 (L43 says so). Review WR-03: Phase 24 recorded green gate runs of 296.91 s, 294.40 s and 336.15 s on this host under higher load, not cited beside the bar; the `.pre-commit-config.yaml` comment says the 300 s was "read on 2026-10-14" when it was set by the human. WR-01: no test pins the `requirements.txt` stamp dependency or the `-c requirements.txt` line. WR-02: the probe used an absolute `PIP_CONSTRAINT`, not the shipped relative `-c`. All open in `25-REVIEW-DISPOSITION.md`.
 - ℹ️ [Phase 25] The idle-host method never got an idle host: seven A1 waits gave up (lowest 1-min load 1.60 with other agent sessions open). A decisive re-read needs the other sessions closed or a new rule; the rule text stands for a future session.
 - ℹ️ [Phase 25] The resource-tracker flake did not fire in this phase's four green `make verify` runs (A1, B1, probe, 25-05); the `must` debt's decision is still owed from Phases 23 and 24.
@@ -734,6 +754,7 @@ None yet.
 - v0.4 roadmap created: Phases 17–20 (Debt First — Commit Gate and Pool Race; Trochoid Maths, Proved; The Trochoid in the Part; The Flip, conditional) — 14/14 v0.4 requirements mapped, 0 orphans, numbering continues from Phase 16; Phase 20 is skipped, never deleted, if the root-mode `Lxx` is O3 or O4 with the flip deferred
 - Phase 20 skipped (O4, flip deferred) under L38, 2026-10-09: the hob root is opt-in through root_shape; the flip waits on a real fit report or a mating-pair request below z_min (D-09).
 - v0.5 roadmap created: Phases 21–25 (Browser Test of the Viewer; Download Name Carries the Root; Conditional Form Fields; Bore-Shape Selector, discretionary; Gate Bar Re-Set, Venv Probe, Ledger Close) — 24/24 v0.5 requirements mapped, 0 orphans, numbering continues from Phase 20; Phase 24 is skipped, never deleted, if the human cuts it (its three requirements then move to Future Requirements by an explicit edit)
+- v0.6 roadmap created: Phases 26–29 (Gate Fails With a Cause; Ledger Tests and Harness; Refuse the Bad Link; Ubuntu 26 Final Reading, date-gated) — 17/17 v0.6 requirements mapped, 0 orphans, numbering continues from Phase 25; Phase 29 may close with its item still active (trigger restated, REQ-ubuntu26-classified-on-migration then moves to Future Requirements by an explicit edit with the human) and is never deleted
 
 ## Deferred Items
 
@@ -743,10 +764,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15
-Stopped at: Milestone v0.5 archived on `gsd/milestone-v0.5-close` (audit `tech_debt`, override closeout; Phase 22 WR-01/WR-02 filed as `must` debt in `4ef9f15`)
+Last session: 2026-10-15T13:26:20.925Z
+Stopped at: Completed 26-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Approve the v0.6 roadmap (the orchestrator commits it), then /gsd-discuss-phase 26 (the `make test-image` mount-or-exclude decision waits on the first run's red set) or /gsd-plan-phase 26

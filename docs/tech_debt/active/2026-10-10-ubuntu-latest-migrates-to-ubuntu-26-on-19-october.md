@@ -35,5 +35,9 @@ fix, as 21-08 did; if it is green, record the image version and the install seco
 `bench/RESULTS.md` reading and resolve this item. Pinning `runs-on: ubuntu-24.04` is the fallback; that is the
 human's decision, not the executor's.
 
+Pre-classified on 2026-10-15 on draft PR #40, run 38724011970: test (3.12) green, vendor-bundle green,
+image green (all three on `Image: ubuntu-26.04` `20261012.163.1`; `1318 passed`, install 14.44 s); record
+`bench/RESULTS.md` `### Ubuntu 26.04, pre-classified (26-02)`. Phase 29 reads the first migrated run against it.
+
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

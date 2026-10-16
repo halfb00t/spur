@@ -1,7 +1,7 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.5 — Honest Form",
+  "milestone": "v0.6 — Clean Ledger",
   "phases": [
     {
       "number": "1",
@@ -26,13 +26,33 @@
     {
       "number": "21",
       "name": "25",
+      "status": "complete"
+    },
+    {
+      "number": "26",
+      "name": "Gate Fails With a Cause",
+      "status": "in_progress"
+    },
+    {
+      "number": "27",
+      "name": "Ledger Tests and Harness",
+      "status": "pending"
+    },
+    {
+      "number": "28",
+      "name": "Refuse the Bad Link",
+      "status": "pending"
+    },
+    {
+      "number": "29",
+      "name": "Ubuntu 26 Final Reading",
       "status": "pending"
     }
   ],
   "next": {
-    "command": "/gsd:progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 1 of 4 · 86% · executing"
   },
-  "updated_at": "2026-10-15T03:40:31.424Z"
+  "updated_at": "2026-10-15T13:26:16.475Z"
 }

@@ -68,13 +68,53 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Next Milestone
+## Current Milestone: v0.6 Clean Ledger
 
-Not set — `/gsd-new-milestone`. Carried in: the `resource_tracker` flake's fallback trigger
-("the next milestone's start") falls due; the Ubuntu 26 `ubuntu-latest` migration fires
-2026-10-19. Candidates: the gear family (helical first, Out of Scope below), the hob-root
-default flip on D-09's trigger, the open review info findings of Phases 21–24, Phase 22's two
-`must` debts.
+**Goal:** Retire the open `must` debt and the cheap `nice` items, and triage every open
+review info finding, so the gate either passes or fails with a cause — never hangs or flakes
+unexplained — with no new `GearParams` field and the 44-record fixture byte-identical to the
+`v0.5` tag.
+
+**Target features:**
+- Gate reliability — the `resource_tracker` flake's fallback trigger
+  (`docs/tech_debt/active/2026-10-06-resource-tracker-flake-fails-the-gate.md`) runs now:
+  whole-suite `make test` loops at `-n 8 --cov` and `-n 8 --no-cov`, then a fix or a
+  re-deferral that carries the measurement. The 98 % hang
+  (`2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md`) has no repro, so the
+  deliverable is evidence capture (per-test ids and durations) so the next occurrence
+  localises, not a guessed fix.
+- Phase 22 pair — a seeded `slug()` totality test reaching every `root_mode` refusal reason
+  in the commit slice (`2026-10-15-slug-totality-is-not-guarded-in-the-gate.md`); the
+  failed-build name test made independent of `_EXPORTS` order
+  (`2026-10-15-failed-build-name-test-depends-on-cache-order.md`).
+- Browser harness pair — `stop_group` signals before it reads `ps`
+  (`2026-10-10-stop-group-reads-ps-before-it-signals.md`); the group-floor comment corrected
+  to the members observed by `ps`, with dated corrections under the two `bench/RESULTS.md`
+  rows, readings not rewritten (`2026-10-10-group-floor-of-3-is-not-two-pool-workers.md`).
+- Bogus enum link — `#root_shape=bogus` stops loading a blank select and silently building
+  the default part; the page refuses it visibly through the existing 422 marking path (the
+  human's pick at kickoff, L03/L08: refuse, never guess). Exact shape settled at
+  discuss-phase and logged as a new `Lxx`; the browser test's `root_shape=bogus as today`
+  pin flips with it (`2026-10-10-root-shape-bogus-loads-a-blank-select.md`).
+- Ubuntu 26 CI — classify the first CI run whose `Set up job` names Ubuntu 26 (fires
+  2026-10-19) from its whole log before any fix
+  (`2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`). Date-gated.
+- Info findings — every open review info finding of Phases 19 and 21–24 triaged: fixed,
+  filed, or closed with a reason.
+- Cheap `nice` items — the hook pin reading the caller's `PYTEST_ARGS`, the launch-failure
+  message naming a stamp that skips the install, and `make test-image` collecting tests
+  that read host-only files.
+
+**Rules this milestone lives by:**
+- Only invalid links change behaviour; every valid shared link builds the same part and
+  sends the same fields (L05). No new `GearParams` field; `tests/regression/pre_v0_2.json`
+  byte-identical to the `v0.5` tag (L26).
+- A flake or hang is fixed only from a captured reproduction; without one it is re-deferred
+  with the measurement that failed to reproduce it, never closed on a guess (L08).
+- A debt item or idea is retired only in the commit that closes it (CLAUDE.md).
+
+Picked 2026-10-15 as "the debt sweep" over the gear family (helical first — moves to the
+v0.7 candidate) and the hob-root default flip (still blocked on D-09's trigger).
 
 <details>
 <summary>v0.5 Honest Form — scope as set at kickoff (shipped 2026-10-15)</summary>
@@ -589,8 +629,14 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-- (none) — v0.5 shipped 2026-10-15 with every hypothesis validated; the next milestone's
-  hypotheses are set by `/gsd-new-milestone` (its `REQUIREMENTS.md` is written fresh).
+- [ ] The gate passes or fails with a cause: the `resource_tracker` flake fixed or
+  re-deferred with its measurement; the next hang leaves per-test evidence (v0.6)
+- [ ] The Phase 22 and browser-harness `must` debts retired (v0.6)
+- [ ] A link with an invalid enum value is refused visibly, not built as the default (v0.6)
+- [ ] CI is green, or its failure classified, on Ubuntu 26 `ubuntu-latest` (v0.6)
+- [ ] Every open review info finding of Phases 19 and 21–24 triaged; three cheap `nice`
+  items retired (v0.6)
+- Full list with IDs: `.planning/REQUIREMENTS.md`.
 
 ### Out of Scope
 
@@ -849,4 +895,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-15 after v0.5 milestone.*
+*Last updated: 2026-10-15 after starting milestone v0.6 Clean Ledger.*

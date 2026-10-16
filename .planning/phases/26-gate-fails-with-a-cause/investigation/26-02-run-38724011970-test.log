@@ -1,0 +1,786 @@
+test (3.12)	Set up job	﻿2026-10-15T10:58:24.7690273Z Current runner version: '2.337.0'
+test (3.12)	Set up job	2026-10-15T10:58:24.7714082Z ##[group]Runner Image Provisioner
+test (3.12)	Set up job	2026-10-15T10:58:24.7714931Z Hosted Compute Agent
+test (3.12)	Set up job	2026-10-15T10:58:24.7715489Z Version: 20261012.601
+test (3.12)	Set up job	2026-10-15T10:58:24.7716088Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+test (3.12)	Set up job	2026-10-15T10:58:24.7716809Z Build Date: 2026-10-12T17:48:21Z
+test (3.12)	Set up job	2026-10-15T10:58:24.7717430Z Worker ID: {dc3b786a-85e0-45e5-a56d-f1f1348b9d5f}
+test (3.12)	Set up job	2026-10-15T10:58:24.7718073Z Region: westus3
+test (3.12)	Set up job	2026-10-15T10:58:24.7718592Z Cloud: Azure
+test (3.12)	Set up job	2026-10-15T10:58:24.7719103Z ##[endgroup]
+test (3.12)	Set up job	2026-10-15T10:58:24.7720390Z ##[group]Operating System
+test (3.12)	Set up job	2026-10-15T10:58:24.7720975Z Ubuntu
+test (3.12)	Set up job	2026-10-15T10:58:24.7721437Z 26.04.1
+test (3.12)	Set up job	2026-10-15T10:58:24.7721953Z LTS
+test (3.12)	Set up job	2026-10-15T10:58:24.7722713Z ##[endgroup]
+test (3.12)	Set up job	2026-10-15T10:58:24.7723411Z ##[group]Runner Image
+test (3.12)	Set up job	2026-10-15T10:58:24.7723957Z Image: ubuntu-26.04
+test (3.12)	Set up job	2026-10-15T10:58:24.7724468Z Version: 20261012.163.1
+test (3.12)	Set up job	2026-10-15T10:58:24.7725475Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261012.163/images/ubuntu/Ubuntu2604-Readme.md
+test (3.12)	Set up job	2026-10-15T10:58:24.7727088Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261012.163
+test (3.12)	Set up job	2026-10-15T10:58:24.7727964Z ##[endgroup]
+test (3.12)	Set up job	2026-10-15T10:58:24.7729031Z ##[group]GITHUB_TOKEN Permissions
+test (3.12)	Set up job	2026-10-15T10:58:24.7731143Z Contents: read
+test (3.12)	Set up job	2026-10-15T10:58:24.7731805Z Metadata: read
+test (3.12)	Set up job	2026-10-15T10:58:24.7732570Z Packages: read
+test (3.12)	Set up job	2026-10-15T10:58:24.7733137Z ##[endgroup]
+test (3.12)	Set up job	2026-10-15T10:58:24.7735182Z Secret source: Actions
+test (3.12)	Set up job	2026-10-15T10:58:24.7736133Z Cache mode: write
+test (3.12)	Set up job	2026-10-15T10:58:24.7736778Z Prepare workflow directory
+test (3.12)	Set up job	2026-10-15T10:58:24.8058265Z Prepare all required actions
+test (3.12)	Set up job	2026-10-15T10:58:24.8107696Z Getting action download info
+test (3.12)	Set up job	2026-10-15T10:58:25.1174065Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+test (3.12)	Set up job	2026-10-15T10:58:25.2028693Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+test (3.12)	Set up job	2026-10-15T10:58:25.3355015Z Complete job name: test (3.12)
+test (3.12)	Run actions/checkout@v4	﻿2026-10-15T10:58:25.4148410Z ##[group]Run actions/checkout@v4
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4149211Z with:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4149616Z   repository: halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4153367Z   token: ***
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4153769Z   ssh-strict: true
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4154171Z   ssh-user: git
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4154580Z   persist-credentials: true
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4155019Z   clean: true
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4155434Z   sparse-checkout-cone-mode: true
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4155909Z   fetch-depth: 1
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4156300Z   fetch-tags: false
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4156698Z   show-progress: true
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4157096Z   lfs: false
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4157471Z   submodules: false
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4157868Z   set-safe-directory: true
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4158327Z   allow-unsafe-pr-checkout: false
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.4159082Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5146746Z Syncing repository: halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5149949Z ##[group]Getting Git version info
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5151117Z Working directory is '/home/runner/work/spur/spur'
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5152952Z [command]/usr/bin/git version
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5165358Z git version 2.55.0
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5185656Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5199418Z Temporarily overriding HOME='/home/runner/work/_temp/1cf6d76a-09b1-4c0a-bd20-8bfa2a13981a' before making global git config changes
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5201959Z Adding repository directory to the temporary git global config as a safe directory
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5204341Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/spur/spur
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5265224Z Deleting the contents of '/home/runner/work/spur/spur'
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5269274Z ##[group]Initializing the repository
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5275696Z [command]/usr/bin/git init /home/runner/work/spur/spur
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5417653Z hint: Using 'master' as the name for the initial branch. This default branch name
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5419624Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5421577Z hint: to use in all of your new repositories, which will suppress this warning,
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5423101Z hint: call:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5423826Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5424703Z hint: 	git config --global init.defaultBranch <name>
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5425779Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5426855Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5428444Z hint: 'development'. The just-created branch can be renamed via this command:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5429748Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5430467Z hint: 	git branch -m <name>
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5431350Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5432593Z hint: Disable this message with "git config set advice.defaultBranchName false"
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5438116Z Initialized empty Git repository in /home/runner/work/spur/spur/.git/
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5448911Z [command]/usr/bin/git remote add origin https://github.com/halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5524743Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5526167Z ##[group]Disabling automatic garbage collection
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5527543Z [command]/usr/bin/git config --local gc.auto 0
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5555325Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5556645Z ##[group]Setting up auth
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5561153Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5589118Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.5987556Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.6016398Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.6222730Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.6249771Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.6464519Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.6493856Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.6494655Z ##[group]Fetching the repository
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:25.6503013Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +d6d323bc85cab161425d383bb37bb8909eb710e2:refs/remotes/pull/40/merge
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3837820Z From https://github.com/halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3840556Z  * [new ref]         d6d323bc85cab161425d383bb37bb8909eb710e2 -> pull/40/merge
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3846781Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3848711Z ##[group]Determining the checkout info
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3850613Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3851793Z [command]/usr/bin/git sparse-checkout disable
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3898750Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3930018Z ##[group]Checking out the ref
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.3932730Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/40/merge
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6298958Z Note: switching to 'refs/remotes/pull/40/merge'.
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6300079Z 
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6300772Z You are in 'detached HEAD' state. You can look around, make experimental
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6301963Z changes and commit them, and you can discard any commits you make in this
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6303278Z state without impacting any branches by switching back to a branch.
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6304301Z 
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6304846Z If you want to create a new branch to retain commits you create, you may
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6305512Z do so (now or later) by using -c with the switch command. Example:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6305845Z 
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6306015Z   git switch -c <new-branch-name>
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6306227Z 
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6306651Z Or undo this operation with:
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6306871Z 
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6306995Z   git switch -
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6307155Z 
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6307460Z Turn off this advice by setting config variable advice.detachedHead to false
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6307781Z 
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6308159Z HEAD is now at d6d323b Merge 21c0346761098769029cc98b2f7ebdfe4ae3294f into 26ddd74b52ec91981c88773e1c2e2974d084d034
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6316984Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6361119Z [command]/usr/bin/git log -1 --format=%H
+test (3.12)	Run actions/checkout@v4	2026-10-15T10:58:27.6381969Z d6d323bc85cab161425d383bb37bb8909eb710e2
+test (3.12)	Run actions/setup-python@v5	﻿2026-10-15T10:58:27.6638946Z ##[group]Run actions/setup-python@v5
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6639326Z with:
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6639587Z   python-version: 3.12
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6639844Z   cache: pip
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6640084Z   check-latest: false
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6642743Z   token: ***
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6643008Z   update-environment: true
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6643325Z   allow-prereleases: false
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6643625Z   freethreaded: false
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.6643882Z ##[endgroup]
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.7970111Z ##[group]Installed versions
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.8082672Z (node:2381) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.8083549Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.8084332Z Successfully set up CPython (3.12.15)
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.8085282Z ##[endgroup]
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:27.9354491Z [command]/opt/hostedtoolcache/Python/3.12.15/x64/bin/pip cache dir
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:28.2393770Z /home/runner/.cache/pip
+test (3.12)	Run actions/setup-python@v5	2026-10-15T10:58:28.4652647Z pip cache is not found
+test (3.12)	Run make verify PYTHON=python	﻿2026-10-15T10:58:28.4789663Z ##[group]Run make verify PYTHON=python
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4790140Z ^[[36;1mmake verify PYTHON=python^[[0m
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4934571Z shell: /usr/bin/bash -e {0}
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4934894Z env:
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4935191Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4935677Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4936097Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4936468Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4936835Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4937216Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4937558Z   PIP_CONSTRAINT: requirements.txt
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4937867Z   BROWSER_INSTALL_ARGS: --with-deps
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.4938162Z ##[endgroup]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:28.5064267Z python -m venv .venv
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:31.2196932Z .venv/bin/python -m pip install --quiet --upgrade pip
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:32.5911608Z .venv/bin/python -m pip install -e '.[dev]' -c requirements.txt
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:32.8799665Z Obtaining file:///home/runner/work/spur/spur
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:32.8821486Z   Installing build dependencies: started
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:33.6321109Z   Installing build dependencies: finished with status 'done'
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:33.6329583Z   Checking if build backend supports build_editable: started
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:33.6677940Z   Checking if build backend supports build_editable: finished with status 'done'
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:33.6683792Z   Getting requirements to build editable: started
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:33.8027551Z   Getting requirements to build editable: finished with status 'done'
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:33.8037898Z   Installing backend dependencies: started
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.2261825Z   Installing backend dependencies: finished with status 'done'
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.2268688Z   Preparing editable metadata (pyproject.toml): started
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.4898712Z   Preparing editable metadata (pyproject.toml): finished with status 'done'
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.5513915Z Collecting cadquery>=2.5 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.5920040Z   Downloading cadquery-2.8.0-py3-none-any.whl.metadata (14 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.6449550Z Collecting fastapi>=0.115 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.6550191Z   Downloading fastapi-0.141.1-py3-none-any.whl.metadata (27 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.7723077Z Collecting pydantic>=2.7 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.7820966Z   Downloading pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.8222695Z Collecting uvicorn>=0.30 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.8321388Z   Downloading uvicorn-0.53.0-py3-none-any.whl.metadata (6.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.8550659Z Collecting httpx>=0.27 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.8651195Z   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.8855852Z Collecting import-linter>=2.3 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.8956124Z   Downloading import_linter-2.15-py3-none-any.whl.metadata (2.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:34.9918869Z Collecting mypy>=1.18 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.0020844Z   Downloading mypy-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.0401402Z Collecting playwright==1.63.0 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.0499145Z   Downloading playwright-1.63.0-py3-none-manylinux1_x86_64.whl.metadata (3.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.0791630Z Collecting pre-commit>=4 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.0891553Z   Downloading pre_commit-4.7.0-py2.py3-none-any.whl.metadata (1.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.1089531Z Collecting pytest-cov>=7.1 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.1189199Z   Downloading pytest_cov-7.1.0-py3-none-any.whl.metadata (32 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.1422119Z Collecting pytest-xdist>=3.8 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.1522244Z   Downloading pytest_xdist-3.8.0-py3-none-any.whl.metadata (3.0 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.1824829Z Collecting pytest>=8 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.1928507Z   Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.4814115Z Collecting ruff>=0.14 (from spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.4915600Z   Downloading ruff-0.17.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (20 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.5127334Z Collecting pyee<14,>=13 (from playwright==1.63.0->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.5226748Z   Downloading pyee-13.0.1-py3-none-any.whl.metadata (3.0 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.6713964Z Collecting greenlet<4.0.0,>=3.1.1 (from playwright==1.63.0->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.6820159Z   Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.7044932Z Collecting typing-extensions (from pyee<14,>=13->playwright==1.63.0->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.7151772Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.7419080Z Collecting cadquery-ocp<8.0,>=7.9.3.1 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.7527753Z   Downloading cadquery_ocp-7.9.3.1.1-cp312-cp312-manylinux_2_31_x86_64.whl.metadata (831 bytes)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.8935553Z Collecting ezdxf>=1.3.0 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.9036477Z   Downloading ezdxf-1.4.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.9 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.9245831Z Collecting multimethod<2.0,>=1.11 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.9344519Z   Downloading multimethod-1.12-py3-none-any.whl.metadata (9.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.9578799Z Collecting nlopt<3.0,>=2.9.0 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.9685373Z   Downloading nlopt-2.11.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (2.1 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.9878422Z Collecting runtype (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:35.9978600Z   Downloading runtype-0.5.3-py3-none-any.whl.metadata (6.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.0470790Z Collecting casadi (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.0574351Z   Downloading casadi-3.8.1-cp311-abi3-manylinux_2_28_x86_64.whl.metadata (2.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.0905867Z Collecting trame (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.1009054Z   Downloading trame-4.0.0-py3-none-any.whl.metadata (8.7 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.1272693Z Collecting trame-vtk (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.1375378Z   Downloading trame_vtk-2.11.17-py3-none-any.whl.metadata (14 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.1572244Z Collecting trame-components (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.1674693Z   Downloading trame_components-2.5.0-py3-none-any.whl.metadata (3.7 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.1891401Z Collecting trame-vuetify (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.1992362Z   Downloading trame_vuetify-3.3.0-py3-none-any.whl.metadata (5.5 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.2260848Z Collecting pyparsing>=3.0.0 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.2362047Z   Downloading pyparsing-3.3.3-py3-none-any.whl.metadata (5.9 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.3479453Z Collecting scipy (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.3581436Z   Downloading scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.4602734Z Collecting numba (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.4703047Z   Downloading numba-0.68.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (2.8 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.4884681Z Collecting cadquery-ocp-proxy==7.9.3.1.1 (from cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.4983430Z   Downloading cadquery_ocp_proxy-7.9.3.1.1-py3-none-any.whl.metadata (5.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.5363036Z Collecting vtk==9.6.2 (from cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.5480555Z   Downloading vtk-9.6.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.6942633Z Collecting matplotlib>=2.0.0 (from vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.7047545Z   Downloading matplotlib-3.11.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (80 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.8901931Z Collecting numpy<3,>=2 (from nlopt<3.0,>=2.9.0->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:36.9001536Z   Downloading numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.0311214Z Collecting fonttools (from ezdxf>=1.3.0->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.0414267Z   Downloading fonttools-4.65.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (125 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.0807034Z Collecting starlette>=0.46.0 (from fastapi>=0.115->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.0906219Z   Downloading starlette-1.6.0-py3-none-any.whl.metadata (6.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.1104893Z Collecting typing-inspection>=0.4.2 (from fastapi>=0.115->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.1208306Z   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.1374423Z Collecting annotated-doc>=0.0.2 (from fastapi>=0.115->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.1472881Z   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.1704933Z Collecting anyio (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.1805443Z   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.2035650Z Collecting certifi (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.2136842Z   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.2345312Z Collecting httpcore==1.* (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.2445168Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.2666567Z Collecting idna (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.2771724Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.2972104Z Collecting h11>=0.16 (from httpcore==1.*->httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.3071499Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.3298793Z Collecting click>=6 (from import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.3397969Z   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.4789383Z Collecting grimp>=3.17 (from import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.4890519Z   Downloading grimp-3.17-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.8 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.5210810Z Collecting rich>=14.2.0 (from import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.5310288Z   Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.5951241Z Collecting contourpy>=1.0.1 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.6052205Z   Downloading contourpy-1.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.6235659Z Collecting cycler>=0.10 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.6334147Z   Downloading cycler-0.12.1-py3-none-any.whl.metadata (3.8 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.7006509Z Collecting kiwisolver>=1.3.1 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.7109828Z   Downloading kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.7219457Z Collecting packaging>=20.0 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.7231623Z   Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.8675687Z Collecting pillow>=9 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.8778158Z   Downloading pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.8988566Z Collecting python-dateutil>=2.7 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.9089703Z   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.9298784Z Collecting mypy_extensions>=1.0.0 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.9400254Z   Downloading mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.9473704Z Collecting pathspec>=1.0.0 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:37.9485958Z   Using cached pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.0640909Z Collecting librt>=0.16.0 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.0743638Z   Downloading librt-0.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (1.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.1259556Z Collecting ast-serialize<1.0.0,>=0.11.2 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.1364487Z   Downloading ast_serialize-0.13.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (1.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.1597608Z Collecting cfgv>=2.0.0 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.1699349Z   Downloading cfgv-3.5.0-py2.py3-none-any.whl.metadata (8.9 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.2076895Z Collecting identify>=1.0.0 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.2180725Z   Downloading identify-2.6.20-py2.py3-none-any.whl.metadata (4.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.2394850Z Collecting nodeenv>=0.11.1 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.2499979Z   Downloading nodeenv-1.11.0-py2.py3-none-any.whl.metadata (40 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.2908478Z Collecting pyyaml>=5.1 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.3011891Z   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.3424007Z Collecting virtualenv>=20.10.0 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.3527138Z   Downloading virtualenv-21.14.7-py3-none-any.whl.metadata (4.1 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.3742238Z Collecting annotated-types>=0.6.0 (from pydantic>=2.7->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.3846544Z   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:38.9923730Z Collecting pydantic-core==2.46.5 (from pydantic>=2.7->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.0025511Z   Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.0227593Z Collecting iniconfig>=1.0.1 (from pytest>=8->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.0327614Z   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.0407844Z Collecting pluggy<2,>=1.5 (from pytest>=8->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.0422661Z   Using cached pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.0628647Z Collecting pygments>=2.7.2 (from pytest>=8->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.0729374Z   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.4612941Z Collecting coverage>=7.10.6 (from coverage[toml]>=7.10.6->pytest-cov>=7.1->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.4713452Z   Downloading coverage-7.16.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.4941691Z Collecting execnet>=2.1 (from pytest-xdist>=3.8->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.5040906Z   Downloading execnet-2.1.2-py3-none-any.whl.metadata (2.9 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.5235025Z Collecting six>=1.5 (from python-dateutil>=2.7->matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.5332297Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.5536312Z Collecting markdown-it-py>=2.2.0 (from rich>=14.2.0->import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.5634427Z   Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.5845061Z Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=14.2.0->import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.5944341Z   Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.6228971Z Collecting distlib<1,>=0.4.3 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.6327630Z   Downloading distlib-0.4.3-py2.py3-none-any.whl.metadata (5.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.6592844Z Collecting filelock<5,>=3.24.2 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.6693800Z   Downloading filelock-4.2.0-py3-none-any.whl.metadata (2.0 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.6934814Z Collecting platformdirs<5,>=4.4 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.7034801Z   Downloading platformdirs-4.13.0-py3-none-any.whl.metadata (5.5 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.7215527Z Collecting python-discovery>=1.6.1 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.7314861Z   Downloading python_discovery-1.6.2-py3-none-any.whl.metadata (5.1 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.7921560Z Collecting llvmlite<0.51,>=0.50.0dev0 (from numba->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.8022331Z   Downloading llvmlite-0.50.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (5.1 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.8344499Z Collecting trame-client<5,>=4 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.8445166Z   Downloading trame_client-4.1.4-py3-none-any.whl.metadata (6.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.8633785Z Collecting trame-common<2,>=1.2.7 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.8734326Z   Downloading trame_common-1.2.9-py3-none-any.whl.metadata (4.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.8984719Z Collecting trame-server<5,>=4 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.9089945Z   Downloading trame_server-4.1.0-py3-none-any.whl.metadata (5.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.9328424Z Collecting wslink>=2.5.7 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.9428588Z   Downloading wslink-2.6.0-py3-none-any.whl.metadata (3.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.9661168Z Collecting more-itertools (from trame-server<5,>=4->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:39.9760430Z   Downloading more_itertools-11.1.0-py3-none-any.whl.metadata (41 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.4571105Z Collecting aiohttp<4 (from wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.4675876Z   Downloading aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.5489130Z Collecting msgpack<2,>=1 (from wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.5595155Z   Downloading msgpack-1.2.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.5815606Z Collecting aiohappyeyeballs>=2.5.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.5917141Z   Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl.metadata (5.9 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.6084036Z Collecting aiosignal>=1.4.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.6186190Z   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.6388243Z Collecting attrs>=17.3.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.6489415Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.7102279Z Collecting frozenlist>=1.1.1 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:40.7203295Z   Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.0116374Z Collecting multidict<8.0,>=4.5 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.0218650Z   Downloading multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (6.2 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.0874115Z Collecting propcache>=0.2.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.0977072Z   Downloading propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (25 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.3133477Z Collecting yarl<2.0,>=1.25.1 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.3237442Z   Downloading yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (111 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.3611094Z Downloading playwright-1.63.0-py3-none-manylinux1_x86_64.whl (48.2 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.5103212Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.2/48.2 MB 346.5 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.5208081Z Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (621 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.5262037Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 621.4/621.4 kB 112.9 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.5361325Z Downloading pyee-13.0.1-py3-none-any.whl (15 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.5480547Z Downloading cadquery-2.8.0-py3-none-any.whl (201 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.5620971Z Downloading cadquery_ocp-7.9.3.1.1-cp312-cp312-manylinux_2_31_x86_64.whl (67.8 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.7281987Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 67.8/67.8 MB 412.2 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.7384867Z Downloading cadquery_ocp_proxy-7.9.3.1.1-py3-none-any.whl (3.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:41.7520398Z Downloading vtk-9.6.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (146.0 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.1586998Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 146.0/146.0 MB 360.8 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.1692761Z Downloading multimethod-1.12-py3-none-any.whl (10 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.1820016Z Downloading nlopt-2.11.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (402 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.1955026Z Downloading numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.2415220Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.7/16.7 MB 389.6 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.2523538Z Downloading ezdxf-1.4.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (5.8 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.2701677Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.8/5.8 MB 389.4 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.2805539Z Downloading fastapi-0.141.1-py3-none-any.whl (131 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.2927610Z Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3044113Z Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3162302Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3280080Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3409749Z Downloading import_linter-2.15-py3-none-any.whl (640 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3455993Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 640.5/640.5 kB 148.6 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3557420Z Downloading click-8.5.0-py3-none-any.whl (125 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3681414Z Downloading grimp-3.17-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.3 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3772340Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.3/2.3 MB 310.1 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.3879662Z Downloading matplotlib-3.11.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (9.9 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4162832Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.9/9.9 MB 390.2 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4266554Z Downloading contourpy-1.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (383 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4393318Z Downloading cycler-0.12.1-py3-none-any.whl (8.3 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4516812Z Downloading fonttools-4.65.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.4 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4696433Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.4/5.4 MB 333.0 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4804041Z Downloading kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.5 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4877193Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.5/1.5 MB 244.2 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.4986935Z Downloading mypy-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (15.6 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5391931Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 15.6/15.6 MB 408.9 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5500322Z Downloading ast_serialize-0.13.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.3 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5562812Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 257.7 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5667438Z Downloading librt-0.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (531 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5716574Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 532.0/532.0 kB 106.3 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5820054Z Downloading mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5847812Z Using cached packaging-26.3-py3-none-any.whl (129 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5859840Z Using cached pathspec-1.1.1-py3-none-any.whl (57 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.5966728Z Downloading pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.9 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6180512Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.9/6.9 MB 368.5 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6284363Z Downloading pre_commit-4.7.0-py2.py3-none-any.whl (226 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6410261Z Downloading cfgv-3.5.0-py2.py3-none-any.whl (7.4 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6529916Z Downloading identify-2.6.20-py2.py3-none-any.whl (99 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6650511Z Downloading nodeenv-1.11.0-py2.py3-none-any.whl (34 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6770603Z Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6903900Z Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.6990999Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 310.8 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7092874Z Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7212355Z Downloading pyparsing-3.3.3-py3-none-any.whl (126 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7334941Z Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7374245Z Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7475533Z Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7596410Z Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7662235Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 224.7 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7764463Z Downloading pytest_cov-7.1.0-py3-none-any.whl (22 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.7884724Z Downloading coverage-7.16.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (258 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8007220Z Downloading pytest_xdist-3.8.0-py3-none-any.whl (46 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8124500Z Downloading execnet-2.1.2-py3-none-any.whl (40 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8241848Z Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8366589Z Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8419772Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 173.3 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8520574Z Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8645583Z Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8762909Z Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.8884671Z Downloading ruff-0.17.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (10.4 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.9194217Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 373.6 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.9295910Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.9413677Z Downloading starlette-1.6.0-py3-none-any.whl (75 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.9531138Z Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.9650456Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.9768712Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:42.9884779Z Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0003011Z Downloading uvicorn-0.53.0-py3-none-any.whl (87 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0126974Z Downloading virtualenv-21.14.7-py3-none-any.whl (5.5 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0298712Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 382.7 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0403483Z Downloading distlib-0.4.3-py2.py3-none-any.whl (470 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0540619Z Downloading filelock-4.2.0-py3-none-any.whl (135 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0660137Z Downloading platformdirs-4.13.0-py3-none-any.whl (32 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0776795Z Downloading python_discovery-1.6.2-py3-none-any.whl (38 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.0897890Z Downloading casadi-3.8.1-cp311-abi3-manylinux_2_28_x86_64.whl (89.4 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.3132046Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.4/89.4 MB 408.7 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.3233281Z Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.3352833Z Downloading numba-0.68.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (3.9 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.3478691Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.9/3.9 MB 358.6 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.3584337Z Downloading llvmlite-0.50.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (59.7 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.5021118Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 59.7/59.7 MB 420.5 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.5123977Z Downloading runtype-0.5.3-py3-none-any.whl (31 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.5245052Z Downloading scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6103442Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 422.4 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6204640Z Downloading trame-4.0.0-py3-none-any.whl (27 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6331272Z Downloading trame_client-4.1.4-py3-none-any.whl (568 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6375364Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 568.3/568.3 kB 133.7 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6476379Z Downloading trame_common-1.2.9-py3-none-any.whl (24 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6592825Z Downloading trame_server-4.1.0-py3-none-any.whl (46 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6710179Z Downloading wslink-2.6.0-py3-none-any.whl (37 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6832101Z Downloading aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.9 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.6901755Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 328.7 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7005016Z Downloading msgpack-1.2.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (472 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7134900Z Downloading multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (483 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7263391Z Downloading yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (117 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7381169Z Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7497406Z Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7614597Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7736737Z Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (242 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7866500Z Downloading propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (250 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.7988467Z Downloading more_itertools-11.1.0-py3-none-any.whl (72 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.8103589Z Downloading trame_components-2.5.0-py3-none-any.whl (82 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.8229569Z Downloading trame_vtk-2.11.17-py3-none-any.whl (851 kB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.8277191Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 852.0/852.0 kB 216.8 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.8380998Z Downloading trame_vuetify-3.3.0-py3-none-any.whl (6.8 MB)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:43.8572841Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.8/6.8 MB 386.8 MB/s  0:00:00
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:44.6200251Z Building wheels for collected packages: spur
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:44.6206379Z   Building editable for spur (pyproject.toml): started
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:44.6544356Z   Building editable for spur (pyproject.toml): finished with status 'done'
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:44.6548091Z   Created wheel for spur: filename=spur-0.1.0-py3-none-any.whl size=10804 sha256=df6c4098c9a28219afcec169c3f1491ddce3e74a15e2db85b4389bea002af14d
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:44.6549973Z   Stored in directory: /tmp/pip-ephem-wheel-cache-qxpyrdwp/wheels/33/af/90/f4c91e14bfd787ea655c30c23a4f75d572b508e3d00c9a6597
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:44.6572033Z Successfully built spur
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:58:44.8499014Z Installing collected packages: distlib, typing-extensions, trame-common, six, runtype, ruff, pyyaml, pyparsing, pygments, propcache, pluggy, platformdirs, pillow, pathspec, packaging, numpy, nodeenv, mypy_extensions, multimethod, multidict, msgpack, more-itertools, mdurl, llvmlite, librt, kiwisolver, iniconfig, idna, identify, h11, grimp, greenlet, frozenlist, fonttools, filelock, execnet, cycler, coverage, click, cfgv, certifi, cadquery-ocp-proxy, attrs, ast-serialize, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, typing-inspection, trame-client, scipy, python-discovery, python-dateutil, pytest, pyee, pydantic-core, numba, nlopt, mypy, markdown-it-py, httpcore, ezdxf, contourpy, casadi, anyio, aiosignal, virtualenv, trame-vuetify, trame-vtk, trame-components, starlette, rich, pytest-xdist, pytest-cov, pydantic, playwright, matplotlib, httpx, aiohttp, wslink, vtk, pre-commit, import-linter, fastapi, trame-server, cadquery-ocp, trame, cadquery, spur
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:08.8796215Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:08.8858578Z Successfully installed aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 ast-serialize-0.13.0 attrs-26.1.0 cadquery-2.8.0 cadquery-ocp-7.9.3.1.1 cadquery-ocp-proxy-7.9.3.1.1 casadi-3.8.1 certifi-2026.7.22 cfgv-3.5.0 click-8.5.0 contourpy-1.4.0 coverage-7.16.2 cycler-0.12.1 distlib-0.4.3 execnet-2.1.2 ezdxf-1.4.4 fastapi-0.141.1 filelock-4.2.0 fonttools-4.65.0 frozenlist-1.8.0 greenlet-3.5.6 grimp-3.17 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 identify-2.6.20 idna-3.20 import-linter-2.15 iniconfig-2.3.1 kiwisolver-1.5.1 librt-0.16.0 llvmlite-0.50.0 markdown-it-py-4.2.0 matplotlib-3.11.2 mdurl-0.1.2 more-itertools-11.1.0 msgpack-1.2.3 multidict-7.1.0 multimethod-1.12 mypy-2.4.0 mypy_extensions-1.1.0 nlopt-2.11.0 nodeenv-1.11.0 numba-0.68.0 numpy-2.5.3 packaging-26.3 pathspec-1.1.1 pillow-12.3.0 platformdirs-4.13.0 playwright-1.63.0 pluggy-1.7.0 pre-commit-4.7.0 propcache-0.5.4 pydantic-2.13.5 pydantic-core-2.46.5 pyee-13.0.1 pygments-2.21.0 pyparsing-3.3.3 pytest-9.1.1 pytest-cov-7.1.0 pytest-xdist-3.8.0 python-dateutil-2.9.0.post0 python-discovery-1.6.2 pyyaml-6.0.3 rich-15.0.0 ruff-0.17.0 runtype-0.5.3 scipy-1.18.1 six-1.17.0 spur-0.1.0 starlette-1.6.0 trame-4.0.0 trame-client-4.1.4 trame-common-1.2.9 trame-components-2.5.0 trame-server-4.1.0 trame-vtk-2.11.17 trame-vuetify-3.3.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.53.0 virtualenv-21.14.7 vtk-9.6.2 wslink-2.6.0 yarl-1.25.1
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:09.7414982Z pre-commit installed at .git/hooks/pre-commit
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:09.7428756Z pre-commit installed at .git/hooks/commit-msg
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:09.7441497Z pre-commit installed at .git/hooks/pre-push
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:09.7652792Z .venv/bin/python -m ruff check .
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:09.8252173Z All checks passed!
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:09.8262940Z .venv/bin/python -m mypy src tests docker bench scripts
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.3253176Z Success: no issues found in 49 source files
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.3532332Z .venv/bin/lint-imports
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4576396Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4577532Z ╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4578096Z ╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4578626Z  ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4579217Z  ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4579594Z ╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4579912Z ╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4580216Z   └──▶║║                    ▲ 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4580531Z       ╚╝────────────────────┘
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4580752Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4776807Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4779614Z ---------
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4781035Z Contracts
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4782865Z ---------
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4783763Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4786132Z Analyzed 41 files, 85 dependencies.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4787611Z -----------------------------------
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4788590Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4794281Z The app never imports its own tests KEPT
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4799031Z The gear maths stays free of the CAD kernel KEPT
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4804070Z The CLI does not inherit web-serving policy KEPT
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4808602Z The gear maths stays free of the logger KEPT
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4813306Z The serving process never imports the CAD kernel KEPT
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4813956Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.4815168Z Contracts: 5 kept, 0 broken.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.5069957Z .venv/bin/python -m playwright install --with-deps --only-shell chromium
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.8385817Z Installing dependencies...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.8444792Z Switching to root user to install dependencies...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.9130884Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.9493440Z Hit:2 http://azure.archive.ubuntu.com/ubuntu resolute InRelease
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.9524078Z Get:6 https://packages.microsoft.com/ubuntu/26.04/prod resolute InRelease [3964 B]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.9525099Z Get:3 http://azure.archive.ubuntu.com/ubuntu resolute-updates InRelease [137 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.9553444Z Get:4 http://azure.archive.ubuntu.com/ubuntu resolute-backports InRelease [137 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.9588213Z Get:5 http://azure.archive.ubuntu.com/ubuntu resolute-security InRelease [137 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:21.9812847Z Get:7 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main amd64 Packages [97.4 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0023769Z Get:8 http://azure.archive.ubuntu.com/ubuntu resolute-updates/main amd64v3 Packages [738 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0033659Z Get:12 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main arm64 Packages [87.7 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0075118Z Get:13 https://packages.microsoft.com/ubuntu/26.04/prod resolute/main armhf Packages [962 B]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0104359Z Get:9 http://azure.archive.ubuntu.com/ubuntu resolute-updates/main Translation-en [173 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0108808Z Get:10 http://azure.archive.ubuntu.com/ubuntu resolute-updates/universe amd64v3 Packages [329 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0137907Z Get:11 http://azure.archive.ubuntu.com/ubuntu resolute-updates/universe Translation-en [107 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0146210Z Get:14 http://azure.archive.ubuntu.com/ubuntu resolute-security/main amd64v3 Packages [602 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:22.0186767Z Get:15 http://azure.archive.ubuntu.com/ubuntu resolute-security/universe amd64v3 Packages [202 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:24.5149660Z Fetched 2753 kB in 0s (10.7 MB/s)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.2528299Z Reading package lists...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.2791050Z Reading package lists...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4401659Z Building dependency tree...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4406573Z Reading state information...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4730265Z libasound2t64 is already the newest version (1.2.15.3-1ubuntu1.1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4731056Z libasound2t64 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4731709Z libatk-bridge2.0-0t64 is already the newest version (2.60.4-0ubuntu0.1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4732631Z libatk-bridge2.0-0t64 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4733257Z libatk1.0-0t64 is already the newest version (2.60.4-0ubuntu0.1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4733835Z libatk1.0-0t64 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4734402Z libatspi2.0-0t64 is already the newest version (2.60.4-0ubuntu0.1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4734827Z libatspi2.0-0t64 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4735190Z libcairo2 is already the newest version (1.18.4-3).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4735560Z libcairo2 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4735941Z libcups2t64 is already the newest version (2.4.16-1ubuntu1.3).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4736344Z libcups2t64 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4736757Z libdbus-1-3 is already the newest version (1.16.2-2ubuntu4).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4737141Z libdbus-1-3 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4737487Z libdrm2 is already the newest version (2.4.131-1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4737852Z libdrm2 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4738688Z libgbm1 is already the newest version (26.0.8-1ubuntu0.3).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4739067Z libgbm1 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4739449Z libglib2.0-0t64 is already the newest version (2.88.0-1ubuntu0.1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4739870Z libglib2.0-0t64 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4740262Z libnspr4 is already the newest version (2:4.38.2-1ubuntu1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4740653Z libnspr4 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4741015Z libnss3 is already the newest version (2:3.120-1ubuntu2.1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4741387Z libnss3 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4741764Z libpango-1.0-0 is already the newest version (1.57.0-1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4742151Z libpango-1.0-0 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4742787Z libx11-6 is already the newest version (2:1.8.13-1ubuntu0.1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4743180Z libx11-6 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4743538Z libxcb1 is already the newest version (1.17.0-2ubuntu1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4743924Z libxcb1 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4744315Z libxcomposite1 is already the newest version (1:0.4.6-1build1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4744736Z libxcomposite1 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4745120Z libxdamage1 is already the newest version (1:1.1.7-1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4745501Z libxdamage1 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4745892Z libxext6 is already the newest version (2:1.3.4-1build3).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4746258Z libxext6 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4746621Z libxfixes3 is already the newest version (1:6.0.0-2build2).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4747007Z libxfixes3 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4747367Z libxkbcommon0 is already the newest version (1.13.1-1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4747917Z libxkbcommon0 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4748295Z libxrandr2 is already the newest version (2:1.5.4-1build1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4748684Z libxrandr2 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4749121Z xvfb is already the newest version (2:21.1.22-1ubuntu1.2).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4749613Z fonts-noto-color-emoji is already the newest version (2.051-1build1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4750123Z libfontconfig1 is already the newest version (2.17.1-3ubuntu1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4750535Z libfontconfig1 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4750954Z libfreetype6 is already the newest version (2.14.2+dfsg-1ubuntu0.2).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4751391Z libfreetype6 set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4751796Z fonts-liberation is already the newest version (1:2.1.5-3build1).
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.4752222Z fonts-liberation set to manually installed.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.5200241Z Solving dependencies...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6076377Z The following additional packages will be installed:
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6081893Z   xfonts-encodings xfonts-utils
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6082292Z Recommended packages:
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6082820Z   fonts-ipafont-mincho fonts-tlwg-loma
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6267974Z The following NEW packages will be installed:
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6268678Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6276868Z   fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6277473Z   xfonts-utils
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6458541Z 0 upgraded, 9 newly installed, 0 to remove and 21 not upgraded.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6459290Z Need to get 21.9 MB of archives.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6459883Z After this operation, 80.2 MB of additional disk space will be used.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.6460593Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:25.8166243Z Get:2 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-ipafont-gothic all 00303-23ubuntu1 [3703 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:26.4111964Z Get:3 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 fonts-freefont-ttf all 20211204+svn4273-4build1 [5656 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:26.5683894Z Get:4 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-tlwg-loma-otf all 1:0.7.3-1build1 [106 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:26.6326797Z Get:5 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-unifont all 1:16.0.04-1build1 [3169 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:26.7598607Z Get:6 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 fonts-wqy-zenhei all 0.9.45-8build1 [7863 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:26.9678828Z Get:7 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 xfonts-encodings all 1:1.0.5-0ubuntu3 [576 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.0408855Z Get:8 http://azure.archive.ubuntu.com/ubuntu resolute/main amd64v3 xfonts-utils amd64 1:7.7+7build1 [97.3 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.1062863Z Get:9 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 xfonts-cyrillic all 1:1.0.5+nmu1build1 [384 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.1782670Z Get:10 http://azure.archive.ubuntu.com/ubuntu resolute/universe amd64v3 xfonts-scalable all 1:1.0.3-1.3build1 [304 kB]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5027792Z Fetched 21.9 MB in 2s (14.1 MB/s)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5258857Z Selecting previously unselected package fonts-ipafont-gothic.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5484390Z (Reading database ... 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5484793Z (Reading database ... 5%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5485104Z (Reading database ... 10%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5485395Z (Reading database ... 15%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5485679Z (Reading database ... 20%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5486021Z (Reading database ... 25%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5486291Z (Reading database ... 30%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5486580Z (Reading database ... 35%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5486846Z (Reading database ... 40%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5487092Z (Reading database ... 45%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.5487363Z (Reading database ... 50%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.6122051Z (Reading database ... 55%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.6690406Z (Reading database ... 60%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.7182931Z (Reading database ... 65%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.7689193Z (Reading database ... 70%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.8046043Z (Reading database ... 75%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.8589971Z (Reading database ... 80%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:27.9983740Z (Reading database ... 85%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.1377680Z (Reading database ... 90%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3018020Z (Reading database ... 95%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3018634Z (Reading database ... 100%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3019336Z (Reading database ... 211065 files and directories currently installed.)
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3063561Z Preparing to unpack .../0-fonts-ipafont-gothic_00303-23ubuntu1_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3148406Z Unpacking fonts-ipafont-gothic (00303-23ubuntu1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3758322Z Selecting previously unselected package fonts-freefont-ttf.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3878306Z Preparing to unpack .../1-fonts-freefont-ttf_20211204+svn4273-4build1_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.3888348Z Unpacking fonts-freefont-ttf (20211204+svn4273-4build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.4651033Z Selecting previously unselected package fonts-tlwg-loma-otf.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.4770029Z Preparing to unpack .../2-fonts-tlwg-loma-otf_1%3a0.7.3-1build1_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.4783257Z Unpacking fonts-tlwg-loma-otf (1:0.7.3-1build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.6868820Z Selecting previously unselected package fonts-unifont.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.7000615Z Preparing to unpack .../3-fonts-unifont_1%3a16.0.04-1build1_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:28.7959226Z Unpacking fonts-unifont (1:16.0.04-1build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:29.7384581Z Selecting previously unselected package fonts-wqy-zenhei.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:29.7516434Z Preparing to unpack .../4-fonts-wqy-zenhei_0.9.45-8build1_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:29.8638815Z Unpacking fonts-wqy-zenhei (0.9.45-8build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.3987832Z Selecting previously unselected package xfonts-encodings.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4113435Z Preparing to unpack .../5-xfonts-encodings_1%3a1.0.5-0ubuntu3_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4124587Z Unpacking xfonts-encodings (1:1.0.5-0ubuntu3) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4342103Z Selecting previously unselected package xfonts-utils.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4464643Z Preparing to unpack .../6-xfonts-utils_1%3a7.7+7build1_amd64v3.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4471815Z Unpacking xfonts-utils (1:7.7+7build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4768667Z Selecting previously unselected package xfonts-cyrillic.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4890324Z Preparing to unpack .../7-xfonts-cyrillic_1%3a1.0.5+nmu1build1_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.4901013Z Unpacking xfonts-cyrillic (1:1.0.5+nmu1build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5137872Z Selecting previously unselected package xfonts-scalable.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5260351Z Preparing to unpack .../8-xfonts-scalable_1%3a1.0.3-1.3build1_all.deb ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5270061Z Unpacking xfonts-scalable (1:1.0.3-1.3build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5634571Z Setting up fonts-wqy-zenhei (0.9.45-8build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5766036Z Setting up fonts-freefont-ttf (20211204+svn4273-4build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5782295Z Setting up fonts-tlwg-loma-otf (1:0.7.3-1build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5808175Z Setting up xfonts-encodings (1:1.0.5-0ubuntu3) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5821771Z Setting up fonts-ipafont-gothic (00303-23ubuntu1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5875489Z update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5889363Z Setting up fonts-unifont (1:16.0.04-1build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5903503Z Setting up xfonts-utils (1:7.7+7build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.5950577Z Setting up xfonts-cyrillic (1:1.0.5+nmu1build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.6346950Z Setting up xfonts-scalable (1:1.0.3-1.3build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.6684093Z Processing triggers for man-db (2.13.1-1build1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.6708740Z Not building database; man-db/auto-update is not 'true'.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:30.6721654Z Processing triggers for fontconfig (2.17.1-3ubuntu1) ...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3125619Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3126343Z Running kernel seems to be up-to-date.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3126648Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3126773Z Restarting services...
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3202071Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3202664Z Service restarts being deferred:
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3207305Z  systemctl restart hosted-compute-agent.service
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3207823Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3207983Z No containers need to be restarted.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3208287Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3208482Z No user sessions are running outdated binaries.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3208811Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:31.3209113Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:32.2516759Z Downloading Chrome Headless Shell 153.0.8010.12 (playwright chromium-headless-shell v1243) from https://cdn.playwright.dev/builds/cft/153.0.8010.12/linux64/chrome-headless-shell-linux64.zip
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:32.6670997Z |                                                                                |   0% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:32.7802170Z |■■■■■■■■                                                                        |  10% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:32.8370541Z |■■■■■■■■■■■■■■■■                                                                |  20% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:32.8759956Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:32.9174830Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:32.9718625Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:33.0220854Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:33.0744236Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:33.1008086Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:33.1543514Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:33.2156567Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 114.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.4741823Z Chrome Headless Shell 153.0.8010.12 (playwright chromium-headless-shell v1243) downloaded to /home/runner/work/spur/spur/.venv/ms-playwright/chromium_headless_shell-1243
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.4745670Z Downloading FFmpeg (playwright ffmpeg v1011) from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8446486Z |                                                                                |   0% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8476841Z |■■■■■■■■                                                                        |  10% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8495831Z |■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8507972Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8525579Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8537608Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8547608Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8561555Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8573486Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8617211Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.8627621Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.9195019Z FFmpeg (playwright ffmpeg v1011) downloaded to /home/runner/work/spur/spur/.venv/ms-playwright/ffmpeg-1011
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:35.9478912Z .venv/bin/python -m pytest -n 4 --cov --cov-report=term 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.8904439Z ============================= test session starts ==============================
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.8933388Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.8963005Z rootdir: /home/runner/work/spur/spur
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.8992952Z configfile: pyproject.toml
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.9022901Z testpaths: tests
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.9053095Z plugins: cov-7.1.0, xdist-3.8.0, platformdirs-4.13.0, anyio-4.15.1
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.9082873Z created: 4/4 workers
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.9112858Z 4 workers [1318 items]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:51.9142648Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:52.1344001Z ........................................................................ [  5%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:52.6793608Z ........................................................................ [ 10%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:53.1453963Z ........................................................................ [ 16%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:53.7263794Z ........................................................................ [ 21%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:54.1743632Z ........................................................................ [ 27%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T10:59:54.5713584Z ........................................................................ [ 32%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:00:15.8814848Z ........................................................................ [ 38%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:00:43.4963444Z ........................................................................ [ 43%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:00:51.1745670Z ........................................................................ [ 49%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:00:53.7113414Z ........................................................................ [ 54%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:01:04.5403644Z ........................................................................ [ 60%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:01:45.2853406Z ........................................................................ [ 65%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:02:31.0910063Z ........................................................................ [ 71%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:03:28.5881896Z ........................................................................ [ 76%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:03:31.7263587Z ........................................................................ [ 81%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:03:32.4203499Z ........................................................................ [ 87%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:03:48.4752040Z ........................................................................ [ 92%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:09:26.1650588Z ........................................................................ [ 98%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9655418Z ......................                                                   [100%]
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9657726Z ================================ tests coverage ================================
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9658785Z _______________ coverage: platform linux, python 3.12.15-final-0 _______________
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9659425Z 
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9659654Z Name                       Stmts   Miss Branch BrPart   Cover
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9660077Z -------------------------------------------------------------
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9660514Z src/spur/__init__.py           7      2      0      0  71.43%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9660946Z src/spur/__main__.py           2      2      0      0   0.00%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9661360Z src/spur/app.py              157      3     20      3  96.61%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9661785Z src/spur/build_errors.py       3      0      0      0 100.00%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9662196Z src/spur/calc.py             572      3    226      3  99.25%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9662861Z src/spur/cli.py               88      6     14      1  93.14%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9663269Z src/spur/model.py            352      3    100      4  98.45%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9663712Z src/spur/params.py            65      0      6      0 100.00%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9664131Z src/spur/pool.py              57      0      8      0 100.00%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9664555Z src/spur/records.py           55      2     12      2  94.03%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9664957Z -------------------------------------------------------------
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9665346Z TOTAL                       1358     21    386     13  98.05%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9668143Z Required test coverage of 96.0% reached. Total coverage: 98.05%
+test (3.12)	Run make verify PYTHON=python	2026-10-15T11:12:11.9668832Z ======================= 1318 passed in 754.49s (0:12:34) =======================
+test (3.12)	kernel pair this run resolved	﻿2026-10-15T11:12:12.0355738Z ##[group]Run .venv/bin/python -c "from importlib.metadata import version; print('cadquery', version('cadquery'), 'cadquery-ocp', version('cadquery-ocp'))"
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0356933Z ^[[36;1m.venv/bin/python -c "from importlib.metadata import version; print('cadquery', version('cadquery'), 'cadquery-ocp', version('cadquery-ocp'))"^[[0m
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0398673Z shell: /usr/bin/bash -e {0}
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0398928Z env:
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0399197Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0399610Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0400014Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0400387Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0400762Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0401128Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.0401429Z ##[endgroup]
+test (3.12)	kernel pair this run resolved	2026-10-15T11:12:12.1013709Z cadquery 2.8.0 cadquery-ocp 7.9.3.1.1
+test (3.12)	Post Run actions/setup-python@v5	﻿2026-10-15T11:12:12.1205901Z Post job cleanup.
+test (3.12)	Post Run actions/setup-python@v5	2026-10-15T11:12:12.2467278Z (node:4048) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (3.12)	Post Run actions/setup-python@v5	2026-10-15T11:12:12.2468063Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (3.12)	Post Run actions/setup-python@v5	2026-10-15T11:12:12.2659142Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/spur/spur --files-from manifest.txt --use-compress-program zstdmt
+test (3.12)	Post Run actions/setup-python@v5	2026-10-15T11:12:13.4426865Z (node:4048) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+test (3.12)	Post Run actions/setup-python@v5	2026-10-15T11:12:14.4237655Z Sent 0 of 563092057 (0.0%), 0.0 MBs/sec
+test (3.12)	Post Run actions/setup-python@v5	2026-10-15T11:12:15.3398934Z Sent 563092057 of 563092057 (100.0%), 280.3 MBs/sec
+test (3.12)	Post Run actions/setup-python@v5	2026-10-15T11:12:15.6908360Z Cache saved with the key: setup-python-Linux-x64-26.04-Ubuntu-python-3.12.15-pip-609652ea823ad3f5d35cd322fe160fb8ec1c32db8dcf286b6747a1cd4e5d14d2
+test (3.12)	Post Run actions/checkout@v4	﻿2026-10-15T11:12:15.7054428Z Post job cleanup.
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.7902789Z [command]/usr/bin/git version
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.7945999Z git version 2.55.0
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.7984383Z Temporarily overriding HOME='/home/runner/work/_temp/b43789a5-f781-4dae-a541-1e19ee6a0e62' before making global git config changes
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.7986047Z Adding repository directory to the temporary git global config as a safe directory
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.7991325Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/spur/spur
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8031157Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8067370Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8327699Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8357007Z http.https://github.com/.extraheader
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8367560Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8403230Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8655680Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (3.12)	Post Run actions/checkout@v4	2026-10-15T11:12:15.8691661Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (3.12)	Complete job	﻿2026-10-15T11:12:15.9076224Z Cleaning up orphan processes
+test (3.12)	Complete job	2026-10-15T11:12:15.9388023Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

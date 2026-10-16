@@ -1,0 +1,39 @@
+--- a/tests/test_pool.py
++++ b/tests/test_pool.py
+@@ -11,6 +11,7 @@
+ 
+ import ast
+ import asyncio
++import gc
+ import logging
+ import multiprocessing as mp
+ import os
+@@ -20,6 +21,7 @@
+ import sys
+ import threading
+ import time
++from collections.abc import Iterator
+ from concurrent.futures import ProcessPoolExecutor
+ from concurrent.futures.process import BrokenProcessPool
+ from pathlib import Path
+@@ -35,6 +37,20 @@
+ from spur.pool import BuildPool
+ 
+ 
++@pytest.fixture(autouse=True)
++def _collect_cycles_outside_the_resource_tracker_lock() -> Iterator[None]:
++    """Free each test's cyclic garbage at its own teardown, with the tracker lock not held.
++
++    The producer tests below keep `manager` and a `pytest.raises` traceback in a cycle
++    that holds the executor's five semaphores. Only the cyclic GC frees that, and an
++    automatic pass that lands inside `ResourceTracker`'s lock finalises the semaphores
++    re-entrantly (`UserWarning: ResourceTracker called reentrantly`); `filterwarnings =
++    error` then fails whichever test is running, never the producer.
++    """
++    yield
++    gc.collect()
++
++
+ def _sleep_past_timeout(seconds: float) -> bytes:
+     """Module-level, not a lambda -- `spawn` can only pickle a function it can import
+     by qualified name (02-RESEARCH.md's Anti-Patterns; confirmed empirically this

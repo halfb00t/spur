@@ -1,0 +1,26 @@
+--- a/tests/test_pool.py
++++ b/tests/test_pool.py
+@@ -195,6 +195,7 @@
+         # assignment (Codex re-review of ae052f8: `exitcode=None`, errno ECHILD).
+         manager.join(timeout=5)
+         assert not manager.is_alive(), "executor manager thread did not finish shutdown"
++        del manager  # breaks the cycle at its source: `manager` holds the executor's queues
+         assert proc.exitcode == -signal.SIGTERM
+         assert pool.replaced == replaced_before + 1
+ 
+@@ -582,6 +583,7 @@
+         proc.terminate()
+         manager.join(timeout=5)
+         assert not manager.is_alive(), "executor manager thread did not finish shutdown"
++        del manager  # as in the wedged-build test
+         assert proc.exitcode == -signal.SIGTERM
+ 
+ 
+@@ -639,6 +641,7 @@
+         # read from the process table and the exit code, not from psutil.
+         manager.join(timeout=5)
+         assert not manager.is_alive(), "executor manager thread did not finish shutdown"
++        del manager  # as in the wedged-build test
+         assert proc.exitcode == -signal.SIGTERM
+         assert pool.executor_for(params).submit(os.getpid).result() != worker_pid_before
+ 

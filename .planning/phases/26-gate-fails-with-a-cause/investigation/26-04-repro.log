@@ -1,0 +1,83 @@
+# 26-04 reproduction log (D-03), re-run on this host
+date: 2026-10-15T11:44:25Z
+python: Python 3.12.15
+host: 18 CPUs, arm64, 64.0 GiB RAM
+uptime: 17:44  up 2 days,  8:43, 10 users, load averages: 6.85 8.58 7.74
+
+=== script rt_repro.py ===
+# rt_repro.py -- ~12 lines, stdlib only. GC is forced inside the tracker lock the way an
+# automatic pass would land there.
+import gc, sys, multiprocessing as mp, warnings
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import resource_tracker as rt
+ctx = mp.get_context("spawn")
+ex = ProcessPoolExecutor(max_workers=1, mp_context=ctx)   # 5 named semaphores
+ex.me = ex; del ex                                        # cyclic garbage
+orig = rt.ResourceTracker._check_alive
+def noisy(self): gc.collect(); return orig(self)          # runs under the RLock
+rt.ResourceTracker._check_alive = noisy
+warnings.simplefilter("error"); got = []
+sys.unraisablehook = lambda a: got.append(repr(a.exc_value))
+ctx.Lock()                                                # register -> ensure_running -> _check_alive
+print(len(got))
+
+=== script rt_ctrl_gc_before.py ===
+# rt_repro.py -- ~12 lines, stdlib only. GC is forced inside the tracker lock the way an
+# automatic pass would land there.
+import gc, sys, multiprocessing as mp, warnings
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import resource_tracker as rt
+ctx = mp.get_context("spawn")
+ex = ProcessPoolExecutor(max_workers=1, mp_context=ctx)   # 5 named semaphores
+ex.me = ex; del ex                                        # cyclic garbage
+gc.collect()
+orig = rt.ResourceTracker._check_alive
+def noisy(self): gc.collect(); return orig(self)          # runs under the RLock
+rt.ResourceTracker._check_alive = noisy
+warnings.simplefilter("error"); got = []
+sys.unraisablehook = lambda a: got.append(repr(a.exc_value))
+ctx.Lock()                                                # register -> ensure_running -> _check_alive
+print(len(got))
+
+=== script rt_ctrl_nocycle.py ===
+# rt_repro.py -- ~12 lines, stdlib only. GC is forced inside the tracker lock the way an
+# automatic pass would land there.
+import gc, sys, multiprocessing as mp, warnings
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import resource_tracker as rt
+ctx = mp.get_context("spawn")
+ex = ProcessPoolExecutor(max_workers=1, mp_context=ctx)   # 5 named semaphores
+del ex                                        # cyclic garbage
+orig = rt.ResourceTracker._check_alive
+def noisy(self): gc.collect(); return orig(self)          # runs under the RLock
+rt.ResourceTracker._check_alive = noisy
+warnings.simplefilter("error"); got = []
+sys.unraisablehook = lambda a: got.append(repr(a.exc_value))
+ctx.Lock()                                                # register -> ensure_running -> _check_alive
+print(len(got))
+
+=== runs (stdout count only; stderr dropped: leaked-semaphore noise) ===
+$ .venv/bin/python rt_repro.py 2>/dev/null   [run 1]
+stdout: 5
+$ .venv/bin/python rt_repro.py 2>/dev/null   [run 2]
+stdout: 5
+$ .venv/bin/python rt_repro.py 2>/dev/null   [run 3]
+stdout: 5
+$ .venv/bin/python rt_repro.py 2>/dev/null   [run 4]
+stdout: 5
+$ .venv/bin/python rt_repro.py 2>/dev/null   [run 5]
+stdout: 5
+$ .venv/bin/python rt_ctrl_gc_before.py 2>/dev/null   [run 1]
+stdout: 0
+$ .venv/bin/python rt_ctrl_gc_before.py 2>/dev/null   [run 2]
+stdout: 0
+$ .venv/bin/python rt_ctrl_gc_before.py 2>/dev/null   [run 3]
+stdout: 0
+$ .venv/bin/python rt_ctrl_nocycle.py 2>/dev/null   [run 1]
+stdout: 0
+$ .venv/bin/python rt_ctrl_nocycle.py 2>/dev/null   [run 2]
+stdout: 0
+$ .venv/bin/python rt_ctrl_nocycle.py 2>/dev/null   [run 3]
+stdout: 0
+
+uptime after: 17:44  up 2 days,  8:43, 10 users, load averages: 6.85 8.58 7.74

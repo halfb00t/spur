@@ -1,0 +1,9 @@
+17:22  up 2 days,  8:20, 10 users, load averages: 5.25 6.87 7.59
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser --no-cov -q
+bringing up nodes...
+bringing up nodes...
+
+.                                                                        [100%]
+1 passed in 20.16s
+exit 0
+17:22  up 2 days,  8:21, 10 users, load averages: 4.89 6.69 7.50

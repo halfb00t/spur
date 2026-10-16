@@ -5930,3 +5930,483 @@ What a green run on macOS arm64 does not show: the `linux/arm64` image, a Pi 5, 
 behave the same and was not run by the probe), or build requirements under pip 26.2. pip's news of 2026-07-29 (cached in
 `.planning/research/PITFALLS.md`) says constraints no longer reach isolated build environments, so `hatchling` is expected to
 build unconstrained; the 25-03 logs hold no `hatchling` or build-isolation line, so this run did not observe it.
+
+## Gate fails with a cause (Phase 26)
+
+What this section does: v0.6's first phase removes the gate's false reds from reproductions and makes a stall leave its
+cause. Every whole log is under `.planning/phases/26-gate-fails-with-a-cause/investigation/`. Readings are appended per
+plan, never rewritten.
+
+### The hook pin and the caller's PYTEST_ARGS (26-01)
+
+The shared-recipe pin (`tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe`)
+dry-runs `make -n verify` and `make -n verify.fast` and asserts `"--ignore=" not in whole_pytest`. `_make_env()` stripped
+make's own flags from the child's environment but not `PYTEST_ARGS`, which the Makefile reads through `PYTEST_ARGS ?=`, so
+a caller narrowing the gate put its own `--ignore=` into the recipe the pin compares. The debt item is
+`2026-10-10-hook-pin-reads-the-callers-pytest-args` (it cost 21-07 one 165 s run).
+
+- Host: `bench.machine_facts()` reads `18 CPUs, arm64, 64.0 GiB RAM`; GNU Make 4.4.1, pytest 9.1.1
+- Read 2026-10-15 on HEAD `73cbddd` (the before-runs ran on that tree, `tests/test_hooks.py` unedited); `-n0 --no-cov
+  -p no:cacheprovider` throughout, so each pin run is a dry run of `make -n` and takes well under a second
+
+| Form | Command | Before | After | Log |
+|---|---|---|---|---|
+| environment | `PYTEST_ARGS="--ignore=tests/test_browser.py" pytest <pin>` | `1 failed in 0.03s`, exit 1 | `1 passed in 0.03s`, exit 0 | `26-01-env-before.log`, `26-01-env-after.log` |
+| make command line | `make test PYTEST_ARGS="--ignore=tests/test_browser.py tests/test_hooks.py -n0 --no-cov -q -p no:cacheprovider"` | `1 failed, 6 passed in 0.59s`, `make: *** [Makefile:177: test] Error 1`, exit 2 | `9 passed in 0.48s`, exit 0 | `26-01-make-before.log`, `26-01-make-after.log` |
+| empty | `PYTEST_ARGS= pytest <pin>` | `1 passed in 0.02s`, exit 0 | `1 passed in 0.03s`, exit 0 | `26-01-empty-before.log`, `26-01-empty-after.log` |
+| new test, environment | `-k ignores_pytest_args` (`test_the_pin_ignores_pytest_args_set_in_the_environment`) | red (below) | passes in the file's `9 passed` | `26-01-tests-red.log` |
+| new test, make command line | `-k ignores_pytest_args` (`test_the_pin_ignores_pytest_args_handed_down_from_the_make_command_line`) | red (below) | passes in the file's `9 passed` | `26-01-tests-red.log` |
+
+The empty form is a recorded run, not a committed test: `PYTEST_ARGS ?=` takes an empty value as unset, so it reads the same
+recipe before and after and cannot be red. The two new tests were run against the unfixed `_make_env()` and read
+`2 failed, 7 deselected in 0.06s`, both on the assertion the debt item named:
+
+```
+>       assert "--ignore=" not in whole_pytest
+E       AssertionError: assert '--ignore=' not in '.venv/bin/p...t_browser.py'
+E
+E         '--ignore=' is contained here:
+E           port=term --ignore=tests/test_browser.py
+```
+
+The fix is one word, `"PYTEST_ARGS"` added to `_MAKE_VARIABLES`. `_make_env()` is the one place every `make` the hook tests
+start goes through (`_dry_run`, the two `-W` dry runs, and the hook-stamp tests through `_clean_git_env`); the other shape,
+`PYTEST_ARGS=` on the dry run's command line, would have to be repeated at each call site. `Makefile` is unchanged
+(`git diff --exit-code v0.5 -- Makefile` exits 0), so `$(PYTEST_ARGS)` stays the last word of the `test` recipe and a
+caller's flag still wins over the recipe's. What this does not show: a narrowed full `make verify PYTEST_ARGS=...` was not
+run end to end here; the make-command-line row runs `make test` over `tests/test_hooks.py` only, which is the form that
+failed in 21-07 reduced to the file that holds the pin.
+
+### Ubuntu 26.04, pre-classified (26-02)
+
+SC5: the shipped tree on the image `ubuntu-latest` is about to become, read before the rollout. `ubuntu-latest` begins moving to
+Ubuntu 26.04 on 2026-10-19 (`actions/runner-images#14748`); today is 2026-10-15. The agent cut `spike/26-ubuntu-26` from the `v0.5`
+tag (`26ddd74`) with one commit, `21c0346`, whose diff from `v0.5` is the three `runs-on: ubuntu-latest` lines of
+`.github/workflows/ci.yml` changed to `runs-on: ubuntu-26.04` and nothing else, and stopped. The human told the agent to push, and
+the push and the draft PR #40 (`spike(26): ubuntu-26.04 pre-classification -- DO NOT MERGE`, base `main`) were made on that
+instruction; the pre-push hook's `make verify` passed first. The agent then only read the run with `gh`. The whole per-job logs
+are kept under `.planning/phases/26-gate-fails-with-a-cause/investigation/` as `26-02-run-38724011970-test.log` (786 lines),
+`26-02-run-38724011970-vendor-bundle.log` (193) and `26-02-run-38724011970-image.log` (1,715), each from
+`gh run view 38724011970 --log --job {id}`, not `--log-failed`.
+
+| Run | Conclusion | Classification |
+|---|---|---|
+| [38724011970](https://github.com/halfb00t/spur/actions/runs/38724011970) (`ci`, event `pull_request`, attempt 1, head `21c0346761098769029cc98b2f7ebdfe4ae3294f`, created 2026-10-15 10:58:19Z) | success: `test (3.12)`, `vendor-bundle` and `image` all green | `test (3.12)` green; `vendor-bundle` green; `image` green. Nothing red, so nothing to classify as known or new; one attempt, no re-run |
+
+The run's `headSha` is the spike commit. A first-attempt green run means the `twin selectors` race (a main-only red) and the
+resource-tracker flake did not show here; both are intermittent, so this run does not clear them. `grep -ciE 'FAILED|resource_tracker|ResourceTracker|ReentrantCall|ExceptionGroup|twin selectors|rerun|Traceback'`
+prints 0 on each of the three logs.
+
+#### Host state (the runner)
+
+- All three jobs: `Image: ubuntu-26.04`, `Version: 20261012.163.1`, runner 2.337.0, provisioner `20261012.601`, operating
+  system `Ubuntu 26.04.1 LTS` (the `Set up job` group); apt mirrors name the codename `resolute`
+- `test (3.12)`: `pytest -n 4` (`4 workers [1318 items]`), so the runner had 4 CPUs as on 24.04; Python 3.12.15
+  (`actions/setup-python@v5`), pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0, `playwright` 1.63.0
+  (`manylinux1_x86_64` wheel, 48.2 MB), cadquery 2.8.0 with cadquery-ocp 7.9.3.1.1 (the `kernel pair this run resolved` step),
+  Chrome Headless Shell 153.0.8010.12 (`playwright chromium-headless-shell v1243`)
+- `image`: Docker 29.4.2 under `docker/setup-buildx-action@v3`; the in-image `docker/smoke.py` printed
+  `smoke: kernel, exports, ASGI stack and validation all live`
+- Read 2026-10-15 11:12 to 11:20 UTC. A shared runner: load is not observable from the log, so every wall figure is one sample
+
+#### Readings
+
+The 24.04 column is 21-08's run 38059369744 (2026-10-10, image `ubuntu-24.04` `20261004.327.1`, head `88df5cf`). That tree held
+1226 tests; this one holds 1318, so the pytest wall and the coverage rows are not like for like, and the install rows are.
+
+| Reading | Ubuntu 26.04, this run | Ubuntu 24.04, 21-08 |
+|---|---|---|
+| `test (3.12)` job wall time | **13 min 54 s** (834 s): `startedAt` 10:58:23Z, `completedAt` 11:12:17Z | 16 min 8 s |
+| Result line | `1318 passed in 754.49s (0:12:34)`; no failure, no `rerun` | `1226 passed in 887.92s (0:14:47)` |
+| Coverage TOTAL | `1358 21 386 13 98.05%` against the 96.0 % floor (`Required test coverage of 96.0% reached`) | `1346 21 384 14 97.98%` |
+| Import contracts | `Contracts: 5 kept, 0 broken.` | the same line |
+| Install, `playwright install --with-deps --only-shell chromium` | **14.44 s** from the command line (10:59:21.507) to the pytest command's line (10:59:35.948): `Switching to root user to install dependencies...`, `0 upgraded, 9 newly installed`, 21.9 MB of archives, 80.2 MB of additional disk; the shell download 10:59:32.252 to 10:59:35.474 (3.22 s), ffmpeg to 10:59:35.919 | 13.97 s, `1 upgraded, 9 newly installed`, 21.5 MB, 79.5 MB, shell download 3.44 s |
+| Install path | `/home/runner/work/spur/spur/.venv/ms-playwright/chromium_headless_shell-1243` and `.../ffmpeg-1011` | the same |
+| Renderer string, `twin selectors:` line | not printed: the workflow runs `make verify` without `-s` or `-v`, so no per-test line is in the log | not printed either |
+| Other jobs | `image` success 10:58:23Z to 11:00:18Z (1 min 55 s); `vendor-bundle` success 10:58:23Z to 10:58:41Z (18 s) | `image` 2 min 13 s; `vendor-bundle` 12 s |
+| UTC start and finish of the run | first job start 10:58:23Z, last job finish 11:12:17Z | 14:22:50Z to 14:38:58Z |
+
+The browser test is in the 1318 passed: it has no skip path and fails closed on a missing shell (`tests/test_browser_pins.py`),
+so a pass is a launched headless shell on Ubuntu 26.04 with the `--with-deps` set above installed by apt.
+
+#### The ordering against the rollout
+
+This run started at 10:58:23Z on 2026-10-15. The newest `ci` runs before it all read `Image: ubuntu-24.04` in their `Set up job`:
+38680454993 (`main`, 04:14Z), 38678227683 (03:49Z), 38673037695 (02:49Z), 38617655448 and 38617083596 (2026-10-14). No
+`ubuntu-latest` run of this repository named 26.04 before the spike's jobs started, so SC5's ordering holds on what can be read
+today. The run is on a pinned `ubuntu-26.04` label, not on `ubuntu-latest`, so whether the migrated label resolves to this same
+image version (`20261012.163.1` or a later one) is confirmed only when the first `ubuntu-latest` run naming 26.04 exists; Phase 29
+orders that run against the start and finish times above.
+
+#### What the log does and does not show
+
+One run is not the migration. It shows that the shipped `v0.5` tree, with `runs-on` the only difference, builds, installs the
+browser with `--with-deps` through apt on `resolute`, passes all 1318 tests at 98.05 % coverage, passes the vendored-bundle byte
+check, and builds and smoke-tests the container, once, on image `20261012.163.1`. It does not show how often the intermittent
+twin-selectors red and the resource-tracker flake occur on 26.04 against 24.04: both are expected classes on this tree, and one
+green run cannot rank them. It does not show a later image version, since GitHub revises the image weekly. Phase 29 reads the first
+migrated `ubuntu-latest` run against this one.
+
+#### Outcome
+
+**SC5 is met**: the throwaway PR changed only the three `runs-on` lines, its three jobs ran on `ubuntu-26.04` before the rollout
+reached this repository, each whole log is kept, and every job is classified here before any `ci.yml` edit lands anywhere. All
+three are green; nothing goes to the human as options. The PR is closed unmerged and the remote branch is left for the human to
+delete. No `runs-on: ubuntu-24.04` pin is made.
+
+### Twin selectors (26-03)
+
+Date 2026-10-15. Fix commit `6ff1269`. Host: 18 CPUs, arm64, 64.0 GiB RAM (`bench.machine_facts()`). pytest 9.1.1, pytest-xdist 3.8.0,
+playwright 1.63.0; the `make test` recipe's own `-n 8` stood for every run (`make -n test` prints `pytest -n 8 --cov --cov-report=term`).
+
+#### The lever is the `/api/info` response, not the STL route
+
+SC2 and the debt item said a delayed STL route makes the old step red. On the real app it does not: `app.js` issues
+`/api/model.stl` only after the `/api/info` response (`update()`, `app.js:262-274`), and the old baseline was taken after the
+info *request*, before that response was acted on. A parked STL route therefore leaves the old step green; a parked
+`/api/info` released after the old baseline puts the STL request inside the counted window. The 350 ms debounce does not bear
+on the baseline at load (`update()` runs directly, `app.js:643-644`, so no timer is pending); it bears on the zero-request
+assertion, which needs a settle past 350 ms after the two picks (24 CX-05). The arms below were run before any edit to the
+step (SC2's escape clause: the real app could have disagreed with the stand-in; it did not).
+
+| Arm | Change | Runs | Result | Failure text |
+|---|---|---|---|---|
+| 1, delayed STL route | the STL route parks its route, never released; `/api/info` not routed; old baseline | 3 | green 3 of 3 (`1 passed in 21.79s`, `21.56s`, `20.16s`) | none |
+| 2, parked /api/info, old baseline | `/api/info` parked; old `expect_request("/api/info")` and baseline; released before the first pick | 3 | red 3 of 3 (`1 failed in 18.02s`, `18.04s`, `18.01s`) | `AssertionError: twin selectors: 1 request(s) sent by two pending picks` (`assert 279 == 278`) |
+| 3, parked /api/info, new baseline | as arm 2; released inside `expect_request` on `/api/model.stl`; baseline after it | 3 | green 3 of 3 (`1 passed in 21.51s`, `21.76s`, `21.55s`) | none |
+
+Whole logs, diffs and the table with load figures: `.planning/phases/26-gate-fails-with-a-cause/investigation/26-03-arm{1,2,3}.diff`, `26-03-arm{1,2,3}-run{1,2,3}.log`,
+`26-03-arms.md`. Each arm's patch was applied with `git apply` and reverted with `git apply -R`; the tree read clean after each.
+No sleep in any route handler: the delay is a parked route released from the test.
+
+#### The CX-05 control
+
+After the second pick, a throwaway patch dispatches a bubbling `input` event on the first form input (the form's listener
+calls `scheduleUpdate()`). On the fixed step with the final settle removed (assert at once) the step passes
+(`1 passed in 22.66s`, the vacuous pass CX-05 names). With the settle it is red, `AssertionError: twin selectors: 2 request(s)
+sent by two pending picks` (the stray update sends `/api/info`, then the aborted STL request, so the count is 2, not the 1 a
+bare info request would give), and the stray `/api/info` request event arrived **354 ms** after the dispatch (`CX05-STRAY-INFO-MS 354`,
+one run). The committed settle is `DEBOUNCE_SETTLE_MS = 1_000`. Logs: `26-03-cx05-old.log`, `26-03-cx05-new.log`, with
+`26-03-cx05-old.diff` and `26-03-cx05-new.diff`.
+
+#### 20 runs at -n 8
+
+Pre-registered by the plan's text (committed before execution): 20 runs, sequential, no early stop, no retry, a red classified by
+its `step:` note and kept. `make test PYTEST_ARGS="tests/test_browser.py tests/test_browser_pins.py --no-cov -q"`, one-minute
+load average before -> after each run, logs `26-03-repeat-1.log` to `26-03-repeat-20.log`.
+
+| Run | Exit | Result line | Wall (s) | Load before -> after |
+|---|---|---|---|---|
+| 1 | 0 | `5 passed in 23.64s` | 24s | 5.38 -> 4.66 |
+| 2 | 0 | `5 passed in 23.76s` | 24s | 4.66 -> 5.01 |
+| 3 | 0 | `5 passed in 23.82s` | 24s | 5.01 -> 4.63 |
+| 4 | 0 | `5 passed in 22.22s` | 22s | 4.63 -> 4.56 |
+| 5 | 0 | `5 passed in 23.67s` | 24s | 4.56 -> 3.96 |
+| 6 | 0 | `5 passed in 23.54s` | 24s | 3.96 -> 4.38 |
+| 7 | 0 | `5 passed in 23.56s` | 23s | 4.38 -> 3.79 |
+| 8 | 0 | `5 passed in 23.65s` | 24s | 3.79 -> 3.84 |
+| 9 | 0 | `5 passed in 23.76s` | 24s | 3.84 -> 3.62 |
+| 10 | 0 | `5 passed in 24.22s` | 25s | 3.62 -> 4.53 |
+| 11 | 0 | `5 passed in 23.92s` | 24s | 4.53 -> 4.53 |
+| 12 | 0 | `5 passed in 23.90s` | 24s | 4.53 -> 4.30 |
+| 13 | 0 | `5 passed in 24.90s` | 25s | 4.30 -> 4.68 |
+| 14 | 0 | `5 passed in 23.89s` | 24s | 4.68 -> 4.25 |
+| 15 | 0 | `5 passed in 23.66s` | 24s | 4.25 -> 4.00 |
+| 16 | 0 | `5 passed in 24.25s` | 24s | 4.00 -> 4.10 |
+| 17 | 0 | `5 passed in 24.12s` | 24s | 4.10 -> 4.45 |
+| 18 | 0 | `5 passed in 23.79s` | 24s | 4.45 -> 4.87 |
+| 19 | 0 | `5 passed in 24.50s` | 25s | 4.87 -> 6.76 |
+| 20 | 0 | `5 passed in 22.34s` | 22s | 6.76 -> 5.54 |
+
+**20 of 20 green** (`5 passed` each, exit 0; no `step:` note in any log).
+
+What this does and does not show: the browser files pass 20 of 20 on this host at `-n 8`. The old step was not run 20 times
+here, so this count alone does not separate the fix from the host being fast; the old step failed on `main` CI (a runner about
+twice as slow) in 2 of 8 runs. The proof of the mechanism is the arms above (red under a parked `/api/info`, green with the new
+baseline), not this count. The draft phase PR's CI run is read in 26-07 (supporting only: a `pull_request` run, green on both
+red `main` trees too). The post-merge `main` run (D-05) can only be read after `make pr.land`; it is carried to land time by
+`docs/tech_debt/active/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md`.
+
+### The resource-tracker flake (26-04)
+
+#### The rule (26-04)
+
+This rule is committed alone, before run A1, and nothing in it changes once A1 has started: a different rule is a new
+session of twenty runs, and a red run is kept, never dropped or retried (D-04, L08). The 10 + 10 is a consistency check.
+The proof is the forced-GC gate test, which removes the luck; the natural rate on macOS was 0 of 60 two-file loops on
+2026-10-09, so a quiet 10 + 10 here proves little and is recorded as such.
+
+1. **Host.** All twenty runs are read on one host: `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`). The branch
+   is `gsd/phase-26-gate-fails-with-a-cause`; the runs are not on a quiet host and no quiet host is waited for, so the
+   1-minute load is a covariate, not a gate.
+2. **One run.** `make test PYTEST_ARGS="tests/test_pool.py tests/test_api.py -k 'not forced_gc' --cov-fail-under=0"`,
+   the gate's own `-n 8 --cov` recipe. `-k 'not forced_gc'` keeps the gate test out of both arms, so both read the
+   natural rate only. `--cov-fail-under=0` because a partial `--cov` run otherwise ends on the coverage floor
+   (`Required test coverage of 96.0% not reached`, exit 1), which is not the flake.
+3. **Arms, by content.** Arm A (before) is HEAD's `tests/test_pool.py`: unfixed, no gate test, sha256
+   `d88ba80e08cfcaf0c522ca0d688d246e02eda31dc3c234eb4cab90eaa3ab8b3b`, frozen as
+   `investigation/26-04-arm-before.test_pool.py.txt`. Arm B (after) is the fix plus the gate test, sha256
+   `b56df86990cb4a5547bc776b0979355b4b3e5927c522a5a11f43e03c1dc01ba5`, frozen as
+   `investigation/26-04-arm-after.test_pool.py.txt`. The arm's file is copied over `tests/test_pool.py` before each run
+   and its hash checked before and after; nothing else differs between arms.
+4. **Order.** A1 B1 A2 B2 ... A10 B10, one at a time, never concurrent, no idle wait. The 1-minute load before and after
+   each run is recorded.
+5. **Cap.** 20 runs, no early stop, no retry. Each run is killed at 600 s by `timeout`; a killed run is its own row,
+   classified `killed`.
+6. **Signature.** A red counts as the flake only if its log holds `ReentrantCallError` or
+   `ResourceTracker called reentrantly`. Any other red (a coverage line, a timeout, an unrelated failure) is its own row,
+   kept, not counted.
+7. **Recorded per run:** UTC start and end, wall seconds, exit, the pytest result line, the effective `-n` (the
+   `N workers` line), the load; once per session `pip freeze` filtered to pytest, pytest-xdist, pytest-cov and coverage.
+8. **Reading.** Zero flake reds in the after arm reads "consistent, not conclusive": at the 1-in-5-to-10 rate STACK saw in
+   a Linux container, 0 of 10 by luck alone is 15 to 30 %. The forced-GC gate test is the proof.
+
+#### Readings (26-04)
+
+Host `18 CPUs, arm64, 64.0 GiB RAM`, Python 3.12.15, 2026-10-15; the dev host was shared with other sessions (1-minute load
+5.9 to 15.3 during the acceptance runs, 6.9 at the reproduction). Logs: `.planning/phases/26-gate-fails-with-a-cause/investigation/26-04-*`.
+
+**The stdlib reproduction was re-run before any fix (D-03).** STACK's `rt_repro.py` (forced `gc.collect()` inside
+`ResourceTracker._check_alive`, an executor made cyclic garbage, `filterwarnings = error`), stdout count only:
+5 of 5 runs printed `5` (five unraisable `ResourceTracker called reentrantly` warnings, one executor's semaphores). Control 1
+(`gc.collect()` before the patch): `0` in 3 of 3. Control 2 (no `ex.me = ex` cycle): `0` in 3 of 3. Until this run every
+STACK figure was READ-from-STACK; these are MEASURED here (`26-04-repro.log`).
+
+**The forced-GC gate test, per arm** (`test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup`, three
+producers then the victim in a fresh interpreter, a `gc.collect()` forced inside the tracker's lock on every entry; this
+host, three runs per arm):
+
+| Arm | Change | Forced-GC, 3 runs (this host) | STACK (macOS, `-n0 --no-cov`) |
+|---|---|---|---|
+| A | none (unfixed `tests/test_pool.py`) | red 3 of 3 | FAILED 3 of 3 |
+| B | autouse fixture, teardown `gc.collect()` | red 0 of 3 | 0 of 3 |
+| C | `del manager` after the last use in the three producers | red 0 of 3 | 0 of 3 |
+| B + C | both (the fix as committed) | red 0 of 3 | not run in STACK |
+
+The red text, from `26-04-gate-A-1.log`: the child pytest reads `1 failed, 3 passed in 10.11s`, the failure is
+`FAILED tests/test_pool.py::test_a_closed_pool_never_builds_a_replacement_worker` (the victim, never a producer), with
+`multiprocessing.resource_tracker.ReentrantCallError: Reentrant call into the multiprocessing resource tracker` raised from
+`ensure_running` -> `_reentrant_call_error`, then `UserWarning: ResourceTracker called reentrantly for resource cleanup,
+which is unsupported. The semaphore object '/mp-8ax0ao_6' might leak.`, ending in `PytestUnraisableExceptionWarning:
+Exception ignored in: <Finalize object, dead>`. `check_alive calls: 94` in all three red runs, so the patch ran (the
+test asserts the count is above 0).
+
+**The gate test's cost.** Alone (`-n0 --no-cov`, the pytest `in N s` of the outer run): 11.27 to 13.14 s over the three
+green runs of the fix (arm A, red, 10.49 to 10.60 s). The whole `tests/test_pool.py` (21 tests with it) reads 31.17 and
+32.86 s at `-n0 --no-cov`. Inside the gate (`make verify`, `-n 8 --cov`, durations block of `26-04-verify.log`): 10.58 s.
+The file is in `HEAVY_TEST_FILES`, so none of it runs in the commit-time slice.
+
+**The 10 + 10 natural run**, under the rule committed in `957539c` at 2026-10-15T11:50:18Z (first run, A1, started
+11:50:47Z), interleaved A1 B1 ... A10 B10, `make test PYTEST_ARGS="tests/test_pool.py tests/test_api.py -k 'not forced_gc'
+--cov-fail-under=0"`, effective `-n 8` (`8 workers [82 items]` in all 20 logs), pytest 9.1.1, pytest-xdist 3.8.0,
+pytest-cov 7.1.0, coverage 7.16.2. Arm hashes checked before and after every run, all equal to the rule's:
+
+| Run | Arm | UTC start | Wall (s) | Exit | Result line | Workers | Load before -> after | Class |
+|---|---|---|---|---|---|---|---|---|
+| A1 | before | 2026-10-15T11:50:47Z | 13 | 0 | 82 passed in 13.34s | 8 | 5.90 -> 6.48 | green |
+| B1 | after | 2026-10-15T11:51:01Z | 13 | 0 | 82 passed in 13.67s | 8 | 6.48 -> 6.75 | green |
+| A2 | before | 2026-10-15T11:51:14Z | 14 | 0 | 82 passed in 13.75s | 8 | 6.75 -> 8.44 | green |
+| B2 | after | 2026-10-15T11:51:28Z | 14 | 0 | 82 passed in 13.66s | 8 | 8.44 -> 10.86 | green |
+| A3 | before | 2026-10-15T11:51:42Z | 14 | 0 | 82 passed in 13.72s | 8 | 10.86 -> 10.45 | green |
+| B3 | after | 2026-10-15T11:51:56Z | 14 | 0 | 82 passed in 13.74s | 8 | 10.45 -> 9.81 | green |
+| A4 | before | 2026-10-15T11:52:10Z | 14 | 0 | 82 passed in 13.70s | 8 | 9.81 -> 9.13 | green |
+| B4 | after | 2026-10-15T11:52:24Z | 14 | 0 | 82 passed in 13.83s | 8 | 9.13 -> 11.46 | green |
+| A5 | before | 2026-10-15T11:52:38Z | 15 | 0 | 82 passed in 14.45s | 8 | 11.46 -> 14.01 | green |
+| B5 | after | 2026-10-15T11:52:53Z | 14 | 0 | 82 passed in 13.80s | 8 | 14.01 -> 15.29 | green |
+| A6 | before | 2026-10-15T11:53:07Z | 14 | 0 | 82 passed in 13.80s | 8 | 15.29 -> 15.34 | green |
+| B6 | after | 2026-10-15T11:53:21Z | 14 | 0 | 82 passed in 13.99s | 8 | 15.34 -> 13.66 | green |
+| A7 | before | 2026-10-15T11:53:35Z | 14 | 0 | 82 passed in 14.10s | 8 | 13.66 -> 12.37 | green |
+| B7 | after | 2026-10-15T11:53:49Z | 15 | 0 | 82 passed in 13.97s | 8 | 12.37 -> 12.37 | green |
+| A8 | before | 2026-10-15T11:54:04Z | 13 | 0 | 82 passed in 13.77s | 8 | 12.37 -> 15.00 | green |
+| B8 | after | 2026-10-15T11:54:18Z | 14 | 0 | 82 passed in 13.99s | 8 | 15.00 -> 14.11 | green |
+| A9 | before | 2026-10-15T11:54:32Z | 14 | 0 | 82 passed in 14.02s | 8 | 14.11 -> 13.59 | green |
+| B9 | after | 2026-10-15T11:54:46Z | 14 | 0 | 82 passed in 14.01s | 8 | 13.59 -> 12.17 | green |
+| A10 | before | 2026-10-15T11:55:00Z | 14 | 0 | 82 passed in 13.96s | 8 | 12.17 -> 10.67 | green |
+| B10 | after | 2026-10-15T11:55:14Z | 15 | 0 | 82 passed in 14.28s | 8 | 10.67 -> 11.98 | green |
+
+Flake reds: 0 of 10 in the before arm, 0 of 10 in the after arm; no other red, no killed run. The before arm did not
+reproduce the flake either, so this table does not separate the arms: it is **consistent, not conclusive**. At the 1 in 5
+to 10 rate STACK saw in a Linux container, 0 of 10 by luck alone is 15 to 30 %, and on this macOS host the rate was 0 of 60
+on 2026-10-09 with the unfixed file. The forced-GC gate test, red 3 of 3 before and green 3 of 3 after, is the proof; the
+flake is **located and fixed from a reproduction**, not shown to be gone.
+
+Plan text that did not hold: the plan expects `19 passed` for `tests/test_pool.py`; the file has 19 test functions with the
+gate test, one of them parametrised three ways, so 21 collected items (20 without it), and all 21 pass.
+
+**The gate.** `make verify PYTEST_ARGS="--durations=0 --durations-min=5.0"`: exit 0, `1321 passed in 185.61s (0:03:05)`,
+`TOTAL 1358 22 386 13 97.99%`, `Required test coverage of 96.0% reached` (`26-04-verify.log`).
+
+### Hang evidence (26-05)
+
+Plan 26-05 puts `-v --durations=25` on the `test` recipe, `faulthandler_timeout = 120` in the ini, proves with a
+throwaway stalled test that a stall names itself, and measures the gate's cost of the flags. The 2026-10-10 hang left
+neither a test id nor a stack because the gate ran without `-v` or a per-test timeout (the hang item).
+
+#### The timeout, from a local reading
+
+`make test PYTEST_ARGS="--durations=25"` before any edit, 2026-10-15, Apple M5 Max, 1-minute load 11.27 at the end
+(`investigation/26-05-durations-local.log`): `1321 passed in 196.96s`, exit 0. The ten slowest phases (all `call`):
+
+```
+32.33s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+31.36s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-keyed-cells]
+29.82s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-holes]
+21.31s call     tests/test_model.py::test_the_kernel_tier_proof_fails_when_the_printed_tip_radius_is_off_by_0_05_mm
+16.42s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-spokes]
+14.63s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-round-holes]
+14.04s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-round-spokes]
+13.96s call     tests/test_model.py::test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root
+13.89s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-cells]
+13.40s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-keyed-holes]
+```
+
+The slowest single phase S is **32.33 s** (`tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser`). Rule: the
+timeout is 120 s unless 2 x S exceeds 120, then 2 x S rounded up to the next 10 s. 2 x 32.33 = 64.66, below 120, so
+`faulthandler_timeout = 120`. STACK's CI estimate for the slowest test is about 52 s. CI's `--durations` and the x2 rule
+on its numbers: 26-07. The key is dump-only (`faulthandler_exit_on_timeout` stays off until a first captured hang).
+
+#### The stall proof
+
+A throwaway `tests/test_zz_stall_probe.py` (one test, `test_stalls`, sleeping 30 s; deleted before the change commit,
+never committed) was run once through `make test PYTEST_ARGS="tests/test_zz_stall_probe.py -o faulthandler_timeout=5
+--cov-fail-under=0"`, that is `-n 8 --cov -v --durations=25` (`investigation/26-05-stall.log`). The log holds, in order:
+
+```
+tests/test_zz_stall_probe.py::test_stalls /Users/half/git/halfb00t/spur/.venv/lib/python3.12/site-packages/coverage/control.py:967: CoverageWarning: ...
+Timeout (0:00:05)!
+  File "/Users/half/git/halfb00t/spur/tests/test_zz_stall_probe.py", line 5 in test_stalls
+...
+============================== 1 passed in 30.58s ==============================
+```
+
+The start line names the test (no worker id), the dump names the file, line and function, and the run carries on to a
+pass (dump-only). The dump's first line was glued to a controller line already half written, as RESEARCH measured.
+
+#### The cost of the flags: 3 + 3, interleaved A B A B A B
+
+Arm A is the recipe before the change (`git show 70609110:Makefile`, kept as `investigation/26-05-Makefile.A.mk`) run
+as `make -f ... test PYTEST_ARGS="-o faulthandler_timeout=0"` (no `-v`, no `--durations`, ini timer off). Arm B is
+`make test` on the committed recipe and ini. Same tree, venv, stamps and browser; one run at a time, no idle wait, each
+run's 1-minute load logged before and after; this plan's text, committed before execution, is the pre-registration.
+Wall is two clock reads around the make call.
+
+| Run | Arm | Wall | pytest s | Load before -> after | Exit |
+|-----|-----|------|----------|----------------------|------|
+| A1 | before (old recipe, ini timer off) | 207.21 s | 207.00 s | 4.67 -> 7.93 | 0 |
+| B1 | after (committed recipe and ini) | 218.94 s | 218.66 s | 7.93 -> 7.59 | 0 |
+| A2 | before (old recipe, ini timer off) | 211.07 s | 210.79 s | 7.59 -> 7.68 | 0 |
+| B2 | after (committed recipe and ini) | 208.50 s | 208.28 s | 7.68 -> 9.62 | 0 |
+| A3 | before (old recipe, ini timer off) | 202.32 s | 201.83 s | 9.62 -> 10.12 | 0 |
+| B3 | after (committed recipe and ini) | 189.99 s | 189.28 s | 10.12 -> 10.45 | 0 |
+
+Mean wall: A **206.87 s**, B **205.81 s**, delta **-0.51 %**. L43's bar is 300 s: every run is
+at most 218.94 s. The 5 % stop rule (D-09) did not trip. The load rose from 4.7 to 10.5 over the six runs (the host
+was shared), and the per-pair deltas are +5.7 %, -1.2 % and -6.1 %: the run-to-run spread, which Phase 25 read at about
+8 % on 195.23 s and 179.21 s, is larger than the effect, so the table says the flags cost nothing measurable, not that
+they are free. Every arm-B run exited 0 and none printed a `Timeout (` line, so the dump-only timeout changes nothing
+when nothing stalls. All six runs read `1321 passed`.
+
+#### What the evidence does not show
+
+The timer is armed per test item. A stall after a worker's last test, in xdist's worker shutdown or in pytest-cov's
+combine, leaves no dump and no test id: `-v` shows every test finished and the run still waiting. The hang item's
+runbook states this window and the operator step for it; the item stays active and no cause is claimed. The CI
+confirm of the 120 s value is 26-07's task.
+
+### make test-image (26-06)
+
+`make test-image` is documented as the way to run the suite without a local Python, and had never been read. It was run
+once on the unfixed recipe and its red set recorded before any fix. Host Darwin 27.0.0 arm64 (OrbStack), Docker server
+29.4.0, 2026-10-15, HEAD `febe0b9`. The image is **linux/amd64** (the shell exports `DOCKER_DEFAULT_PLATFORM=linux/amd64`
+and `PLATFORM` is unset), so it runs emulated on this arm64 host, and every wall below carries that cost. The container
+installs pytest 9.1.1; it holds neither pytest-cov nor pytest-xdist.
+
+#### The first run, unfixed
+
+`make test-image PYTEST_ARGS="-rs"` exited 2 in 125 s (image build 57 s of it): **5 errors in 4.20s**, `Interrupted: 5
+errors during collection` (`ModuleNotFoundError` for `bench` and `scripts`). A collection error stops the run, so no
+test-level red showed. The red set below is a second reading of the same image and command line with the `bench/` and
+`scripts/` mounts and `PYTHONPATH=/app/src:/app` applied by hand (Makefile unedited) and only
+`--ignore=tests/test_browser.py`: **29 failed, 1290 passed in 863.84s (0:14:23)**, exit 1, no `SKIPPED` line. Logs:
+`26-06-first.log`, `26-06-first-mounted.log` beside `26-06-redset.md` in the phase's `investigation/`.
+
+The research's static prediction named two `tests/test_bench.py` exit-128 tests; the reading is two `test_bench.py`
+tests that run `git` (`FileNotFoundError`), plus the rows below.
+
+| Test | Cause | Class |
+|---|---|---|
+| tests/test_bench.py (collection) | `ModuleNotFoundError: No module named 'bench'` | bench/scripts not mounted |
+| tests/test_calc.py (collection) | `ModuleNotFoundError: No module named 'bench'` | bench/scripts not mounted |
+| tests/test_trochoid.py (collection) | `ModuleNotFoundError: No module named 'bench'` | bench/scripts not mounted |
+| tests/test_pr_land.py (collection) | `ModuleNotFoundError: No module named 'scripts'` | bench/scripts not mounted |
+| tests/test_skip_tokens.py (collection) | `ModuleNotFoundError: No module named 'scripts'` | bench/scripts not mounted |
+| tests/test_bench.py::test_the_report_names_the_largest_fine_stl_and_breaks_a_tie_by_file_order | `bench/build_time.py:131` runs `git`: `FileNotFoundError: 'git'` | git |
+| tests/test_bench.py::test_the_report_prints_the_load_it_was_given_rather_than_reading_one_itself | `bench/build_time.py:131` runs `git`: `FileNotFoundError: 'git'` | git |
+| tests/test_browser_pins.py::test_playwright_is_pinned_exactly_in_dev_and_never_in_the_runtime_closure | `FileNotFoundError: /app/Dockerfile` | Dockerfile |
+| tests/test_hooks.py::test_the_commit_hook_runs_the_fast_prefix_and_the_push_hook_runs_the_whole_gate | `FileNotFoundError: /app/.pre-commit-config.yaml` | make |
+| tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_pin_ignores_pytest_args_set_in_the_environment | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_pin_ignores_pytest_args_handed_down_from_the_make_command_line | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_hooks.py::test_the_dev_venv_installs_under_the_closure_and_reinstalls_when_it_moves | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_image_suite_ignores_the_browser_test | `FileNotFoundError: 'make'` | make |
+| tests/test_hooks.py::test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_hooks.py::test_the_hook_stamp_skips_loudly_when_core_hooks_path_is_set | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_staged_file_with_both_markers_is_refused_with_each_line_named | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_markers_inside_longer_words_pass | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_no_space_type_ignore_under_src_spur_is_refused | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_whole_file_ignore_errors_in_an_untracked_module_is_refused | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_no_fake_done.py::test_a_deliberate_suppression_outside_src_spur_passes | `FileNotFoundError: /app/Makefile` | make |
+| tests/test_pr_land.py::test_required_jobs_file_matches_ci_yml_job_names | `FileNotFoundError: /app/.github/workflows/ci.yml` | .github |
+| tests/test_pr_land.py::test_a_job_name_override_moves_the_derived_required_set | `FileNotFoundError: /app/.github/workflows/ci.yml` | .github |
+| tests/test_pr_land.py::test_land_happy_path_returns_0_and_prints_the_run_url | `scripts/pr_land.py:212 required_jobs`: `FileNotFoundError: /app/.github/workflows/required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_reports_the_last_read_error_when_every_poll_failed | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_reports_no_run_observed_with_the_actions_url_when_reads_succeeded | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_names_a_skip_token_only_after_reading_it_from_the_squash_commit | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_local_tip_differs_keeps_the_branch | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_local_branch_absent_no_delete_no_error | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_refuses_a_token_hidden_below_a_git_cut_line_in_the_pr_body | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_gh_pr_merge_failure_returns_1_no_poll_no_follow_up | same, `required-jobs.txt` | .github |
+| tests/test_pr_land.py::test_land_several_problems_at_once_prints_all_then_one_nothing_was_merged_line | same, `required-jobs.txt` | .github |
+| tests/test_pool.py::test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup | the test spawns `pytest ... --no-cov -n0` in a subprocess; the image holds neither pytest-cov nor pytest-xdist: `pytest.main(): error: unrecognized arguments: --no-cov -n0`, `check_alive calls: 0` (`tests/test_pool.py:773`) | other |
+
+Counts: 5 collection errors and 29 failures. By class: `bench/scripts not mounted` 5, `git` 2, `Dockerfile` 1, `make` 14,
+`.github` 11, `other` 1. 33 of 34 fit D-11's rule; the one that did not stopped the plan for the human.
+
+#### The D-11 checkpoint: one red outside the rule
+
+`tests/test_pool.py::test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup` (26-04, D-02) is not a
+host-file read: it launches a subprocess `pytest --no-cov -n0`, and the image lacks pytest-cov and pytest-xdist
+(`unrecognized arguments`). A probe in the same image with `pytest-cov 7.1.0` and `pytest-xdist 3.8.0` installed read
+`1 passed, 20 deselected in 24.28s` (`26-06-optB-probe.log`). The human chose **option B**: add both plugins to the
+recipe's `pip install` line, so the D-02 gate test runs in the image instead of being ignored. This is a
+**human-approved deviation from D-11's literal text** (D-11 names make, git, the Dockerfile, `.github` and the mounts as
+the only causes); it is recorded here and in the SUMMARY. `tests/test_pool.py` is not ignored.
+
+#### The fix
+
+- Mounts: `bench/` and `scripts/` read-only beside `src/`, `tests/` and `pyproject.toml` (five `:ro` mounts);
+  `PYTHONPATH=/app/src:/app` (the `/app` is redundant beside `python -m pytest` with `-w /app`; the mounts do the work,
+  the recipe comment says so).
+- `pip install pytest httpx pytest-cov pytest-xdist` (option B, above).
+- Whole-file `--ignore`s, each with its cause in a recipe comment: `tests/test_browser.py` (no playwright in the image,
+  D-01), `tests/test_hooks.py` (make; all 9 tests), `tests/test_no_fake_done.py` (make), `tests/test_browser_pins.py`
+  (Dockerfile; its only test), `tests/test_pr_land.py` (`.github`), `tests/test_bench.py` (git). Whole-file as D-11
+  writes it, not per-test `--deselect`: a renamed test leaves a stale `--deselect` id that fails silently.
+- The cost of whole-file: it drops passing tests with the red ones, **47** in `tests/test_pr_land.py` (11 of 58 fail)
+  and **41** in `tests/test_bench.py` (2 of 43 fail). Those run in `make verify`, which is the gate.
+- `tests/test_calc.py`, `tests/test_trochoid.py` and `tests/test_skip_tokens.py` stay in the image suite. No skip
+  marker was added to any test file.
+
+#### The after run
+
+`make test-image PYTEST_ARGS="-rs"` exited **0**: `1201 passed in 888.34s (0:14:48)`, 938.98 s wall (the image layers
+were cached, so the build is a few seconds of it). No `ERROR collecting` line and no `SKIPPED` line. The pin
+`test_the_image_suite_ignores_the_browser_test` (same name) now asserts the exact sets of mounts, `PYTHONPATH`, pip-installed
+tools and ignored files, and was seen red against the old recipe first (`26-06-pin-red.log`). Log: `26-06-after.log`.
+
+#### What the image suite does not run
+
+The image suite skips `tests/test_browser.py`, `tests/test_hooks.py`, `tests/test_no_fake_done.py`,
+`tests/test_browser_pins.py`, `tests/test_pr_land.py` and `tests/test_bench.py` entirely. `make verify` runs all of them
+on the host. Nothing runs `make test-image` in CI (filed as an idea).

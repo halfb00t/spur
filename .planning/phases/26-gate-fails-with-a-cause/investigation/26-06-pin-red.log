@@ -1,0 +1,31 @@
+        nothing; it prints the recipe."""
+        lines = _dry_run("test-image")
+        at = next(i for i, ln in enumerate(lines) if "docker run" in ln)
+        end = at
+        while lines[end].endswith("\\"):
+            end += 1
+        words = shlex.split(" ".join(ln.rstrip("\\").strip() for ln in lines[at : end + 1]))
+    
+        mounts = set()
+        for host, target, mode in (w.rsplit(":", 2) for w in words if w.startswith(str(REPO_ROOT))):
+            mounts.add((Path(host).relative_to(REPO_ROOT).as_posix(), target, mode))
+>       assert mounts == {
+            ("src", "/app/src", "ro"),
+            ("tests", "/app/tests", "ro"),
+            ("pyproject.toml", "/app/pyproject.toml", "ro"),
+            ("bench", "/app/bench", "ro"),
+            ("scripts", "/app/scripts", "ro"),
+        }, words
+E       AssertionError: ['docker', 'run', '--rm', '--user', 'root', '-e', ...]
+E       assert {('pyproject....tests', 'ro')} == {('bench', '/...tests', 'ro')}
+E         
+E         Extra items in the right set:
+E         ('bench', '/app/bench', 'ro')
+E         ('scripts', '/app/scripts', 'ro')
+E         Use -v to get more diff
+
+tests/test_hooks.py:246: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_hooks.py::test_the_image_suite_ignores_the_browser_test - A...
+1 failed, 8 deselected in 0.03s
+pytest exit 1 (red against the old recipe, before the Makefile edit)

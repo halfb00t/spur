@@ -1,458 +1,371 @@
 # Pitfalls Research
 
-**Domain:** Adding a headless-browser test of the viewer, schema-driven conditional form fields, a UI-only bore-shape selector, a `slug()` change, a re-set gate bar and a constrained `make venv` probe to an existing, shipped parametric spur-gear generator (`spur`, milestone v0.5 Honest Form)
-**Researched:** 2026-10-10
-**Confidence:** HIGH for everything tagged MEASURED or READ (executed or read on 2026-10-10 on the host below); MEDIUM for DOCS (fetched documentation, not re-executed); LOW for anything tagged UNVERIFIED.
+**Domain:** a debt-sweep milestone (v0.6 Clean Ledger) on spur: a gate that must stay trustworthy (pytest-xdist `-n 8 --cov`, 300 s bar, headless browser, spawn-context `BuildPool`), a hunt for a rare flake and a rare hang, two guard tests, a process-group teardown, one user-visible link refusal, a runner-OS migration, and info-finding triage.
+**Researched:** 2026-10-15
+**Confidence:** HIGH for repo-specific pitfalls (read from code, debt files and retrospectives, several re-measured today); MEDIUM for upstream/runner facts (web-sourced, tagged below).
 
-**Evidence tags used below**
+**Claim tags used below:** `MEASURED` = I ran it today in this repo (2026-10-15, `.venv`, Python 3.12.15, pytest 9.1.1); `READ` = read in a named file or fetched page; `UNVERIFIED` = inference or assumption, not checked. Anything tagged `UNVERIFIED` must not be written into a decision or a comment as fact.
 
-- **MEASURED** - run on 2026-10-10 on the dev host: Apple M5 Max, 18 CPUs, macOS arm64, Python 3.12.15, Playwright 1.63.0 (Chromium 153.0.8010.12, headless shell build `chromium_headless_shell-1243`), pip 26.2.1, uvicorn 0.54.0, pydantic 2.13.5, pytest-xdist 3.8.0. Scratch scripts live in the session scratchpad and were not committed; a plan that leans on a number must re-create the measurement inside the repo.
-- **READ** - a repo file at the line named, or upstream source/PyPI metadata read today.
-- **DOCS** - an upstream documentation page fetched today.
-- **UNVERIFIED** - inference or memory; no check was possible here (no Docker daemon, no Linux host, no GitHub runner).
+**Phase labels.** The roadmap does not exist yet. "Phase to address" uses these working labels, which map one-to-one onto the milestone's target features:
 
-**Phase labels (role names, the roadmap numbers from 21):**
-
-- **BT** - the browser test of the viewer (server fixture, browser install, gate placement).
-- **CF** - conditional form fields (`enabled_when` in `json_schema_extra`, rendered by `app.js`).
-- **BS** - the bore-shape selector.
-- **SL** - the `slug()` change that carries `root_shape`.
-- **GB** - the L34 gate-bar re-set.
-- **VP** - the `make venv` under `PIP_CONSTRAINT` probe.
-- **LG** - the two small ledger items (reverify recipe, Pi 5 claim).
+| Label | Scope |
+|---|---|
+| **A. Gate reliability** | `resource_tracker` flake loops and fix-or-redefer; 98 % hang evidence capture |
+| **B. Phase 22 guard pair** | seeded `slug()` totality test; `_EXPORTS`-order-independent failed-build name test |
+| **C. Browser harness pair** | `stop_group` signal-before-read; group-floor comment and dated RESULTS corrections |
+| **D. Invalid-enum link** | `#root_shape=bogus` refused visibly; new `Lxx`; browser pin flips |
+| **E. Ubuntu 26 CI** | classify the first Ubuntu-26 CI run before any fix (date-gated, from 2026-10-19) |
+| **F. Triage and cheap items** | info findings of Phases 19, 21-24; hook pin, launch message, `make test-image` |
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall BT-1: No WebGL context kills the whole form, not just the viewer
-
-**What goes wrong:** On a runner where Chromium cannot create a WebGL2 context, `app.js` throws at module top level (`const renderer = new WebGLRenderer({ canvas, antialias: true })`, `app.js:229`) before the wiring IIFE at the bottom runs, so `buildForm()` never executes. A test written to check "the form builds from `/api/schema`" then fails with a timeout that looks like a schema problem. MEASURED: launching with `--disable-3d-apis` gave 0 form fields (wait timed out at 8 s) and the console error `THREE.WebGLRenderer: A WebGL context could not be created`. The vendored three.js is 0.186.0 (READ, `web/package.json`), which is WebGL2-only.
-
-**Why it happens:** The viewer and the form share one module with no feature detection. It is also a real product defect: a user with WebGL disabled gets a blank form.
-
-**Consequences:** A GPU-less CI runner that lacks a software GL path produces a red required check with a misleading symptom.
-
-**How to avoid:**
-1. Launch the Playwright-managed headless shell with its defaults. READ: Playwright's own launcher always pushes `--enable-unsafe-swiftshader` (`chromium.ts`, "See https://issues.chromium.org/issues/40277080"). MEASURED: the default headless shell reported `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device ...))` even on this GPU Mac, so macOS and CI use the same software GL stack. `channel="chromium"` (new headless) reported `ANGLE Metal Renderer: Apple M5 Max` - a different stack - so do not use it; local and CI would stop being comparable. `--disable-gpu` was harmless on this build (still SwiftShader) but adds nothing; do not pass GL flags.
-2. The fixture asserts `canvas.getContext('webgl2')` is non-null first and fails with a message that names WebGL, before any form assertion.
-3. Treat Linux behaviour as UNVERIFIED until a CI spike branch has run it: no Docker daemon was available here. Chromium's SwiftShader doc says WebGL needs `--enable-unsafe-swiftshader` on current builds (DOCS, via search results); Playwright's launcher already supplies it.
-4. File the "dead form without WebGL" gap as a `nice` debt item (the form could build before the renderer is created). Do not fix it inside the browser-test phase; the phase's job is to prove the shipped `app.js`.
-
-**Warning signs:** `wait_for_function` timeouts on form fields only in CI; console error text containing `WebGLRenderer`.
-
-**Phase to address:** BT (first plan: the WebGL precondition and the CI spike).
-
----
-
-### Pitfall BT-2: A new test file silently joins the 30 s commit slice
-
-**What goes wrong:** `make verify.fast` excludes the four heavy files by name (`--ignore=tests/test_model.py ... test_pool.py test_api.py test_cli.py`). The Makefile comment says why: "a new test file runs at commit until someone names it heavy" (READ, `Makefile:154`). A `tests/test_browser.py` therefore runs at pre-commit, needs a browser binary and a server, and has to fit in the SDK's hard 30 s kill. The slice is 11.4 s today (READ, `bench/RESULTS.md` 19-09: 824 tests, 11.39-11.54 s). Nothing in `tests/test_hooks.py` pins the ignore list (READ: it checks the shared static prefix and the hook ids only).
-
-**Why it happens:** Exclusion-by-name is deliberate (L36) and has no check that a heavy file was added to it.
-
-**How to avoid:** In the same commit that adds the browser test file, add `--ignore=tests/test_browser.py` to `test.fast` and amend L36 in the new `Lxx`. Add a test that fails when a test file imports `playwright` and is not in the ignore list, in the style of `tests/test_hooks.py`, so the next browser file cannot repeat this. Pure-Python tests for the new schema metadata and slug stay in the fast slice on purpose (they are cheap).
-
-**Warning signs:** `make verify.fast` over 20 s; a commit that times out in the SDK after the BT phase lands; `Executable doesn't exist` at commit time on a fresh clone.
-
-**Phase to address:** BT.
-
----
-
-### Pitfall BT-3: A skip-if-no-browser makes the gate green with zero browser coverage
-
-**What goes wrong:** `pytest.importorskip("playwright")` or a "skip when the browser is missing" fixture turns a fresh clone, a half-installed venv or a CI misconfiguration into a pass. The repo has been bitten by exactly this shape: `make no-fake-done` passed vacuously on macOS because `\b` is not implemented in the system regex (READ, `Makefile:102`, debt resolved in #23).
-
-**How to avoid:**
-1. No skip on a missing browser. A missing binary is a hard failure whose message says `make venv`.
-2. An explicit, printed opt-out only (an environment variable such as `SPUR_NO_BROWSER=1`), refused when `CI` is set. The opt-out prints in the pytest header so a log shows it was taken.
-3. A test that collects the browser test ids and asserts at least one exists, so a rename or a stray `--ignore` cannot silently empty the file.
-4. `make test-image` (READ, `Makefile:186`) mounts the whole `tests/` directory and installs only `pytest httpx`; a module-level `import playwright` makes collection fail there. Decide: `--ignore` the file in that recipe, or import inside the fixture. Do not use `importorskip` to dodge it.
-
-**Warning signs:** A pytest summary with a browser-file skip count; "0 browser tests collected" in a verbose run.
-
-**Phase to address:** BT.
-
----
-
-### Pitfall BT-4: An in-process server shares globals with the TestClient tests on the same xdist worker
-
-**What goes wrong:** If the live server is a `uvicorn.Server` in a thread, it serves the same `spur.app.app` object that `tests/test_api.py` drives with `TestClient`. That module installs `app.dependency_overrides[build_backend]` in a module-scoped autouse fixture and pops it on exit (READ, `tests/test_api.py:25-41`), and `app.py` holds process-global `BUILD_QUEUE` and `_in_flight_builds` (READ, `app.py:102, 111`). pytest-xdist's default `--dist load` does not keep a module's tests together, so the override can appear or vanish while a browser test is mid-request. Without the override `build_backend()` raises `RuntimeError("Build pool not started")` (READ, `app.py:228`) and the page shows a 500 for no visible reason.
-
-**How to avoid:** Run the server as a subprocess in its own interpreter. MEASURED: `python -m uvicorn spur.app:app --fd N` with `SPUR_BUILD_WORKERS=1` answered `/api/health` 0.16 s after spawn. The subprocess runs the real `BuildPool`, which is the production path (`build_backend` hard-fails without a pool by design), so this also keeps the test honest.
-
-**Warning signs:** A browser test that passes with `-n 0` and fails at `-n 8`; 500s that mention the pool; a `test_api.py` failure that only appears when a browser test ran earlier on the same worker.
-
-**Phase to address:** BT.
-
----
-
-### Pitfall BT-5: Port collisions, orphaned servers and one server per worker
-
-**What goes wrong:** Three separate failure modes.
-1. *Per-worker duplication.* DOCS (pytest-xdist how-to): "tests in different processes requesting a high-level scoped fixture (for example `session`) will execute the fixture code more than once." At `-n 8`, a session fixture means up to 8 servers, 8 `BuildPool`s and 8 browsers. MEASURED: one Playwright driver plus headless shell with a WebGL2 canvas is 6 processes and about 387 MiB RSS (RSS double-counts shared pages, so an upper bound); times 8 is roughly 3 GiB before the servers' own pools.
-2. *Port races.* "Find a free port, close it, start the server" has a window where another worker takes the port.
-3. *Orphans.* MEASURED: after `SIGKILL` of the uvicorn process, both of its pool children were still alive 6 s later. A scratch experiment of mine also left a parentless uvicorn (PPID 1) when a script was killed by `timeout`; I had to clean it up by hand. A crashed xdist worker is not hypothetical: `docs/tech_debt/active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md` records twelve of them on this host.
-
-**How to avoid:**
-1. Bind the listening socket in the fixture on port 0 and hand it to the child: `subprocess.Popen([...,"-m","uvicorn","spur.app:app","--fd",str(sock.fileno())], pass_fds=[sock.fileno()], start_new_session=True)`. MEASURED: works with a TCP socket (the installed uvicorn 0.54.0 wraps the descriptor with `socket.AF_UNIX`, READ `config.py` `bind_socket`, yet serving and `getsockname()` were correct). The parent already holds the socket, so there is no port race and no log parsing.
-2. Teardown: `os.killpg(proc.pid, SIGTERM)`, wait a bounded time, then `SIGKILL` the group. Do not assert the exit code is 0: MEASURED, uvicorn exited with `-15` after `SIGTERM`. `start_new_session=True` is what makes the group kill reach the pool children.
-3. Set `SPUR_BUILD_WORKERS=1` for the test server (READ: default 2, `app.py:125`).
-4. Make one worker pay. Three options, in order of preference: (a) a single scenario test, so only one worker launches a server and a browser; (b) `@pytest.mark.xdist_group` plus `--dist loadgroup` - DOCS: the mark works only under `loadgroup`, and "Tests without the `xdist_group` mark are distributed normally as in the `--dist=load` mode", so the mark is a silent no-op under the current `addopts`, and switching the whole suite's scheduling is a gate-time change that must be measured; (c) a `FileLock` once-only fixture (DOCS, xdist how-to), which has no clean "last worker out" teardown. Start with (a).
-
-**Warning signs:** `Address already in use`; `ps` showing `uvicorn spur.app:app` after the suite; memory pressure on a 4 vCPU CI runner (UNVERIFIED: runner RAM was not checked).
-
-**Phase to address:** BT.
-
----
-
-### Pitfall BT-6: Waiting on the wrong signal passes before the request exists
-
-**What goes wrong:** `update()` debounces 350 ms, then runs `/api/info` then `/api/model.stl?quality=preview` with an abort-and-sequence guard (`seq`, `mine !== seq`). MEASURED, immediately after `fill("[name=teeth]", "21")`: `#status` text is `''` and `#dl-stl` has `href="api/model.stl"` (the previous state). A wait for "status is empty" or "download link has an href" is therefore already satisfied before the debounce fires. MEASURED with a `MutationObserver`: for a cached gear the "Building…" state exists for milliseconds (`["Building…", ""]`), so polling for it is a coin toss.
-
-**Why it happens:** The UI has no explicit "settled" signal. Server caches (`_build_cached`, `_EXPORTS`, keyed `(params, fmt, quality, encoding)`, READ `app.py:401`) also make the second request for any gear fast, so test order changes what is observable. MEASURED: first STL ready 4.83 s after `goto` (pool spawn plus the OCP import), later loads 0.27-0.78 s.
-
-**How to avoid:**
-1. Wait on content, not on absence: the `#dl-stl` `href` containing the expected query (`teeth=21`), the hash, or `page.expect_response` on the exact URL.
-2. For stale-response ordering, park the request, do not sleep. MEASURED recipe: a `page.route` handler that appends the `route` to a list and returns; change the field again; wait for the second result; then release the parked route. Result: final href `api/model.stl?teeth=24`, hash `#teeth=24`, and `continue_()` on the already-aborted route raised no error. The guard works; the test needs no timing.
-3. Never block inside a sync-API route handler (for example waiting on a `threading.Event`). MEASURED: my first attempt deadlocked the page and hit a 60 s timeout. The mechanism (the sync dispatcher is blocked) is inferred, the timeout was observed.
-4. Warm the server in the fixture (one preview build) with a bound derived from `SPUR_BUILD_TIMEOUT` (30 s), so the first test does not pay the cold build. Pass explicit timeouts; do not rely on the library default for `expect` (UNVERIFIED here: believed to be 5 s).
-5. Do not use `page.clock`. DOCS: it fakes `requestAnimationFrame` as well as `setTimeout`/`Date`, and `app.js`'s `render()` is `requestAnimationFrame`-gated, so a faked clock would freeze the draw the test wants to see (inference). The 350 ms debounce is cheap in real time.
-6. Do not assert the console is clean. MEASURED: SwiftShader emits `GPU stall due to ReadPixels` warnings on every run. Assert no `pageerror` and no console `error`.
-
-**Warning signs:** Tests that pass alone and fail in a full run; a fixed `wait_for_timeout` anywhere in the file; green on the second run of a fresh server and red on the first.
-
-**Phase to address:** BT.
-
----
-
-### Pitfall BT-7: "The STL loaded into the scene" has no observable
-
-**What goes wrong:** `mesh`, `scene` and `renderer` are module-scope `let`/`const` inside an ES module, so `page.evaluate` cannot read them. `renderer.render` runs from a `requestAnimationFrame`, and a WebGL canvas created without `preserveDrawingBuffer` reads back blank outside the draw (standard WebGL behaviour; UNVERIFIED here). The three signals the page does expose - the info rows, the warning, the download link - are all set before or independently of `showModel`.
-
-**How to avoid:** Add one generic, field-name-free line in `showModel` that exposes a fact (for example `canvas.dataset.triangles = String(geometry.attributes.position.count / 3)`) and assert on it. Do not expose `window.__scene`. The alternative, a Playwright screenshot of the canvas clip checked for more than one distinct colour, works but is the weaker proof and varies with the GL stack. Never pixel-diff against a stored image: macOS and Linux differ in fonts and in GL. Check the one-line change against the token pins in `tests/test_api.py` before writing it (see CF-1).
-
-**Phase to address:** BT.
-
----
-
-### Pitfall BT-8: Browser install drift and the pinned-closure discipline
+### Pitfall 1: Closing the flake on a non-reproduction (or on a quiet fortnight)
 
 **What goes wrong:**
-1. *Two sources of truth for the browser.* The Playwright wheel pins the browser build. MEASURED: playwright 1.63.0 installed `chromium-1243` and `chromium_headless_shell-1243` (Chromium 153.0.8010.12). A loose `playwright>=1` in the dev extra lets a `make venv` on one machine and CI on another resolve different Chromium builds. The existing discipline pins the runtime closure only (`requirements.txt`, 31 packages, `--no-deps`, L12); dev tools are loose ranges (`pytest>=8`, `ruff>=0.14`, READ `pyproject.toml`).
-2. *A pip upgrade without a browser re-download.* `$(STAMP)` depends on `pyproject.toml` only. A `pip install -U` in an existing venv bumps the driver but not the browser, and the next run fails with `Executable doesn't exist` until `playwright install` is run.
-3. *Install size and time.* MEASURED: `playwright install chromium` fetched the full Chromium, the headless shell and ffmpeg: 557 MB, 39.5 s on this host. The help output shows `--only-shell` (READ), which installs the headless shell alone. The driver inside the wheel is 130 MB (MEASURED) and bundles its own `node`, so the L11 worry about Node at test time does not apply to the Python route - but it must not enter `dependencies` or `requirements.txt`, or the image gains 130 MB.
-4. *CI ordering.* `.venv` only exists after `make verify` creates it (READ, `ci.yml` comment on the `kernel pair` step), so a CI step cannot run `playwright install` before the venv exists. The install has to be a Makefile recipe step (inside or after `$(STAMP)`), with an OS-dependency step on Linux (`--with-deps` needs apt; UNVERIFIED whether `ubuntu-latest` already has the shared libraries for the headless shell).
-5. *Caching.* DOCS (Playwright CI page): "Caching browser binaries is not recommended, since the amount of time it takes to restore the cache is comparable to the time it takes to download the binaries." Budget about 40 s of the `test (3.12)` job for the download and measure it on CI.
-6. *OS support.* DOCS: Playwright lists Ubuntu 22.04 / 24.04 / 26.04 and macOS 14+. `ubuntu-latest` is a moving label, so the Playwright pin, not the runner, decides the browser.
+The loops run, read zero reds, and the item is resolved ("could not reproduce") or the milestone's success line reads "gate no longer flakes". The flake returns in the next milestone, the sixth occurrence, with the trigger again naming a lapsed event.
 
-**How to avoid:** Pin `playwright` exactly in `[project.optional-dependencies] dev` (a new, separately named tier: runtime closure vs dev pin, recorded in the `Lxx`). Keep it out of `dependencies`, `requirements.txt` and `docker/refresh-requirements.sh` (READ: the script resolves `pip install /src`, which is runtime only, so it stays clean unless someone edits the wrong table). Make the stamp recipe run `playwright install --only-shell chromium` after `pip install`, keyed to `pyproject.toml`. A test or `make` check compares `playwright --version`'s expected browser revision against the installed directory so drift produces one clear message.
-
-**Warning signs:** `Executable doesn't exist at ~/Library/Caches/ms-playwright/...`; a CI run that downloads two browsers; a diff to `requirements.txt` in a phase that only added a dev tool.
-
-**Phase to address:** BT (install and pin), with the `Lxx` in the same phase.
-
----
-
-### Pitfall BT-9: Coverage accounting when the server runs in a subprocess
-
-**What goes wrong:** Three traps.
-1. A subprocess is not measured. READ: the repo's own comment says pytest-cov 7 dropped its subprocess hook (`pyproject.toml` `[tool.coverage.run]`); DOCS (pytest-cov changelog via search; coverage docs) agree: pytest-cov 7.0.0 removed it, and coverage's `patch = ["subprocess"]` is the replacement and "sets `parallel = True`" and needs a combine. So server lines run only by the browser test earn nothing, and no floor moves. That is acceptable: the `app.py` lines the browser exercises are already covered by `TestClient` tests.
-2. Turning `patch = ["subprocess"]` on to "fix" it makes a `SIGKILL`ed server child leave a partial data file; `sigterm = true` only protects against `SIGTERM`. A truncated file can fail the combine step, which fails the whole gate. (Inference; UNVERIFIED.)
-3. Adding `greenlet` to `concurrency` because Playwright's sync API uses greenlets (READ: `greenlet` is a Playwright dependency). The tests are outside `source = ["src/spur"]`, so nothing in `spur` runs inside a greenlet. Whether `greenlet` can be listed beside `thread` is UNVERIFIED; do not touch it.
-
-**How to avoid:** Leave `[tool.coverage.run]` alone. Record the `app.py` and total coverage before and after the phase (baseline 97.92 % at `1220 tests`, floor 96) and state that the number did not move for a reason, not by luck. Do not move `fail_under` (the existing debt `2026-10-04-worker-coverage-flush-is-sometimes-lost.md` already says a total that wanders 0.22 points makes a tighter floor a coin toss).
-
-**Phase to address:** BT.
-
----
-
-### Pitfall BT-10: The `must` flake gets blamed on, or hidden by, the new test
-
-**What goes wrong:** The `resource_tracker` `ReentrantCallError` chain has four recorded occurrences, all in whole-suite runs, one on CI (READ, `2026-10-06-resource-tracker-flake-fails-the-gate.md`). `filterwarnings = ["error"]` makes pytest raise the unraisable-exception warning in whichever test is running when the finalizer fires - the chain has surfaced in `test_pool.py` tests, "predating Phase 17". A new test file adds process churn per worker, so the next occurrence may land in a browser test and read as a browser flake. The reverse also happens: a real browser teardown problem gets filed as "the known flake".
-
-MEASURED, so the browser teardown is not an established source: Playwright's sync API under `filterwarnings = error` and the `-p no:cacheprovider` pytest of the repo's style produced no warning in 6 runs (clean teardown 2, leaky fixture that never closes the browser 3, `-n 2` 1), and left no orphan driver or browser processes afterwards.
+**Why it happens:**
+The flake is rare and the loops are expensive. The record is 5 occurrences (3 local, 1 CI, 1 more local) against 100 clean two-file loops and 60 clean isolation loops (READ: `2026-10-06-resource-tracker-flake-fails-the-gate.md`). The whole-suite rate is unmeasured; the debt file's only local estimate is 2 in 12 before Phase 23 (READ), and 5 occurrences in a few dozen whole-suite runs puts it somewhere in a few to roughly fifteen percent (UNVERIFIED: the denominators were never recorded). Zero reds in N loops bounds the rate only to about 3/N (rule of three): 30 clean loops leave an upper bound near 10 %, 60 near 5 %. With an unknown true rate the chance of seeing nothing is large (arithmetic: at a true 3 % rate, 30 loops see no red 40 % of the time; at 10 %, 4 %; 60 loops at 3 %: 16 %). A negative from a short loop is therefore not evidence of absence, which is exactly the v0.4 lesson ("60 isolation loops saw nothing, one whole-suite baseline run did").
 
 **How to avoid:**
-1. Keep the whole log of every failed gate run during BT (`make verify 2>&1 | tee`), as 19-01 did, and classify each failure against the chain's signature (five reentrant-call warnings at the end of a call phase) before calling it new.
-2. Do not add a `filterwarnings` entry and do not fix the flake in the same phase. The debt file's trigger is "the next `make verify` failure, with its whole log"; a combined change confounds it.
-3. Close the browser and stop Playwright explicitly in the fixture (`browser.close(); pw.stop()`), even though a leak did no harm here.
-4. Know what N buys: 2 whole-suite failures in 12 runs has a 95 % Wilson interval of about 5-45 % (calculated). A before/after comparison at N around 10 cannot see a change in this rate. State that in the record rather than claiming "no effect".
+- Commit the stop rule before the first loop (the v0.3 pre-registration pattern, which worked): arms, loop count, what counts as a red, and the allowed outcomes. Suggested: whole-suite `make test` loops, one variable per arm (`-n 8 --cov` vs `-n 8 --no-cov`), interleaved round by round on the same host, run until the first red in an arm or 60 loops per arm, whichever comes first.
+- The only outcomes: (a) a captured red with its whole log, then diagnose and fix; (b) no red in the cap, then re-defer with the stated 95 % upper bound (about 3/N) and a trigger that names an event, not a phase. Never "resolved".
+- Write the milestone success line about what the milestone controls ("loops run to the pre-registered cap, outcome recorded, evidence armed"), not "flake gone". v0.3's own lesson: a success metric the milestone's discoveries or luck can fail.
+- Loops must be whole-suite. Two-file loops were already shown not to sample the gate's population (READ: 19-03, "probably do not sample the same population").
 
-**Phase to address:** BT (logging discipline), GB (the runs that measure it).
+**Warning signs:**
+A loop count chosen after seeing the first runs; "looks stable" in a SUMMARY; two variables changed between arms (see Pitfall 2); a debt file flipped to `resolved` with no commit that changes code or a filter; a trigger phrased "Phase NN planning".
 
----
-
-### Pitfall BT-11: The decision "in or out of `make verify`" creates a second definition of passing
-
-**What goes wrong:** If the browser test stays out of `make verify` (its own `make test.browser`, its own CI job), L13's "one definition of passing in three places" (dev shell/pre-push, CI, `pr.land`) now has two. A new required CI job also means edits to `.github/workflows/required-jobs.txt` and the GitHub ruleset on `main` (L22); `tests/test_pr_land.py` fails if `ci.yml` and `required-jobs.txt` disagree (READ). If it stays in, the pre-push hook and CI pay for it every time (see GB).
-
-**How to avoid:** Price both routes at discuss-phase with measured numbers, not estimates: (a) the test alone, `pytest tests/test_browser.py -n0 --no-cov --durations=0` (cold server, warm server, browser launch separately); (b) the CI install cost (about 40 s measured locally for the download; measure on a runner). Whichever route is chosen, say in the `Lxx` which of the three places run the browser test, and make `pr.land`'s required-job list match.
-
-**Phase to address:** BT (decision), GB (cost into the bar).
+**Phase to address:** A (stop rule is the first commit of the phase, before any loop).
 
 ---
 
-### Pitfall CF-1: The generic-code pins in `tests/test_api.py` will fail by design, and are easy to weaken
+### Pitfall 2: Changing two variables at once, or comparing arms that are not comparable
 
-**What goes wrong:** READ, `tests/test_api.py:162-212`: `test_the_shareable_link_round_trips_every_field_through_generic_code` pins exact tokens of `app.js` (`fields.set(name, { input, wrap, title });`, `for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];`, `q.set(name, input.value)`, `history.replaceState(...)`, and others), and forbids any GearParams name as a quoted string, or as `.<field>`, outside the `DIMS` block. Its own comment names "the shape a conditional-field or bore-selector patch would add". So:
-- A conditional renderer that adds a key to the `fields.set(...)` entry breaks a pin.
-- A bore selector necessarily names `bore_d`, `bore_flat`, `bore_hex` and the keyway fields, breaking the "no field name" half.
-- `test_every_key_the_ui_reads_is_a_derived_dimensions_field` harvests every line that starts `['word',` as a DIMS key (`^\s*\['(\w+)',`) and requires each to be a `DerivedDimensions` field. A selector options table written as `['round', ...]` rows is read as DIMS keys and fails it.
+**What goes wrong:**
+An arm differs from the baseline in more than the intended factor, so a red or a no-red cannot be attributed. Concrete traps here:
+- `--no-cov` also removes coverage's `multiprocessing` and `thread` concurrency patching (READ: `pyproject.toml` `[tool.coverage.run]`), the tracer's allocations and the combine step. A no-red under `--no-cov` says the tracer shifts the timing; it does not say coverage is the cause.
+- Host differs by hour: recorded load at the occurrences ranged from about 2.5 to 17.5 (READ). `tests/test_pool.py` uses injected 0.2 s and 1.0 s timeouts (READ: `Makefile` comment on `PYTEST_WORKERS`), so concurrent arms or a busy dev host produce timing failures that are not the flake.
+- CI is not the dev host: `PYTEST_WORKERS` clamps to the online CPU count, so ubuntu-latest (4 vCPU) runs `-n 4`, and the RESULTS rows say `pytest -n 4` (READ). The debt file's third occurrence says "`-n 8`" for the CI run, which the Makefile clamp contradicts (READ; the clamp predates the occurrence). Do not reason from "-n 8" for CI.
+- Dev tools float: `requirements.txt` pins the runtime closure only and `pytest`, `pytest-xdist`, `pytest-cov` are `>=` in `[dev]` (READ), so CI and the laptop can run different pytest or xdist. Record `pip freeze | grep -E 'pytest|xdist|cov|coverage'` with every loop.
 
-**Why it happens:** The pins were written to make exactly this change a deliberate act, and 08 D-09 locked "no conditional form behaviour".
-
-**How to avoid:** The new `Lxx` supersedes 08 D-09 and the same commit rewrites the pins. Keep the intent: (i) the conditional renderer reads only schema metadata and names no field; (ii) the selector's field names live in one named constant block, carved out the way `DIMS` is, with a non-vacuous assertion that the carve-out regex matched (the existing test already has the "a regex that silently stopped matching must fail" guard - copy it); (iii) write option tables as objects (`{ value: 'round', ... }`), never as `['x', ...]` rows. Never delete a pin to get green; a pin changes only to a stricter or more specific one, and the `Lxx` says which.
-
-**Warning signs:** A diff that removes a snippet from the pin tuple; a carve-out regex that matches the whole file.
-
-**Phase to address:** CF (rewrite for the renderer), BS (carve-out for the selector).
-
----
-
-### Pitfall CF-2: Encoding refusals as "disabled" creates deadlocks and false claims
-
-**What goes wrong:** MEASURED against the running API:
-- `keyway_width=3` alone and `keyway_depth=1.4` alone are both `422` ("A keyway needs both..."). If each is `enabled_when` the other is above 0, both are permanently disabled and the user can never set either.
-- `spoke_count=4` plus `hole_count=4` is a `422` ("Only one body cutout pattern per part"). Disabling the other patterns when one is set stops the user switching without first zeroing it.
-- `recess_sides=none` with `recess_depth=3` is `200` with `warnings: []`; `bore_d=0, bore_flat=5` is `200` with `warnings: []`. The server says nothing is inert in either case. A relation that dims these fields makes a claim the server does not confirm, and adding a warning to make it true changes `warnings` for existing links.
-- `root_shape=trochoid, teeth=40` is ignored for a numeric reason (base circle above the root circle, `calc.py:1707`), which no field-value relation can express.
-
-**Why it happens:** "Relevance depends on another field" sounds like one concept but covers three: *ignored* (server warns, 200), *refused* (server 422) and *numerically inert* (warned, depends on geometry).
+**Why it happens:**
+The first idea is "turn things off until it stops". Each factor is also a timing change.
 
 **How to avoid:**
-1. Define `enabled_when` narrowly: the field is *ignored by the server* when the condition is false, in exactly the cases where `calc.derive()` already emits an "ignored" warning. READ, `calc.py:1162-1247`: hex bore (`bore_d`, `bore_flat`), spokes (`spoke_width`, `hub_d`, `rim_wall`, `spoke_fillet` at `spoke_count` 0), holes (`hole_d`, `hole_circle_d` at `hole_count` 0), honeycomb (`hex_wall` at `hex_cell` 0). Refusals stay 422s and stay visible; the numeric trochoid case stays a warning.
-2. Dim and annotate rather than set `disabled`, so a value stays editable and sendable. A `disabled` control still reads through `input.value` in `gearQuery()`, so it would still be sent, but it cannot be typed into; that is the deadlock.
-3. A model-driven test over `GearParams.model_fields` (the style of `test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order`, `test_cli.py:198-242`): for each field with a relation, (a) the target fields exist; (b) the relation graph has no cycle and no field is gated only by fields that it gates; (c) with the condition false and the field set to a non-default value, `/api/info` is `200` and `warnings` names the field as ignored; (d) with the condition true, no ignored-warning names it. Run the same check on `bore_hex` versus `bore_d`/`bore_flat` so the L27 precedence is covered. This direction catches a relation that the server does not back; the reverse direction (every "ignored" warning has a relation) is a second assertion over the same list.
-4. A relation the server does not back (the recess and `bore_d=0` cases) is a decision for the human, not a silent addition: either leave it undimmed, or add the warning as a separate, tested change with its own record. Note `bore_d=0, bore_flat=5` silently ignoring the D-flat is a pre-existing L08-shaped gap; file it.
+- One factor per arm, arms interleaved, never concurrent (concurrent arms starve each other and trip the 0.2 s/1.0 s pool timeouts).
+- Do not repeat v0.5's mistake: its idle-host precondition could not be met on a shared developer host (eight waits, then a human waiver). Pre-register a loaded-host method: record `uptime` before and after each loop as a covariate, do not gate on it.
+- Classify every non-green loop by signature before counting it: a red counts as the flake only if the log contains `ReentrantCallError` or `ResourceTracker called reentrantly`; any other failure is recorded as its own row, not discarded and not counted.
+- Record per loop: wall time, effective `-n`, tool versions, load, and the worker-to-test assignment (see Pitfall 4's journal). Keep whole logs under `.planning/.../investigation/` as 19-01 and 23-04 did.
+- If CI is a loop population, use a separate `workflow_dispatch` workflow file. A new job in `ci.yml` must be added to `required-jobs.txt` (READ: `tests/test_pr_land.py` drift test reads `ci.yml`) and becomes a required check on every PR.
 
-**Phase to address:** CF.
+**Warning signs:**
+"Also bumped `-n`" or "also pinned a version" in a loop note; a loop log with a `test_pool.py` timing assertion failure counted as the flake; no effective `-n` recorded.
 
----
-
-### Pitfall CF-3: `json_schema_extra` is not policed, so collisions and drops are on you
-
-**What goes wrong:** DOCS (pydantic JSON-schema page): a dict passed as `json_schema_extra` is added to the field's schema and "coexist[s] alongside generated properties". MEASURED on pydantic 2.13.5: a nested dict and a list for `enabled_when`, and a key literally named `if`, were all emitted verbatim; nothing refuses a JSON Schema keyword. So:
-- A key that happens to be a keyword (`if`, `then`, `else`, `dependentRequired`, `readOnly`) is emitted as a real constraint to any consumer that validates against `/api/schema`. `enabled_when` itself is not a keyword (UNVERIFIED against the full 2020-12 vocabulary; check the list).
-- The extra is attached per field. The `_f()` helper builds `extra: JsonDict` for numeric fields, but `root_shape` and `recess_sides` build their own `json_schema_extra={"group":..., "unit": ""}` (READ, `params.py:59-65`, `102-104`). A relation added only through `_f()` is dropped for the Literal fields with no error.
-- A relation naming a field that does not exist (typo) silently never fires: in `app.js`, `fields.get(name)` is `undefined`.
-- Nested values must stay `JsonValue`-typed or mypy `disallow_any_explicit` objects (READ: `JsonDict` from `pydantic.config` is already used).
-- `/openapi.json` also embeds the model; `test_openapi_documents_the_typed_contracts` exists (READ, `test_api.py:65`), so add the key and re-run it rather than assuming FastAPI copes with a nested extra (UNVERIFIED).
-
-**How to avoid:** Keep the vocabulary to one bare key (`enabled_when`) beside the existing bare `group`/`unit`/`step`, and add a test that no extra key is in the JSON Schema keyword set (a static list in the test). Carry the new metadata through one helper path for both construction styles. The model-driven test in CF-2 (a) covers the typo and drop cases. Keep the relation grammar to what the four ignored-field cases need (`{field, gt}` or `{field, eq}`, and `all`); the moment a fifth case needs `or`/`not`, stop and take it to the human instead of growing an expression language.
-
-**Phase to address:** CF.
+**Phase to address:** A.
 
 ---
 
-### Pitfall CF-4: The state is computed once, but values are changed programmatically in five places
+### Pitfall 3: Fixing the symptom: a `filterwarnings` entry, or a `shutdown(wait=True)` added on a guess
 
-**What goes wrong:** `app.js` writes input values without events in `readHash()`, the reset handler and `hashchange`; programmatic `.value =` does not dispatch `input`, and only `form.addEventListener('input', scheduleUpdate)` re-runs anything. If the conditional evaluation lives in an `input` listener, a link opened fresh (`readHash()` then `update()`), the Reset button and a back/forward navigation leave the previous dimming in place.
+**What goes wrong:**
+The warning is filtered, or an explicit shutdown is sprinkled into tests, and the item is retired, while the cause is unlocated. The prior two deferrals refused exactly this (READ: "a fix would be a guess", "a filter would hide the symptom"); the milestone is about to be tempted to do it anyway because it is the third milestone to carry a `must`.
 
-**How to avoid:** Evaluate relations in one function called from `update()` (which every path reaches) or immediately after `readHash()`/reset, not from an event. A BT test per path: open `#hole_count=4&hole_d=3`, assert the holes group is not dimmed and the spokes group is; press Reset; navigate with `history.back()`.
-
-**Phase to address:** CF (design), BT (the three-path test).
-
----
-
-### Pitfall BS-1: The selector rewrites or reinterprets what the user set (L05)
-
-**What goes wrong:** The default part is a D-flat bore (`bore_d=9`, `bore_flat=8`, READ `params.py:72-75`), not a round one. A selector that "derives from the flat fields on load" has to reproduce the server's semantics exactly, and the form's existing semantics are subtle:
-- An empty input is omitted from the query, so the server applies the default: `bore_flat` blank means 8 (D-flat), not 0. A selector that reads blank as 0 derives "round" while the server builds a D-flat.
-- Defaults are compared as strings (`String(input.value) !== String(defaults[name])`), so `bore_d=9.0` is *kept* in the request set while `9` is dropped. A selector that normalises "9.0" to "9" changes the request set. Derive with `Number()`, never write back a re-formatted value.
-- Precedence: `bore_hex > 0` replaces `bore_d` and `bore_flat` (L27). MEASURED: `#bore_hex=6&bore_d=7&bore_flat=5` sends all three, and the page warns `Hex bore replaces the round profile: bore_d (7 mm) and bore_flat (5 mm) are ignored.` The warning names two fields; hiding them (as a "hex" state might) hides the subject of the warning.
-- A selector state of "Hex" with `bore_hex=0` means nothing to the server; writing a made-up default value (there is none: the default is 0) would silently change the part (the project's second standing rule). The selector must show the state the server computes, and a "chosen but incomplete" state must be visible as such.
-- Switching "D-flat" to "Round" writes `bore_flat=0`, losing a value the user typed; switching back must restore the last typed value (remember it in memory, do not invent 8), and must never write `''`.
-- `bore_d=0` with a D-flat set is `200` with no warning (MEASURED), a fifth state that the four-shape selector must either name or leave visible.
+**What is actually known (use it):**
+- The chain is a CPython 3.12 resource-tracker reentrancy: a garbage-collection pass finalizes a dead `Finalize` of a semaphore (`multiprocessing.synchronize._cleanup` calling `resource_tracker.unregister`) while the same thread is already inside the tracker. CPython added `ReentrantCallError` plus an `RLock` (GH-109629) and later a queue of reentrant messages (gh-131788) (READ: CPython commit pages found by search; MEDIUM).
+- This venv's 3.12.15 has `ReentrantCallError` and `RLock` but not the reentrant-message queue (MEASURED: `inspect.getsource(multiprocessing.resource_tracker)` shows `ReentrantCallError` and `RLock`, no `_reentrant_messages`). So the later upstream fix is not in the project's only supported interpreter (L23), and the project cannot upgrade past 3.12. Whether it will ever be backported to 3.12 is UNVERIFIED.
+- The test id does not localise the cause. Of the five occurrences, four name a test, and those four name three different ones (the dying-worker test twice, the same-slot-timeouts test, `test_health_reports_pool_state`; the first occurrence's log was truncated before the id) (READ). pytest 9.1.1 attributes an unraisable exception to whichever test phase is running when the hook fires (MEASURED: `_pytest.unraisableexception` source: the hook appends to a deque and `pytest_runtest_call/setup/teardown` drain it; the explicit `gc.collect()` runs only at unconfigure). The reported test is the victim of a GC pass, not the origin. The debt file's reasoning "no occurrence was localised to a pool a test leaves to its finalizer" therefore sets a bar the evidence format cannot meet.
 
 **How to avoid:**
-1. The selector writes only on a user change of the selector, only the minimum fields, explicit `"0"` not `''`, and never on load.
-2. Pin the baseline before writing it. MEASURED today (record it as the golden file in BT): `#bore_hex=6&bore_d=7&bore_flat=5&teeth=21` yields the requests `info?teeth=21&bore_d=7&bore_flat=5&bore_hex=6` and `model.stl?...&quality=preview`; the hash is rewritten to schema order and drops defaults (`#teeth=19&module=1.75&bore_flat=0` becomes `#bore_flat=0`). Compare request *sets* in canonical order, not raw hashes.
-3. A BT-driven walk over the 44-record fixture (`tests/regression/pre_v0_2.json`): open each record as a link before and after the selector, and assert the `/api/info` and `/api/model.stl` query parameter sets are identical to the golden ones.
-4. A model-driven server test that every state in the selector's constant round-trips: for each shape, the flat fields it writes are accepted and produce the shape's `bore_effective`/`hex_across_flats` result.
+- The honest fix has to be framed as removing the precondition (no dead semaphore `Finalize` objects awaiting GC while the tracker is busy), proven by a reproduction, not as removing the warning.
+- To get a reproduction cheaply, amplify GC and keep a control: run the suite (or the pool tests plus a long tail of other files, since "other tests on the same worker" is the recorded `ASSUMPTION`) with an investigation-only plugin that lowers GC thresholds (for example `gc.set_threshold(1, 1, 1)` from a `-p` module outside the repo). Pre-register it as a separate arm against an untouched control. If it reproduces at a higher rate, that shows the mechanism (UNVERIFIED that it will). It does not show the in-gate rate is cured.
+- Then the candidate changes are ordered by honesty: (1) deterministic teardown in the pool tests (`shutdown(wait=True)`, drop references, an explicit `gc.collect()` at the fixture boundary after the pool is gone), shown red-to-green on the amplified arm and re-looped on the unamplified one; (2) a narrow filter naming the message, only with the upstream citation and the measured trigger rate recorded, as an explicit human decision. A `gc.collect()` that merely shifts timing is a mitigation and must be called one in the log and the comment.
+- Keep the filter off unless the human picks it. Never a blanket `ignore::pytest.PytestUnraisableExceptionWarning` (the debt file already says so).
 
-**Phase to address:** BS (design and tests), BT (golden baseline, which must land first).
+**Warning signs:**
+A change to `pyproject.toml` `filterwarnings` in a commit that cites the flake; a fix whose evidence is "42 loops green"; a comment asserting which test "leaks the semaphore" with no listing; the word "probably" in a decision-log sentence.
 
----
-
-### Pitfall BS-2: The selector's own name leaks into the link, and the server does not complain
-
-**What goes wrong:** MEASURED: `GET /api/info?bore_shape=hex&teeth=21` returns `200` (unknown query parameters are ignored; READ `pyproject.toml` comment: "no model gains extra=forbid"). If the select is created through the generic `buildForm()` path, or registered in the `fields` map, `gearQuery()` sends `bore_shape=...`, the shared link grows an unknown parameter, and no test on the Python side notices. The contract "the URL/API/CLI stay flat" fails silently.
-
-**How to avoid:** The select is not in `fields`. A BT test records every `/api/*` request with `page.on('request')` and asserts the parameter names are a subset of `GearParams.model_fields` plus `{quality, mate_teeth}`, and that the hash contains no non-field key. Also fix the order of operations: the selector is added to the Bore fieldset by code that does not touch the `Object.entries(schema.properties)` loop (a pinned token).
-
-**Phase to address:** BS, verified in BT.
+**Phase to address:** A.
 
 ---
 
-### Pitfall BS-3: A `<select>` assigned a value with no matching option goes blank and silently drops it
+### Pitfall 4: The hang deliverable (evidence capture) costs the gate, or cannot see the hang
 
-**What goes wrong:** MEASURED, an existing behaviour: `#root_shape=bogus&teeth=21` leaves the `root_shape` select at `selectedIndex -1` with `value ''`, the UI sends only `teeth=21`, and the hash is rewritten to `#teeth=21`. The API alone returns `422 Input should be 'radial' or 'trochoid'` for the same value (MEASURED), so the UI turns a refusal into a silent default. A bore-shape select that derives a value absent from its option list does the same thing to the bore.
+**What goes wrong:**
+Diagnostics are added to every `make verify` and either slow it past the 300 s bar on CI and the laptop, change the pinned recipe, or still record nothing when the hang recurs.
 
-**How to avoid:** Never assign a derived selector value that is not an option; cover every reachable derived state with an option (including the "none" and "incomplete" states). For the existing `root_shape` behaviour: pin it in the BT baseline first so it is a conscious fact, then file it as a debt item (a link carrying an invalid enum is changed to the default with no message - an L05-adjacent gap). Do not fix it in the same change as the selector.
-
-**Phase to address:** BT (pin), BS (own selector), a debt file (existing gap).
-
----
-
-### Pitfall BS-4: Two mechanisms for the same relation
-
-**What goes wrong:** If conditional fields (CF) and the selector (BS) are built separately, the schema relation dims `bore_d`/`bore_flat` when `bore_hex > 0` while the selector derives its own state from the same fields with its own code. The two can disagree on load (`bore_hex=6` plus keyway fields, the 422 case), and the selector is the first bore-specific logic in `app.js`, in tension with the milestone rule "a field relation lives in schema metadata ... never hard-coded in `app.js`".
-
-**How to avoid:** Build CF first and have the selector consume the same evaluation pass. Decide explicitly, with the human, how much of the selector is schema metadata: the pragmatic route is a single `BORE_SHAPES` constant in `app.js` under the new `Lxx` (the idea file's own wording: "accepting the first bore-specific logic in `app.js`"), plus the model-driven round-trip test in BS-1(4) so drift between that constant and `calc` is caught mechanically. Recommend this over inventing a model-level discriminator (the idea file says that is its own phase and needs an L05 story for every link).
-
-**Phase to address:** CF before BS (ordering), discuss-phase for BS.
-
----
-
-### Pitfall SL-1: The old names are pinned, and the default's name must not move
-
-**What goes wrong:** READ:
-- `tests/test_api.py:376-412` asserts that the trochoid and radial downloads have the same `Content-Disposition` (`filename="spur_z23_m1.75_pa25.stl"`), with a docstring that says so.
-- `tests/test_api.py:716-720` pins `filename="spur_z21_m1.75_pa25.{fmt}"` for a default-radial gear.
-- `docs/architecture/http-api.md:43` documents "`Content-Disposition` from `params.slug()`".
-- `slug()` is also used for the temp export file name (`model.py:807`), `bench/export_cost.py:176`, `tests/test_model.py:2021`, and `records._gear_fields` (`records.py:180`) which puts it in every structured record.
-A suffix on every name (including radial) changes the default gear's file name for every user and breaks line 720.
-
-**How to avoid:** Append a suffix only for the non-default `root_shape` (for example `_trochoid`), so every radial name is byte-identical to today's. Flip the one assertion at line 411-412 to the new fact, update `http-api.md:43` and the idea file's record in the same commit, and add the end-to-end check in BT with `page.expect_download()` and `download.suggested_filename`. Tests that only assert the `slug` field is truthy (`test_api.py:797, 985, 1086, 1123`) and `test_records.py`'s synthetic `slug="spur_z19"` are unaffected.
-
-**Phase to address:** SL.
-
----
-
-### Pitfall SL-2: The name claims a root the part may not have
-
-**What goes wrong:** `root_shape=trochoid` is *ignored* where the base circle lies above the root circle: MEASURED, `root_shape=trochoid&teeth=40` returns `200` with "...the trochoid root request is ignored", and the test docstring says that from 27 teeth on at the default module and angle "the two parts are the same". A slug built from the requested value labels a radial part "trochoid"; the idea's purpose (two different parts with one name) is inverted into two identical parts with two names. A file name is a claim about the part (L08's spirit).
-
-**How to avoid:** Decide in the `Lxx`: (a) name the *requested* value and say so in `http-api.md`, or (b) name the *effective* root via `calc.root_mode(p)`. Prefer (b): `root_mode` is pure and cheap (MEASURED by 19-09: `derive()` 10.3 us radial, 30 us trochoid), and `params.py` already imports `calc` locally in `_feasible`. If (b), `slug()` must be total: it is called inside failure-path records (`build.failed`, `queue.refused`), so an exception from `root_mode` there would mask the original error. Test the 23-tooth case (applies) and the 40-tooth case (ignored) both ways.
-
-**Phase to address:** SL.
-
----
-
-### Pitfall SL-3: "Collides with cached exports keyed by slug" - checked, it does not
-
-**What goes wrong:** The worry is that a renamed slug serves a stale name from a cache. READ: the export blob cache key is `(params, fmt, q.quality, encoding)` (`app.py:401`), the solid cache is keyed on the `GearParams` object, and `Content-Disposition` is built at response time from `params.slug()` (`app.py:496`); `pool.py` routes by parameter hash, and `grep slug` finds no use there. No cache is keyed by the slug.
-
-**How to avoid:** Nothing to build; record this in the `Lxx` so the question is not asked again, and keep the existing assertion that the radial and trochoid bytes differ (it is how the test knows the cache did not answer both).
-
-**Phase to address:** SL (recorded, not fixed).
-
----
-
-### Pitfall GB-1: There is no idle host unless you wait for one, and the gate raises its own load
-
-**What goes wrong:** L34's 66 s was not read on a quiet host: Phase 15's method says "no waiting for a quiet host", loads read were 6.53 and 9.09 (READ, `bench/RESULTS.md` 2208-2250), on a 12-CPU M2 Max. The 192.94 s reading is on an 18-CPU M5 Max with load 4.03 -> 9.06 across the runs, because each run's eight workers raise the next run's starting load (READ, 19-09 table). MEASURED right now: `uptime` showed load averages of 6.05 at the start of this session on this host, with 10 users logged in (other agent sessions share the machine). Back-to-back runs can never be "idle".
+**Why it happens:**
+The obvious tools do not fit this failure:
+- The hang stalled after about 1200 of 1220 items reported and produced nothing until the harness's SIGTERM at 600 s (READ). The harness kill loses any summary written at session end (`--junitxml`, `--durations`, the terminal summary). Only a stream flushed as it happens survives.
+- `-v` under xdist prints a test id on completion, not on start, so it names the last finished tests, not the stuck one. `--durations` reports at the end. Neither shows a test that never finishes.
+- A per-test timeout does nothing for a stall in the exit window after the last test (where the debt file says the stall sat) and `pytest-timeout` is not a dependency (READ: not in `[dev]`, and the lock is `>=`); adding it is a dev-dependency change and its signal method can itself kill the worker and erase the evidence.
+- The recipe is pinned: `tests/test_hooks.py` requires `verify` and `verify.fast` to share one pytest recipe through the `-n` argument and `--ignore=` to appear only in the fast one (READ). Adding flags to one target's recipe, or `-v` to both unequally, goes red or silently forks "one definition of passing" (L13, L36).
+- Host-specific cost is invisible locally: the same suite read 487 s, 895 s and 924 s on ubuntu-latest `main` runs against 180-300 s on the M5 Max (READ: `bench/RESULTS.md`). A diagnostic priced only on the laptop is not priced.
 
 **How to avoid:**
-1. Reuse the project's own quiet protocol (Phase 12 D-02): poll `sysctl -n vm.loadavg` about once a minute and start only when the 1-minute figure is under 1.5. READ: that wait took 6 minutes to fall from 4.40 to 1.30 once. Budget it: 10 runs are on the order of 90 minutes.
-2. Phase 15's R1: before every run, `pgrep -fl '[p]ytest|[p]re_commit|[m]ake verify'` prints nothing, so no other session's gate is live.
-3. Record load before and after, the power source and the time of day; flag a run that started over 1.5 and do not average it silently.
-4. Write the rule that turns readings into a bar *before* the first reading (as L34 fixed its knee rule before the read), and let the human set the number. A bar set from the readings after seeing them is the "tuned toward a pass" that L08/L34 forbid.
+- Capture, do not interpret: an append-only, per-worker journal of test start and finish lines, flushed per line, written by a small conftest hook (`pytest_runtest_logstart` / `logfinish`), to a temp directory outside the git tree, one file per xdist worker (`PYTEST_XDIST_WORKER`). On a stall, the last unfinished line per worker names the stuck test, and it survives SIGTERM. This is the "per-test ids and durations" the milestone asks for, in a form the failure cannot erase. Price it: 1,318 one-line flushed writes; measure the gate with and without it on the same host, in the same interleaved A/B shape as v0.5's browser test (L39), before accepting (L08: a gate cost is measured before it is accepted).
+- Add stack evidence for the exit window: `faulthandler_timeout` (a built-in pytest ini option; it dumps all thread stacks after N seconds of one test) covers an in-test hang with no dependency. Whether its output reaches the terminal from an xdist worker is UNVERIFIED and must be tested on purpose by a deliberately sleeping test, run once and reverted. It does not cover the exit window; for that the runbook is operational: do not kill the stuck run first. Run `ps -A -o pid,ppid,pgid,stat,command` for the pytest tree (workers, `BuildPool` spawn children, `resource_tracker`) and a stack sampler on each (`sample <pid>` on macOS), then kill.
+- Keep the recipe pin green by making any new flag common to both targets or by putting the journal in `conftest.py` only (no Makefile change).
+- Explicitly leave the 98 % hang unfixed. Its debt file says one occurrence with no repro "can be watched, not fixed".
 
-**Phase to address:** GB.
+**Warning signs:**
+`--timeout` or `-v` appearing in `Makefile` `test:` but not `test.fast:`; a new dev dependency in `pyproject.toml`; a gate reading more than noise slower in the A/B; the journal written inside the repo working tree (dirty tree on every run, and the pre-commit stash/`git grep` steps see it).
+
+**Phase to address:** A (design and price it before arming).
 
 ---
 
-### Pitfall GB-2: The spread is bigger than the effect being measured
+### Pitfall 5: A `slug()` totality test that is vacuous (the debt's own suggested design mostly never reaches the refusal reasons)
 
-**What goes wrong:** READ (19-09): three runs of `make verify` read 208.52, 161.71, 208.60 s (range 47 s, about 26 % of the mean) on one host. The kernel-tier tests are 12-26 s each, one of them 25.78 s on a single worker, so with eight workers the wall time is quantised by how the long tests pack, not only by host load. A browser test costing a few seconds disappears in that spread at N = 3.
+**What goes wrong:**
+The test passes, is green forever, and exercises almost nothing. This repo's retrospective already names the class: "a regression test is only a test if the bug it names makes it fail" (v0.2 lesson 2, WR-06).
+
+**Measured facts (all MEASURED today, seed fixed, validated `GearParams` only):**
+- Uniform random draws over the schema box with `root_shape="trochoid"`: of 24,776 requests that validate, 22,049 (89 %) end at `nothing radial to replace`, 2,687 (11 %) build the trochoid root, 40 (0.16 %) hit `tip land gone`, and 0 reach `bracket degenerate`, `curve invalid` or `tooth severed`. A seeded "few hundred random requests" test (the debt file's first suggestion) therefore reaches the interesting branches about zero times.
+- The full `bench.trochoid.sweep_cases()` grid (31,446 cases, 1.7 s): 13,879 fail validation; of the rest, 9,954 build the trochoid, 6,674 `nothing radial to replace`, 866 `tip land gone`, 73 `tooth severed`, and 0 `bracket degenerate`, 0 `curve invalid`. So the debt file's other suggestion, "a slice of `sweep_cases()` covering every refusal reason", is also unsatisfiable through validated parameters for two of the six reasons.
+- `slug()` reads only `root_mode(...).mode`. Its real failure is not "a reason string it cannot handle" (any reason gives the radial name); it is an exception raised inside `cutter` / `_junction` / `_root_curve` for some validated request (READ: `params.py` `slug`; `calc.py` `root_mode`). A test that counts reasons tests the wrong thing.
+
+**Why it happens:**
+The test is written from the debt file's wording ("reach every refusal reason") rather than from the failure it must catch (an exception on the failure-record path, which would turn a `BuildError` 422 into a 500 and lose the cause).
 
 **How to avoid:**
-1. Price the browser test where it can be seen: in isolation (`pytest tests/test_browser.py -n0 --no-cov --durations=0`), reporting launch, server warm-up and scenario seconds, and the worst-case wall contribution (its longest single test goes on one worker's critical path).
-2. For the whole-gate comparison, alternate A and B in one session on the same tree: A = `make verify PYTEST_ARGS="--ignore=tests/test_browser.py"`, B = `make verify`. That isolates the browser test exactly and needs no worktree (PYTEST_ARGS comes last in the recipe, READ `Makefile:131`). N of at least 5 per arm; report min, median and max, not only the mean.
-3. Count flake-failed runs separately (about 1 in 6 whole-suite runs locally, BT-10): list them, keep them out of the mean, and plan N + 3 attempts.
+- Assert the invariant over a stratified region, not the whole box: draw seeded cases from the undercut region (low tooth counts where `rb > rf`), plus the pinned boundary rows already in `test_the_download_name_follows_the_root_root_mode_builds` (26/27 flip, the tip-land row). Count modes and reasons inside the test and assert each reachable bucket is non-empty (`trochoid`, `tip land gone`, `tooth severed`). A counter assertion is what turns "passes" into "passes having looked".
+- For the two unreachable reasons, say so in the test (an explicit assertion that validated sweeps never produce them, so a future change that makes them reachable fails loudly and prompts adding coverage) and drive them by monkeypatching `_root_curve` or `_junction` to return/raise them, asserting `slug()` returns the radial name for a returned reason. This is a decision for the human: either the two reasons are reachable only by construction, or the predicate has dead branches (a finding worth a line in the ledger).
+- Prove it can fail: monkeypatch `_junction` (or `_root_curve`) to raise and show the new test goes red, with the control call on the unpatched code first (the v0.3 pattern: "a control call on the unpatched build before any monkeypatch"). Record the red in `bench/RESULTS.md`'s "Seen red once" table, the convention every browser/gate pin in this repo follows.
+- Seed with a local `random.Random(n)` instance, never `random.seed()` (the module generator is shared with every other test in the xdist worker). No new dependency (`hypothesis` is not in `[dev]`).
+- Budget: the whole 31k grid costs 1.7 s serial. The test belongs in a non-heavy file so it runs in `make verify.fast` (30 s kill, about 11 s used); a few hundred stratified cases are milliseconds. If importing `bench.trochoid` is needed, note `tests/test_calc.py` and `tests/test_trochoid.py` already do (READ), which matters for Pitfall 14.
 
-**Phase to address:** GB, with the isolated price taken in BT.
+**Warning signs:**
+A test whose assertion is only `slug().endswith(...) == (...)` with no bucket counts; a runtime in milliseconds with 20k random cases (the draw is mostly the cheap branch); a test that never imports `_root_curve`/`_junction` to attack it; a pass the first time it is written.
 
----
-
-### Pitfall GB-3: The bar belongs to a host, and four files quote the old one
-
-**What goes wrong:** The bar was set on a 12-CPU M2 Max, the new reading is on an 18-CPU M5 Max, both with `PYTEST_WORKERS` 8. CI runs on a 4-vCPU runner at `-n 4`, where whole-suite runs read 128.16 s and 210.98 s (READ, the flake debt, runs 37460192883 and 37460451701). One number cannot be the bar for all three. Meanwhile the old figure is quoted in `Makefile:85` ("about 64 s to about 75 s, over L34's 66 s bar"), `Makefile:153` ("the whole gate is 63.555 s (L34)"), `.pre-commit-config.yaml:10` ("A warm `make verify` measured 63.555 s") and the Phase 19 review's IN-03 (READ, `2026-10-09-phase-19-review-info-findings-deferred.md`).
-
-**How to avoid:** The `Lxx` names the host the bar belongs to and says what it is not (not a CI limit, not a promise to contributors). The same commit rewrites the three stale comments to cite the new `Lxx` and retires IN-03 (CLAUDE.md: retire a debt item only in the commit that closes it). Do not rescale across hosts; quote each reading with its machine, as 19-09 did.
-
-**Phase to address:** GB.
+**Phase to address:** B.
 
 ---
 
-### Pitfall VP-1: The arm64 wheel gap is not the risk; the proof venv clobbering the commit hooks is
+### Pitfall 6: Fixing cache-order dependence by leaking `_EXPORTS` state, or by fixing one test of a convention used everywhere
 
-**What goes wrong (the premise):** The idea file expects `vtk`, `casadi`, `nlopt` to lack arm64 wheels. MEASURED against PyPI JSON for all 31 pins in `requirements.txt` today: every one has either a pure-Python wheel or a macOS arm64 wheel (`vtk 9.6.2` `cp312 macosx_11_0_arm64`, `casadi 3.8.1` `cp311-abi3 macosx_11_0_arm64`, `nlopt 2.11.0`, `numpy 2.5.3`, `pydantic_core 2.46.5`, `PyYAML 6.0.3`, `cadquery-ocp 7.9.3.1.1`; `cadquery-ocp-proxy`, `cadquery 2.8.0` pure). The dev venv already runs `cadquery 2.8.0`, `cadquery-ocp 7.9.3.1.1`, `vtk 9.6.2`, `casadi 3.8.1`, `nlopt 2.11.0` (MEASURED, `pip freeze`). The probe is likely to install cleanly; plan for it to pass.
+**What goes wrong:**
+Three failure modes:
+1. `_EXPORTS.clear()` does not exist (READ: `_BlobCache` has `get` and `put` only). Adding a `clear()` to production code for a test, or an autouse fixture that empties the cache after every test, adds API surface or costs rebuilds across the whole suite.
+2. A fixture that replaces `app._EXPORTS` but forgets to restore it leaks a fresh or emptied cache into later tests on the same xdist worker. Each worker is its own process (the cache is per-process, as the debt file says), so the leak is intra-worker and depends on scheduling, the same order-dependence being removed.
+3. The convention is not local to the two cited tests. `test_pool.py` picks `teeth=43` and `teeth=44` with the comment "a count no other test ever successfully downloads", and `test_api.py` has more (READ: `tests/test_pool.py:262, :293`, `tests/test_api.py` teeth 71 and 73 comments). Fixing two leaves the same hand-kept uniqueness rule elsewhere.
 
-**What goes wrong (the actual hazards):**
-1. *Hook clobbering.* `make venv VENV=.venv-proof` in the main checkout runs `$(VENV)/bin/pre-commit install`, and pre-commit bakes the installing venv's python into the shim. READ: `.git/hooks/pre-commit` currently has `INSTALL_PYTHON=/Users/half/git/halfb00t/spur/.venv/bin/python`, and the Makefile comment (`Makefile:51`) records the consequence: delete that venv and "every later commit would fail". The `$(HOOKS)` stamp is per venv, so re-running `make venv` for the real `.venv` would not reinstall them.
-2. *Untracked 1.4 GB.* `.gitignore` lists `.venv/` and `venv/` only; `.venv-proof/` shows up in `git status` and is one `git add -A` from a commit.
-3. *Versions move under the constraint.* The current dev venv is newer than the closure for `fastapi` (0.142.4 vs 0.141.1), `starlette` (1.7.0 vs 1.6.0) and `uvicorn` (0.54.0 vs 0.53.0) (MEASURED); the constraint downgrades them. CI already runs the pins on Linux, so a macOS-only difference is the thing to look for.
-4. *`$(STAMP)` has no `requirements.txt` prerequisite.* Adopting the constraint without adding one means a later pin change never re-installs.
-5. *pip 26.2 changed the meaning of the variable.* DOCS (pip news, 2026-07-29): "Constraints files, including `PIP_CONSTRAINT`, no longer affect isolated build environments. Use `--build-constraint` or the `PIP_BUILD_CONSTRAINT`". The venv here has pip 26.2.1 and `$(STAMP)` upgrades pip first. So `pip install -e .` builds `hatchling` unconstrained; that is fine for this project, but L34's "a conflicting pin fails closed" evidence was for runtime pins - do not extend it to build requirements.
-6. *"Passes" proves little.* The dev venv already has the same kernel pair, so `test_the_fixture_was_captured_on_the_kernel_this_run_uses` already passes locally. The probe can show *no harm*, not benefit; its value is the version-delta list and a clean `pip check`.
-7. *Dev tools are outside the closure.* The 31 pins are the runtime set; `pytest`, `mypy`, `ruff`, `playwright` float. "Single statement of what spur is tested against" is true only for runtime.
-8. *arm64 Linux is a different claim.* A green macOS arm64 venv says nothing about the Docker `linux/arm64` image or the Pi 5 claim (LG).
+**How to avoid:**
+- Use `monkeypatch.setattr(app_module, "_EXPORTS", _BlobCache(budget))` inside the test (or a narrowly scoped fixture): monkeypatch restores automatically, needs no production change, and `app.py` reads the module global at call time (READ: the endpoint references `_EXPORTS`), so it takes effect. The alternative in the debt file (a private cache key such as `face_width=7.7`) keeps the by-hand uniqueness rule and is weaker.
+- Keep the non-vacuity assertion the test already has (`r.status_code == 422` and `caplog.records`): a cache hit would be a 200, so the existing assertion is what proves the isolation worked. Prove it red: seed `_EXPORTS` with an entry for the same request (or run after a test that downloads it), watch the 422 become a 200 on the old test, then watch the new test hold.
+- Prove order-independence by running the file with the downloading test first via explicit node ids at `-n 0`, plus a few `-n 8` repetitions, rather than asserting "seems independent".
+- Note the other instances (`teeth=43/44/71/73`) in the debt entry or a new `nice` item; fix them only if the human asks (surgical edits, CLAUDE.md).
+- The test is in `tests/test_api.py`, a heavy file: it does not run in the commit slice, so only the pre-push `make verify` and CI exercise it.
 
-**How to avoid:** Run the probe in a scratch `git clone` outside the repo (a clone has its own `.git/hooks`; a linked worktree also works - the Makefile detects it and skips the install, READ `Makefile:71`). Record: the venv creation time, `pip check`, the full `pip freeze` diff against `.venv`, `make verify` result line, and the load at start. If adopting, give `$(STAMP)` the prerequisite and `export PIP_CONSTRAINT := requirements.txt` in the recipe (a relative path works because `make` runs at the repo root), amend L34's CI sentence, and keep Playwright pinned in `[dev]` (BT-8).
+**Warning signs:**
+A new method on `_BlobCache` that only tests call; an autouse fixture in `conftest.py` touching `app`; a passing run on one worker that fails with `-n 0` in a different order.
 
-**Phase to address:** VP.
+**Phase to address:** B.
+
+---
+
+### Pitfall 7: `stop_group`: reordering the signal and the read creates the hazards the current order avoids
+
+**What goes wrong:**
+The fix for "a failed `ps` skips the signals" (READ: `tests/browser_session.py`, `group_members` has `check=True`; `stop_group` reads `ps` before and after each signal) is done by reordering, and one of these slips in:
+- **PID reuse.** The group id is the leader's pid. While the leader is un-reaped (a zombie), nothing else can take that pid, so `os.killpg(pgid, ...)` is safe. `proc.wait()` and `proc.poll()` reap the leader. Today the reap is last (`proc.wait` after the loop) (READ). Any `proc.poll()` added "to check whether it already exited" before the signals reaps it, frees the pid and makes the `killpg` a shot at a recycled group number. `_signal_group` also swallows `PermissionError` (READ), which on a recycled group owned by another uid would hide that this happened.
+- **Immediate SIGKILL.** "Signal unconditionally" read as "SIGTERM then SIGKILL straight away" removes the SIGTERM grace and defeats the property the test proves (the shipped server stops on SIGTERM within `TERM_BOUND_S`, 0.22-0.25 s measured; READ: RESULTS). The wait between the signals must not depend on `ps` being healthy: on `ps` failure treat the survivors as unknown, sleep the bound, then escalate.
+- **A silent pass.** If a failed read is swallowed, the final assertion must still fail ("survivors unknown"), or the teardown reports green with an unverified group.
+- **Portability.** BSD `ps` on macOS and procps on the runner both accept `-A -o pgid=,stat=,pid=` (READ: both hosts have run it). Adding `command=` to the helper breaks `len(fields) == 3` for commands containing spaces. Listing the group's commands is a one-off diagnostic, not a change to `group_members`.
+
+**How to avoid:**
+- Order: record `pgid = proc.pid`; send SIGTERM; wait up to `TERM_BOUND_S`, polling the group only to end the wait early (a failed read means "keep waiting"); send SIGKILL if the leader or any member can still exist; reap the leader last; final assertion reads once more and fails on survivors or on an unreadable `ps`.
+- Do not call `proc.poll()`, `proc.wait()`, `communicate()` or `returncode` before the signals.
+- Make the new path testable without a browser: a unit test that starts a real process group (`start_new_session=True`, a small child that ignores or handles SIGTERM, plus a grandchild), patches `group_members` to raise `CalledProcessError`, and asserts the group is gone. The test must clean up after itself in a `finally` with its own `os.killpg`, since the red state of the old code leaves an orphan group (a test of a leak that leaks). It runs in `make verify.fast` as a non-heavy file; a new file there is picked up automatically (the exclusion list names heavy files only; READ).
+- See it red first: run the new test against the unfixed `stop_group` and record the orphan. Then re-run the leader-only break from `bench/RESULTS.md` "Seen red once (Phase 21)", row 21-01 "no orphan after the kill" (`os.kill(pgid, SIGKILL)` for `os.killpg`), and confirm the survivor assertion still fires; the debt file asks for this and it is the proof the survivor check was not weakened.
+- Also remove the dead first `survivors = group_members(pgid)` (WR-01/IN-01), and fix the failure message's bound (`{bound}` prints the last loop's bound).
+
+**Warning signs:**
+A `proc.poll()` in `stop_group`; a `ps` failure that no longer fails the test; `SIGKILL` within the same tick as `SIGTERM`; a new test that leaves `uvicorn` or `sleep` children after a red run (check with `ps -A -o pgid=,stat=,pid=` after the run).
+
+**Phase to address:** C.
+
+---
+
+### Pitfall 8: Writing the group-floor correction from one host's listing, or rewriting the readings
+
+**What goes wrong:**
+The comment on `MIN_GROUP_MEMBERS = 3` says "uvicorn plus the shipped pool of 2 workers"; two RESULTS rows say "uvicorn and two pool workers" on macOS and on ubuntu-latest (READ). The reviewer's listing says uvicorn, `resource_tracker` and one worker, and the debt file itself marks the member set an `ASSUMPTION` the orchestrator did not re-list (READ). The fix lists the group on the laptop, corrects the comment and both RESULTS rows, and the Linux row is now wrong or right by accident. Or the RESULTS numbers (3, and "group read 2 before the first build") are edited, destroying a record.
+
+**How to avoid:**
+- List the group on each host, from a real run: on macOS during the test (`ps -A -o pid=,pgid=,command=`, one-off), and on Linux from a CI log. For Linux the test run itself must print the listing: add the command column to the already-printed "server group members before the kill" line (a separate `ps` call, not the helper) on a draft PR and read the run's log (the 15-05 draft-PR-to-read-CI pattern). Do not claim the Linux member set from macOS.
+- Corrections are dated notes under the rows. "Measurements are records: prose may be corrected, numbers and run headings never" (v0.2 pattern, READ). The reading `3` stays; the dated correction names what the three were. Do not rewrite "before the first build the group read 2" either; its explanation (uvicorn plus the tracker) is the correction.
+- Decide, as the debt file asks, whether the floor should name the tracker or force two concurrent builds; if a second worker is forced, that is a behaviour change of the test (a new concurrent build) and needs its own measurement, so default to the comment-only correction.
+- The floor stays a non-vacuity check (three live before, zero after); do not lower it to 2.
+
+**Warning signs:**
+A RESULTS diff with deleted lines (the v0.2 rule was 0 deleted lines for added-in-PR text, and older rows are never reworded); a comment that names members without a date or a host; the Linux row corrected with no CI run cited.
+
+**Phase to address:** C.
+
+---
+
+### Pitfall 9: The invalid-enum fix changes what a valid link sends or builds (the L05 trap), through the shared code path
+
+**What goes wrong:**
+The silent drop happens in two generic places: `readHash()` assigns `input.value = h.get(name) ?? defaults[name]` (a select given a value it has no option for reads `''` at index -1) and `gearQuery()` skips `''` (READ: `app.js`). Any change there is the path every valid link takes. A careless fix changes what some valid link sends, and nothing in the 44 golden records will say so:
+- The 44 `golden_requests.json` records are the pre-v0.2 fixture's links (MEASURED: 11 contain `recess_sides=...`, 0 contain `root_shape`). The two enum fields' non-default valid values (`root_shape=trochoid`, `recess_sides=top|bottom|both`) are exercised only by LINK_A / LINK_B and the round-trip steps in `test_browser.py` (READ). The golden sweep guards L05 for numbers well and for enums thinly.
+- Empty string. `#root_shape=` (present but empty) is today "an emptied box is its default" (`?? ` does not fire on `''`; `gearQuery` skips it). The API returns 422 for an empty enum. Whether the page now refuses it is a policy call. Silently treating `''` as invalid changes behaviour for links that currently build the default part; silently leaving it changes nothing. Decide it explicitly in the new `Lxx`.
+- The same family, undecided scope: `<input type="number">` sanitises a non-numeric value to `''` (standard behaviour; UNVERIFIED in this page, which I did not run), so `#teeth=abc` is dropped the same way. The milestone names enums only. Fixing numbers is scope creep (file an idea per CLAUDE.md); but the new `Lxx` must say enums-only, or the next reviewer will find the numeric twin and call the fix incomplete.
+- Source-token pins. `tests/test_api.py` greps `app.js` for exact tokens (the `readHash` loop, the `gearQuery` condition `if (input.value !== '' && String(input.value) !== String(defaults[name])) q.set(name, input.value);`, and L41/L42's added tokens) (READ). Editing those lines turns pins red; the right response is to extend the token list (L42's pattern: "removed none"), not to delete the pin that proves the round trip is generic.
+- A refused value must survive the page. The 422 marking path marks `d.loc[1]` (READ: `problems()`), which resolves for a select named `root_shape`. But the value must first reach the request: a select cannot hold a value it has no option for, so the fix needs somewhere to keep the raw string (a temporary option or a side map). Whatever it is, it must not leave a phantom option visible after the user picks a valid one, must not disturb `deriveSelectors()` / `applyRelations()` ordering at `readHash()`'s end, and must keep the fragment (today `update()` rewrites `#root_shape=bogus&teeth=22` to `#teeth=22`, which erases the evidence of what was asked) (READ: RESULTS/pin).
+- The fix must be generic over every schema enum (`root_shape`, `recess_sides`), not special-cased to `root_shape`: L02 says the form is generated from `/api/schema` and nothing else, and `test_the_shareable_link_round_trips_every_field_through_generic_code` forbids per-field code.
+
+**How to avoid:**
+- Read the `Lxx` decision as the first artifact (the milestone says shape is settled at discuss-phase): enum-only; empty-string policy; whether the page refuses client-side or sends the value for the API to refuse. The milestone's chosen route (the existing 422 marking path) is the cheaper and keeps one source of truth (the API) for what is valid, so prefer sending the raw value and letting the server's 422 mark it, with the select showing the offending value.
+- Prove L05 mechanically: after the change, `tests/regression/pre_v0_2.json` and `golden_requests.json` are byte-identical to `v0.5` (`git diff v0.5 HEAD -- ...` empty; the v0.5 audit used exactly this check), the golden sweep passes unchanged, and add a valid-enum row (trochoid, and each `recess_sides` value) to the round-trip step if not already pinned.
+- Keep the diff to invalid-link behaviour: the new code path must be unreachable for any value in `prop.enum`.
+- Run `make verify` (the browser test is in it) and `make golden.regen` must show an empty diff; if `golden.regen` changes the file, the change is wrong (D-09: only in its own commit).
+
+**Warning signs:**
+The golden sweep or round-trip pin goes red for a valid link (that is the fix being wrong, not the pin); `fragment` assertions changing for valid links; a diff touching `gearQuery()` rather than only the enum branch; a new `if (name === 'root_shape')`.
+
+**Phase to address:** D.
+
+---
+
+### Pitfall 10: Flipping the browser pin without seeing it red first, or seeing it red for the wrong reason
+
+**What goes wrong:**
+The `root_shape=bogus as today` step asserts today's behaviour in about a dozen sub-assertions (query `teeth=22`, `selectedIndex -1`, fragment `#teeth=22`, no `.error`, API 422) (READ: `test_browser.py`). It is rewritten to the new behaviour in the same commit as the fix, and never observed failing against the new code, so nobody knows whether the old assertions were still reachable or whether the new ones can fail. The repo's own rule is that every pin is shown red once (`bench/RESULTS.md` "Seen red once"), and the history shows the trap: breaks "never reach the new step" because an earlier step fails first (21-04 hashchange break; 21-05 sweep break), so the red seen was not the pin's.
+
+**How to avoid:**
+- Order inside the one change: (1) apply the `app.js` fix with the old pin untouched and run the browser test: the `bogus as today` step must go red at the first sub-assertion that the fix changes (and only that step, not an earlier one); record its first failure line. (2) Rewrite the pin to the new contract. (3) Revert only the `app.js` fix and confirm the new pin goes red at the new assertions; record that too. Both lines go in "Seen red once".
+- The new pin must assert the three user-visible facts: the invalid value is not dropped from the request, the field is marked (`.invalid` on the wrap, the existing path) with the API's message in `#messages`, and the fragment still carries the asked value. Plus the control that proves L05: the valid-link steps are unchanged and green.
+- Keep the string `today's behaviour, filed as debt` and `TODAY` out of the new step's messages: the message names the debt file by path, and that file moves to `resolved/` in the fixing commit (CLAUDE.md), so a stale path in an assertion message misleads.
+- The debt must be retired in the same commit (`Status: resolved`, sha, `git mv` to `resolved/`, INDEX row), and the debt file's trigger names finished phases (v0.5 audit item 4), so restating nothing is needed once it is resolved.
+
+**Warning signs:**
+One commit that edits both `app.js` and the pin with no recorded red; a "Seen red once" row whose first failure is an earlier step; the old step's `TODAY` constant still referenced after the debt moved.
+
+**Phase to address:** D.
+
+---
+
+### Pitfall 11: Ubuntu 26 migration: fixing before classifying, and mistaking a rolling migration for a single event
+
+**What goes wrong:**
+The date gate is 2026-10-19. The migration is not a switch: GitHub states it "will roll out gradually between October 19 and November 19, 2026" (READ: github.blog changelog 2026-09-17; MEDIUM). So after the 19th, successive `ubuntu-latest` runs can land on 24.04 or 26.04; a green run on 24.04 proves nothing about 26.04, a red 26.04 run followed by a green re-run on 24.04 can read as a flake, and the item "first run whose `Set up job` names Ubuntu 26" may not arrive on the 19th. Worse, the first red can be unrelated to the OS (an unrelated flake, the resource-tracker chain, a `main` run reading 487-924 s) and get "fixed" as a migration problem.
+
+**Facts relevant to classification (READ unless tagged):**
+- Labels `ubuntu-26.04` and `ubuntu-24.04` exist today, so a deliberate trial run on `ubuntu-26.04` can be made before the migration reaches this repo (changelog, MEDIUM). Using one is a human decision (the debt file reserves pinning `runs-on: ubuntu-24.04` for the human; a trial is a CI change). Note that `ci.yml` has three jobs, all on `ubuntu-latest`: `test (3.12)`, `vendor-bundle`, `image`; all three migrate, and `docker/setup-buildx`, `build-push-action`, `setup-node@v4` with `cache: npm` ride the new image too. Read all three jobs' whole logs, not just `test`.
+- Python: the `actions/python-versions` manifest lists 3.12.13, 3.12.14 and 3.12.15 for linux 26.04 and none of the 3.12.12-and-earlier ones (MEASURED today by fetching the manifest). So a `python-version: "3.12"` resolves on 26.04; the interpreter patch can differ from the run that was green on 24.04 (CI saw 3.12.14).
+- Playwright: Ubuntu 26.04 support arrived in v1.61.0 (June 2026) per the upstream issue (MEDIUM); this repo pins 1.63.0, whose driver names `ubuntu26.04-x64` (MEASURED: `coreBundle.js` contains the platform entries). That shows the driver knows the platform; it does not show `--with-deps` installs the right libraries there. The upstream issue lists the `t64` renamed libraries (`libasound2t64`, `libatk1.0-0t64`, ...) as what a 26.04 needs (MEDIUM); a failure there reads as an apt error in the install step, a different class from a WebGL or timing failure.
+- The browser test fails closed (D-02): a broken install turns `test (3.12)` red on every PR at once, with the failure in the browser test and not in the code under review.
+- The canvas PNG ratio bar (4.9) was set from two hosts (macOS, ubuntu-24.04 image); a different Mesa/SwiftShader on 26.04 can move the ratio without the viewer being wrong (READ: `browser_session.py`, `PNG_RATIO_BAR`).
+
+**How to avoid:**
+- The item's own rule, kept: classify from the whole log (apt, Python, Playwright install, WebGL ratio, timeouts, the other two jobs) before any fix, as 21-08 did. Write the classification (a short table: step, 24.04 baseline, 26.04 reading) into `bench/RESULTS.md` as a new reading before touching `ci.yml`.
+- Record each CI run's image name and version (the `Set up job` group) next to its result for the whole migration window; treat the milestone item as "armed until a 26.04 run has been read", not "done on the 19th".
+- If red: pinning `ubuntu-24.04` is the documented fallback and the human's call; a fix to the install (`--with-deps`, package names) is a second option; a ratio-bar change is a third and needs the same two-host derivation (PD-03). If green: record the image version and install seconds and resolve the item in that commit.
+- Do not let the date gate block the other phases or the milestone close: schedule E last, or run it as a watch, with the milestone able to close with E honestly open (as v0.1-v0.5 did with named triggers).
+- Keep the first-run read separate from other CI noise: re-run a red 26.04 job once on the same label before concluding (the resource-tracker chain also reds `test (3.12)`; classify by the failing test, per Pitfall 3).
+
+**Warning signs:**
+An edit to `runs-on` or `BROWSER_INSTALL_ARGS` before the log is read; a "green on 26" claim from a run whose `Set up job` says 24.04; treating `vendor-bundle` or `image` red as unrelated without reading; a RESULTS row with no image version.
+
+**Phase to address:** E.
+
+---
+
+### Pitfall 12: Info-finding triage that closes without reasons, mislabels severity, or turns into refactors
+
+**What goes wrong:**
+About 18 info findings are open across Phases 19 and 21-24 (MEASURED by reading the five `*-REVIEW-DISPOSITION.md` tables: 21 IN-01..04; 22 IN-01..03; 23 IN-08, IN-11; 24 IN-01..04 plus CX-03, CX-05; and 19 IN-01, IN-02, IN-04 deferred in a debt file, IN-03 already resolved). The sweep marks them `closed` wholesale, or fixes them as a batch.
+
+**Why it happens / what is really hiding in the list (READ: titles):**
+- Severity labels understate. Several "info" findings are about tests that can pass without proving anything, the failure class this repo's retrospectives rank highest: 24 CX-05 ("the request-count assertion can pass before a queued 350 ms debounce fires"), 23 IN-08 ("the driver check cannot tell `hex_cell eq 0.05` from `hex_cell gt 0`"), 23 IN-11 (`_js_number` unguarded outside 1e-6 to 1e21 and for -0.0), 21 IN-03 (the "no path that passes without the browser" scan is line- and spelling-based), 21 IN-04 ("inconsistent waits and a hot loop", adjacent to the flake/hang hunt). Triage by what the finding can do to the gate, not by its label.
+- 24 IN-02 / CX-03 (a selector naming an unknown group throws in `buildForm()`, so the page shows the schema message and never calls `update()`) touches the same `app.js` bootstrap as the enum fix (Pitfall 9); order and scope matter.
+- 22 IN-03 ("L40 quotes the best-case reading as its cost") and 22 IN-01 (duplicated test block) are record and refactor items; the decision log is append-only, so a correction is a dated note, not a rewrite (READ: v0.2 and v0.3 patterns).
+- v0.3's lesson 5 and v0.5's lesson 2 are the same lesson twice: untriaged `open` findings are invisible until an audit. The sweep must end with zero `open`.
+
+**How to avoid:**
+- One disposition per finding, in its `*-REVIEW-DISPOSITION.md`, from the closed set the files already use: `fixed` (with sha), `deferred` (with a debt/idea file path), `skipped` (with the reason). A reason in one line for every `skipped`. No bulk "wontfix".
+- Triage pass first (read-only), fix pass second: write all dispositions with a proposed action, put the "info that is really a vacuity bug" set in front of the human, and only then change code. Fix only what is tiny and inside this milestone's files; everything else becomes `deferred` with a trigger that names an event.
+- Hold the line on scope: a fix is surgical (CLAUDE.md "note the tangent, raise it after"). The IN-01/IN-02 pair for Phase 19 (`_chamfer_tips` re-solving, `bench/trochoid_part.py` near-copies) is a refactor; the debt file already ties it to "when model.py is next touched". Deferring with that trigger is correct.
+- Retire debt only in the commit that closes it (CLAUDE.md); the disposition table and the debt file's `Status` move together.
+
+**Warning signs:**
+A disposition with `closed` and no sha or path; a diff touching `model.py` or `calc.py` from this phase; a fix that edits a finding's own test to make it pass; fewer than 18 rows touched.
+
+**Phase to address:** F.
 
 ---
 
 ## Moderate Pitfalls
 
-### Pitfall M-1: Playwright artifacts and the repo's git hygiene
+### Pitfall 13: The hook-pin fix hides the next leak of environment into the pin
 
-**What goes wrong:** Traces, screenshots and `test-results/` land in the working directory and are not in `.gitignore`; `.coverage.*` and `*.stl` are. A failing CI run wants artifacts, a local run leaves untracked directories.
-**Prevention:** Add the artifact directory to `.gitignore` in the BT commit; write failure artifacts under `tmp_path`, and upload them from CI only on failure. Do not use `pytest-playwright` for this: it registers its own CLI options, fixtures and artifact directory in a suite whose `--strict-config` and `filterwarnings = error` have been tuned by hand (recommendation; the plugin's interplay with `-n 8` was not run here). Plain `playwright.sync_api` in one fixture is enough.
+**What goes wrong:**
+`PYTEST_ARGS` is removed from the test's child environment (`_make_env`), but the failure came from make exporting a command-line variable into recipes' environments (READ: debt file). `_MAKE_VARIABLES` strips make's own flags, and `PYTEST_ARGS` is not on it. A fix that sets `PYTEST_ARGS=` on the dry-run command line works; a fix that only pops the env var may not cover a value passed via `MAKEFLAGS`.
 
-### Pitfall M-2: Type-checking the browser tests under `mypy --strict --disallow-any-explicit`
+**How to avoid:**
+Prove it with a case that runs the pin with `PYTEST_ARGS` set in the environment and again as a `make verify PYTEST_ARGS=...` command-line variable, and see both red against the old helper first (the debt file reproduced the env-var form; the command-line form is what actually bit 21-07). Keep `through_worker_count` and the `--ignore=` assertions unchanged. Mind the recipe-pin behaviour from Pitfall 4 if any new flag lands in `test:`.
 
-**What goes wrong:** MEASURED: `playwright` ships `py.typed`, so it type-checks, but `page.evaluate(...)` returns `Any` and returning it from a typed function gives `error: Returning Any from function declared to return "int" [no-any-return]`. `make typecheck` covers `tests` (READ, `Makefile`).
-**Prevention:** Follow the repo's convention (`Any` is never written; `object` narrowed at use): `isinstance` the result of `evaluate`, or declare the helper's return as `object`. Expect to do this at every `evaluate` call, so wrap them in two or three typed helpers.
+**Phase to address:** F.
 
-### Pitfall M-3: `no-fake-done` scans `*.js`
+### Pitfall 14: `make test-image` is worse than the debt file says; "exclude two files" would gut it
 
-**What goes wrong:** `make no-fake-done` greps `*.py`, `*.js`, `*.sh` for `TODO|FIXME|XXX|HACK|NotImplementedError` (whole word). New `app.js` comments for the relation grammar or the selector that use those words fail the gate; the vendored bundle is excluded, `app.js` is not.
-**Prevention:** Write the sentence out ("not yet handled: ...") and file the idea or debt instead.
+**What goes wrong:**
+The debt file lists `test_hooks.py` and `test_browser_pins.py`. The image mounts only `src/`, `tests/` and `pyproject.toml` and installs only `pytest` and `httpx` (READ: Makefile). Tests that read other host files or import `bench` / `scripts` (grep, READ): `test_api.py`, `test_cli.py`, `test_bench.py`, `test_pr_land.py`, `test_no_fake_done.py`, `test_skip_tokens.py`, `test_browser_pins.py`, `test_hooks.py`; and `tests/test_calc.py` and `tests/test_trochoid.py` import `bench.trochoid` (READ), which is not in the image. Some of those hits only reference a repo root for a few tests, so the true red set is unknown (UNVERIFIED: the debt file's own ASSUMPTION; I did not run it). Docker is up on this host (MEASURED: `docker info` succeeded), so it can be measured.
 
-### Pitfall M-4: Resource cost of eight Chromiums plus eight pools on a small runner
+**How to avoid:**
+Run `make test-image` once and read the red set before designing the fix. Excluding `test_calc.py` and `test_trochoid.py` would drop the product's two largest pure-maths suites from the image run; prefer mounting `bench/` (and whatever else the red set needs, read-only) over a long `--ignore` list, or retire the target's claim. This is the human's choice (CLAUDE.md "stop and ask": locked decision territory), with options priced. Keep `tests/test_browser.py` ignored as today. Do not fix by editing tests to skip when a file is absent; that adds a pass-without-the-thing path (the browser pins already forbid this class, D-02).
 
-**What goes wrong:** CI's `ubuntu-latest` has 4 vCPUs (READ: the Makefile comment) and `PYTEST_WORKERS` clamps to 4 there, so at most 4 browsers and 4 pools; the injected 0.2 s and 1.0 s timeouts in `tests/test_pool.py` are already the sensitive ones on a starved runner (READ, `Makefile:142`). Extra CPU-hungry software-rendered WebGL from the browser test competes with them.
-**Prevention:** Option BT-5(a) (one scenario, one worker). Measure the pool tests' pass rate on CI with the browser test present, using the run history, before and after.
+**Phase to address:** F.
 
-### Pitfall M-5: Reverify loops will recur during this milestone (LG)
+### Pitfall 15: The launch-failure message "fix" that shifts the stamp's behaviour
 
-**What goes wrong:** `VERIFICATION.md` goes `stale` when any covered file changes after the report; this milestone edits the decision log (`Lxx`), `Makefile` comments, `README.md` and `docs/architecture/*.md` repeatedly, all of them typically in covered file sets. The idea file records that `/gsd-ship` blocked twice in one phase for this (READ, `docs/ideas/2026-09-28-reverify-after-post-verification-fixes.md`). Its own trigger for a skill is "hit three times".
-**Prevention:** Take the one-paragraph `HOW_TO_DEVELOP.md` §6 recipe early in the milestone (it is a paragraph, not a skill), so the first stale block is a known step, not a new investigation. Promote to `.ai_skills/reverify-phase` only if the loop hits a third time (CLAUDE.md: add a skill when a workflow repeats).
+**What goes wrong:**
+Changing the `$(BROWSER)` stamp to depend on the shell's revision directory changes what `make test` rebuilds (READ: `Makefile` stamp, `test_hooks.py` pins it; "the commit slice never builds it"). The simplest honest fix is text only: print Playwright's own error first, then the advice `rm .venv/.browser && make test`. A stamp change needs the dry-run pin and the "install lines in verify, not in verify.fast" pin kept green and a cold-checkout check.
 
-### Pitfall M-6: Softening the Pi 5 claim must not become a new unmeasured claim (LG)
+**How to avoid:**
+Text-only unless the human wants the stamp; read `tests/test_hooks.py` pins for `BROWSER_STAMP` first. A message change is unit-testable without a browser (the fail-closed test already sets `PLAYWRIGHT_BROWSERS_PATH` to an empty dir; READ). Keep "fails closed" intact; do not add a skip path.
 
-**What goes wrong:** README line 40 says a Raspberry Pi 5 "all work[s]"; every number in the tree is from a 12- or 18-CPU Apple host (READ, the idea file). Softening to "numbers measured on an M-series Mac" is right; adding "arm64 is verified" because the VP probe passed on macOS arm64 would be a new, wrong claim (VP-1 item 8).
-**Prevention:** State the hardware the numbers came from and nothing more; the sentence cites no VP result.
+**Phase to address:** F.
 
-### Pitfall M-7: A relation's "true" state changes the warning text the user sees
+### Pitfall 16: Debt/ledger bookkeeping done out of band
 
-**What goes wrong:** MEASURED: `bore_hex=6, bore_d=7` warns `bore_d (7 mm) and bore_flat (8 mm) are ignored` - it names `bore_flat (8 mm)`, a *default* the user never set. A form that dims `bore_flat` is consistent, but a form that also hides it makes the warning refer to an invisible field.
-**Prevention:** Dim, never hide, and keep the warnings exactly as they are (the API and CLI do not change in this milestone).
+**What goes wrong:**
+An item is declared retired in a later commit or a SUMMARY, not in the fixing commit; `INDEX.md` rows or `Resolved in:` shas point at squashed branch commits (an open debt item: `2026-10-05-resolved-in-shas-point-at-squashed-branch-commits.md`, READ by name). Retiring a flake or hang item that stays `active` is correct; flipping it is not.
+
+**How to avoid:**
+For each retired item: `Status: resolved`, `Resolved in:` a sha that will exist on `main` (see that debt item; use the PR's squash after landing or state the branch sha explicitly), `git mv` to `resolved/`, INDEX row moved, all in the fixing commit (CLAUDE.md). Items re-deferred keep `active` and gain the measurement paragraph. State in the final reply whether any item was filed and its path.
+
+**Phase to address:** all.
+
+### Pitfall 17: Gate-cost drift from the work itself, measured on the wrong host
+
+**What goes wrong:**
+The 300 s bar (L43) was set on the M5 Max from two non-decisive readings (READ), while the CI job on `main` reads 8.9-16.6 min. New tests (slug totality, stop_group unit, name-test fixture), the journal, and the browser pin changes each add seconds; the milestone ends with the gate near the bar and nobody knows which change did it.
+
+**How to avoid:**
+Price each added piece against the same-host `make verify` baseline (v0.4's lesson: "record the delta against the same-host baseline"), keep new tests in non-heavy files where possible, and record deltas in `bench/RESULTS.md`. A change to the 300 s bar is out of scope; surface it if crossed.
+
+**Phase to address:** A, B, C, D (each prices itself).
 
 ---
 
 ## Minor Pitfalls
 
-### Pitfall m-1: `goto` with only a hash change is a same-document navigation
+### Pitfall 18: Commit trailer and branch hygiene
+**What goes wrong:** Mixed `Co-Authored-By` trailers across a model switch (recurring in v0.4 and v0.5). **Prevention:** use the single attribution line given for the session; note a switch rather than mixing.
 
-Opening `#hole_count=4` after a page is already loaded does not reload; the `hashchange` handler runs `readHash()` then `update()`. A test that expects a fresh page load will see stale state. (UNVERIFIED in Playwright specifics; the app side is READ at `app.js:340`.) Use a new page per scenario for "open this link", and `history.back()` for the navigation case.
+### Pitfall 19: Verification digests read `stale` again
+**What goes wrong:** Five closes, five stale overrides (READ). **Prevention:** do not re-stamp; use `.ai_skills/reverify-phase` only when a phase's report is needed to ship, and record the cause once at the close.
 
-### Pitfall m-2: Dated comments and docs drift
+### Pitfall 20: A diagnosis pasted from elsewhere over-claims
+**What goes wrong:** The v0.4 crash-report analysis said "every worker", "probably spur" and cost a validation pass (READ: RETROSPECTIVE). **Prevention:** tag every claim in loop notes and decisions `MEASURED/READ/UNVERIFIED`; the xdist OCCT segfault item stays separate from the tracker flake (shared trait is only "whole-suite runs"; READ), so do not merge them in a fix or an explanation.
 
-`docs/architecture/web-ui.md` and `http-api.md` describe the UI and the `Content-Disposition` rule; the BT, CF and SL changes each need their line there in the same commit (CLAUDE.md: new behaviour ships with its tests; docs ride along). `README` must not claim a browser test runs in `make verify` if the `Lxx` puts it elsewhere.
-
-### Pitfall m-3: The in-app "Reset" and `defaults` for float fields
-
-`defaults[name]` comes from JSON, so `0.0` becomes `0`. Any new JS that compares to a default must use the existing `String()` form or the numbers will disagree on `0` vs `0.0`.
-
-### Pitfall m-4: A retired ledger item must ride the commit that closes it
-
-CLAUDE.md: `Status: resolved`, the sha, `git mv` into `resolved/`, the INDEX row moved - in the fixing commit. v0.5 closes seven idea files and one debt item (IN-03 plus possibly IN-04 for the `root_fillet` label, which sits in the `DIMS` table the CF phase touches); do not batch them.
+### Pitfall 21: Date-gated work stranded by a branch
+**What goes wrong:** E needs a CI run after 2026-10-19 on a branch that has CI (`gsd/milestone-v0.6-*`), and the first Ubuntu-26 run may be on `main` after a merge, not on the PR. **Prevention:** note which runs count (PR head or push to `main`); a draft PR opened early reads CI (the 15-05 pattern, READ).
 
 ---
 
@@ -460,146 +373,113 @@ CLAUDE.md: `Status: resolved`, the sha, `git mv` into `resolved/`, the INDEX row
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| `importorskip("playwright")` or skip-on-missing-browser | Gate green on a fresh clone and in the image test | Zero browser coverage with a green check; the `no-fake-done` macOS history repeated | Never; an explicit, printed, CI-refused opt-out only |
-| Loosening the generic-code pins in `test_api.py` to fit the new JS | Fast green | The "form is generated from `/api/schema` only" rule (L02) stops being mechanically enforced | Never silently; only as a stricter pin under the new `Lxx` |
-| `disabled` on every gated field | Looks finished | Deadlocks (keyway pair), traps (cutout patterns), unbacked claims (recess) | Never for refusals; dim-and-annotate for ignored-field cases only |
-| Server in an in-process thread | No subprocess handling | Shared `app` globals and `dependency_overrides` with `TestClient` tests | Never in this suite |
-| Slug carries the requested `root_shape` | One-line change | A radial part named "trochoid" where the request is ignored | Only if the `Lxx` records it as "requested" and the doc says so |
-| Bar set from the first idle-looking reading | Closes IN-03 quickly | A number read at one load, one spread, one host; the next re-set repeats | Never; pre-register the rule, N >= 5 per arm, record min/median/max |
-| `make venv VENV=.venv-proof` in the main checkout | Matches the idea file's wording | Hook shim points at a venv that is later deleted; every commit fails | Never; use a scratch clone or a linked worktree |
-| Adding `playwright` to `dependencies` or the closure | One place to list it | 130 MB Node driver in the image; the closure stops being runtime-only | Never |
+| `filterwarnings` entry for the tracker warning | Gate green at once | Hides a CPython bug class; the next precondition change is invisible | Only as an explicit human decision, with the upstream citation and measured rate recorded, and a narrow message match |
+| `shutdown(wait=True)` added to every pool test unmeasured | Looks like a fix | Cost and a masked cause if timing merely shifts | Only after a reproduction (amplified or natural) goes red to green |
+| Random-only totality test | Fast to write | Reaches the cheap branch 89 % of the time, deep branches never | Never as the only mechanism |
+| Special-casing `root_shape` in `app.js` | Smallest diff | Breaks L02 and the generic-code pin; `recess_sides` stays silently dropped | Never |
+| Tuning the 4.9 PNG bar to turn a red 26.04 run green | Quick CI green | Un-derived bar; masks a rendering change | Only re-derived from both hosts' ratios under PD-03, human's call |
+| Marking info findings `skipped` without a reason | Empties the table | Reopens as an audit finding next milestone | Never; one-line reason or a debt file |
+| Per-test `--timeout` plugin for the hang | Names a stuck test | New dev dependency, kills evidence, blind to the exit window | Only after the journal and faulthandler prove insufficient |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| pytest-xdist | Session fixture assumed once per run; `xdist_group` assumed to work under the default `--dist load` | Fixture runs once per worker (DOCS); `xdist_group` needs `--dist loadgroup` (DOCS); design for one worker paying |
-| coverage + subprocess | Enabling `patch = ["subprocess"]` to count the server | Leave it off; the server lines are covered by `TestClient`; a killed child may leave partial data (UNVERIFIED) |
-| `filterwarnings = error` | Blaming the browser, or filtering the chain | Keep the whole log; classify against the four known occurrences; no blanket filter |
-| `make verify.fast` | New test file joins the 30 s slice automatically | Add `--ignore=` in the same commit and test the list |
-| `make test-image` | `import playwright` at module top breaks collection in the image | Ignore the file in that recipe or import inside the fixture |
-| uvicorn `--fd` | Passing a TCP socket to a flag documented for unix/systemd sockets | MEASURED to work on 0.54.0; keep a test that the fixture can serve one request so an upgrade that breaks it is caught |
-| pip 26.2 | Assuming `PIP_CONSTRAINT` reaches build isolation | It does not as of 26.2 (DOCS); use `PIP_BUILD_CONSTRAINT` only if build deps need pinning |
-| Playwright on CI | Pre-step `playwright install` before `make verify` | The venv does not exist before `make`; install inside the Makefile |
+| pytest-xdist + spawn pools | Treat the failing test as the culprit | Treat it as the victim of whichever GC pass fired; log worker-to-test assignment |
+| coverage `multiprocessing` + `--no-cov` arm | Read a no-cov green as "coverage is the cause" | Report it as "timing differs"; keep a separate GC-amplified arm |
+| `make -n` hook pin | Add flags to one recipe | Share flags across `test:` and `test.fast:` or use `conftest.py` |
+| Playwright `--with-deps` on a new Ubuntu | Assume 24.04 package names | Classify an apt failure separately (t64 renames) from a WebGL/ratio failure |
+| macOS vs Linux `ps` | Add columns to the helper | Keep `pgid=,stat=,pid=`; use `command=` only in one-off diagnostics |
+| `_EXPORTS` module cache | Clear via new production method | `monkeypatch.setattr` a fresh `_BlobCache` in the test |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| One server, pool and browser per xdist worker | Memory and CPU spikes at suite start; the 0.2 s/1.0 s pool timeouts trip | One scenario test, one worker; `SPUR_BUILD_WORKERS=1` for the test server | `-n 8` locally (about 387 MiB per browser, MEASURED); `-n 4` on a CI runner |
-| Cold first build in the browser test | First test red, rest green; 4.83 s measured against a 5 s style default | Warm the server in the fixture with a bound from `SPUR_BUILD_TIMEOUT` | Fresh page cache after `make clean` ("a couple of minutes", READ) |
-| Software-rendered WebGL under load | Slow frames, `GPU stall` console noise | Assert structure, not frame timing; no console-clean assertion | Any run on the headless shell |
-| Gate wall time quantised by long tests | 26 % spread across three runs | N >= 5 per arm, min/median/max, interleaved A/B | Always, at 8 workers with 12-26 s tests |
-
-## Security Mistakes
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Test server bound to `0.0.0.0` | A local gear generator with no auth (REQ-no-auth-default) exposed on the network during the test run | The pre-bound socket is `127.0.0.1` only |
-| Launching Chromium with `--no-sandbox` by hand | Playwright already adds it unless `chromiumSandbox` is set (READ); do not widen further | Use Playwright defaults; the page under test is this repo's own static files |
-| Relation metadata evaluated as code | If `enabled_when` ever became an expression string, the form would `eval` server data | Keep it a data structure (`{field, gt}`), never a string to execute |
-| `slug()` free text in a header | Header injection through `Content-Disposition` | The suffix comes from a `Literal`; `root_shape` can only be one of two literals |
-
-## UX Pitfalls
-
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Hiding ignored fields | The ignored-field warning names fields the user cannot see | Dim and annotate; keep every field visible and sendable |
-| Selector shows "Hex" while the part is a D-flat | The UI claims a part it is not building | Show the state the server computes; a visible "enter across-flats" state |
-| Switching shape forgets what the user typed | Lost data, silent change of the part | Remember last typed values in memory; never invent a default |
-| Disabled field with no reason | "Why can't I click this?" | A short line saying which field makes it inert; same wording as the server's warning |
-| Download name identical for two parts | The browser appends `(1)`; the user cannot tell which file is which | SL, with the requested/effective decision made explicitly |
+| Whole-suite loops on the dev host while working | Pool-timeout failures counted as the flake; browser pins slow | Interleave arms; classify by signature; record load | Always on a shared host (v0.5 never got idle) |
+| Diagnostics priced on the M5 Max only | CI job past a runner limit or much slower | A/B on the same host and read one CI run | CI jobs already read 487-924 s |
+| Full 31k-case sweep inside the commit slice | `make verify.fast` creeps toward the 30 s kill | A few hundred stratified cases; the full sweep stays in `bench/` | Slice has about 10 s of headroom |
+| Gate rerun per tiny change in a long loop phase | Hours per day lost | Loop in the background on a quiet window, develop B-F meanwhile on a worktree | Each full gate 3-5 min |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Browser test:** often missing a hard failure for a missing browser - verify `SPUR_NO_BROWSER` is printed in the header when set, refused under `CI`, and that the collected-count test fails on an empty file.
-- [ ] **Browser test:** often missing the `--ignore=` in `test.fast` - verify `make verify.fast` runs without launching a browser and still reads under 20 s.
-- [ ] **Browser test:** often missing teardown of the server group - verify `pgrep -fl "uvicorn spur.app"` prints nothing after a full `make verify` and after a deliberately killed worker.
-- [ ] **Browser test:** often passes only when the server is warm - verify a run from a cold server (fresh process, empty `_build_cached`) passes.
-- [ ] **Browser test:** verify no `wait_for_timeout`/`sleep` and no `page.clock`.
-- [ ] **CI:** often missing the OS-library step - verify a CI run on a branch prints the Chromium version, installs only the headless shell, and the pinned Playwright version appears in the log.
-- [ ] **Conditional fields:** often missing the three programmatic paths - verify reset, `hashchange` and fresh load in the browser test.
-- [ ] **Conditional fields:** verify the model-driven relation test also fails when a relation is removed from one field (a tripwire, as the repo does for other proofs).
-- [ ] **Conditional fields:** verify `/openapi.json`, `/docs` and the CLI `--help` field walk still pass with the new key present.
-- [ ] **Selector:** verify the 44-record fixture, opened as links, produces identical request parameter sets before and after the selector.
-- [ ] **Selector:** verify no `/api/*` request and no hash carries a non-field key.
-- [ ] **Selector:** verify a link with `bore_hex=6&bore_d=7&bore_flat=5` still sends all three and still shows the warning.
-- [ ] **Slug:** verify the default radial name is byte-identical to `spur_z21_m1.75_pa25.stl`-style names, and that `suggested_filename` in the browser matches `Content-Disposition`.
-- [ ] **Gate bar:** verify the rule was committed before the first reading, each reading has its load and its machine, and the three stale comments are rewritten in the same commit.
-- [ ] **Venv probe:** verify `git status` is clean and `.git/hooks/pre-commit` still names `.venv/bin/python` after the probe.
-- [ ] **Ledger:** verify each closed item has `Status: resolved`, a sha, its `git mv` and its INDEX row in the commit that closed it.
+- [ ] **Flake:** a stop rule committed before the first loop, a recorded outcome (capture or bounded non-reproduction), debt file still `active` if no fix, trigger an event
+- [ ] **Hang:** evidence armed (journal that survives SIGTERM), priced in the gate, runbook for the exit window; item not marked resolved
+- [ ] **Slug totality:** bucket counts asserted non-empty, two unreachable reasons stated, red seen against a monkeypatched `_junction`, seeded with a local `Random`
+- [ ] **Name test:** restored cache after the test, red seen when the cache holds the entry, order-independent under `-n 0` reordering and `-n 8`
+- [ ] **stop_group:** `ps` failure still signals and still fails the test with "survivors unknown"; leader-only break still red; no `proc.poll()` before signals
+- [ ] **Group floor:** listing taken on each host from a real run; RESULTS numbers untouched, dated notes added
+- [ ] **Enum link:** golden and fixture files byte-identical to `v0.5`; the old pin seen red against the fix, the new pin seen red without it; empty-string policy decided in the `Lxx`; generic over every schema enum
+- [ ] **Ubuntu 26:** a run's image version recorded; classification table before any `ci.yml` edit; all three jobs read
+- [ ] **Info findings:** zero `open`; every `skipped` has a reason; every `deferred` has a path; the vacuity-class infos surfaced to the human
+- [ ] **Ledger:** retired items moved in their fixing commit; a statement of any item filed and its path in the final reply
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Hook shim points at a deleted proof venv | LOW | `rm .git/hooks/{pre-commit,commit-msg,pre-push}`; `rm .venv/.hooks-installed`; `make venv` (re-installs from `.venv`); read `INSTALL_PYTHON` in the shim |
-| Orphaned test servers holding ports or memory | LOW | `pgrep -fl "uvicorn spur.app"`, then `kill -TERM -<pgid>`; fix the fixture's group kill |
-| A pin in `test_api.py` weakened to get green | MEDIUM | Revert the pin change; re-derive the intended pin from the `Lxx`; re-run the field walk |
-| Slug shipped with a suffix on radial names | MEDIUM | Revert to unsuffixed radial; every shared download name was changed in the interim - note it in the `Lxx` |
-| Bar re-set from a loaded reading | LOW | Supersede with a new `Lxx` carrying the idle-protocol readings; the rule is already in the record |
-| Flake attributed to the browser test (or the reverse) | LOW | Compare the failing log to the four recorded occurrences; run the failing test alone at `-n 0` |
-| `requirements.txt` changed by accident for a dev tool | LOW | `git checkout requirements.txt`; add the dev pin to `[dev]` only |
+| Flake closed on a guess, recurs | Medium | Re-open: `Status: active`, add the recurrence log, restate the trigger; do not delete the earlier non-reproduction |
+| Vacuous totality test shipped | Low | Add bucket-count assertions and a monkeypatch red; re-record in RESULTS |
+| Cache leaked across tests by a fixture | Low | Replace with `monkeypatch.setattr`; rerun the file in reversed order |
+| `stop_group` orphaned a server | Low | `ps -A -o pgid=,stat=,pid=`; `kill -KILL -<pgid>` by hand; add the unit test |
+| Valid link behaviour changed by the enum fix | High if shipped | Revert the `app.js` change; golden sweep and fixture bytes are the tripwire (L05) |
+| First 26.04 run red and "fixed" blind | Medium | Revert the `ci.yml` change; classify from the whole log; re-apply with the table |
+| Info finding closed with no reason | Low | Reopen the row, write the reason or a debt file |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| BT-1 no WebGL, form dead | BT | WebGL precondition test with its own message; CI spike run prints a GL renderer |
-| BT-2 joins the 30 s slice | BT | `--ignore` in `test.fast`; test that fails if a Playwright-importing file is not ignored; `make verify.fast` < 20 s |
-| BT-3 vacuous skip | BT | No skip on missing browser; opt-out printed and refused in CI; collected-count test |
-| BT-4 shared globals | BT | Server is a subprocess; passes at `-n 8` repeatedly |
-| BT-5 ports, orphans, per-worker cost | BT | Pre-bound socket; `killpg`; no orphans after kill; RSS measured at `-n 8` |
-| BT-6 wrong wait signal | BT | Content-based waits; parked-route stale-response test; no sleeps |
-| BT-7 no scene observable | BT | One generic dataset line asserted; no `window.__scene` |
-| BT-8 install drift, pinning | BT | Exact `playwright` pin in `[dev]`; install in the stamp; closure unchanged |
-| BT-9 coverage | BT | Coverage per file before/after recorded; `[tool.coverage.run]` unchanged |
-| BT-10 flake attribution | BT, GB | Whole logs kept; Wilson interval stated; no filter added |
-| BT-11 second definition of passing | BT | `Lxx` says which of the three places run it; `required-jobs.txt` matches `ci.yml` |
-| CF-1 generic pins | CF, BS | Pins rewritten stricter under the `Lxx`; carve-out regex non-vacuous |
-| CF-2 refusals as disabled | CF | Model-driven relation test (ignored-warning backed); graph has no cycle |
-| CF-3 `json_schema_extra` collisions and drops | CF | One bare key; keyword-set test; both construction styles carried |
-| CF-4 programmatic value changes | CF, BT | Reset, `hashchange` and fresh-load browser tests |
-| BS-1 L05 rewriting | BS, BT | Golden request sets from the 44 fixture records; round-trip test per state |
-| BS-2 name leak | BS, BT | Request-parameter-subset assertion over `/api/*` |
-| BS-3 blank select | BT (pin), BS | Existing `root_shape=bogus` behaviour pinned and filed |
-| BS-4 two mechanisms | CF before BS | Selector uses CF's evaluation pass |
-| SL-1 pinned names | SL | One assertion flipped, default names unchanged, docs updated |
-| SL-2 requested vs effective | SL | 23-tooth and 40-tooth tests under the chosen rule |
-| SL-3 cache keys | SL | Recorded in the `Lxx` (checked) |
-| GB-1 idle host | GB | Quiet protocol (<1.5 load), `pgrep` clean, load recorded |
-| GB-2 spread | GB | Interleaved A/B, N >= 5, min/median/max |
-| GB-3 host-bound bar, stale comments | GB | Host named in `Lxx`; three comments and IN-03 in the same commit |
-| VP-1 hooks, ignore, versions, stamp | VP | Scratch clone or worktree; `pip check`; freeze diff; `.git/hooks` unchanged |
-| M-5 reverify loop | LG (early) | Recipe paragraph in `HOW_TO_DEVELOP.md` §6 |
-| M-6 Pi 5 | LG | README sentence cites no VP result |
+| 1 Closing on a non-reproduction | A | Stop rule commit predates the first loop; outcome is capture or bounded re-deferral |
+| 2 Two variables / incomparable arms | A | One factor per arm; effective `-n` and tool versions logged; signature classification |
+| 3 Symptom fix for the flake | A | No `filterwarnings` change without a human decision and upstream citation; a red-to-green on a reproduction |
+| 4 Evidence capture cost / blindness | A | A/B gate cost; journal survives a deliberate SIGTERM; recipe pin green |
+| 5 Vacuous totality test | B | Bucket counts and a monkeypatch red recorded |
+| 6 `_EXPORTS` leak / local fix | B | `monkeypatch` restore; reordered runs; other conventions noted |
+| 7 `stop_group` ordering hazards | C | New unit test red then green; leader-only break still red |
+| 8 Group-floor correction | C | Per-host listings cited; dated notes; no number rewritten |
+| 9 Enum fix changes valid links | D | Fixture and golden byte-identical to `v0.5`; generic code only |
+| 10 Pin flipped without seeing red | D | Two recorded reds (old pin vs fix; new pin vs reverted fix) |
+| 11 Ubuntu 26 fix before classify | E | Table in RESULTS before any `ci.yml` edit; image version per run |
+| 12 Info triage without reasons | F | Zero `open`; reason or path per row |
+| 13 Hook-pin env leak | F | Both env-var and command-line forms red then green |
+| 14 `test-image` red set | F | `make test-image` read before the fix; human picks mount vs ignore |
+| 15 Launch message | F | Text-only unless asked; stamp pins green |
+| 16 Ledger bookkeeping | all | Same-commit retirement |
+| 17 Gate-cost drift | A-D | Same-host delta recorded per addition |
 
-**Sequencing implied by the pitfalls:**
+## Phase-Specific Warnings
 
-1. BT first. It carries the golden baselines (request sets for the 44 records, the hex-link warning, the `root_shape=bogus` behaviour) that CF and BS are judged against, and its server fixture, install and gate-placement decision are what every later phase's cost sits on.
-2. CF before BS (BS-4). BS reuses CF's evaluation pass.
-3. SL is independent; it needs only BT's `suggested_filename` check, so it can sit anywhere after BT.
-4. GB last, with the isolated price of the browser test taken in BT and the interleaved A/B taken once the test set is final. The registered rule is written before any reading.
-5. VP is independent, but run it in a scratch clone and not while a GB measurement is in progress (it loads the host).
-6. LG's reverify paragraph is cheapest early.
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|---------------|------------|
+| A. Flake loops | Non-reproduction read as a fix; arms differ in more than one factor | Pre-registered stop rule, interleaved single-factor arms, signature-classified reds, the 95 % bound written down |
+| A. Flake fix | Filter or `shutdown` added on a guess; test id read as the culprit | GC-amplified reproduction arm with a control; victim-not-culprit framing; mitigation named as mitigation |
+| A. Hang evidence | `-v`/`--timeout` cost, recipe fork, evidence erased by the kill | Flushed per-worker journal outside the tree, `faulthandler_timeout` tested on purpose, A/B price |
+| B. Totality test | 89 % of random draws are the cheap branch; two reasons unreachable | Stratified undercut region, bucket assertions, monkeypatch red, local `Random` |
+| B. Name test | Production `clear()`, fixture leak, local fix | `monkeypatch.setattr` a fresh `_BlobCache`; reorder runs |
+| C. stop_group | PID reuse via `poll()`, immediate SIGKILL, silent pass, `ps` columns | Signal first, bounded wait, reap last, unit test with its own cleanup |
+| C. Group floor | One host's listing generalised; RESULTS numbers edited | Listing from a CI log; dated notes only |
+| D. Enum link | Valid links change; empty-string policy; token pins; fragment rewritten | `Lxx` first; byte-identical fixture and golden; extend token pins; generic over enums |
+| D. Pin flip | Never seen red, or red at the wrong step | Fix with old pin first, then new pin with the fix reverted |
+| E. Ubuntu 26 | Rolling migration, fix before classification, all three jobs | Image version per run; table before edits; human owns pinning |
+| F. Triage | Closing without reasons; "info" that is a vacuity bug; refactor creep | One disposition each, read-first pass, deferred items carry event triggers |
+| F. `test-image` | Excluding the biggest suites | Run it, read the red set, mount `bench/` or retire the claim |
 
-**Research flags for the discuss-phase steps:**
+## Suggested Ordering Constraints (from the pitfalls, for the roadmap)
 
-- BT: needs a CI spike (headless shell on `ubuntu-latest`, apt libraries, install time) and a human decision on in/out of `make verify`, priced.
-- CF: needs a human decision on the relation grammar's scope and on whether a relation the server does not back (recess, `bore_d=0`) is added with a new warning or left alone.
-- BS: needs a human decision on how much of the selector is hard-coded in `app.js` (BS-4) and what the "incomplete hex" state shows.
-- SL: needs a human decision, requested vs effective.
-- GB: needs the rule fixed before reading, and the human to set the number.
-- VP: standard; low risk after the hazards above.
+1. **C before D.** D's red-first protocol and its many browser runs depend on a teardown that cannot leak a server group; C also fixes the comment D's runs read.
+2. **A's loops are long and load-sensitive.** Run them in a quiet window or on a dispatch-only workflow, and develop B, C, D, F on a separate worktree meanwhile; do not run the loops concurrently with the browser test or each other.
+3. **E last or as a watch.** It cannot be done before the migration reaches this repo (2026-10-19 to 2026-11-19, rolling); the milestone must be able to close with E open and its trigger restated.
+4. **F's triage pass first, its fixes last.** Some infos (24 CX-03 / IN-02) touch the `app.js` bootstrap that D edits.
+5. **Phases that need deeper research or a human decision before planning:** A (stop rule, GC amplifier, `gc`-threshold plugin design), D (the `Lxx`: empty string, send-vs-refuse-client-side, enum-only scope), F `test-image` (run it, then options).
 
 ## Sources
 
-- Repo (READ): `app.js` (`:229` renderer, `update()`, `readHash`, `gearQuery`), `params.py`, `calc.py:1162-1247, 1707`, `app.py:101-114, 203-209, 401, 496`, `tests/test_api.py` (`:25-41`, `:164-212`, `:376-412`, `:720`), `tests/test_cli.py:196-242`, `Makefile`, `pyproject.toml`, `.github/workflows/ci.yml`, `.pre-commit-config.yaml`, `.gitignore`, `bench/RESULTS.md` (Phase 15 method, 19-09 "The gate, priced"), `.git/hooks/pre-commit`, `docs/tech_debt/active/*` (resource-tracker flake, xdist segfault, coverage flush, Phase 19 review deferrals), `docs/ideas/*` (browser test, conditional fields, bore selector, download name, venv constraint, reverify, Pi 5).
-- MEASURED 2026-10-10 (scratch scripts, not committed): headless GL stack on macOS arm64 for the default shell vs `channel="chromium"`; `--disable-3d-apis` form failure; first/later STL-ready times; `#status`/href state right after `fill`; parked-route stale-response ordering; process count and RSS of driver plus browser; `playwright install chromium` size and time; Playwright under `filterwarnings = error`; uvicorn `--fd` with a TCP socket; pool children surviving a server `SIGKILL`; baseline link behaviours (`root_shape=bogus`, hex link, default omission); API responses for the ignored/refused combinations; pydantic `json_schema_extra` nested emission; all 31 pins against PyPI JSON; `pip freeze` of the dev venv; mypy strict on a Playwright call.
-- Upstream source READ: Playwright `chromium.ts` (`--enable-unsafe-swiftshader`), uvicorn `config.py` `bind_socket` (installed 0.54.0 and master).
-- DOCS: pytest-xdist distribution and how-to pages (`xdist_group` and `--dist loadgroup`; session fixtures run per worker; FileLock pattern); Playwright Python browsers, CI, intro and clock pages (cache location, `--only-shell`, caching not recommended, Ubuntu 22.04/24.04/26.04, clock fakes `requestAnimationFrame`); coverage.py config (subprocess patch, `parallel`); pytest-cov 7.0.0 changelog (via search result); pip 26.2 release notes (constraints and build isolation); pydantic JSON-schema docs (`json_schema_extra` dict is merged); Chromium SwiftShader doc (via search result).
-- UNVERIFIED and labelled in text: headless shell on `ubuntu-latest` without extra apt packages; `expect` default timeout; WebGL canvas readback without `preserveDrawingBuffer`; coverage partial-file behaviour on `SIGKILL`; `greenlet` beside `thread` in coverage `concurrency`; full JSON Schema 2020-12 keyword list vs `enabled_when`; FastAPI's handling of a nested extra in `/openapi.json`; same-document `goto` semantics in Playwright.
-
----
-*Pitfalls research for: v0.5 Honest Form on the shipped spur gear generator*
-*Researched: 2026-10-10*
+- `/Users/half/git/halfb00t/spur/.planning/PROJECT.md`, `.planning/RETROSPECTIVE.md`, `.planning/STATE.md`, `.planning/milestones/v0.5-MILESTONE-AUDIT.md` (READ)
+- `/Users/half/git/halfb00t/spur/docs/tech_debt/active/*.md`, especially the flake, hang, slug-totality, cache-order, stop-group, group-floor, bogus-enum, Ubuntu-26, hook-pin, launch-message, test-image and Phase-19-info items (READ)
+- `tests/browser_session.py`, `tests/test_browser.py`, `tests/test_hooks.py`, `tests/test_api.py`, `tests/test_pool.py`, `tests/test_trochoid.py`, `src/spur/app.py`, `src/spur/static/app.js`, `src/spur/params.py`, `src/spur/calc.py`, `Makefile`, `pyproject.toml`, `.github/workflows/ci.yml`, `bench/RESULTS.md` (READ)
+- Local measurements 2026-10-15 in `.venv` (Python 3.12.15, pytest 9.1.1): `multiprocessing.resource_tracker` source inspection; `_pytest.unraisableexception` source inspection; random and `bench.trochoid.sweep_cases()` reason counts through validated `GearParams`; golden record enum counts; Playwright driver platform entries; `docker info`; `actions/python-versions` `versions-manifest.json` (MEASURED)
+- CPython resource-tracker reentrancy fixes (GH-109629, gh-131788): search results listing CPython commit mirrors, for example https://code.everydayimshuflin.com/greg/cpython/commit/f53e7de6a84a0f535efb75c3671283b801a1af0f and https://remotebranch.eu/Stowage/cpython/commit/f24a012350f71141648cbd61081a25a458dd7fff (MEDIUM; mirrors, not python.org; whether 3.12 will receive gh-131788 is UNVERIFIED)
+- GitHub changelog, "Ubuntu 26 generally available and latest migration", 2026-09-17: https://github.blog/changelog/2026-09-17-ubuntu-26-generally-available-and-latest-migration (MEDIUM)
+- Playwright issue on Ubuntu 26.04 support (added in v1.61.0, t64 library names): https://github.com/microsoft/playwright/issues/40117 (MEDIUM)
+- `actions/python-versions` manifest: https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json (MEASURED)

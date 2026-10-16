@@ -15,13 +15,26 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-_MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL")
+_MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL", "PYTEST_ARGS")
+# The files the image suite does not run (26-06): the Makefile comment above `test-image`
+# gives each one's reason.
+IMAGE_IGNORED = {
+    "tests/test_browser.py",
+    "tests/test_hooks.py",
+    "tests/test_no_fake_done.py",
+    "tests/test_browser_pins.py",
+    "tests/test_pr_land.py",
+    "tests/test_bench.py",
+}
 HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli", "test_browser")
 # The browser stamp, the Makefile's `BROWSER := $(VENV)/.browser`. The commit slice never
 # builds it, so on a checkout where it is missing or older than `$(STAMP)` a dry run of
@@ -33,7 +46,10 @@ BROWSER_STAMP = ".venv/.browser"
 
 def _make_env() -> dict[str, str]:
     """The gate runs this test from inside `make`: the parent's flags and jobserver
-    must not leak into the `make` this test starts."""
+    must not leak into the `make` this test starts. Nor may a caller's `PYTEST_ARGS`: a
+    caller narrowing the gate sets it in its environment or on the make command line (which
+    make exports to the recipe), and a dry run would print it into the recipe these pins
+    compare."""
     return {k: v for k, v in os.environ.items() if k not in _MAKE_VARIABLES}
 
 
@@ -117,6 +133,12 @@ def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() 
 
     assert through_worker_count(whole_pytest) == through_worker_count(fast_pytest)
     assert "--cov" in whole_pytest
+    # D-06 (26-05): every whole gate prints each test id at start and finish and the 25
+    # slowest durations, so a stalled run names its test; the commit slice stays lean.
+    assert "-v" in whole_pytest.split()
+    assert any(w.startswith("--durations=") for w in whole_pytest.split())
+    assert "-v" not in fast_pytest.split()
+    assert not any(w.startswith("--durations=") for w in fast_pytest.split())
     assert "--ignore=" not in whole_pytest
     assert "--no-cov" in fast_pytest
     # The whole set, not membership: a fifth `--ignore` would quietly stop the commit
@@ -126,6 +148,32 @@ def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() 
         w.removeprefix("--ignore=") for w in fast_pytest.split() if w.startswith("--ignore=")
     }
     assert ignored == {f"tests/{n}.py" for n in HEAVY_TEST_FILES}
+
+
+def test_the_pin_ignores_pytest_args_set_in_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A narrowed gate must not turn this pin red (debt item
+    2026-10-10-hook-pin-reads-the-callers-pytest-args). `PYTEST_ARGS` in the caller's
+    environment reaches the dry run through the Makefile's `PYTEST_ARGS ?=`, so the pin
+    compared the caller's flags instead of the recipe; it cost 21-07 one 165 s run."""
+    monkeypatch.setenv("PYTEST_ARGS", "--ignore=tests/test_browser.py")
+    test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe()
+
+
+def test_the_pin_ignores_pytest_args_handed_down_from_the_make_command_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`make verify PYTEST_ARGS="--ignore=..."` exports the variable to the recipe, so the
+    pin runs with it set. These four are exactly what GNU Make 4.4.1 hands a recipe for a
+    command-line variable (measured, 26-RESEARCH Item 1). `_make_env` already strips the
+    MAKEFLAGS trio, so this case documents the shape make hands down; `PYTEST_ARGS` is the
+    carrier that turns the pin red."""
+    monkeypatch.setenv("PYTEST_ARGS", "--ignore=tests/test_browser.py")
+    monkeypatch.setenv("MAKEFLAGS", " -- PYTEST_ARGS=--ignore=tests/test_browser.py")
+    monkeypatch.setenv("MAKELEVEL", "1")
+    monkeypatch.setenv("MFLAGS", "")
+    test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe()
 
 
 def test_the_whole_gate_installs_the_browser_and_the_commit_slice_never_does() -> None:
@@ -179,15 +227,40 @@ def test_the_dev_venv_installs_under_the_closure_and_reinstalls_when_it_moves() 
 
 
 def test_the_image_suite_ignores_the_browser_test() -> None:
-    """The image installs only pytest and httpx, so the browser test could not even import
-    there. A dry run builds and runs nothing; it prints the recipe."""
+    """Pins the `test-image` recipe as exact sets (D-13): the read-only mounts, `PYTHONPATH`,
+    the pip-installed test tools and the ignored files. The image installs only what the
+    runtime needs, so the browser test could not even import there, and the host-only files
+    read `make`, git, the Dockerfile or `.github`, none of which the image holds (26-06).
+    Sets, not lists: the order of the flags is not the contract. A dry run builds and runs
+    nothing; it prints the recipe."""
     lines = _dry_run("test-image")
-    at = next(i for i, ln in enumerate(lines) if " -m pytest " in ln)
+    at = next(i for i, ln in enumerate(lines) if "docker run" in ln)
     end = at
     while lines[end].endswith("\\"):
         end += 1
-    recipe = " ".join(ln.rstrip("\\").strip() for ln in lines[at : end + 1])
-    assert "--ignore=tests/test_browser.py" in recipe.split(), recipe
+    words = shlex.split(" ".join(ln.rstrip("\\").strip() for ln in lines[at : end + 1]))
+
+    mounts = set()
+    for host, target, mode in (w.rsplit(":", 2) for w in words if w.startswith(str(REPO_ROOT))):
+        mounts.add((Path(host).relative_to(REPO_ROOT).as_posix(), target, mode))
+    assert mounts == {
+        ("src", "/app/src", "ro"),
+        ("tests", "/app/tests", "ro"),
+        ("pyproject.toml", "/app/pyproject.toml", "ro"),
+        ("bench", "/app/bench", "ro"),
+        ("scripts", "/app/scripts", "ro"),
+    }, words
+    assert words[words.index("-e") + 1] == "PYTHONPATH=/app/src:/app", words
+
+    # pytest-cov and pytest-xdist are here for one test: the forced-GC test in test_pool.py
+    # launches `pytest --no-cov -n0` in a subprocess, which fails "unrecognized arguments"
+    # without them (26-06, option B).
+    script = words[words.index("-c") + 1].split()
+    pip = script[script.index("install") + 1 : script.index("&&")]
+    tools = {w for w in pip if not w.startswith("-")}
+    assert tools == {"pytest", "httpx", "pytest-cov", "pytest-xdist"}, script
+    ignored = {w.removeprefix("--ignore=") for w in script if w.startswith("--ignore=")}
+    assert ignored == IMAGE_IGNORED, script
 
 
 def test_the_hook_stamp_installs_from_the_main_checkout_and_never_from_a_linked_worktree(

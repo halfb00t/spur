@@ -1,0 +1,512 @@
+host: Darwin 27.0.0 arm64
+docker server: 29.4.0
+date: 2026-10-15T12:36:06Z
+HEAD: febe0b969b251d684ee36399fb45b195931fadf0
+start epoch: 1792067766
+---
+docker build  -t spur:latest .
+#0 building with "orbstack" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.48kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 2.2s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 resolve docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e 0.0s done
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 0B / 13.13MB 0.2s
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 1.05MB / 13.13MB 0.6s
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 2.10MB / 13.13MB 0.8s
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 3.15MB / 13.13MB 0.9s
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 7.34MB / 13.13MB 1.2s
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 9.44MB / 13.13MB 1.4s
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 11.53MB / 13.13MB 1.5s
+#3 sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 13.13MB / 13.13MB 1.7s done
+#3 extracting sha256:c3fba84503b044ce5cd182dd0150892f3b0eff1350c4c5d7f5ca2066da594550 0.1s done
+#3 DONE 1.8s
+
+#4 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm
+#4 DONE 1.3s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 199B done
+#5 DONE 0.0s
+
+#6 [ 1/10] FROM docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#6 resolve docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258 0.0s done
+#6 DONE 0.1s
+
+#7 [internal] load build context
+#7 transferring context: 875.05kB done
+#7 DONE 0.1s
+
+#8 [ 2/10] RUN apt-get update  && apt-get install -y --no-install-recommends libgl1 libx11-6 libexpat1  && rm -rf /var/lib/apt/lists/*
+#8 0.579 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#8 0.801 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#8 0.887 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]
+#8 1.167 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+#8 2.163 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#8 2.164 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [353 kB]
+#8 2.809 Fetched 9392 kB in 3s (3601 kB/s)
+#8 2.809 Reading package lists...
+#8 3.175 Reading package lists...
+#8 3.499 Building dependency tree...
+#8 3.579 Reading state information...
+#8 3.757 The following additional packages will be installed:
+#8 3.758   libbsd0 libdrm-amdgpu1 libdrm-common libdrm-intel1 libdrm-nouveau2
+#8 3.758   libdrm-radeon1 libdrm2 libedit2 libelf1 libgl1-mesa-dri libglapi-mesa
+#8 3.758   libglvnd0 libglx-mesa0 libglx0 libicu72 libllvm15 libpciaccess0
+#8 3.758   libsensors-config libsensors5 libx11-data libx11-xcb1 libxau6 libxcb-dri2-0
+#8 3.758   libxcb-dri3-0 libxcb-glx0 libxcb-present0 libxcb-randr0 libxcb-shm0
+#8 3.758   libxcb-sync1 libxcb-xfixes0 libxcb1 libxdmcp6 libxext6 libxfixes3 libxml2
+#8 3.759   libxshmfence1 libxxf86vm1 libz3-4
+#8 3.759 Suggested packages:
+#8 3.759   pciutils lm-sensors
+#8 3.869 The following NEW packages will be installed:
+#8 3.869   libbsd0 libdrm-amdgpu1 libdrm-common libdrm-intel1 libdrm-nouveau2
+#8 3.869   libdrm-radeon1 libdrm2 libedit2 libelf1 libexpat1 libgl1 libgl1-mesa-dri
+#8 3.869   libglapi-mesa libglvnd0 libglx-mesa0 libglx0 libicu72 libllvm15
+#8 3.869   libpciaccess0 libsensors-config libsensors5 libx11-6 libx11-data libx11-xcb1
+#8 3.869   libxau6 libxcb-dri2-0 libxcb-dri3-0 libxcb-glx0 libxcb-present0
+#8 3.869   libxcb-randr0 libxcb-shm0 libxcb-sync1 libxcb-xfixes0 libxcb1 libxdmcp6
+#8 3.869   libxext6 libxfixes3 libxml2 libxshmfence1 libxxf86vm1 libz3-4
+#8 4.074 0 upgraded, 41 newly installed, 0 to remove and 0 not upgraded.
+#8 4.074 Need to get 51.2 MB of archives.
+#8 4.074 After this operation, 216 MB of additional disk space will be used.
+#8 4.074 Get:1 http://deb.debian.org/debian bookworm/main amd64 libbsd0 amd64 0.11.7-2 [117 kB]
+#8 4.271 Get:2 http://deb.debian.org/debian bookworm/main amd64 libdrm-common all 2.4.114-1 [7112 B]
+#8 4.275 Get:3 http://deb.debian.org/debian bookworm/main amd64 libdrm2 amd64 2.4.114-1+b1 [37.5 kB]
+#8 4.284 Get:4 http://deb.debian.org/debian bookworm/main amd64 libdrm-amdgpu1 amd64 2.4.114-1+b1 [20.9 kB]
+#8 4.289 Get:5 http://deb.debian.org/debian bookworm/main amd64 libpciaccess0 amd64 0.17-2 [51.4 kB]
+#8 4.303 Get:6 http://deb.debian.org/debian bookworm/main amd64 libdrm-intel1 amd64 2.4.114-1+b1 [64.0 kB]
+#8 4.356 Get:7 http://deb.debian.org/debian bookworm/main amd64 libdrm-nouveau2 amd64 2.4.114-1+b1 [19.1 kB]
+#8 4.360 Get:8 http://deb.debian.org/debian bookworm/main amd64 libdrm-radeon1 amd64 2.4.114-1+b1 [21.8 kB]
+#8 4.363 Get:9 http://deb.debian.org/debian bookworm/main amd64 libedit2 amd64 3.1-20221030-2 [93.0 kB]
+#8 4.455 Get:10 http://deb.debian.org/debian bookworm/main amd64 libelf1 amd64 0.188-2.1 [174 kB]
+#8 4.473 Get:11 http://deb.debian.org/debian-security bookworm-security/main amd64 libexpat1 amd64 2.5.0-1+deb12u4 [106 kB]
+#8 4.482 Get:12 http://deb.debian.org/debian bookworm/main amd64 libglvnd0 amd64 1.6.0-1 [51.8 kB]
+#8 4.486 Get:13 http://deb.debian.org/debian bookworm/main amd64 libxau6 amd64 1:1.0.9-1 [19.7 kB]
+#8 4.489 Get:14 http://deb.debian.org/debian bookworm/main amd64 libxdmcp6 amd64 1:1.1.2-3 [26.3 kB]
+#8 4.490 Get:15 http://deb.debian.org/debian bookworm/main amd64 libxcb1 amd64 1.15-1 [144 kB]
+#8 4.634 Get:16 http://deb.debian.org/debian bookworm/main amd64 libx11-data all 2:1.8.4-2+deb12u2 [292 kB]
+#8 4.661 Get:17 http://deb.debian.org/debian bookworm/main amd64 libx11-6 amd64 2:1.8.4-2+deb12u2 [760 kB]
+#8 4.725 Get:18 http://deb.debian.org/debian bookworm/main amd64 libglapi-mesa amd64 22.3.6-1+deb12u2 [35.9 kB]
+#8 4.727 Get:19 http://deb.debian.org/debian bookworm/main amd64 libx11-xcb1 amd64 2:1.8.4-2+deb12u2 [192 kB]
+#8 4.821 Get:20 http://deb.debian.org/debian bookworm/main amd64 libxcb-dri2-0 amd64 1.15-1 [107 kB]
+#8 4.832 Get:21 http://deb.debian.org/debian bookworm/main amd64 libxcb-dri3-0 amd64 1.15-1 [107 kB]
+#8 4.842 Get:22 http://deb.debian.org/debian bookworm/main amd64 libxcb-glx0 amd64 1.15-1 [122 kB]
+#8 4.853 Get:23 http://deb.debian.org/debian bookworm/main amd64 libxcb-present0 amd64 1.15-1 [105 kB]
+#8 4.865 Get:24 http://deb.debian.org/debian bookworm/main amd64 libxcb-randr0 amd64 1.15-1 [117 kB]
+#8 4.870 Get:25 http://deb.debian.org/debian bookworm/main amd64 libxcb-shm0 amd64 1.15-1 [105 kB]
+#8 4.880 Get:26 http://deb.debian.org/debian bookworm/main amd64 libxcb-sync1 amd64 1.15-1 [109 kB]
+#8 5.001 Get:27 http://deb.debian.org/debian bookworm/main amd64 libxcb-xfixes0 amd64 1.15-1 [109 kB]
+#8 5.079 Get:28 http://deb.debian.org/debian bookworm/main amd64 libxext6 amd64 2:1.3.4-1+b1 [52.9 kB]
+#8 5.128 Get:29 http://deb.debian.org/debian bookworm/main amd64 libxfixes3 amd64 1:6.0.0-2 [22.7 kB]
+#8 5.130 Get:30 http://deb.debian.org/debian bookworm/main amd64 libxshmfence1 amd64 1.3-1 [8820 B]
+#8 5.132 Get:31 http://deb.debian.org/debian bookworm/main amd64 libxxf86vm1 amd64 1:1.1.4-1+b2 [20.8 kB]
+#8 5.203 Get:32 http://deb.debian.org/debian bookworm/main amd64 libicu72 amd64 72.1-3+deb12u1 [9376 kB]
+#8 6.016 Get:33 http://deb.debian.org/debian bookworm/main amd64 libxml2 amd64 2.9.14+dfsg-1.3~deb12u6 [689 kB]
+#8 6.066 Get:34 http://deb.debian.org/debian bookworm/main amd64 libz3-4 amd64 4.8.12-3.1 [7216 kB]
+#8 6.689 Get:35 http://deb.debian.org/debian bookworm/main amd64 libllvm15 amd64 1:15.0.6-4+b1 [23.1 MB]
+#8 8.676 Get:36 http://deb.debian.org/debian bookworm/main amd64 libsensors-config all 1:3.6.0-7.1 [14.3 kB]
+#8 8.677 Get:37 http://deb.debian.org/debian bookworm/main amd64 libsensors5 amd64 1:3.6.0-7.1 [34.2 kB]
+#8 8.742 Get:38 http://deb.debian.org/debian bookworm/main amd64 libgl1-mesa-dri amd64 22.3.6-1+deb12u2 [7240 kB]
+#8 9.389 Get:39 http://deb.debian.org/debian bookworm/main amd64 libglx-mesa0 amd64 22.3.6-1+deb12u2 [148 kB]
+#8 9.394 Get:40 http://deb.debian.org/debian bookworm/main amd64 libglx0 amd64 1.6.0-1 [34.4 kB]
+#8 9.399 Get:41 http://deb.debian.org/debian bookworm/main amd64 libgl1 amd64 1.6.0-1 [88.4 kB]
+#8 9.584 debconf: delaying package configuration, since apt-utils is not installed
+#8 9.627 Fetched 51.2 MB in 6s (9250 kB/s)
+#8 9.711 Selecting previously unselected package libbsd0:amd64.
+#8 9.711 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6704 files and directories currently installed.)
+#8 9.728 Preparing to unpack .../00-libbsd0_0.11.7-2_amd64.deb ...
+#8 9.747 Unpacking libbsd0:amd64 (0.11.7-2) ...
+#8 9.834 Selecting previously unselected package libdrm-common.
+#8 9.834 Preparing to unpack .../01-libdrm-common_2.4.114-1_all.deb ...
+#8 9.837 Unpacking libdrm-common (2.4.114-1) ...
+#8 9.919 Selecting previously unselected package libdrm2:amd64.
+#8 9.920 Preparing to unpack .../02-libdrm2_2.4.114-1+b1_amd64.deb ...
+#8 9.921 Unpacking libdrm2:amd64 (2.4.114-1+b1) ...
+#8 10.01 Selecting previously unselected package libdrm-amdgpu1:amd64.
+#8 10.01 Preparing to unpack .../03-libdrm-amdgpu1_2.4.114-1+b1_amd64.deb ...
+#8 10.01 Unpacking libdrm-amdgpu1:amd64 (2.4.114-1+b1) ...
+#8 10.09 Selecting previously unselected package libpciaccess0:amd64.
+#8 10.09 Preparing to unpack .../04-libpciaccess0_0.17-2_amd64.deb ...
+#8 10.09 Unpacking libpciaccess0:amd64 (0.17-2) ...
+#8 10.18 Selecting previously unselected package libdrm-intel1:amd64.
+#8 10.18 Preparing to unpack .../05-libdrm-intel1_2.4.114-1+b1_amd64.deb ...
+#8 10.18 Unpacking libdrm-intel1:amd64 (2.4.114-1+b1) ...
+#8 10.27 Selecting previously unselected package libdrm-nouveau2:amd64.
+#8 10.27 Preparing to unpack .../06-libdrm-nouveau2_2.4.114-1+b1_amd64.deb ...
+#8 10.27 Unpacking libdrm-nouveau2:amd64 (2.4.114-1+b1) ...
+#8 10.35 Selecting previously unselected package libdrm-radeon1:amd64.
+#8 10.35 Preparing to unpack .../07-libdrm-radeon1_2.4.114-1+b1_amd64.deb ...
+#8 10.35 Unpacking libdrm-radeon1:amd64 (2.4.114-1+b1) ...
+#8 10.44 Selecting previously unselected package libedit2:amd64.
+#8 10.44 Preparing to unpack .../08-libedit2_3.1-20221030-2_amd64.deb ...
+#8 10.44 Unpacking libedit2:amd64 (3.1-20221030-2) ...
+#8 10.53 Selecting previously unselected package libelf1:amd64.
+#8 10.53 Preparing to unpack .../09-libelf1_0.188-2.1_amd64.deb ...
+#8 10.53 Unpacking libelf1:amd64 (0.188-2.1) ...
+#8 10.62 Selecting previously unselected package libexpat1:amd64.
+#8 10.62 Preparing to unpack .../10-libexpat1_2.5.0-1+deb12u4_amd64.deb ...
+#8 10.62 Unpacking libexpat1:amd64 (2.5.0-1+deb12u4) ...
+#8 10.71 Selecting previously unselected package libglvnd0:amd64.
+#8 10.71 Preparing to unpack .../11-libglvnd0_1.6.0-1_amd64.deb ...
+#8 10.72 Unpacking libglvnd0:amd64 (1.6.0-1) ...
+#8 10.80 Selecting previously unselected package libxau6:amd64.
+#8 10.80 Preparing to unpack .../12-libxau6_1%3a1.0.9-1_amd64.deb ...
+#8 10.80 Unpacking libxau6:amd64 (1:1.0.9-1) ...
+#8 10.88 Selecting previously unselected package libxdmcp6:amd64.
+#8 10.88 Preparing to unpack .../13-libxdmcp6_1%3a1.1.2-3_amd64.deb ...
+#8 10.89 Unpacking libxdmcp6:amd64 (1:1.1.2-3) ...
+#8 10.97 Selecting previously unselected package libxcb1:amd64.
+#8 10.97 Preparing to unpack .../14-libxcb1_1.15-1_amd64.deb ...
+#8 10.97 Unpacking libxcb1:amd64 (1.15-1) ...
+#8 11.06 Selecting previously unselected package libx11-data.
+#8 11.06 Preparing to unpack .../15-libx11-data_2%3a1.8.4-2+deb12u2_all.deb ...
+#8 11.06 Unpacking libx11-data (2:1.8.4-2+deb12u2) ...
+#8 11.15 Selecting previously unselected package libx11-6:amd64.
+#8 11.15 Preparing to unpack .../16-libx11-6_2%3a1.8.4-2+deb12u2_amd64.deb ...
+#8 11.16 Unpacking libx11-6:amd64 (2:1.8.4-2+deb12u2) ...
+#8 11.27 Selecting previously unselected package libglapi-mesa:amd64.
+#8 11.27 Preparing to unpack .../17-libglapi-mesa_22.3.6-1+deb12u2_amd64.deb ...
+#8 11.27 Unpacking libglapi-mesa:amd64 (22.3.6-1+deb12u2) ...
+#8 11.35 Selecting previously unselected package libx11-xcb1:amd64.
+#8 11.35 Preparing to unpack .../18-libx11-xcb1_2%3a1.8.4-2+deb12u2_amd64.deb ...
+#8 11.36 Unpacking libx11-xcb1:amd64 (2:1.8.4-2+deb12u2) ...
+#8 11.44 Selecting previously unselected package libxcb-dri2-0:amd64.
+#8 11.44 Preparing to unpack .../19-libxcb-dri2-0_1.15-1_amd64.deb ...
+#8 11.44 Unpacking libxcb-dri2-0:amd64 (1.15-1) ...
+#8 11.53 Selecting previously unselected package libxcb-dri3-0:amd64.
+#8 11.53 Preparing to unpack .../20-libxcb-dri3-0_1.15-1_amd64.deb ...
+#8 11.53 Unpacking libxcb-dri3-0:amd64 (1.15-1) ...
+#8 11.62 Selecting previously unselected package libxcb-glx0:amd64.
+#8 11.62 Preparing to unpack .../21-libxcb-glx0_1.15-1_amd64.deb ...
+#8 11.62 Unpacking libxcb-glx0:amd64 (1.15-1) ...
+#8 11.72 Selecting previously unselected package libxcb-present0:amd64.
+#8 11.72 Preparing to unpack .../22-libxcb-present0_1.15-1_amd64.deb ...
+#8 11.72 Unpacking libxcb-present0:amd64 (1.15-1) ...
+#8 11.81 Selecting previously unselected package libxcb-randr0:amd64.
+#8 11.81 Preparing to unpack .../23-libxcb-randr0_1.15-1_amd64.deb ...
+#8 11.81 Unpacking libxcb-randr0:amd64 (1.15-1) ...
+#8 11.90 Selecting previously unselected package libxcb-shm0:amd64.
+#8 11.90 Preparing to unpack .../24-libxcb-shm0_1.15-1_amd64.deb ...
+#8 11.90 Unpacking libxcb-shm0:amd64 (1.15-1) ...
+#8 11.98 Selecting previously unselected package libxcb-sync1:amd64.
+#8 11.98 Preparing to unpack .../25-libxcb-sync1_1.15-1_amd64.deb ...
+#8 11.99 Unpacking libxcb-sync1:amd64 (1.15-1) ...
+#8 12.07 Selecting previously unselected package libxcb-xfixes0:amd64.
+#8 12.07 Preparing to unpack .../26-libxcb-xfixes0_1.15-1_amd64.deb ...
+#8 12.08 Unpacking libxcb-xfixes0:amd64 (1.15-1) ...
+#8 12.17 Selecting previously unselected package libxext6:amd64.
+#8 12.17 Preparing to unpack .../27-libxext6_2%3a1.3.4-1+b1_amd64.deb ...
+#8 12.17 Unpacking libxext6:amd64 (2:1.3.4-1+b1) ...
+#8 12.26 Selecting previously unselected package libxfixes3:amd64.
+#8 12.26 Preparing to unpack .../28-libxfixes3_1%3a6.0.0-2_amd64.deb ...
+#8 12.26 Unpacking libxfixes3:amd64 (1:6.0.0-2) ...
+#8 12.34 Selecting previously unselected package libxshmfence1:amd64.
+#8 12.34 Preparing to unpack .../29-libxshmfence1_1.3-1_amd64.deb ...
+#8 12.35 Unpacking libxshmfence1:amd64 (1.3-1) ...
+#8 12.43 Selecting previously unselected package libxxf86vm1:amd64.
+#8 12.43 Preparing to unpack .../30-libxxf86vm1_1%3a1.1.4-1+b2_amd64.deb ...
+#8 12.43 Unpacking libxxf86vm1:amd64 (1:1.1.4-1+b2) ...
+#8 12.51 Selecting previously unselected package libicu72:amd64.
+#8 12.51 Preparing to unpack .../31-libicu72_72.1-3+deb12u1_amd64.deb ...
+#8 12.52 Unpacking libicu72:amd64 (72.1-3+deb12u1) ...
+#8 12.91 Selecting previously unselected package libxml2:amd64.
+#8 12.92 Preparing to unpack .../32-libxml2_2.9.14+dfsg-1.3~deb12u6_amd64.deb ...
+#8 12.92 Unpacking libxml2:amd64 (2.9.14+dfsg-1.3~deb12u6) ...
+#8 13.03 Selecting previously unselected package libz3-4:amd64.
+#8 13.03 Preparing to unpack .../33-libz3-4_4.8.12-3.1_amd64.deb ...
+#8 13.03 Unpacking libz3-4:amd64 (4.8.12-3.1) ...
+#8 13.41 Selecting previously unselected package libllvm15:amd64.
+#8 13.41 Preparing to unpack .../34-libllvm15_1%3a15.0.6-4+b1_amd64.deb ...
+#8 13.41 Unpacking libllvm15:amd64 (1:15.0.6-4+b1) ...
+#8 13.96 Selecting previously unselected package libsensors-config.
+#8 13.96 Preparing to unpack .../35-libsensors-config_1%3a3.6.0-7.1_all.deb ...
+#8 13.96 Unpacking libsensors-config (1:3.6.0-7.1) ...
+#8 14.05 Selecting previously unselected package libsensors5:amd64.
+#8 14.05 Preparing to unpack .../36-libsensors5_1%3a3.6.0-7.1_amd64.deb ...
+#8 14.08 Unpacking libsensors5:amd64 (1:3.6.0-7.1) ...
+#8 14.17 Selecting previously unselected package libgl1-mesa-dri:amd64.
+#8 14.17 Preparing to unpack .../37-libgl1-mesa-dri_22.3.6-1+deb12u2_amd64.deb ...
+#8 14.21 Unpacking libgl1-mesa-dri:amd64 (22.3.6-1+deb12u2) ...
+#8 14.59 Selecting previously unselected package libglx-mesa0:amd64.
+#8 14.59 Preparing to unpack .../38-libglx-mesa0_22.3.6-1+deb12u2_amd64.deb ...
+#8 14.59 Unpacking libglx-mesa0:amd64 (22.3.6-1+deb12u2) ...
+#8 14.68 Selecting previously unselected package libglx0:amd64.
+#8 14.68 Preparing to unpack .../39-libglx0_1.6.0-1_amd64.deb ...
+#8 14.68 Unpacking libglx0:amd64 (1.6.0-1) ...
+#8 14.77 Selecting previously unselected package libgl1:amd64.
+#8 14.77 Preparing to unpack .../40-libgl1_1.6.0-1_amd64.deb ...
+#8 14.77 Unpacking libgl1:amd64 (1.6.0-1) ...
+#8 14.84 Setting up libexpat1:amd64 (2.5.0-1+deb12u4) ...
+#8 14.85 Setting up libpciaccess0:amd64 (0.17-2) ...
+#8 14.85 Setting up libxau6:amd64 (1:1.0.9-1) ...
+#8 14.86 Setting up libicu72:amd64 (72.1-3+deb12u1) ...
+#8 14.86 Setting up libglvnd0:amd64 (1.6.0-1) ...
+#8 14.87 Setting up libsensors-config (1:3.6.0-7.1) ...
+#8 14.88 Setting up libz3-4:amd64 (4.8.12-3.1) ...
+#8 14.89 Setting up libx11-data (2:1.8.4-2+deb12u2) ...
+#8 14.89 Setting up libsensors5:amd64 (1:3.6.0-7.1) ...
+#8 14.90 Setting up libglapi-mesa:amd64 (22.3.6-1+deb12u2) ...
+#8 14.91 Setting up libxshmfence1:amd64 (1.3-1) ...
+#8 14.91 Setting up libbsd0:amd64 (0.11.7-2) ...
+#8 14.92 Setting up libdrm-common (2.4.114-1) ...
+#8 14.92 Setting up libelf1:amd64 (0.188-2.1) ...
+#8 14.93 Setting up libxml2:amd64 (2.9.14+dfsg-1.3~deb12u6) ...
+#8 14.93 Setting up libxdmcp6:amd64 (1:1.1.2-3) ...
+#8 14.94 Setting up libxcb1:amd64 (1.15-1) ...
+#8 14.94 Setting up libxcb-xfixes0:amd64 (1.15-1) ...
+#8 14.95 Setting up libxcb-glx0:amd64 (1.15-1) ...
+#8 14.95 Setting up libedit2:amd64 (3.1-20221030-2) ...
+#8 14.96 Setting up libxcb-shm0:amd64 (1.15-1) ...
+#8 14.96 Setting up libxcb-present0:amd64 (1.15-1) ...
+#8 14.96 Setting up libxcb-sync1:amd64 (1.15-1) ...
+#8 14.97 Setting up libxcb-dri2-0:amd64 (1.15-1) ...
+#8 14.97 Setting up libdrm2:amd64 (2.4.114-1+b1) ...
+#8 14.97 Setting up libxcb-randr0:amd64 (1.15-1) ...
+#8 14.98 Setting up libllvm15:amd64 (1:15.0.6-4+b1) ...
+#8 14.98 Setting up libx11-6:amd64 (2:1.8.4-2+deb12u2) ...
+#8 14.98 Setting up libdrm-amdgpu1:amd64 (2.4.114-1+b1) ...
+#8 14.99 Setting up libxcb-dri3-0:amd64 (1.15-1) ...
+#8 14.99 Setting up libx11-xcb1:amd64 (2:1.8.4-2+deb12u2) ...
+#8 14.99 Setting up libdrm-nouveau2:amd64 (2.4.114-1+b1) ...
+#8 15.00 Setting up libdrm-radeon1:amd64 (2.4.114-1+b1) ...
+#8 15.00 Setting up libdrm-intel1:amd64 (2.4.114-1+b1) ...
+#8 15.01 Setting up libgl1-mesa-dri:amd64 (22.3.6-1+deb12u2) ...
+#8 15.05 Setting up libxext6:amd64 (2:1.3.4-1+b1) ...
+#8 15.06 Setting up libxxf86vm1:amd64 (1:1.1.4-1+b2) ...
+#8 15.06 Setting up libxfixes3:amd64 (1:6.0.0-2) ...
+#8 15.07 Setting up libglx-mesa0:amd64 (22.3.6-1+deb12u2) ...
+#8 15.07 Setting up libglx0:amd64 (1.6.0-1) ...
+#8 15.07 Setting up libgl1:amd64 (1.6.0-1) ...
+#8 15.08 Processing triggers for libc-bin (2.36-9+deb12u14) ...
+#8 DONE 15.3s
+
+#9 [ 3/10] WORKDIR /app
+#9 DONE 0.0s
+
+#10 [ 4/10] COPY requirements.txt .
+#10 DONE 0.0s
+
+#11 [ 5/10] RUN pip install --no-deps -r requirements.txt
+#11 1.805 Collecting PyYAML==6.0.3 (from -r requirements.txt (line 9))
+#11 2.247   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+#11 2.353 Collecting aiohappyeyeballs==2.7.1 (from -r requirements.txt (line 10))
+#11 2.432   Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl.metadata (5.9 kB)
+#11 2.524 Collecting annotated-doc==0.0.5 (from -r requirements.txt (line 11))
+#11 2.602   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+#11 2.698 Collecting annotated-types==0.8.0 (from -r requirements.txt (line 12))
+#11 2.778   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+#11 2.899 Collecting anyio==4.15.1 (from -r requirements.txt (line 13))
+#11 2.977   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+#11 3.067 Collecting cadquery-ocp-proxy==7.9.3.1.1 (from -r requirements.txt (line 14))
+#11 3.149   Downloading cadquery_ocp_proxy-7.9.3.1.1-py3-none-any.whl.metadata (5.2 kB)
+#11 3.267 Collecting cadquery-ocp==7.9.3.1.1 (from -r requirements.txt (line 15))
+#11 3.347   Downloading cadquery_ocp-7.9.3.1.1-cp312-cp312-manylinux_2_31_x86_64.whl.metadata (831 bytes)
+#11 3.445 Collecting cadquery==2.8.0 (from -r requirements.txt (line 16))
+#11 3.524   Downloading cadquery-2.8.0-py3-none-any.whl.metadata (14 kB)
+#11 3.696 Collecting casadi==3.8.1 (from -r requirements.txt (line 17))
+#11 3.774   Downloading casadi-3.8.1-cp311-abi3-manylinux_2_28_x86_64.whl.metadata (2.2 kB)
+#11 3.884 Collecting click==8.5.0 (from -r requirements.txt (line 18))
+#11 3.963   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#11 4.252 Collecting ezdxf==1.4.4 (from -r requirements.txt (line 19))
+#11 4.329   Downloading ezdxf-1.4.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.9 kB)
+#11 4.454 Collecting fastapi==0.141.1 (from -r requirements.txt (line 20))
+#11 4.531   Downloading fastapi-0.141.1-py3-none-any.whl.metadata (27 kB)
+#11 4.767 Collecting fonttools==4.65.0 (from -r requirements.txt (line 21))
+#11 4.844   Downloading fonttools-4.65.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (125 kB)
+#11 5.039 Collecting h11==0.16.0 (from -r requirements.txt (line 22))
+#11 5.119   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#11 5.218 Collecting idna==3.20 (from -r requirements.txt (line 23))
+#11 5.297   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+#11 5.407 Collecting more-itertools==11.1.0 (from -r requirements.txt (line 24))
+#11 5.486   Downloading more_itertools-11.1.0-py3-none-any.whl.metadata (41 kB)
+#11 5.588 Collecting multimethod==1.12 (from -r requirements.txt (line 25))
+#11 5.665   Downloading multimethod-1.12-py3-none-any.whl.metadata (9.6 kB)
+#11 5.765 Collecting nlopt==2.11.0 (from -r requirements.txt (line 26))
+#11 5.845   Downloading nlopt-2.11.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (2.1 kB)
+#11 6.083 Collecting numpy==2.5.3 (from -r requirements.txt (line 27))
+#11 6.159   Downloading numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+#11 6.247 Collecting packaging==26.3 (from -r requirements.txt (line 28))
+#11 6.325   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+#11 6.498 Collecting pydantic==2.13.5 (from -r requirements.txt (line 29))
+#11 6.575   Downloading pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+#11 7.161 Collecting pydantic_core==2.46.5 (from -r requirements.txt (line 30))
+#11 7.237   Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+#11 7.329 Collecting pyparsing==3.3.3 (from -r requirements.txt (line 31))
+#11 7.408   Downloading pyparsing-3.3.3-py3-none-any.whl.metadata (5.9 kB)
+#11 7.505 Collecting python-dateutil==2.9.0.post0 (from -r requirements.txt (line 32))
+#11 7.585   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+#11 7.681 Collecting runtype==0.5.3 (from -r requirements.txt (line 33))
+#11 7.760   Downloading runtype-0.5.3-py3-none-any.whl.metadata (6.4 kB)
+#11 7.876 Collecting six==1.17.0 (from -r requirements.txt (line 34))
+#11 7.954   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+#11 8.073 Collecting starlette==1.6.0 (from -r requirements.txt (line 35))
+#11 8.152   Downloading starlette-1.6.0-py3-none-any.whl.metadata (6.4 kB)
+#11 8.247 Collecting typing-inspection==0.4.4 (from -r requirements.txt (line 36))
+#11 8.328   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+#11 8.436 Collecting typing_extensions==4.16.0 (from -r requirements.txt (line 37))
+#11 8.516   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#11 8.633 Collecting uvicorn==0.53.0 (from -r requirements.txt (line 38))
+#11 8.711   Downloading uvicorn-0.53.0-py3-none-any.whl.metadata (6.6 kB)
+#11 8.838 Collecting vtk==9.6.2 (from -r requirements.txt (line 39))
+#11 8.916   Downloading vtk-9.6.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.6 kB)
+#11 9.026 Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+#11 9.191    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 6.8 MB/s eta 0:00:00
+#11 9.271 Downloading aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+#11 9.350 Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+#11 9.430 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#11 9.510 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+#11 9.600 Downloading cadquery_ocp_proxy-7.9.3.1.1-py3-none-any.whl (3.3 kB)
+#11 9.679 Downloading cadquery_ocp-7.9.3.1.1-cp312-cp312-manylinux_2_31_x86_64.whl (67.8 MB)
+#11 16.17    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 67.8/67.8 MB 10.4 MB/s eta 0:00:00
+#11 16.25 Downloading cadquery-2.8.0-py3-none-any.whl (201 kB)
+#11 16.35 Downloading casadi-3.8.1-cp311-abi3-manylinux_2_28_x86_64.whl (89.4 MB)
+#11 26.67    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.4/89.4 MB 8.7 MB/s eta 0:00:00
+#11 26.74 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#11 26.83 Downloading ezdxf-1.4.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (5.8 MB)
+#11 27.47    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.8/5.8 MB 9.2 MB/s eta 0:00:00
+#11 27.55 Downloading fastapi-0.141.1-py3-none-any.whl (131 kB)
+#11 27.64 Downloading fonttools-4.65.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.4 MB)
+#11 28.23    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.4/5.4 MB 9.2 MB/s eta 0:00:00
+#11 28.31 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#11 28.39 Downloading idna-3.20-py3-none-any.whl (69 kB)
+#11 28.47 Downloading more_itertools-11.1.0-py3-none-any.whl (72 kB)
+#11 28.55 Downloading multimethod-1.12-py3-none-any.whl (10 kB)
+#11 28.63 Downloading nlopt-2.11.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (402 kB)
+#11 28.75 Downloading numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+#11 30.61    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.7/16.7 MB 9.0 MB/s eta 0:00:00
+#11 30.68 Downloading packaging-26.3-py3-none-any.whl (129 kB)
+#11 30.78 Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+#11 30.90 Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+#11 31.11    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 9.7 MB/s eta 0:00:00
+#11 31.19 Downloading pyparsing-3.3.3-py3-none-any.whl (126 kB)
+#11 31.28 Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+#11 31.38 Downloading runtype-0.5.3-py3-none-any.whl (31 kB)
+#11 31.46 Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+#11 31.54 Downloading starlette-1.6.0-py3-none-any.whl (75 kB)
+#11 31.63 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#11 31.71 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#11 31.79 Downloading uvicorn-0.53.0-py3-none-any.whl (87 kB)
+#11 31.87 Downloading vtk-9.6.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (146.0 MB)
+#11 48.81    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 146.0/146.0 MB 8.6 MB/s eta 0:00:00
+#11 49.54 Installing collected packages: vtk, casadi, uvicorn, typing-inspection, typing_extensions, starlette, six, runtype, PyYAML, python-dateutil, pyparsing, pydantic_core, pydantic, packaging, numpy, nlopt, multimethod, more-itertools, idna, h11, fonttools, fastapi, ezdxf, click, cadquery-ocp-proxy, cadquery-ocp, cadquery, anyio, annotated-types, annotated-doc, aiohappyeyeballs
+#11 55.88 Successfully installed PyYAML-6.0.3 aiohappyeyeballs-2.7.1 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 cadquery-2.8.0 cadquery-ocp-7.9.3.1.1 cadquery-ocp-proxy-7.9.3.1.1 casadi-3.8.1 click-8.5.0 ezdxf-1.4.4 fastapi-0.141.1 fonttools-4.65.0 h11-0.16.0 idna-3.20 more-itertools-11.1.0 multimethod-1.12 nlopt-2.11.0 numpy-2.5.3 packaging-26.3 pydantic-2.13.5 pydantic_core-2.46.5 pyparsing-3.3.3 python-dateutil-2.9.0.post0 runtype-0.5.3 six-1.17.0 starlette-1.6.0 typing-inspection-0.4.4 typing_extensions-4.16.0 uvicorn-0.53.0 vtk-9.6.2
+#11 55.88 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#11 DONE 56.5s
+
+#12 [ 6/10] COPY pyproject.toml README.md ./
+#12 DONE 0.1s
+
+#13 [ 7/10] COPY src ./src
+#13 DONE 0.0s
+
+#14 [ 8/10] COPY docker ./docker
+#14 DONE 0.0s
+
+#15 [ 9/10] RUN pip install --no-deps .  && python docker/smoke.py  && rm -rf /tmp/.cache
+#15 1.013 Processing /app
+#15 1.016   Installing build dependencies: started
+#15 4.464   Installing build dependencies: finished with status 'done'
+#15 4.464   Getting requirements to build wheel: started
+#15 4.737   Getting requirements to build wheel: finished with status 'done'
+#15 4.737   Preparing metadata (pyproject.toml): started
+#15 5.115   Preparing metadata (pyproject.toml): finished with status 'done'
+#15 5.117 Building wheels for collected packages: spur
+#15 5.117   Building wheel for spur (pyproject.toml): started
+#15 5.266   Building wheel for spur (pyproject.toml): finished with status 'done'
+#15 5.267   Created wheel for spur: filename=spur-0.1.0-py3-none-any.whl size=248181 sha256=fca0980a25a0f9dbbf5a6661d6c64d69a64b484e89a54347eb82f9b4f555fffa
+#15 5.267   Stored in directory: /tmp/pip-ephem-wheel-cache-bf6gtqvs/wheels/54/1b/b7/aa63e25c8f14f4f2ae7b04e6097bdecb770e455c5c1ee0a600
+#15 5.273 Successfully built spur
+#15 5.273 Installing collected packages: spur
+#15 5.307 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#15 5.307 Successfully installed spur-0.1.0
+#15 5.992 {"ts": "2026-10-15T12:37:30.233372+00:00", "level": "INFO", "logger": "spur.records", "event": "build.started", "version": "0.1.0", "request": "bfb7750c", "slug": "spur_z19_m1.75_pa25", "params": {}, "fmt": "stl", "quality": "preview"}
+#15 11.21 {"ts": "2026-10-15T12:37:35.451011+00:00", "level": "INFO", "logger": "spur.records", "event": "export.served", "version": "0.1.0", "request": "bfb7750c", "slug": "spur_z19_m1.75_pa25", "params": {}, "fmt": "stl", "quality": "preview", "encoding": "identity", "source": "built", "duration_ms": 5218}
+#15 11.21 {"ts": "2026-10-15T12:37:35.452624+00:00", "level": "INFO", "logger": "spur.records", "event": "build.started", "version": "0.1.0", "request": "26b1f3e0", "slug": "spur_z19_m1.75_pa25", "params": {}, "fmt": "step", "quality": "fine"}
+#15 11.30 {"ts": "2026-10-15T12:37:35.542871+00:00", "level": "INFO", "logger": "spur.records", "event": "export.served", "version": "0.1.0", "request": "26b1f3e0", "slug": "spur_z19_m1.75_pa25", "params": {}, "fmt": "step", "quality": "fine", "encoding": "identity", "source": "built", "duration_ms": 90}
+#15 11.30 smoke: kernel, exports, ASGI stack and validation all live
+#15 DONE 11.6s
+
+#16 [10/10] RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin spur
+#16 0.170 useradd warning: spur's uid 10001 is greater than SYS_UID_MAX 999
+#16 DONE 0.2s
+
+#17 exporting to image
+#17 exporting layers
+#17 exporting layers 20.8s done
+#17 exporting manifest sha256:95853f2871bca67beee9f37bea57582a32fc5429c597a338064de61077999963
+#17 exporting manifest sha256:95853f2871bca67beee9f37bea57582a32fc5429c597a338064de61077999963 done
+#17 exporting config sha256:6cc1f04d456538f43f47559dd571741b2d046a2f94f6678b74cb175e6b453546 done
+#17 exporting attestation manifest sha256:818f55b14cdd71ffc3e4329722593768ed48044fb4c6f21342d0e1e751cfbd3f 0.0s done
+#17 exporting manifest list sha256:3eb4cfcef7f3cbeeb4bb9f5793d50050e9c5eac7836a653d83ae901cc98ace6f done
+#17 naming to docker.io/library/spur:latest done
+#17 DONE 20.8s
+docker run --rm  --user root -e PYTHONPATH=/app/src \
+  -v "/Users/half/git/halfb00t/spur/src:/app/src:ro" -v "/Users/half/git/halfb00t/spur/tests:/app/tests:ro" \
+  -v "/Users/half/git/halfb00t/spur/pyproject.toml:/app/pyproject.toml:ro" \
+  -w /app --entrypoint sh spur:latest \
+  -c "pip install -q --root-user-action=ignore pytest httpx \
+      && python -m pytest -q -p no:cacheprovider \
+      --ignore=tests/test_browser.py -rs"
+
+==================================== ERRORS ====================================
+_____________________ ERROR collecting tests/test_bench.py _____________________
+ImportError while importing test module '/app/tests/test_bench.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/half/git/halfb00t/spur/tests/test_bench.py:45: in <module>
+    ???
+E   ModuleNotFoundError: No module named 'bench'
+_____________________ ERROR collecting tests/test_calc.py ______________________
+ImportError while importing test module '/app/tests/test_calc.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/half/git/halfb00t/spur/tests/test_calc.py:27: in <module>
+    ???
+E   ModuleNotFoundError: No module named 'bench'
+____________________ ERROR collecting tests/test_pr_land.py ____________________
+ImportError while importing test module '/app/tests/test_pr_land.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/half/git/halfb00t/spur/tests/test_pr_land.py:29: in <module>
+    ???
+E   ModuleNotFoundError: No module named 'scripts'
+__________________ ERROR collecting tests/test_skip_tokens.py __________________
+ImportError while importing test module '/app/tests/test_skip_tokens.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/half/git/halfb00t/spur/tests/test_skip_tokens.py:20: in <module>
+    ???
+E   ModuleNotFoundError: No module named 'scripts'
+___________________ ERROR collecting tests/test_trochoid.py ____________________
+ImportError while importing test module '/app/tests/test_trochoid.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/half/git/halfb00t/spur/tests/test_trochoid.py:21: in <module>
+    ???
+E   ModuleNotFoundError: No module named 'bench'
+!!!!!!!!!!!!!!!!!!! Interrupted: 5 errors during collection !!!!!!!!!!!!!!!!!!!!
+5 errors in 4.20s
+make: *** [Makefile:228: test-image] Error 2
+make test-image exit 2
+end epoch: 1792067891

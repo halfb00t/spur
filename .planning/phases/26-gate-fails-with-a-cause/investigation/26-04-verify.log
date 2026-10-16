@@ -1,0 +1,111 @@
+.venv/bin/python -m ruff check .
+All checks passed!
+.venv/bin/python -m mypy src tests docker bench scripts
+Success: no issues found in 49 source files
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 41 files, 85 dependencies.
+-----------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+
+Contracts: 5 kept, 0 broken.
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term --durations=0 --durations-min=5.0
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+testpaths: tests
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [1321 items]
+
+........................................................................ [  5%]
+........................................................................ [ 10%]
+........................................................................ [ 16%]
+........................................................................ [ 21%]
+........................................................................ [ 27%]
+........................................................................ [ 32%]
+........................................................................ [ 38%]
+........................................................................ [ 43%]
+........................................................................ [ 49%]
+........................................................................ [ 54%]
+........................................................................ [ 59%]
+........................................................................ [ 65%]
+........................................................................ [ 70%]
+........................................................................ [ 76%]
+........................................................................ [ 81%]
+........................................................................ [ 87%]
+........................................................................ [ 92%]
+........................................................................ [ 98%]
+.........................                                                [100%]
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.15-final-0 _______________
+
+Name                       Stmts   Miss Branch BrPart   Cover
+-------------------------------------------------------------
+src/spur/__init__.py           7      2      0      0  71.43%
+src/spur/__main__.py           2      2      0      0   0.00%
+src/spur/app.py              157      3     20      3  96.61%
+src/spur/build_errors.py       3      0      0      0 100.00%
+src/spur/calc.py             572      3    226      3  99.25%
+src/spur/cli.py               88      6     14      1  93.14%
+src/spur/model.py            352      4    100      4  98.23%
+src/spur/params.py            65      0      6      0 100.00%
+src/spur/pool.py              57      0      8      0 100.00%
+src/spur/records.py           55      2     12      2  94.03%
+-------------------------------------------------------------
+TOTAL                       1358     22    386     13  97.99%
+Required test coverage of 96.0% reached. Total coverage: 97.99%
+============================== slowest durations ===============================
+29.77s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+26.12s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-keyed-cells]
+24.29s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-holes]
+23.02s call     tests/test_model.py::test_the_kernel_tier_proof_fails_when_the_printed_tip_radius_is_off_by_0_05_mm
+15.08s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-keyed-holes]
+14.38s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-spokes]
+13.64s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-round-holes]
+13.48s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-keyed-spokes]
+13.46s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-round-spokes]
+13.14s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-hex-holes]
+12.85s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-d-flat-cells]
+12.84s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-hex-spokes]
+12.75s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-round-cells]
+12.72s call     tests/test_model.py::test_every_feature_proof_holds_on_a_tip_chamfered_gear_with_each_cutout_on_each_bore[trochoid-hex-cells]
+12.51s call     tests/test_model.py::test_the_default_gear_asked_for_the_hob_root_builds_the_oracle_s_root
+11.47s call     tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[19t-m1.75-25deg-x0]
+11.19s call     tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[10t-m1-20deg-x0]
+11.06s call     tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[8t-m1-20deg-x0]
+10.95s call     tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[14t-m1-20deg-x0]
+10.91s call     tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[30t-m0.2-14.5deg-x-0.6]
+10.86s call     tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[6t-m1-14.5deg-x0]
+10.86s call     tests/test_model.py::test_the_built_root_is_the_oracle_s_root_on_every_kernel_row[30t-m10-14.5deg-x-0.6]
+10.58s call     tests/test_pool.py::test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup
+10.01s call     tests/test_cli.py::test_readme_export_examples_run
+8.76s call     tests/test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation
+8.48s call     tests/test_calc.py::test_the_trochoid_sweep_over_the_allowed_box
+7.81s call     tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced
+6.00s call     tests/test_pool.py::test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal
+5.96s call     tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced
+
+(3934 durations < 5s hidden.)
+======================= 1321 passed in 185.61s (0:03:05) =======================
+exit 0

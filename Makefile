@@ -173,8 +173,16 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 PYTEST_WORKERS ?= $(shell w=8; n=$$(getconf _NPROCESSORS_ONLN 2>/dev/null); \
                     [ "$$n" -ge 1 ] 2>/dev/null || n=1; echo $$(( n < w ? n : w )))
 
+# -v prints every test id at start and finish, so a stalled run names its test, and
+# --durations=25 is the reading faulthandler_timeout (pyproject.toml) is sized from. The
+# 2026-10-10 hang left neither (docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-
+# percent-with-no-failure.md). They sit after --cov-report=term and before $(PYTEST_ARGS),
+# so a caller's -q still cancels the -v. test.fast keeps its lean output on purpose.
+# Cost, 3 + 3 interleaved on the M5 Max, 2026-10-15 (load 4.7-10.5): mean wall 206.87 s
+# without the flags and the ini timer, 205.81 s with them, -0.51 % (bench/RESULTS.md, "Hang
+# evidence (26-05)"); against L43's 300 s bar, and inside Phase 25's ~8 % run-to-run spread.
 test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache, not the tests)
-	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term $(PYTEST_ARGS)
+	$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term -v --durations=25 $(PYTEST_ARGS)
 
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
 # whole gate's bar is 300 s on the 18-CPU Apple M5 Max (L43).
@@ -214,16 +222,42 @@ check: verify smoke vendor-check  ## everything CI runs, locally (needs Docker)
 image:  ## build the container image
 	docker build $(PLATFORM_ARG) -t $(IMAGE) .
 
-# --ignore=tests/test_browser.py: the image installs only pytest and httpx, so that module
-# could not even import playwright here (D-01); tests/test_hooks.py reads this recipe.
+# What the image suite does not run, one --ignore per file, each traced to a red read on the
+# unfixed recipe (.planning/phases/26-gate-fails-with-a-cause/investigation/26-06-redset.md).
+# Whole files, not per-test --deselect ids: a renamed test would leave a stale id that fails
+# silently. The cost is passing tests dropped with them (47 in test_pr_land.py, 41 in
+# test_bench.py).
+# --ignore=tests/test_browser.py: the image installs only pytest and httpx plus the two
+# plugins below, so that module could not even import playwright here (D-01).
+# --ignore=tests/test_hooks.py: reads the Makefile and .pre-commit-config.yaml and runs make;
+# the image holds neither the files nor a make binary.
+# --ignore=tests/test_no_fake_done.py: runs make and git against the Makefile; the image
+# holds none of them.
+# --ignore=tests/test_browser_pins.py: reads the Dockerfile, which .dockerignore keeps out
+# of the image.
+# --ignore=tests/test_pr_land.py: reads .github/workflows/ci.yml and required-jobs.txt,
+# which the image does not hold.
+# --ignore=tests/test_bench.py: two of its tests run git (bench/build_time.py), and the
+# image has no git.
+# bench/ and scripts/ are mounted because tests import them (bench from test_calc.py and
+# test_trochoid.py, scripts from test_skip_tokens.py). PYTHONPATH's /app is redundant beside
+# `python -m pytest` with -w /app (the -m form puts the working directory on sys.path); the
+# mounts are what make the imports work. D-11 set it anyway, so a later reader does not
+# "fix" the wrong thing.
+# pytest-cov and pytest-xdist are installed for one test: the forced-GC test in test_pool.py
+# launches `pytest --no-cov -n0` in a subprocess, which fails "unrecognized arguments"
+# without them (26-06, human decision: option B). tests/test_hooks.py reads this recipe.
 test-image: image  ## run the test suite inside the image (needs no local python)
-	docker run --rm $(PLATFORM_ARG) --user root -e PYTHONPATH=/app/src \
+	docker run --rm $(PLATFORM_ARG) --user root -e PYTHONPATH=/app/src:/app \
 	  -v "$(CURDIR)/src:/app/src:ro" -v "$(CURDIR)/tests:/app/tests:ro" \
 	  -v "$(CURDIR)/pyproject.toml:/app/pyproject.toml:ro" \
+	  -v "$(CURDIR)/bench:/app/bench:ro" -v "$(CURDIR)/scripts:/app/scripts:ro" \
 	  -w /app --entrypoint sh $(IMAGE) \
-	  -c "pip install -q --root-user-action=ignore pytest httpx \
+	  -c "pip install -q --root-user-action=ignore pytest httpx pytest-cov pytest-xdist \
 	      && python -m pytest -q -p no:cacheprovider \
-	      --ignore=tests/test_browser.py $(PYTEST_ARGS)"
+	      --ignore=tests/test_browser.py --ignore=tests/test_hooks.py \
+	      --ignore=tests/test_no_fake_done.py --ignore=tests/test_browser_pins.py \
+	      --ignore=tests/test_pr_land.py --ignore=tests/test_bench.py $(PYTEST_ARGS)"
 
 smoke: image  ## exercise the kernel, both exporters and the ASGI app inside the image
 	docker run --rm $(PLATFORM_ARG) --entrypoint python $(IMAGE) docker/smoke.py

@@ -1,0 +1,31 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term tests/test_pool.py tests/test_api.py -k 'not forced_gc' --cov-fail-under=0
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [82 items]
+
+........................................................................ [ 87%]
+..........                                                               [100%]
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.15-final-0 _______________
+
+Name                       Stmts   Miss Branch BrPart   Cover
+-------------------------------------------------------------
+src/spur/__init__.py           7      2      0      0  71.43%
+src/spur/__main__.py           2      2      0      0   0.00%
+src/spur/app.py              157      3     20      3  96.61%
+src/spur/build_errors.py       3      0      0      0 100.00%
+src/spur/calc.py             572     75    226     45  83.71%
+src/spur/cli.py               88     88     14      0   0.00%
+src/spur/model.py            352     39    100     24  84.73%
+src/spur/params.py            65      0      6      0 100.00%
+src/spur/pool.py              57      0      8      0 100.00%
+src/spur/records.py           55      4     12      4  88.06%
+-------------------------------------------------------------
+TOTAL                       1358    213    386     76  81.71%
+============================= 82 passed in 13.66s ==============================
+exit 0
+run-record	B	2	ok	2026-10-15T11:51:28Z	2026-10-15T11:51:42Z	14	8.44	10.86	b56df86990cb4a5547bc776b0979355b4b3e5927c522a5a11f43e03c1dc01ba5

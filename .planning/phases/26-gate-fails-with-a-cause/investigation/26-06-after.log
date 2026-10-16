@@ -1,0 +1,94 @@
+docker build  -t spur:latest .
+#0 building with "orbstack" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 2.48kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 1.3s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+#3 resolve docker.io/docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e 0.0s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm
+#4 DONE 1.0s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 199B done
+#5 DONE 0.0s
+
+#6 [ 1/10] FROM docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#6 resolve docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258 0.0s done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 1.01kB done
+#7 DONE 0.0s
+
+#8 [ 9/10] RUN pip install --no-deps .  && python docker/smoke.py  && rm -rf /tmp/.cache
+#8 CACHED
+
+#9 [ 2/10] RUN apt-get update  && apt-get install -y --no-install-recommends libgl1 libx11-6 libexpat1  && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [ 3/10] WORKDIR /app
+#10 CACHED
+
+#11 [ 6/10] COPY pyproject.toml README.md ./
+#11 CACHED
+
+#12 [ 8/10] COPY docker ./docker
+#12 CACHED
+
+#13 [ 4/10] COPY requirements.txt .
+#13 CACHED
+
+#14 [ 5/10] RUN pip install --no-deps -r requirements.txt
+#14 CACHED
+
+#15 [ 7/10] COPY src ./src
+#15 CACHED
+
+#16 [10/10] RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin spur
+#16 CACHED
+
+#17 exporting to image
+#17 exporting layers done
+#17 exporting manifest sha256:95853f2871bca67beee9f37bea57582a32fc5429c597a338064de61077999963 done
+#17 exporting config sha256:6cc1f04d456538f43f47559dd571741b2d046a2f94f6678b74cb175e6b453546 done
+#17 exporting attestation manifest sha256:2bc4fe7e9d7503d8311d330df052d350f5f6021ccbb8e9f02a6260a80661be0b 0.0s done
+#17 exporting manifest list sha256:2ec2f330b182520a3a83101c5685ab5ef614679c9772375c80d5d4ef6f1a74d1
+#17 exporting manifest list sha256:2ec2f330b182520a3a83101c5685ab5ef614679c9772375c80d5d4ef6f1a74d1 done
+#17 naming to docker.io/library/spur:latest done
+#17 DONE 0.1s
+docker run --rm  --user root -e PYTHONPATH=/app/src:/app \
+  -v "/Users/half/git/halfb00t/spur/src:/app/src:ro" -v "/Users/half/git/halfb00t/spur/tests:/app/tests:ro" \
+  -v "/Users/half/git/halfb00t/spur/pyproject.toml:/app/pyproject.toml:ro" \
+  -v "/Users/half/git/halfb00t/spur/bench:/app/bench:ro" -v "/Users/half/git/halfb00t/spur/scripts:/app/scripts:ro" \
+  -w /app --entrypoint sh spur:latest \
+  -c "pip install -q --root-user-action=ignore pytest httpx pytest-cov pytest-xdist \
+      && python -m pytest -q -p no:cacheprovider \
+      --ignore=tests/test_browser.py --ignore=tests/test_hooks.py \
+      --ignore=tests/test_no_fake_done.py --ignore=tests/test_browser_pins.py \
+      --ignore=tests/test_pr_land.py --ignore=tests/test_bench.py -rs"
+........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 17%]
+........................................................................ [ 23%]
+........................................................................ [ 29%]
+........................................................................ [ 35%]
+........................................................................ [ 41%]
+........................................................................ [ 47%]
+........................................................................ [ 53%]
+........................................................................ [ 59%]
+........................................................................ [ 65%]
+........................................................................ [ 71%]
+........................................................................ [ 77%]
+........................................................................ [ 83%]
+........................................................................ [ 89%]
+........................................................................ [ 95%]
+.................................................                        [100%]
+1201 passed in 888.34s (0:14:48)
+make test-image exit 0
