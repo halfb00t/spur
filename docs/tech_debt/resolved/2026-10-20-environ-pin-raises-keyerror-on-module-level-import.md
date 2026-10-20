@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: fix(27): stop the environ pin's climb at a statement so a module-level import is reported
+Resolved in: 27628ef
 Date: 2026-10-20
 Source: Phase 27 code re-review after the WR-01..WR-03 fixes (`.planning/phases/27-ledger-tests-and-harness/27-REVIEW.md` WR-04)
 Related files:

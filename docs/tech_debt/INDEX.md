@@ -36,7 +36,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
-| [The environ pin raises `KeyError` on a module-level `from os import environ`](resolved/2026-10-20-environ-pin-raises-keyerror-on-module-level-import.md) | fix(27): stop the environ pin's climb at a statement so a module-level import is reported — see the file's own `Resolved in:` field |
+| [The environ pin raises `KeyError` on a module-level `from os import environ`](resolved/2026-10-20-environ-pin-raises-keyerror-on-module-level-import.md) | `27628ef` — see the file's own `Resolved in:` field |
 | [The group floor of 3 is recorded as "two pool workers"; the live group is uvicorn, the resource tracker and one worker](resolved/2026-10-10-group-floor-of-3-is-not-two-pool-workers.md) | docs(27): name the server group's members as ps lists them, with dated corrections — see the file's own `Resolved in:` field |
 | [The launch failure message names a stamp that skips the install](resolved/2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md) | fix(tests): name the reinstall that works when the browser stamp is current — see the file's own `Resolved in:` field |
 | [`stop_group` reads `ps` before it signals, so a failed `ps` leaves the server group alive](resolved/2026-10-10-stop-group-reads-ps-before-it-signals.md) | fix(tests): stop_group signals the server group before it reads ps — see the file's own `Resolved in:` field |
