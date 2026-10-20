@@ -75,7 +75,7 @@ The `arguments` stop cannot open a new bypass: it only ends the climb earlier, s
 
 ## Info
 
-### IN-04: Nothing pins that `_build` passes its own `rm` to `_chamfer_tips` (carried forward, skipped on purpose)
+### IN-04: Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`
 
 **File:** `tests/test_model.py:899, 926, 976` (with `src/spur/model.py:640, 783`)
 **Issue:** The point of 19-REVIEW IN-01 is that the chamfer limit reads the curve the part was cut from and does not solve it again. The updated monkeypatches (`lambda solid, _p, _pr, _rm: solid`, `lambda _p, _rm=None: ...`) accept either calling shape, so reverting `_chamfer_tips` to `tip_chamfer_effective(p)` would leave every test green. The change is correct today but unguarded. The fixer skipped it because both suggested tests assert an internal call, which `docs/CODING_VALUES.md` (Testing) bans, and because the revert changes cost (a second root solve) and not any observable result. That reasoning is sound for the two suggested fixes, so this stays an Info item and not something to force; it is not resolved in substance, so it is carried forward under the same id. (File not in this diff.)
