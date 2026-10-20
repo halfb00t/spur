@@ -1,7 +1,8 @@
 # `make pr.land` merges the pushed PR head without checking the local branch is pushed
 
 Severity: blocker
-Status: active
+Status: resolved
+Resolved in: fix(pr_land): refuse a local head branch the PR head does not carry
 Date: 2026-10-20
 Source: `/gsd-verify-work 26`, after `make pr.land PR=41`
 Related files:
