@@ -2,16 +2,23 @@
 phase: 27-ledger-tests-and-harness
 reviewed: 2026-10-20T00:00:00Z
 depth: standard
-files_reviewed: 3
+files_reviewed: 10
 files_reviewed_list:
   - docs/tech_debt/INDEX.md
-  - docs/tech_debt/resolved/2026-10-20-environ-pin-raises-keyerror-on-module-level-import.md
+  - docs/tech_debt/resolved/2026-10-10-group-floor-of-3-is-not-two-pool-workers.md
+  - docs/tech_debt/resolved/2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md
+  - docs/tech_debt/resolved/2026-10-10-stop-group-reads-ps-before-it-signals.md
+  - docs/tech_debt/resolved/2026-10-15-failed-build-name-test-depends-on-cache-order.md
+  - docs/tech_debt/resolved/2026-10-15-slug-totality-is-not-guarded-in-the-gate.md
+  - tests/test_bench.py
   - tests/test_browser_pins.py
+  - tests/test_process_group.py
+  - tests/test_selector.py
 findings:
   critical: 0
   warning: 0
-  info: 7
-  total: 7
+  info: 2
+  total: 2
 status: issues_found
 ---
 
@@ -19,65 +26,66 @@ status: issues_found
 
 **Reviewed:** 2026-10-20
 **Depth:** standard
-**Files Reviewed:** 3
+**Files Reviewed:** 10
 **Status:** issues_found
 
 ## Summary
 
-Incremental re-review of `git diff ebeffcf..HEAD` on the three files: the WR-04 fix (27628ef: the `_problems` climb stops at a node that is already an `ast.stmt`, plus `test_an_import_of_environ_is_reported_not_a_crash`) and the tech-debt resolve (27628ef, b9755ad). Ran `.venv/bin/python -m pytest tests/test_browser_pins.py --no-cov -q`: 11 passed. I probed `_problems` with `python -I` against hand-written sources.
+Incremental re-review of `git diff 130aa9e..HEAD` on the ten files: the Info-scope fix commits c22742e (IN-01), d7426e0 (IN-02), d91ce2f (IN-03), c8cf8b4 (IN-05), 782fe9f (IN-07) and 0fd2b98 (IN-06).
 
-Prior findings:
+Ran `.venv/bin/python -m pytest tests/test_browser_pins.py tests/test_process_group.py tests/test_selector.py tests/test_bench.py --no-cov -q`: **81 passed in 2.68s**. Also `ruff check` and `mypy --strict` on the four test files: clean. (`ruff format --check` flags two files; the project does not use `ruff format`, L16, so that is not a finding.) `git status` is clean.
 
-- **Prior WR-04 (module-level `from os import environ` raised `KeyError`): closed.** Reproduced the old failure shape against the new code and it now returns one problem: `from os import environ` -> `['x.py:1: `environ` in `from os import environ`']`. The aliased form (`as e`) and the in-function form also report one problem each. A marker constant on a later line does not allow the import (`from os import environ` then `x = "SPUR_"` -> still one problem), so the "an import is always reported" claim in the new test docstring holds. The two new test rows cover the module-level and in-function forms.
-- **No regression in the WR-01 cases.** The `if`-header, default-argument and `except`-header sources still report one problem each (the parametrized test passes). The legitimate shapes still pass: the `SPUR_` scrub in an `if` header, and `os.environ.get("PLAYWRIGHT_BROWSERS_PATH")` in a plain assignment. `match`/`case`, decorator, `with` header and class-base reads are all still reported. The new `isinstance(expression, ast.stmt)` test only fires on a node that is itself a statement, which for the watched names can only be an `ImportFrom`; every `Attribute`/`Name` read still climbs exactly as before.
-- **IN-07 behavior unchanged.** `def f(a=os.environ.get("S"), b="SPUR_"): pass` still returns `[]` (the climb ends under the `arguments` node, not at a statement). The fix neither widens nor narrows this; IN-07 stays open with its line range updated.
-- **Debt move follows CLAUDE.md.** `Status: resolved`; `Resolved in: 27628ef` is a sha (an improvement on the subject-line fields in IN-06); the file sits in `docs/tech_debt/resolved/`; the INDEX row is in the Resolved table and there is no leftover row in Active (checked with grep) and no stale file in `active/`. The sha was named in a follow-up commit (b9755ad) because a commit cannot hold its own sha; that is unavoidable and consistent with the rule. The resolved file's `Related files:` line still cites `tests/test_browser_pins.py:119-122`, which is the pre-fix range; cosmetic for a closed item and not worth a finding.
+Disposition of the prior findings:
 
-No new Critical or Warning findings. Info findings IN-01 to IN-07 are carried forward unchanged in substance; the only change is IN-07's line range, which shifted with the added comment lines.
+| Id | Status |
+|---|---|
+| IN-01 | Closed |
+| IN-02 | Closed |
+| IN-03 | Closed (the optional `isfinite` message change was declined; see below) |
+| IN-04 | **Open, skipped on purpose, carried forward** |
+| IN-05 | Closed |
+| IN-06 | Closed |
+| IN-07 | Closed for the `def` and `lambda` default-argument shapes it named; one adjacent lambda-body shape remains, filed as IN-08 |
+
+- **IN-01 closed.** The `killpg` now runs only while `proc.returncode is None`. `returncode` is set by the instrumented `wait`, which calls the real `Popen.wait`, so a reaped leader is never signalled again. A leader that was killed but not yet reaped still has `returncode None`; its pid is still held by the kernel as a zombie, so the `killpg` is safe there. The final `Popen.wait(proc, timeout=5)` returns at once when already reaped. Comment states the why.
+- **IN-02 closed.** The `poll` wrapper, its `setattr` and the word in the docstring are gone. `grep poll` over `tests/process_group.py` and `tests/test_process_group.py` finds only a `time.sleep` comment, so nothing asserts or produces a `poll` event.
+- **IN-03 closed.** `test_the_page_string_reads_a_number_as_the_page_does` carries the rows that pin the original (`-0.0`, `1.0`, `0.05`, `1e-6`, `1e16`, and the `1e21` and `1e-7` raises). The rows match `tests/test_browser.py:623-636` and the values match the copy's documented contract. The `nan`/`inf` message is still misleading, but no caller passes either, and the fix report says why it was not touched; I accept that.
+- **IN-05 closed.** `bench/trochoid_part.py` references `subprocess` in exactly three places: the import (27), `subprocess.run` (333) and `subprocess.CalledProcessError` (335). The `SimpleNamespace(run=no_head, CalledProcessError=subprocess.CalledProcessError)` exposes both. `machine_facts()` is not defined through that module's `subprocess` name, and the `grep` shows no other use. The stand-in is installed through `monkeypatch.setattr`, so it is undone at teardown, and both parametrized rows pass.
+- **IN-06 closed.** Each new sha resolves with `git show --name-status` to the commit that renames the item from `active/` to `resolved/`: `99e2b7d` (group floor), `a393e50` (launch failure message), `a7c5f78` (`stop_group` order), `c47bfc4` (failed-build name), `345ee08` (`slug()` totality). Each file's `Resolved in:` line and its INDEX row hold the same sha; no old subject is left in the five files (grep). The shas are branch commits, `git branch --contains` lists only this branch, so they will stop being ancestors of `main` after a squash merge. The active item `2026-10-05-resolved-in-shas-point-at-squashed-branch-commits.md` already tracks this (L22, L25); not re-filed.
+- **IN-07 closed for its named shapes; probe below.** The committed `tests/test_browser_pins.py` is coherent: it has the `ast.arguments` stop on line 125, the extended comment, the two new rows and the widened docstring; it is byte-identical between 782fe9f and HEAD, the tree is clean, the 13 tests in the file pass. The `git checkout --` slip left no trace.
+
+### IN-07 probe (`.venv/bin/python -I`, `_problems` and `_scan_problems`)
+
+Counts are problems reported; `0` means allowed.
+
+| Source | Result | Reading |
+|---|---|---|
+| `def f(a=os.environ.get("S"), b="SPUR_")` | 1 | sibling default no longer allows it |
+| `async def` and `*, a=..., b="SPUR_"` and `a=..., /, b="SPUR_"` | 1 each | the three parameter kinds are covered |
+| `lambda a=os.environ["S"], b="SPUR_": 0` | 1 | |
+| `def f(a: os.environ["S"] = "SPUR_")` | 1 | annotation sits under `ast.arg`, a separate unit |
+| `def f(a=os.environ.get("PLAYWRIGHT_BROWSERS_PATH"), b=1)` | 0 | a default that holds its own marker is still allowed |
+| `def f(*, a=any(k.startswith("SPUR_") for k in os.environ))` | 0 | the real scrub shape in a default is still allowed |
+| `def f(a: os.environ["SPUR_"] = 1)` | 0 | own-marker annotation allowed |
+| `from os import environ` / `def f(a=environ)` | 2 | import and bare-name default both reported, no crash |
+| `def f(a=os.environ.get("SPUR_X"))` | 1 | not a bypass: the rule is equality with a whole marker, as before |
+| `_scan_problems()` over the real scan set (`browser_session.py`, `capture_requests.py`, `process_group.py`, `test_browser.py`) | `[]` | no false positive on the shipped code |
+
+The `arguments` stop cannot open a new bypass: it only ends the climb earlier, so the searched subtree can only shrink. It cannot add a false positive on a legitimate shape either: a default holding its own marker has the marker inside the same default expression and is still allowed, and the two real reads (`browser_session.py:128` and `:171`) are not defaults.
 
 ## Info
 
-### IN-01: `_sleeper` sends `killpg` to a pid its own test already reaped
-
-**File:** `tests/test_process_group.py:38-43`
-**Issue:** After `stop_group` has called `proc.wait`, the fixture's `finally` still runs `os.killpg(proc.pid, SIGKILL)`. `stop_group`'s docstring says a reaped leader's pid can be reused and a group signal could then reach an unrelated group. The same hazard is reintroduced here, in test code. The window is tiny, but the guard is one line. (Carried forward; file not in this diff.)
-**Fix:** `if proc.returncode is None:` before the `killpg`, keeping the final `subprocess.Popen.wait(proc, timeout=5)`.
-
-### IN-02: `_instrument` records `poll` events that `stop_group` never produces, and test 1 asserts only `events[0]`
-
-**File:** `tests/test_process_group.py:46-75, 86-88`
-**Issue:** `stop_group` calls `proc.wait` but never `proc.poll`, so the `poll` recorder is dead. The first test's name promises "before `ps` is read or the leader reaped", and it checks only `events[0] == "signal SIGTERM"`. That is sufficient for the stated order, but the `poll`/`wait` instrumentation adds nothing a reader can rely on. (Carried forward; file not in this diff.)
-**Fix:** Drop the `poll` wrapper, or assert the positions that matter, e.g. `events.index("wait") > events.index("signal SIGTERM")`.
-
-### IN-03: `_page_string` in `test_selector.py` is a second copy of `_js_number`, and the copy's new guard and `-0` rule are untested
-
-**File:** `tests/test_selector.py:226-239`
-**Issue:** Both copies gained the same range assert and `+ 0`. The browser module's copy is covered by `test_the_oracle_reads_a_link_as_the_page_does` (the `-0.0` row, the `1e21` and `1e-7` raises). The selector copy has no test, so the two can drift apart silently. The assert message also misreports non-finite input: `nan` or `inf` fails the range test and gets "JavaScript writes this with an exponent". (Carried forward unchanged; file not in this diff.)
-**Fix:** One row each for `-0.0` and an out-of-range value against `_page_string`. Optionally replace the `assert` with `math.isfinite(number)` first, so the message is right.
-
-### IN-04: Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`
+### IN-04: Nothing pins that `_build` passes its own `rm` to `_chamfer_tips` (carried forward, skipped on purpose)
 
 **File:** `tests/test_model.py:899, 926, 976` (with `src/spur/model.py:640, 783`)
-**Issue:** The point of 19-REVIEW IN-01 is that the chamfer limit reads the curve the part was cut from and does not solve it again. The updated monkeypatches (`lambda solid, _p, _pr, _rm: solid`, `lambda _p, _rm=None: ...`) accept either calling shape, so reverting `_chamfer_tips` to `tip_chamfer_effective(p)` would leave every test green. The change is correct today, but unguarded. (Carried forward unchanged; file not in this diff.)
-**Fix:** One test that patches `spur.model.root_mode` with a counting wrapper and asserts a single call per `_build`, or patches `tip_chamfer_effective` with `lambda _p, rm: seen.append(rm)` and asserts `seen[0] is not None`.
+**Issue:** The point of 19-REVIEW IN-01 is that the chamfer limit reads the curve the part was cut from and does not solve it again. The updated monkeypatches (`lambda solid, _p, _pr, _rm: solid`, `lambda _p, _rm=None: ...`) accept either calling shape, so reverting `_chamfer_tips` to `tip_chamfer_effective(p)` would leave every test green. The change is correct today but unguarded. The fixer skipped it because both suggested tests assert an internal call, which `docs/CODING_VALUES.md` (Testing) bans, and because the revert changes cost (a second root solve) and not any observable result. That reasoning is sound for the two suggested fixes, so this stays an Info item and not something to force; it is not resolved in substance, so it is carried forward under the same id. (File not in this diff.)
+**Fix:** Either record it as a `nice` item in `docs/tech_debt/active/` with an INDEX row, so the skip is a decision on file and not only a line in a fix report, or add a behavior-level check: measure the `_build` time or the number of root solves through a public counter if one exists. Failing both, close it as accepted in the phase disposition.
 
-### IN-05: `test_the_host_state_reads_unknown_where_git_cannot_name_head` patches the process-wide `subprocess.run`
+### IN-08: A lambda's parameter-list marker still allows a read in the lambda's body
 
-**File:** `tests/test_bench.py:1084`
-**Issue:** `monkeypatch.setattr("bench.trochoid_part.subprocess.run", no_head)` resolves through the `subprocess` module object, so it replaces `subprocess.run` for every caller while the test runs, not only the bench module. It is safe now because `_host_state` calls `run` only for `git`, but any later `subprocess.run` in `_host_state` (or a fixture) would get the failure for the wrong reason. (Carried forward unchanged. The `test_ps_is_run_with_a_timeout` test in `tests/test_process_group.py:127` does the same and notes it in a comment; it is safe there because the patched window holds one call.)
-**Fix:** Patch `bench.trochoid_part.subprocess` with a `types.SimpleNamespace(run=no_head, CalledProcessError=subprocess.CalledProcessError)`, or accept the global patch and say so in a comment.
-
-### IN-06: The `Resolved in:` fields of the five resolved debt items hold commit subjects, not shas
-
-**File:** `docs/tech_debt/resolved/2026-10-10-group-floor-of-3-is-not-two-pool-workers.md:5` and the four sibling files
-**Issue:** `CLAUDE.md` says to "add the commit sha" on resolve. The INDEX rows say "see the file's own `Resolved in:` field", which then gives a subject line. A subject is not stable if the commits are rebased or squashed, and it cannot be used with `git show`. (Some older resolved rows in the INDEX already use subjects, so this follows precedent. It is still weaker than the rule. The newest resolved item, the environ pin one, does use a sha, so the five older ones are now the outliers.) (Carried forward unchanged.)
-**Fix:** After the fix commits land, replace each subject with the short sha in a follow-up `docs` commit.
-
-### IN-07: The climb stops at `arguments`, so one default argument's marker allows another default's `environ` read
-
-**File:** `tests/test_browser_pins.py:119-129`
-**Issue:** The WR-01 fix ends the climb under the statement, but a default argument's parent is the `ast.arguments` node, which holds every default, annotation and keyword-only default of the function. The "expression" searched for a marker is then the whole parameter list. Reproduced again on the current code: `def f(a=os.environ.get("S"), b="SPUR_"): pass` returns `[]`, as do the `lambda a=os.environ["S"], b="SPUR_": 0` and annotation forms. The same width exists for any sibling inside one expression (`{"a": os.environ["S"], "b": "SPUR_"}`, `f(os.environ["S"], "SPUR_")`); that one is inherent to a marker-in-expression rule and the module docstring already calls the pin a tripwire. The `arguments` case is different only in that the two things are not one expression to a reader. It is unlikely to occur by accident.
-**Fix:** Optional. Also stop the climb when the parent is `ast.arguments`, so the unit is the single default expression (`expression` is then the default value or annotation itself). Or say in the module docstring that the unit is the statement's top-level child expression, which may span a whole parameter list.
+**File:** `tests/test_browser_pins.py:124-131`
+**Issue:** Found while probing the IN-07 fix. The `arguments` stop ends the climb under a lambda's parameter list, but a read in the lambda's body does not climb through `arguments`: the body is a sibling of it, under the `Lambda` node. The climb therefore ends at the whole `Lambda` expression, and `ast.walk` of it takes in the parameter defaults. Reproduced: `g = lambda a="SPUR_": os.environ["S"]` and `def f(a=lambda b="SPUR_": os.environ["S"]): pass` both return `[]`. So a marker in a lambda's defaults allows a read in its body, while a marker in a `def`'s defaults does not allow a read in its body (the `def` is a statement and the body statements are their own units). This is the same class as the dict/call sibling case the module docstring already accepts as inherent to a marker-in-expression rule, and it is not newly opened by 782fe9f (the old code allowed it too); it only means the IN-07 comment's claim, "one default's marker must not allow another default's read", is accurate but the wider "a header marker must not allow a body read" does not hold for `lambda`. No lambda in the scan set reads `environ`, and it takes a deliberate construction.
+**Fix:** Optional. Add `ast.Lambda` to the stop set, so a lambda body's climb ends at the body expression: `while not (isinstance(expression, ast.stmt) or isinstance(parents[expression], clause) or isinstance(parents[expression], ast.Lambda) and expression is not parents[expression].args)`. That is more machinery than the gap earns; the simpler option is to leave the code and add a sentence to the module docstring that a lambda is one expression, parameter list included.
 
 ---
 
