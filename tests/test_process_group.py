@@ -38,8 +38,11 @@ def _sleeper() -> Iterator[subprocess.Popen[bytes]]:
     try:
         yield proc
     finally:
-        with contextlib.suppress(ProcessLookupError, PermissionError):
-            os.killpg(proc.pid, signal.SIGKILL)
+        # A leader `stop_group` already reaped has a pid the kernel may hand to someone else,
+        # and `killpg` on it could reach an unrelated group: the hazard `stop_group` avoids.
+        if proc.returncode is None:
+            with contextlib.suppress(ProcessLookupError, PermissionError):
+                os.killpg(proc.pid, signal.SIGKILL)
         subprocess.Popen.wait(proc, timeout=5)
 
 
