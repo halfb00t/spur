@@ -13,7 +13,9 @@ What each turns red:
 
 - a skip spelling (`importorskip`, `skip`, `skipif`, `xfail`, `pytestmark`, `getenv`), or an
   environment read whose expression holds neither `SPUR_` nor `PLAYWRIGHT_BROWSERS_PATH`,
-  appearing anywhere in the browser test's modules -- each is a way for a green gate to lie;
+  appearing anywhere in the browser test's modules (`_scan_set`: the `*browser*` files,
+  `capture_requests.py` and the teardown in `process_group.py`) -- each is a way for a green
+  gate to lie;
   `launch` no longer failing with the literal install command, and the `make` command that
   reinstalls with the stamp present, when the shell is missing;
 - `playwright` no longer pinned with `==` in `[dev]`, or appearing in the runtime closure
@@ -30,6 +32,7 @@ from __future__ import annotations
 import ast
 import importlib.util
 import re
+import sys
 import tomllib
 from pathlib import Path
 
@@ -52,11 +55,21 @@ WATCHED = SKIP_SPELLINGS | {"environ"}
 
 
 def _scan_set() -> list[Path]:
-    """The browser test's modules: every `tests/*browser*.py` but this file, and the script
-    that regenerates the golden pin, which launches the same browser."""
+    """The browser test's modules: every `tests/*browser*.py` but this file, the script that
+    regenerates the golden pin, which launches the same browser, and the server teardown
+    `stop_group`, which the browser test's fixture runs and no `*browser*` glob matches."""
     found = {p for p in REPO_ROOT.glob("tests/*browser*.py") if p.name != Path(__file__).name}
     found.add(REPO_ROOT / "tests" / "capture_requests.py")
+    found.add(REPO_ROOT / "tests" / "process_group.py")
     return sorted(found)
+
+
+def _scan_problems() -> list[str]:
+    return [
+        problem
+        for path in _scan_set()
+        for problem in _problems(path.name, path.read_text(encoding="utf-8"))
+    ]
 
 
 def _parse(path: Path) -> ast.Module:
@@ -154,10 +167,32 @@ def test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed() -> 
     assert _problems("d.py", scrub) == []
 
 
+def test_a_skip_spelling_in_the_server_teardown_module_is_caught(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """27-REVIEW WR-02: `stop_group` moved out of `browser_session.py` into
+    `tests/process_group.py`, which no `*browser*` glob matches. The teardown runs in the
+    browser test's fixture, so a skip there turns that test into a pass without it running."""
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    for name in ("browser_session.py", "capture_requests.py"):
+        (tests / name).write_text("", encoding="utf-8")
+    (tests / "process_group.py").write_text(
+        'import pytest\n\n\ndef stop_group() -> None:\n    pytest.skip("no ps")\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(sys.modules[__name__], "REPO_ROOT", tmp_path)
+
+    problems = _scan_problems()
+
+    assert len(problems) == 1, problems
+    assert problems[0].startswith("process_group.py:5:"), problems
+
+
 def test_the_browser_test_has_no_path_that_passes_without_the_browser() -> None:
     paths = _scan_set()
     names = {p.name for p in paths}
-    assert "browser_session.py" in names, names
+    assert {"browser_session.py", "process_group.py"} <= names, names
     defining = [
         p.name
         for p in paths
@@ -168,11 +203,7 @@ def test_the_browser_test_has_no_path_that_passes_without_the_browser() -> None:
     ]
     assert len(defining) == 1, f"{TEST_NAME} is defined in {defining}, expected exactly one module"
 
-    problems = [
-        problem
-        for path in paths
-        for problem in _problems(path.name, path.read_text(encoding="utf-8"))
-    ]
+    problems = _scan_problems()
     assert not problems, "a path that passes without the browser (D-02): " + "; ".join(problems)
 
     launch = next(
