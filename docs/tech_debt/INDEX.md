@@ -31,6 +31,7 @@ Severity (grep-able `Severity:` field):
 | nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
 | nice | [Phase 19 code review: the root_fillet label finding is still deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | Phase 28 (REQ-root-fillet-label-follows-root), or the `DIMS` table in `src/spur/static/app.js` is next touched |
 | nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched, or Phase 28's info-finding triage |
+| nice | [Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`](active/2026-10-20-nothing-pins-that-build-passes-its-own-rm-to-chamfer-tips.md) | `_build` or `_chamfer_tips` is next touched, or a public per-build cost counter exists |
 
 ## Resolved
 
