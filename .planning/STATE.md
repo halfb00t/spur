@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 27
 current_phase_name: Ledger Tests and Harness
 status: executing
-stopped_at: Completed 27-03-PLAN.md
-last_updated: "2026-10-20T13:39:52.132Z"
+stopped_at: Completed 27-04-PLAN.md
+last_updated: "2026-10-20T13:48:48.082Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 27 execution started
-state_head: a7c5f78a0bef27c849e3a2e6b585576cb225aa9a
+state_head: 9c62faca7a39da35f16b05ce0d9883f2f1d06216
 progress:
   total_phases: 4
   completed_phases: 6
   total_plans: 13
-  completed_plans: 10
-  percent: 77
+  completed_plans: 11
+  percent: 85
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 27 (Ledger Tests and Harness) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 27 execution started
 
-Progress: [████████░░] 77% (1 of 4 phases)
+Progress: [█████████░] 85% (1 of 4 phases)
 
 ## Performance Metrics
 
@@ -255,6 +255,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 27 P01 | 25 min | 3 tasks | 8 files |
 | Phase 27 P02 | 9 min | 3 tasks | 15 files |
 | Phase 27 P03 | 6 min | 2 tasks | 9 files |
+| Phase 27 P04 | 7 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -487,6 +488,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 27]: 27-02: tests/test_cli.py keeps its own _BORE_OFF copy; 22 IN-01 covered test_trochoid.py and test_api.py only, the rest noted in 27-06's triage table
 - [Phase 27]: 27-03: the leader-only red that fires on the real server is the 21-01 break (os.kill(pgid, SIGKILL)); the plan's os.kill(pgid, sig) passes because uvicorn shuts its pool workers down on SIGTERM — Seen: run 1 of investigation/27-03-red-leader-only.log read 2 passed; run 2 read still has live pids after SIGTERM (10 s) and SIGKILL (5 s)
 - [Phase 27]: 27-03: stop_group signals the group before any ps read or proc.wait; a failed or absent ps skips the grace and fails as survivors unknown after SIGTERM and SIGKILL — T-21-02 and the reused-pid risk (T-27-11); proved by tests/test_process_group.py, 0.04 s, red against the old order (3 failed)
+- [Phase 27]: 27-04: D-03 landed as a behaviour-free src/ change (_chamfer_tips takes the build's RootMode); fixture diff vs v0.5 empty, src/ diff limited to model.py
+- [Phase 27]: 27-04: IN-02 near-copy replacement skipped (D-07, recorded by 27-06); Phase 19 debt item stays active for the Phase 28 root_fillet label only
 
 ### Pending Todos
 
@@ -778,8 +781,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-20T13:39:52.085Z
-Stopped at: Completed 27-03-PLAN.md
+Last session: 2026-10-20T13:48:48.039Z
+Stopped at: Completed 27-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
