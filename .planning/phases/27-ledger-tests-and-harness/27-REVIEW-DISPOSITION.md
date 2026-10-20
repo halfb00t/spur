@@ -3,10 +3,6 @@ phase: 27
 review: 27-REVIEW.md
 titles: json
 findings:
-  - id: WR-04
-    severity: warning
-    disposition: fixed
-    title: "The WR-01 fix makes `_problems` raise `KeyError` on a module-level `from os import environ`"
   - id: IN-01
     severity: info
     disposition: open
@@ -35,6 +31,10 @@ findings:
     severity: info
     disposition: open
     title: "The climb stops at `arguments`, so one default argument's marker allows another default's `environ` read"
+  - id: WR-04
+    severity: warning
+    disposition: fixed
+    title: "The WR-01 fix makes `_problems` raise `KeyError` on a module-level `from os import environ`"
   - id: WR-01
     severity: warning
     disposition: fixed
@@ -49,14 +49,13 @@ findings:
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
 open: 7
 total: 11
-recorded: 2026-10-20T16:29:40.114Z
+recorded: 2026-10-20T16:38:53.562Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-04 | warning | fixed | 27-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
@@ -64,6 +63,7 @@ recorded: 2026-10-20T16:29:40.114Z
 | IN-05 | info | open | - |
 | IN-06 | info | open | - |
 | IN-07 | info | open | - |
+| WR-04 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-01 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-03 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
