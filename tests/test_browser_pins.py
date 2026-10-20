@@ -5,10 +5,14 @@ path that passes, or is skipped, without it. These tests read the browser test's
 a syntax tree, so they import neither playwright nor the CAD kernel and cost milliseconds
 in the commit-time slice, where the browser test itself never runs (D-01).
 
+These pins are a tripwire, not a proof: they see the listed spellings and an `environ` read
+whose own statement names neither marker. `getattr(pytest, "skip")`, an empty `parametrize` or
+a conditional `return` before the first step are not seen (21-REVIEW IN-03).
+
 What each turns red:
 
 - a skip spelling (`importorskip`, `skip`, `skipif`, `xfail`, `pytestmark`, `getenv`), or an
-  environment read other than the `SPUR_` scrub and the `PLAYWRIGHT_BROWSERS_PATH` message,
+  environment read whose statement holds neither `SPUR_` nor `PLAYWRIGHT_BROWSERS_PATH`,
   appearing anywhere in the browser test's modules -- each is a way for a green gate to lie;
   `launch` no longer failing with the literal install command, and the `make` command that
   reinstalls with the stamp present, when the shell is missing;
@@ -71,6 +75,50 @@ def _pyproject_lists() -> tuple[list[str], list[str]]:
     return runtime, dev
 
 
+def _problems(name: str, source: str) -> list[str]:
+    """Each skip spelling, or `environ` read outside the allowance, in one module's source."""
+    lines = source.splitlines()
+    tree = ast.parse(source, filename=name)
+    parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+    problems: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Attribute | ast.Name | ast.ImportFrom):
+            continue
+        if isinstance(node, ast.Attribute):
+            spoken = [node.attr]
+        elif isinstance(node, ast.Name):
+            spoken = [node.id]
+        else:
+            spoken = [a.name for a in node.names]
+        spelled = next((s for s in spoken if s in WATCHED), "")
+        if not spelled:
+            continue
+        line = lines[node.lineno - 1]
+        if spelled == "environ":
+            # Equality with a whole string constant in the read's own statement: the `SPUR_`
+            # scrub's `k.startswith("SPUR_")` and the launch message's `.get("PLAYWRIGHT_...")`
+            # both carry a marker that way, and a marker in a comment or a longer word does not.
+            statement: ast.AST = node
+            while not isinstance(statement, ast.stmt):
+                statement = parents[statement]
+            if any(
+                isinstance(c, ast.Constant) and c.value in ALLOWED_ENVIRON_MARKERS
+                for c in ast.walk(statement)
+            ):
+                continue
+        problems.append(f"{name}:{node.lineno}: `{spelled}` in `{line.strip()}`")
+    return problems
+
+
+def test_an_environ_read_is_allowed_by_its_statement_not_its_line() -> None:
+    """21-REVIEW IN-03: the allowance is a marker constant in the read's own statement. A
+    marker in a comment on the line must not pass, and a read wrapped over two lines, its
+    marker on the second, must."""
+    assert len(_problems("a.py", 'import os\nos.environ["X"]  # SPUR_\n')) == 1
+    wrapped = 'import os\npath = os.environ.get(\n    "PLAYWRIGHT_BROWSERS_PATH")\n'
+    assert _problems("b.py", wrapped) == []
+
+
 def test_the_browser_test_has_no_path_that_passes_without_the_browser() -> None:
     paths = _scan_set()
     names = {p.name for p in paths}
@@ -85,25 +133,11 @@ def test_the_browser_test_has_no_path_that_passes_without_the_browser() -> None:
     ]
     assert len(defining) == 1, f"{TEST_NAME} is defined in {defining}, expected exactly one module"
 
-    problems: list[str] = []
-    for path in paths:
-        lines = path.read_text(encoding="utf-8").splitlines()
-        for node in ast.walk(_parse(path)):
-            if not isinstance(node, ast.Attribute | ast.Name | ast.ImportFrom):
-                continue
-            if isinstance(node, ast.Attribute):
-                spoken = [node.attr]
-            elif isinstance(node, ast.Name):
-                spoken = [node.id]
-            else:
-                spoken = [a.name for a in node.names]
-            spelled = next((s for s in spoken if s in WATCHED), "")
-            if not spelled:
-                continue
-            line = lines[node.lineno - 1]
-            if spelled == "environ" and any(m in line for m in ALLOWED_ENVIRON_MARKERS):
-                continue
-            problems.append(f"{path.name}:{node.lineno}: `{spelled}` in `{line.strip()}`")
+    problems = [
+        problem
+        for path in paths
+        for problem in _problems(path.name, path.read_text(encoding="utf-8"))
+    ]
     assert not problems, "a path that passes without the browser (D-02): " + "; ".join(problems)
 
     launch = next(
