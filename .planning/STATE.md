@@ -2,40 +2,40 @@
 gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
-current_phase: 26
-current_phase_name: Gate Fails With a Cause
-status: verifying
-stopped_at: Completed 26-07-PLAN.md
-last_updated: "2026-10-15T14:38:39.122Z"
-last_activity: 2026-10-15
-last_activity_desc: Phase 26 execution started
-state_head: 577b494cf5129bb6138259c2b5114fcceaf5908c
+current_phase: 27
+current_phase_name: Ledger Tests and Harness
+status: planning
+stopped_at: Phase 26 complete, ready to plan Phase 27
+last_updated: "2026-10-20T10:40:43.496Z"
+last_activity: 2026-10-20
+last_activity_desc: Phase 26 complete, transitioned to Phase 27
+state_head: a4d55a65728b06c1c163c8fbc49126ea8a2ae057
 progress:
   total_phases: 4
-  completed_phases: 5
+  completed_phases: 1
   total_plans: 7
   completed_plans: 7
-  percent: 100
+  percent: 25
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-15)
+See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 26 — Gate Fails With a Cause
+**Current focus:** Phase 27 — Ledger Tests and Harness
 
 ## Current Position
 
-Phase: 26 (Gate Fails With a Cause) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
-Last activity: 2026-10-15 — Phase 26 execution started
+Phase: 27 — Ledger Tests and Harness
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-20 — Phase 26 complete, transitioned to Phase 27
 
-Progress: [██████████] 100% (0 of 4 phases)
+Progress: [██░░░░░░░░] 25% (1 of 4 phases)
 
 ## Performance Metrics
 
@@ -76,6 +76,7 @@ Progress: [██████████] 100% (0 of 4 phases)
 | 23 | 4 | - | - |
 | 24 | 4 | - | - |
 | 25 | 5 | - | - |
+| 26 | 7 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -477,6 +478,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 26]: 26-06: pytest-cov and pytest-xdist added to the test-image pip install so the forced-GC test runs in the image (human option B, deviation from D-11 literal text)
 - [Phase 26]: 26-06: test-image ignores six files whole, not per-test --deselect (stale ids fail silently); drops 47 + 41 passing tests from the image suite
 - [Phase 26]: D-07 applied on CI run 38750065494: S_ci 83.55 s, so faulthandler_timeout raised 120 -> 170
+- [Phase 26]: UAT closed on the post-merge `main` read (run 38858407163, the twin step's test PASSED); the 13 commits PR #41 left off `main` landed in PR #42 with the `pr_land` pre-merge local-tip refusal
 
 ### Pending Todos
 
@@ -484,10 +486,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 begins 2026-10-19 and runs to 2026-11-19: Phase 26's
-  throwaway-PR pre-classification must have run its three jobs before it reaches the repo (the human pushes the
-  PR). Until Phase 26 lands, `main` CI is red on 2 of the last 8 runs at the browser step "twin selectors"
-  (`docs/tech_debt/active/2026-10-15-twin-selectors-step-reds-main.md`, `must`).
+- ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 runs 2026-10-19 to 2026-11-19; Phase 26's pre-classification
+  ran green (26-02, run 38724011970), and the Ubuntu 26 item stays active for Phase 29.
+- ✓ [Phase 26] The twin-selectors step read green on the first post-merge `main` run (38858407163 at `1981d93`). One
+  green run is consistent with the fix, not conclusive (2 reds in 8 before it); later `main` runs add to it.
+- ✓ [Phase 26] PR #41 landed its pushed head `6c0e57b` without 13 unpushed commits (`faf376b` among them); they
+  landed in PR #42 (`a4d55a6`), and `make pr.land` now refuses a local head branch the PR head does not carry.
 - ⚠️ [Phase 25] The 300 s bar rests on two non-decisive readings under load 4–7 (L43 says so). Review WR-03: Phase 24 recorded green gate runs of 296.91 s, 294.40 s and 336.15 s on this host under higher load, not cited beside the bar; the `.pre-commit-config.yaml` comment says the 300 s was "read on 2026-10-14" when it was set by the human. WR-01: no test pins the `requirements.txt` stamp dependency or the `-c requirements.txt` line. WR-02: the probe used an absolute `PIP_CONSTRAINT`, not the shipped relative `-c`. All open in `25-REVIEW-DISPOSITION.md`.
 - ℹ️ [Phase 25] The idle-host method never got an idle host: seven A1 waits gave up (lowest 1-min load 1.60 with other agent sessions open). A decisive re-read needs the other sessions closed or a new rule; the rule text stands for a future session.
 - ℹ️ [Phase 25] The resource-tracker flake did not fire in this phase's four green `make verify` runs (A1, B1, probe, 25-05); the `must` debt's decision is still owed from Phases 23 and 24.
@@ -766,10 +770,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15T14:38:39.100Z
-Stopped at: Completed 26-07-PLAN.md
+Last session: 2026-10-20T10:45:00.000Z
+Stopped at: Phase 26 complete, ready to plan Phase 27
 Resume file: None
 
 ## Operator Next Steps
 
-- Approve the v0.6 roadmap (the orchestrator commits it), then /gsd-discuss-phase 26 (the `make test-image` mount-or-exclude decision waits on the first run's red set) or /gsd-plan-phase 26
+- /gsd-discuss-phase 27, or /gsd-plan-phase 27 to plan directly

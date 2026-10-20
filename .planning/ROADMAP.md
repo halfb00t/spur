@@ -138,9 +138,9 @@ flakes unexplained — with no new `GearParams` field, the 44-record fixture and
 request pin byte-identical to the `v0.5` tag, and exactly one visible change: a link carrying
 a value its form control cannot hold is refused instead of silently building the default part.
 
-- [ ] **Phase 26: Gate Fails With a Cause** - The false reds are fixed from reproductions or
+- [x] **Phase 26: Gate Fails With a Cause** - The false reds are fixed from reproductions or
       re-deferred with the measurement, a stalled test names itself, the image recipe tests
-      what it claims, and Ubuntu 26 is pre-classified before the rollout reaches the repo
+      what it claims, and Ubuntu 26 is pre-classified before the rollout reaches the repo (completed 2026-10-20)
 - [ ] **Phase 27: Ledger Tests and Harness** - Slug totality guarded in the commit slice, the
       failed-build name test independent of cache order, `stop_group` signalling before it
       reads `ps`, and the harness's own records and launch message made true
@@ -244,7 +244,7 @@ retired in the commit that fixes it. **Phase close**: `make verify` result line 
 **Research flag**: No research phase. Three first measurements, each the first task of its
 item: the `make test-image` red set (never run in research), the CI `--durations` that sets the
 timeout, and the flake reproduction re-run on this host.
-**Plans**: 7/7 plans executed
+**Plans**: 7/7 plans complete
 
 Plans:
 **Wave 1**
@@ -478,7 +478,7 @@ empty.
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
-| 26. Gate Fails With a Cause | v0.6 | 7/7 | In Progress | - |
+| 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
 | 27. Ledger Tests and Harness | v0.6 | 0/? | Not started | - |
 | 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |

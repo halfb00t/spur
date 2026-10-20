@@ -626,11 +626,21 @@ pytest — L13). Full list with sources and acceptance evidence:
   makes no Pi 5 claim; `.ai_skills/reverify-phase/SKILL.md` with `docs/HOW_TO_DEVELOP.md`
   §6 pointing at it; the three ideas retired into `docs/ideas/retired/`;
   REQ-venv-constraint-probe, REQ-pi5-claim-softened, REQ-reverify-recipe)
+- ✓ The gate passes or fails with a cause — Phase 26 (the `resource_tracker` flake located
+  from a forced-GC reproduction and fixed in `tests/test_pool.py`, 0 of 10 in each natural
+  arm, consistent not conclusive; a stalled test names itself through `-v --durations=25`
+  and `faulthandler_timeout = 170`, sized from CI run 38750065494's slowest phase 83.55 s;
+  the twin-selectors race traced to the `/api/info` response and fixed, read green on the
+  first post-merge `main` run 38858407163; the hook pin no longer reads the caller's
+  `PYTEST_ARGS`; `make test-image` mounts what its tests read; Ubuntu 26.04 pre-classified
+  green on run 38724011970; REQ-hook-pin-ignores-caller-args, REQ-twin-selectors-race-fixed,
+  REQ-tracker-flake-fixed-from-repro, REQ-hang-leaves-evidence,
+  REQ-test-image-runs-what-it-claims, REQ-ubuntu26-preclassified; UAT 1/1. PR #41 landed
+  its pushed head without 13 local commits; they landed in PR #42, and `make pr.land` now
+  refuses a local head branch the PR head does not carry)
 
 ### Active
 
-- [ ] The gate passes or fails with a cause: the `resource_tracker` flake fixed or
-  re-deferred with its measurement; the next hang leaves per-test evidence (v0.6)
 - [ ] The Phase 22 and browser-harness `must` debts retired (v0.6)
 - [ ] A link with an invalid enum value is refused visibly, not built as the default (v0.6)
 - [ ] CI is green, or its failure classified, on Ubuntu 26 `ubuntu-latest` (v0.6)
@@ -895,4 +905,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-15 after starting milestone v0.6 Clean Ledger.*
+*Last updated: 2026-10-20 after Phase 26.*
