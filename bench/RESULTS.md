@@ -4778,6 +4778,8 @@ is a staging module that nothing in `make verify` collects yet (PD-01).
 | Slowest build-bound step | 2.53 s (`first build drawn`), under PD-04's 15 s, so `BUILD_WAIT_MS` stays 45,000 ms |
 | `git status --porcelain --ignored` after a green run | nothing outside `.venv/` and the ignores already in place (`.coverage`, caches, `__pycache__`, `web/node_modules`); the test writes no file (PD-10) |
 
+**Correction (2026-10-20, 27-06), row "Group members seen before the kill".** The row reads "3 (uvicorn and two pool workers)". `ps -ww -A -o pid=,pgid=,stat=,command=` on the same harness, read on this Mac on 2026-10-20 (27-01, `### The server group, listed (27-01)`), lists uvicorn, `multiprocessing.resource_tracker` and one or two spawned workers: 4, 3 and 4 members in three runs. The pool is two single-worker executors routed by `hash(p) % workers` (`src/spur/pool.py`), each starting its worker at its first build, and the hash is salted per process, so 3 is every build on one slot and 4 is both. Before the first build the group read 2: uvicorn and the tracker, not uvicorn and a worker. The count 3 above stands as recorded; only its naming is corrected. `MIN_GROUP_MEMBERS = 3` is unchanged: three live members before the kill and none after is still the non-vacuity check.
+
 `PNG_RATIO_BAR` by PD-03, written in the plan before this reading: the lower of the hosts' drawn/blank ratios
 divided by 2, rounded down to one decimal place. Only macOS is read here: 9.93 / 2 = 4.96, rounded down to
 **4.9**, which is not under 2.0, so it is asserted. 21-02 re-sets it from the lower of the macOS and
@@ -4901,6 +4903,8 @@ an ancestor of the phase branch. The whole log is kept at
 | `href after showModel` step | 0.25 s |
 | Server process group members before the kill | 3 (uvicorn and two pool workers), read by `ps -A -o pgid=,stat=,pid=` on the runner's procps. The post-kill zero was read by the same reader: the teardown that asserts it ran and the test is in the passed set. The runner's log does not print the group-gone time |
 | Same job on `main`, for scale (same workflow, `pytest -n 4`, no browser) | 8 min 54 s job, `1220 passed in 487.39s` (run 38040124903, 2026-10-10); 16 min 04 s, `894.96s` (37951628866, 2026-10-09); 16 min 35 s, `924.02s` (37930095920, 2026-10-09) |
+
+**Correction (2026-10-20, 27-06), row "Server process group members before the kill".** The row reads "3 (uvicorn and two pool workers)". That reading counted rows with `ps -A -o pgid=,stat=,pid=`, which prints no command, so which three members it counted was never observed. `ps -ww -A -o pid=,pgid=,stat=,command=` on a later `ubuntu-latest` run (27-01, run 39428298442, `Image: ubuntu-24.04`, version 20261012.334.1, 2026-10-20) lists uvicorn, the resource tracker and two spawned workers (4 members). The same mechanism as above gives 3 members when every build lands on one executor slot: uvicorn, the tracker and one worker, not two workers. The count 3 above stands as recorded; only its naming is corrected. `MIN_GROUP_MEMBERS = 3` is unchanged: three live members before the kill and none after is still the non-vacuity check.
 
 The three `main` runs differ from each other by up to 437 s of pytest wall with no change to the suite, which is
 more than the spike run differs from the two slower of them. The spike run's own 906.71 s therefore sits inside

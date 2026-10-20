@@ -52,8 +52,18 @@ STL_ROUTE = "**/api/model.stl*"
 # Each is under 15 s, so PD-04 still leaves 45 s. Not read on ubuntu-latest here.
 BUILD_WAIT_MS = 45_000
 
-# uvicorn plus the shipped pool of 2 workers (D-11, 21-RESEARCH Pattern 1). Seen before the
-# kill so that the zero seen after it is a real zero and not a reader that matches nothing.
+# The kill's non-vacuity check: the group is counted before the kill so that the zero counted
+# after it is a real zero and not a reader that matches nothing. After the browser test's
+# builds `ps -ww` lists uvicorn, `multiprocessing.resource_tracker` and one or two spawned
+# workers (27-01), not "uvicorn plus the pool's 2 workers": the pool is two single-worker
+# executors routed by `hash(p) % workers` (src/spur/pool.py, D-07 affinity), each starting its
+# worker at its first build, and `hash(GearParams())` is salted per process. So 3 is every
+# build on one executor slot and 4 is both slots; a run reading exactly 3 and one reading 4
+# both clear `>=`, and neither shows both workers ran. macOS (Apple M5 Max, macOS 27.0.1,
+# 1-minute load 4.7-7.7, 2026-10-20, 27-01) read 4, 3 and 4 over three runs; ubuntu-latest
+# (run 39428298442, `Image: ubuntu-24.04` version 20261012.334.1, 2026-10-20, 27-01) read 4
+# in its one run, the same three commands. A forced second build would show both workers and
+# was rejected (D-01); members are not matched by command either, the floor is a count (D-01).
 MIN_GROUP_MEMBERS = 3
 
 # The lower of the hosts' drawn/blank PNG byte ratios divided by 2, rounded down to one
@@ -104,10 +114,10 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
     variable, so the pool is the shipped two workers and the shipped timeouts (D-11).
 
     `floor_applies` is asked at teardown whether the group must still show its
-    `MIN_GROUP_MEMBERS`. Pool workers start on first use: the group read 2 members after
-    /api/health reported a pool and 3 after one preview build (macOS, 2026-10-10). A test
-    that failed before it built anything must not add a second, misleading error here, so
-    the caller says when the floor is meaningful.
+    `MIN_GROUP_MEMBERS`. Before any build the group is uvicorn and the resource tracker (2
+    members, macOS 2026-10-10); a worker starts at its executor's first build (see
+    `MIN_GROUP_MEMBERS`). A test that failed before it built anything must not add a second,
+    misleading error here, so the caller says when the floor is meaningful.
     """
     sock = socket.socket()
     try:
@@ -137,8 +147,9 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
                         members = group_members(proc.pid)
                         print(f"server group members before the kill: {len(members)}")
                         assert len(members) >= MIN_GROUP_MEMBERS, (
-                            f"saw {members} in the server's group, expected uvicorn plus its "
-                            f"pool workers (>= {MIN_GROUP_MEMBERS}): the survivor check "
+                            f"saw {members} in the server's group, "
+                            "expected uvicorn, the resource tracker and at least one pool worker "
+                            f"(>= {MIN_GROUP_MEMBERS}): the survivor check "
                             "below would read an empty group as proof"
                         )
                 finally:
