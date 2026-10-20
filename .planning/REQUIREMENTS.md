@@ -80,7 +80,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   the SIGTERM grace and the leader-only-break red are kept; a sub-second unit test outside
   the `*browser*` glob proves both paths and cleans up its own group
   (`2026-10-10-stop-group-reads-ps-before-it-signals.md`).
-- [ ] **REQ-group-floor-recorded-true**: the `MIN_GROUP_MEMBERS` comment names the members
+- [x] **REQ-group-floor-recorded-true**: the `MIN_GROUP_MEMBERS` comment names the members
   observed by `ps` on macOS and Linux (uvicorn, the resource tracker, one or two workers);
   dated corrections sit under both `bench/RESULTS.md` rows; no reading rewritten
   (`2026-10-10-group-floor-of-3-is-not-two-pool-workers.md`).
@@ -182,7 +182,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-slug-totality-guarded | Phase 27 | Complete |
 | REQ-failed-build-name-isolated | Phase 27 | Complete |
 | REQ-stop-group-signals-first | Phase 27 | Complete |
-| REQ-group-floor-recorded-true | Phase 27 | Pending |
+| REQ-group-floor-recorded-true | Phase 27 | Complete |
 | REQ-launch-message-true | Phase 27 | Complete |
 | REQ-bad-link-refused | Phase 28 | Pending |
 | REQ-bad-link-decision-logged | Phase 28 | Pending |

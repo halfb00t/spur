@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 27
 current_phase_name: Ledger Tests and Harness
-status: executing
-stopped_at: Completed 27-05-PLAN.md
-last_updated: "2026-10-20T13:58:56.445Z"
+status: verifying
+stopped_at: Completed 27-06-PLAN.md
+last_updated: "2026-10-20T14:12:18.776Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 27 execution started
-state_head: 4d43b64262939c3d4d6465fadab522e48740ed62
+state_head: 8561dcc11757d86d121aee939394fe7883d6b821
 progress:
   total_phases: 4
   completed_phases: 6
   total_plans: 13
-  completed_plans: 12
-  percent: 92
+  completed_plans: 13
+  percent: 100
 ---
 
 # Project State
@@ -32,10 +32,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 27 (Ledger Tests and Harness) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-20 — Phase 27 execution started
 
-Progress: [█████████░] 92% (1 of 4 phases)
+Progress: [██████████] 100% (1 of 4 phases)
 
 ## Performance Metrics
 
@@ -257,6 +257,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 27 P03 | 6 min | 2 tasks | 9 files |
 | Phase 27 P04 | 7 min | 2 tasks | 8 files |
 | Phase 27 P05 | 9 min | 3 tasks | 11 files |
+| Phase 27 P06 | 14 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -493,6 +494,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 27]: 27-04: IN-02 near-copy replacement skipped (D-07, recorded by 27-06); Phase 19 debt item stays active for the Phase 28 root_fillet label only
 - [Phase 27]: 27-05: launch() stays text-only; the reinstall it names is rm -f .venv/.browser && make test, because the stamp alone skips the install
 - [Phase 27]: 27-05: the pins' environ allowance is equality with a string constant in the read's own statement (tripwire, not proof)
+- [Phase 27]: MIN_GROUP_MEMBERS stays 3 and names no member: 3 is every build on one executor slot, 4 is both, and either clears it (D-01)
+- [Phase 27]: The ubuntu correction says 21-02's count came from a ps that prints no command; the member set is 27-01's later listing (L08)
 
 ### Pending Todos
 
@@ -784,8 +787,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-20T13:58:47.202Z
-Stopped at: Completed 27-05-PLAN.md
+Last session: 2026-10-20T14:12:18.717Z
+Stopped at: Completed 27-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
