@@ -51,7 +51,7 @@ def _instrument(
     proc: subprocess.Popen[bytes],
     read: Callable[[int], list[int]],
 ) -> list[str]:
-    """Fake the reader with `read`; return the list each signal, read, wait and poll lands in."""
+    """Fake the reader with `read`; return the list each signal, read and wait lands in."""
     events: list[str] = []
     real_signal = process_group._signal_group
 
@@ -67,14 +67,9 @@ def _instrument(
         events.append("wait")
         return subprocess.Popen.wait(proc, timeout)
 
-    def poll() -> int | None:
-        events.append("poll")
-        return subprocess.Popen.poll(proc)
-
     monkeypatch.setattr(process_group, "_signal_group", signal_group)
     monkeypatch.setattr(process_group, "group_members", record_read)
     monkeypatch.setattr(proc, "wait", wait)
-    monkeypatch.setattr(proc, "poll", poll)
     return events
 
 
