@@ -24,7 +24,7 @@ Edited and committed in the main checkout: `workflow.use_worktrees` is `false` i
 
 ## Fixed Issues
 
-### WR-01: `_problems` environ allowance walks a compound statement's whole body
+### WR-01: `_problems` environ allowance walks a compound statement's whole body, so the new "own statement" rule is bypassable
 
 **Files modified:** `tests/test_browser_pins.py`
 **Commit:** 5bf2a0f
@@ -43,7 +43,7 @@ FAILED ...[except-header-marker-in-handler-body]
 
 Status: fixed. The change is a logic rule in a test pin, so the reviewer may want to confirm the rule itself, although the rows above cover both reviewer reproductions and the allowed scrub.
 
-### WR-02: moving the teardown to `tests/process_group.py` took it out of the pin's scan set
+### WR-02: Moving the teardown to `tests/process_group.py` took it out of the pin's scan set
 
 **Files modified:** `tests/test_browser_pins.py`
 **Commit:** 2e724cf
