@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`_problems` environ allowance walks a compound statement's whole body, so the new \"own statement\" rule is bypassable"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "Moving the teardown to `tests/process_group.py` took it out of the pin's scan set"
   - id: WR-03
     severity: warning
@@ -39,17 +39,17 @@ findings:
     severity: info
     disposition: open
     title: "The `Resolved in:` fields of the five resolved debt items hold commit subjects, not shas"
-open: 8
+open: 6
 total: 9
-recorded: 2026-10-20T15:35:36.266Z
+recorded: 2026-10-20T15:36:00.246Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
+| WR-01 | warning | fixed | 27-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 27-REVIEW-FIX.md |
 | WR-03 | warning | fixed | 27-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
