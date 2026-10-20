@@ -229,9 +229,14 @@ def _page_string(value: float) -> str:
     The same `Decimal(repr(float(value))).normalize()` with `f` formatting that
     `tests/browser_session.py`'s `_js_number` uses, copied here because that module imports
     playwright and this one must stay in the commit slice. `repr` gives JavaScript's shortest
-    round-trip digits and `1.0` becomes `1`; exact for 1e-6 <= |value| < 1e21.
+    round-trip digits and `1.0` becomes `1`; exact for 1e-6 <= |value| < 1e21, which is
+    checked, and `-0` is `0`.
     """
-    return format(Decimal(repr(float(value))).normalize(), "f")
+    number = float(value)
+    assert number == 0 or 1e-6 <= abs(number) < 1e21, (
+        f"{number!r}: JavaScript writes this with an exponent, which this function does not"
+    )
+    return format(Decimal(repr(number)).normalize() + 0, "f")
 
 
 def _derive_class(gear: GearParams) -> tuple[bool, bool]:

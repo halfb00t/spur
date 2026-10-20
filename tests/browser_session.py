@@ -268,10 +268,16 @@ def _js_number(value: float) -> str:
 
     `:g` wrote 1e+06 and 1e-05 where JavaScript writes 1000000 and 0.00001. `repr` gives the
     same shortest round-trip digits as JavaScript, and `Decimal(...).normalize()` formatted
-    with `f` keeps them positional, with `1.0` as `1`. Exact for 1e-6 <= |value| < 1e21; JavaScript
-    switches to an exponent outside that range, and no relation threshold is near it.
+    with `f` keeps them positional, with `1.0` as `1`. Exact for 1e-6 <= |value| < 1e21, which
+    is checked: JavaScript writes an exponent outside that range (`1e+21`, `1e-7`), and a
+    positional string there would not be the page's.
     """
-    return format(Decimal(repr(float(value))).normalize(), "f")
+    number = float(value)
+    assert number == 0 or 1e-6 <= abs(number) < 1e21, (
+        f"{number!r}: JavaScript writes this with an exponent, which this function does not"
+    )
+    # `+ 0` turns Decimal's `-0` into `0`, as JavaScript's `${-0}` reads.
+    return format(Decimal(repr(number)).normalize() + 0, "f")
 
 
 def _given(link: str) -> dict[str, str]:
@@ -591,9 +597,9 @@ def serve_stl_from(page: Page, stl: bytes) -> None:
     on the server, so the pool is not asked again and a step's cost is the page's, not the
     kernel's. The `download name` step (Phase 22) opens its own page without this route,
     because it needs the server's Content-Disposition, and builds one more part. The bytes
-    must be served and not the
-    request aborted: an aborted STL makes `fail()` replace `#messages` with "Request failed:
-    ...", which erases the very warnings a step asserts (21-RESEARCH P7).
+    must be served and not the request aborted: an aborted STL makes `fail()` replace
+    `#messages` with "Request failed: ...", which erases the very warnings a step asserts
+    (21-RESEARCH P7).
     """
     page.unroute(STL_ROUTE)
     page.route(STL_ROUTE, lambda route: route.fulfill(status=200, body=stl))
@@ -610,8 +616,13 @@ def fixture_hash(params: dict[str, object], mate_teeth: int | None) -> str:
     """The link a person would share for one fixture record: its params, then the mate.
 
     `str(value)` of the JSON value, so `1.0` stays `1.0` the way a person typing it would
-    send it; the page's own `gearQuery()` decides what survives (a default is dropped).
+    send it; the page's own `gearQuery()` decides what survives (a default is dropped). A
+    param that is not an int, float or str is refused: `str(True)` is `True`, which no person
+    types into a link.
     """
+    for name, value in params.items():
+        scalar = isinstance(value, int | float | str) and not isinstance(value, bool)
+        assert scalar, f"record param {name!r} is {value!r}: str() would write {str(value)!r}"
     pairs = [(name, str(value)) for name, value in params.items()]
     if mate_teeth is not None:
         pairs.append(("mate_teeth", str(mate_teeth)))

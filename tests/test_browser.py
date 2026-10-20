@@ -51,6 +51,7 @@ from browser_session import (
     expected_inactive,
     expected_pick,
     expected_shown,
+    fixture_hash,
     fixture_hashes,
     flip_links,
     foreign_keys,
@@ -606,7 +607,9 @@ def test_the_oracle_reads_a_link_as_the_page_does() -> None:
     and word a reason exactly as app.js does. No browser: a hand-written schema, so a
     repeated key or a threshold of 1e6 need not exist in the real one. Red on a last-wins
     repeated key, a blank first value that is not the default, or a reason whose number
-    differs from JavaScript's `${value}`."""
+    differs from JavaScript's `${value}`, or a threshold JavaScript writes with an exponent
+    (23-REVIEW IN-11, read from node: `${-0}` is `0`, `${1e21}` is `1e+21`, `${1e-7}` is
+    `1e-7`)."""
     properties: dict[str, dict[str, object]] = {
         "gate": {"title": "Gate", "default": 0},
         "tiny": {"title": "Tiny", "default": 0},
@@ -622,10 +625,26 @@ def test_the_oracle_reads_a_link_as_the_page_does() -> None:
     assert expected_inactive(properties, "gate=6") == {"dep": "Needs Gate = 0"}
     # Each pair was read from node: `${1e6}` is 1000000 and `${1e-5}` is 0.00001, where
     # Python's `:g` wrote 1e+06 and 1e-05. JavaScript stays positional from 1e-6 up to 1e21.
-    for threshold, written in ((0, "0"), (1, "1"), (1.0, "1"), (0.05, "0.05"), (1e6, "1000000"),
-                               (1e-5, "0.00001"), (1e-6, "0.000001"), (1e16, "10000000000000000")):
+    for threshold, written in ((0, "0"), (-0.0, "0"), (1, "1"), (1.0, "1"), (0.05, "0.05"),
+                               (1e6, "1000000"), (1e-5, "0.00001"), (1e-6, "0.000001"),
+                               (1e16, "10000000000000000")):
         properties["dep"]["enabled_when"] = [{"field": "gate", "op": "gt", "value": threshold}]
         assert expected_inactive(properties, "gate=0") == {"dep": f"Needs Gate above {written}"}
+    for beyond in (1e21, 1e-7):
+        properties["dep"]["enabled_when"] = [{"field": "gate", "op": "gt", "value": beyond}]
+        with pytest.raises(AssertionError, match="exponent"):
+            expected_inactive(properties, "gate=0")
+
+
+def test_a_fixture_link_refuses_a_value_no_person_would_type() -> None:
+    """21-REVIEW IN-02: `fixture_hash` writes `str(value)` per param, which is right for an
+    int, a float or a str. `str(True)` is `True`, which no person types into a link, and a
+    bool or null field would pin a wrong query in the golden file. No browser, no fixture."""
+    for bad in (True, None):
+        with pytest.raises(AssertionError, match="'x'"):
+            fixture_hash({"x": bad}, None)
+    link = fixture_hash({"teeth": 19, "module": 1.75, "root_shape": "trochoid"}, None)
+    assert link == "teeth=19&module=1.75&root_shape=trochoid"
 
 
 def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
