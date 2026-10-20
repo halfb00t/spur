@@ -36,6 +36,7 @@ import itertools
 import json
 import math
 import subprocess
+import types
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -1082,7 +1083,10 @@ def test_the_host_state_reads_unknown_where_git_cannot_name_head(
     def no_head(*_args: object, **_kwargs: object) -> object:
         raise failure
 
-    monkeypatch.setattr("bench.trochoid_part.subprocess.run", no_head)
+    # The module's own name for `subprocess`, not the shared module object: patching `.run`
+    # through it would fail every caller of `subprocess.run` in the process while the test runs.
+    stand_in = types.SimpleNamespace(run=no_head, CalledProcessError=subprocess.CalledProcessError)
+    monkeypatch.setattr("bench.trochoid_part.subprocess", stand_in)
     now = datetime(2026, 10, 20, tzinfo=UTC)
     lines = _host_state(now, now, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
     assert "- HEAD: `unknown`" in lines
