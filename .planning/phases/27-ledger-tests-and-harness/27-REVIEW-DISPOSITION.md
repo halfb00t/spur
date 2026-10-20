@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`_sleeper` sends `killpg` to a pid its own test already reaped"
   - id: IN-02
     severity: info
@@ -17,11 +17,11 @@ findings:
     title: "`_page_string` in `test_selector.py` is a second copy of `_js_number`, and the copy's new guard and `-0` rule are untested"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: skipped
     title: "Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`"
   - id: IN-05
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`test_the_host_state_reads_unknown_where_git_cannot_name_head` patches the process-wide `subprocess.run`"
   - id: IN-06
     severity: info
@@ -29,7 +29,7 @@ findings:
     title: "The `Resolved in:` fields of the five resolved debt items hold commit subjects, not shas"
   - id: IN-07
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The climb stops at `arguments`, so one default argument's marker allows another default's `environ` read"
   - id: WR-04
     severity: warning
@@ -47,22 +47,22 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 7
+open: 3
 total: 11
-recorded: 2026-10-20T16:38:53.562Z
+recorded: 2026-10-20T17:09:58.091Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-01 | info | open | - |
+| IN-01 | info | fixed | 27-REVIEW-FIX.md |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
+| IN-04 | info | skipped | 27-REVIEW-FIX.md |
+| IN-05 | info | fixed | 27-REVIEW-FIX.md |
 | IN-06 | info | open | - |
-| IN-07 | info | open | - |
+| IN-07 | info | fixed | 27-REVIEW-FIX.md |
 | WR-04 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-01 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
