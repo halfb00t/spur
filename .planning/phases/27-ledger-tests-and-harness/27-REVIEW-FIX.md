@@ -38,13 +38,13 @@ Exit status 0. (`make verify` was in fact run twice at the end, the first time t
 **Commit:** c22742e
 **Applied fix:** The fixture's `killpg` now runs only while `proc.returncode is None`, with a comment saying why; the final class-level `wait` is kept. The same pid-reuse hazard `stop_group` guards against is no longer reintroduced in test code.
 
-### IN-02: `_instrument` records `poll` events that `stop_group` never produces
+### IN-02: `_instrument` records `poll` events that `stop_group` never produces, and test 1 asserts only `events[0]`
 
 **Files modified:** `tests/test_process_group.py`
 **Commit:** d7426e0
 **Applied fix:** Confirmed with grep that `tests/process_group.py` calls `proc.wait` and never `proc.poll`, then dropped the `poll` wrapper, its `monkeypatch.setattr` and the word "poll" in the docstring. The review's first option (drop the dead recorder) was the simpler of the two; the existing `events[0] == "signal SIGTERM"` assertion already carries the stated order.
 
-### IN-03: `_page_string` in `test_selector.py` is an untested copy of `_js_number`
+### IN-03: `_page_string` in `test_selector.py` is a second copy of `_js_number`, and the copy's new guard and `-0` rule are untested
 
 **Files modified:** `tests/test_selector.py`
 **Commit:** d91ce2f
@@ -56,7 +56,7 @@ Exit status 0. (`make verify` was in fact run twice at the end, the first time t
 **Commit:** c8cf8b4
 **Applied fix:** The test now replaces `bench.trochoid_part.subprocess` with a `types.SimpleNamespace(run=no_head, CalledProcessError=...)` instead of patching `.run` on the shared module, so no other `subprocess.run` caller sees the failure. Chose this over the comment-only option because it is a three-line change that removes the hazard.
 
-### IN-06: `Resolved in:` fields of five resolved debt items hold commit subjects, not shas
+### IN-06: The `Resolved in:` fields of the five resolved debt items hold commit subjects, not shas
 
 **Files modified:** `docs/tech_debt/INDEX.md` and the five files under `docs/tech_debt/resolved/`: `2026-10-10-group-floor-of-3-is-not-two-pool-workers.md`, `2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md`, `2026-10-10-stop-group-reads-ps-before-it-signals.md`, `2026-10-15-failed-build-name-test-depends-on-cache-order.md`, `2026-10-15-slug-totality-is-not-guarded-in-the-gate.md`
 **Commit:** 0fd2b98
