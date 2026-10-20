@@ -25,6 +25,9 @@ import pytest
 # means a bug.
 TERM_BOUND_S = 10.0
 KILL_BOUND_S = 5.0
+# One `ps` read. It lists the host's processes in well under a second; the bound is far above
+# that, so crossing it means `ps` is hung and the group is reported as unknown (27-REVIEW WR-03).
+PS_BOUND_S = 5.0
 
 
 def _log_tail(log: IO[bytes], lines: int = 40) -> str:
@@ -43,7 +46,11 @@ def group_members(pgid: int) -> list[int]:
     holds only zombies on macOS, so neither says what the fixture needs to know.
     """
     out = subprocess.run(
-        ["ps", "-A", "-o", "pgid=,stat=,pid="], capture_output=True, text=True, check=True
+        ["ps", "-A", "-o", "pgid=,stat=,pid="],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=PS_BOUND_S,  # a hung ps would hold up SIGKILL and the reap after SIGTERM
     ).stdout
     live: list[int] = []
     for row in out.splitlines():
@@ -82,7 +89,12 @@ def stop_group(proc: subprocess.Popen[bytes], log: IO[bytes]) -> None:
             while survivors and time.monotonic() < deadline:
                 time.sleep(0.05)  # a poll interval; the condition is the group, not the clock
                 survivors = group_members(pgid)
-        except (subprocess.CalledProcessError, OSError):  # ps failed, or there is no ps
+        except (  # ps failed, hung, printed a row we cannot read, or there is no ps
+            subprocess.CalledProcessError,
+            subprocess.TimeoutExpired,
+            OSError,
+            ValueError,
+        ):
             survivors = None
             continue
         if not survivors:

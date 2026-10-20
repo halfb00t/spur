@@ -93,6 +93,8 @@ def test_the_group_is_signalled_before_ps_is_read_or_the_leader_reaped(
     [
         pytest.param(subprocess.CalledProcessError(1, ["ps"]), id="ps-exits-non-zero"),
         pytest.param(FileNotFoundError(2, "No such file or directory", "ps"), id="ps-is-absent"),
+        pytest.param(subprocess.TimeoutExpired(["ps"], 5), id="ps-hangs"),
+        pytest.param(ValueError("invalid literal for int()"), id="ps-row-is-not-numbers"),
     ],
 )
 def test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled(
@@ -110,3 +112,19 @@ def test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled(
         signals = [e for e in events if e.startswith("signal")]
         assert signals == ["signal SIGTERM", "signal SIGKILL"], events
         assert proc.returncode is not None, "the sleep leader is still running"
+
+
+def test_ps_is_run_with_a_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    """27-REVIEW WR-03: a `ps` that hangs after SIGTERM must not block the teardown for ever,
+    so SIGKILL and the reap are never held up. A fake `run` keeps the test off the host's `ps`."""
+    seen: dict[str, object] = {}
+
+    def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        seen.update(kwargs)
+        return subprocess.CompletedProcess(command, 0, stdout="")
+
+    # The module object is shared, so this is process-wide for the one call below.
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert process_group.group_members(1) == []
+    assert seen.get("timeout") is not None, seen
