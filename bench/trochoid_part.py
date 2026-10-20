@@ -108,15 +108,14 @@ def outline_teeth(pr: Profile, curve: RootCurve) -> list[Tooth]:
 
 def trochoid_curve(p: GearParams, rho: float) -> tuple[Cutter, RootCurve]:
     """The cutter and the hob's root curve for `p` at tip radius `rho` mm, from the one
-    predicate (`root_mode`). `RootMode.curve` does not exist until 19-04, so the curve is
-    read back with `trochoid_root` -- the same call `root_mode` made and discarded
-    (18-REVIEW IN-02). A gear the trochoid does not apply to raises, naming the reason."""
+    predicate (`root_mode`). The curve is the one `root_mode` solved (`RootMode.curve`,
+    18-REVIEW IN-02). A gear the trochoid does not apply to raises, naming the reason."""
     rm = root_mode(p, profile(p), requested="trochoid", rho=rho)
     if rm.mode != "trochoid" or rm.cutter is None:
         raise ValueError(f"not a trochoid gear at tip radius {rho:g} mm: {rm.reason}")
-    curve = trochoid_root(rm.cutter)
+    curve = rm.curve
     if curve is None:
-        raise ValueError(f"root_mode said trochoid but trochoid_root found no curve "
+        raise ValueError(f"root_mode said trochoid but carried no curve "
                          f"at tip radius {rho:g} mm")
     return rm.cutter, curve
 
@@ -330,8 +329,13 @@ def _host_state(start: datetime, end: datetime, load_before: tuple[float, float,
                 load_after: tuple[float, float, float]) -> list[str]:
     versions = ", ".join(f"{dist} {metadata.version(dist)}"
                          for dist in ("cadquery", "cadquery-ocp"))
-    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
-                          capture_output=True, text=True, check=True).stdout.strip()
+    try:
+        head = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                              capture_output=True, text=True, check=True).stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Outside a git checkout or without git the host block still prints, and says it
+        # cannot name HEAD (19-REVIEW IN-04): never a guess (L08).
+        head = "unknown"
     stamp = "%Y-%m-%dT%H:%M:%SZ"
     return [
         "#### Host state",

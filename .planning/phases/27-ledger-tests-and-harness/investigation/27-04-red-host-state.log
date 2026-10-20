@@ -1,0 +1,79 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_the_host_state_reads_unknown_where_git_cannot_name_head[no-git-binary] __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x142d943e0>
+failure = FileNotFoundError(2, 'No such file or directory')
+
+    @pytest.mark.parametrize("failure", [
+        pytest.param(FileNotFoundError(2, "No such file or directory", "git"), id="no-git-binary"),
+        pytest.param(subprocess.CalledProcessError(128, ["git", "rev-parse", "--short", "HEAD"]),
+                     id="not-a-checkout"),
+    ])
+    def test_the_host_state_reads_unknown_where_git_cannot_name_head(
+            monkeypatch: pytest.MonkeyPatch, failure: Exception) -> None:
+        """19-REVIEW IN-04: a bench run from a tarball or a host without git must still print
+        its host block, and say it cannot name HEAD rather than guess one (L08)."""
+        def no_head(*_args: object, **_kwargs: object) -> object:
+            raise failure
+    
+        monkeypatch.setattr("bench.trochoid_part.subprocess.run", no_head)
+        now = datetime(2026, 10, 20, tzinfo=UTC)
+>       lines = _host_state(now, now, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bench.py:1087: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bench/trochoid_part.py:333: in _host_state
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_args = (['git', 'rev-parse', '--short', 'HEAD'],)
+_kwargs = {'capture_output': True, 'text': True, 'check': True}
+
+    def no_head(*_args: object, **_kwargs: object) -> object:
+>       raise failure
+E       FileNotFoundError: [Errno 2] No such file or directory: 'git'
+
+tests/test_bench.py:1083: FileNotFoundError
+_ test_the_host_state_reads_unknown_where_git_cannot_name_head[not-a-checkout] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x142d94650>
+failure = CalledProcessError(128, ['git', 'rev-parse', '--short', 'HEAD'])
+
+    @pytest.mark.parametrize("failure", [
+        pytest.param(FileNotFoundError(2, "No such file or directory", "git"), id="no-git-binary"),
+        pytest.param(subprocess.CalledProcessError(128, ["git", "rev-parse", "--short", "HEAD"]),
+                     id="not-a-checkout"),
+    ])
+    def test_the_host_state_reads_unknown_where_git_cannot_name_head(
+            monkeypatch: pytest.MonkeyPatch, failure: Exception) -> None:
+        """19-REVIEW IN-04: a bench run from a tarball or a host without git must still print
+        its host block, and say it cannot name HEAD rather than guess one (L08)."""
+        def no_head(*_args: object, **_kwargs: object) -> object:
+            raise failure
+    
+        monkeypatch.setattr("bench.trochoid_part.subprocess.run", no_head)
+        now = datetime(2026, 10, 20, tzinfo=UTC)
+>       lines = _host_state(now, now, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bench.py:1087: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bench/trochoid_part.py:333: in _host_state
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_args = (['git', 'rev-parse', '--short', 'HEAD'],)
+_kwargs = {'capture_output': True, 'text': True, 'check': True}
+
+    def no_head(*_args: object, **_kwargs: object) -> object:
+>       raise failure
+E       subprocess.CalledProcessError: Command '['git', 'rev-parse', '--short', 'HEAD']' returned non-zero exit status 128.
+
+tests/test_bench.py:1083: CalledProcessError
+=========================== short test summary info ============================
+FAILED tests/test_bench.py::test_the_host_state_reads_unknown_where_git_cannot_name_head[no-git-binary]
+FAILED tests/test_bench.py::test_the_host_state_reads_unknown_where_git_cannot_name_head[not-a-checkout]
+2 failed, 43 deselected in 1.70s
+exit 1

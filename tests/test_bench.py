@@ -35,6 +35,8 @@ from __future__ import annotations
 import itertools
 import json
 import math
+import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cadquery as cq
@@ -72,6 +74,7 @@ from bench.trochoid_part import (
     WALK_RHO_MM,
     WALK_SHIFTS,
     WALK_TEETH,
+    _host_state,
     chamfer_verdict,
     corner_rows,
     deviation_a,
@@ -1065,3 +1068,21 @@ def test_the_waist_walk_is_d07s_grid_at_both_backlashes() -> None:
     assert all(round(b - a, 2) == 0.01 for a, b in itertools.pairwise(WALK_SHIFTS))
     assert WALK_RHO_MM == (0.0, 0.38, 3.0)
     assert set(WALK_BACKLASH) == {0.0, GearParams().backlash}
+
+
+@pytest.mark.parametrize("failure", [
+    pytest.param(FileNotFoundError(2, "No such file or directory", "git"), id="no-git-binary"),
+    pytest.param(subprocess.CalledProcessError(128, ["git", "rev-parse", "--short", "HEAD"]),
+                 id="not-a-checkout"),
+])
+def test_the_host_state_reads_unknown_where_git_cannot_name_head(
+        monkeypatch: pytest.MonkeyPatch, failure: Exception) -> None:
+    """19-REVIEW IN-04: a bench run from a tarball or a host without git must still print
+    its host block, and say it cannot name HEAD rather than guess one (L08)."""
+    def no_head(*_args: object, **_kwargs: object) -> object:
+        raise failure
+
+    monkeypatch.setattr("bench.trochoid_part.subprocess.run", no_head)
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    lines = _host_state(now, now, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
+    assert "- HEAD: `unknown`" in lines

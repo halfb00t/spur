@@ -31,7 +31,7 @@ Severity (grep-able `Severity:` field):
 | nice | [A wedged worker holds process exit until it finishes or is killed](active/2026-10-06-wedged-worker-holds-process-exit.md) | `BuildPool.shutdown` is next touched, or a graceful shutdown is observed to hang |
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
 | nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
-| nice | [Phase 19 code review: four info findings deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | `model.py`, `bench/trochoid_part.py` or the `DIMS` table is next touched (IN-01, IN-02, IN-04) |
+| nice | [Phase 19 code review: the root_fillet label finding is still deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | Phase 28 (REQ-root-fillet-label-follows-root), or the `DIMS` table in `src/spur/static/app.js` is next touched |
 | nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched, or Phase 28's info-finding triage |
 
 ## Resolved
