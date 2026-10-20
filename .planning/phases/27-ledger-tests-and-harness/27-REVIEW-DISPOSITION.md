@@ -3,6 +3,14 @@ phase: 27
 review: 27-REVIEW.md
 titles: json
 findings:
+  - id: IN-04
+    severity: info
+    disposition: open
+    title: "Nothing pins that `_build` passes its own `rm` to `_chamfer_tips` (carried forward, skipped on purpose)"
+  - id: IN-08
+    severity: info
+    disposition: open
+    title: "A lambda's parameter-list marker still allows a read in the lambda's body"
   - id: IN-01
     severity: info
     disposition: fixed
@@ -15,10 +23,6 @@ findings:
     severity: info
     disposition: fixed
     title: "`_page_string` in `test_selector.py` is a second copy of `_js_number`, and the copy's new guard and `-0` rule are untested"
-  - id: IN-04
-    severity: info
-    disposition: skipped
-    title: "Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`"
   - id: IN-05
     severity: info
     disposition: fixed
@@ -47,22 +51,23 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 0
-total: 11
-recorded: 2026-10-20T17:10:33.001Z
+open: 2
+total: 12
+recorded: 2026-10-20T17:23:59.176Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-01 | info | fixed | 27-REVIEW-FIX.md |
-| IN-02 | info | fixed | 27-REVIEW-FIX.md |
-| IN-03 | info | fixed | 27-REVIEW-FIX.md |
-| IN-04 | info | skipped | 27-REVIEW-FIX.md |
-| IN-05 | info | fixed | 27-REVIEW-FIX.md |
-| IN-06 | info | fixed | 27-REVIEW-FIX.md |
-| IN-07 | info | fixed | 27-REVIEW-FIX.md |
+| IN-04 | info | open | - |
+| IN-08 | info | open | - |
+| IN-01 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| IN-02 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| IN-03 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| IN-05 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| IN-06 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| IN-07 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-04 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-01 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
