@@ -19,13 +19,16 @@ test in this repository, while
 the ruleset's own copy of the required-check names is not in git. The checks only
 this module can make at all: the PR is open and based on `main` (a PR to another
 base sits outside the ruleset, and step 5's evidence only ever exists for `main`);
-a clean working tree (the local follow-up switches branches); no GitHub Actions
+a clean working tree (the local follow-up switches branches); a local head branch,
+when there is one, at the PR's head (the ruleset only sees what was pushed); no GitHub Actions
 skip token in the squash subject or body (after D-03 that text is `main`'s commit
 message, and the leak happens after the wall); the run for the squash commit
 appearing at all; and the local follow-up.
 
 Steps, in order: (1) read and parse the PR, refuse on its state/base; (2) refuse a
-dirty working tree; (3) `check_head` -- refuse a behind, run-less, unfinished or
+dirty working tree, and a local head branch whose tip is not the PR's head -- commits
+not pushed would be left off `main` (PR #41 landed at its pushed head while 13 local
+commits, one a fix, were never pushed); (3) `check_head` -- refuse a behind, run-less, unfinished or
 non-green head, and refuse a skip token in the checked subject/body
 (`message_refusals`); (4) squash-merge with the exact subject and body just
 checked; (5) poll for a run on the squash commit (~60 s,
@@ -462,8 +465,21 @@ def land(
             print("pr.land: nothing was merged.")
             return 1
 
+    # An absent local branch is no refusal: landing from another clone, or after the
+    # branch was deleted, is legitimate -- only a local tip the PR does not carry is.
+    refusals = []
+    local_result = run(
+        ["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{pr.head_branch}"]
+    )
+    local_tip = local_result.stdout.strip()
+    if local_result.returncode == 0 and local_tip != pr.head_sha:
+        refusals.append(
+            f"pr.land: local branch {pr.head_branch} tip {local_tip} is not the PR's "
+            f"head {pr.head_sha}. Push it, let CI run on the pushed head, retry."
+        )
+
     subject = squash_subject(pr)
-    refusals = check_head(pr.head_sha, run, required_jobs())
+    refusals += check_head(pr.head_sha, run, required_jobs())
     refusals += message_refusals(subject, pr.body)
     if refusals:
         for line in refusals:
