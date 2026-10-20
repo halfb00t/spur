@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
-current_phase: 27
-current_phase_name: Ledger Tests and Harness
-status: verifying
-stopped_at: Completed 27-06-PLAN.md
-last_updated: "2026-10-20T14:12:18.776Z"
+current_phase: 28
+current_phase_name: Refuse the Bad Link
+status: planning
+stopped_at: Phase 27 complete, ready to plan Phase 28
+last_updated: "2026-10-20T14:34:07.596Z"
 last_activity: 2026-10-20
-last_activity_desc: Phase 27 execution started
-state_head: 8561dcc11757d86d121aee939394fe7883d6b821
+last_activity_desc: Phase 27 complete, transitioned to Phase 28
+state_head: f4aa34129f072ce8389bb69a42c05b8067cf456a
 progress:
   total_phases: 4
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 13
   completed_plans: 13
-  percent: 100
+  percent: 78
 ---
 
 # Project State
@@ -30,12 +30,12 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 27 (Ledger Tests and Harness) — EXECUTING
-Plan: 6 of 6
-Status: Phase complete — ready for verification
-Last activity: 2026-10-20 — Phase 27 execution started
+Phase: 28 — Refuse the Bad Link
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-20 — Phase 27 complete, transitioned to Phase 28
 
-Progress: [██████████] 100% (1 of 4 phases)
+Progress: [████████░░] 78% (1 of 4 phases)
 
 ## Performance Metrics
 
@@ -77,6 +77,7 @@ Progress: [██████████] 100% (1 of 4 phases)
 | 24 | 4 | - | - |
 | 25 | 5 | - | - |
 | 26 | 7 | - | - |
+| 27 | 6 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -788,7 +789,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-20T14:12:18.717Z
-Stopped at: Completed 27-06-PLAN.md
+Stopped at: Phase 27 complete, ready to plan Phase 28
 Resume file: None
 
 ## Operator Next Steps

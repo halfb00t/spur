@@ -141,7 +141,7 @@ a value its form control cannot hold is refused instead of silently building the
 - [x] **Phase 26: Gate Fails With a Cause** - The false reds are fixed from reproductions or
       re-deferred with the measurement, a stalled test names itself, the image recipe tests
       what it claims, and Ubuntu 26 is pre-classified before the rollout reaches the repo (completed 2026-10-20)
-- [ ] **Phase 27: Ledger Tests and Harness** - Slug totality guarded in the commit slice, the
+- [x] **Phase 27: Ledger Tests and Harness** - Slug totality guarded in the commit slice, the (completed 2026-10-20)
       failed-build name test independent of cache order, `stop_group` signalling before it
       reads `ps`, and the harness's own records and launch message made true
 - [ ] **Phase 28: Refuse the Bad Link** - A link carrying a value its form control cannot hold
@@ -331,7 +331,7 @@ corrections; L40 takes a dated amendment, not a rewrite. Every new guard test is
 the red recorded. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — standard patterns.
-**Plans**: 6/6 plans executed
+**Plans**: 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -498,6 +498,6 @@ empty.
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
-| 27. Ledger Tests and Harness | v0.6 | 6/6 | In Progress | - |
+| 27. Ledger Tests and Harness | v0.6 | 6/6 | Complete    | 2026-10-20 |
 | 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |
