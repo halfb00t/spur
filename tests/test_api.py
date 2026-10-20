@@ -8,6 +8,7 @@ import cadquery as cq
 import pytest
 from fastapi.testclient import TestClient
 
+import spur.app
 import spur.model
 from spur.app import STATIC, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
@@ -1286,6 +1287,17 @@ def test_a_failed_build_emits_build_failed_naming_the_class_and_the_level(
     assert not _event_records(caplog, "export.served")
 
 
+@pytest.fixture
+def fresh_exports(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The byte cache is module state shared by every `TestClient` test on an xdist worker,
+    and an earlier download of the same gear at the same quality answers before a raising
+    backend runs. Replacing the whole object per test makes that backend reachable whatever
+    ran before, with no uniqueness rule kept by hand. 1 MiB: the raising backend stores
+    nothing."""
+    monkeypatch.setattr(spur.app, "_EXPORTS", spur.app._BlobCache(1 << 20))
+
+
+@pytest.mark.usefixtures("fresh_exports")
 @pytest.mark.parametrize(("fields", "name"), [
     pytest.param({"teeth": 25, "root_shape": "trochoid"}, "spur_z25_m1.75_pa25_trochoid",
                  id="applies"),
@@ -1296,7 +1308,9 @@ def test_a_failed_build_emits_build_failed_naming_the_class_and_the_level(
 def test_a_failed_build_records_the_name_of_the_part_it_would_have_been(
         caplog: pytest.LogCaptureFixture, fields: dict[str, object], name: str) -> None:
     """SC2: the `build.failed` record names the part the request would have been --
-    `_trochoid` when the hob root applies, the plain name when `root_mode` refuses."""
+    `_trochoid` when the hob root applies, the plain name when `root_mode` refuses.
+    `_EXPORTS` is fresh for this test, so no earlier download can answer before the
+    raising backend runs."""
     caplog.set_level(logging.INFO)
 
     async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
@@ -1304,10 +1318,6 @@ def test_a_failed_build_records_the_name_of_the_part_it_would_have_been(
 
     app.dependency_overrides[build_backend] = lambda: backend
     try:
-        # 25 teeth trochoid is downloaded by no other test and the hob root applies there
-        # (26 is tests/test_cli.py:646, 682, 23 is this file's root-shape test), and no
-        # other test downloads the 33.5 degree tip-land gear, so the byte cache cannot
-        # answer before the raising backend runs.
         r = client.get("/api/model.stl", params={"quality": "preview", **fields})
     finally:
         app.dependency_overrides[build_backend] = lambda: _inline_backend

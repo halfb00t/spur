@@ -1,0 +1,85 @@
+.FF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_a_failed_build_records_the_name_of_the_part_it_would_have_been[applies] _
+
+caplog = <_pytest.logging.LogCaptureFixture object at 0x1437c3500>
+fields = {'teeth': 25, 'root_shape': 'trochoid'}
+name = 'spur_z25_m1.75_pa25_trochoid'
+
+    @pytest.mark.parametrize(("fields", "name"), [
+        pytest.param({"teeth": 25, "root_shape": "trochoid"}, "spur_z25_m1.75_pa25_trochoid",
+                     id="applies"),
+        pytest.param({"teeth": 19, "profile_shift": -0.4, "backlash": 0.10, "pressure_angle": 33.5,
+                      "root_shape": "trochoid", "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0,
+                      "recess_sides": "none"}, "spur_z19_m1.75_pa33.5", id="refused"),
+    ])
+    def test_a_failed_build_records_the_name_of_the_part_it_would_have_been(
+            caplog: pytest.LogCaptureFixture, fields: dict[str, object], name: str) -> None:
+        """SC2: the `build.failed` record names the part the request would have been --
+        `_trochoid` when the hob root applies, the plain name when `root_mode` refuses."""
+        caplog.set_level(logging.INFO)
+    
+        async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+            raise BuildError("the kernel refused this part")
+    
+        app.dependency_overrides[build_backend] = lambda: backend
+        try:
+            # 25 teeth trochoid is downloaded by no other test and the hob root applies there
+            # (26 is tests/test_cli.py:646, 682, 23 is this file's root-shape test), and no
+            # other test downloads the 33.5 degree tip-land gear, so the byte cache cannot
+            # answer before the raising backend runs.
+            r = client.get("/api/model.stl", params={"quality": "preview", **fields})
+        finally:
+            app.dependency_overrides[build_backend] = lambda: _inline_backend
+>       assert r.status_code == 422
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_api.py:1322: AssertionError
+------------------------------ Captured log call -------------------------------
+INFO     spur.records:records.py:208 export.served
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/model.stl?quality=preview&teeth=25&root_shape=trochoid "HTTP/1.1 200 OK"
+_ test_a_failed_build_records_the_name_of_the_part_it_would_have_been[refused] _
+
+caplog = <_pytest.logging.LogCaptureFixture object at 0x1437c0770>
+fields = {'teeth': 19, 'profile_shift': -0.4, 'backlash': 0.1, 'pressure_angle': 33.5, ...}
+name = 'spur_z19_m1.75_pa33.5'
+
+    @pytest.mark.parametrize(("fields", "name"), [
+        pytest.param({"teeth": 25, "root_shape": "trochoid"}, "spur_z25_m1.75_pa25_trochoid",
+                     id="applies"),
+        pytest.param({"teeth": 19, "profile_shift": -0.4, "backlash": 0.10, "pressure_angle": 33.5,
+                      "root_shape": "trochoid", "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0,
+                      "recess_sides": "none"}, "spur_z19_m1.75_pa33.5", id="refused"),
+    ])
+    def test_a_failed_build_records_the_name_of_the_part_it_would_have_been(
+            caplog: pytest.LogCaptureFixture, fields: dict[str, object], name: str) -> None:
+        """SC2: the `build.failed` record names the part the request would have been --
+        `_trochoid` when the hob root applies, the plain name when `root_mode` refuses."""
+        caplog.set_level(logging.INFO)
+    
+        async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
+            raise BuildError("the kernel refused this part")
+    
+        app.dependency_overrides[build_backend] = lambda: backend
+        try:
+            # 25 teeth trochoid is downloaded by no other test and the hob root applies there
+            # (26 is tests/test_cli.py:646, 682, 23 is this file's root-shape test), and no
+            # other test downloads the 33.5 degree tip-land gear, so the byte cache cannot
+            # answer before the raising backend runs.
+            r = client.get("/api/model.stl", params={"quality": "preview", **fields})
+        finally:
+            app.dependency_overrides[build_backend] = lambda: _inline_backend
+>       assert r.status_code == 422
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_api.py:1322: AssertionError
+------------------------------ Captured log call -------------------------------
+INFO     spur.records:records.py:208 export.served
+INFO     httpx:_client.py:1025 HTTP Request: GET http://testserver/api/model.stl?quality=preview&teeth=19&profile_shift=-0.4&backlash=0.1&pressure_angle=33.5&root_shape=trochoid&bore_d=0&bore_flat=0&bore_chamfer=0&recess_sides=none "HTTP/1.1 200 OK"
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_a_failed_build_records_the_name_of_the_part_it_would_have_been[applies]
+FAILED tests/test_api.py::test_a_failed_build_records_the_name_of_the_part_it_would_have_been[refused]
+2 failed, 1 passed, 60 deselected in 2.16s
+exit 1

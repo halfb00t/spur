@@ -33,13 +33,13 @@ Severity (grep-able `Severity:` field):
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
 | nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
 | nice | [Phase 19 code review: four info findings deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | `model.py`, `bench/trochoid_part.py` or the `DIMS` table is next touched (IN-01, IN-02, IN-04) |
-| must | [A failed-build name test passes only while no other test downloads the same gear](active/2026-10-15-failed-build-name-test-depends-on-cache-order.md) | `tests/test_api.py` next gains a download test, or this test reads 200 instead of 422 |
 | nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched, or Phase 28's info-finding triage |
 
 ## Resolved
 
 | Item | Resolved in |
 |---|---|
+| [A failed-build name test passes only while no other test downloads the same gear](resolved/2026-10-15-failed-build-name-test-depends-on-cache-order.md) | test(27): give the failed-build name test its own export cache — see the file's own `Resolved in:` field |
 | [`slug()` totality is not guarded in the gate, and it runs inside failure-record paths](resolved/2026-10-15-slug-totality-is-not-guarded-in-the-gate.md) | test(27): guard slug() totality with a seeded, stratified test in the commit slice — see the file's own `Resolved in:` field |
 | [The twin-selectors fix has not yet been read on a `main` run](resolved/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md) | docs(26): record the post-merge main read and retire the twin-selectors read item — see the file's own `Resolved in:` field |
 | [`make pr.land` merges the pushed PR head without checking the local branch is pushed](resolved/2026-10-20-pr-land-merges-a-stale-head.md) | fix(pr_land): refuse a local head branch the PR head does not carry — see the file's own `Resolved in:` field |
