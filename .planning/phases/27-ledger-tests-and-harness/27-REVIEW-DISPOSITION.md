@@ -13,7 +13,7 @@ findings:
     title: "Moving the teardown to `tests/process_group.py` took it out of the pin's scan set"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
   - id: IN-01
     severity: info
@@ -39,9 +39,9 @@ findings:
     severity: info
     disposition: open
     title: "The `Resolved in:` fields of the five resolved debt items hold commit subjects, not shas"
-open: 9
+open: 8
 total: 9
-recorded: 2026-10-20T14:26:56.245Z
+recorded: 2026-10-20T15:35:36.266Z
 ---
 
 # Phase 27: Code Review Disposition
@@ -50,7 +50,7 @@ recorded: 2026-10-20T14:26:56.245Z
 |---------|----------|-------------|--------|
 | WR-01 | warning | open | - |
 | WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
+| WR-03 | warning | fixed | 27-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
