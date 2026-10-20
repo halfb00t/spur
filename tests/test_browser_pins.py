@@ -120,9 +120,11 @@ def _problems(name: str, source: str) -> list[str]:
             # reaches the `Module`, which has no parent, and the scan dies on a `KeyError`
             # instead of reporting the import (27-REVIEW WR-04). It also stops under an
             # `arguments` node, which holds every default of a function: one default's marker
-            # must not allow another default's read (27-REVIEW IN-07).
+            # must not allow another default's read (27-REVIEW IN-07). A `lambda` is one
+            # expression whose parameter list and body are siblings, so it stops there too: a
+            # marker in a lambda's defaults must not allow a read in its body (27-REVIEW IN-08).
             expression: ast.AST = node
-            clause = ast.stmt | ast.ExceptHandler | ast.match_case | ast.arguments
+            clause = ast.stmt | ast.ExceptHandler | ast.match_case | ast.arguments | ast.Lambda
             while not (isinstance(expression, ast.stmt) or isinstance(parents[expression], clause)):
                 expression = parents[expression]
             if any(
@@ -166,11 +168,20 @@ def test_an_environ_read_is_allowed_by_its_statement_not_its_line() -> None:
             'import os\ng = lambda a=os.environ["SKIP"], b="SPUR_": 0\n',
             id="lambda-default-marker-in-another-default",
         ),
+        pytest.param(
+            'import os\ng = lambda a="SPUR_": os.environ["SKIP"]\n',
+            id="lambda-default-marker-in-the-body-read",
+        ),
+        pytest.param(
+            'import os\ndef f(a=lambda b="SPUR_": os.environ["SKIP"]):\n    pass\n',
+            id="nested-lambda-default-marker-in-the-body-read",
+        ),
     ],
 )
 def test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read(source: str) -> None:
-    """27-REVIEW WR-01, IN-07: the allowance looks at the read's own expression, never at the
-    body of the `if`, `def` or `except` whose header holds the read, nor at a sibling default."""
+    """27-REVIEW WR-01, IN-07, IN-08: the allowance looks at the read's own expression, never at
+    the body of the `if`, `def` or `except` whose header holds the read, nor at a sibling default,
+    nor at a lambda's parameter list when the read is in its body."""
     assert len(_problems("c.py", source)) == 1
 
 
@@ -192,6 +203,10 @@ def test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed() -> 
     """The legitimate shape: the marker is inside the read's own expression, in a header."""
     scrub = 'import os\nif any(k.startswith("SPUR_") for k in os.environ):\n    pass\n'
     assert _problems("d.py", scrub) == []
+    own_default = 'import os\ndef f(a=os.environ.get("PLAYWRIGHT_BROWSERS_PATH")):\n    pass\n'
+    assert _problems("d.py", own_default) == []
+    own_body = 'import os\ng = lambda: any(k.startswith("SPUR_") for k in os.environ)\n'
+    assert _problems("d.py", own_body) == []
 
 
 def test_a_skip_spelling_in_the_server_teardown_module_is_caught(
