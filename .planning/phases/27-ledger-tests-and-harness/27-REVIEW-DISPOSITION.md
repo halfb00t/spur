@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The WR-01 fix makes `_problems` raise `KeyError` on a module-level `from os import environ`"
   - id: IN-01
     severity: info
@@ -47,16 +47,16 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 8
+open: 7
 total: 11
-recorded: 2026-10-20T16:11:39.129Z
+recorded: 2026-10-20T16:29:40.114Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-04 | warning | open | - |
+| WR-04 | warning | fixed | 27-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
