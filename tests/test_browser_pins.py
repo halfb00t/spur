@@ -6,13 +6,13 @@ a syntax tree, so they import neither playwright nor the CAD kernel and cost mil
 in the commit-time slice, where the browser test itself never runs (D-01).
 
 These pins are a tripwire, not a proof: they see the listed spellings and an `environ` read
-whose own statement names neither marker. `getattr(pytest, "skip")`, an empty `parametrize` or
+whose own expression names neither marker. `getattr(pytest, "skip")`, an empty `parametrize` or
 a conditional `return` before the first step are not seen (21-REVIEW IN-03).
 
 What each turns red:
 
 - a skip spelling (`importorskip`, `skip`, `skipif`, `xfail`, `pytestmark`, `getenv`), or an
-  environment read whose statement holds neither `SPUR_` nor `PLAYWRIGHT_BROWSERS_PATH`,
+  environment read whose expression holds neither `SPUR_` nor `PLAYWRIGHT_BROWSERS_PATH`,
   appearing anywhere in the browser test's modules -- each is a way for a green gate to lie;
   `launch` no longer failing with the literal install command, and the `make` command that
   reinstalls with the stamp present, when the shell is missing;
@@ -32,6 +32,8 @@ import importlib.util
 import re
 import tomllib
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -98,12 +100,16 @@ def _problems(name: str, source: str) -> list[str]:
             # Equality with a whole string constant in the read's own statement: the `SPUR_`
             # scrub's `k.startswith("SPUR_")` and the launch message's `.get("PLAYWRIGHT_...")`
             # both carry a marker that way, and a marker in a comment or a longer word does not.
-            statement: ast.AST = node
-            while not isinstance(statement, ast.stmt):
-                statement = parents[statement]
+            # The climb stops under the statement (or `except` / `case` clause), not at it: a
+            # compound statement's node holds its whole body, so a marker anywhere inside an
+            # `if` would have allowed a read in its header (27-REVIEW WR-01).
+            expression: ast.AST = node
+            clause = ast.stmt | ast.ExceptHandler | ast.match_case
+            while not isinstance(parents[expression], clause):
+                expression = parents[expression]
             if any(
                 isinstance(c, ast.Constant) and c.value in ALLOWED_ENVIRON_MARKERS
-                for c in ast.walk(statement)
+                for c in ast.walk(expression)
             ):
                 continue
         problems.append(f"{name}:{node.lineno}: `{spelled}` in `{line.strip()}`")
@@ -111,12 +117,41 @@ def _problems(name: str, source: str) -> list[str]:
 
 
 def test_an_environ_read_is_allowed_by_its_statement_not_its_line() -> None:
-    """21-REVIEW IN-03: the allowance is a marker constant in the read's own statement. A
+    """21-REVIEW IN-03: the allowance is a marker constant in the read's own expression. A
     marker in a comment on the line must not pass, and a read wrapped over two lines, its
     marker on the second, must."""
     assert len(_problems("a.py", 'import os\nos.environ["X"]  # SPUR_\n')) == 1
     wrapped = 'import os\npath = os.environ.get(\n    "PLAYWRIGHT_BROWSERS_PATH")\n'
     assert _problems("b.py", wrapped) == []
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param(
+            'import os\nif os.environ.get("CI_NO_BROWSER"):\n    x = "SPUR_"\n',
+            id="if-header-marker-in-body",
+        ),
+        pytest.param(
+            'import os\ndef f(a=os.environ.get("SKIP")):\n    return "PLAYWRIGHT_BROWSERS_PATH"\n',
+            id="default-argument-marker-in-body",
+        ),
+        pytest.param(
+            'import os\ntry:\n    pass\nexcept os.environ.get("X"):\n    y = "SPUR_"\n',
+            id="except-header-marker-in-handler-body",
+        ),
+    ],
+)
+def test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read(source: str) -> None:
+    """27-REVIEW WR-01: the allowance looks at the read's own expression, never at the body of
+    the `if`, `def` or `except` whose header holds the read."""
+    assert len(_problems("c.py", source)) == 1
+
+
+def test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed() -> None:
+    """The legitimate shape: the marker is inside the read's own expression, in a header."""
+    scrub = 'import os\nif any(k.startswith("SPUR_") for k in os.environ):\n    pass\n'
+    assert _problems("d.py", scrub) == []
 
 
 def test_the_browser_test_has_no_path_that_passes_without_the_browser() -> None:
