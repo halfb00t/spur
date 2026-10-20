@@ -65,13 +65,13 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Ledger — tests and harness tell the truth
 
-- [ ] **REQ-slug-totality-guarded**: a seeded, millisecond test in the commit slice proves
+- [x] **REQ-slug-totality-guarded**: a seeded, millisecond test in the commit slice proves
   `slug()` raises nothing and ends `_trochoid` exactly when `root_mode` says trochoid, over
   draws stratified to reach every reachable refusal reason (each bucket asserted non-empty);
   `bracket degenerate` and `curve invalid` — unreachable by validated parameters (MEASURED) —
   are forced by patching and labelled forced; the test is red against a patched raising
   `_junction`/`_root_curve` (`2026-10-15-slug-totality-is-not-guarded-in-the-gate.md`).
-- [ ] **REQ-failed-build-name-isolated**: the failed-build name test reads 422 regardless of
+- [x] **REQ-failed-build-name-isolated**: the failed-build name test reads 422 regardless of
   test order or xdist scheduling — `_EXPORTS` replaced per test — and is red when the cache is
   pre-seeded with its gear under the old code
   (`2026-10-15-failed-build-name-test-depends-on-cache-order.md`).
@@ -179,8 +179,8 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-hang-leaves-evidence | Phase 26 | Complete |
 | REQ-test-image-runs-what-it-claims | Phase 26 | Complete |
 | REQ-ubuntu26-preclassified | Phase 26 | Complete |
-| REQ-slug-totality-guarded | Phase 27 | Pending |
-| REQ-failed-build-name-isolated | Phase 27 | Pending |
+| REQ-slug-totality-guarded | Phase 27 | Complete |
+| REQ-failed-build-name-isolated | Phase 27 | Complete |
 | REQ-stop-group-signals-first | Phase 27 | Pending |
 | REQ-group-floor-recorded-true | Phase 27 | Pending |
 | REQ-launch-message-true | Phase 27 | Pending |
