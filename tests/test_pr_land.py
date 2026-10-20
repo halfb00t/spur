@@ -838,9 +838,30 @@ def test_no_run_report_a_failed_commit_read_is_the_last_error() -> None:
     assert "actions/workflows" not in report
 
 
-def test_land_local_tip_differs_keeps_the_branch(capsys: pytest.CaptureFixture[str]) -> None:
+def test_land_refuses_a_local_branch_with_commits_the_pr_head_does_not_carry(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """PR #41: squash-merged at its pushed head while 13 local commits were never
+    pushed. A local tip that is not the PR's head is refused before any merge."""
+    local_tip = "0123456789abcdef0123456789abcdef01234567"
+    runner = _happy_runner().replace("rev-parse --verify", cp(0, local_tip))
+    assert land(3, runner, sleep=lambda _: None) == 1
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.calls)
+    out = capsys.readouterr().out
+    assert f"tip {local_tip} is not the PR's head {PR3_HEAD_SHA}" in out
+    assert "Push it" in out
+    assert out.count("nothing was merged") == 1
+
+
+def test_land_local_tip_differs_after_the_merge_keeps_the_branch(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The tip matched before the merge and moved during it (a commit made while the
+    poll ran): the merge stands, the branch is kept, not deleted."""
     runner = _happy_runner().replace(
-        "rev-parse --verify", cp(0, "0123456789abcdef0123456789abcdef01234567")
+        "rev-parse --verify",
+        cp(0, PR3_HEAD_SHA),
+        cp(0, "0123456789abcdef0123456789abcdef01234567"),
     )
     assert land(3, runner, sleep=lambda _: None) == 0
     assert not any(c[:3] == ["git", "branch", "-D"] for c in runner.calls)
@@ -909,6 +930,7 @@ def test_land_refuses_a_token_hidden_below_a_git_cut_line_in_the_pr_body(
         .on("pr view 3 --json number", cp(0, pr_json))
         .on("git diff --quiet", cp(0))
         .on("git diff --cached --quiet", cp(0))
+        .on("rev-parse --verify", cp(0, PR3_HEAD_SHA))
         .on(f"compare/main...{PR3_HEAD_SHA}", cp(0, CURRENT_COMPARE_JSON))
         .on(f"runs?head_sha={PR3_HEAD_SHA}", cp(0, PR3_RUNS_JSON))
         .on("runs/36088409707/jobs", cp(0, PR3_JOBS_JSON))
@@ -929,6 +951,7 @@ def test_land_gh_pr_merge_failure_returns_1_no_poll_no_follow_up(
         .on("pr view 3 --json number", cp(0, PR3_VIEW_JSON.replace('"MERGED"', '"OPEN"')))
         .on("git diff --quiet", cp(0))
         .on("git diff --cached --quiet", cp(0))
+        .on("rev-parse --verify", cp(0, PR3_HEAD_SHA))
         .on(f"compare/main...{PR3_HEAD_SHA}", cp(0, CURRENT_COMPARE_JSON))
         .on(f"runs?head_sha={PR3_HEAD_SHA}", cp(0, PR3_RUNS_JSON))
         .on("runs/36088409707/jobs", cp(0, PR3_JOBS_JSON))
@@ -968,6 +991,7 @@ def test_land_several_problems_at_once_prints_all_then_one_nothing_was_merged_li
         .on("pr view 3 --json number", cp(0, pr_json))
         .on("git diff --quiet", cp(0))
         .on("git diff --cached --quiet", cp(0))
+        .on("rev-parse --verify", cp(0, PR3_HEAD_SHA))
         .on(f"compare/main...{PR3_HEAD_SHA}", cp(0, behind_compare))
         .on(f"runs?head_sha={PR3_HEAD_SHA}", cp(0, PR3_RUNS_JSON))
         .on("runs/36088409707/jobs", cp(0, red_jobs))

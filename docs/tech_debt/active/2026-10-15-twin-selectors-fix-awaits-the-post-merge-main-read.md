@@ -14,13 +14,18 @@ Both reds of the twin-selectors step were `main` push runs (38347283201 at `94df
 `pull_request` runs of the same trees were green. So neither the local runs of 26-03 nor the draft phase PR's run reads
 the place and event where the step failed. D-05 asks for the post-merge `main` run to be read green; that run exists only
 after `make pr.land` lands Phase 26, which is after the phase's verification, so no task inside the phase can perform it.
-The fix itself was proved on the real app (the `/api/info` response arms, the CX-05 control, 20 local runs at `-n 8`),
-recorded in `bench/RESULTS.md`.
+The mechanism was proved on the real app by the three-run `/api/info` response arms and the CX-05 control, recorded in
+`bench/RESULTS.md`. The 20 local runs at `-n 8` are 20 of 20 green, which is consistent with the fix but does not separate
+it from a fast host: the old step was not run 20 times here, and it failed on `main` CI (a runner about twice as slow) in 2
+of 8 runs (`bench/RESULTS.md`, `### Twin selectors (26-03)`; the resolved twin item files the same runs under "Not proven by
+this commit"). They are not proof that the `main` red is fixed.
 
 ## Why it matters
-Until the `main` run is read, the fix is proved on the real app locally, not on the runner and event that failed. One
-green `main` run is consistent with the fix, not conclusive: at the observed 2 reds in 8 runs, a single run is green about
-75 % of the time by luck. The local arms stay the proof; this read is the check that the place that failed no longer does.
+Until the `main` run is read, the mechanism is proved on the real app locally, not on the runner and event that failed. The
+only proof that the `main` red is fixed is the post-merge `main` CI read below; the local arms prove the mechanism, and the
+20 local runs prove nothing about the red. One green `main` run is consistent with the fix, not conclusive: at the observed
+2 reds in 8 runs, a single run is green about 75 % of the time by luck. So this read is the check that the place that
+failed no longer does, and further green `main` runs add to it.
 
 ## Next step
 Trigger: the first `main` CI run after `make pr.land` lands Phase 26.

@@ -42,6 +42,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [`make pr.land` merges the pushed PR head without checking the local branch is pushed](resolved/2026-10-20-pr-land-merges-a-stale-head.md) | fix(pr_land): refuse a local head branch the PR head does not carry — see the file's own `Resolved in:` field |
 | [`make test-image` collects test files that read files the image does not hold](resolved/2026-10-10-test-image-collects-tests-that-read-host-files.md) | fix(26): make test-image mounts what its tests read and ignores only host-only files by name — see the file's own `Resolved in:` field |
 | [A reentrant `resource_tracker` cleanup warning sometimes fails `make verify`](resolved/2026-10-06-resource-tracker-flake-fails-the-gate.md) | fix(26): collect the pool tests' cycles outside the resource tracker lock, located from a forced-GC reproduction — see the file's own `Resolved in:` field |
 | [The browser step "twin selectors" reds `main` CI with one extra request](resolved/2026-10-15-twin-selectors-step-reds-main.md) | fix(26): take the twin-selectors baseline after the link's own STL request and settle past the debounce — see the file's own `Resolved in:` field |

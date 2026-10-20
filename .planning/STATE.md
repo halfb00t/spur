@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 26
 current_phase_name: Gate Fails With a Cause
-status: executing
-stopped_at: Completed 26-06-PLAN.md
-last_updated: "2026-10-15T13:26:20.946Z"
+status: verifying
+stopped_at: Completed 26-07-PLAN.md
+last_updated: "2026-10-15T14:38:39.122Z"
 last_activity: 2026-10-15
 last_activity_desc: Phase 26 execution started
-state_head: d9904e41bf9a8b986f368dc0441f7b79beee8bbc
+state_head: 577b494cf5129bb6138259c2b5114fcceaf5908c
 progress:
   total_phases: 4
   completed_phases: 5
   total_plans: 7
-  completed_plans: 6
-  percent: 86
+  completed_plans: 7
+  percent: 100
 ---
 
 # Project State
@@ -32,10 +32,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 26 (Gate Fails With a Cause) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-15 — Phase 26 execution started
 
-Progress: [█████████░] 86% (0 of 4 phases)
+Progress: [██████████] 100% (0 of 4 phases)
 
 ## Performance Metrics
 
@@ -250,6 +250,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 26 P04 | 19 min | 3 tasks | 4 files |
 | Phase 26 P05 | 32 min | 3 tasks | 6 files |
 | Phase 26 P06 | 40min | 3 tasks | 12 files |
+| Phase 26 P07 | 25min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -475,6 +476,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 26]: 26-05: faulthandler_timeout stays 120 (slowest phase 32.33 s locally, 2 x S = 64.66 s); the -v --durations=25 flags cost -0.51 % over 3 + 3 interleaved gate runs (206.87 s vs 205.81 s, L43 bar 300 s); hang item stays active with a runbook
 - [Phase 26]: 26-06: pytest-cov and pytest-xdist added to the test-image pip install so the forced-GC test runs in the image (human option B, deviation from D-11 literal text)
 - [Phase 26]: 26-06: test-image ignores six files whole, not per-test --deselect (stale ids fail silently); drops 47 + 41 passing tests from the image suite
+- [Phase 26]: D-07 applied on CI run 38750065494: S_ci 83.55 s, so faulthandler_timeout raised 120 -> 170
 
 ### Pending Todos
 
@@ -764,8 +766,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15T13:26:20.925Z
-Stopped at: Completed 26-06-PLAN.md
+Last session: 2026-10-15T14:38:39.100Z
+Stopped at: Completed 26-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -40,7 +40,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   when the caller sets `PYTEST_ARGS`, in both the environment and the `make` command-line form;
   the new test is red for both forms before the fix
   (`docs/tech_debt/active/2026-10-10-hook-pin-reads-the-callers-pytest-args.md`).
-- [ ] **REQ-twin-selectors-race-fixed**: the browser step "twin selectors" no longer reds on
+- [x] **REQ-twin-selectors-race-fixed**: the browser step "twin selectors" no longer reds on
   `main` (runs 38347283201, 38680454993; PR runs of the same commits green). The request
   baseline is taken after the page's own STL request has settled past the 350 ms debounce;
   a delayed-route proof shows the old step red and the new one green. Filed as `must` debt and
@@ -52,7 +52,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   before it starts; effective `-n`, tool versions and signature-classified reds recorded in
   `bench/RESULTS.md`. If the reproduction does not hold, the item is re-deferred with that
   measurement instead (`2026-10-06-resource-tracker-flake-fails-the-gate.md`).
-- [ ] **REQ-hang-leaves-evidence**: a stalled test in `make verify` leaves its test id and a
+- [x] **REQ-hang-leaves-evidence**: a stalled test in `make verify` leaves its test id and a
   stack dump in the log (`faulthandler_timeout` dump-only, `-v --durations`), shown by a
   deliberately stalled test once; the timeout is set from a recorded `--durations` reading;
   the gate's cost is measured against the 300 s bar (L43). The hang item stays `active` with
@@ -174,9 +174,9 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | REQ-hook-pin-ignores-caller-args | Phase 26 | Complete |
-| REQ-twin-selectors-race-fixed | Phase 26 | Pending |
+| REQ-twin-selectors-race-fixed | Phase 26 | Complete |
 | REQ-tracker-flake-fixed-from-repro | Phase 26 | Complete |
-| REQ-hang-leaves-evidence | Phase 26 | Pending |
+| REQ-hang-leaves-evidence | Phase 26 | Complete |
 | REQ-test-image-runs-what-it-claims | Phase 26 | Complete |
 | REQ-ubuntu26-preclassified | Phase 26 | Complete |
 | REQ-slug-totality-guarded | Phase 27 | Pending |

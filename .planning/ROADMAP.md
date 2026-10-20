@@ -244,7 +244,7 @@ retired in the commit that fixes it. **Phase close**: `make verify` result line 
 **Research flag**: No research phase. Three first measurements, each the first task of its
 item: the `make test-image` red set (never run in research), the CI `--durations` that sets the
 timeout, and the flake reproduction re-run on this host.
-**Plans**: 6/7 plans executed
+**Plans**: 7/7 plans executed
 
 Plans:
 **Wave 1**
@@ -266,7 +266,7 @@ Plans:
 - [x] 26-06-PLAN.md — `make test-image`: first red set recorded, mounts + named ignores, pin tightened, item retired, CI idea filed
 
 **Wave 7** *(blocked on Wave 6 completion)*
-- [ ] 26-07-PLAN.md — phase close gate and the phase's first CI run: D-07's durations rule, the twin step on CI, D-16 follow-through
+- [x] 26-07-PLAN.md — phase close gate and the phase's first CI run: D-07's durations rule, the twin step on CI, D-16 follow-through
 
 ### Phase 27: Ledger Tests and Harness
 
@@ -478,7 +478,7 @@ empty.
 | 13–16 | v0.3 | 20/20 | Complete | 2026-10-05 |
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
-| 26. Gate Fails With a Cause | v0.6 | 6/7 | In Progress | - |
+| 26. Gate Fails With a Cause | v0.6 | 7/7 | In Progress | - |
 | 27. Ledger Tests and Harness | v0.6 | 0/? | Not started | - |
 | 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |
