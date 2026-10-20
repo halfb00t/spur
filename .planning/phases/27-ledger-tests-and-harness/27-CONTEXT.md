@@ -82,6 +82,21 @@ the decisions the roadmap left to this discussion and the defaults taken around 
 - 22 IN-03 is a dated amendment to L40, not a rewrite. Every new guard test is seen red once and the red is
   recorded.
 
+### Taken at plan-phase (2026-10-20, from 27-RESEARCH.md Open Questions)
+- **D-06:** `group_members`, `_signal_group`, `stop_group` and `_log_tail` move to a new `tests/process_group.py`,
+  in their own commit before the reorder. The `stop_group` unit test (`tests/test_process_group.py`) imports it
+  with a fake `group_members`, so it runs in `make test-image` (the image has neither playwright nor `ps`). No new
+  `--ignore`.
+- **D-07:** 19 IN-02's bench half does only the cheap part: `bench/trochoid_part.py` reads `rm.curve` and drops the
+  stale "does not exist until 19-04" paragraph, plus the `_host_state` catch. Replacing the near-copies with the
+  test helpers is recorded `skipped` in the triage table, with the reason: they differ in error type (assert vs
+  `ValueError`), sample count (fixed 400 vs a `samples` parameter) and signature. This narrows D-04's last
+  sentence.
+- **D-08:** Only the failed-build name test gets the fresh-`_BlobCache` fixture. The three sibling tests
+  (`tests/test_api.py` ~:1255, :1322, :1357) keep the unique-teeth convention.
+- **D-09:** The new launch-failure text gets one pin in `tests/test_browser_pins.py`, seen red against the old
+  text and recorded.
+
 ### Claude's Discretion
 - The seed, draw count and stratification method for the slug test, within the millisecond budget.
 - The throwaway PR's exact workflow edit for D-05, provided it changes only what runs, adds no fix and is closed
