@@ -33,6 +33,7 @@ from .build_errors import BuildError
 from .calc import (
     Profile,
     RootCurve,
+    RootMode,
     bore_radius,
     bore_rim_limit,
     hex_across_flats,
@@ -622,7 +623,7 @@ def _cut_body(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
     return solid.cut(*cutters)
 
 
-def _chamfer_tips(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
+def _chamfer_tips(solid: cq.Shape, p: GearParams, pr: Profile, rm: RootMode) -> cq.Shape:
     """An end-face edge break on the tooth-tip arcs: bore_chamfer's exact call and
     meaning, symmetric 45 degrees, c off the end face and c off the tip (D-03).
 
@@ -632,8 +633,11 @@ def _chamfer_tips(solid: cq.Shape, p: GearParams, pr: Profile) -> cq.Shape:
     outline. The cost (bench/RESULTS.md "Tooth-tip chamfer spike"): about 12 s at 200
     teeth (400 edges), the same at any c -- the one v0.2 cut in L09's cost family,
     where the analytic remedy is ruled out by the reading.
+
+    `rm` is _build's one root answer, so the chamfer limit reads the curve the part was
+    cut from instead of solving it again (19-REVIEW IN-01).
     """
-    c = tip_chamfer_effective(p)
+    c = tip_chamfer_effective(p, rm)
     if c <= 0:
         return solid
     solid = _body(solid).chamfer(c, None, _tip_edges(solid, pr.ra, p.face_width))
@@ -776,7 +780,7 @@ def _build(p: GearParams) -> cq.Solid:
     solid = _cut_bore(solid, p)
     solid = _cut_keyway(solid, p)
     solid = _cut_body(solid, p, pr)
-    solid = _chamfer_tips(solid, p, pr)
+    solid = _chamfer_tips(solid, p, pr, rm)
 
     solids = solid.Solids()
     if len(solids) != 1 or not solids[0].isValid():
