@@ -591,3 +591,16 @@ def test_writing_before_planning_goes_red() -> None:
     assert _pick(round_bore, start, {}, _defaults()) is None
     written, _ = _pick_write_first(round_bore, start, {}, _defaults())
     assert written["bore_flat"] == 0
+
+
+def test_the_page_string_reads_a_number_as_the_page_does() -> None:
+    """27-REVIEW IN-03: `_page_string` is a copy of `tests/browser_session.py`'s `_js_number`,
+    made so this module stays off playwright, and `tests/test_browser.py` pins only the
+    original. The same rows here keep the two from drifting: `-0` is `0`, positional digits
+    through 1e16, and an exponent range raises rather than writing a string the page does not."""
+    for number, written in ((-0.0, "0"), (1.0, "1"), (0.05, "0.05"), (1e-6, "0.000001"),
+                            (1e16, "10000000000000000")):
+        assert _page_string(number) == written
+    for beyond in (1e21, 1e-7):
+        with pytest.raises(AssertionError, match="exponent"):
+            _page_string(beyond)
