@@ -75,7 +75,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   test order or xdist scheduling — `_EXPORTS` replaced per test — and is red when the cache is
   pre-seeded with its gear under the old code
   (`2026-10-15-failed-build-name-test-depends-on-cache-order.md`).
-- [ ] **REQ-stop-group-signals-first**: `stop_group` signals the group before it inspects it;
+- [x] **REQ-stop-group-signals-first**: `stop_group` signals the group before it inspects it;
   a failed `ps` fails the teardown as "survivors unknown" with the group already signalled;
   the SIGTERM grace and the leader-only-break red are kept; a sub-second unit test outside
   the `*browser*` glob proves both paths and cleans up its own group
@@ -181,7 +181,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-ubuntu26-preclassified | Phase 26 | Complete |
 | REQ-slug-totality-guarded | Phase 27 | Complete |
 | REQ-failed-build-name-isolated | Phase 27 | Complete |
-| REQ-stop-group-signals-first | Phase 27 | Pending |
+| REQ-stop-group-signals-first | Phase 27 | Complete |
 | REQ-group-floor-recorded-true | Phase 27 | Pending |
 | REQ-launch-message-true | Phase 27 | Pending |
 | REQ-bad-link-refused | Phase 28 | Pending |

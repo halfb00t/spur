@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 27
 current_phase_name: Ledger Tests and Harness
 status: executing
-stopped_at: Completed 27-02-PLAN.md
-last_updated: "2026-10-20T13:32:01.353Z"
+stopped_at: Completed 27-03-PLAN.md
+last_updated: "2026-10-20T13:39:52.132Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 27 execution started
-state_head: c30ebd0804bb4c4a0ea0a4dc8030c1b529669f54
+state_head: a7c5f78a0bef27c849e3a2e6b585576cb225aa9a
 progress:
   total_phases: 4
   completed_phases: 6
   total_plans: 13
-  completed_plans: 9
-  percent: 69
+  completed_plans: 10
+  percent: 77
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 27 (Ledger Tests and Harness) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 27 execution started
 
-Progress: [███████░░░] 69% (1 of 4 phases)
+Progress: [████████░░] 77% (1 of 4 phases)
 
 ## Performance Metrics
 
@@ -254,6 +254,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 26 P07 | 25min | 3 tasks | 8 files |
 | Phase 27 P01 | 25 min | 3 tasks | 8 files |
 | Phase 27 P02 | 9 min | 3 tasks | 15 files |
+| Phase 27 P03 | 6 min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -484,6 +485,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 27]: 27-01: the browser test's server group is the server, its resource tracker and one or two spawned workers on macOS (4, 3, 4) and ubuntu-24.04 (4); 3 vs 4 is a hash-salt outcome, so the floor stays 3
 - [Phase 27]: 27-02: the slug totality test draws 1,300 gears in five seeded boxes; buckets are root_mode's answer, each asserted non-empty, RootReason's members asserted equal to reachable plus forced
 - [Phase 27]: 27-02: tests/test_cli.py keeps its own _BORE_OFF copy; 22 IN-01 covered test_trochoid.py and test_api.py only, the rest noted in 27-06's triage table
+- [Phase 27]: 27-03: the leader-only red that fires on the real server is the 21-01 break (os.kill(pgid, SIGKILL)); the plan's os.kill(pgid, sig) passes because uvicorn shuts its pool workers down on SIGTERM — Seen: run 1 of investigation/27-03-red-leader-only.log read 2 passed; run 2 read still has live pids after SIGTERM (10 s) and SIGKILL (5 s)
+- [Phase 27]: 27-03: stop_group signals the group before any ps read or proc.wait; a failed or absent ps skips the grace and fails as survivors unknown after SIGTERM and SIGKILL — T-21-02 and the reused-pid risk (T-27-11); proved by tests/test_process_group.py, 0.04 s, red against the old order (3 failed)
 
 ### Pending Todos
 
@@ -775,8 +778,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-20T13:32:01.311Z
-Stopped at: Completed 27-02-PLAN.md
+Last session: 2026-10-20T13:39:52.085Z
+Stopped at: Completed 27-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

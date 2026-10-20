@@ -331,7 +331,7 @@ corrections; L40 takes a dated amendment, not a rewrite. Every new guard test is
 the red recorded. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — standard patterns.
-**Plans**: 2/6 plans executed
+**Plans**: 3/6 plans executed
 
 Plans:
 **Wave 1**
@@ -341,7 +341,7 @@ Plans:
 - [x] 27-02-PLAN.md — ledger guards: seeded stratified `slug()` totality test (red x2), fresh `_BlobCache` for the failed-build name test (red), 24 IN-03, 22 IN-01, 23 IN-08; two items retired
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 27-03-PLAN.md — `stop_group` signals first: teardown moved to playwright-free `tests/process_group.py`, sub-second unit test red then green, leader-only red kept, 21 IN-01; item retired
+- [x] 27-03-PLAN.md — `stop_group` signals first: teardown moved to playwright-free `tests/process_group.py`, sub-second unit test red then green, leader-only red kept, 21 IN-01; item retired
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 27-04-PLAN.md — the one `model.py` touch (D-03/D-04) with the fixture byte-identical, bench reads `rm.curve`, `_host_state` names an unknown HEAD; Phase 19 item edited in place
@@ -498,6 +498,6 @@ empty.
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
-| 27. Ledger Tests and Harness | v0.6 | 2/6 | In Progress | - |
+| 27. Ledger Tests and Harness | v0.6 | 3/6 | In Progress | - |
 | 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |
