@@ -16,6 +16,7 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
+| blocker | [`make pr.land` merges the pushed PR head without checking the local branch is pushed](active/2026-10-20-pr-land-merges-a-stale-head.md) | the next `make pr.land`: fix before it runs |
 | must | [A link with an invalid enum value loads a blank select and builds the default part](active/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | Phase 23 or 24 touches buildForm's enum rendering, or a user reports a link that loaded a blank select (pinned as today's behaviour by the browser test's step `root_shape=bogus as today`) |
 | must | [CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the browser test's install has only run on 24.04](active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md) | the first CI run after 2026-10-19 whose `Set up job` group names Ubuntu 26 (read its whole log; classify before any fix) |
 | must | [`stop_group` reads `ps` before it signals, so a failed `ps` leaves the server group alive](active/2026-10-10-stop-group-reads-ps-before-it-signals.md) | the next change to the teardown in `tests/browser_session.py`, or any run whose teardown reports `CalledProcessError` from `ps` instead of survivors |
