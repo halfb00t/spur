@@ -1,7 +1,7 @@
 ---
 phase: 26-gate-fails-with-a-cause
 verified: 2026-10-15T15:20:00Z
-status: human_needed
+status: passed
 score: 4/5 must-haves verified
 covered_files:
   - ".planning/phases/26-gate-fails-with-a-cause/26-01-PLAN.md"
