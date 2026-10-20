@@ -2595,6 +2595,8 @@ Machine: 12 CPUs, Apple M2 Max, 32 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand
 Shell 153.0.8010.12; the timeit, sweep and browser readings on 2026-10-11 about 12:15 to 12:30 local time
 (22-01), load average 5.2 to 6.5 (`uptime`).
 
+**Amendment (2026-10-20, 22-REVIEW IN-03).** The browser proof above quotes `step download name` at 1.13 s beside `step first build drawn` at 2.93 s; that was the low reading. 22-02's three readings on the committed head are 3.56, 3.20 and 1.13 s, mean 2.63 s (`bench/RESULTS.md`, "The download step, priced (22-02)"), and that section leaves the spread unexplained. Each is under 21 PD-04's 15 s, so `BUILD_WAIT_MS` stays 45,000 ms; the conclusion is unchanged, only the figure it was quoted with. The Totality paragraph's sweep is still a command, and since Phase 27 the gate also holds a seeded, stratified test of the same claim in the commit slice (`tests/test_trochoid.py::test_slug_is_total_and_ends_trochoid_exactly_when_root_mode_does`: seed 20261020, 1,300 draws in five boxes, 0.07 s, 27-02 SUMMARY). No existing sentence of this entry is edited.
+
 ## L41 — A field the model says is inert is dimmed in the form and stays a field: enabled_when on GearParams, proved against calc (supersedes 08 D-09, keeps L02)
 
 Date: 2026-10-11.
