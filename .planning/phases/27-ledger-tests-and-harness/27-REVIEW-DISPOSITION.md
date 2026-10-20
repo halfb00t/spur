@@ -5,8 +5,8 @@ titles: json
 findings:
   - id: IN-04
     severity: info
-    disposition: open
-    title: "Nothing pins that `_build` passes its own `rm` to `_chamfer_tips` (carried forward, skipped on purpose)"
+    disposition: skipped
+    title: "Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`"
   - id: IN-08
     severity: info
     disposition: open
@@ -51,16 +51,16 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 2
+open: 1
 total: 12
-recorded: 2026-10-20T17:23:59.176Z
+recorded: 2026-10-20T17:24:38.053Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-04 | info | open | - |
+| IN-04 | info | skipped | 27-REVIEW-FIX.md |
 | IN-08 | info | open | - |
 | IN-01 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | IN-02 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
