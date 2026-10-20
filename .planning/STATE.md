@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 27
 current_phase_name: Ledger Tests and Harness
 status: executing
-stopped_at: Phase 27 context gathered
-last_updated: "2026-10-20T12:55:08.845Z"
+stopped_at: Completed 27-01-PLAN.md
+last_updated: "2026-10-20T13:19:58.527Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 27 execution started
-state_head: 3b5bb00adfe167d8af8b7529ab7882261c751148
+state_head: 1ea663d115c9b0e0d99e1fb1ef9c21e64dbad5f2
 progress:
   total_phases: 4
   completed_phases: 6
   total_plans: 13
-  completed_plans: 7
-  percent: 54
+  completed_plans: 8
+  percent: 62
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 27 (Ledger Tests and Harness) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 27
+Plan: 2 of 6
+Status: Ready to execute
 Last activity: 2026-10-20 — Phase 27 execution started
 
-Progress: [█████░░░░░] 54% (1 of 4 phases)
+Progress: [██████░░░░] 62% (1 of 4 phases)
 
 ## Performance Metrics
 
@@ -252,6 +252,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 26 P05 | 32 min | 3 tasks | 6 files |
 | Phase 26 P06 | 40min | 3 tasks | 12 files |
 | Phase 26 P07 | 25min | 3 tasks | 8 files |
+| Phase 27 P01 | 25 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -479,6 +480,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 26]: 26-06: test-image ignores six files whole, not per-test --deselect (stale ids fail silently); drops 47 + 41 passing tests from the image suite
 - [Phase 26]: D-07 applied on CI run 38750065494: S_ci 83.55 s, so faulthandler_timeout raised 120 -> 170
 - [Phase 26]: UAT closed on the post-merge `main` read (run 38858407163, the twin step's test PASSED); the 13 commits PR #41 left off `main` landed in PR #42 with the `pr_land` pre-merge local-tip refusal
+- [Phase 27]: 27-01: the browser test's server group is the server, its resource tracker and one or two spawned workers on macOS (4, 3, 4) and ubuntu-24.04 (4); 3 vs 4 is a hash-salt outcome, so the floor stays 3
 
 ### Pending Todos
 
@@ -770,9 +772,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-20T11:19:55.245Z
-Stopped at: Phase 27 context gathered
-Resume file: .planning/phases/27-ledger-tests-and-harness/27-CONTEXT.md
+Last session: 2026-10-20T13:19:58.482Z
+Stopped at: Completed 27-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
