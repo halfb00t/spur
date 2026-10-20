@@ -7,12 +7,16 @@ no code with spur.calc.
 
 import json
 import math
+import random
 import re
 import time
+import typing
+from collections import Counter
 from dataclasses import FrozenInstanceError, replace
 from functools import cache
 from itertools import pairwise
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 from pydantic import ValidationError
@@ -28,6 +32,7 @@ from spur.calc import (
     TROCHOID_JOIN_EPS,
     Cutter,
     Profile,
+    RootReason,
     _junction,
     _root_curve,
     _trochoid_point,
@@ -233,6 +238,106 @@ def test_the_download_name_follows_the_root_root_mode_builds(
     rm = root_mode(p, profile(p), requested=p.root_shape, rho=p.root_fillet)
     assert (rm.reason, p.slug()) == (reason, name)
     assert p.slug().endswith("_trochoid") == (rm.mode == "trochoid")
+
+
+_REACHABLE_REASONS = frozenset({"not requested", "nothing radial to replace", "tip land gone",
+                                "tooth severed"})
+# Only a patch reaches these two: tests/test_calc.py's sweep tally reads 0 for both.
+_FORCED_REASONS = frozenset({"bracket degenerate", "curve invalid"})
+
+
+class _SlugBox(NamedTuple):
+    """One stratum of the draw: how many, and the ranges the fields are drawn from."""
+    draws: int
+    teeth: tuple[int, int]
+    profile_shift: tuple[float, float]
+    pressure_angle: tuple[float, float]
+    root_shape: str
+
+
+# One wide box of 2,000 draws never reached `tooth severed` (27-RESEARCH, measured), so the
+# boxes aim: the undercut region where the hob cuts a tooth through is teeth 6-10 at shift
+# -0.6 to -0.5; `tip land gone` needs a pressure angle of about 33.5 or more; `nothing
+# radial to replace` is 27 teeth up at the defaults; the radial box fills `not requested`
+# and is drawn last, so the first 1,200 draws keep the sequence 27-RESEARCH measured.
+_SLUG_BOXES = (
+    _SlugBox(300, (6, 26), (-0.6, 0.3), (14.5, 25), "trochoid"),     # applies
+    _SlugBox(300, (27, 200), (-0.6, 1.0), (14.5, 35), "trochoid"),   # ignored
+    _SlugBox(300, (6, 40), (-0.6, 1.0), (33.5, 35), "trochoid"),     # no land
+    _SlugBox(300, (6, 10), (-0.6, -0.4), (14.5, 20), "trochoid"),    # severed
+    _SlugBox(100, (6, 200), (-0.6, 1.0), (14.5, 35), "radial"),      # not requested
+)
+
+
+def test_slug_is_total_and_ends_trochoid_exactly_when_root_mode_does() -> None:
+    """REQ-slug-totality-guarded, SC1: `slug()` runs inside the `build.failed` and
+    `queue.refused` records, so an exception from it would replace the real cause of a
+    failed build with a 500 (the debt item's why). L40 accepted its totality on a one-off
+    1.9 s sweep, a command and not a test; this is the test, seeded, in the commit slice.
+    Every validated draw must name itself without raising, and end `_trochoid` exactly
+    when `root_mode` says trochoid. The bucket of a draw is `root_mode`'s answer, never
+    the box's intent, and every reachable bucket must hold a draw: a box that stops
+    reaching its reason (a moved bound, a changed `random` sequence) turns the test red
+    instead of passing on less. The two reasons no validated draw reaches are forced in
+    the next test; the members of the `RootReason` union turn a reason added later red until it
+    is classified here.
+
+    Fields are drawn in a fixed call order from one generator seeded 20261020 and the boxes'
+    insertion order, so two runs draw the same gears into the same buckets (CPython 3.12,
+    L23). Draws the validator refuses are skipped and counted, never coerced.
+
+    Measured 2026-10-20 (Apple M5 Max, Python 3.12.15) over the 1,300 draws: 564 trochoid,
+    303 `nothing radial to replace`, 82 `not requested`, 13 `tip land gone`, 9 `tooth
+    severed`, 329 skipped by the validator; the call takes 0.07 s. Seen red twice, each
+    `1 failed` with its RuntimeError, when `_junction` and when `_root_curve` raised on
+    entry (investigation/27-02-red-slug-*.log)."""
+    assert set(typing.get_args(RootReason)) == _REACHABLE_REASONS | _FORCED_REASONS
+    rng = random.Random(20261020)
+    buckets: Counter[str] = Counter()
+    skipped = 0
+    for box in _SLUG_BOXES:
+        for _ in range(box.draws):
+            fields = {**_BORE_OFF,
+                      "teeth": rng.randint(*box.teeth),
+                      "profile_shift": round(rng.uniform(*box.profile_shift), 2),
+                      "pressure_angle": round(rng.uniform(*box.pressure_angle), 1),
+                      "module": round(rng.uniform(0.2, 10), 2),
+                      "backlash": round(rng.uniform(0, 1), 2),
+                      "root_fillet": round(rng.uniform(0, 3), 2),
+                      "root_shape": box.root_shape}
+            try:
+                p = GearParams.model_validate(fields)
+            except ValidationError:
+                skipped += 1
+                continue
+            rm = root_mode(p, profile(p), requested=p.root_shape, rho=p.root_fillet)
+            name = p.slug()
+            assert name.endswith("_trochoid") == (rm.mode == "trochoid"), (fields, rm.reason, name)
+            buckets[rm.reason or "trochoid"] += 1
+    empty = (_REACHABLE_REASONS | {"trochoid"}) - {b for b, n in buckets.items() if n}
+    assert not empty, (sorted(empty), dict(buckets), skipped)
+    assert not _FORCED_REASONS & buckets.keys(), (
+        "a validated draw reached a forced reason: relabel it", dict(buckets))
+
+
+@pytest.mark.parametrize(("target", "patch", "reason"), [
+    pytest.param("spur.calc._junction", lambda _c, _eps: None, "bracket degenerate",
+                 id="forced-bracket-degenerate"),
+    pytest.param("spur.calc._root_curve", lambda _c: "curve invalid", "curve invalid",
+                 id="forced-curve-invalid"),
+])
+def test_slug_stays_total_on_the_two_reasons_only_a_patch_reaches(
+        monkeypatch: pytest.MonkeyPatch, target: str, patch: object, reason: str) -> None:
+    """REQ-slug-totality-guarded, SC1, forced: validated parameters never reach
+    `bracket degenerate` or `curve invalid` (tests/test_calc.py's sweep tally reads 0 for
+    both, measured), so each is reached by replacing only the function that returns it;
+    every other path stays real. The 23-teeth gear is the `23-applies` row, which is a
+    trochoid until the patch refuses it; the name must then be the radial one."""
+    p = GearParams.model_validate({"teeth": 23, "root_shape": "trochoid"})
+    monkeypatch.setattr(target, patch)
+    rm = root_mode(p, profile(p), requested=p.root_shape, rho=p.root_fillet)
+    assert (rm.mode, rm.reason) == ("radial", reason)
+    assert p.slug() == "spur_z23_m1.75_pa25"
 
 
 def test_a_sharp_cutter_and_a_corner_centre_on_the_rolling_line_are_both_legal() -> None:

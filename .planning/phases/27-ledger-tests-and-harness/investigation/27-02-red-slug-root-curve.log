@@ -1,0 +1,61 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_slug_is_total_and_ends_trochoid_exactly_when_root_mode_does _______
+
+    def test_slug_is_total_and_ends_trochoid_exactly_when_root_mode_does() -> None:
+        """REQ-slug-totality-guarded, SC1: `slug()` runs inside the `build.failed` and
+        `queue.refused` records, so an exception from it would replace the real cause of a
+        failed build with a 500 (the debt item's why). L40 accepted its totality on a one-off
+        1.9 s sweep, a command and not a test; this is the test, seeded, in the commit slice.
+        Every validated draw must name itself without raising, and end `_trochoid` exactly
+        when `root_mode` says trochoid. The bucket of a draw is `root_mode`'s answer, never
+        the box's intent, and every reachable bucket must hold a draw: a box that stops
+        reaching its reason (a moved bound, a changed `random` sequence) turns the test red
+        instead of passing on less. The two reasons no validated draw reaches are forced in
+        the next test; `get_args(RootReason)` turns a reason added later red until it is
+        classified here.
+    
+        Fields are drawn in a fixed call order from one `random.Random(20261020)` and the boxes'
+        insertion order, so two runs draw the same gears into the same buckets (CPython 3.12,
+        L23). Draws the validator refuses are skipped and counted, never coerced."""
+        assert set(typing.get_args(RootReason)) == _REACHABLE_REASONS | _FORCED_REASONS
+        rng = random.Random(20261020)
+        buckets: Counter[str] = Counter()
+        skipped = 0
+        for box in _SLUG_BOXES:
+            for _ in range(box.draws):
+                fields = {**_BORE_OFF,
+                          "teeth": rng.randint(*box.teeth),
+                          "profile_shift": round(rng.uniform(*box.profile_shift), 2),
+                          "pressure_angle": round(rng.uniform(*box.pressure_angle), 1),
+                          "module": round(rng.uniform(0.2, 10), 2),
+                          "backlash": round(rng.uniform(0, 1), 2),
+                          "root_fillet": round(rng.uniform(0, 3), 2),
+                          "root_shape": box.root_shape}
+                try:
+                    p = GearParams.model_validate(fields)
+                except ValidationError:
+                    skipped += 1
+                    continue
+>               rm = root_mode(p, profile(p), requested=p.root_shape, rho=p.root_fillet)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_trochoid.py:307: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/calc.py:1706: in root_mode
+    curve = _root_curve(c)
+            ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+c = Cutter(pr=Profile(z=20, m=2.28, alpha=0.40317105721069013, r=22.799999999999997, rb=20.971930138935615, ra=25.23959999...159114686923576, rho_requested=2.58, rho=0.915, w_c=-1.7753999999999994, a=0.0006021447588866469, xi=3.505096250107427)
+
+    def _root_curve(c: Cutter) -> RootCurve | RootReason:
+        """The curve, or the named reason there is none; cheap checks first."""
+>       raise RuntimeError("mutated _root_curve")
+E       RuntimeError: mutated _root_curve
+
+src/spur/calc.py:1613: RuntimeError
+=========================== short test summary info ============================
+FAILED tests/test_trochoid.py::test_slug_is_total_and_ends_trochoid_exactly_when_root_mode_does
+1 failed, 100 deselected in 0.08s
+exit 1
