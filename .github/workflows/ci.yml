@@ -43,7 +43,7 @@ jobs:
       # var on this step and not a step of its own because `.venv` exists only once
       # `make verify` has made it, and the shell must land under it (D-06). No cache:
       # Playwright's CI documentation says restoring one is about as slow as downloading.
-      - run: make verify PYTHON=python
+      - run: make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"
         env:
           PIP_CONSTRAINT: requirements.txt
           BROWSER_INSTALL_ARGS: --with-deps

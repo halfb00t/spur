@@ -197,6 +197,15 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
                 try:
                     if body_finished and floor_applies():
                         members = group_members(proc.pid)
+                        # temporary, spike branch only (27-01, D-05)
+                        for row in subprocess.run(
+                            ["ps", "-ww", "-A", "-o", "pid=,pgid=,stat=,command="],
+                            capture_output=True,
+                            text=True,
+                            check=True,
+                        ).stdout.splitlines():
+                            if row.split()[1:2] == [str(proc.pid)]:
+                                print(f"spur-group-listing: {row.strip()}")
                         print(f"server group members before the kill: {len(members)}")
                         assert len(members) >= MIN_GROUP_MEMBERS, (
                             f"saw {members} in the server's group, expected uvicorn plus its "
