@@ -1,0 +1,13 @@
+# sysctl hw.ncpu machdep.cpu.brand_string hw.memsize
+18
+Apple M5 Max
+68719476736
+# sw_vers -productVersion
+27.0.1
+# uname -r
+27.0.0
+# python
+Python 3.12.15
+playwright 1.63.0
+# date -u
+2026-10-20T12:58:04Z

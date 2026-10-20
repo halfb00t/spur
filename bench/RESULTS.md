@@ -6500,3 +6500,86 @@ is the read D-05 asked for, and it retires
 `docs/tech_debt/resolved/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md`. It is consistent with the
 fix, not conclusive: before the fix the step went red on 2 of 8 `main` runs, so two greens in a row happen by luck
 about 56 % of the time ((6/8)^2). Later `main` runs add to it; a red at the step re-opens the twin item.
+
+## Ledger tests and harness (Phase 27)
+
+What this section holds: v0.6's second phase makes the ledger's tests and the browser harness say what they check. Readings are
+appended per plan, never rewritten. Every whole log is under `.planning/phases/27-ledger-tests-and-harness/investigation/`.
+
+### The server group, listed (27-01)
+
+D-05: the group-floor comment in `tests/browser_session.py` (`MIN_GROUP_MEMBERS`, written in 27-06) must cite members that `ps`
+observed, on macOS and on Linux. A print inside the harness never reaches a green `make verify` log (pytest captures it; Phase
+26's `twin selectors:` lines were absent from both post-merge `main` logs), so the Linux listing needed one throwaway run with
+`-s -n0`. The agent cut `spike/27-group-listing` from the phase head `9943a7b` (BASE, `9943a7bbf7078b420f5142a1bf60986d2e2cda5e`)
+with one commit, `9c42559` (`9c4255967bddab853820aa9f534dc83a8e5414d5`), whose diff from BASE is two files: the `test` job's
+`make verify PYTHON=python` step in `.github/workflows/ci.yml` became `make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"`,
+and `serve()` in `tests/browser_session.py` gained a temporary loop that prints each `ps -ww -A -o pid=,pgid=,stat=,command=` row
+whose pgid is the server's pid, as `spur-group-listing: {row}`, just before the existing `server group members before the kill: N`
+line. `-ww` keeps the whole command line on both `ps` implementations, and `stat` lets a zombie row be told from a member exactly as
+`group_members` does. The agent ran that same print three times on this Mac before anything was pushed. The human told the
+orchestrator to push; the orchestrator pushed on that instruction (started 2026-10-20T13:07:31Z; the pre-push hook's `make verify`
+passed first) and opened draft PR [#43](https://github.com/halfb00t/spur/pull/43)
+(`spike(27): list the browser test's server group on ubuntu-latest -- DO NOT MERGE`, base `main`). The agent then only read the
+run with `gh`. The whole per-job logs are `27-01-run-39428298442-test.log` (819 lines), `27-01-run-39428298442-vendor-bundle.log`
+(193) and `27-01-run-39428298442-image.log` (1,738), each from `gh run view 39428298442 --log --job {id}`, not `--log-failed`.
+The three macOS runs are `27-01-macos-run-{1,2,3}.log` and the host facts `27-01-macos-host.log`.
+
+One reading detail: with `-s -v`, pytest prints `PASSED` without a newline, so the first listing row of every run sits glued to
+it (`PASSEDspur-group-listing: ...`) in the macOS logs and in the CI log alike. The rows below count that glued row; a filter on
+`startswith('spur-group-listing: ')` under-counts every run by one.
+
+#### Host state
+
+- macOS: Apple M5 Max, 18 CPUs, 64 GiB, macOS 27.0.1 (Darwin 27.0.0), Python 3.12.15 (Homebrew `python@3.12`, framework build),
+  `playwright` 1.63.0; read 2026-10-20 about 12:58 to 12:59 UTC, one run at a time in the foreground. Load averages (1, 5, 15 min)
+  before and after each run: run 1 5.64 9.39 9.39 then 5.74 9.14 9.30; run 2 5.36 9.00 9.25 then 4.69 8.61 9.10; run 3 4.69 8.61
+  9.10 then 7.69 9.05 9.25. The Mac was not idle (10 users, a load of 5 to 9)
+- The runner: run [39428298442](https://github.com/halfb00t/spur/actions/runs/39428298442) (`ci`, event `pull_request`, attempt 1, head
+  `9c4255967bddab853820aa9f534dc83a8e5414d5`, created 2026-10-20T13:11:31Z). Runner 2.337.0, operating system `Ubuntu 24.04.5 LTS`
+  in all three jobs. `test (3.12)`: `Image: ubuntu-24.04`, `Version: 20261012.334.1`, provisioner `20261012.601`, started
+  13:11:34Z, finished 13:13:19Z (1 min 45 s), success. `image`: `Image: ubuntu-24.04`, `Version: 20261012.334.1`, 13:11:34Z to
+  13:13:13Z, success. `vendor-bundle`: `Image: ubuntu-24.04`, `Version: 20261018.339.1` (a later image than the other two jobs of
+  the same run), 13:11:34Z to 13:11:43Z, success
+- `test (3.12)`: Python 3.12.15 (`actions/setup-python@v5`, "Successfully set up CPython (3.12.15)"), pytest 9.1.1, pytest-xdist
+  3.8.0 (run with `-n0`), `playwright` 1.63.0, cadquery 2.8.0 with cadquery-ocp 7.9.3.1.1, Chrome Headless Shell 153.0.8010.12
+  (`playwright chromium-headless-shell v1243`); `2 passed in 30.01s`. A shared runner: load is not observable from the log
+- No job named `ubuntu-26.04`: `grep -c 'ubuntu-26'` prints 0 on all three logs. This `ubuntu-latest` run is still on 24.04, so the
+  rollout (which began 2026-10-19, `actions/runner-images#14748`) had not reached this repository's `ubuntu-latest` at 13:11Z on
+  2026-10-20. Phase 29 reads the first migrated run; this one is not it
+
+#### Readings
+
+Members are named by command, never by row position: uvicorn is `-m uvicorn spur.app:app --fd 5`, the tracker is
+`-c from multiprocessing.resource_tracker import main;main(N)`, a spawned worker is `-c from multiprocessing.spawn import
+spawn_main; spawn_main(tracker_fd=N, pipe_handle=M) --multiprocessing-fork`. No row had a `Z` stat and no row was a command
+outside those three, so the live rows equal the `server group members before the kill` line in every run. Pids are not recorded as
+meaningful; only counts and commands are.
+
+| Host | Run | Members before the kill | Members, by command |
+|---|---|---|---|
+| macOS (M5 Max, Python 3.12.15) | 1 | 4 | uvicorn (`Ss`), resource tracker (`S`), 2 spawned workers (`S`, pipe handles 35 and 37) |
+| macOS | 2 | 3 | uvicorn (`Ss`), resource tracker (`S`), 1 spawned worker (`S`, pipe handle 35) |
+| macOS | 3 | 4 | uvicorn (`Ss`), resource tracker (`S`), 2 spawned workers (`S`, pipe handles 35 and 37) |
+| `ubuntu-latest`, Ubuntu 24.04.5, image `20261012.334.1`, run 39428298442 | 1 | 4 | uvicorn (`Ssl`), resource tracker (`S`), 2 spawned workers (`Sl`, pipe handles 25 and 27) |
+
+#### Why 3 on one run and 4 on another
+
+`src/spur/pool.py` builds `workers` single-worker pools (lines 95-98: `ProcessPoolExecutor(max_workers=1, mp_context=_SPAWN,
+initializer=_warm)`, one per slot) and routes each request with `self._executors[hash(p) % self.workers]` (`executor_for`, line
+101; "D-07: affinity, not load-balance"). A single-worker pool spawns its worker at its first build, not at construction. `hash(p)`
+is salted per process, so the slot a given `GearParams` lands on differs between runs: the three-member rows (server, tracker, one
+worker) are what one worker spawned looks like, and the four-member rows (server, tracker, two workers) are both slots having
+built. The listings show the commands; the slot routing is read from `pool.py`, not observed here. macOS run 2 is the one-slot outcome; the other four runs are the two-slot outcome. That is a hash-salt
+outcome, not a property of the host: macOS produced both, and the one Linux run produced the larger set.
+
+#### What the listings do and do not show
+
+They show, from this plan's own logs only, that the group the harness signals on both hosts is the server, its resource tracker and
+one or two spawned workers, that nothing else (no browser, no `ps` child, no zombie) was in the process group at the point of the
+kill, and that the floor of 3 is a count macOS run 2 printed (Linux printed 4 once), made of the server, the tracker and one worker, not of two pool
+workers.
+They do not show how often Linux forms the three-member group: one Linux run produced four, and the macOS spread of 4, 3, 4 says
+the next Linux run can produce three, so a floor above three would be wrong on either host. They do not show Ubuntu 26.04: this run
+is on 24.04, and Phase 29 reads the repository's first migrated `ubuntu-latest` run (browser test or full gate) against it. The
+floor's job is unchanged; 27-06 writes the `MIN_GROUP_MEMBERS` comment from this record.
