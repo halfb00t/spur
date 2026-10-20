@@ -46,13 +46,13 @@ created: "2026-10-20"
 | T-27-07 | Tampering | temporary `calc.py` mutation committed | medium | mitigate | `git diff --exit-code v0.5 -- src/spur/calc.py src/spur/params.py` exits 0 | closed |
 | T-27-08 | Tampering | temporary pre-seed test or broken `_has_key` committed | low | mitigate | `git grep tmp_preseed -- tests` empty; walker test green | closed |
 | T-27-09 | Denial of Service | commit slice crossing L36's 30 s | low | mitigate | `make verify.fast` 932 passed, real 11.32 s (27-06) | closed |
-| T-27-10 | Denial of Service | orphaned uvicorn group surviving a failed `ps` | medium | mitigate | `tests/process_group.py:60` `os.killpg(pgid, sig)` before any read; `tests/test_process_group.py` 3 passed | closed |
+| T-27-10 | Denial of Service | orphaned uvicorn group surviving a failed `ps` | medium | mitigate | `tests/process_group.py:67` `os.killpg(pgid, sig)` before any read; `tests/test_process_group.py` 6 passed (re-run after WR-03, 2026-10-20) | closed |
 | T-27-11 | Tampering | signalling a reused pid's group after reaping | medium | mitigate | signal-first test asserts no wait/poll precedes SIGTERM; green | closed |
 | T-27-12 | Denial of Service | unit test or leader-only re-run leaking processes | low | mitigate | `pgrep -fl uvicorn` empty after the phase | closed |
 | T-27-13 | Tampering | leader-only mutation committed | low | mitigate | `os.killpg(pgid, sig)` present, no leader-only `os.kill(` in `tests/process_group.py` | closed |
 | T-27-14 | Tampering | D-03 moving a built part or printed number | medium | mitigate | `git diff --exit-code v0.5 -- tests/regression/` exits 0; `src/` diff is `model.py` only; regression + chamfer 141 passed | closed |
 | T-27-15 | Repudiation | bench host block naming an unreadable HEAD | low | mitigate | `tests/test_bench.py -k host_state` 2 passed; red first (`investigation/27-04-red-host-state.log`) | closed |
-| T-27-16 | Tampering | launch change opening a browser-less pass path | medium | mitigate | `tests/test_browser_pins.py` 4 passed; fail-closed run logged (`investigation/27-05-launch-fail-closed.log`) | closed |
+| T-27-16 | Tampering | launch change opening a browser-less pass path | medium | mitigate | `tests/test_browser_pins.py` 9 passed (re-run after WR-01/WR-02, 2026-10-20); fail-closed run logged (`investigation/27-05-launch-fail-closed.log`) | closed |
 | T-27-17 | Tampering | statement-scoped allowance letting an environ read slip | low | mitigate | synthetic sources red against the line rule (`investigation/27-05-red-environ-rule.log`); pins green | closed |
 | T-27-18 | Denial of Service | advice deleting the browser cache | low | mitigate | `.venv/ms-playwright` and `.venv/.browser` still present; advice removes only the stamp | closed |
 | T-27-19 | Repudiation | a RESULTS reading or L40 sentence rewritten | medium | mitigate | `git diff --numstat v0.5`: `bench/RESULTS.md` 676/0, `docs/architecture/decision_log.md` 2/0 | closed |
@@ -94,3 +94,11 @@ created: "2026-10-20"
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-10-20
+
+## Security Audit 2026-10-20
+
+| Metric | Count |
+|---|---|
+| Threats found | 22 |
+| Closed | 22 |
+| Open | 0 |
