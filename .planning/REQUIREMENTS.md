@@ -84,7 +84,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   observed by `ps` on macOS and Linux (uvicorn, the resource tracker, one or two workers);
   dated corrections sit under both `bench/RESULTS.md` rows; no reading rewritten
   (`2026-10-10-group-floor-of-3-is-not-two-pool-workers.md`).
-- [ ] **REQ-launch-message-true**: the browser-launch failure message names a command that
+- [x] **REQ-launch-message-true**: the browser-launch failure message names a command that
   installs the browser when the stamp is present but the browser is not; text-only, the
   literal pinned by `tests/test_browser_pins.py` kept
   (`2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md`).
@@ -183,7 +183,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-failed-build-name-isolated | Phase 27 | Complete |
 | REQ-stop-group-signals-first | Phase 27 | Complete |
 | REQ-group-floor-recorded-true | Phase 27 | Pending |
-| REQ-launch-message-true | Phase 27 | Pending |
+| REQ-launch-message-true | Phase 27 | Complete |
 | REQ-bad-link-refused | Phase 28 | Pending |
 | REQ-bad-link-decision-logged | Phase 28 | Pending |
 | REQ-root-fillet-label-follows-root | Phase 28 | Pending |

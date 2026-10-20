@@ -331,7 +331,7 @@ corrections; L40 takes a dated amendment, not a rewrite. Every new guard test is
 the red recorded. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — standard patterns.
-**Plans**: 4/6 plans executed
+**Plans**: 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -347,7 +347,7 @@ Plans:
 - [x] 27-04-PLAN.md — the one `model.py` touch (D-03/D-04) with the fixture byte-identical, bench reads `rm.curve`, `_host_state` names an unknown HEAD; Phase 19 item edited in place
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 27-05-PLAN.md — launch message names a working reinstall (pin red, D-09), 21 IN-02, 21 IN-03, 22 IN-02, 23 IN-11; item retired
+- [x] 27-05-PLAN.md — launch message names a working reinstall (pin red, D-09), 21 IN-02, 21 IN-03, 22 IN-02, 23 IN-11; item retired
 
 **Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 27-06-PLAN.md — `MIN_GROUP_MEMBERS` comment and two dated corrections from both listings, L40 amendment, "Seen red once (Phase 27)", draft triage, phase-close gate; item retired
@@ -498,6 +498,6 @@ empty.
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
-| 27. Ledger Tests and Harness | v0.6 | 4/6 | In Progress | - |
+| 27. Ledger Tests and Harness | v0.6 | 5/6 | In Progress | - |
 | 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |

@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 27
 current_phase_name: Ledger Tests and Harness
 status: executing
-stopped_at: Completed 27-04-PLAN.md
-last_updated: "2026-10-20T13:48:48.082Z"
+stopped_at: Completed 27-05-PLAN.md
+last_updated: "2026-10-20T13:58:56.445Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 27 execution started
-state_head: 9c62faca7a39da35f16b05ce0d9883f2f1d06216
+state_head: 4d43b64262939c3d4d6465fadab522e48740ed62
 progress:
   total_phases: 4
   completed_phases: 6
   total_plans: 13
-  completed_plans: 11
-  percent: 85
+  completed_plans: 12
+  percent: 92
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 27 (Ledger Tests and Harness) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 27 execution started
 
-Progress: [█████████░] 85% (1 of 4 phases)
+Progress: [█████████░] 92% (1 of 4 phases)
 
 ## Performance Metrics
 
@@ -256,6 +256,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 27 P02 | 9 min | 3 tasks | 15 files |
 | Phase 27 P03 | 6 min | 2 tasks | 9 files |
 | Phase 27 P04 | 7 min | 2 tasks | 8 files |
+| Phase 27 P05 | 9 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -490,6 +491,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 27]: 27-03: stop_group signals the group before any ps read or proc.wait; a failed or absent ps skips the grace and fails as survivors unknown after SIGTERM and SIGKILL — T-21-02 and the reused-pid risk (T-27-11); proved by tests/test_process_group.py, 0.04 s, red against the old order (3 failed)
 - [Phase 27]: 27-04: D-03 landed as a behaviour-free src/ change (_chamfer_tips takes the build's RootMode); fixture diff vs v0.5 empty, src/ diff limited to model.py
 - [Phase 27]: 27-04: IN-02 near-copy replacement skipped (D-07, recorded by 27-06); Phase 19 debt item stays active for the Phase 28 root_fillet label only
+- [Phase 27]: 27-05: launch() stays text-only; the reinstall it names is rm -f .venv/.browser && make test, because the stamp alone skips the install
+- [Phase 27]: 27-05: the pins' environ allowance is equality with a string constant in the read's own statement (tripwire, not proof)
 
 ### Pending Todos
 
@@ -781,8 +784,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-20T13:48:48.039Z
-Stopped at: Completed 27-04-PLAN.md
+Last session: 2026-10-20T13:58:47.202Z
+Stopped at: Completed 27-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
