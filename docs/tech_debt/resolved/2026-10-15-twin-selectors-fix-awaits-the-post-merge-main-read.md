@@ -1,7 +1,8 @@
 # The twin-selectors fix has not yet been read on a `main` run
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: docs(26): record the post-merge main read and retire the twin-selectors read item
 Date: 2026-10-15
 Source: Phase 26 D-05, 26-03
 Related files:
@@ -35,6 +36,12 @@ Trigger: the first `main` CI run after `make pr.land` lands Phase 26.
 3. Append a dated reading to `bench/RESULTS.md` on the next phase branch.
 4. Green: retire this item in that commit (Status, `Resolved in:`, `git mv` to `resolved/`, move the INDEX row).
    Red at the twin step: stop and ask (re-open the twin item), no patch.
+
+## Resolution (2026-10-20)
+Read green on both `main` push runs after Phase 26 landed: 38858407163 at `1981d93` and 39409577060 at `a4d55a6`,
+`test (3.12)` success, `test_the_shipped_viewer_in_a_real_browser` PASSED in each (`bench/RESULTS.md`, `#### The D-05
+post-merge read (2026-10-20)`). Consistent with the fix, not conclusive: at 2 reds in 8 before it, two greens happen by
+luck about 56 % of the time. A red at the step on a later `main` run re-opens the twin item.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

@@ -35,13 +35,13 @@ Severity (grep-able `Severity:` field):
 | nice | [Phase 19 code review: four info findings deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | `model.py`, `bench/trochoid_part.py` or the `DIMS` table is next touched (IN-01, IN-02, IN-04) |
 | must | [`slug()` totality is not guarded in the gate, and it runs inside failure-record paths](active/2026-10-15-slug-totality-is-not-guarded-in-the-gate.md) | `calc.root_mode`, `cutter`, `_junction` or `_root_curve` next changes, or any response or record shows an exception raised from `slug()` |
 | must | [A failed-build name test passes only while no other test downloads the same gear](active/2026-10-15-failed-build-name-test-depends-on-cache-order.md) | `tests/test_api.py` next gains a download test, or this test reads 200 instead of 422 |
-| must | [The twin-selectors fix has not yet been read on a `main` run](active/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md) | the first `main` CI run after `make pr.land` lands Phase 26: read `test (3.12)` at step `twin selectors` (green -> retire; red -> re-open the twin item, stop and ask) |
 | nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched, or Phase 28's info-finding triage |
 
 ## Resolved
 
 | Item | Resolved in |
 |---|---|
+| [The twin-selectors fix has not yet been read on a `main` run](resolved/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md) | docs(26): record the post-merge main read and retire the twin-selectors read item — see the file's own `Resolved in:` field |
 | [`make pr.land` merges the pushed PR head without checking the local branch is pushed](resolved/2026-10-20-pr-land-merges-a-stale-head.md) | fix(pr_land): refuse a local head branch the PR head does not carry — see the file's own `Resolved in:` field |
 | [`make test-image` collects test files that read files the image does not hold](resolved/2026-10-10-test-image-collects-tests-that-read-host-files.md) | fix(26): make test-image mounts what its tests read and ignores only host-only files by name — see the file's own `Resolved in:` field |
 | [A reentrant `resource_tracker` cleanup warning sometimes fails `make verify`](resolved/2026-10-06-resource-tracker-flake-fails-the-gate.md) | fix(26): collect the pool tests' cycles outside the resource tracker lock, located from a forced-GC reproduction — see the file's own `Resolved in:` field |

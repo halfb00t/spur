@@ -6482,3 +6482,21 @@ grep -c 'PASSED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
 ```
 
 then append the run id, head sha and result under a dated heading in this file; that append retires the item.
+
+#### The D-05 post-merge read (2026-10-20)
+
+Both `main` push runs after Phase 26 landed, logs saved whole under
+`.planning/phases/26-gate-fails-with-a-cause/investigation/`:
+
+| Run | Head | Image | `test (3.12)` | Browser test | Suite |
+|---|---|---|---|---|---|
+| 38858407163 | `1981d93` (PR #41) | ubuntu-24.04 | success | PASSED on `gw2`, 37.26 s `call` | 1321 passed in 469.99 s |
+| 39409577060 | `a4d55a6` (PR #42) | ubuntu-24.04 | success | PASSED on `gw2`, 47.45 s `call` | 1322 passed in 580.19 s |
+
+`grep -c` for the PASSED line reads 1 in each log; `twin selectors` appears 0 times, as in the pre-merge reading
+(`make verify` runs without `-s`). Both runs carry the twin fix (`6ff1269`): PR #41 landed its pushed head `6c0e57b`,
+which already held it; PR #42 added the 13 commits PR #41 left off, one of them `faulthandler_timeout` 120 -> 170. This
+is the read D-05 asked for, and it retires
+`docs/tech_debt/resolved/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md`. It is consistent with the
+fix, not conclusive: before the fix the step went red on 2 of 8 `main` runs, so two greens in a row happen by luck
+about 56 % of the time ((6/8)^2). Later `main` runs add to it; a red at the step re-opens the twin item.
