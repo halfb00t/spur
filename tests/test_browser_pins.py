@@ -115,10 +115,13 @@ def _problems(name: str, source: str) -> list[str]:
             # both carry a marker that way, and a marker in a comment or a longer word does not.
             # The climb stops under the statement (or `except` / `case` clause), not at it: a
             # compound statement's node holds its whole body, so a marker anywhere inside an
-            # `if` would have allowed a read in its header (27-REVIEW WR-01).
+            # `if` would have allowed a read in its header (27-REVIEW WR-01). A node that is
+            # already a statement (`from os import environ`) is its own unit: climbing past it
+            # reaches the `Module`, which has no parent, and the scan dies on a `KeyError`
+            # instead of reporting the import (27-REVIEW WR-04).
             expression: ast.AST = node
             clause = ast.stmt | ast.ExceptHandler | ast.match_case
-            while not isinstance(parents[expression], clause):
+            while not (isinstance(expression, ast.stmt) or isinstance(parents[expression], clause)):
                 expression = parents[expression]
             if any(
                 isinstance(c, ast.Constant) and c.value in ALLOWED_ENVIRON_MARKERS
@@ -159,6 +162,20 @@ def test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read(sou
     """27-REVIEW WR-01: the allowance looks at the read's own expression, never at the body of
     the `if`, `def` or `except` whose header holds the read."""
     assert len(_problems("c.py", source)) == 1
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param("from os import environ\n", id="module-level"),
+        pytest.param("def f():\n    from os import environ\n", id="in-a-function"),
+    ],
+)
+def test_an_import_of_environ_is_reported_not_a_crash(source: str) -> None:
+    """27-REVIEW WR-04: an `ImportFrom` is a statement and holds no marker constant, so it is
+    always one problem. The module-level form used to climb past the statement to the `Module`
+    and raise `KeyError`, hiding every other problem in the scan set."""
+    assert len(_problems("e.py", source)) == 1
 
 
 def test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed() -> None:

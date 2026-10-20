@@ -1,7 +1,8 @@
 # The environ pin raises `KeyError` on a module-level `from os import environ`
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: fix(27): stop the environ pin's climb at a statement so a module-level import is reported
 Date: 2026-10-20
 Source: Phase 27 code re-review after the WR-01..WR-03 fixes (`.planning/phases/27-ledger-tests-and-harness/27-REVIEW.md` WR-04)
 Related files:
@@ -27,6 +28,3 @@ Stop the climb at a node that is already a statement
 (`while not isinstance(expression, ast.stmt) and not isinstance(parents[expression], clause):`)
 and add a self-test row `'from os import environ\n'` expecting one problem. Revisit by Phase 28,
 or when `tests/test_browser_pins.py` is next touched.
-
-<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
-     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
