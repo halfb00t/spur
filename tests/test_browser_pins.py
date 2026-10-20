@@ -118,9 +118,11 @@ def _problems(name: str, source: str) -> list[str]:
             # `if` would have allowed a read in its header (27-REVIEW WR-01). A node that is
             # already a statement (`from os import environ`) is its own unit: climbing past it
             # reaches the `Module`, which has no parent, and the scan dies on a `KeyError`
-            # instead of reporting the import (27-REVIEW WR-04).
+            # instead of reporting the import (27-REVIEW WR-04). It also stops under an
+            # `arguments` node, which holds every default of a function: one default's marker
+            # must not allow another default's read (27-REVIEW IN-07).
             expression: ast.AST = node
-            clause = ast.stmt | ast.ExceptHandler | ast.match_case
+            clause = ast.stmt | ast.ExceptHandler | ast.match_case | ast.arguments
             while not (isinstance(expression, ast.stmt) or isinstance(parents[expression], clause)):
                 expression = parents[expression]
             if any(
@@ -156,11 +158,19 @@ def test_an_environ_read_is_allowed_by_its_statement_not_its_line() -> None:
             'import os\ntry:\n    pass\nexcept os.environ.get("X"):\n    y = "SPUR_"\n',
             id="except-header-marker-in-handler-body",
         ),
+        pytest.param(
+            'import os\ndef f(a=os.environ.get("SKIP"), b="SPUR_"):\n    pass\n',
+            id="default-argument-marker-in-another-default",
+        ),
+        pytest.param(
+            'import os\ng = lambda a=os.environ["SKIP"], b="SPUR_": 0\n',
+            id="lambda-default-marker-in-another-default",
+        ),
     ],
 )
 def test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read(source: str) -> None:
-    """27-REVIEW WR-01: the allowance looks at the read's own expression, never at the body of
-    the `if`, `def` or `except` whose header holds the read."""
+    """27-REVIEW WR-01, IN-07: the allowance looks at the read's own expression, never at the
+    body of the `if`, `def` or `except` whose header holds the read, nor at a sibling default."""
     assert len(_problems("c.py", source)) == 1
 
 
