@@ -1,0 +1,113 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+______ test_the_group_is_signalled_before_ps_is_read_or_the_leader_reaped ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1094a70e0>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-533/test_the_group_is_signalled_be0')
+
+    def test_the_group_is_signalled_before_ps_is_read_or_the_leader_reaped(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        with _sleeper() as proc, (tmp_path / "server.log").open("w+b") as log:
+            events = _instrument(monkeypatch, proc, lambda _pgid: [])
+    
+            process_group.stop_group(proc, log)
+    
+>           assert events[0] == "signal SIGTERM", events
+E           AssertionError: ['read', 'signal SIGTERM', 'read', 'wait']
+E           assert 'read' == 'signal SIGTERM'
+E             
+E             - signal SIGTERM
+E             + read
+
+tests/test_process_group.py:86: AssertionError
+_ test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled[ps-exits-non-zero] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1094a6000>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-533/test_a_failed_ps_fails_the_tea0')
+error = CalledProcessError(1, ['ps'])
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            pytest.param(subprocess.CalledProcessError(1, ["ps"]), id="ps-exits-non-zero"),
+            pytest.param(FileNotFoundError(2, "No such file or directory", "ps"), id="ps-is-absent"),
+        ],
+    )
+    def test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, error: Exception
+    ) -> None:
+        def fail(_pgid: int) -> list[int]:
+            raise error
+    
+        with _sleeper() as proc, (tmp_path / "server.log").open("w+b") as log:
+            events = _instrument(monkeypatch, proc, fail)
+    
+            with pytest.raises(pytest.fail.Exception, match="survivors unknown"):
+>               process_group.stop_group(proc, log)
+
+tests/test_process_group.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/process_group.py:70: in stop_group
+    survivors = group_members(pgid)
+                ^^^^^^^^^^^^^^^^^^^
+tests/test_process_group.py:61: in record_read
+    return read(pgid)
+           ^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_pgid = 27966
+
+    def fail(_pgid: int) -> list[int]:
+>       raise error
+E       subprocess.CalledProcessError: Command '['ps']' returned non-zero exit status 1.
+
+tests/test_process_group.py:102: CalledProcessError
+_ test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled[ps-is-absent] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1094a56a0>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-533/test_a_failed_ps_fails_the_tea1')
+error = FileNotFoundError(2, 'No such file or directory')
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            pytest.param(subprocess.CalledProcessError(1, ["ps"]), id="ps-exits-non-zero"),
+            pytest.param(FileNotFoundError(2, "No such file or directory", "ps"), id="ps-is-absent"),
+        ],
+    )
+    def test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path, error: Exception
+    ) -> None:
+        def fail(_pgid: int) -> list[int]:
+            raise error
+    
+        with _sleeper() as proc, (tmp_path / "server.log").open("w+b") as log:
+            events = _instrument(monkeypatch, proc, fail)
+    
+            with pytest.raises(pytest.fail.Exception, match="survivors unknown"):
+>               process_group.stop_group(proc, log)
+
+tests/test_process_group.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/process_group.py:70: in stop_group
+    survivors = group_members(pgid)
+                ^^^^^^^^^^^^^^^^^^^
+tests/test_process_group.py:61: in record_read
+    return read(pgid)
+           ^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+_pgid = 27971
+
+    def fail(_pgid: int) -> list[int]:
+>       raise error
+E       FileNotFoundError: [Errno 2] No such file or directory: 'ps'
+
+tests/test_process_group.py:102: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_process_group.py::test_the_group_is_signalled_before_ps_is_read_or_the_leader_reaped
+FAILED tests/test_process_group.py::test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled[ps-exits-non-zero]
+FAILED tests/test_process_group.py::test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled[ps-is-absent]
+3 failed in 0.05s
+exit 1

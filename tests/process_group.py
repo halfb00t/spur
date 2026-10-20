@@ -63,25 +63,40 @@ def _signal_group(pgid: int, sig: signal.Signals) -> None:
 def stop_group(proc: subprocess.Popen[bytes], log: IO[bytes]) -> None:
     """SIGTERM the server's whole group, SIGKILL what outlasts the bound, fail on survivors.
 
+    Signal first, then read: `ps` decides only how long to wait and what to report. A reader
+    that fails must not stop the signals (the orphan T-21-02), and the leader is not reaped
+    before the group is signalled, because a reaped leader's pid can be reused and the group
+    signal would then reach an unrelated process group. A failed `ps` cannot observe the
+    group, so it skips the grace and goes on to SIGKILL, then fails as "survivors unknown".
+
     The group, not the leader: killing only uvicorn left both pool workers alive 10 s later
     (21-RESEARCH Pitfall P3), and they would outlive the test run.
     """
     pgid = proc.pid  # start_new_session makes the leader's pid the group id
-    survivors = group_members(pgid)
-    bound = TERM_BOUND_S
+    survivors: list[int] | None = []
     for sig, bound in ((signal.SIGTERM, TERM_BOUND_S), (signal.SIGKILL, KILL_BOUND_S)):
         _signal_group(pgid, sig)
-        deadline = time.monotonic() + bound
-        survivors = group_members(pgid)
-        while survivors and time.monotonic() < deadline:
-            time.sleep(0.05)  # a poll interval; the condition is the group, not the clock
+        try:
+            deadline = time.monotonic() + bound
             survivors = group_members(pgid)
+            while survivors and time.monotonic() < deadline:
+                time.sleep(0.05)  # a poll interval; the condition is the group, not the clock
+                survivors = group_members(pgid)
+        except (subprocess.CalledProcessError, OSError):  # ps failed, or there is no ps
+            survivors = None
+            continue
         if not survivors:
             break
     with contextlib.suppress(subprocess.TimeoutExpired):
         proc.wait(timeout=KILL_BOUND_S)  # reap the leader so it is not left a zombie
+    if survivors is None:
+        pytest.fail(
+            f"server process group {pgid}: survivors unknown, ps failed after SIGTERM and "
+            f"SIGKILL were sent; server log tail:\n{_log_tail(log)}"
+        )
     if survivors:
         pytest.fail(
             f"server process group {pgid} still has live pids {survivors} after "
-            f"SIGTERM, SIGKILL and {bound:.0f} s; server log tail:\n{_log_tail(log)}"
+            f"SIGTERM ({TERM_BOUND_S:.0f} s) and SIGKILL ({KILL_BOUND_S:.0f} s); "
+            f"server log tail:\n{_log_tail(log)}"
         )
