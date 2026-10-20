@@ -10,7 +10,8 @@ What each turns red:
 - a skip spelling (`importorskip`, `skip`, `skipif`, `xfail`, `pytestmark`, `getenv`), or an
   environment read other than the `SPUR_` scrub and the `PLAYWRIGHT_BROWSERS_PATH` message,
   appearing anywhere in the browser test's modules -- each is a way for a green gate to lie;
-  `launch` no longer failing with the literal install command when the shell is missing;
+  `launch` no longer failing with the literal install command, and the `make` command that
+  reinstalls with the stamp present, when the shell is missing;
 - `playwright` no longer pinned with `==` in `[dev]`, or appearing in the runtime closure
   (`[project].dependencies`, `requirements.txt`, the `Dockerfile`,
   `docker/refresh-requirements.sh`): L11 keeps the closure the image installs free of it, and
@@ -32,6 +33,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 TEST_NAME = "test_the_shipped_viewer_in_a_real_browser"
 INSTALL_COMMAND = "playwright install --only-shell chromium"
+# The stamp `.venv/.browser` re-runs the install only when `pyproject.toml` or
+# `requirements.txt` change, so with the stamp present and the shell gone a bare `make test`
+# skips the install; removing the stamp is what makes it install (21-REVIEW WR-03).
+REINSTALL_COMMAND = "rm -f .venv/.browser && make test"
 
 # Every way a test passes or is skipped without having run, and the two environment reads
 # that can change which part is tested.
@@ -124,6 +129,16 @@ def test_the_browser_test_has_no_path_that_passes_without_the_browser() -> None:
         and INSTALL_COMMAND in node.value
     ]
     assert named, f"launch() must name `{INSTALL_COMMAND}` when it fails"
+    reinstall = [
+        node
+        for node in ast.walk(launch)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and REINSTALL_COMMAND in node.value
+    ]
+    assert reinstall, (
+        f"launch() must name {REINSTALL_COMMAND} when it fails: the stamp alone skips the install"
+    )
 
 
 def test_playwright_is_pinned_exactly_in_dev_and_never_in_the_runtime_closure() -> None:

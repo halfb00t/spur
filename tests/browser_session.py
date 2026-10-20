@@ -148,7 +148,7 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
 
 
 def launch(pw: Playwright) -> Browser:
-    """Start the default Chrome Headless Shell, or fail the test naming how to install it.
+    """Start the default Chrome Headless Shell, or fail with Playwright's error and the reinstall.
 
     Called from the test body, not a fixture: `pytest.fail` in a fixture reports ERROR, in
     the body FAILED. No channel, no flags: the default shell renders on SwiftShader on both
@@ -159,9 +159,12 @@ def launch(pw: Playwright) -> Browser:
     except Error as error:
         path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "<unset: Playwright's default cache>")
         pytest.fail(
-            "the headless shell is not installed: run `playwright install --only-shell "
-            f"chromium` (PLAYWRIGHT_BROWSERS_PATH={path}); `make test` runs the install "
-            f"stamp for you.\nPlaywright said: {error}"
+            f"the headless shell did not start. Playwright said: {error}\n"
+            "If the shell is missing, `rm -f .venv/.browser && make test` installs it again: "
+            "the stamp alone skips the install while it is present (`.venv` is the default "
+            "VENV). Outside make, run `playwright install --only-shell chromium` with "
+            f"PLAYWRIGHT_BROWSERS_PATH={path}. On Linux, a missing shared library needs "
+            "`BROWSER_INSTALL_ARGS=--with-deps` on that make command."
         )
 
 

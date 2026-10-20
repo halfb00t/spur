@@ -1,0 +1,117 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________________ test_the_shipped_viewer_in_a_real_browser ___________________
+
+pw = <playwright._impl._playwright.Playwright object at 0x10b0eee10>
+
+    def launch(pw: Playwright) -> Browser:
+        """Start the default Chrome Headless Shell, or fail naming Playwright's error and the reinstall.
+    
+        Called from the test body, not a fixture: `pytest.fail` in a fixture reports ERROR, in
+        the body FAILED. No channel, no flags: the default shell renders on SwiftShader on both
+        hosts, while the full Chromium channel would draw on the host GPU (D-03).
+        """
+        try:
+>           return pw.chromium.launch()
+                   ^^^^^^^^^^^^^^^^^^^^
+
+tests/browser_session.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/playwright/sync_api/_generated.py:16814: in launch
+    self._sync(
+.venv/lib/python3.12/site-packages/playwright/_impl/_browser_type.py:101: in launch
+    await self._channel.send(
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:76: in send
+    return await self._connection.wrap_api_call(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <playwright._impl._connection.Connection object at 0x10b0a6420>
+cb = <function Channel.send.<locals>.<lambda> at 0x10b0d6840>
+is_internal = False, title = None
+
+    async def wrap_api_call(
+        self, cb: Callable[[], Any], is_internal: bool = False, title: str = None
+    ) -> Any:
+        if self._api_zone.get():
+            return await cb()
+        task = asyncio.current_task(self._loop)
+        parsed_st = _attach_api_call_information(
+            getattr(task, "__pw_stack__", None) or _capture_stack_trace(),
+            is_internal,
+            title,
+        )
+        self._api_zone.set(parsed_st)
+        try:
+            return await cb()
+        except Exception as error:
+>           raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+E           playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist at /private/tmp/claude-501/-Users-half-git-halfb00t-spur/51cec072-c832-4d05-b163-e790eb7a3908/scratchpad/empty-browsers/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell
+E           ╔════════════════════════════════════════════════════════════╗
+E           ║ Looks like Playwright was just installed or updated.       ║
+E           ║ Please run the following command to download new browsers: ║
+E           ║                                                            ║
+E           ║     playwright install                                     ║
+E           ║                                                            ║
+E           ║ <3 Playwright Team                                         ║
+E           ╚════════════════════════════════════════════════════════════╝
+
+.venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:632: Error
+
+During handling of the above exception, another exception occurred:
+
+server = 'http://127.0.0.1:64834'
+
+    def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
+        """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
+        properties = _schema_properties(server)
+        selectors = _schema_selectors(server)
+        field_count = len(properties)
+        parked: list[Route] = []
+        seen: list[str] = []
+    
+        with sync_playwright() as pw:
+            # In the body, not a fixture: a missing shell must be a FAILED test with the install
+            # command in its message, not an ERROR and not a skip (D-02, D-07).
+>           browser = launch(pw)
+                      ^^^^^^^^^^
+
+tests/test_browser.py:642: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+pw = <playwright._impl._playwright.Playwright object at 0x10b0eee10>
+
+    def launch(pw: Playwright) -> Browser:
+        """Start the default Chrome Headless Shell, or fail naming Playwright's error and the reinstall.
+    
+        Called from the test body, not a fixture: `pytest.fail` in a fixture reports ERROR, in
+        the body FAILED. No channel, no flags: the default shell renders on SwiftShader on both
+        hosts, while the full Chromium channel would draw on the host GPU (D-03).
+        """
+        try:
+            return pw.chromium.launch()
+        except Error as error:
+            path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "<unset: Playwright's default cache>")
+>           pytest.fail(
+                f"the headless shell did not start. Playwright said: {error}\n"
+                "If the shell is missing, `rm -f .venv/.browser && make test` installs it again: "
+                "the stamp alone skips the install while it is present (`.venv` is the default "
+                "VENV). Outside make, run `playwright install --only-shell chromium` with "
+                f"PLAYWRIGHT_BROWSERS_PATH={path}. On Linux, a missing shared library needs "
+                "`BROWSER_INSTALL_ARGS=--with-deps` on that make command."
+            )
+E           Failed: the headless shell did not start. Playwright said: BrowserType.launch: Executable doesn't exist at /private/tmp/claude-501/-Users-half-git-halfb00t-spur/51cec072-c832-4d05-b163-e790eb7a3908/scratchpad/empty-browsers/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell
+E           ╔════════════════════════════════════════════════════════════╗
+E           ║ Looks like Playwright was just installed or updated.       ║
+E           ║ Please run the following command to download new browsers: ║
+E           ║                                                            ║
+E           ║     playwright install                                     ║
+E           ║                                                            ║
+E           ║ <3 Playwright Team                                         ║
+E           ╚════════════════════════════════════════════════════════════╝
+E           If the shell is missing, `rm -f .venv/.browser && make test` installs it again: the stamp alone skips the install while it is present (`.venv` is the default VENV). Outside make, run `playwright install --only-shell chromium` with PLAYWRIGHT_BROWSERS_PATH=/private/tmp/claude-501/-Users-half-git-halfb00t-spur/51cec072-c832-4d05-b163-e790eb7a3908/scratchpad/empty-browsers. On Linux, a missing shared library needs `BROWSER_INSTALL_ARGS=--with-deps` on that make command.
+
+tests/browser_session.py:161: Failed
+=========================== short test summary info ============================
+FAILED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser - Fai...
+1 failed, 1 deselected in 0.64s
+exit 1
