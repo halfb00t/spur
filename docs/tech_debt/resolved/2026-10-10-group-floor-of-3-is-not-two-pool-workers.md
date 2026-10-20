@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: docs(27): name the server group's members as ps lists them, with dated corrections
+Resolved in: 99e2b7d
 Date: 2026-10-10
 Source: phase 21 code review, finding WR-02 (`.planning/phases/21-browser-test-of-the-viewer/21-REVIEW.md`)
 Related files:

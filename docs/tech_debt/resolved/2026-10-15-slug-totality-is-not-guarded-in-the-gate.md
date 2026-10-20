@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: test(27): guard slug() totality with a seeded, stratified test in the commit slice
+Resolved in: 345ee08
 Date: 2026-10-15
 Source: phase 22 code review, finding WR-01 (`.planning/milestones/v0.5-phases/22-download-name-carries-the-root/22-REVIEW.md`); untriaged until the v0.5 milestone audit, filed at the human's call at the v0.5 close
 Related files:

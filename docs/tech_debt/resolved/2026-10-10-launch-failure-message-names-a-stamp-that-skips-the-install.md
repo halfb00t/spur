@@ -2,7 +2,7 @@
 
 Severity: nice
 Status: resolved
-Resolved in: fix(tests): name the reinstall that works when the browser stamp is current
+Resolved in: a393e50
 Date: 2026-10-10
 Source: phase 21 code review, finding WR-03 (`.planning/phases/21-browser-test-of-the-viewer/21-REVIEW.md`)
 Related files:
