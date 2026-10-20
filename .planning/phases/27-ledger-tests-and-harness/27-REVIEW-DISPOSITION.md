@@ -9,11 +9,11 @@ findings:
     title: "`_sleeper` sends `killpg` to a pid its own test already reaped"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`_instrument` records `poll` events that `stop_group` never produces, and test 1 asserts only `events[0]`"
   - id: IN-03
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`_page_string` in `test_selector.py` is a second copy of `_js_number`, and the copy's new guard and `-0` rule are untested"
   - id: IN-04
     severity: info
@@ -25,7 +25,7 @@ findings:
     title: "`test_the_host_state_reads_unknown_where_git_cannot_name_head` patches the process-wide `subprocess.run`"
   - id: IN-06
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The `Resolved in:` fields of the five resolved debt items hold commit subjects, not shas"
   - id: IN-07
     severity: info
@@ -47,9 +47,9 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 3
+open: 0
 total: 11
-recorded: 2026-10-20T17:09:58.091Z
+recorded: 2026-10-20T17:10:33.001Z
 ---
 
 # Phase 27: Code Review Disposition
@@ -57,11 +57,11 @@ recorded: 2026-10-20T17:09:58.091Z
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | IN-01 | info | fixed | 27-REVIEW-FIX.md |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
+| IN-02 | info | fixed | 27-REVIEW-FIX.md |
+| IN-03 | info | fixed | 27-REVIEW-FIX.md |
 | IN-04 | info | skipped | 27-REVIEW-FIX.md |
 | IN-05 | info | fixed | 27-REVIEW-FIX.md |
-| IN-06 | info | open | - |
+| IN-06 | info | fixed | 27-REVIEW-FIX.md |
 | IN-07 | info | fixed | 27-REVIEW-FIX.md |
 | WR-04 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | WR-01 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
