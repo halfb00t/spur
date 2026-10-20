@@ -638,6 +638,20 @@ pytest — L13). Full list with sources and acceptance evidence:
   REQ-test-image-runs-what-it-claims, REQ-ubuntu26-preclassified; UAT 1/1. PR #41 landed
   its pushed head without 13 local commits; they landed in PR #42, and `make pr.land` now
   refuses a local head branch the PR head does not carry)
+- ✓ The ledger guards cannot pass vacuously and the browser harness says what was observed
+  — Phase 27 (`slug()` totality guarded by a seeded 1,300-draw stratified test in the commit
+  slice, red twice; the failed-build name test gets its own `_BlobCache`; `stop_group` sends
+  SIGTERM to the group before any `ps` read or reap, moved to playwright-free
+  `tests/process_group.py`, proved red by a SIGKILL-to-leader-only break — the plan's
+  SIGTERM-leader-only mutation stays green because uvicorn stops its workers; the server
+  group listed from `ps` on macOS (4, 3, 4) and ubuntu-24.04 run 39428298442 (4) via the
+  closed-unmerged spike PR #43, `MIN_GROUP_MEMBERS` stays 3 with the members named; the
+  launch message names `rm -f .venv/.browser && make test`; `model.py` hands the tip chamfer
+  the build's one root answer, fixture byte-identical; five debt items retired; L40 amended;
+  REQ-slug-totality-guarded, REQ-failed-build-name-isolated, REQ-stop-group-signals-first,
+  REQ-group-floor-recorded-true, REQ-launch-message-true; verified 4/4, `make verify` 1333
+  passed; review 0 critical / 3 warning / 6 info all open — WR-03 lets a `ps` parse error skip
+  SIGKILL, WR-02 left `tests/process_group.py` outside the pin scan)
 
 ### Active
 
@@ -905,4 +919,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-20 after Phase 26.*
+*Last updated: 2026-10-20 after Phase 27.*

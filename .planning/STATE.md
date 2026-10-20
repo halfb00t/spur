@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 27 — Ledger Tests and Harness
+**Current focus:** Phase 28 — Refuse the Bad Link
 
 ## Current Position
 
@@ -35,7 +35,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-20 — Phase 27 complete, transitioned to Phase 28
 
-Progress: [████████░░] 78% (1 of 4 phases)
+Progress: [█████░░░░░] 50% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -504,6 +504,11 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 27] Code review `27-REVIEW-DISPOSITION.md`: 9 open (3 warning, 6 info). WR-03: a `ValueError` from parsing `ps` rows escapes
+  `stop_group` after SIGTERM, skipping SIGKILL and the reap, and `ps` has no timeout. WR-02: `tests/process_group.py` is outside
+  the browser pins' `tests/*browser*.py` scan. WR-01: the pins' `environ` allowance is bypassable in a compound statement's header.
+  The verifier judged none defeats a success criterion and recommends closing WR-02 and WR-03 before Phase 28's repeated browser runs.
+- ℹ️ [Phase 27] `spike/27-group-listing` (PR #43, closed unmerged) still exists locally and on `origin`; deleting it is the human's call.
 - ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 runs 2026-10-19 to 2026-11-19; Phase 26's pre-classification
   ran green (26-02, run 38724011970), and the Ubuntu 26 item stays active for Phase 29.
 - ✓ [Phase 26] The twin-selectors step read green on the first post-merge `main` run (38858407163 at `1981d93`). One
