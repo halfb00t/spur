@@ -1,0 +1,82 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________________ test_openapi_documents_the_typed_contracts __________________
+
+    def test_openapi_documents_the_typed_contracts() -> None:
+        """D-11, the info half (Plan 04-02 adds the health half to this same function).
+    
+        The field names are written out literally here, not derived from
+        DerivedDimensions.model_fields -- a renamed field, or a route that lost its typed
+        return annotation, must fail this test rather than pass tautologically.
+        """
+        schema = client.get("/openapi.json").json()
+    
+        info_response = schema["paths"]["/api/info"]["get"]["responses"]["200"]
+        assert info_response["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/DerivedDimensions"}
+    
+        fields = {
+            "pitch_d", "tip_d", "root_d", "base_d", "caliper_over_tips", "tip_thickness",
+            "root_thickness", "root_gap", "root_fillet", "root_form_d", "root_waist",
+            "tip_chamfer_effective", "span_teeth",
+            "span", "bore_effective", "hex_across_flats", "hex_across_corners",
+            "keyway_floor_to_wall", "keyway_width_effective", "recess_id", "recess_od",
+            "recess_fillet", "web", "cutout_hub_wall", "cutout_rim_wall",
+            "spoke_fillet_effective", "hex_cell_effective", "hex_cell_count", "warnings",
+            "mate_teeth", "centre_distance",
+        }
+        component = schema["components"]["schemas"]["DerivedDimensions"]
+        assert set(component["properties"]) == fields
+        # The null-over-absent invariant (D-01): a field with a default drops out of
+        # `required` in OpenAPI (Pitfall 2), so a field that quietly regained one would show
+        # up here first.
+        assert set(component["required"]) == fields
+    
+        assert component["properties"]["pitch_d"]["unit"] == "mm"
+        assert component["properties"]["centre_distance"]["unit"] == "mm"  # nullable, still a length
+        assert component["properties"]["hex_across_flats"]["unit"] == "mm"
+        assert component["properties"]["hex_across_corners"]["unit"] == "mm"
+        assert component["properties"]["keyway_floor_to_wall"]["unit"] == "mm"
+        assert component["properties"]["keyway_width_effective"]["unit"] == "mm"
+        assert component["properties"]["tip_chamfer_effective"]["unit"] == "mm"
+        assert component["properties"]["root_form_d"]["unit"] == "mm"
+        assert component["properties"]["root_waist"]["unit"] == "mm"
+        assert component["properties"]["cutout_hub_wall"]["unit"] == "mm"
+        assert component["properties"]["cutout_rim_wall"]["unit"] == "mm"
+        assert component["properties"]["spoke_fillet_effective"]["unit"] == "mm"
+        assert component["properties"]["hex_cell_effective"]["unit"] == "mm"
+        assert "unit" not in component["properties"]["span_teeth"]
+        assert "unit" not in component["properties"]["hex_cell_count"]
+    
+        health_response = schema["paths"]["/api/health"]["get"]["responses"]["200"]
+        assert health_response["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/HealthReport"}
+    
+        health_component = schema["components"]["schemas"]["HealthReport"]
+        assert set(health_component["required"]) == {"status", "version", "pool"}
+    
+        pool_component = schema["components"]["schemas"]["PoolState"]
+        assert set(pool_component["required"]) == {
+            "workers", "queue_available", "workers_replaced"}
+    
+        # L42, the goal's "API unchanged" half (L05): the bore-shape selectors reach the form
+        # through /api/schema and nowhere else. The first line makes the second non-vacuous
+        # (the key exists). 24-CONTEXT D-05 expected the key to reach the OpenAPI component
+        # schemas of InfoQuery and ModelQuery, which inherit it, and called that harmless;
+        # measured (24-RESEARCH Finding 1) FastAPI flattens both query models into
+        # `parameters`, so /openapi.json is byte-identical with and without the selectors. A
+        # FastAPI or pydantic change that starts carrying the key is a decision for a new Lxx,
+        # not drift.
+        assert "selectors" in client.get("/api/schema").json(), "L42: /api/schema lost its selectors"
+        # The walk reads keys, not text: prose that merely names the word is not the key, and
+        # the substring test this replaces failed on it (24 IN-03). The two documents make the
+        # walker itself non-vacuous.
+>       assert _has_key({"x": [{"selectors": []}]}, "selectors")
+E       AssertionError: assert False
+E        +  where False = _has_key({'x': [{'selectors': []}]}, 'selectors')
+
+tests/test_api.py:152: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_openapi_documents_the_typed_contracts - Assert...
+1 failed, 61 deselected in 1.88s
+exit 1

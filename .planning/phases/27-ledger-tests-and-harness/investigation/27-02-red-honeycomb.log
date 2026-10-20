@@ -1,0 +1,23 @@
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_a_relation_true_only_at_the_first_open_count_goes_red[hex_wall-hex_cell-0.05] _
+
+dep = 'hex_wall', gate = 'hex_cell', value = 0.05
+
+    @pytest.mark.parametrize(("dep", "gate", "value"), [
+        ("hub_d", "spoke_count", 1.0), ("hole_d", "hole_count", 1.0), ("hex_wall", "hex_cell", 0.05)])
+    def test_a_relation_true_only_at_the_first_open_count_goes_red(
+            dep: str, gate: str, value: float) -> None:
+        """IN-08: `eq 1` is true at count 1 and false at 4 spokes or 3 holes, where calc uses the
+        field; `hex_cell eq 0.05` is the same at the 0.05 mm cell and a 4 mm one. The driver check
+        must fail on its own assertion and not leave this to the forward check's incidental
+        ValidationError."""
+>       with pytest.raises(AssertionError, match="wrong or extra driver"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE AssertionError
+
+tests/test_relations.py:507: Failed
+=========================== short test summary info ============================
+FAILED tests/test_relations.py::test_a_relation_true_only_at_the_first_open_count_goes_red[hex_wall-hex_cell-0.05]
+1 failed, 2 passed, 56 deselected in 0.08s
+exit 1

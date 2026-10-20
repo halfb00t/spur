@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 import pytest
+from composition import BORE_OFF
 from pydantic import ValidationError
 from trochoid_oracle import clearance
 
@@ -89,8 +90,7 @@ STEP = 1e-7  # rad, the contact-normal step the secants are taken over
 
 def _gear(**fields: object) -> GearParams:
     """A test gear with the bore off: the default 9 mm bore refuses small gears."""
-    return GearParams.model_validate(
-        {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none", **fields})
+    return GearParams.model_validate({**BORE_OFF, **fields})
 
 
 def _swept(points: tuple[tuple[float, float], ...], p: GearParams, rho: float,
@@ -210,9 +210,6 @@ def test_the_tip_land_limit_moves_with_backlash_and_module_one_field_step_either
         assert root_warnings(rm) == (sentence,)
 
 
-_BORE_OFF = {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none"}
-
-
 @pytest.mark.parametrize(("fields", "name", "reason"), [
     pytest.param({}, "spur_z19_m1.75_pa25", "not requested", id="default-gear"),
     pytest.param({"teeth": 23, "root_shape": "trochoid"},
@@ -224,7 +221,7 @@ _BORE_OFF = {"bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "no
     pytest.param({"teeth": 40, "root_shape": "trochoid"},
                  "spur_z40_m1.75_pa25", "nothing radial to replace", id="40-ignored"),
     pytest.param({"teeth": 19, "module": 1.75, "profile_shift": -0.4, "backlash": 0.10,
-                  "pressure_angle": 33.5, "root_shape": "trochoid", **_BORE_OFF},
+                  "pressure_angle": 33.5, "root_shape": "trochoid", **BORE_OFF},
                  "spur_z19_m1.75_pa33.5", "tip land gone", id="tip-land-gone-refused"),
 ])
 def test_the_download_name_follows_the_root_root_mode_builds(
@@ -297,7 +294,7 @@ def test_slug_is_total_and_ends_trochoid_exactly_when_root_mode_does() -> None:
     skipped = 0
     for box in _SLUG_BOXES:
         for _ in range(box.draws):
-            fields = {**_BORE_OFF,
+            fields = {**BORE_OFF,
                       "teeth": rng.randint(*box.teeth),
                       "profile_shift": round(rng.uniform(*box.profile_shift), 2),
                       "pressure_angle": round(rng.uniform(*box.pressure_angle), 1),
