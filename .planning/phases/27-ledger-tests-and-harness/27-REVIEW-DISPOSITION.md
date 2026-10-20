@@ -3,18 +3,10 @@ phase: 27
 review: 27-REVIEW.md
 titles: json
 findings:
-  - id: WR-01
+  - id: WR-04
     severity: warning
-    disposition: fixed
-    title: "`_problems` environ allowance walks a compound statement's whole body, so the new \"own statement\" rule is bypassable"
-  - id: WR-02
-    severity: warning
-    disposition: fixed
-    title: "Moving the teardown to `tests/process_group.py` took it out of the pin's scan set"
-  - id: WR-03
-    severity: warning
-    disposition: fixed
-    title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
+    disposition: open
+    title: "The WR-01 fix makes `_problems` raise `KeyError` on a module-level `from os import environ`"
   - id: IN-01
     severity: info
     disposition: open
@@ -39,24 +31,42 @@ findings:
     severity: info
     disposition: open
     title: "The `Resolved in:` fields of the five resolved debt items hold commit subjects, not shas"
-open: 6
-total: 9
-recorded: 2026-10-20T15:36:00.246Z
+  - id: IN-07
+    severity: info
+    disposition: open
+    title: "The climb stops at `arguments`, so one default argument's marker allows another default's `environ` read"
+  - id: WR-01
+    severity: warning
+    disposition: fixed
+    title: "`_problems` environ allowance walks a compound statement's whole body, so the new \"own statement\" rule is bypassable"
+  - id: WR-02
+    severity: warning
+    disposition: fixed
+    title: "Moving the teardown to `tests/process_group.py` took it out of the pin's scan set"
+  - id: WR-03
+    severity: warning
+    disposition: fixed
+    title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
+open: 8
+total: 11
+recorded: 2026-10-20T16:11:39.129Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 27-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 27-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 27-REVIEW-FIX.md |
+| WR-04 | warning | open | - |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
 | IN-04 | info | open | - |
 | IN-05 | info | open | - |
 | IN-06 | info | open | - |
+| IN-07 | info | open | - |
+| WR-01 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 27-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
