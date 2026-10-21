@@ -1,0 +1,4 @@
+.venv/bin/python -m playwright install  --only-shell chromium
+touch /private/tmp/claude-501/-Users-half-git-halfb00t-spur/51cec072-c832-4d05-b163-e790eb7a3908/scratchpad/absent/.browser
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term -v --durations=25 
+exit 0

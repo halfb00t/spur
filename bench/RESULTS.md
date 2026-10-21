@@ -4778,6 +4778,8 @@ is a staging module that nothing in `make verify` collects yet (PD-01).
 | Slowest build-bound step | 2.53 s (`first build drawn`), under PD-04's 15 s, so `BUILD_WAIT_MS` stays 45,000 ms |
 | `git status --porcelain --ignored` after a green run | nothing outside `.venv/` and the ignores already in place (`.coverage`, caches, `__pycache__`, `web/node_modules`); the test writes no file (PD-10) |
 
+**Correction (2026-10-20, 27-06), row "Group members seen before the kill".** The row reads "3 (uvicorn and two pool workers)". `ps -ww -A -o pid=,pgid=,stat=,command=` on the same harness, read on this Mac on 2026-10-20 (27-01, `### The server group, listed (27-01)`), lists uvicorn, `multiprocessing.resource_tracker` and one or two spawned workers: 4, 3 and 4 members in three runs. The pool is two single-worker executors routed by `hash(p) % workers` (`src/spur/pool.py`), each starting its worker at its first build, and the hash is salted per process, so 3 is every build on one slot and 4 is both. Before the first build the group read 2: uvicorn and the tracker, not uvicorn and a worker. The count 3 above stands as recorded; only its naming is corrected. `MIN_GROUP_MEMBERS = 3` is unchanged: three live members before the kill and none after is still the non-vacuity check.
+
 `PNG_RATIO_BAR` by PD-03, written in the plan before this reading: the lower of the hosts' drawn/blank ratios
 divided by 2, rounded down to one decimal place. Only macOS is read here: 9.93 / 2 = 4.96, rounded down to
 **4.9**, which is not under 2.0, so it is asserted. 21-02 re-sets it from the lower of the macOS and
@@ -4901,6 +4903,8 @@ an ancestor of the phase branch. The whole log is kept at
 | `href after showModel` step | 0.25 s |
 | Server process group members before the kill | 3 (uvicorn and two pool workers), read by `ps -A -o pgid=,stat=,pid=` on the runner's procps. The post-kill zero was read by the same reader: the teardown that asserts it ran and the test is in the passed set. The runner's log does not print the group-gone time |
 | Same job on `main`, for scale (same workflow, `pytest -n 4`, no browser) | 8 min 54 s job, `1220 passed in 487.39s` (run 38040124903, 2026-10-10); 16 min 04 s, `894.96s` (37951628866, 2026-10-09); 16 min 35 s, `924.02s` (37930095920, 2026-10-09) |
+
+**Correction (2026-10-20, 27-06), row "Server process group members before the kill".** The row reads "3 (uvicorn and two pool workers)". That reading counted rows with `ps -A -o pgid=,stat=,pid=`, which prints no command, so which three members it counted was never observed. `ps -ww -A -o pid=,pgid=,stat=,command=` on a later `ubuntu-latest` run (27-01, run 39428298442, `Image: ubuntu-24.04`, version 20261012.334.1, 2026-10-20) lists uvicorn, the resource tracker and two spawned workers (4 members). The same mechanism as above gives 3 members when every build lands on one executor slot: uvicorn, the tracker and one worker, not two workers. The count 3 above stands as recorded; only its naming is corrected. `MIN_GROUP_MEMBERS = 3` is unchanged: three live members before the kill and none after is still the non-vacuity check.
 
 The three `main` runs differ from each other by up to 437 s of pytest wall with no change to the suite, which is
 more than the spike run differs from the two slower of them. The spike run's own 906.71 s therefore sits inside
@@ -6482,3 +6486,123 @@ grep -c 'PASSED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
 ```
 
 then append the run id, head sha and result under a dated heading in this file; that append retires the item.
+
+#### The D-05 post-merge read (2026-10-20)
+
+Both `main` push runs after Phase 26 landed, logs saved whole under
+`.planning/phases/26-gate-fails-with-a-cause/investigation/`:
+
+| Run | Head | Image | `test (3.12)` | Browser test | Suite |
+|---|---|---|---|---|---|
+| 38858407163 | `1981d93` (PR #41) | ubuntu-24.04 | success | PASSED on `gw2`, 37.26 s `call` | 1321 passed in 469.99 s |
+| 39409577060 | `a4d55a6` (PR #42) | ubuntu-24.04 | success | PASSED on `gw2`, 47.45 s `call` | 1322 passed in 580.19 s |
+
+`grep -c` for the PASSED line reads 1 in each log; `twin selectors` appears 0 times, as in the pre-merge reading
+(`make verify` runs without `-s`). Both runs carry the twin fix (`6ff1269`): PR #41 landed its pushed head `6c0e57b`,
+which already held it; PR #42 added the 13 commits PR #41 left off, one of them `faulthandler_timeout` 120 -> 170. This
+is the read D-05 asked for, and it retires
+`docs/tech_debt/resolved/2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md`. It is consistent with the
+fix, not conclusive: before the fix the step went red on 2 of 8 `main` runs, so two greens in a row happen by luck
+about 56 % of the time ((6/8)^2). Later `main` runs add to it; a red at the step re-opens the twin item.
+
+## Ledger tests and harness (Phase 27)
+
+What this section holds: v0.6's second phase makes the ledger's tests and the browser harness say what they check. Readings are
+appended per plan, never rewritten. Every whole log is under `.planning/phases/27-ledger-tests-and-harness/investigation/`.
+
+### The server group, listed (27-01)
+
+D-05: the group-floor comment in `tests/browser_session.py` (`MIN_GROUP_MEMBERS`, written in 27-06) must cite members that `ps`
+observed, on macOS and on Linux. A print inside the harness never reaches a green `make verify` log (pytest captures it; Phase
+26's `twin selectors:` lines were absent from both post-merge `main` logs), so the Linux listing needed one throwaway run with
+`-s -n0`. The agent cut `spike/27-group-listing` from the phase head `9943a7b` (BASE, `9943a7bbf7078b420f5142a1bf60986d2e2cda5e`)
+with one commit, `9c42559` (`9c4255967bddab853820aa9f534dc83a8e5414d5`), whose diff from BASE is two files: the `test` job's
+`make verify PYTHON=python` step in `.github/workflows/ci.yml` became `make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"`,
+and `serve()` in `tests/browser_session.py` gained a temporary loop that prints each `ps -ww -A -o pid=,pgid=,stat=,command=` row
+whose pgid is the server's pid, as `spur-group-listing: {row}`, just before the existing `server group members before the kill: N`
+line. `-ww` keeps the whole command line on both `ps` implementations, and `stat` lets a zombie row be told from a member exactly as
+`group_members` does. The agent ran that same print three times on this Mac before anything was pushed. The human told the
+orchestrator to push; the orchestrator pushed on that instruction (started 2026-10-20T13:07:31Z; the pre-push hook's `make verify`
+passed first) and opened draft PR [#43](https://github.com/halfb00t/spur/pull/43)
+(`spike(27): list the browser test's server group on ubuntu-latest -- DO NOT MERGE`, base `main`). The agent then only read the
+run with `gh`. The whole per-job logs are `27-01-run-39428298442-test.log` (819 lines), `27-01-run-39428298442-vendor-bundle.log`
+(193) and `27-01-run-39428298442-image.log` (1,738), each from `gh run view 39428298442 --log --job {id}`, not `--log-failed`.
+The three macOS runs are `27-01-macos-run-{1,2,3}.log` and the host facts `27-01-macos-host.log`.
+
+One reading detail: with `-s -v`, pytest prints `PASSED` without a newline, so the first listing row of every run sits glued to
+it (`PASSEDspur-group-listing: ...`) in the macOS logs and in the CI log alike. The rows below count that glued row; a filter on
+`startswith('spur-group-listing: ')` under-counts every run by one.
+
+#### Host state
+
+- macOS: Apple M5 Max, 18 CPUs, 64 GiB, macOS 27.0.1 (Darwin 27.0.0), Python 3.12.15 (Homebrew `python@3.12`, framework build),
+  `playwright` 1.63.0; read 2026-10-20 about 12:58 to 12:59 UTC, one run at a time in the foreground. Load averages (1, 5, 15 min)
+  before and after each run: run 1 5.64 9.39 9.39 then 5.74 9.14 9.30; run 2 5.36 9.00 9.25 then 4.69 8.61 9.10; run 3 4.69 8.61
+  9.10 then 7.69 9.05 9.25. The Mac was not idle (10 users, a load of 5 to 9)
+- The runner: run [39428298442](https://github.com/halfb00t/spur/actions/runs/39428298442) (`ci`, event `pull_request`, attempt 1, head
+  `9c4255967bddab853820aa9f534dc83a8e5414d5`, created 2026-10-20T13:11:31Z). Runner 2.337.0, operating system `Ubuntu 24.04.5 LTS`
+  in all three jobs. `test (3.12)`: `Image: ubuntu-24.04`, `Version: 20261012.334.1`, provisioner `20261012.601`, started
+  13:11:34Z, finished 13:13:19Z (1 min 45 s), success. `image`: `Image: ubuntu-24.04`, `Version: 20261012.334.1`, 13:11:34Z to
+  13:13:13Z, success. `vendor-bundle`: `Image: ubuntu-24.04`, `Version: 20261018.339.1` (a later image than the other two jobs of
+  the same run), 13:11:34Z to 13:11:43Z, success
+- `test (3.12)`: Python 3.12.15 (`actions/setup-python@v5`, "Successfully set up CPython (3.12.15)"), pytest 9.1.1, pytest-xdist
+  3.8.0 (run with `-n0`), `playwright` 1.63.0, cadquery 2.8.0 with cadquery-ocp 7.9.3.1.1, Chrome Headless Shell 153.0.8010.12
+  (`playwright chromium-headless-shell v1243`); `2 passed in 30.01s`. A shared runner: load is not observable from the log
+- No job named `ubuntu-26.04`: `grep -c 'ubuntu-26'` prints 0 on all three logs. This `ubuntu-latest` run is still on 24.04, so the
+  rollout (which began 2026-10-19, `actions/runner-images#14748`) had not reached this repository's `ubuntu-latest` at 13:11Z on
+  2026-10-20. Phase 29 reads the first migrated run; this one is not it
+
+#### Readings
+
+Members are named by command, never by row position: uvicorn is `-m uvicorn spur.app:app --fd 5`, the tracker is
+`-c from multiprocessing.resource_tracker import main;main(N)`, a spawned worker is `-c from multiprocessing.spawn import
+spawn_main; spawn_main(tracker_fd=N, pipe_handle=M) --multiprocessing-fork`. No row had a `Z` stat and no row was a command
+outside those three, so the live rows equal the `server group members before the kill` line in every run. Pids are not recorded as
+meaningful; only counts and commands are.
+
+| Host | Run | Members before the kill | Members, by command |
+|---|---|---|---|
+| macOS (M5 Max, Python 3.12.15) | 1 | 4 | uvicorn (`Ss`), resource tracker (`S`), 2 spawned workers (`S`, pipe handles 35 and 37) |
+| macOS | 2 | 3 | uvicorn (`Ss`), resource tracker (`S`), 1 spawned worker (`S`, pipe handle 35) |
+| macOS | 3 | 4 | uvicorn (`Ss`), resource tracker (`S`), 2 spawned workers (`S`, pipe handles 35 and 37) |
+| `ubuntu-latest`, Ubuntu 24.04.5, image `20261012.334.1`, run 39428298442 | 1 | 4 | uvicorn (`Ssl`), resource tracker (`S`), 2 spawned workers (`Sl`, pipe handles 25 and 27) |
+
+#### Why 3 on one run and 4 on another
+
+`src/spur/pool.py` builds `workers` single-worker pools (lines 95-98: `ProcessPoolExecutor(max_workers=1, mp_context=_SPAWN,
+initializer=_warm)`, one per slot) and routes each request with `self._executors[hash(p) % self.workers]` (`executor_for`, line
+101; "D-07: affinity, not load-balance"). A single-worker pool spawns its worker at its first build, not at construction. `hash(p)`
+is salted per process, so the slot a given `GearParams` lands on differs between runs: the three-member rows (server, tracker, one
+worker) are what one worker spawned looks like, and the four-member rows (server, tracker, two workers) are both slots having
+built. The listings show the commands; the slot routing is read from `pool.py`, not observed here. macOS run 2 is the one-slot outcome; the other four runs are the two-slot outcome. That is a hash-salt
+outcome, not a property of the host: macOS produced both, and the one Linux run produced the larger set.
+
+#### What the listings do and do not show
+
+They show, from this plan's own logs only, that the group the harness signals on both hosts is the server, its resource tracker and
+one or two spawned workers, that nothing else (no browser, no `ps` child, no zombie) was in the process group at the point of the
+kill, and that the floor of 3 is a count macOS run 2 printed (Linux printed 4 once), made of the server, the tracker and one worker, not of two pool
+workers.
+They do not show how often Linux forms the three-member group: one Linux run produced four, and the macOS spread of 4, 3, 4 says
+the next Linux run can produce three, so a floor above three would be wrong on either host. They do not show Ubuntu 26.04: this run
+is on 24.04, and Phase 29 reads the repository's first migrated `ubuntu-latest` run (browser test or full gate) against it. The
+floor's job is unchanged; 27-06 writes the `MIN_GROUP_MEMBERS` comment from this record.
+
+### Seen red once (Phase 27)
+
+Each deliberate break was run red once and reverted, or was the old code the fix replaced. The first failure line is copied from the kept log named in the row (every log is under `.planning/phases/27-ledger-tests-and-harness/investigation/`); later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 27-02 | `tests/test_trochoid.py::test_slug_is_total_and_ends_trochoid_exactly_when_root_mode_does` | `raise RuntimeError("mutated _junction")` as the first body line of `_junction` in `src/spur/calc.py` | `RuntimeError: mutated _junction`; `1 failed, 100 deselected in 0.09s`, log `27-02-red-slug-junction.log` | yes, `git checkout -- src/spur/calc.py`; `git diff --exit-code v0.5 -- src/spur/calc.py src/spur/params.py` clean before any commit |
+| 27-02 | the same totality test | the same raise as the first body line of `_root_curve` | `RuntimeError: mutated _root_curve`; `1 failed, 100 deselected in 0.08s`, log `27-02-red-slug-root-curve.log` | yes, the same `git checkout` and the same clean diff |
+| 27-02 | `tests/test_api.py::test_a_failed_build_records_the_name_of_the_part_it_would_have_been` | a temporary test downloaded both rows' gears first, under the old shape (no per-test export cache) | `assert 200 == 422` (`where 200 = <Response [200 OK]>.status_code`), both rows, log `27-02-red-name-preseeded.log` | the fix replaced it: `fresh_exports` gives the test its own cache and the same pre-seed reads `3 passed, 60 deselected` (`27-02-green-name-preseeded.log`) |
+| 27-02 | `tests/test_api.py::test_openapi_documents_the_typed_contracts`, the `_has_key` self-check | `_has_key` returned `False` | `AssertionError: assert False` where `False = _has_key({'x': [{'selectors': []}]}, 'selectors')`; `1 failed, 61 deselected in 1.88s`, log `27-02-red-openapi-walk.log` | yes, the committed `_has_key` is the dict and list walk |
+| 27-02 | `tests/test_relations.py::test_a_relation_true_only_at_the_first_open_count_goes_red[hex_wall-hex_cell-0.05]` | the `honeycomb (4)` row absent from `CUTOUT_STATES` | `Failed: DID NOT RAISE AssertionError`; `1 failed, 2 passed, 56 deselected in 0.08s`, log `27-02-red-honeycomb.log` | the fix replaced it: the row is in `CUTOUT_STATES` and the meta-test counts fourteen states |
+| 27-03 | `tests/test_process_group.py::test_the_group_is_signalled_before_ps_is_read_or_the_leader_reaped` and the two `test_a_failed_ps_fails_the_teardown_with_the_group_already_signalled` rows | the moved, unreordered `stop_group` (reads `ps` before it signals) | `AssertionError: ['read', 'signal SIGTERM', 'read', 'wait']`; the failed-`ps` rows raise `CalledProcessError` and `FileNotFoundError: [Errno 2] No such file or directory: 'ps'` before any signal; `3 failed in 0.05s`, log `27-03-red-old-order.log` | the fix replaced it: the reordered `stop_group` reads `3 passed in 0.04s` (`27-03-green.log`) |
+| 27-03 | the browser test's survivor check on the real server (run 2 of the log; run 1 was the plan's literal break, `os.kill(pgid, sig)` to the leader, and the browser test passed, so it was not red) | `_signal_group` signals the leader only (the 21-01 break) | `Failed: server process group 46075 still has live pids [46103, 46206, 49708] after SIGTERM (10 s) and SIGKILL (5 s)`; `2 passed, 1 error in 38.48s`, log `27-03-red-leader-only.log` | yes, the orphaned workers killed by group, the module restored from a saved copy and `cmp` clean; `grep -c 'os.kill(pgid' tests/process_group.py` reads 0 |
+| 27-04 | `tests/test_bench.py::test_the_host_state_reads_unknown_where_git_cannot_name_head[no-git-binary,not-a-checkout]` | `_host_state` without its catch around `git rev-parse` | `FileNotFoundError: [Errno 2] No such file or directory: 'git'` and `subprocess.CalledProcessError: Command '['git', 'rev-parse', '--short', 'HEAD']' returned non-zero exit status 128.`; `2 failed, 43 deselected in 1.70s`, log `27-04-red-host-state.log` | the fix replaced it: `_host_state` catches both and the rows read `2 passed in 1.56s` |
+| 27-05 | `tests/test_browser_pins.py::test_the_browser_test_has_no_path_that_passes_without_the_browser`, the reinstall pin | the old launch-failure text, which names no reinstall | `AssertionError: launch() must name rm -f .venv/.browser && make test when it fails: the stamp alone skips the install`; `1 failed, 2 passed in 0.07s`, log `27-05-red-launch-pin.log` | the fix replaced it: `launch()` names the reinstall and the pin finds `REINSTALL_COMMAND` in it |
+| 27-05 | `tests/test_browser_pins.py::test_an_environ_read_is_allowed_by_its_statement_not_its_line` | the line rule: a `# SPUR_` comment on the line allowed the read | `assert 0 == 1` where `0 = len([])` for `_problems('a.py', 'import os\nos.environ["X"]  # SPUR_\n')`; `1 failed, 3 deselected in 0.02s`, log `27-05-red-environ-rule.log` | the fix replaced it: the allowance is a constant inside the read's own statement |
+| 27-05 | `tests/test_browser.py::test_the_oracle_reads_a_link_as_the_page_does`, `-0` | `_js_number` before its range check and its `-0` rule | `AssertionError: assert {'dep': 'Needs Gate above -0'} == {'dep': 'Needs Gate above 0'}`; `2 failed, 1 deselected in 0.15s` for the pair of rows, log `27-05-red-harness-info.log` | the fix replaced it: `_js_number` writes `-0` as `0` |
+| 27-05 | `tests/test_browser.py::test_a_fixture_link_refuses_a_value_no_person_would_type` | `fixture_hash` before it refused a non-scalar param | `Failed: DID NOT RAISE AssertionError`, log `27-05-red-harness-info.log` | the fix replaced it: `fixture_hash` refuses a bool or null param |

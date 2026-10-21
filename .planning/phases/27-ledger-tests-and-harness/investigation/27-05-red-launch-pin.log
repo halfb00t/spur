@@ -1,0 +1,80 @@
+F..                                                                      [100%]
+=================================== FAILURES ===================================
+______ test_the_browser_test_has_no_path_that_passes_without_the_browser _______
+
+    def test_the_browser_test_has_no_path_that_passes_without_the_browser() -> None:
+        paths = _scan_set()
+        names = {p.name for p in paths}
+        assert "browser_session.py" in names, names
+        defining = [
+            p.name
+            for p in paths
+            if any(
+                isinstance(node, ast.FunctionDef) and node.name == TEST_NAME
+                for node in ast.walk(_parse(p))
+            )
+        ]
+        assert len(defining) == 1, f"{TEST_NAME} is defined in {defining}, expected exactly one module"
+    
+        problems: list[str] = []
+        for path in paths:
+            lines = path.read_text(encoding="utf-8").splitlines()
+            for node in ast.walk(_parse(path)):
+                if not isinstance(node, ast.Attribute | ast.Name | ast.ImportFrom):
+                    continue
+                if isinstance(node, ast.Attribute):
+                    spoken = [node.attr]
+                elif isinstance(node, ast.Name):
+                    spoken = [node.id]
+                else:
+                    spoken = [a.name for a in node.names]
+                spelled = next((s for s in spoken if s in WATCHED), "")
+                if not spelled:
+                    continue
+                line = lines[node.lineno - 1]
+                if spelled == "environ" and any(m in line for m in ALLOWED_ENVIRON_MARKERS):
+                    continue
+                problems.append(f"{path.name}:{node.lineno}: `{spelled}` in `{line.strip()}`")
+        assert not problems, "a path that passes without the browser (D-02): " + "; ".join(problems)
+    
+        launch = next(
+            node
+            for node in ast.walk(_parse(REPO_ROOT / "tests" / "browser_session.py"))
+            if isinstance(node, ast.FunctionDef) and node.name == "launch"
+        )
+        fails = [
+            node
+            for node in ast.walk(launch)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "fail"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "pytest"
+        ]
+        assert fails, "launch() must call pytest.fail when the shell cannot start"
+        named = [
+            node
+            for node in ast.walk(launch)
+            if isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and INSTALL_COMMAND in node.value
+        ]
+        assert named, f"launch() must name `{INSTALL_COMMAND}` when it fails"
+        reinstall = [
+            node
+            for node in ast.walk(launch)
+            if isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and REINSTALL_COMMAND in node.value
+        ]
+>       assert reinstall, (
+            f"launch() must name {REINSTALL_COMMAND} when it fails: the stamp alone skips the install"
+        )
+E       AssertionError: launch() must name rm -f .venv/.browser && make test when it fails: the stamp alone skips the install
+E       assert []
+
+tests/test_browser_pins.py:139: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_browser_pins.py::test_the_browser_test_has_no_path_that_passes_without_the_browser
+1 failed, 2 passed in 0.07s
+exit 1

@@ -17,7 +17,6 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import signal
 import socket
 import struct
 import subprocess
@@ -34,6 +33,7 @@ from typing import IO, NamedTuple
 
 import pytest
 from playwright.sync_api import Browser, Error, Page, Playwright, Request
+from process_group import _log_tail, group_members, stop_group
 
 # Matches the page's own STL request, whatever its query string.
 STL_ROUTE = "**/api/model.stl*"
@@ -52,8 +52,18 @@ STL_ROUTE = "**/api/model.stl*"
 # Each is under 15 s, so PD-04 still leaves 45 s. Not read on ubuntu-latest here.
 BUILD_WAIT_MS = 45_000
 
-# uvicorn plus the shipped pool of 2 workers (D-11, 21-RESEARCH Pattern 1). Seen before the
-# kill so that the zero seen after it is a real zero and not a reader that matches nothing.
+# The kill's non-vacuity check: the group is counted before the kill so that the zero counted
+# after it is a real zero and not a reader that matches nothing. After the browser test's
+# builds `ps -ww` lists uvicorn, `multiprocessing.resource_tracker` and one or two spawned
+# workers (27-01), not "uvicorn plus the pool's 2 workers": the pool is two single-worker
+# executors routed by `hash(p) % workers` (src/spur/pool.py, D-07 affinity), each starting its
+# worker at its first build, and `hash(GearParams())` is salted per process. So 3 is every
+# build on one executor slot and 4 is both slots; a run reading exactly 3 and one reading 4
+# both clear `>=`, and neither shows both workers ran. macOS (Apple M5 Max, macOS 27.0.1,
+# 1-minute load 4.7-7.7, 2026-10-20, 27-01) read 4, 3 and 4 over three runs; ubuntu-latest
+# (run 39428298442, `Image: ubuntu-24.04` version 20261012.334.1, 2026-10-20, 27-01) read 4
+# in its one run, the same three commands. A forced second build would show both workers and
+# was rejected (D-01); members are not matched by command either, the floor is a count (D-01).
 MIN_GROUP_MEMBERS = 3
 
 # The lower of the hosts' drawn/blank PNG byte ratios divided by 2, rounded down to one
@@ -71,72 +81,10 @@ PNG_RATIO_BAR = 4.9
 FIXTURE_PATH = Path(__file__).with_name("regression") / "pre_v0_2.json"
 GOLDEN_PATH = Path(__file__).with_name("regression") / "golden_requests.json"
 
-# How long the server gets to start, and to stop after SIGTERM and then after SIGKILL.
-# Measured on the dev host: /api/health reported a pool 0.18-0.24 s after spawn, killpg
-# took 0.22 s (21-RESEARCH Pattern 1). The bounds are generous: crossing one means a bug.
+# How long the server gets to start. Measured on the dev host: /api/health reported a pool
+# 0.18-0.24 s after spawn (21-RESEARCH Pattern 1). The bound is generous: crossing it means
+# a bug.
 READY_BOUND_S = 120.0
-TERM_BOUND_S = 10.0
-KILL_BOUND_S = 5.0
-
-
-def _log_tail(log: IO[bytes], lines: int = 40) -> str:
-    # pread, not seek: the child writes through a descriptor that shares this file's
-    # offset, and a seek here would make it overwrite the start of its own log.
-    fd = log.fileno()
-    data = os.pread(fd, os.fstat(fd).st_size, 0)
-    return "\n".join(data.decode(errors="replace").splitlines()[-lines:])
-
-
-def group_members(pgid: int) -> list[int]:
-    """Live pids of one process group: `ps -A -o pgid=,stat=,pid=`, zombies left out.
-
-    A scan of the group and not of the host: this machine holds unrelated orphaned
-    `multiprocessing` children, and `os.killpg(pgid, 0)` answers EPERM for a group that
-    holds only zombies on macOS, so neither says what the fixture needs to know.
-    """
-    out = subprocess.run(
-        ["ps", "-A", "-o", "pgid=,stat=,pid="], capture_output=True, text=True, check=True
-    ).stdout
-    live: list[int] = []
-    for row in out.splitlines():
-        fields = row.split()
-        if len(fields) == 3 and int(fields[0]) == pgid and not fields[1].startswith("Z"):
-            live.append(int(fields[2]))
-    return live
-
-
-def _signal_group(pgid: int, sig: signal.Signals) -> None:
-    # Gone already (ProcessLookupError) is the goal; EPERM is macOS's answer for a group of
-    # zombies, which group_members then reads as empty.
-    with contextlib.suppress(ProcessLookupError, PermissionError):
-        os.killpg(pgid, sig)
-
-
-def stop_group(proc: subprocess.Popen[bytes], log: IO[bytes]) -> None:
-    """SIGTERM the server's whole group, SIGKILL what outlasts the bound, fail on survivors.
-
-    The group, not the leader: killing only uvicorn left both pool workers alive 10 s later
-    (21-RESEARCH Pitfall P3), and they would outlive the test run.
-    """
-    pgid = proc.pid  # start_new_session makes the leader's pid the group id
-    survivors = group_members(pgid)
-    bound = TERM_BOUND_S
-    for sig, bound in ((signal.SIGTERM, TERM_BOUND_S), (signal.SIGKILL, KILL_BOUND_S)):
-        _signal_group(pgid, sig)
-        deadline = time.monotonic() + bound
-        survivors = group_members(pgid)
-        while survivors and time.monotonic() < deadline:
-            time.sleep(0.05)  # a poll interval; the condition is the group, not the clock
-            survivors = group_members(pgid)
-        if not survivors:
-            break
-    with contextlib.suppress(subprocess.TimeoutExpired):
-        proc.wait(timeout=KILL_BOUND_S)  # reap the leader so it is not left a zombie
-    if survivors:
-        pytest.fail(
-            f"server process group {pgid} still has live pids {survivors} after "
-            f"SIGTERM, SIGKILL and {bound:.0f} s; server log tail:\n{_log_tail(log)}"
-        )
 
 
 def _wait_for_pool(base: str, proc: subprocess.Popen[bytes], log: IO[bytes]) -> None:
@@ -166,10 +114,10 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
     variable, so the pool is the shipped two workers and the shipped timeouts (D-11).
 
     `floor_applies` is asked at teardown whether the group must still show its
-    `MIN_GROUP_MEMBERS`. Pool workers start on first use: the group read 2 members after
-    /api/health reported a pool and 3 after one preview build (macOS, 2026-10-10). A test
-    that failed before it built anything must not add a second, misleading error here, so
-    the caller says when the floor is meaningful.
+    `MIN_GROUP_MEMBERS`. Before any build the group is uvicorn and the resource tracker (2
+    members, macOS 2026-10-10); a worker starts at its executor's first build (see
+    `MIN_GROUP_MEMBERS`). A test that failed before it built anything must not add a second,
+    misleading error here, so the caller says when the floor is meaningful.
     """
     sock = socket.socket()
     try:
@@ -199,8 +147,9 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
                         members = group_members(proc.pid)
                         print(f"server group members before the kill: {len(members)}")
                         assert len(members) >= MIN_GROUP_MEMBERS, (
-                            f"saw {members} in the server's group, expected uvicorn plus its "
-                            f"pool workers (>= {MIN_GROUP_MEMBERS}): the survivor check "
+                            f"saw {members} in the server's group, "
+                            "expected uvicorn, the resource tracker and at least one pool worker "
+                            f"(>= {MIN_GROUP_MEMBERS}): the survivor check "
                             "below would read an empty group as proof"
                         )
                 finally:
@@ -210,7 +159,7 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
 
 
 def launch(pw: Playwright) -> Browser:
-    """Start the default Chrome Headless Shell, or fail the test naming how to install it.
+    """Start the default Chrome Headless Shell, or fail with Playwright's error and the reinstall.
 
     Called from the test body, not a fixture: `pytest.fail` in a fixture reports ERROR, in
     the body FAILED. No channel, no flags: the default shell renders on SwiftShader on both
@@ -221,9 +170,12 @@ def launch(pw: Playwright) -> Browser:
     except Error as error:
         path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "<unset: Playwright's default cache>")
         pytest.fail(
-            "the headless shell is not installed: run `playwright install --only-shell "
-            f"chromium` (PLAYWRIGHT_BROWSERS_PATH={path}); `make test` runs the install "
-            f"stamp for you.\nPlaywright said: {error}"
+            f"the headless shell did not start. Playwright said: {error}\n"
+            "If the shell is missing, `rm -f .venv/.browser && make test` installs it again: "
+            "the stamp alone skips the install while it is present (`.venv` is the default "
+            "VENV). Outside make, run `playwright install --only-shell chromium` with "
+            f"PLAYWRIGHT_BROWSERS_PATH={path}. On Linux, a missing shared library needs "
+            "`BROWSER_INSTALL_ARGS=--with-deps` on that make command."
         )
 
 
@@ -327,10 +279,16 @@ def _js_number(value: float) -> str:
 
     `:g` wrote 1e+06 and 1e-05 where JavaScript writes 1000000 and 0.00001. `repr` gives the
     same shortest round-trip digits as JavaScript, and `Decimal(...).normalize()` formatted
-    with `f` keeps them positional, with `1.0` as `1`. Exact for 1e-6 <= |value| < 1e21; JavaScript
-    switches to an exponent outside that range, and no relation threshold is near it.
+    with `f` keeps them positional, with `1.0` as `1`. Exact for 1e-6 <= |value| < 1e21, which
+    is checked: JavaScript writes an exponent outside that range (`1e+21`, `1e-7`), and a
+    positional string there would not be the page's.
     """
-    return format(Decimal(repr(float(value))).normalize(), "f")
+    number = float(value)
+    assert number == 0 or 1e-6 <= abs(number) < 1e21, (
+        f"{number!r}: JavaScript writes this with an exponent, which this function does not"
+    )
+    # `+ 0` turns Decimal's `-0` into `0`, as JavaScript's `${-0}` reads.
+    return format(Decimal(repr(number)).normalize() + 0, "f")
 
 
 def _given(link: str) -> dict[str, str]:
@@ -650,9 +608,9 @@ def serve_stl_from(page: Page, stl: bytes) -> None:
     on the server, so the pool is not asked again and a step's cost is the page's, not the
     kernel's. The `download name` step (Phase 22) opens its own page without this route,
     because it needs the server's Content-Disposition, and builds one more part. The bytes
-    must be served and not the
-    request aborted: an aborted STL makes `fail()` replace `#messages` with "Request failed:
-    ...", which erases the very warnings a step asserts (21-RESEARCH P7).
+    must be served and not the request aborted: an aborted STL makes `fail()` replace
+    `#messages` with "Request failed: ...", which erases the very warnings a step asserts
+    (21-RESEARCH P7).
     """
     page.unroute(STL_ROUTE)
     page.route(STL_ROUTE, lambda route: route.fulfill(status=200, body=stl))
@@ -669,8 +627,13 @@ def fixture_hash(params: dict[str, object], mate_teeth: int | None) -> str:
     """The link a person would share for one fixture record: its params, then the mate.
 
     `str(value)` of the JSON value, so `1.0` stays `1.0` the way a person typing it would
-    send it; the page's own `gearQuery()` decides what survives (a default is dropped).
+    send it; the page's own `gearQuery()` decides what survives (a default is dropped). A
+    param that is not an int, float or str is refused: `str(True)` is `True`, which no person
+    types into a link.
     """
+    for name, value in params.items():
+        scalar = isinstance(value, int | float | str) and not isinstance(value, bool)
+        assert scalar, f"record param {name!r} is {value!r}: str() would write {str(value)!r}"
     pairs = [(name, str(value)) for name, value in params.items()]
     if mate_teeth is not None:
         pairs.append(("mate_teeth", str(mate_teeth)))

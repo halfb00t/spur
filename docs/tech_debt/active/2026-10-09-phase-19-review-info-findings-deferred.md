@@ -1,13 +1,12 @@
-# Phase 19 code review: four info findings deferred
+# Phase 19 code review: the root_fillet label finding is still deferred
 
 Severity: nice
 Status: active
 Date: 2026-10-09
 Source: `.planning/phases/19-the-trochoid-in-the-part/19-REVIEW.md` IN-01 to IN-04 (gsd-code-reviewer, standard depth); the human chose `fix-now` for CR-01 and WR-01 only
 Related files:
-- src/spur/model.py (`_build`'s "one answer" comment; `_chamfer_tips` calls `tip_chamfer_effective(p)` without `rm`)
-- bench/trochoid_part.py:109-121 (`trochoid_curve` re-solves the curve `RootMode.curve` already holds), :172-195 (`root_edges`, `tooth0_root_edges`, `oracle_reading` near-copies of `tests/test_model.py` `_root_edges`, `_oracle_reading`), :333 (`_host_state` `check=True` on `git rev-parse`)
 - src/spur/static/app.js:23 (`['root_fillet', 'Root fillet used']` while a hob root is in force)
+- History: the four findings are in Context below; the Update paragraph there says which are fixed
 
 ## Context
 Four `Info` findings from the Phase 19 review, none a defect in a printed number or a built part:
@@ -17,11 +16,13 @@ Four `Info` findings from the Phase 19 review, none a defect in a printed number
 - **IN-03** The Makefile comment quotes L34's 63.555 s gate while the gate reads 161–240 s on this host (19-09, accepted as `accept-A`, recorded in L38). The comment is a claim the repo contradicts. Resolved in: 34270c8 (L43 re-set the bar and the Makefile comment now cites it).
 - **IN-04** The UI result row labels `root_fillet` "Root fillet used" under a hob root, where the value is the hob's tip radius; `_host_state` crashes outside a git checkout instead of printing "unknown".
 
+**Update (2026-10-20, Phase 27).** IN-01 is fixed in `refactor(model): pass the build's one root answer to the tip chamfer`. IN-02's bench half (the stale paragraph and the re-solve) and IN-04's `_host_state` half are fixed in `fix(bench): read root_mode's curve and name an unknown HEAD in the trochoid bench`. IN-02's near-copy replacement (`root_edges`, `tooth0_root_edges`, `oracle_reading` against `tests/test_model.py`'s `_root_edges`, `_oracle_reading`) is `skipped` (D-07): the two sets differ in the error type (an assert against `ValueError`), in the sample count (a fixed 400 against a `samples` parameter) and in signature, and Phase 27's triage table records it. IN-03 was already resolved in `34270c8`. What remains is IN-04's `root_fillet` label (`src/spur/static/app.js:23`), which is Phase 28's REQ-root-fillet-label-follows-root.
+
 ## Why it matters
 Maintainability only: a comment and a label that overstate, duplicated test helpers that can drift apart, and a bench that re-solves what it already has. No user-visible number is wrong (CR-01, the one that was, is fixed in the same review round).
 
 ## Next step
-Fix IN-01, IN-02 and IN-04 together when `model.py`, `bench/trochoid_part.py` or the `DIMS` table is next touched (one small commit: pass `rm` through `_chamfer_tips`, read `rm.curve` in the bench and import the test helpers, make the `root_fillet` label a function of the document, catch `CalledProcessError`/`FileNotFoundError` in `_host_state`).
+Make the `root_fillet` label a function of the document (Phase 28, REQ-root-fillet-label-follows-root), or when the `DIMS` table in `src/spur/static/app.js` is next touched. Then set this item resolved with that commit.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

@@ -6,8 +6,10 @@ from typing import cast
 
 import cadquery as cq
 import pytest
+from composition import BORE_OFF
 from fastapi.testclient import TestClient
 
+import spur.app
 import spur.model
 from spur.app import STATIC, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
@@ -72,6 +74,15 @@ def test_schema_drives_the_form() -> None:
     options = schema["selectors"][0]["options"]
     assert [option["label"] for option in options] == ["Round", "D-flat", "Hex", "No bore"]
     assert options[2]["when"] == [{"field": "bore_hex", "op": "gt", "value": 0}]
+
+
+def _has_key(node: object, key: str) -> bool:
+    """Whether any object in a parsed JSON document has `key` as a key, at any depth."""
+    if isinstance(node, dict):
+        return key in node or any(_has_key(value, key) for value in node.values())
+    if isinstance(node, list):
+        return any(_has_key(item, key) for item in node)
+    return False
 
 
 def test_openapi_documents_the_typed_contracts() -> None:
@@ -140,7 +151,12 @@ def test_openapi_documents_the_typed_contracts() -> None:
     # FastAPI or pydantic change that starts carrying the key is a decision for a new Lxx,
     # not drift.
     assert "selectors" in client.get("/api/schema").json(), "L42: /api/schema lost its selectors"
-    assert "selectors" not in client.get("/openapi.json").text, (
+    # The walk reads keys, not text: prose that merely names the word is not the key, and
+    # the substring test this replaces failed on it (24 IN-03). The two documents make the
+    # walker itself non-vacuous.
+    assert _has_key({"x": [{"selectors": []}]}, "selectors")
+    assert not _has_key({"description": "the selectors field"}, "selectors")
+    assert not _has_key(schema, "selectors"), (
         "L42: the selectors reached /openapi.json, which carried none before the selector")
 
 
@@ -922,8 +938,7 @@ def test_unknown_format_is_rejected() -> None:
     assert client.get("/api/model.obj").status_code == 422
 
 
-SMALL_GEAR = {"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6,
-              "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none"}
+SMALL_GEAR = {"teeth": 6, "pressure_angle": 14.5, "profile_shift": -0.6, **BORE_OFF}
 
 
 def test_impossible_mate_is_a_warning_not_a_number() -> None:
@@ -1286,17 +1301,29 @@ def test_a_failed_build_emits_build_failed_naming_the_class_and_the_level(
     assert not _event_records(caplog, "export.served")
 
 
+@pytest.fixture
+def fresh_exports(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The byte cache is module state shared by every `TestClient` test on an xdist worker,
+    and an earlier download of the same gear at the same quality answers before a raising
+    backend runs. Replacing the whole object per test makes that backend reachable whatever
+    ran before, with no uniqueness rule kept by hand. 1 MiB: the raising backend stores
+    nothing."""
+    monkeypatch.setattr(spur.app, "_EXPORTS", spur.app._BlobCache(1 << 20))
+
+
+@pytest.mark.usefixtures("fresh_exports")
 @pytest.mark.parametrize(("fields", "name"), [
     pytest.param({"teeth": 25, "root_shape": "trochoid"}, "spur_z25_m1.75_pa25_trochoid",
                  id="applies"),
     pytest.param({"teeth": 19, "profile_shift": -0.4, "backlash": 0.10, "pressure_angle": 33.5,
-                  "root_shape": "trochoid", "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0,
-                  "recess_sides": "none"}, "spur_z19_m1.75_pa33.5", id="refused"),
+                  "root_shape": "trochoid", **BORE_OFF}, "spur_z19_m1.75_pa33.5", id="refused"),
 ])
 def test_a_failed_build_records_the_name_of_the_part_it_would_have_been(
         caplog: pytest.LogCaptureFixture, fields: dict[str, object], name: str) -> None:
     """SC2: the `build.failed` record names the part the request would have been --
-    `_trochoid` when the hob root applies, the plain name when `root_mode` refuses."""
+    `_trochoid` when the hob root applies, the plain name when `root_mode` refuses.
+    `_EXPORTS` is fresh for this test, so no earlier download can answer before the
+    raising backend runs."""
     caplog.set_level(logging.INFO)
 
     async def backend(p: GearParams, fmt: str, quality: str) -> bytes:
@@ -1304,10 +1331,6 @@ def test_a_failed_build_records_the_name_of_the_part_it_would_have_been(
 
     app.dependency_overrides[build_backend] = lambda: backend
     try:
-        # 25 teeth trochoid is downloaded by no other test and the hob root applies there
-        # (26 is tests/test_cli.py:646, 682, 23 is this file's root-shape test), and no
-        # other test downloads the 33.5 degree tip-land gear, so the byte cache cannot
-        # answer before the raising backend runs.
         r = client.get("/api/model.stl", params={"quality": "preview", **fields})
     finally:
         app.dependency_overrides[build_backend] = lambda: _inline_backend

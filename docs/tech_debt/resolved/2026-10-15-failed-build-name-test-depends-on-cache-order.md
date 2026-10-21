@@ -1,7 +1,8 @@
 # A failed-build name test passes only while no other test downloads the same gear
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: c47bfc4
 Date: 2026-10-15
 Source: phase 22 code review, finding WR-02 (`.planning/milestones/v0.5-phases/22-download-name-carries-the-root/22-REVIEW.md`); untriaged until the v0.5 milestone audit, filed at the human's call at the v0.5 close
 Related files:

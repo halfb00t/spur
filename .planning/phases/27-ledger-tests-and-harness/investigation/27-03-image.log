@@ -1,0 +1,16 @@
+#17 exporting manifest list sha256:c90ec31f68f428077dfd48c1b6592da855ead637374cd12a02cf1138426c60e4 done
+#17 naming to docker.io/library/spur:latest done
+#17 DONE 0.2s
+docker run --rm  --user root -e PYTHONPATH=/app/src:/app \
+  -v "/Users/half/git/halfb00t/spur/src:/app/src:ro" -v "/Users/half/git/halfb00t/spur/tests:/app/tests:ro" \
+  -v "/Users/half/git/halfb00t/spur/pyproject.toml:/app/pyproject.toml:ro" \
+  -v "/Users/half/git/halfb00t/spur/bench:/app/bench:ro" -v "/Users/half/git/halfb00t/spur/scripts:/app/scripts:ro" \
+  -w /app --entrypoint sh spur:latest \
+  -c "pip install -q --root-user-action=ignore pytest httpx pytest-cov pytest-xdist \
+      && python -m pytest -q -p no:cacheprovider \
+      --ignore=tests/test_browser.py --ignore=tests/test_hooks.py \
+      --ignore=tests/test_no_fake_done.py --ignore=tests/test_browser_pins.py \
+      --ignore=tests/test_pr_land.py --ignore=tests/test_bench.py tests/test_process_group.py"
+...                                                                      [100%]
+3 passed in 0.02s
+exit 0

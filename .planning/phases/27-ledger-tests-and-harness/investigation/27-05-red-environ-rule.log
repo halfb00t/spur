@@ -1,0 +1,18 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_an_environ_read_is_allowed_by_its_statement_not_its_line _________
+
+    def test_an_environ_read_is_allowed_by_its_statement_not_its_line() -> None:
+        """21-REVIEW IN-03: the allowance is a marker constant in the read's own statement. A
+        marker in a comment on the line must not pass, and a read wrapped over two lines, its
+        marker on the second, must."""
+>       assert len(_problems("a.py", 'import os\nos.environ["X"]  # SPUR_\n')) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+E        +    where [] = _problems('a.py', 'import os\nos.environ["X"]  # SPUR_\n')
+
+tests/test_browser_pins.py:101: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_browser_pins.py::test_an_environ_read_is_allowed_by_its_statement_not_its_line
+1 failed, 3 deselected in 0.02s
+exit 1

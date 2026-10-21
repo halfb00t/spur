@@ -11,7 +11,7 @@ says the same thing, so this module holds the three proofs together:
   both construction styles (`_f` and the two `Literal` fields) build it through `_extra()`;
 - the calc parity: with its relation false, a dependent moves nothing in `derive()` but
   `warnings`, and a warning names it (forward); every field `derive()` calls ignored
-  has a relation (reverse); and in each of twelve whole-part states the relation is true
+  has a relation (reverse); and in each of fourteen whole-part states the relation is true
   exactly where `derive()` does not call the field ignored (the driver check).
 
 It imports `spur.params` and `spur.calc` only. The import-boundary contracts keep both off
@@ -244,12 +244,13 @@ def _assert_calc_ignores_only(declared: frozenset[str]) -> int:
 # spoke and hole fields are required once their count is set, and hex_wall must be at least
 # 0.4 mm. Each gate sits at the first value past its closed one (the count 1, the cell
 # 0.05 mm, which `calc` enlarges with a warning and accepts), because a relation whose
-# threshold is off by one (`spoke_count gt 1`) is false at exactly that value. A count
-# family also gets a second, larger open value (4 spokes, 3 holes): without it a relation
-# true at exactly the first value and false at every other (`spoke_count eq 1`) is
-# indistinguishable from `gt 0`, and a user would see `hub_d` dimmed on a real 4-spoke part
-# (L08). The `eq` case was only ever caught by the forward check's incidental
-# ValidationError (IN-08). All twelve states validate (measured 2026-10-12).
+# threshold is off by one (`spoke_count gt 1`) is false at exactly that value. Every gate
+# also gets a second, larger open value (4 spokes, 3 holes, a 4 mm cell): without it a
+# relation true at exactly the first value and false at every other (`spoke_count eq 1`,
+# `hex_cell eq 0.05`) is indistinguishable from `gt 0`, and a user would see `hub_d` dimmed
+# on a real 4-spoke part (L08). The `eq` case was only ever caught by the forward check's
+# incidental ValidationError (IN-08), and the cell had no second value (23 IN-08). All
+# fourteen states validate (measured 2026-10-20).
 CUTOUT_STATES: dict[str, dict[str, float]] = {
     "no cutout": {},
     "spokes": {"spoke_count": 1, "spoke_width": 4, "hub_d": 20, "rim_wall": 3,
@@ -259,6 +260,7 @@ CUTOUT_STATES: dict[str, dict[str, float]] = {
     "holes": {"hole_count": 1, "hole_d": 3, "hole_circle_d": 24},
     "holes (3)": {"hole_count": 3, "hole_d": 3, "hole_circle_d": 24},
     "honeycomb": {"hex_cell": 0.05, "hex_wall": 1},
+    "honeycomb (4)": {"hex_cell": 4, "hex_wall": 1},
 }
 # A hex bore refuses a keyway (the REFUSED pair); a round bore with one is the other kind.
 BORE_STATES: dict[str, dict[str, float]] = {
@@ -286,7 +288,7 @@ def _assert_relations_name_the_driver_calc_obeys(
     tried is the state's own, else one schema step above the field's non-zero default, else
     `minimum + step`: a hex bore names bore_d only off its default (L27, amended
     2026-10-14), so the probe steps off it, and 0 would be named by nothing.
-    Each count gate is probed at two open values (see CUTOUT_STATES), so `eq 1` and `gt 0`
+    Each gate is probed at two open values (see CUTOUT_STATES), so `eq 1` and `gt 0`
     differ. A gate that never differs across valid parts (`spoke_count eq 0` beside `hole_count gt
     0`, since two patterns are refused) changes nothing a user can see and passes.
     """
@@ -451,7 +453,7 @@ def test_a_relation_calc_never_calls_ignored_goes_red() -> None:
 
 
 def test_each_relation_names_the_driver_calc_obeys() -> None:
-    """WR-03: driver parity over every declared relation, in twelve whole-part states. Red on
+    """WR-03: driver parity over every declared relation, in fourteen whole-part states. Red on
     a relation whose driver `calc` does not use for the field, or whose extra gate makes
     it true where `calc` says ignored."""
     relations = _relations()
@@ -496,13 +498,16 @@ def test_an_extra_gate_beside_the_right_driver_goes_red(dep: str, wrong: str) ->
             {dep: [(owner, "gt", 0.0), (wrong, op, 0.0)]})
 
 
-@pytest.mark.parametrize(("dep", "gate"), [("hub_d", "spoke_count"), ("hole_d", "hole_count")])
-def test_a_relation_true_only_at_the_first_open_count_goes_red(dep: str, gate: str) -> None:
+@pytest.mark.parametrize(("dep", "gate", "value"), [
+    ("hub_d", "spoke_count", 1.0), ("hole_d", "hole_count", 1.0), ("hex_wall", "hex_cell", 0.05)])
+def test_a_relation_true_only_at_the_first_open_count_goes_red(
+        dep: str, gate: str, value: float) -> None:
     """IN-08: `eq 1` is true at count 1 and false at 4 spokes or 3 holes, where calc uses the
-    field. The driver check must fail on its own assertion and not leave this to the forward
-    check's incidental ValidationError."""
+    field; `hex_cell eq 0.05` is the same at the 0.05 mm cell and a 4 mm one. The driver check
+    must fail on its own assertion and not leave this to the forward check's incidental
+    ValidationError."""
     with pytest.raises(AssertionError, match="wrong or extra driver"):
-        _assert_relations_name_the_driver_calc_obeys({dep: [(gate, "eq", 1.0)]})
+        _assert_relations_name_the_driver_calc_obeys({dep: [(gate, "eq", value)]})
 
 
 @pytest.mark.parametrize("dropped", ["spoke_fillet", "bore_d", "bore_flat"])

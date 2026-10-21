@@ -626,11 +626,35 @@ pytest — L13). Full list with sources and acceptance evidence:
   makes no Pi 5 claim; `.ai_skills/reverify-phase/SKILL.md` with `docs/HOW_TO_DEVELOP.md`
   §6 pointing at it; the three ideas retired into `docs/ideas/retired/`;
   REQ-venv-constraint-probe, REQ-pi5-claim-softened, REQ-reverify-recipe)
+- ✓ The gate passes or fails with a cause — Phase 26 (the `resource_tracker` flake located
+  from a forced-GC reproduction and fixed in `tests/test_pool.py`, 0 of 10 in each natural
+  arm, consistent not conclusive; a stalled test names itself through `-v --durations=25`
+  and `faulthandler_timeout = 170`, sized from CI run 38750065494's slowest phase 83.55 s;
+  the twin-selectors race traced to the `/api/info` response and fixed, read green on the
+  first post-merge `main` run 38858407163; the hook pin no longer reads the caller's
+  `PYTEST_ARGS`; `make test-image` mounts what its tests read; Ubuntu 26.04 pre-classified
+  green on run 38724011970; REQ-hook-pin-ignores-caller-args, REQ-twin-selectors-race-fixed,
+  REQ-tracker-flake-fixed-from-repro, REQ-hang-leaves-evidence,
+  REQ-test-image-runs-what-it-claims, REQ-ubuntu26-preclassified; UAT 1/1. PR #41 landed
+  its pushed head without 13 local commits; they landed in PR #42, and `make pr.land` now
+  refuses a local head branch the PR head does not carry)
+- ✓ The ledger guards cannot pass vacuously and the browser harness says what was observed
+  — Phase 27 (`slug()` totality guarded by a seeded 1,300-draw stratified test in the commit
+  slice, red twice; the failed-build name test gets its own `_BlobCache`; `stop_group` sends
+  SIGTERM to the group before any `ps` read or reap, moved to playwright-free
+  `tests/process_group.py`, proved red by a SIGKILL-to-leader-only break — the plan's
+  SIGTERM-leader-only mutation stays green because uvicorn stops its workers; the server
+  group listed from `ps` on macOS (4, 3, 4) and ubuntu-24.04 run 39428298442 (4) via the
+  closed-unmerged spike PR #43, `MIN_GROUP_MEMBERS` stays 3 with the members named; the
+  launch message names `rm -f .venv/.browser && make test`; `model.py` hands the tip chamfer
+  the build's one root answer, fixture byte-identical; five debt items retired; L40 amended;
+  REQ-slug-totality-guarded, REQ-failed-build-name-isolated, REQ-stop-group-signals-first,
+  REQ-group-floor-recorded-true, REQ-launch-message-true; verified 4/4, `make verify` 1333
+  passed; review 0 critical / 3 warning / 6 info all open — WR-03 lets a `ps` parse error skip
+  SIGKILL, WR-02 left `tests/process_group.py` outside the pin scan)
 
 ### Active
 
-- [ ] The gate passes or fails with a cause: the `resource_tracker` flake fixed or
-  re-deferred with its measurement; the next hang leaves per-test evidence (v0.6)
 - [ ] The Phase 22 and browser-harness `must` debts retired (v0.6)
 - [ ] A link with an invalid enum value is refused visibly, not built as the default (v0.6)
 - [ ] CI is green, or its failure classified, on Ubuntu 26 `ubuntu-latest` (v0.6)
@@ -895,4 +919,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-15 after starting milestone v0.6 Clean Ledger.*
+*Last updated: 2026-10-20 after Phase 27.*

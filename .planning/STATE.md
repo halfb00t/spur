@@ -2,40 +2,39 @@
 gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
-current_phase: 26
-current_phase_name: Gate Fails With a Cause
-status: verifying
-stopped_at: Completed 26-07-PLAN.md
-last_updated: "2026-10-15T14:38:39.122Z"
-last_activity: 2026-10-15
-last_activity_desc: Phase 26 execution started
-state_head: 577b494cf5129bb6138259c2b5114fcceaf5908c
+current_phase: 28
+current_phase_name: Refuse the Bad Link
+status: "Phase 27 shipped — PR #44"
+stopped_at: Phase 27 complete, ready to plan Phase 28
+last_updated: "2026-10-21T06:16:51.614Z"
+last_activity: 2026-10-21
+state_head: 299d527c56d10a8986e4597d5ef2c38a664e98d1
 progress:
   total_phases: 4
-  completed_phases: 5
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  completed_phases: 7
+  total_plans: 13
+  completed_plans: 13
+  percent: 78
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-15)
+See: .planning/PROJECT.md (updated 2026-10-20)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 26 — Gate Fails With a Cause
+**Current focus:** Phase 28 — Refuse the Bad Link
 
 ## Current Position
 
-Phase: 26 (Gate Fails With a Cause) — EXECUTING
-Plan: 7 of 7
-Status: Phase complete — ready for verification
-Last activity: 2026-10-15 — Phase 26 execution started
+Phase: 28 — Refuse the Bad Link
+Plan: Not started
+Status: Phase 27 shipped — PR #44
+Last activity: 2026-10-21
 
-Progress: [██████████] 100% (0 of 4 phases)
+Progress: [████████░░] 78% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -76,6 +75,8 @@ Progress: [██████████] 100% (0 of 4 phases)
 | 23 | 4 | - | - |
 | 24 | 4 | - | - |
 | 25 | 5 | - | - |
+| 26 | 7 | - | - |
+| 27 | 6 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -251,6 +252,12 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 26 P05 | 32 min | 3 tasks | 6 files |
 | Phase 26 P06 | 40min | 3 tasks | 12 files |
 | Phase 26 P07 | 25min | 3 tasks | 8 files |
+| Phase 27 P01 | 25 min | 3 tasks | 8 files |
+| Phase 27 P02 | 9 min | 3 tasks | 15 files |
+| Phase 27 P03 | 6 min | 2 tasks | 9 files |
+| Phase 27 P04 | 7 min | 2 tasks | 8 files |
+| Phase 27 P05 | 9 min | 3 tasks | 11 files |
+| Phase 27 P06 | 14 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -477,6 +484,18 @@ pending; the next milestone starts this list fresh.
 - [Phase 26]: 26-06: pytest-cov and pytest-xdist added to the test-image pip install so the forced-GC test runs in the image (human option B, deviation from D-11 literal text)
 - [Phase 26]: 26-06: test-image ignores six files whole, not per-test --deselect (stale ids fail silently); drops 47 + 41 passing tests from the image suite
 - [Phase 26]: D-07 applied on CI run 38750065494: S_ci 83.55 s, so faulthandler_timeout raised 120 -> 170
+- [Phase 26]: UAT closed on the post-merge `main` read (run 38858407163, the twin step's test PASSED); the 13 commits PR #41 left off `main` landed in PR #42 with the `pr_land` pre-merge local-tip refusal
+- [Phase 27]: 27-01: the browser test's server group is the server, its resource tracker and one or two spawned workers on macOS (4, 3, 4) and ubuntu-24.04 (4); 3 vs 4 is a hash-salt outcome, so the floor stays 3
+- [Phase 27]: 27-02: the slug totality test draws 1,300 gears in five seeded boxes; buckets are root_mode's answer, each asserted non-empty, RootReason's members asserted equal to reachable plus forced
+- [Phase 27]: 27-02: tests/test_cli.py keeps its own _BORE_OFF copy; 22 IN-01 covered test_trochoid.py and test_api.py only, the rest noted in 27-06's triage table
+- [Phase 27]: 27-03: the leader-only red that fires on the real server is the 21-01 break (os.kill(pgid, SIGKILL)); the plan's os.kill(pgid, sig) passes because uvicorn shuts its pool workers down on SIGTERM — Seen: run 1 of investigation/27-03-red-leader-only.log read 2 passed; run 2 read still has live pids after SIGTERM (10 s) and SIGKILL (5 s)
+- [Phase 27]: 27-03: stop_group signals the group before any ps read or proc.wait; a failed or absent ps skips the grace and fails as survivors unknown after SIGTERM and SIGKILL — T-21-02 and the reused-pid risk (T-27-11); proved by tests/test_process_group.py, 0.04 s, red against the old order (3 failed)
+- [Phase 27]: 27-04: D-03 landed as a behaviour-free src/ change (_chamfer_tips takes the build's RootMode); fixture diff vs v0.5 empty, src/ diff limited to model.py
+- [Phase 27]: 27-04: IN-02 near-copy replacement skipped (D-07, recorded by 27-06); Phase 19 debt item stays active for the Phase 28 root_fillet label only
+- [Phase 27]: 27-05: launch() stays text-only; the reinstall it names is rm -f .venv/.browser && make test, because the stamp alone skips the install
+- [Phase 27]: 27-05: the pins' environ allowance is equality with a string constant in the read's own statement (tripwire, not proof)
+- [Phase 27]: MIN_GROUP_MEMBERS stays 3 and names no member: 3 is every build on one executor slot, 4 is both, and either clears it (D-01)
+- [Phase 27]: The ubuntu correction says 21-02's count came from a ps that prints no command; the member set is 27-01's later listing (L08)
 
 ### Pending Todos
 
@@ -484,10 +503,17 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 begins 2026-10-19 and runs to 2026-11-19: Phase 26's
-  throwaway-PR pre-classification must have run its three jobs before it reaches the repo (the human pushes the
-  PR). Until Phase 26 lands, `main` CI is red on 2 of the last 8 runs at the browser step "twin selectors"
-  (`docs/tech_debt/active/2026-10-15-twin-selectors-step-reds-main.md`, `must`).
+- ⚠️ [Phase 27] Code review `27-REVIEW-DISPOSITION.md`: 9 open (3 warning, 6 info). WR-03: a `ValueError` from parsing `ps` rows escapes
+  `stop_group` after SIGTERM, skipping SIGKILL and the reap, and `ps` has no timeout. WR-02: `tests/process_group.py` is outside
+  the browser pins' `tests/*browser*.py` scan. WR-01: the pins' `environ` allowance is bypassable in a compound statement's header.
+  The verifier judged none defeats a success criterion and recommends closing WR-02 and WR-03 before Phase 28's repeated browser runs.
+- ℹ️ [Phase 27] `spike/27-group-listing` (PR #43, closed unmerged) still exists locally and on `origin`; deleting it is the human's call.
+- ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 runs 2026-10-19 to 2026-11-19; Phase 26's pre-classification
+  ran green (26-02, run 38724011970), and the Ubuntu 26 item stays active for Phase 29.
+- ✓ [Phase 26] The twin-selectors step read green on the first post-merge `main` run (38858407163 at `1981d93`). One
+  green run is consistent with the fix, not conclusive (2 reds in 8 before it); later `main` runs add to it.
+- ✓ [Phase 26] PR #41 landed its pushed head `6c0e57b` without 13 unpushed commits (`faf376b` among them); they
+  landed in PR #42 (`a4d55a6`), and `make pr.land` now refuses a local head branch the PR head does not carry.
 - ⚠️ [Phase 25] The 300 s bar rests on two non-decisive readings under load 4–7 (L43 says so). Review WR-03: Phase 24 recorded green gate runs of 296.91 s, 294.40 s and 336.15 s on this host under higher load, not cited beside the bar; the `.pre-commit-config.yaml` comment says the 300 s was "read on 2026-10-14" when it was set by the human. WR-01: no test pins the `requirements.txt` stamp dependency or the `-c requirements.txt` line. WR-02: the probe used an absolute `PIP_CONSTRAINT`, not the shipped relative `-c`. All open in `25-REVIEW-DISPOSITION.md`.
 - ℹ️ [Phase 25] The idle-host method never got an idle host: seven A1 waits gave up (lowest 1-min load 1.60 with other agent sessions open). A decisive re-read needs the other sessions closed or a new rule; the rule text stands for a future session.
 - ℹ️ [Phase 25] The resource-tracker flake did not fire in this phase's four green `make verify` runs (A1, B1, probe, 25-05); the `must` debt's decision is still owed from Phases 23 and 24.
@@ -766,10 +792,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-15T14:38:39.100Z
-Stopped at: Completed 26-07-PLAN.md
+Last session: 2026-10-20T14:12:18.717Z
+Stopped at: Phase 27 complete, ready to plan Phase 28
 Resume file: None
 
 ## Operator Next Steps
 
-- Approve the v0.6 roadmap (the orchestrator commits it), then /gsd-discuss-phase 26 (the `make test-image` mount-or-exclude decision waits on the first run's red set) or /gsd-plan-phase 26
+- /gsd-discuss-phase 27, or /gsd-plan-phase 27 to plan directly

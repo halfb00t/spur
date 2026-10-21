@@ -65,26 +65,26 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Ledger — tests and harness tell the truth
 
-- [ ] **REQ-slug-totality-guarded**: a seeded, millisecond test in the commit slice proves
+- [x] **REQ-slug-totality-guarded**: a seeded, millisecond test in the commit slice proves
   `slug()` raises nothing and ends `_trochoid` exactly when `root_mode` says trochoid, over
   draws stratified to reach every reachable refusal reason (each bucket asserted non-empty);
   `bracket degenerate` and `curve invalid` — unreachable by validated parameters (MEASURED) —
   are forced by patching and labelled forced; the test is red against a patched raising
   `_junction`/`_root_curve` (`2026-10-15-slug-totality-is-not-guarded-in-the-gate.md`).
-- [ ] **REQ-failed-build-name-isolated**: the failed-build name test reads 422 regardless of
+- [x] **REQ-failed-build-name-isolated**: the failed-build name test reads 422 regardless of
   test order or xdist scheduling — `_EXPORTS` replaced per test — and is red when the cache is
   pre-seeded with its gear under the old code
   (`2026-10-15-failed-build-name-test-depends-on-cache-order.md`).
-- [ ] **REQ-stop-group-signals-first**: `stop_group` signals the group before it inspects it;
+- [x] **REQ-stop-group-signals-first**: `stop_group` signals the group before it inspects it;
   a failed `ps` fails the teardown as "survivors unknown" with the group already signalled;
   the SIGTERM grace and the leader-only-break red are kept; a sub-second unit test outside
   the `*browser*` glob proves both paths and cleans up its own group
   (`2026-10-10-stop-group-reads-ps-before-it-signals.md`).
-- [ ] **REQ-group-floor-recorded-true**: the `MIN_GROUP_MEMBERS` comment names the members
+- [x] **REQ-group-floor-recorded-true**: the `MIN_GROUP_MEMBERS` comment names the members
   observed by `ps` on macOS and Linux (uvicorn, the resource tracker, one or two workers);
   dated corrections sit under both `bench/RESULTS.md` rows; no reading rewritten
   (`2026-10-10-group-floor-of-3-is-not-two-pool-workers.md`).
-- [ ] **REQ-launch-message-true**: the browser-launch failure message names a command that
+- [x] **REQ-launch-message-true**: the browser-launch failure message names a command that
   installs the browser when the stamp is present but the browser is not; text-only, the
   literal pinned by `tests/test_browser_pins.py` kept
   (`2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md`).
@@ -179,11 +179,11 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-hang-leaves-evidence | Phase 26 | Complete |
 | REQ-test-image-runs-what-it-claims | Phase 26 | Complete |
 | REQ-ubuntu26-preclassified | Phase 26 | Complete |
-| REQ-slug-totality-guarded | Phase 27 | Pending |
-| REQ-failed-build-name-isolated | Phase 27 | Pending |
-| REQ-stop-group-signals-first | Phase 27 | Pending |
-| REQ-group-floor-recorded-true | Phase 27 | Pending |
-| REQ-launch-message-true | Phase 27 | Pending |
+| REQ-slug-totality-guarded | Phase 27 | Complete |
+| REQ-failed-build-name-isolated | Phase 27 | Complete |
+| REQ-stop-group-signals-first | Phase 27 | Complete |
+| REQ-group-floor-recorded-true | Phase 27 | Complete |
+| REQ-launch-message-true | Phase 27 | Complete |
 | REQ-bad-link-refused | Phase 28 | Pending |
 | REQ-bad-link-decision-logged | Phase 28 | Pending |
 | REQ-root-fillet-label-follows-root | Phase 28 | Pending |

@@ -1,7 +1,8 @@
 # The group floor of 3 is recorded as "two pool workers"; the live group is uvicorn, the resource tracker and one worker
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: 99e2b7d
 Date: 2026-10-10
 Source: phase 21 code review, finding WR-02 (`.planning/phases/21-browser-test-of-the-viewer/21-REVIEW.md`)
 Related files:
@@ -32,6 +33,13 @@ List the group once with `ps -o pid=,pgid=,command=` during a run on each host, 
 comment to the observed members, and add a dated correction under the two `RESULTS.md`
 rows (do not rewrite the readings). Then decide whether the floor should name the tracker
 explicitly, or whether a second concurrent build should be forced so both workers appear.
+
+## Resolution
+2026-10-20 (27-06): 27-01 listed the group with `ps` on macOS (4, 3, 4 members in three runs) and on `ubuntu-latest` (run
+39428298442, 4 members): uvicorn, `multiprocessing.resource_tracker` and one or two spawned workers. The comment on
+`MIN_GROUP_MEMBERS`, `serve()`'s docstring and the floor message now say so, and a dated correction sits under each of
+the two `bench/RESULTS.md` rows. The open question is answered as D-01 decided: the floor names no member and no second
+build is forced; the count of 3 stays the kill's non-vacuity check (3 live before, 0 after), and 3 and 4 both clear it.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

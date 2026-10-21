@@ -31,12 +31,12 @@
     {
       "number": "26",
       "name": "Gate Fails With a Cause",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "27",
       "name": "Ledger Tests and Harness",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "28",
@@ -51,8 +51,8 @@
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 1 of 4 · 100% · ready to verify"
+    "label": "Advance to the next step (plan phase 28)",
+    "reason": "Phase 3 of 4 — needs a plan"
   },
-  "updated_at": "2026-10-15T14:38:38.534Z"
+  "updated_at": "2026-10-20T14:34:07.607Z"
 }

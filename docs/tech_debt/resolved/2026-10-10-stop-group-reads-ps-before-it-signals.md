@@ -1,7 +1,8 @@
 # `stop_group` reads `ps` before it signals, so a failed `ps` leaves the server group alive
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: a7c5f78
 Date: 2026-10-10
 Source: phase 21 code review, finding WR-01 (`.planning/phases/21-browser-test-of-the-viewer/21-REVIEW.md`)
 Related files:

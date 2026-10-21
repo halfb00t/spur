@@ -1,0 +1,16 @@
+# 27-04 one-off check, 2026-10-20: trochoid_curve's rm.curve against trochoid_root(rm.cutter) on every CHAMFER_ROWS row
+# run: PYTHONPATH=. .venv/bin/python <script> (bench is not installed; see tests/test_bench.py docstring)
+# script:
+#   from bench.trochoid_part import CHAMFER_ROWS, trochoid_curve
+#   from spur.calc import trochoid_root
+#   from spur.params import GearParams
+#   
+#   equal = 0
+#   for row in CHAMFER_ROWS:
+#       p = GearParams.model_validate(row.fields)
+#       cut, curve = trochoid_curve(p, row.rho)
+#       assert curve == trochoid_root(cut), row.label
+#       equal += 1
+#   print(f"{equal} of {len(CHAMFER_ROWS)} equal")
+14 of 14 equal
+exit 0

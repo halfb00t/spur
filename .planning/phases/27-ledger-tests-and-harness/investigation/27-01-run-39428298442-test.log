@@ -1,0 +1,819 @@
+test (3.12)	Set up job	﻿2026-10-20T13:11:35.6839683Z Current runner version: '2.337.0'
+test (3.12)	Set up job	2026-10-20T13:11:35.6864728Z ##[group]Runner Image Provisioner
+test (3.12)	Set up job	2026-10-20T13:11:35.6865698Z Hosted Compute Agent
+test (3.12)	Set up job	2026-10-20T13:11:35.6866290Z Version: 20261012.601
+test (3.12)	Set up job	2026-10-20T13:11:35.6866910Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+test (3.12)	Set up job	2026-10-20T13:11:35.6867689Z Build Date: 2026-10-12T17:48:21Z
+test (3.12)	Set up job	2026-10-20T13:11:35.6868360Z Worker ID: {fe9ac4b4-3351-4016-ac68-fbda500fa4c0}
+test (3.12)	Set up job	2026-10-20T13:11:35.6869045Z Region: centralus
+test (3.12)	Set up job	2026-10-20T13:11:35.6869616Z Cloud: Azure
+test (3.12)	Set up job	2026-10-20T13:11:35.6870181Z ##[endgroup]
+test (3.12)	Set up job	2026-10-20T13:11:35.6872004Z ##[group]Operating System
+test (3.12)	Set up job	2026-10-20T13:11:35.6872647Z Ubuntu
+test (3.12)	Set up job	2026-10-20T13:11:35.6873218Z 24.04.5
+test (3.12)	Set up job	2026-10-20T13:11:35.6873738Z LTS
+test (3.12)	Set up job	2026-10-20T13:11:35.6874274Z ##[endgroup]
+test (3.12)	Set up job	2026-10-20T13:11:35.6875293Z ##[group]Runner Image
+test (3.12)	Set up job	2026-10-20T13:11:35.6875899Z Image: ubuntu-24.04
+test (3.12)	Set up job	2026-10-20T13:11:35.6876454Z Version: 20261012.334.1
+test (3.12)	Set up job	2026-10-20T13:11:35.6877568Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+test (3.12)	Set up job	2026-10-20T13:11:35.6879331Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+test (3.12)	Set up job	2026-10-20T13:11:35.6880278Z ##[endgroup]
+test (3.12)	Set up job	2026-10-20T13:11:35.6881481Z ##[group]GITHUB_TOKEN Permissions
+test (3.12)	Set up job	2026-10-20T13:11:35.6883814Z Contents: read
+test (3.12)	Set up job	2026-10-20T13:11:35.6884729Z Metadata: read
+test (3.12)	Set up job	2026-10-20T13:11:35.6885344Z Packages: read
+test (3.12)	Set up job	2026-10-20T13:11:35.6885890Z ##[endgroup]
+test (3.12)	Set up job	2026-10-20T13:11:35.6887979Z Secret source: Actions
+test (3.12)	Set up job	2026-10-20T13:11:35.6888894Z Cache mode: write
+test (3.12)	Set up job	2026-10-20T13:11:35.6889895Z Prepare workflow directory
+test (3.12)	Set up job	2026-10-20T13:11:35.7200000Z Prepare all required actions
+test (3.12)	Set up job	2026-10-20T13:11:35.7248230Z Getting action download info
+test (3.12)	Set up job	2026-10-20T13:11:36.0151910Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+test (3.12)	Set up job	2026-10-20T13:11:36.1290225Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+test (3.12)	Set up job	2026-10-20T13:11:36.3290591Z Complete job name: test (3.12)
+test (3.12)	Run actions/checkout@v4	﻿2026-10-20T13:11:36.3980039Z ##[group]Run actions/checkout@v4
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3980995Z with:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3981511Z   repository: halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3985716Z   token: ***
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3986258Z   ssh-strict: true
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3986782Z   ssh-user: git
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3987335Z   persist-credentials: true
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3987957Z   clean: true
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3988520Z   sparse-checkout-cone-mode: true
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3989132Z   fetch-depth: 1
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3989640Z   fetch-tags: false
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3990183Z   show-progress: true
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3990704Z   lfs: false
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3991204Z   submodules: false
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3991756Z   set-safe-directory: true
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3992335Z   allow-unsafe-pr-checkout: false
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.3993103Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.4981076Z Syncing repository: halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.4982936Z ##[group]Getting Git version info
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.4983734Z Working directory is '/home/runner/work/spur/spur'
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.4985310Z [command]/usr/bin/git version
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5066266Z git version 2.55.0
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5096147Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5112589Z Temporarily overriding HOME='/home/runner/work/_temp/be6fe6bf-37fc-486e-bdf3-57babcb4a7d7' before making global git config changes
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5115182Z Adding repository directory to the temporary git global config as a safe directory
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5118640Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/spur/spur
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5165908Z Deleting the contents of '/home/runner/work/spur/spur'
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5169150Z ##[group]Initializing the repository
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5180689Z [command]/usr/bin/git init /home/runner/work/spur/spur
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5329755Z hint: Using 'master' as the name for the initial branch. This default branch name
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5331817Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5333890Z hint: to use in all of your new repositories, which will suppress this warning,
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5335198Z hint: call:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5335829Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5336544Z hint: 	git config --global init.defaultBranch <name>
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5337358Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5338100Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5339158Z hint: 'development'. The just-created branch can be renamed via this command:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5340416Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5341293Z hint: 	git branch -m <name>
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5342029Z hint:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5342836Z hint: Disable this message with "git config set advice.defaultBranchName false"
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5344050Z Initialized empty Git repository in /home/runner/work/spur/spur/.git/
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5346263Z [command]/usr/bin/git remote add origin https://github.com/halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5459923Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5460915Z ##[group]Disabling automatic garbage collection
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5464146Z [command]/usr/bin/git config --local gc.auto 0
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5495579Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5496488Z ##[group]Setting up auth
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5509965Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5542966Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5853171Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.5890191Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.6079624Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.6109417Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.6293134Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.6328904Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.6330264Z ##[group]Fetching the repository
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:36.6339561Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +fe6163f2583af590cba84b57d8e818ee5ca761d4:refs/remotes/pull/43/merge
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5365078Z From https://github.com/halfb00t/spur
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5366990Z  * [new ref]         fe6163f2583af590cba84b57d8e818ee5ca761d4 -> pull/43/merge
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5370717Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5372420Z ##[group]Determining the checkout info
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5374289Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5378869Z [command]/usr/bin/git sparse-checkout disable
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5646789Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5712340Z ##[group]Checking out the ref
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.5716030Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/43/merge
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8537373Z Note: switching to 'refs/remotes/pull/43/merge'.
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8538622Z 
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8539435Z You are in 'detached HEAD' state. You can look around, make experimental
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8541468Z changes and commit them, and you can discard any commits you make in this
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8543630Z state without impacting any branches by switching back to a branch.
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8545062Z 
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8546018Z If you want to create a new branch to retain commits you create, you may
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8547996Z do so (now or later) by using -c with the switch command. Example:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8549173Z 
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8549874Z   git switch -c <new-branch-name>
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8550959Z 
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8551689Z Or undo this operation with:
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8552468Z 
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8552862Z   git switch -
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8553438Z 
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8554538Z Turn off this advice by setting config variable advice.detachedHead to false
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8556129Z 
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8557770Z HEAD is now at fe6163f Merge 9c4255967bddab853820aa9f534dc83a8e5414d5 into a4d55a65728b06c1c163c8fbc49126ea8a2ae057
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8563058Z ##[endgroup]
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8594305Z [command]/usr/bin/git log -1 --format=%H
+test (3.12)	Run actions/checkout@v4	2026-10-20T13:11:38.8617420Z fe6163f2583af590cba84b57d8e818ee5ca761d4
+test (3.12)	Run actions/setup-python@v5	﻿2026-10-20T13:11:38.9009201Z ##[group]Run actions/setup-python@v5
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9010711Z with:
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9011793Z   python-version: 3.12
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9012922Z   cache: pip
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9013992Z   check-latest: false
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9024947Z   token: ***
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9026122Z   update-environment: true
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9027391Z   allow-prereleases: false
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9028636Z   freethreaded: false
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:38.9029825Z ##[endgroup]
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:39.0360928Z ##[group]Installed versions
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:39.0445747Z (node:2111) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:39.0449915Z Successfully set up CPython (3.12.15)
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:39.0453118Z ##[endgroup]
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:39.0457482Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:39.1589832Z [command]/opt/hostedtoolcache/Python/3.12.15/x64/bin/pip cache dir
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:40.5819695Z /home/runner/.cache/pip
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:40.7377959Z Cache hit for: setup-python-Linux-x64-24.04-Ubuntu-python-3.12.15-pip-609652ea823ad3f5d35cd322fe160fb8ec1c32db8dcf286b6747a1cd4e5d14d2
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:40.7482952Z (node:2111) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:41.9168303Z Received 88080384 of 513745049 (17.1%), 83.9 MBs/sec
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:42.9246362Z Received 260046848 of 513745049 (50.6%), 123.9 MBs/sec
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:43.9214183Z Received 411041792 of 513745049 (80.0%), 130.5 MBs/sec
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:44.4290131Z Received 513745049 of 513745049 (100.0%), 139.5 MBs/sec
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:44.4291435Z Cache Size: ~490 MB (513745049 B)
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:44.4426621Z [command]/usr/bin/tar -xf /home/runner/work/_temp/f733df40-88fa-493b-ad30-0ee48a95f72a/cache.tzst -P -C /home/runner/work/spur/spur --use-compress-program unzstd
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:44.9061756Z Cache restored successfully
+test (3.12)	Run actions/setup-python@v5	2026-10-20T13:11:44.9257370Z Cache restored from key: setup-python-Linux-x64-24.04-Ubuntu-python-3.12.15-pip-609652ea823ad3f5d35cd322fe160fb8ec1c32db8dcf286b6747a1cd4e5d14d2
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	﻿2026-10-20T13:11:44.9441842Z ##[group]Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9442713Z ^[[36;1mmake test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"^[[0m
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9616749Z shell: /usr/bin/bash -e {0}
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9617349Z env:
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9617772Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9618562Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9619102Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9619647Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9620133Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9620621Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9621094Z   PIP_CONSTRAINT: requirements.txt
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9621501Z   BROWSER_INSTALL_ARGS: --with-deps
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9621883Z ##[endgroup]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:44.9743847Z python -m venv .venv
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:47.6114856Z .venv/bin/python -m pip install --quiet --upgrade pip
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:49.0096314Z .venv/bin/python -m pip install -e '.[dev]' -c requirements.txt
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:49.3080073Z Obtaining file:///home/runner/work/spur/spur
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:49.3104123Z   Installing build dependencies: started
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.1201553Z   Installing build dependencies: finished with status 'done'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.1208305Z   Checking if build backend supports build_editable: started
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.1573184Z   Checking if build backend supports build_editable: finished with status 'done'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.1580300Z   Getting requirements to build editable: started
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.2988847Z   Getting requirements to build editable: finished with status 'done'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.2999957Z   Installing backend dependencies: started
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.7500159Z   Installing backend dependencies: finished with status 'done'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.7506287Z   Preparing editable metadata (pyproject.toml): started
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:50.9271808Z   Preparing editable metadata (pyproject.toml): finished with status 'done'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.0241955Z Collecting cadquery>=2.5 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.0255537Z   Using cached cadquery-2.8.0-py3-none-any.whl.metadata (14 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.0895454Z Collecting fastapi>=0.115 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.0908159Z   Using cached fastapi-0.141.1-py3-none-any.whl.metadata (27 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.2296262Z Collecting pydantic>=2.7 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.2309181Z   Using cached pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.2607470Z Collecting uvicorn>=0.30 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.2619808Z   Using cached uvicorn-0.53.0-py3-none-any.whl.metadata (6.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.2856405Z Collecting httpx>=0.27 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.2867436Z   Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.3093198Z Collecting import-linter>=2.3 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.3104925Z   Using cached import_linter-2.15-py3-none-any.whl.metadata (2.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.4149004Z Collecting mypy>=1.18 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.4163007Z   Using cached mypy-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.4671371Z Collecting playwright==1.63.0 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.5485577Z   Downloading playwright-1.63.0-py3-none-manylinux1_x86_64.whl.metadata (3.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.5967608Z Collecting pre-commit>=4 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.6099807Z   Downloading pre_commit-4.7.0-py2.py3-none-any.whl.metadata (1.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.6322375Z Collecting pytest-cov>=7.1 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.6333388Z   Using cached pytest_cov-7.1.0-py3-none-any.whl.metadata (32 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.6564936Z Collecting pytest-xdist>=3.8 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.6581022Z   Using cached pytest_xdist-3.8.0-py3-none-any.whl.metadata (3.0 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.6886750Z Collecting pytest>=8 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:51.6898143Z   Using cached pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.0571438Z Collecting ruff>=0.14 (from spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.0703557Z   Downloading ruff-0.17.1-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (20 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.1030000Z Collecting pyee<14,>=13 (from playwright==1.63.0->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.1159343Z   Downloading pyee-13.0.1-py3-none-any.whl.metadata (3.0 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.2863587Z Collecting greenlet<4.0.0,>=3.1.1 (from playwright==1.63.0->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.2995002Z   Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.3237351Z Collecting typing-extensions (from pyee<14,>=13->playwright==1.63.0->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.3249899Z   Using cached typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.3524872Z Collecting cadquery-ocp<8.0,>=7.9.3.1 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.3536008Z   Using cached cadquery_ocp-7.9.3.1.1-cp312-cp312-manylinux_2_31_x86_64.whl.metadata (831 bytes)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.4501947Z Collecting ezdxf>=1.3.0 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.4514295Z   Using cached ezdxf-1.4.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.9 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.4761892Z Collecting multimethod<2.0,>=1.11 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.4772870Z   Using cached multimethod-1.12-py3-none-any.whl.metadata (9.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.5011600Z Collecting nlopt<3.0,>=2.9.0 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.5023090Z   Using cached nlopt-2.11.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (2.1 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.5228522Z Collecting runtype (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.5240179Z   Using cached runtype-0.5.3-py3-none-any.whl.metadata (6.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.5713287Z Collecting casadi (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.5722299Z   Using cached casadi-3.8.1-cp311-abi3-manylinux_2_28_x86_64.whl.metadata (2.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6042065Z Collecting trame (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6053483Z   Using cached trame-4.0.0-py3-none-any.whl.metadata (8.7 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6318915Z Collecting trame-vtk (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6330262Z   Using cached trame_vtk-2.11.17-py3-none-any.whl.metadata (14 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6531745Z Collecting trame-components (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6543032Z   Using cached trame_components-2.5.0-py3-none-any.whl.metadata (3.7 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6869224Z Collecting trame-vuetify (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.6880490Z   Using cached trame_vuetify-3.3.0-py3-none-any.whl.metadata (5.5 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.7145276Z Collecting pyparsing>=3.0.0 (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.7156184Z   Using cached pyparsing-3.3.3-py3-none-any.whl.metadata (5.9 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.8211306Z Collecting scipy (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.8224049Z   Using cached scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.9405590Z Collecting numba (from cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.9418352Z   Using cached numba-0.68.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (2.8 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.9605293Z Collecting cadquery-ocp-proxy==7.9.3.1.1 (from cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.9616054Z   Using cached cadquery_ocp_proxy-7.9.3.1.1-py3-none-any.whl.metadata (5.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:52.9996005Z Collecting vtk==9.6.2 (from cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.0008445Z   Using cached vtk-9.6.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.1410207Z Collecting matplotlib>=2.0.0 (from vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.1421447Z   Using cached matplotlib-3.11.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (80 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.3426222Z Collecting numpy<3,>=2 (from nlopt<3.0,>=2.9.0->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.3437510Z   Using cached numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.4846227Z Collecting fonttools (from ezdxf>=1.3.0->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.4858191Z   Using cached fonttools-4.65.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (125 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.5235301Z Collecting starlette>=0.46.0 (from fastapi>=0.115->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.5246969Z   Using cached starlette-1.6.0-py3-none-any.whl.metadata (6.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.5451553Z Collecting typing-inspection>=0.4.2 (from fastapi>=0.115->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.5462373Z   Using cached typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.5799093Z Collecting annotated-doc>=0.0.2 (from fastapi>=0.115->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.5809395Z   Using cached annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6044028Z Collecting anyio (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6056744Z   Using cached anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6311481Z Collecting certifi (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6442690Z   Downloading certifi-2026.10.19-py3-none-any.whl.metadata (2.5 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6669095Z Collecting httpcore==1.* (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6681265Z   Using cached httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6888219Z Collecting idna (from httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.6899031Z   Using cached idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.7091682Z Collecting h11>=0.16 (from httpcore==1.*->httpx>=0.27->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.7102831Z   Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.7326186Z Collecting click>=6 (from import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.7336929Z   Using cached click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.8362277Z Collecting grimp>=3.17 (from import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.8374831Z   Using cached grimp-3.17-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.8 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.8687125Z Collecting rich>=14.2.0 (from import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.8697485Z   Using cached rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.9314167Z Collecting contourpy>=1.0.1 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.9327319Z   Using cached contourpy-1.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.9514322Z Collecting cycler>=0.10 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:53.9525906Z   Using cached cycler-0.12.1-py3-none-any.whl.metadata (3.8 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.0461578Z Collecting kiwisolver>=1.3.1 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.0473649Z   Using cached kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.0553732Z Collecting packaging>=20.0 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.0564568Z   Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.2181909Z Collecting pillow>=9 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.2312767Z   Downloading pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.2718672Z Collecting python-dateutil>=2.7 (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.2729565Z   Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.2941241Z Collecting mypy_extensions>=1.0.0 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.2952395Z   Using cached mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.3002646Z Collecting pathspec>=1.0.0 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.3013921Z   Using cached pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.4127576Z Collecting librt>=0.16.0 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.4138944Z   Using cached librt-0.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (1.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.4680552Z Collecting ast-serialize<1.0.0,>=0.11.2 (from mypy>=1.18->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.4815143Z   Downloading ast_serialize-0.13.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (1.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.5052565Z Collecting cfgv>=2.0.0 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.5063237Z   Using cached cfgv-3.5.0-py2.py3-none-any.whl.metadata (8.9 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.5408574Z Collecting identify>=1.0.0 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.5418987Z   Using cached identify-2.6.20-py2.py3-none-any.whl.metadata (4.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.5620677Z Collecting nodeenv>=0.11.1 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.5631954Z   Using cached nodeenv-1.11.0-py2.py3-none-any.whl.metadata (40 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.6026557Z Collecting pyyaml>=5.1 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.6038497Z   Using cached pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.6468262Z Collecting virtualenv>=20.10.0 (from pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.6603368Z   Downloading virtualenv-21.14.11-py3-none-any.whl.metadata (4.1 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.6988036Z Collecting annotated-types>=0.6.0 (from pydantic>=2.7->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:54.6998813Z   Using cached annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3194848Z Collecting pydantic-core==2.46.5 (from pydantic>=2.7->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3207488Z   Using cached pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3421150Z Collecting iniconfig>=1.0.1 (from pytest>=8->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3432380Z   Using cached iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3486826Z Collecting pluggy<2,>=1.5 (from pytest>=8->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3497353Z   Using cached pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3773251Z Collecting pygments>=2.7.2 (from pytest>=8->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.3784141Z   Using cached pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.7459766Z Collecting coverage>=7.10.6 (from coverage[toml]>=7.10.6->pytest-cov>=7.1->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.7472846Z   Using cached coverage-7.16.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.7713137Z Collecting execnet>=2.1 (from pytest-xdist>=3.8->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.7725555Z   Using cached execnet-2.1.2-py3-none-any.whl.metadata (2.9 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.7931627Z Collecting six>=1.5 (from python-dateutil>=2.7->matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.7941751Z   Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.8223294Z Collecting markdown-it-py>=2.2.0 (from rich>=14.2.0->import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.8234852Z   Using cached markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.8450991Z Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=14.2.0->import-linter>=2.3->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.8461503Z   Using cached mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.8752642Z Collecting distlib<1,>=0.4.3 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.8882601Z   Downloading distlib-0.4.4-py2.py3-none-any.whl.metadata (5.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.9189365Z Collecting filelock<5,>=3.24.2 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.9326126Z   Downloading filelock-4.2.4-py3-none-any.whl.metadata (2.0 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.9612306Z Collecting platformdirs<5,>=4.4 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.9742260Z   Downloading platformdirs-4.13.5-py3-none-any.whl.metadata (5.5 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:55.9951688Z Collecting python-discovery>=1.6.1 (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.0083183Z   Downloading python_discovery-1.6.4-py3-none-any.whl.metadata (5.1 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.0779338Z Collecting llvmlite<0.51,>=0.50.0dev0 (from numba->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.0790239Z   Using cached llvmlite-0.50.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (5.1 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1105985Z Collecting trame-client<5,>=4 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1120473Z   Using cached trame_client-4.1.4-py3-none-any.whl.metadata (6.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1314777Z Collecting trame-common<2,>=1.2.7 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1324840Z   Using cached trame_common-1.2.9-py3-none-any.whl.metadata (4.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1585426Z Collecting trame-server<5,>=4 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1713106Z   Downloading trame_server-4.1.0-py3-none-any.whl.metadata (5.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1973478Z Collecting wslink>=2.5.7 (from trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.1984062Z   Using cached wslink-2.6.0-py3-none-any.whl.metadata (3.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.2228214Z Collecting more-itertools (from trame-server<5,>=4->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.2240457Z   Using cached more_itertools-11.1.0-py3-none-any.whl.metadata (41 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.7175429Z Collecting aiohttp<4 (from wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.7310590Z   Downloading aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8060105Z Collecting msgpack<2,>=1 (from wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8071587Z   Using cached msgpack-1.2.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8289976Z Collecting aiohappyeyeballs>=2.5.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8300830Z   Using cached aiohappyeyeballs-2.7.1-py3-none-any.whl.metadata (5.9 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8476588Z Collecting aiosignal>=1.4.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8493123Z   Using cached aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8696469Z Collecting attrs>=17.3.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.8707629Z   Using cached attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.9312600Z Collecting frozenlist>=1.1.1 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:56.9325053Z   Using cached frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:57.1589062Z Collecting multidict<8.0,>=4.5 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:57.1722690Z   Downloading multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (6.2 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:57.2912831Z Collecting propcache>=0.2.0 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:57.2923150Z   Using cached propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (25 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:57.5012547Z Collecting yarl<2.0,>=1.25.1 (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:57.5024196Z   Using cached yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (111 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:57.5399402Z Downloading playwright-1.63.0-py3-none-manylinux1_x86_64.whl (48.2 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0256264Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.2/48.2 MB 106.4 MB/s  0:00:00
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0391312Z Downloading greenlet-3.5.6-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (621 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0471504Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 621.4/621.4 kB 63.7 MB/s  0:00:00
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0601226Z Downloading pyee-13.0.1-py3-none-any.whl (15 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0630809Z Using cached cadquery-2.8.0-py3-none-any.whl (201 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0642858Z Using cached cadquery_ocp-7.9.3.1.1-cp312-cp312-manylinux_2_31_x86_64.whl (67.8 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0897216Z Using cached cadquery_ocp_proxy-7.9.3.1.1-py3-none-any.whl (3.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.0907640Z Using cached vtk-9.6.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (146.0 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1436683Z Using cached multimethod-1.12-py3-none-any.whl (10 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1445335Z Using cached nlopt-2.11.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (402 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1457641Z Using cached numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.7 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1526626Z Using cached ezdxf-1.4.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (5.8 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1558292Z Using cached fastapi-0.141.1-py3-none-any.whl (131 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1569171Z Using cached annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1579276Z Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1589743Z Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1600332Z Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1610473Z Using cached import_linter-2.15-py3-none-any.whl (640 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1624039Z Using cached click-8.5.0-py3-none-any.whl (125 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1635145Z Using cached grimp-3.17-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.3 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1654507Z Using cached matplotlib-3.11.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (9.9 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1701415Z Using cached contourpy-1.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (383 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1713908Z Using cached cycler-0.12.1-py3-none-any.whl (8.3 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1724485Z Using cached fonttools-4.65.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.4 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1754871Z Using cached kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.5 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1771513Z Using cached mypy-2.4.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (15.6 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.1959623Z Downloading ast_serialize-0.13.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.3 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.2090149Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 104.5 MB/s  0:00:00
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.2106396Z Using cached librt-0.16.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (531 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.2124994Z Using cached mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.2140345Z Using cached packaging-26.3-py3-none-any.whl (129 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.2156481Z Using cached pathspec-1.1.1-py3-none-any.whl (57 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.2294754Z Downloading pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (7.1 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.2892084Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.1/7.1 MB 120.6 MB/s  0:00:00
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3023210Z Downloading pre_commit-4.7.0-py2.py3-none-any.whl (226 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3064530Z Using cached cfgv-3.5.0-py2.py3-none-any.whl (7.4 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3074695Z Using cached identify-2.6.20-py2.py3-none-any.whl (99 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3085916Z Using cached nodeenv-1.11.0-py2.py3-none-any.whl (34 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3096102Z Using cached pydantic-2.13.5-py3-none-any.whl (472 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3109520Z Using cached pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3128618Z Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3138781Z Using cached pyparsing-3.3.3-py3-none-any.whl (126 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3149907Z Using cached pytest-9.1.1-py3-none-any.whl (386 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3162171Z Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3172676Z Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3182588Z Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3198820Z Using cached pytest_cov-7.1.0-py3-none-any.whl (22 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3209577Z Using cached coverage-7.16.2-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (258 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3220791Z Using cached pytest_xdist-3.8.0-py3-none-any.whl (46 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3231053Z Using cached execnet-2.1.2-py3-none-any.whl (40 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3241798Z Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3253409Z Using cached pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3267598Z Using cached rich-15.0.0-py3-none-any.whl (310 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3280002Z Using cached markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3291017Z Using cached mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.3425215Z Downloading ruff-0.17.1-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (10.4 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4159428Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.4/10.4 MB 141.9 MB/s  0:00:00
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4172628Z Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4184828Z Using cached starlette-1.6.0-py3-none-any.whl (75 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4196142Z Using cached anyio-4.15.1-py3-none-any.whl (132 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4207901Z Using cached idna-3.20-py3-none-any.whl (69 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4219569Z Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4231154Z Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4242009Z Using cached uvicorn-0.53.0-py3-none-any.whl (87 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4374214Z Downloading virtualenv-21.14.11-py3-none-any.whl (5.5 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.4978007Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 90.6 MB/s  0:00:00
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.5112313Z Downloading distlib-0.4.4-py2.py3-none-any.whl (472 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.5287312Z Downloading filelock-4.2.4-py3-none-any.whl (162 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.5438622Z Downloading platformdirs-4.13.5-py3-none-any.whl (32 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.5585984Z Downloading python_discovery-1.6.4-py3-none-any.whl (39 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.5614866Z Using cached casadi-3.8.1-cp311-abi3-manylinux_2_28_x86_64.whl (89.4 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6063551Z Downloading certifi-2026.10.19-py3-none-any.whl (136 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6097499Z Using cached numba-0.68.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (3.9 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6123148Z Using cached llvmlite-0.50.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (59.7 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6342800Z Using cached runtype-0.5.3-py3-none-any.whl (31 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6353227Z Using cached scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6487698Z Using cached trame-4.0.0-py3-none-any.whl (27 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6497936Z Using cached trame_client-4.1.4-py3-none-any.whl (568 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6511565Z Using cached trame_common-1.2.9-py3-none-any.whl (24 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6642728Z Downloading trame_server-4.1.0-py3-none-any.whl (46 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6672962Z Using cached wslink-2.6.0-py3-none-any.whl (37 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6808284Z Downloading aiohttp-3.14.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.9 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6949722Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 136.8 MB/s  0:00:00
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.6961723Z Using cached msgpack-1.2.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (472 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7096640Z Downloading multidict-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (483 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7258153Z Using cached yarl-1.25.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (117 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7268735Z Using cached aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7279151Z Using cached aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7289495Z Using cached attrs-26.1.0-py3-none-any.whl (67 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7300209Z Using cached frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (242 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7311758Z Using cached propcache-0.5.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (250 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7323207Z Using cached more_itertools-11.1.0-py3-none-any.whl (72 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7333757Z Using cached trame_components-2.5.0-py3-none-any.whl (82 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7344710Z Using cached trame_vtk-2.11.17-py3-none-any.whl (851 kB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:58.7359542Z Using cached trame_vuetify-3.3.0-py3-none-any.whl (6.8 MB)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:59.4524631Z Building wheels for collected packages: spur
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:59.4532085Z   Building editable for spur (pyproject.toml): started
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:59.4873847Z   Building editable for spur (pyproject.toml): finished with status 'done'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:59.4877561Z   Created wheel for spur: filename=spur-0.1.0-py3-none-any.whl size=10804 sha256=df6c4098c9a28219afcec169c3f1491ddce3e74a15e2db85b4389bea002af14d
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:59.4879292Z   Stored in directory: /tmp/pip-ephem-wheel-cache-ayiuq5f6/wheels/33/af/90/f4c91e14bfd787ea655c30c23a4f75d572b508e3d00c9a6597
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:59.4902810Z Successfully built spur
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:11:59.6811036Z Installing collected packages: distlib, typing-extensions, trame-common, six, runtype, ruff, pyyaml, pyparsing, pygments, propcache, pluggy, platformdirs, pillow, pathspec, packaging, numpy, nodeenv, mypy_extensions, multimethod, multidict, msgpack, more-itertools, mdurl, llvmlite, librt, kiwisolver, iniconfig, idna, identify, h11, grimp, greenlet, frozenlist, fonttools, filelock, execnet, cycler, coverage, click, cfgv, certifi, cadquery-ocp-proxy, attrs, ast-serialize, annotated-types, annotated-doc, aiohappyeyeballs, yarl, uvicorn, typing-inspection, trame-client, scipy, python-discovery, python-dateutil, pytest, pyee, pydantic-core, numba, nlopt, mypy, markdown-it-py, httpcore, ezdxf, contourpy, casadi, anyio, aiosignal, virtualenv, trame-vuetify, trame-vtk, trame-components, starlette, rich, pytest-xdist, pytest-cov, pydantic, playwright, matplotlib, httpx, aiohttp, wslink, vtk, pre-commit, import-linter, fastapi, trame-server, cadquery-ocp, trame, cadquery, spur
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:26.5879294Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:26.5943952Z Successfully installed aiohappyeyeballs-2.7.1 aiohttp-3.14.5 aiosignal-1.4.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 ast-serialize-0.13.1 attrs-26.1.0 cadquery-2.8.0 cadquery-ocp-7.9.3.1.1 cadquery-ocp-proxy-7.9.3.1.1 casadi-3.8.1 certifi-2026.10.19 cfgv-3.5.0 click-8.5.0 contourpy-1.4.0 coverage-7.16.2 cycler-0.12.1 distlib-0.4.4 execnet-2.1.2 ezdxf-1.4.4 fastapi-0.141.1 filelock-4.2.4 fonttools-4.65.0 frozenlist-1.8.0 greenlet-3.5.6 grimp-3.17 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 identify-2.6.20 idna-3.20 import-linter-2.15 iniconfig-2.3.1 kiwisolver-1.5.1 librt-0.16.0 llvmlite-0.50.0 markdown-it-py-4.2.0 matplotlib-3.11.2 mdurl-0.1.2 more-itertools-11.1.0 msgpack-1.2.3 multidict-7.1.0 multimethod-1.12 mypy-2.4.0 mypy_extensions-1.1.0 nlopt-2.11.0 nodeenv-1.11.0 numba-0.68.0 numpy-2.5.3 packaging-26.3 pathspec-1.1.1 pillow-13.0.0 platformdirs-4.13.5 playwright-1.63.0 pluggy-1.7.0 pre-commit-4.7.0 propcache-0.5.4 pydantic-2.13.5 pydantic-core-2.46.5 pyee-13.0.1 pygments-2.21.0 pyparsing-3.3.3 pytest-9.1.1 pytest-cov-7.1.0 pytest-xdist-3.8.0 python-dateutil-2.9.0.post0 python-discovery-1.6.4 pyyaml-6.0.3 rich-15.0.0 ruff-0.17.1 runtype-0.5.3 scipy-1.18.1 six-1.17.0 spur-0.1.0 starlette-1.6.0 trame-4.0.0 trame-client-4.1.4 trame-common-1.2.9 trame-components-2.5.0 trame-server-4.1.0 trame-vtk-2.11.17 trame-vuetify-3.3.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.53.0 virtualenv-21.14.11 vtk-9.6.2 wslink-2.6.0 yarl-1.25.1
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:26.9553827Z .venv/bin/python -m playwright install --with-deps --only-shell chromium
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.3310003Z Installing dependencies...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.3365950Z Switching to root user to install dependencies...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.3997581Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.4401445Z Get:6 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.4460135Z Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.4475139Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.4729128Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.5316303Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.5439103Z Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [12.4 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.5979422Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1397 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6004051Z Get:14 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [557 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6048514Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [308 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6080945Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1704 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6082308Z Get:15 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [618 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6502422Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [342 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6566368Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1805 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6647918Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [411 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6660253Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1145 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6723810Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [231 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6741593Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1222 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.6804481Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [246 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.7267062Z Get:20 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1713 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:27.7349362Z Get:21 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [392 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:34.9012650Z Fetched 12.5 MB in 1s (9270 kB/s)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:35.8802388Z Reading package lists...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:35.9077457Z Reading package lists...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.1173350Z Building dependency tree...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.1180747Z Reading state information...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2951947Z libasound2t64 is already the newest version (1.2.11-1ubuntu0.3).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2953849Z libasound2t64 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2955141Z libatk-bridge2.0-0t64 is already the newest version (2.52.0-1build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2956131Z libatk-bridge2.0-0t64 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2957086Z libatk1.0-0t64 is already the newest version (2.52.0-1build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2957935Z libatk1.0-0t64 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2958576Z libatspi2.0-0t64 is already the newest version (2.52.0-1build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2959172Z libatspi2.0-0t64 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2959687Z libcairo2 is already the newest version (1.18.0-3build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2960215Z libcairo2 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2960654Z libcups2t64 is already the newest version (2.4.7-1.2ubuntu7.14).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2961118Z libcups2t64 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2961741Z libdbus-1-3 is already the newest version (1.14.10-4ubuntu4.1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2962191Z libdbus-1-3 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2962671Z libdrm2 is already the newest version (2.4.125-1ubuntu0.1~24.04.2).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2963307Z libdrm2 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2963867Z libgbm1 is already the newest version (25.2.8-0ubuntu0.24.04.4).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2964295Z libgbm1 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2964900Z libglib2.0-0t64 is already the newest version (2.80.0-6ubuntu3.9).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2965380Z libglib2.0-0t64 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2965990Z libnspr4 is already the newest version (2:4.35-1.1build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2966568Z libnspr4 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2967162Z libnss3 is already the newest version (2:3.98-1ubuntu0.2).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2967697Z libnss3 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2968294Z libpango-1.0-0 is already the newest version (1.52.1+ds-1build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2968734Z libpango-1.0-0 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2969169Z libx11-6 is already the newest version (2:1.8.7-1ubuntu0.1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2969831Z libx11-6 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2970471Z libxcb1 is already the newest version (1.15-1ubuntu2).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2971016Z libxcb1 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2971442Z libxcomposite1 is already the newest version (1:0.4.5-1build3).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2971934Z libxcomposite1 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2972384Z libxdamage1 is already the newest version (1:1.1.6-1build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2972933Z libxdamage1 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2973637Z libxext6 is already the newest version (2:1.3.4-1build2).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2974653Z libxext6 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2975396Z libxfixes3 is already the newest version (1:6.0.0-2build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2976139Z libxfixes3 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2976780Z libxkbcommon0 is already the newest version (1.6.0-1build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2977482Z libxkbcommon0 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2978097Z libxrandr2 is already the newest version (2:1.5.2-2build1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2978800Z libxrandr2 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2979505Z fonts-noto-color-emoji is already the newest version (2.047-0ubuntu0.24.04.1).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2980379Z libfontconfig1 is already the newest version (2.15.0-1.1ubuntu2).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2981027Z libfontconfig1 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2981651Z libfreetype6 is already the newest version (2.13.2+dfsg-1ubuntu0.2).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2982385Z libfreetype6 set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2983047Z fonts-liberation is already the newest version (1:2.1.5-3).
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2983729Z fonts-liberation set to manually installed.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2984484Z The following additional packages will be installed:
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2985192Z   xfonts-encodings xfonts-utils xserver-common
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2985809Z Recommended packages:
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.2986326Z   fonts-ipafont-mincho fonts-tlwg-loma xfonts-base
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3131003Z The following NEW packages will be installed:
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3131874Z   fonts-freefont-ttf fonts-ipafont-gothic fonts-tlwg-loma-otf fonts-unifont
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3138472Z   fonts-wqy-zenhei xfonts-cyrillic xfonts-encodings xfonts-scalable
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3139261Z   xfonts-utils
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3148728Z The following packages will be upgraded:
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3149432Z   xserver-common xvfb
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3303325Z 2 upgraded, 9 newly installed, 0 to remove and 79 not upgraded.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3305098Z Need to get 22.0 MB of archives.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3306042Z After this operation, 79.5 MB of additional disk space will be used.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3306976Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.3906715Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-ipafont-gothic all 00303-21ubuntu1 [3513 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.4832725Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 fonts-freefont-ttf all 20211204+svn4273-2 [5641 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.6046671Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-tlwg-loma-otf all 1:0.7.3-1 [107 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.6502500Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-unifont all 1:15.1.01-1build1 [2993 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:36.7468794Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 fonts-wqy-zenhei all 0.9.45-8 [7472 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.1012757Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-encodings all 1:1.0.5-0ubuntu2 [578 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.2104300Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-utils amd64 1:7.7+6build3 [94.4 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.2468965Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 xfonts-cyrillic all 1:1.0.5+nmu1 [384 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.3677687Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 xfonts-scalable all 1:1.0.3-1.3 [304 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.4054247Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 xserver-common all 2:21.1.12-1ubuntu1.9 [35.0 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.4336831Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 xvfb amd64 2:21.1.12-1ubuntu1.9 [877 kB]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.6867680Z Fetched 22.0 MB in 1s (19.7 MB/s)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7110611Z Selecting previously unselected package fonts-ipafont-gothic.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7284117Z (Reading database ... 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7285134Z (Reading database ... 5%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7285622Z (Reading database ... 10%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7286034Z (Reading database ... 15%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7286372Z (Reading database ... 20%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7286769Z (Reading database ... 25%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7287122Z (Reading database ... 30%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7287446Z (Reading database ... 35%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7287826Z (Reading database ... 40%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7288290Z (Reading database ... 45%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7288676Z (Reading database ... 50%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.7313426Z (Reading database ... 55%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:37.8092508Z (Reading database ... 60%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.0156045Z (Reading database ... 65%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.2191314Z (Reading database ... 70%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.4037243Z (Reading database ... 75%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.4841464Z (Reading database ... 80%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.6185471Z (Reading database ... 85%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.7320576Z (Reading database ... 90%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.8394088Z (Reading database ... 95%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.8395157Z (Reading database ... 100%
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.8395888Z (Reading database ... 203540 files and directories currently installed.)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.8441505Z Preparing to unpack .../00-fonts-ipafont-gothic_00303-21ubuntu1_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:38.8577461Z Unpacking fonts-ipafont-gothic (00303-21ubuntu1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.1431906Z Selecting previously unselected package fonts-freefont-ttf.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.1557313Z Preparing to unpack .../01-fonts-freefont-ttf_20211204+svn4273-2_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.1565832Z Unpacking fonts-freefont-ttf (20211204+svn4273-2) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.2700462Z Selecting previously unselected package fonts-tlwg-loma-otf.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.2825451Z Preparing to unpack .../02-fonts-tlwg-loma-otf_1%3a0.7.3-1_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.2833661Z Unpacking fonts-tlwg-loma-otf (1:0.7.3-1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.3001738Z Selecting previously unselected package fonts-unifont.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.3124326Z Preparing to unpack .../03-fonts-unifont_1%3a15.1.01-1build1_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.3133732Z Unpacking fonts-unifont (1:15.1.01-1build1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.5358638Z Selecting previously unselected package fonts-wqy-zenhei.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.5485330Z Preparing to unpack .../04-fonts-wqy-zenhei_0.9.45-8_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:39.5572601Z Unpacking fonts-wqy-zenhei (0.9.45-8) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.1323547Z Selecting previously unselected package xfonts-encodings.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.1447223Z Preparing to unpack .../05-xfonts-encodings_1%3a1.0.5-0ubuntu2_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.1456316Z Unpacking xfonts-encodings (1:1.0.5-0ubuntu2) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.1721767Z Selecting previously unselected package xfonts-utils.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.1847215Z Preparing to unpack .../06-xfonts-utils_1%3a7.7+6build3_amd64.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.1856081Z Unpacking xfonts-utils (1:7.7+6build3) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.2168377Z Selecting previously unselected package xfonts-cyrillic.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.2295330Z Preparing to unpack .../07-xfonts-cyrillic_1%3a1.0.5+nmu1_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.2304913Z Unpacking xfonts-cyrillic (1:1.0.5+nmu1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.2616322Z Selecting previously unselected package xfonts-scalable.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.2745042Z Preparing to unpack .../08-xfonts-scalable_1%3a1.0.3-1.3_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.2754630Z Unpacking xfonts-scalable (1:1.0.3-1.3) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.3075621Z Preparing to unpack .../09-xserver-common_2%3a21.1.12-1ubuntu1.9_all.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.3098450Z Unpacking xserver-common (2:21.1.12-1ubuntu1.9) over (2:21.1.12-1ubuntu1.8) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.3415477Z Preparing to unpack .../10-xvfb_2%3a21.1.12-1ubuntu1.9_amd64.deb ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.3437533Z Unpacking xvfb (2:21.1.12-1ubuntu1.9) over (2:21.1.12-1ubuntu1.8) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4051925Z Setting up fonts-wqy-zenhei (0.9.45-8) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4162863Z Setting up fonts-freefont-ttf (20211204+svn4273-2) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4179843Z Setting up fonts-tlwg-loma-otf (1:0.7.3-1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4197041Z Setting up xfonts-encodings (1:1.0.5-0ubuntu2) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4215664Z Setting up fonts-ipafont-gothic (00303-21ubuntu1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4273726Z update-alternatives: using /usr/share/fonts/opentype/ipafont-gothic/ipag.ttf to provide /usr/share/fonts/truetype/fonts-japanese-gothic.ttf (fonts-japanese-gothic.ttf) in auto mode
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4289442Z Setting up xserver-common (2:21.1.12-1ubuntu1.9) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4308489Z Setting up fonts-unifont (1:15.1.01-1build1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4327422Z Setting up xvfb (2:21.1.12-1ubuntu1.9) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4345922Z Setting up xfonts-utils (1:7.7+6build3) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4383862Z Setting up xfonts-cyrillic (1:1.0.5+nmu1) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4640848Z Setting up xfonts-scalable (1:1.0.3-1.3) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4881268Z Processing triggers for man-db (2.12.0-4build2) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4900759Z Not building database; man-db/auto-update is not 'true'.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:40.4914276Z Processing triggers for fontconfig (2.15.0-1.1ubuntu2) ...
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0947522Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0948443Z Running kernel seems to be up-to-date.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0948817Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0948992Z No services need to be restarted.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0949196Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0949495Z No containers need to be restarted.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0949742Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0949900Z No user sessions are running outdated binaries.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0950501Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:41.0950739Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.0239099Z Downloading Chrome Headless Shell 153.0.8010.12 (playwright chromium-headless-shell v1243) from https://cdn.playwright.dev/builds/cft/153.0.8010.12/linux64/chrome-headless-shell-linux64.zip
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.4744929Z |                                                                                |   0% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.6865595Z |■■■■■■■■                                                                        |  10% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.7519662Z |■■■■■■■■■■■■■■■■                                                                |  20% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.8015222Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.8519067Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.9149139Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:42.9561432Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:43.0346403Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:43.0619074Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:43.1152810Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:43.1746397Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 114.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:45.5330165Z Chrome Headless Shell 153.0.8010.12 (playwright chromium-headless-shell v1243) downloaded to /home/runner/work/spur/spur/.venv/ms-playwright/chromium_headless_shell-1243
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:45.5334576Z Downloading FFmpeg (playwright ffmpeg v1011) from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-linux.zip
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:45.9480121Z |                                                                                |   0% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:45.9686544Z |■■■■■■■■                                                                        |  10% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:45.9822237Z |■■■■■■■■■■■■■■■■                                                                |  20% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:45.9914776Z |■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:45.9948155Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.0020130Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.0044727Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.0107382Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.0127108Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.0143133Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.0232736Z |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.3 MiB
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.0791849Z FFmpeg (playwright ffmpeg v1011) downloaded to /home/runner/work/spur/spur/.venv/ms-playwright/ffmpeg-1011
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.1013191Z .venv/bin/python -m pytest -n 4 --cov --cov-report=term -v --durations=25 tests/test_browser.py -s -n0 --no-cov
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.9342390Z ============================= test session starts ==============================
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.9343550Z platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0 -- /home/runner/work/spur/spur/.venv/bin/python
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.9344169Z cachedir: .pytest_cache
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.9344705Z rootdir: /home/runner/work/spur/spur
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.9345174Z configfile: pyproject.toml
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:46.9345883Z plugins: platformdirs-4.13.5, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:47.1279510Z collecting ... collected 2 items
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:47.1279925Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:12:47.1289205Z tests/test_browser.py::test_the_oracle_reads_a_link_as_the_page_does PASSED
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7523581Z tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser webgl2 renderer: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7524644Z step webgl2: 0.05 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7525113Z step form built: 0.13 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7525515Z schema: 31 fields in 7 groups
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7525855Z step form from schema: 0.03 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7526375Z canvas PNG blank 3654 B, drawn 38168 B, ratio 10.45 (bar 4.9); data-triangles 9066, STL header 9066
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7526931Z step first build drawn: 2.74 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7527329Z step href after showModel: 0.08 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7527904Z 422 #bore_flat=3: marked ['D-flat'], text ['D-flat must be between 4.5 and 9 mm (flat to opposite side).']
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7528577Z 422 #teeth=2: marked ['Teeth'], text ['Teeth: Input should be greater than or equal to 6']
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7529546Z step invalid field marked: 0.25 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7529964Z warnings per link (two, one, none expected): [2, 1, 0]
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7530371Z step warning rendered: 0.33 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7530786Z step link round trip: 0.44 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7531193Z golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7532084Z golden sweep: shown {'D-flat': 32, 'No bore': 8, 'Round': 4}
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7532499Z step golden sweep: 0.83 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7532973Z inert fields: hex_wall: Needs Honeycomb cell A/F above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7533433Z inert fields: hole_circle_d: Needs Lightening holes above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7534149Z inert fields: hole_d: Needs Lightening holes above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7534726Z inert fields: hub_d: Needs Spoke arms above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7535182Z inert fields: rim_wall: Needs Spoke arms above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7535637Z inert fields: spoke_fillet: Needs Spoke arms above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7536057Z inert fields: spoke_width: Needs Spoke arms above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7536856Z inert fields: flip #bore_hex=0.05: API 200, dimmed ['bore_d', 'bore_flat', 'hex_wall', 'hole_circle_d', 'hole_d', 'hub_d', 'keyway_depth', 'keyway_width', 'rim_wall', 'spoke_fillet', 'spoke_width']
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7537720Z inert fields: flip #spoke_count=1: API 422, dimmed ['hex_wall', 'hole_circle_d', 'hole_d']
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7538380Z inert fields: flip #hole_count=1: API 422, dimmed ['hex_wall', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7539164Z inert fields: flip #hex_cell=0.05: API 422, dimmed ['hole_circle_d', 'hole_d', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7540185Z inert fields: refused pair: invalid ['bore_hex', 'keyway_depth', 'keyway_width'], dimmed and invalid ['keyway_depth', 'keyway_width']
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7540982Z step inert fields: 1.31 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7541360Z bore shape: loaded #bore_hex=0.05: shows 'Hex'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7541815Z bore shape: # + Round -> sent 'bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7542234Z bore shape: #bore_flat=0 + D-flat -> sent ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7542629Z bore shape: bore_flat back to '8' from the stash
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7543088Z bore shape: # + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7543680Z bore shape: completed Hex with 1 number(s) -> sent 'bore_hex=0.05'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7544130Z bore shape: # + Round -> sent 'bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7544791Z bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7545329Z bore shape: loaded #bore_flat=0: shows 'Round'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7545741Z bore shape: loaded #bore_hex=0.05: shows 'Hex'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7546127Z bore shape: loaded #bore_d=0: shows 'No bore'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7546538Z bore shape: loaded #bore_flat=0.0: shows 'Round'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7546995Z bore shape: loaded #bore_hex=-0.05: shows ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7547399Z bore shape: #bore_flat=0 + Round -> sent 'bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7547899Z bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7548424Z bore shape: bore_flat emptied, D-flat still pending
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7548894Z bore shape: completed D-flat with 1 number(s) -> sent ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7549406Z bore shape: #bore_flat=0 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7549970Z bore shape: completed Hex with 1 number(s) -> sent 'bore_flat=0&bore_hex=0.05'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7550500Z bore shape: #bore_flat=0 + No bore -> sent 'bore_d=0&bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7550991Z bore shape: # + Round -> sent 'bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7551370Z bore shape: # + D-flat -> sent ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7551800Z bore shape: # + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7552333Z bore shape: completed Hex with 1 number(s) -> sent 'bore_hex=0.05'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7552791Z bore shape: # + No bore -> sent 'bore_d=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7553225Z bore shape: #bore_hex=0.05 + Round -> sent 'bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7553654Z bore shape: #bore_hex=0.05 + D-flat -> sent ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7554104Z bore shape: #bore_hex=0.05 + Hex -> sent 'bore_hex=0.05'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7556692Z bore shape: #bore_hex=0.05 + No bore -> sent 'bore_d=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7557497Z bore shape: #bore_d=0 + Round -> pending: bore_d: Round needs Bore Ø above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7558008Z bore shape: bore_d emptied, Round still pending
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7558507Z bore shape: completed Round with 1 number(s) -> sent 'bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7559093Z bore shape: #bore_d=0 + D-flat -> pending: bore_d: D-flat needs Bore Ø above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7559678Z bore shape: bore_d emptied, D-flat still pending
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7560176Z bore shape: completed D-flat with 1 number(s) -> sent ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7560704Z bore shape: #bore_d=0 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7561265Z bore shape: completed Hex with 1 number(s) -> sent 'bore_d=0&bore_hex=0.05'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7561741Z bore shape: #bore_d=0 + No bore -> sent 'bore_d=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7562368Z bore shape: #bore_d=0&bore_flat=0 + D-flat -> pending: bore_d: D-flat needs Bore Ø above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7562998Z bore shape: typed bore_d=9, D-flat still pending: bore_flat: D-flat needs D-flat above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7563525Z bore shape: completed D-flat with 2 number(s) -> sent ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7564038Z bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7564804Z bore shape: #bore_flat=0 + D-flat abandoned by bore_d=200: shows 'Round'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7565280Z bore shape: # + Round -> sent 'bore_flat=0'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7565696Z bore shape: #bore_flat=0 + D-flat -> sent ''
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7566457Z bore shape: the stash outlived #bore_hex=0.05 and #bore_flat=0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7567222Z bore shape: #keyway_width=3&keyway_depth=1.4 + Round -> sent 'bore_flat=0&keyway_width=3&keyway_depth=1.4'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7568057Z bore shape: keyed + Round -> 'bore_flat=0&keyway_width=3&keyway_depth=1.4': API 200
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7568938Z bore shape: #keyway_width=3&keyway_depth=1.4 + D-flat -> sent 'keyway_width=3&keyway_depth=1.4'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7569758Z bore shape: keyed + D-flat -> 'keyway_width=3&keyway_depth=1.4': API 200
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7570542Z bore shape: #keyway_width=3&keyway_depth=1.4 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7571476Z bore shape: completed Hex with 1 number(s) -> sent 'keyway_width=3&keyway_depth=1.4&bore_hex=0.05'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7572311Z bore shape: keyed + Hex -> 'keyway_width=3&keyway_depth=1.4&bore_hex=0.05': API 422
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7573193Z bore shape: #keyway_width=3&keyway_depth=1.4 + No bore -> sent 'bore_d=0&keyway_width=3&keyway_depth=1.4'
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7573823Z bore shape: keyed + No bore -> 'bore_d=0&keyway_width=3&keyway_depth=1.4': API 422
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7574266Z step bore shape: 14.15 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7575061Z twin selectors: #bore_flat=0 + D-flat in one, then Hex in the other: the first back to 'Round', the second pending on bore_hex
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7575672Z step twin selectors: 2.28 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7576286Z unknown relation op: bore_d unreadable, the bore-shape select blank, two holding options blank, the form still builds the part
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7576920Z step unknown relation op: 3.70 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7577378Z download name: spur_z23_m1.75_pa25_trochoid.stl, click to download 0.38 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7577836Z step download name: 1.86 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7578215Z bogus: select '' at -1, sent 'teeth=22', API 422
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7578666Z step root_shape=bogus as today: 0.10 s
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.7579230Z request recorder: 264 /api requests (157 api/info) from every page, every key a GearParams field, quality or mate_teeth
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9703452Z PASSEDspur-group-listing: 2931    2931 Ssl  /home/runner/work/spur/spur/.venv/bin/python -m uvicorn spur.app:app --fd 5
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9706734Z spur-group-listing: 2932    2931 S    /home/runner/work/spur/spur/.venv/bin/python -c from multiprocessing.resource_tracker import main;main(11)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9710058Z spur-group-listing: 3010    2931 Sl   /home/runner/work/spur/spur/.venv/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=12, pipe_handle=25) --multiprocessing-fork
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9712877Z spur-group-listing: 3085    2931 Sl   /home/runner/work/spur/spur/.venv/bin/python -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=12, pipe_handle=27) --multiprocessing-fork
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9715033Z server group members before the kill: 4
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9715715Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9715895Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9716315Z ============================= slowest 25 durations =============================
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9717139Z 29.10s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9717822Z 0.52s setup    tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9718398Z 0.19s teardown tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9718742Z 
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9718977Z (3 durations < 0.005s hidden.  Use -vv to show these durations.)
+test (3.12)	Run make test PYTHON=python PYTEST_ARGS="tests/test_browser.py -s -n0 --no-cov"	2026-10-20T13:13:16.9719525Z ============================== 2 passed in 30.01s ==============================
+test (3.12)	kernel pair this run resolved	﻿2026-10-20T13:13:17.1293930Z ##[group]Run .venv/bin/python -c "from importlib.metadata import version; print('cadquery', version('cadquery'), 'cadquery-ocp', version('cadquery-ocp'))"
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1295339Z ^[[36;1m.venv/bin/python -c "from importlib.metadata import version; print('cadquery', version('cadquery'), 'cadquery-ocp', version('cadquery-ocp'))"^[[0m
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1340703Z shell: /usr/bin/bash -e {0}
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1341218Z env:
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1341638Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1342232Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib/pkgconfig
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1342737Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1343246Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1343728Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.15/x64
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1344192Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.15/x64/lib
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.1345157Z ##[endgroup]
+test (3.12)	kernel pair this run resolved	2026-10-20T13:13:17.3069426Z cadquery 2.8.0 cadquery-ocp 7.9.3.1.1
+test (3.12)	Post Run actions/setup-python@v5	﻿2026-10-20T13:13:17.3272346Z Post job cleanup.
+test (3.12)	Post Run actions/setup-python@v5	2026-10-20T13:13:17.4501876Z Cache hit occurred on the primary key setup-python-Linux-x64-24.04-Ubuntu-python-3.12.15-pip-609652ea823ad3f5d35cd322fe160fb8ec1c32db8dcf286b6747a1cd4e5d14d2, not saving cache.
+test (3.12)	Post Run actions/setup-python@v5	2026-10-20T13:13:17.4503498Z (node:3114) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+test (3.12)	Post Run actions/setup-python@v5	2026-10-20T13:13:17.4504680Z (Use `node --trace-deprecation ...` to show where the warning was created)
+test (3.12)	Post Run actions/checkout@v4	﻿2026-10-20T13:13:17.4656396Z Post job cleanup.
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5519984Z [command]/usr/bin/git version
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5557843Z git version 2.55.0
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5592185Z Temporarily overriding HOME='/home/runner/work/_temp/06d17472-4236-44da-9270-904d3e47c848' before making global git config changes
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5593671Z Adding repository directory to the temporary git global config as a safe directory
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5595476Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/spur/spur
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5633504Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5667668Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5903949Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5927293Z http.https://github.com/.extraheader
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5938110Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.5970688Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.6176443Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test (3.12)	Post Run actions/checkout@v4	2026-10-20T13:13:17.6205049Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test (3.12)	Complete job	﻿2026-10-20T13:13:17.6590304Z Cleaning up orphan processes
+test (3.12)	Complete job	2026-10-20T13:13:17.6877236Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -1,0 +1,257 @@
+## Run 1: the plan's literal break, _signal_group sends os.kill(pgid, sig) to the leader only. Result: the browser test PASSED (2 passed): uvicorn handles SIGTERM by shutting its pool workers down, so the group reads empty and no survivor is left to report. Not red.
+
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term -v --durations=25 tests/test_browser.py -n0 --no-cov -q
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+collected 2 items
+
+tests/test_browser.py ..                                                 [100%]
+
+============================= slowest 25 durations =============================
+23.01s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+0.47s teardown tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+0.16s setup    tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+
+(3 durations < 0.005s hidden.  Use -vv to show these durations.)
+============================== 2 passed in 23.66s ==============================
+exit 0
+
+## Run 2: the 21-01 break from bench/RESULTS.md, _signal_group sends os.kill(pgid, signal.SIGKILL) to the leader only (leader dies at once, workers are left)
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term -v --durations=25 tests/test_browser.py -n0 --no-cov -q
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+collected 2 items
+
+tests/test_browser.py ..E                                                [100%]
+
+==================================== ERRORS ====================================
+________ ERROR at teardown of test_the_shipped_viewer_in_a_real_browser ________
+
+request = <SubRequest 'server' for <Function test_the_shipped_viewer_in_a_real_browser>>
+
+    @pytest.fixture(scope="module")
+    def server(request: pytest.FixtureRequest) -> Iterator[str]:
+        """One real server for the module.
+    
+        A subprocess and not an in-process thread: `spur.app.app` is a singleton whose lifespan
+        and `dependency_overrides` every TestClient test on the same worker shares. Torn down
+        in a `finally` inside `serve()`, so a failing assertion still kills the process group.
+        A test that failed (a missing shell, no WebGL) built nothing, so the pool had not started
+        its workers and the group floor is not asserted for it: one failure, reported once.
+        """
+        failed_before = request.session.testsfailed
+>       with serve(lambda: request.session.testsfailed == failed_before) as base:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_browser.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:144: in __exit__
+    next(self.gen)
+tests/browser_session.py:145: in serve
+    stop_group(proc, log)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+proc = <Popen: returncode: -9 args: ['/Users/half/git/halfb00t/spur/.venv/bin/pytho...>
+log = <_io.BufferedRandom name=12>
+
+    def stop_group(proc: subprocess.Popen[bytes], log: IO[bytes]) -> None:
+        """SIGTERM the server's whole group, SIGKILL what outlasts the bound, fail on survivors.
+    
+        Signal first, then read: `ps` decides only how long to wait and what to report. A reader
+        that fails must not stop the signals (the orphan T-21-02), and the leader is not reaped
+        before the group is signalled, because a reaped leader's pid can be reused and the group
+        signal would then reach an unrelated process group. A failed `ps` cannot observe the
+        group, so it skips the grace and goes on to SIGKILL, then fails as "survivors unknown".
+    
+        The group, not the leader: killing only uvicorn left both pool workers alive 10 s later
+        (21-RESEARCH Pitfall P3), and they would outlive the test run.
+        """
+        pgid = proc.pid  # start_new_session makes the leader's pid the group id
+        survivors: list[int] | None = []
+        for sig, bound in ((signal.SIGTERM, TERM_BOUND_S), (signal.SIGKILL, KILL_BOUND_S)):
+            _signal_group(pgid, sig)
+            try:
+                deadline = time.monotonic() + bound
+                survivors = group_members(pgid)
+                while survivors and time.monotonic() < deadline:
+                    time.sleep(0.05)  # a poll interval; the condition is the group, not the clock
+                    survivors = group_members(pgid)
+            except (subprocess.CalledProcessError, OSError):  # ps failed, or there is no ps
+                survivors = None
+                continue
+            if not survivors:
+                break
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.wait(timeout=KILL_BOUND_S)  # reap the leader so it is not left a zombie
+        if survivors is None:
+            pytest.fail(
+                f"server process group {pgid}: survivors unknown, ps failed after SIGTERM and "
+                f"SIGKILL were sent; server log tail:\n{_log_tail(log)}"
+            )
+        if survivors:
+>           pytest.fail(
+                f"server process group {pgid} still has live pids {survivors} after "
+                f"SIGTERM ({TERM_BOUND_S:.0f} s) and SIGKILL ({KILL_BOUND_S:.0f} s); "
+                f"server log tail:\n{_log_tail(log)}"
+            )
+E           Failed: server process group 46075 still has live pids [46103, 46206, 49708] after SIGTERM (10 s) and SIGKILL (5 s); server log tail:
+E           INFO:     127.0.0.1:51248 - "GET /api/info?keyway_width=3&keyway_depth=1.4&bore_hex=0.05 HTTP/1.1" 422 Unprocessable Entity
+E           INFO:     127.0.0.1:51235 - "GET /api/info HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51235 - "GET /api/info?keyway_width=3&keyway_depth=1.4 HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51235 - "GET /api/info?bore_d=0&keyway_width=3&keyway_depth=1.4 HTTP/1.1" 422 Unprocessable Entity
+E           INFO:     127.0.0.1:51249 - "GET /api/info?bore_d=0&keyway_width=3&keyway_depth=1.4 HTTP/1.1" 422 Unprocessable Entity
+E           INFO:     127.0.0.1:51250 - "GET /api/schema HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51251 - "GET /api/info?bore_flat=0 HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51252 - "GET / HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51252 - "GET /static/style.css HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51253 - "GET /static/app.js HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51253 - "GET /static/vendor/three.bundle.min.js HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51253 - "GET /api/info?bore_flat=0 HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51257 - "GET /api/schema HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51258 - "GET / HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51258 - "GET /static/style.css HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51259 - "GET /static/app.js HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51259 - "GET /static/vendor/three.bundle.min.js HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51259 - "GET /api/info?teeth=23 HTTP/1.1" 200 OK
+E           {"ts": "2026-10-20T13:37:42.760976+00:00", "level": "INFO", "logger": "spur.records", "event": "build.started", "version": "0.1.0", "request": "2a1a5142", "slug": "spur_z23_m1.75_pa25", "params": {"teeth": 23}, "fmt": "stl", "quality": "preview"}
+E           {"ts": "2026-10-20T13:37:44.483113+00:00", "level": "INFO", "logger": "spur.records", "event": "export.served", "version": "0.1.0", "request": "2a1a5142", "slug": "spur_z23_m1.75_pa25", "params": {"teeth": 23}, "fmt": "stl", "quality": "preview", "encoding": "gzip", "source": "built", "duration_ms": 1722}
+E           INFO:     127.0.0.1:51259 - "GET /api/model.stl?teeth=23&quality=preview HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51259 - "GET /api/info?teeth=24 HTTP/1.1" 200 OK
+E           {"ts": "2026-10-20T13:37:45.004545+00:00", "level": "INFO", "logger": "spur.records", "event": "build.started", "version": "0.1.0", "request": "c4160fab", "slug": "spur_z24_m1.75_pa25", "params": {"teeth": 24}, "fmt": "stl", "quality": "preview"}
+E           {"ts": "2026-10-20T13:37:45.206896+00:00", "level": "INFO", "logger": "spur.records", "event": "export.served", "version": "0.1.0", "request": "c4160fab", "slug": "spur_z24_m1.75_pa25", "params": {"teeth": 24}, "fmt": "stl", "quality": "preview", "encoding": "gzip", "source": "built", "duration_ms": 202}
+E           INFO:     127.0.0.1:51259 - "GET /api/model.stl?teeth=24&quality=preview HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51261 - "GET / HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51261 - "GET /static/style.css HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51262 - "GET /static/app.js HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51262 - "GET /static/vendor/three.bundle.min.js HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51262 - "GET /api/schema HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51262 - "GET /api/info?teeth=23&root_shape=trochoid HTTP/1.1" 200 OK
+E           {"ts": "2026-10-20T13:37:45.382218+00:00", "level": "INFO", "logger": "spur.records", "event": "build.started", "version": "0.1.0", "request": "119f41df", "slug": "spur_z23_m1.75_pa25_trochoid", "params": {"teeth": 23, "root_shape": "trochoid"}, "fmt": "stl", "quality": "preview"}
+E           {"ts": "2026-10-20T13:37:45.811962+00:00", "level": "INFO", "logger": "spur.records", "event": "export.served", "version": "0.1.0", "request": "119f41df", "slug": "spur_z23_m1.75_pa25_trochoid", "params": {"teeth": 23, "root_shape": "trochoid"}, "fmt": "stl", "quality": "preview", "encoding": "gzip", "source": "built", "duration_ms": 430}
+E           INFO:     127.0.0.1:51262 - "GET /api/model.stl?teeth=23&root_shape=trochoid&quality=preview HTTP/1.1" 200 OK
+E           {"ts": "2026-10-20T13:37:46.178719+00:00", "level": "INFO", "logger": "spur.records", "event": "build.started", "version": "0.1.0", "request": "20f03233", "slug": "spur_z23_m1.75_pa25_trochoid", "params": {"teeth": 23, "root_shape": "trochoid"}, "fmt": "stl", "quality": "fine"}
+E           {"ts": "2026-10-20T13:37:46.258389+00:00", "level": "INFO", "logger": "spur.records", "event": "export.served", "version": "0.1.0", "request": "20f03233", "slug": "spur_z23_m1.75_pa25_trochoid", "params": {"teeth": 23, "root_shape": "trochoid"}, "fmt": "stl", "quality": "fine", "encoding": "gzip", "source": "built", "duration_ms": 80}
+E           INFO:     127.0.0.1:51262 - "GET /api/model.stl?teeth=23&root_shape=trochoid HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51265 - "GET /api/info?teeth=22 HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51266 - "GET /api/info?teeth=22 HTTP/1.1" 200 OK
+E           INFO:     127.0.0.1:51267 - "GET /api/info?root_shape=bogus&teeth=22 HTTP/1.1" 422 Unprocessable Entity
+
+tests/process_group.py:98: Failed
+----------------------------- Captured stdout call -----------------------------
+webgl2 renderer: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)
+step webgl2: 0.01 s
+step form built: 0.05 s
+schema: 31 fields in 7 groups
+step form from schema: 0.02 s
+canvas PNG blank 3917 B, drawn 38908 B, ratio 9.93 (bar 4.9); data-triangles 9066, STL header 9066
+step first build drawn: 2.13 s
+step href after showModel: 0.05 s
+422 #bore_flat=3: marked ['D-flat'], text ['D-flat must be between 4.5 and 9 mm (flat to opposite side).']
+422 #teeth=2: marked ['Teeth'], text ['Teeth: Input should be greater than or equal to 6']
+step invalid field marked: 0.09 s
+warnings per link (two, one, none expected): [2, 1, 0]
+step warning rendered: 0.21 s
+step link round trip: 0.26 s
+golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets
+golden sweep: shown {'D-flat': 32, 'No bore': 8, 'Round': 4}
+step golden sweep: 0.28 s
+inert fields: hex_wall: Needs Honeycomb cell A/F above 0
+inert fields: hole_circle_d: Needs Lightening holes above 0
+inert fields: hole_d: Needs Lightening holes above 0
+inert fields: hub_d: Needs Spoke arms above 0
+inert fields: rim_wall: Needs Spoke arms above 0
+inert fields: spoke_fillet: Needs Spoke arms above 0
+inert fields: spoke_width: Needs Spoke arms above 0
+inert fields: flip #bore_hex=0.05: API 200, dimmed ['bore_d', 'bore_flat', 'hex_wall', 'hole_circle_d', 'hole_d', 'hub_d', 'keyway_depth', 'keyway_width', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: flip #spoke_count=1: API 422, dimmed ['hex_wall', 'hole_circle_d', 'hole_d']
+inert fields: flip #hole_count=1: API 422, dimmed ['hex_wall', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: flip #hex_cell=0.05: API 422, dimmed ['hole_circle_d', 'hole_d', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: refused pair: invalid ['bore_hex', 'keyway_depth', 'keyway_width'], dimmed and invalid ['keyway_depth', 'keyway_width']
+step inert fields: 1.15 s
+bore shape: loaded #bore_hex=0.05: shows 'Hex'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> sent ''
+bore shape: bore_flat back to '8' from the stash
+bore shape: # + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_hex=0.05'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+bore shape: loaded #bore_flat=0: shows 'Round'
+bore shape: loaded #bore_hex=0.05: shows 'Hex'
+bore shape: loaded #bore_d=0: shows 'No bore'
+bore shape: loaded #bore_flat=0.0: shows 'Round'
+bore shape: loaded #bore_hex=-0.05: shows ''
+bore shape: #bore_flat=0 + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+bore shape: bore_flat emptied, D-flat still pending
+bore shape: completed D-flat with 1 number(s) -> sent ''
+bore shape: #bore_flat=0 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_flat=0&bore_hex=0.05'
+bore shape: #bore_flat=0 + No bore -> sent 'bore_d=0&bore_flat=0'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: # + D-flat -> sent ''
+bore shape: # + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_hex=0.05'
+bore shape: # + No bore -> sent 'bore_d=0'
+bore shape: #bore_hex=0.05 + Round -> sent 'bore_flat=0'
+bore shape: #bore_hex=0.05 + D-flat -> sent ''
+bore shape: #bore_hex=0.05 + Hex -> sent 'bore_hex=0.05'
+bore shape: #bore_hex=0.05 + No bore -> sent 'bore_d=0'
+bore shape: #bore_d=0 + Round -> pending: bore_d: Round needs Bore Ø above 0
+bore shape: bore_d emptied, Round still pending
+bore shape: completed Round with 1 number(s) -> sent 'bore_flat=0'
+bore shape: #bore_d=0 + D-flat -> pending: bore_d: D-flat needs Bore Ø above 0
+bore shape: bore_d emptied, D-flat still pending
+bore shape: completed D-flat with 1 number(s) -> sent ''
+bore shape: #bore_d=0 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_d=0&bore_hex=0.05'
+bore shape: #bore_d=0 + No bore -> sent 'bore_d=0'
+bore shape: #bore_d=0&bore_flat=0 + D-flat -> pending: bore_d: D-flat needs Bore Ø above 0
+bore shape: typed bore_d=9, D-flat still pending: bore_flat: D-flat needs D-flat above 0
+bore shape: completed D-flat with 2 number(s) -> sent ''
+bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+bore shape: #bore_flat=0 + D-flat abandoned by bore_d=200: shows 'Round'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> sent ''
+bore shape: the stash outlived #bore_hex=0.05 and #bore_flat=0
+bore shape: #keyway_width=3&keyway_depth=1.4 + Round -> sent 'bore_flat=0&keyway_width=3&keyway_depth=1.4'
+bore shape: keyed + Round -> 'bore_flat=0&keyway_width=3&keyway_depth=1.4': API 200
+bore shape: #keyway_width=3&keyway_depth=1.4 + D-flat -> sent 'keyway_width=3&keyway_depth=1.4'
+bore shape: keyed + D-flat -> 'keyway_width=3&keyway_depth=1.4': API 200
+bore shape: #keyway_width=3&keyway_depth=1.4 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'keyway_width=3&keyway_depth=1.4&bore_hex=0.05'
+bore shape: keyed + Hex -> 'keyway_width=3&keyway_depth=1.4&bore_hex=0.05': API 422
+bore shape: #keyway_width=3&keyway_depth=1.4 + No bore -> sent 'bore_d=0&keyway_width=3&keyway_depth=1.4'
+bore shape: keyed + No bore -> 'bore_d=0&keyway_width=3&keyway_depth=1.4': API 422
+step bore shape: 12.76 s
+twin selectors: #bore_flat=0 + D-flat in one, then Hex in the other: the first back to 'Round', the second pending on bore_hex
+step twin selectors: 2.14 s
+unknown relation op: bore_d unreadable, the bore-shape select blank, two holding options blank, the form still builds the part
+step unknown relation op: 2.63 s
+download name: spur_z23_m1.75_pa25_trochoid.stl, click to download 0.10 s
+step download name: 0.98 s
+bogus: select '' at -1, sent 'teeth=22', API 422
+step root_shape=bogus as today: 0.07 s
+request recorder: 291 /api requests (157 api/info) from every page, every key a GearParams field, quality or mate_teeth
+--------------------------- Captured stdout teardown ---------------------------
+server group members before the kill: 4
+============================= slowest 25 durations =============================
+23.11s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+15.14s teardown tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+0.17s setup    tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+
+(3 durations < 0.005s hidden.  Use -vv to show these durations.)
+=========================== short test summary info ============================
+ERROR tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser - Fail...
+========================= 2 passed, 1 error in 38.48s ==========================
+make: *** [Makefile:185: test] Error 1
+exit 2
+
+## After the red: orphaned workers killed by group (kill -KILL -- -46075); ps -A -o pgid=,pid= filtered to 46075:
+(end of listing; empty above means no pid)

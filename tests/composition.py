@@ -1,6 +1,7 @@
 """The family and refusal tables shared by `tests/test_calc.py` (12-05, this phase's
 calc-level composition matrix, D-07/D-08) and `tests/test_cli.py` (12-07's API/CLI
-routing rows, `12-05-PLAN.md` `key_links`).
+routing rows, `12-05-PLAN.md` `key_links`), and `BORE_OFF`, shared by
+`tests/test_trochoid.py` and `tests/test_api.py` (22-REVIEW IN-01).
 
 Not collected: no `test_` prefix (`tests/regression/corpus.py`'s precedent for a shared,
 non-collected data module under `tests/`). Every table here is written out by hand from
@@ -10,6 +11,12 @@ wrong number (L08, CLAUDE.md).
 """
 
 from __future__ import annotations
+
+# The bore off: the default 9 mm bore refuses small gears, so a test that builds one sets
+# these four fields. One copy, so a moved default cannot drift two copies apart (22-REVIEW
+# IN-01).
+BORE_OFF: dict[str, object] = {
+    "bore_d": 0, "bore_flat": 0, "bore_chamfer": 0, "recess_sides": "none"}
 
 # --- Tier 1: the 96-row bore x cutout x recess x tip-chamfer cross product (D-07) -----
 # Each dict is `{**bore, **cutout, **recess, **tip}` through `GearParams.model_validate`,

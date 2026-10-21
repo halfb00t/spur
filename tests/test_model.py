@@ -896,7 +896,7 @@ def test_the_tip_chamfer_proof_fails_when_the_tip_step_is_skipped(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """D-14's tripwire, Phase 7's precedent: the proof demonstrably catches a silently
     vanished chamfer."""
-    monkeypatch.setattr("spur.model._chamfer_tips", lambda solid, _p, _pr: solid)
+    monkeypatch.setattr("spur.model._chamfer_tips", lambda solid, _p, _pr, _rm: solid)
     p0 = GearParams(bore_chamfer=0, recess_fillet=0)
     p = GearParams(bore_chamfer=0, recess_fillet=0, tip_chamfer=1.0)
     assert derive(p).tip_chamfer_effective == 1.0  # the number still prints -- L08's failure
@@ -923,7 +923,7 @@ def test_the_kernel_fails_one_step_past_the_start_of_the_involute(
     under the involute spline. One 0.05 mm step past it, the kernel returns one solid
     that is not valid. If a kernel bump makes this build, this test goes red and the
     flank limit's premise must be re-measured (bench/tip_chamfer_spike.py)."""
-    monkeypatch.setattr("spur.model.tip_chamfer_effective", lambda _p: 2.9875)
+    monkeypatch.setattr("spur.model.tip_chamfer_effective", lambda _p, _rm=None: 2.9875)
     with pytest.raises(BuildError, match="Geometry kernel produced an invalid solid"):
         _build_checked(GearParams(profile_shift=1.0, pressure_angle=14.5, tip_chamfer=3))
 
