@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: fix(28): print no tip chamfer when none is cut -- log L45 (gsd/phase-28-refuse-the-bad-link)
+Resolved in: 6497c28 fix(28): print no tip chamfer when none is cut -- log L45 (gsd/phase-28-refuse-the-bad-link)
 Date: 2026-10-21
 Source: 10-REVIEW IN-02, triaged in Phase 28 (D-13)
 Related files:
