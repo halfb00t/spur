@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 28
 current_phase_name: Refuse the Bad Link
-status: verifying
-stopped_at: Completed 28-04-PLAN.md
-last_updated: "2026-10-21T13:09:56.197Z"
+status: executing
+stopped_at: Completed 28-05-PLAN.md
+last_updated: "2026-10-21T17:38:07.024Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 28 execution started
-state_head: d526c409df79991498c42105bc3ebe1c14674dba
+state_head: 523585889656e93ef7845d9ea937926184517815
 progress:
   total_phases: 4
   completed_phases: 7
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_plans: 21
+  completed_plans: 18
+  percent: 86
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 28 (Refuse the Bad Link) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
+Plan: 2 of 8
+Status: Ready to execute
 Last activity: 2026-10-21 — Phase 28 execution started
 
-Progress: [██████████] 100% (2 of 4 phases)
+Progress: [█████████░] 86% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -263,6 +263,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 28 P02 | 20 min | 3 tasks | 11 files |
 | Phase 28 P03 | 10min | 3 tasks | 4 files |
 | Phase 28 P04 | 25 min | 3 tasks | 15 files |
+| Phase 28 P05 | 6 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -508,6 +509,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 28]: 18 IN-01 is recorded fixed by 767317b (already fixed in the tree) rather than filed as debt that does not exist
 - [Phase 28]: 10 IN-02 deferred to a must item as a decision for the human (new Lxx with its own fixture.regen, or keep with a reason), not fixed in Phase 28
 - [Phase 28]: 10 IN-01 shares the nice item with Phase 18 leftovers under its own trigger line (D-18)
+- [Phase 28]: 28-05: human disposed Phase 28 review findings: WR-01 fix, WR-02 defer (debt filed), WR-03/G-28-2 fix (L45 via 28-06), IN-01 fix, IN-02 fix (D-19..D-23)
 
 ### Pending Todos
 
@@ -804,8 +806,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-21T13:09:56.130Z
-Stopped at: Completed 28-04-PLAN.md
+Last session: 2026-10-21T17:38:06.932Z
+Stopped at: Completed 28-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

@@ -424,7 +424,7 @@ run `tests/test_api.py` early — its `app.js` regexes were not fully read in re
 the fix is client-side only. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — it needs the discuss-phase decisions above, not research.
-**Plans**: 4/8 plans executed (28-05..28-08 close UAT gaps G-28-1, G-28-2)
+**Plans**: 5/8 plans executed (28-05..28-08 close UAT gaps G-28-1, G-28-2)
 
 Plans:
 **Wave 1**
@@ -440,7 +440,7 @@ Plans:
 - [x] 28-04-PLAN.md — the Phase 18/10 `nice` item and the 10 IN-02 `must` decision filed, 41 ledger rows closed across Phases 10, 18, 19, 21-24, 26, 27, retiring shas written, phase gate
 
 **Gap closure (UAT G-28-1, G-28-2)** *(sequential: each wave blocked on the one before)*
-- [ ] 28-05-PLAN.md — wave 5: blocking-human decision on 28-REVIEW WR-01, WR-02, WR-03 (= G-28-2 = 10 IN-02), IN-01, IN-02; recorded as D-19..D-23, deferrals filed as debt
+- [x] 28-05-PLAN.md — wave 5: blocking-human decision on 28-REVIEW WR-01, WR-02, WR-03 (= G-28-2 = 10 IN-02), IN-01, IN-02; recorded as D-19..D-23, deferrals filed as debt
 - [ ] 28-06-PLAN.md — wave 6: D-21 carried out once: L45 + the tch gate + red test + fixture check + item retired, or kept with a reason and an event trigger
 - [ ] 28-07-PLAN.md — wave 7: D-19, D-20, D-22 in app.js, one red-first commit per `fix`, L44 dated amendments
 - [ ] 28-08-PLAN.md — wave 8: IN-02 re-wrap per D-23, the retiring sha, 28-REVIEW-DISPOSITION.md closed, phase gate
@@ -519,5 +519,5 @@ empty.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
 | 27. Ledger Tests and Harness | v0.6 | 6/6 | Complete    | 2026-10-20 |
-| 28. Refuse the Bad Link | v0.6 | 4/4 | In Progress | - |
+| 28. Refuse the Bad Link | v0.6 | 5/8 | In Progress | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |
