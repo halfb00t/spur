@@ -31,8 +31,10 @@ parameter in the URL so a gear can be shared as a link.
 ## Shape
 
 `app.js`, roughly in this order: build the form from the schema; read the hash into the
-inputs (a token an input cannot hold is kept aside and sent instead, L44), dim the fields whose relation does not hold and show the option each selector's fields
-single out (again on every input and on Reset, before the debounce); on change, debounce, cancel the in-flight request (`AbortController`), fetch
+inputs (a token an input cannot hold is kept aside and sent instead, L44), dim the
+fields whose relation does not hold and show the option each selector's fields single
+out (again on every input and on Reset, before the debounce); on change, debounce,
+cancel the in-flight request (`AbortController`), fetch
 `/api/info` and `/api/model.stl?quality=preview`, update the dimensions table, the
 warnings and the invalid-field marks, then load the STL into the scene. A `seq` counter
 drops responses that arrive out of order. The viewer is a `WebGLRenderer` with
