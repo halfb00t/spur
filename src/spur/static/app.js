@@ -424,7 +424,8 @@ function write(writes) {
   for (const [field, to, zeroed] of writes) {
     const { input } = fields.get(field);
     if (zeroed) stash.set(field, input.value);
-    input.value = to;
+    // The box now holds what the pick wrote, so the request sends that, not an old link token (D-19).
+    input.value = to; rejected.delete(field);
   }
 }
 

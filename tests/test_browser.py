@@ -1950,6 +1950,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
             with step("bad link cleared", no_foreign_key):
                 # D-03: the token is kept while anything else is edited, and ends with an edit
                 # of its own field, a pick on its select, the mate box typed, Reset or a new link.
+                # A pick that writes the field also ends its token: the box then holds what the
+                # pick wrote, and the request must send that, not the token (28-REVIEW WR-01, D-19).
                 sent = _follow_link(page, "teeth=abc")
                 with page.expect_request(
                     lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
@@ -1997,6 +1999,10 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     lambda: page.select_option("form#params select[name=recess_sides]", "top"),
                     "recess_sides=top", None,
                 )
+
+                # "No bore" writes bore_d (the string 0) without an input event on the field.
+                _follow_link(page, "bore_d=abc")
+                recovered(lambda: _pick(page, "No bore"), "bore_d=0", None)
 
                 _follow_link(page, "root_shape=bogus&teeth=22")
                 recovered(lambda: page.locator("#reset").click(), "", "api/model.stl")

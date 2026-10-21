@@ -2974,7 +2974,7 @@ The control that could not hold the token shows blank. The measured replies for 
 **When it clears** (D-03). An edit of that field (a number box typed, a select picked, the mate box typed), Reset, or the next
 `readHash()`. An edit of a different field keeps sending the token and the 422. A selector pick that writes the rejected field
 keeps sending it too: the guard the research offered for that case was not adopted, and the token ends when that field is
-edited or the form is Reset.
+edited or the form is Reset. (superseded by the amendment of 2026-10-21 at the end of this entry.)
 
 **Blank and unknown keys** (D-06). A blank value (`teeth=`, `root_shape=`, `mate_teeth=`) still means the default and an
 unknown key is still ignored, so `#teeth=&root_shape=&mate_teeth=&face_width=8` sends `face_width=8` and builds. This is the one
@@ -3019,6 +3019,8 @@ Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n machdep.cpu.brand_string`
 64.0 GiB RAM`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0,
 cadquery-ocp 7.9.3.1.1, pytest 9.1.1, playwright 1.63.0 (`importlib.metadata.version`); Chromium 153.0.8010.12 for the token
 table; the browser steps read on 2026-10-21 at a 1-minute load of 4.26 (`sysctl -n vm.loadavg`, read after the run).
+
+**Amendment (2026-10-21, 28-REVIEW WR-01, D-19).** A selector pick that writes a field now ends that field's rejected token: `write()` deletes the field's `rejected` entry as it assigns the box, so the request carries what the box shows and not the token the box no longer holds. The guard adopted is the write's own clear, not the empty-box check RESEARCH Pitfall 3 offered. The pick path never fires an `input` event on the field it writes, which is why the form's clearing listener never ran for it. Proof: the `bad link cleared` case `#bore_d=abc` then a pick of "No bore", which sends `bore_d=0` alone, a green build, no mark and no error. Run against the unfixed `write()` it went red at `AssertionError: /api/info was sent 'bore_d=abc', not 'bore_d=0'` (`1 failed, 17 passed in 27.85s`, log `28-07-red-selector-write.log`, `### Seen red once (Phase 28)` in `bench/RESULTS.md`). `tests/test_api.py` gains an eleventh token, `input.value = to; rejected.delete(field);`, and loses none. No existing sentence of this entry is edited; **When it clears** carries a pointer to this paragraph.
 
 ## L45 — A tip chamfer asked for and not cut prints no number: tip_chamfer_effective is gated on the applied value (amends L29's number paragraph; applies L08)
 

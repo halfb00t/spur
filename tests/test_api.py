@@ -255,7 +255,8 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # rule, the clear at the top of readHash(), the read-back of every field and of the mate
     # box, gearQuery()'s early branch, update()'s mate fallback, the two clearing listeners and
     # Reset's clear. A link value its control cannot hold is sent and refused by the server
-    # instead of being dropped; every earlier token is unchanged.
+    # instead of being dropped; every earlier token is unchanged. 28-REVIEW WR-01 (D-19) added
+    # one more, write()'s clear of the field it writes, and removed none.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
@@ -288,6 +289,7 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value",
         "if (zeroed) stash.set(field, input.value);",
         "input.value = to;",
+        "input.value = to; rejected.delete(field);",
         "const stash = new Map();",
         "event.stopPropagation();",
         "reason.textContent = `${chosen.label} needs ${need(condition)}`;",
