@@ -424,11 +424,11 @@ run `tests/test_api.py` early — its `app.js` regexes were not fully read in re
 the fix is client-side only. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — it needs the discuss-phase decisions above, not research.
-**Plans**: 4 plans
+**Plans**: 1/4 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 28-01-PLAN.md — the rejected-token map in `app.js` (D-01..D-05), the old pin seen red against it, four new browser steps seen red without it, L44, web-ui.md, the bad-link debt item retired: one commit (D-07)
+- [x] 28-01-PLAN.md — the rejected-token map in `app.js` (D-01..D-05), the old pin seen red against it, four new browser steps seen red without it, L44, web-ui.md, the bad-link debt item retired: one commit (D-07)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 28-02-PLAN.md — the `root_fillet` label keyed on `root_form_d` (red first, Phase 19 item retired), the 24 IN-01 stash comment plus its idea, the 24 IN-02 / CX-03 "Could not build the form" wording (red first): three commits
@@ -438,6 +438,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 28-04-PLAN.md — the Phase 18/10 `nice` item and the 10 IN-02 `must` decision filed, 41 ledger rows closed across Phases 10, 18, 19, 21-24, 26, 27, retiring shas written, phase gate
+
 **UI hint**: yes
 
 ### Phase 29: Ubuntu 26 Final Reading
@@ -512,5 +513,5 @@ empty.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
 | 27. Ledger Tests and Harness | v0.6 | 6/6 | Complete    | 2026-10-20 |
-| 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
+| 28. Refuse the Bad Link | v0.6 | 1/4 | In Progress | - |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |

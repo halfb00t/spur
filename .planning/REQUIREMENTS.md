@@ -91,14 +91,14 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Bad links — refused, never guessed
 
-- [ ] **REQ-bad-link-refused**: a link carrying a non-blank value its form control cannot hold
+- [x] **REQ-bad-link-refused**: a link carrying a non-blank value its form control cannot hold
   — an enum outside its options (`root_shape=bogus`, `recess_sides=bogus`) or non-numeric
   text in a number box (`teeth=abc`, `mate_teeth=abc`) — keeps the token in the fragment,
   sends it, and is marked through the existing 422 path with the server's text; no part is
   built. Editing the field or Reset clears it. Generic over the schema: no field name in
   `app.js` outside `DIMS` (L02). A blank value (`teeth=`, `root_shape=`) still means "use the
   default", unchanged.
-- [ ] **REQ-bad-link-decision-logged**: `L44` records the boundary (what is refused, blank
+- [x] **REQ-bad-link-decision-logged**: `L44` records the boundary (what is refused, blank
   kept as default, unknown keys still ignored) and amends what L39 pinned; the browser step
   `root_shape=bogus as today` is rewritten in the same commit — the old pin seen red against
   the fix and the new one red with the fix reverted; `docs/architecture/web-ui.md` brought
@@ -184,8 +184,8 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-stop-group-signals-first | Phase 27 | Complete |
 | REQ-group-floor-recorded-true | Phase 27 | Complete |
 | REQ-launch-message-true | Phase 27 | Complete |
-| REQ-bad-link-refused | Phase 28 | Pending |
-| REQ-bad-link-decision-logged | Phase 28 | Pending |
+| REQ-bad-link-refused | Phase 28 | Complete |
+| REQ-bad-link-decision-logged | Phase 28 | Complete |
 | REQ-root-fillet-label-follows-root | Phase 28 | Pending |
 | REQ-info-findings-triaged | Phase 28 | Pending |
 | REQ-old-info-findings-triaged | Phase 28 | Pending |

@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 28
 current_phase_name: Refuse the Bad Link
 status: executing
-stopped_at: Phase 28 context gathered
-last_updated: "2026-10-21T12:28:36.326Z"
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-10-21T12:40:37.178Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 28 execution started
-state_head: 82984ce277f9d5792c9cdcb5c93bbcc006a0568b
+state_head: cb93d4ebdf37a51aba85d4911945fd7a273170b4
 progress:
   total_phases: 4
   completed_phases: 7
   total_plans: 17
-  completed_plans: 13
-  percent: 76
+  completed_plans: 14
+  percent: 82
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 28 (Refuse the Bad Link) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 28
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-10-21 — Phase 28 execution started
 
-Progress: [████████░░] 76% (2 of 4 phases)
+Progress: [████████░░] 82% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -259,6 +259,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 27 P04 | 7 min | 2 tasks | 8 files |
 | Phase 27 P05 | 9 min | 3 tasks | 11 files |
 | Phase 27 P06 | 14 min | 3 tasks | 7 files |
+| Phase 28 P01 | 12 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -497,6 +498,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 27]: 27-05: the pins' environ allowance is equality with a string constant in the read's own statement (tripwire, not proof)
 - [Phase 27]: MIN_GROUP_MEMBERS stays 3 and names no member: 3 is every build on one executor slot, 4 is both, and either clears it (D-01)
 - [Phase 27]: The ubuntu correction says 21-02's count came from a ps that prints no command; the member set is 27-01's later listing (L08)
+- [Phase 28]: L44: a non-blank link token its control reads back as empty is sent as given and refused by the server's 422; blank stays the default, the mate box shows the bare message with no outline
 
 ### Pending Todos
 
@@ -793,9 +795,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-21T08:52:38.209Z
-Stopped at: Phase 28 context gathered
-Resume file: .planning/phases/28-refuse-the-bad-link/28-CONTEXT.md
+Last session: 2026-10-21T12:40:37.114Z
+Stopped at: Completed 28-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
