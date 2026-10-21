@@ -109,9 +109,23 @@ No new `GearParams` field. The fix is client-side only. `problems()` and `fail()
   invalidation) is filed as an idea. The disposition cells are written from `27-TRIAGE.md`'s draft, so the close
   is a reading.
 
+### Triage scope additions (taken at plan-phase, 2026-10-21, after research)
+- **D-15:** The close extends to Phase 27. 27 IN-11 (the `per statement` comment in
+  `tests/test_browser_pins.py:126-128`) is `fixed` as a comment-only commit; 27 IN-12 (the missing pin of the
+  documented over-allowance) is `skipped` or `deferred` with a one-line reason. The close grep covers the
+  Phase 10, 18, 19, 21-24, 26 **and 27** `*-REVIEW-DISPOSITION.md` files.
+- **D-16:** 21 IN-04 is recorded `fixed` for 04a (the vacuous-pass half, `1981d93`), with 04b (the
+  `_wait_until_parked` hot loop) named in the Source cell by its existing debt path. No code change for 04b.
+- **D-17:** 26 IN-04 (comments citing `.planning/` paths that dangle once v0.6 is archived: `Makefile:226`, the
+  hang debt item) is `fixed` now, as its own comment-only commit that re-points the citations at durable
+  sources (`bench/RESULTS.md` sections or `docs/`).
+- **D-18:** 10 IN-01 is folded into the D-12 Phase 18 `nice` debt item, with its own trigger line.
+
 ### Claude's Discretion
 - Exact name and placement of the map and its helper, provided the pinned tokens hold.
 - New browser step names (e.g. `root_shape=bogus is refused`).
+- The optional `input.value === ''` guard against a stale rejection after a selector write (RESEARCH Pitfall 3):
+  adopt only together with a test that shows it; the contract does not need it.
 - Commit order inside the phase, keeping one concern per commit (fix + pin + L44 + docs + debt retirement as one;
   label; 24 IN-01; 24 IN-02 / CX-03; triage records).
 
