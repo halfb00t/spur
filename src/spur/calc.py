@@ -1690,6 +1690,10 @@ def root_mode(p: GearParams, pr: Profile,
        centreline or past the junction.
     6. `tooth severed`: the curve's narrowest half-angle is at or below zero (D-17).
 
+    A `rho` that is not a finite, non-negative millimetre value
+    raises `ValueError` from `cutter` before any reason is decided; with nothing
+    requested it is not read (18-REVIEW IN-07).
+
     Every sentence for these comes from `root_warnings`. `derive()`, `model._build`,
     `tip_chamfer_limit` and `GearParams.slug()` (the download name, L40) each call it
     once, with `requested=p.root_shape` and the tip radius `rho=p.root_fillet` (19 D-01),
