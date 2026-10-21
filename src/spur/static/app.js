@@ -665,7 +665,7 @@ $('#copy-link').addEventListener('click', async (e) => {
   try {
     await buildForm();
   } catch (err) {
-    showMessages([`Could not load the parameter schema: ${err.message}`]);
+    showMessages([`Could not build the form: ${err.message}`]);
     return;
   }
   readHash();

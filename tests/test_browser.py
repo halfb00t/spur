@@ -1803,6 +1803,46 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "two holding options blank, the form still builds the part"
                 )
 
+            with step("form build error", no_foreign_key):
+                # 24 IN-02: the schema loaded, so a message about the schema fetch named the
+                # wrong failure when a selector names a group no field has. The bootstrap
+                # still returns before readHash() and update() (Codex's isolate-and-continue
+                # proposal is not taken, D-14); a malformed selector is caught before it
+                # ships by tests/test_selector.py and test_schema_drives_the_form (CX-03).
+                status, schema = _api_get(server, "/api/schema", "")
+                assert status == 200, f"form build error: /api/schema answered {status}"
+                assert isinstance(schema, dict), "form build error: the schema is not an object"
+                broken_schema = json.loads(json.dumps(schema))
+                assert not any(
+                    prop.get("group") == "No such group"
+                    for prop in broken_schema["properties"].values()
+                ), "form build error: a field already sits in the made-up group"
+                broken_selector = broken_schema["selectors"][0]
+                broken_selector["group"] = "No such group"
+                selector_title = broken_selector["title"]
+                info_before = sum(
+                    1 for url in seen if urllib.parse.urlsplit(url).path == "/api/info"
+                )
+                bad = record_api(browser.new_page(), seen)
+                try:
+                    bad.route("**/api/schema", lambda route: route.fulfill(json=broken_schema))
+                    bad.goto(server + "/")
+                    expect(bad.locator("#messages .error")).to_have_text(
+                        "Could not build the form: "
+                        f'Selector "{selector_title}" names the group "No such group", '
+                        "which no field has"
+                    )
+                    bad.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                finally:
+                    bad.close()
+                info_after = sum(
+                    1 for url in seen if urllib.parse.urlsplit(url).path == "/api/info"
+                )
+                assert info_after == info_before, (
+                    f"the page asked /api/info {info_after - info_before} times with no form"
+                )
+                print(f"form build error: the bootstrap names {selector_title!r}, sent no info")
+
             with step("download name", no_foreign_key):
                 # The main `page` carries serve_stl_from(page, stl), whose STL_ROUTE answers
                 # with the first build's bytes and no Content-Disposition, so a click there
