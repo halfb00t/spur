@@ -121,6 +121,12 @@ UNKNOWN_KEY_LINK = "not_a_field=1&face_width=9"
 # The box blanks `5.`, the API reads it as 5: it is sent and built as the server reads it.
 ACCEPTED_LINK = "face_width=5."
 
+# Links for `root_fillet label`. 26 is the last tooth count where a trochoid request builds the
+# hob root at the default module and angle, 27 the first where it falls back to radial
+# (`rb <= rf`: the `26-applies-last` and `27-ignored-first` rows of tests/test_trochoid.py),
+# and 23 asks for nothing. The label follows the root the server built, not the one asked for.
+LABEL_LINKS = ("teeth=26&root_shape=trochoid", "teeth=27&root_shape=trochoid", "teeth=23")
+
 # The refused pair under a hex bore: a 422 naming the gate and both fields (23-RESEARCH,
 # reproduced), where `.invalid` and `.inactive` must coexist on the keyway fields (PD-07).
 REFUSED_LINK = "bore_hex=6&keyway_width=3&keyway_depth=1.4"
@@ -2041,6 +2047,39 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 assert page.locator("#messages .error").count() == 0
                 print("blank, unknown and accepted: face_width=8, face_width=9, face_width=5.")
+            with step("root_fillet label", no_foreign_key):
+                # D-09, D-10: while a hob root is in force the row reads "Hob tip radius used",
+                # else "Root fillet used"; the key is the info document's `root_form_d`, so a
+                # trochoid request that fell back to radial never reads as the hob.
+                row_labels: list[str] = []
+                for link in LABEL_LINKS:
+                    sent = _follow_link(page, link)
+                    status, body = _api_get(server, "/api/info", sent)
+                    assert status == 200, f"/api/info?{sent} answered {status}, not 200"
+                    assert isinstance(body, dict), f"/api/info?{sent} is not an object"
+                    assert body["root_fillet"] is not None, f"/api/info?{sent} has no root_fillet"
+                    hob = body["root_form_d"] is not None
+                    expected = "Hob tip radius used" if hob else "Root fillet used"
+                    absent = "Root fillet used" if hob else "Hob tip radius used"
+                    # The rows are written before the STL request, so the href for this very
+                    # query means the rows are this link's.
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                    )
+                    dim_labels = page.locator("#dims dt").all_text_contents()
+                    assert expected in dim_labels, (
+                        f"#{link}: the rows {dim_labels} lack {expected!r}"
+                    )
+                    assert absent not in dim_labels, (
+                        f"#{link}: the rows {dim_labels} hold {absent!r}"
+                    )
+                    row_labels.append(expected)
+                assert row_labels == [
+                    "Hob tip radius used",
+                    "Root fillet used",
+                    "Root fillet used",
+                ], f"the label follows the request and not the build: {row_labels}"
+                print(f"root_fillet label per link {LABEL_LINKS}: {row_labels}")
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH
             # Finding 9): the count is what shows every page was watched.

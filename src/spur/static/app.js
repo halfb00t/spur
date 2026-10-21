@@ -24,7 +24,10 @@ const DIMS = [
   ['tip_thickness', 'Tip thickness'],
   ['root_thickness', 'Tooth at root'],
   ['root_gap', 'Gap at root'],
-  ['root_fillet', 'Root fillet used'],
+  // Under the hob root the value is the cutter's tip radius (derive()), and root_form_d is set
+  // exactly when that root was built, so the label follows the build and not the request.
+  // Loose != null on purpose: null and undefined read radial, and 0 is a legal number.
+  ['root_fillet', (d) => (d.root_form_d != null ? 'Hob tip radius used' : 'Root fillet used')],
   ['root_form_d', 'Hob root junction Ø'],
   ['root_waist', 'Narrowest tooth in the root'],
   ['tip_chamfer_effective', 'Tip chamfer used'],

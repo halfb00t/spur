@@ -6672,6 +6672,10 @@ The control blanks but the API accepts: ` 22`, `22 ` and `1_0` for both fields; 
 
 The empty string reads back blank like the others but is never refused by the page: the read-back rule needs a non-empty token (D-02, D-06), so blank stays the default, and the API alone answers 422 for an empty value.
 
+### The root_fillet label (28-02)
+
+The `root_fillet` row of the dimensions table reads "Hob tip radius used" while `/api/info`'s `root_form_d` is non-null and "Root fillet used" otherwise (D-09, D-10). The step `root_fillet label` follows three links in the browser and takes the expected label from the API body for the query the page sent: `teeth=26&root_shape=trochoid` read "Hob tip radius used", `teeth=27&root_shape=trochoid` (the request falls back to radial) read "Root fillet used", and `teeth=23` (nothing requested) read "Root fillet used". The step took 0.20 s in `28-02-green-label.log` (exit 0, `18 passed in 27.62s`), at HEAD `359b6d5` plus the label change.
+
 ### Seen red once (Phase 28)
 
 Each deliberate break was run red once and reverted, or was the old code the fix replaced. The first failure line is copied from the kept log named in the row (every log is under `.planning/phases/28-refuse-the-bad-link/investigation/`); later plans append rows.
@@ -6680,3 +6684,4 @@ Each deliberate break was run red once and reverted, or was the old code the fix
 |---|---|---|---|---|
 | 28-01 | `tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser`, step `root_shape=bogus as today` | the fix applied, the old pin untouched | `AssertionError: today's behaviour, filed as debt: docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md: /api/info was sent 'teeth=22&root_shape=bogus'`; `1 failed, 2 passed in 23.37s`, log `28-01-red-old-pin.log` | the pin was replaced in the same commit; its step name stays here as history |
 | 28-01 | the same test, step `bad link refused` | only `src/spur/static/app.js` reverted to `0efc87c` | `AssertionError: #root_shape=bogus&teeth=22: /api/info was sent 'teeth=22', the link's pairs are [('root_shape', 'bogus'), ('teeth', '22')]`; `1 failed, 2 passed in 23.05s`, log `28-01-red-new-pin.log` | yes, restored from a saved copy, `cmp` clean |
+| 28-02 | the same test, step `root_fillet label` | the old row, which read Root fillet used under every root | `AssertionError: #teeth=26&root_shape=trochoid: the rows ['Pitch Ø', 'Tip Ø', 'Calipers across tips', 'Span over 4 teeth', 'Root Ø', 'Base Ø', 'Tip thickness', 'Root fillet used', 'Hob root junction Ø', 'Narrowest tooth in the root', 'Bore Ø incl. clearance', 'Recess inner Ø', 'Recess outer Ø', 'Recess fillet used', 'Web thickness'] lack 'Hob tip radius used'`; `1 failed, 2 passed in 27.40s`, log `28-02-red-label.log` | the fix replaced it |
