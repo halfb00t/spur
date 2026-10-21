@@ -32,6 +32,7 @@ Severity (grep-able `Severity:` field):
 | nice | [Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`](active/2026-10-20-nothing-pins-that-build-passes-its-own-rm-to-chamfer-tips.md) | `_build` or `_chamfer_tips` is next touched, or a public per-build cost counter exists |
 | nice | [Phase 18's review leftovers and Phase 10's hard-coded chamfer bound](active/2026-10-21-phase-18-review-info-findings-deferred.md) | the next phase that changes the trochoid / hob-root maths in calc.py or its tests; for 10 IN-01, the next edit of bench/tip_chamfer_spike.py or the tip_chamfer bound |
 | must | [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](active/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | the human's decision: fix under a new Lxx or keep with a reason (D-13) |
+| must | [A link token the number box blanks but the API accepts builds a non-default part under a blank box](active/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | the next edit of `refuse()` or `gearQuery()` in `src/spur/static/app.js`, or a report of a part that does not match a blank box |
 
 ## Resolved
 

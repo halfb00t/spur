@@ -1,0 +1,40 @@
+# A link token the number box blanks but the API accepts builds a non-default part under a blank box
+
+Severity: must
+Status: active
+Date: 2026-10-21
+Source: 28-REVIEW WR-02, deferred at the 28-05 checkpoint (D-20)
+Related files:
+- src/spur/static/app.js:115-117
+- src/spur/static/app.js:135-142
+- tests/test_browser.py:122
+- docs/architecture/decision_log.md:2990
+- bench/RESULTS.md:6637
+
+## Context
+The page's convention (D-06) is that a blank control means the default. `refuse()` (`app.js:115-117`) records a non-empty
+link token that its control reads back as `''`, and `gearQuery()` (`app.js:135-142`) sends that token as given (L44).
+For ` 22`, `22 ` and `1_0` (`teeth` and `face_width`) and `22.`, `5.` and `+5` (`face_width` only), the box reads `''`
+and the API answers 200 (`bench/RESULTS.md:6637`, `### Tokens a control cannot hold (28-01)`). The part is then built
+from the token while the box shows blank, so the form says "default" and the part is not the default. Before Phase 28 the
+page built the default part, which at least matched the blank box. L44's paragraph **The server decides**
+(`decision_log.md:2990`) records this and `tests/test_browser.py:122` (`ACCEPTED_LINK = "face_width=5."`) pins it as
+built. The address bar names the token and the dimensions table is the server's; the form gives no sign of which field
+carries the hidden value, and Reset is the only visible cue.
+
+The review's suggested fix shape (page-written wording beside the server's messages, for example `<field title> was opened
+as "<token>" and is built as the server reads it.` after a 200 from `/api/info`) was not taken: L44 and success
+criterion 1 kept every message in the server's words (L02), and showing the token inside the control was rejected as D-01.
+
+## Why it matters
+L05: a parameter the user did not set must never silently change the part. A blank box that carries a hidden non-default
+value is a visible form that disagrees with the part, and a number from that part is one someone will cut metal to (L08).
+The tension is visible only in the address bar and the dimensions table.
+
+## Next step
+Revisit when the next edit of `refuse()` or `gearQuery()` in `src/spur/static/app.js`, or a report of a part that does
+not match a blank box. The wording and placement of any notice are a UI design choice with more than one honest shape;
+take them at a discuss-phase, not in a gap closure.
+
+<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
+     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
