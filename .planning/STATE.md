@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 28
 current_phase_name: Refuse the Bad Link
 status: executing
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-10-21T12:40:37.178Z"
+stopped_at: Completed 28-02-PLAN.md
+last_updated: "2026-10-21T12:51:32.786Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 28 execution started
-state_head: cb93d4ebdf37a51aba85d4911945fd7a273170b4
+state_head: 235e51d4c11ec1b91bc302243455b4324dd1224b
 progress:
   total_phases: 4
   completed_phases: 7
   total_plans: 17
-  completed_plans: 14
-  percent: 82
+  completed_plans: 15
+  percent: 88
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 28 (Refuse the Bad Link) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-10-21 — Phase 28 execution started
 
-Progress: [████████░░] 82% (2 of 4 phases)
+Progress: [█████████░] 88% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -260,6 +260,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 27 P05 | 9 min | 3 tasks | 11 files |
 | Phase 27 P06 | 14 min | 3 tasks | 7 files |
 | Phase 28 P01 | 12 min | 3 tasks | 12 files |
+| Phase 28 P02 | 20 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -499,6 +500,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 27]: MIN_GROUP_MEMBERS stays 3 and names no member: 3 is every build on one executor slot, 4 is both, and either clears it (D-01)
 - [Phase 27]: The ubuntu correction says 21-02's count came from a ps that prints no command; the member set is 27-01's later listing (L08)
 - [Phase 28]: L44: a non-blank link token its control reads back as empty is sent as given and refused by the server's 422; blank stays the default, the mate box shows the bare message with no outline
+- [Phase 28]: D-10: the root_fillet label keys on the loose d.root_form_d != null, so it follows the root the server built, not the request
+- [Phase 28]: D-14: stash comment reworded and its hand-edit invalidation filed as an idea; isolate-and-continue for 24 IN-02 not taken
 
 ### Pending Todos
 
@@ -795,8 +798,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-21T12:40:37.114Z
-Stopped at: Completed 28-01-PLAN.md
+Last session: 2026-10-21T12:51:32.721Z
+Stopped at: Completed 28-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

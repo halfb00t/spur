@@ -103,7 +103,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   `root_shape=bogus as today` is rewritten in the same commit — the old pin seen red against
   the fix and the new one red with the fix reverted; `docs/architecture/web-ui.md` brought
   true; the debt item retired (`2026-10-10-root-shape-bogus-loads-a-blank-select.md`).
-- [ ] **REQ-root-fillet-label-follows-root**: the `root_fillet` derived-dimension label
+- [x] **REQ-root-fillet-label-follows-root**: the `root_fillet` derived-dimension label
   stops reading "Root fillet used" while a hob root is in force (Phase 19 IN-04a); text only —
   no part, number or request moves; own commit.
 
@@ -186,7 +186,7 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-launch-message-true | Phase 27 | Complete |
 | REQ-bad-link-refused | Phase 28 | Complete |
 | REQ-bad-link-decision-logged | Phase 28 | Complete |
-| REQ-root-fillet-label-follows-root | Phase 28 | Pending |
+| REQ-root-fillet-label-follows-root | Phase 28 | Complete |
 | REQ-info-findings-triaged | Phase 28 | Pending |
 | REQ-old-info-findings-triaged | Phase 28 | Pending |
 | REQ-ubuntu26-classified-on-migration | Phase 29 | Pending |
