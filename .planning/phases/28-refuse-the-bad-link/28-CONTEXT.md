@@ -121,6 +121,14 @@ No new `GearParams` field. The fix is client-side only. `problems()` and `fail()
   sources (`bench/RESULTS.md` sections or `docs/`).
 - **D-18:** 10 IN-01 is folded into the D-12 Phase 18 `nice` debt item, with its own trigger line.
 
+### Gap-closure decisions (taken at the 28-05 checkpoint, 2026-10-21, UAT G-28-1 and G-28-2)
+The human's answer, verbatim: `WR-01 fix; WR-02 defer; WR-03 fix; IN-01 fix; IN-02 fix`. Nothing was added to it, so every offered default applies.
+- **D-19 (WR-01):** `fix` — the human answered "WR-01 fix"; 28-07 carries it out under a dated amendment to L44.
+- **D-20 (WR-02):** `defer` — the human answered "WR-02 defer"; filed as `docs/tech_debt/active/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md`, Severity must, revisit when the next edit of `refuse()` or `gearQuery()` in `src/spur/static/app.js`, or a report of a part that does not match a blank box.
+- **D-21 (WR-03, G-28-2, 10 IN-02):** `fix` — the human answered "WR-03 fix"; L45 is to be logged by 28-06, which gates `tip_chamfer_effective` on the applied `tch` so a chamfer asked for and not cut prints `null`.
+- **D-22 (IN-01):** `fix` — the human answered "IN-01 fix", which records their reading that the replacement token tightens the SC2 readHash-end pin.
+- **D-23 (IN-02):** `fix` — the human answered "IN-02 fix"; the `## Shape` paragraph of `docs/architecture/web-ui.md` is re-wrapped with no word changed.
+
 ### Claude's Discretion
 - Exact name and placement of the map and its helper, provided the pinned tokens hold.
 - New browser step names (e.g. `root_shape=bogus is refused`).
