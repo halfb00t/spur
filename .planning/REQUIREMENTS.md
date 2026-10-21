@@ -109,12 +109,12 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Info findings — none left `open`
 
-- [ ] **REQ-info-findings-triaged**: every open review info finding of Phases 19 and 21–24
+- [x] **REQ-info-findings-triaged**: every open review info finding of Phases 19 and 21–24
   carries one disposition in its `*-REVIEW-DISPOSITION.md`: `fixed` + sha, `deferred` + debt or
   idea path, or `skipped` + a one-line reason; zero `open` at the milestone close. Findings
   that let a test pass vacuously (24 CX-05, 23 IN-08, 23 IN-11, 21 IN-03, 21 IN-04) are fixed,
   not skipped.
-- [ ] **REQ-old-info-findings-triaged**: Phase 18 IN-01..08 and Phase 10 IN-01/02 are
+- [x] **REQ-old-info-findings-triaged**: Phase 18 IN-01..08 and Phase 10 IN-01/02 are
   dispositioned the same way: overtaken ones closed with a reason (18 IN-02, IN-06), the
   18 IN-07 docstring fixed, the rest filed as one `nice` item with a named trigger, and 10 IN-02
   (it changes a printed value) filed as a decision for the human, not fixed.
@@ -187,8 +187,8 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-bad-link-refused | Phase 28 | Complete |
 | REQ-bad-link-decision-logged | Phase 28 | Complete |
 | REQ-root-fillet-label-follows-root | Phase 28 | Complete |
-| REQ-info-findings-triaged | Phase 28 | Pending |
-| REQ-old-info-findings-triaged | Phase 28 | Pending |
+| REQ-info-findings-triaged | Phase 28 | Complete |
+| REQ-old-info-findings-triaged | Phase 28 | Complete |
 | REQ-ubuntu26-classified-on-migration | Phase 29 | Pending |
 
 Individual info-finding fixes ride the phase that touches their file (Phase 26: 24 CX-05, 21
