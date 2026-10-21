@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: IN-09
     severity: info
-    disposition: open
+    disposition: fixed
     title: "Test name still says compound statement after the table gained lambda rows"
   - id: IN-10
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The lambda stop is narrower than the statement-level allowance around it"
   - id: IN-04
     severity: info
@@ -59,17 +59,17 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 2
+open: 0
 total: 14
-recorded: 2026-10-21T01:51:11.845Z
+recorded: 2026-10-21T07:01:28.171Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-09 | info | open | - |
-| IN-10 | info | open | - |
+| IN-09 | info | fixed | 27-REVIEW-FIX.md |
+| IN-10 | info | fixed | 27-REVIEW-FIX.md |
 | IN-04 | info | skipped | 27-REVIEW-FIX.md (not in the current review) |
 | IN-08 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | IN-01 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
