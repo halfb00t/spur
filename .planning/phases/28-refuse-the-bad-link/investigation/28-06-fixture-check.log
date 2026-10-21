@@ -1,0 +1,3 @@
+.venv/bin/python tests/regression/capture.py
+wrote 44 records (39 built, 5 mate-only) to /Users/half/git/halfb00t/spur/tests/regression/pre_v0_2.json
+fixture check: 44 records, no held field moved, tip_chamfer_effective null in all 44

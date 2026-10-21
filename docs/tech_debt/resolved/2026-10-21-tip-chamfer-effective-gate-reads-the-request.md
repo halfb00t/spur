@@ -1,7 +1,8 @@
 # tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: fix(28): print no tip chamfer when none is cut -- log L45 (gsd/phase-28-refuse-the-bad-link)
 Date: 2026-10-21
 Source: 10-REVIEW IN-02, triaged in Phase 28 (D-13)
 Related files:

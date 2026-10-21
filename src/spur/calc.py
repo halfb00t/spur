@@ -972,7 +972,8 @@ class DerivedDimensions(BaseModel):
         json_schema_extra={"unit": "mm"})
     tip_chamfer_effective: float | None = Field(
         description="Tip chamfer actually cut on the tooth-tip edges at both faces, "
-                    "after the cap; null with no tip chamfer.",
+                    "after the cap; null when none is cut: none requested, or a "
+                    "request below the 0.001 mm resolution it is cut at.",
         json_schema_extra={"unit": "mm"})
     span_teeth: int = Field(description="Number of teeth the span measurement is taken over.")
     span: float = Field(
@@ -1291,7 +1292,10 @@ def derive(p: GearParams, mate_teeth: int | None = None,
         # rounded value, so the number and the warning read one float (L08).
         root_form_d=None if rm.curve is None else r3(2 * rm.curve.points[-1][0]),
         root_waist=waist,
-        tip_chamfer_effective=r3(tch) if p.tip_chamfer > 0 else None,
+        # Gated on the applied tch, not the request: a chamfer asked for and not cut
+        # builds the solid that no chamfer builds, so it prints what no chamfer prints.
+        # The not-cut warning above carries the dropped request (L45, L08).
+        tip_chamfer_effective=r3(tch) if tch > 0 else None,
         span_teeth=k,
         span=r3(w),
         bore_effective=r3(2 * bore_radius(p)) if p.bore_d > 0 and p.bore_hex == 0 else None,

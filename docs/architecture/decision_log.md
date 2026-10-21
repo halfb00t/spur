@@ -3019,3 +3019,34 @@ Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n machdep.cpu.brand_string`
 64.0 GiB RAM`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0,
 cadquery-ocp 7.9.3.1.1, pytest 9.1.1, playwright 1.63.0 (`importlib.metadata.version`); Chromium 153.0.8010.12 for the token
 table; the browser steps read on 2026-10-21 at a 1-minute load of 4.26 (`sysctl -n vm.loadavg`, read after the run).
+
+## L45 — A tip chamfer asked for and not cut prints no number: tip_chamfer_effective is gated on the applied value (amends L29's number paragraph; applies L08)
+
+Date: 2026-10-21
+
+**The decision** (D-21). At the 28-05 checkpoint the human answered "WR-03 fix" to whether `tip_chamfer_effective` should keep
+gating on the request. It does not: `derive()` now gates the printed field on the applied chamfer `tch`, the value `model.py`
+cuts, so a chamfer asked for and not cut prints `null`. This closes 10 IN-02, 28-REVIEW WR-03 and UAT G-28-2, one finding
+under three names.
+
+**What moves.** `derive(GearParams(tip_chamfer=0.0004)).tip_chamfer_effective` read `0.0` and reads `null`; `GearParams()`
+reads `null` and `GearParams(tip_chamfer=0.4)` reads `0.4`, both as before. The warning, "Tip chamfer 0.0004 mm is below the
+0.001 mm resolution it is cut at and was not cut.", is unchanged and carries the dropped request, and `model.py` already cut
+nothing. Only a request under 0.0005 mm prints differently, because that is the only request `tip_chamfer_effective` rounds
+to `0.0`. The field's description now says null when no chamfer is cut: none requested, or a request below the resolution.
+
+**What it amends.** L29's **The number** paragraph says `tip_chamfer_effective` is `null` when `tip_chamfer` is 0. It is
+`null` when no chamfer is cut, which includes that case. L29 itself is not edited.
+
+**The proof.** The new null assertion in `test_a_sub_print_precision_tip_chamfer_request_still_warns` ran red against the old
+gate first: `AssertionError: assert 0.0 is None` (`1 failed, 20 passed`, `investigation/28-06-red-tip-chamfer-null.log`, the
+row in `bench/RESULTS.md` `### Seen red once (Phase 28)`), and the capped-chamfer test now states its rule on the applied
+value. `make fixture.regen` ran on the fixed tree and the fixture check read every held field of the 44 committed records at
+the replay's own tolerances: `fixture check: 44 records, no held field moved, tip_chamfer_effective null in all 44`
+(`investigation/28-06-fixture-check.log`). No record moved, so no fixture commit was made (D-13) and
+`git diff --exit-code v0.5 -- tests/regression/` is empty.
+
+**Reversibility.** Reversible: one line, one test and this entry; no data and no fixture move.
+
+Reason: L08's rule is no number rather than a plausible one, and the part with a chamfer not cut is the part with no chamfer, so
+it prints what no chamfer prints.
