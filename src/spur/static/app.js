@@ -121,11 +121,8 @@ function readHash() {
   rejected.clear();
   for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];
   for (const [name, { input }] of fields) refuse(name, input, h.get(name));
-  // Assigned twice on purpose: the pinned tail below runs straight into applyRelations(), so
-  // a read-back after it would sit outside readHash().
   mateInput.value = h.get('mate_teeth') ?? '';
   refuse('mate_teeth', mateInput, h.get('mate_teeth'));
-  mateInput.value = h.get('mate_teeth') ?? '';
   applyRelations();
   deriveSelectors();
 }

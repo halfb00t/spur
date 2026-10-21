@@ -256,12 +256,16 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # box, gearQuery()'s early branch, update()'s mate fallback, the two clearing listeners and
     # Reset's clear. A link value its control cannot hold is sent and refused by the server
     # instead of being dropped; every earlier token is unchanged. 28-REVIEW WR-01 (D-19) added
-    # one more, write()'s clear of the field it writes, and removed none.
+    # one more, write()'s clear of the field it writes, and removed none. 28-REVIEW IN-01
+    # (D-22) replaced the readHash-end token with a longer one that also pins the mate
+    # read-back between the assignment and the tail, which the human read as tightening
+    # under SC2.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
         "for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];",
-        "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }",
+        # One exact token on one line, so a grep for it finds this pin: 162 columns.
+        "mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }",  # noqa: E501
         "q.set(name, input.value)",
         "const infoQ = new URLSearchParams(q);",
         "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",

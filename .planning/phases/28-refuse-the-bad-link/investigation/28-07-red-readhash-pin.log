@@ -1,0 +1,115 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_the_shareable_link_round_trips_every_field_through_generic_code _____
+
+    def test_the_shareable_link_round_trips_every_field_through_generic_code() -> None:
+        """D-11's static proof, the browser-test idea's own "cheaper first step": the
+        hash -> form -> query path in app.js handles every `GearParams` field generically,
+        with no per-field code (D-12; L41 supersedes 08 D-09: a relation is schema metadata
+        that generic code reads; L42: a model-level selector list that generic code reads,
+        derives and writes back as flat fields). A renamed or added field cannot
+        silently break the shareable-link round trip without this catching it. The browser
+        itself is checked by hand at gsd-verify-work, against the checklist in
+        12-07-PLAN.md's `<verification>`.
+        """
+        source = (STATIC / "app.js").read_text()
+    
+        # IN-04 (12-REVIEW.md): this proof is pinned to these exact tokens (D-4,
+        # 12-07-SUMMARY.md) -- a renamed variable or restructured loop must fail it -- but a
+        # whitespace-only reformat of app.js (indent width, a long line re-wrapped) proves
+        # nothing about field-genericity and must not fail it. Collapsing all whitespace runs
+        # to one space on both sides keeps the token-level proof and drops only the part that
+        # was never load-bearing.
+        collapsed_source = re.sub(r"\s+", " ", source)
+    
+        # The generic loops the round trip rests on: buildForm() reads every schema
+        # property and records it under its own name; readHash() writes the hash back into
+        # every recorded field; gearQuery() reads every field back into the query; update()
+        # builds the shareable hash from that query and writes it with history.
+        # replaceState(); the copy-link handler copies the resulting location.href; and
+        # hashchange re-reads the hash on navigation (e.g. the copied link opened fresh).
+        #
+        # L41 rewrote the `fields.set` token (the entry now carries the property's own
+        # relation and its reason span) and added the rest of the tail: the three call sites
+        # of applyRelations() (the end of readHash(), the input listener before
+        # scheduleUpdate, Reset), the effective-value rule gearQuery() sends (D-18), the
+        # evaluator's own shape (D-02, D-03) and the loop that writes the dim. The
+        # `hashchange` token and every other token are as they were; none was removed.
+        #
+        # L42 tightened three of them and added fourteen, and removed none. Tokens 4, 10 and 11
+        # gained `deriveSelectors();` at each of applyRelations()'s three call sites (11 also
+        # Reset's `stash.clear();`), so a derive moved out of a site goes red. The added tokens
+        # pin the selector loop over the schema's own list, the derivation through the
+        # relations' `holds()` (a select shows an option only when exactly one holds), the
+        # write rule (an `eq` condition gets the string 0, a `gt` one only its own stashed
+        # string back, otherwise the pick is pending), the stash, the pending pick's
+        # `stopPropagation` and its note. `fields.set(` is counted once below: the select adds
+        # no `fields` entry, so it is never sent and never in the hash.
+        #
+        # L44 added ten tokens and removed none: the `rejected` map's declaration, its read-back
+        # rule, the clear at the top of readHash(), the read-back of every field and of the mate
+        # box, gearQuery()'s early branch, update()'s mate fallback, the two clearing listeners and
+        # Reset's clear. A link value its control cannot hold is sent and refused by the server
+        # instead of being dropped; every earlier token is unchanged. 28-REVIEW WR-01 (D-19) added
+        # one more, write()'s clear of the field it writes, and removed none. 28-REVIEW IN-01
+        # (D-22) replaced the readHash-end token with a longer one that also pins the mate
+        # read-back between the assignment and the tail, which the human read as tightening
+        # under SC2.
+        for snippet in (
+            "for (const [name, prop] of Object.entries(schema.properties)) {",
+            "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
+            "for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];",
+            # One exact token on one line, so a grep for it finds this pin: 140 columns.
+            "mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }",  # noqa: E501
+            "q.set(name, input.value)",
+            "const infoQ = new URLSearchParams(q);",
+            "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
+            "navigator.clipboard.writeText(location.href)",
+            "window.addEventListener('hashchange', () => { readHash(); update(); });",
+            # One exact token on one line, so a grep for it finds this pin: 108 columns.
+            "form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });",  # noqa: E501
+            "mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",
+            "return input.value === '' ? defaults[name] : input.value;",
+            "const have = Number(effective(field));",
+            "default: throw new Error(",
+            "for (const { input, wrap, rels, reason } of fields.values()) {",
+            "const off = rels.map(holds).includes(false);",
+            "wrap.classList.toggle('inactive', off);",
+            "reason.textContent = off ?",
+            "input.setAttribute('aria-describedby', reason.id)",
+            "buildSelectors(schema.selectors ?? [], groups);",
+            "for (const [i, { title, group, options }] of list.entries()) {",
+            "for (const { label } of options) select.add(new Option(label));",
+            "select.addEventListener('input', (event) => pick(s, event));",
+            "const hits = s.options.map((o) => !o.when.map(holds).includes(false));",
+            "s.select.selectedIndex = i === hits.lastIndexOf(true) ? i : -1;",
+            "if (holds(condition)) continue;",
+            "if (op === 'eq') writes.push([field, String(value), true]);",
+            "stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value",
+            "if (zeroed) stash.set(field, input.value);",
+            "input.value = to;",
+            "input.value = to; rejected.delete(field);",
+            "const stash = new Map();",
+            "event.stopPropagation();",
+            "reason.textContent = `${chosen.label} needs ${need(condition)}`;",
+            "const rejected = new Map();",
+            "if (token && input.value === '') rejected.set(name, token);",
+            "const h = new URLSearchParams(location.hash.slice(1)); rejected.clear();",
+            "for (const [name, { input }] of fields) refuse(name, input, h.get(name));",
+            "refuse('mate_teeth', mateInput, h.get('mate_teeth'));",
+            "if (rejected.has(name)) { q.set(name, rejected.get(name)); continue; }",
+            "const mate = mateInput.value || rejected.get('mate_teeth') || '';",
+            "form.addEventListener('input', (e) => rejected.delete(e.target.name));",
+            "mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));",
+            "rejected.clear(); mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",  # noqa: E501
+        ):
+>           assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
+E           AssertionError: mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }
+E           assert "mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }" in 'import { Color, DirectionalLight, EdgesGeometry, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh, ...(); } catch (err) { showMessages([`Could not build the form: ${err.message}`]); return; } readHash(); update(); })(); '
+E            +  where "mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }" = <function sub at 0x1050e9c60>('\\s+', ' ', "mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }")
+E            +    where <function sub at 0x1050e9c60> = re.sub
+
+tests/test_api.py:311: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code
+1 failed, 61 deselected in 2.08s
