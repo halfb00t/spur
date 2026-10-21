@@ -30,6 +30,8 @@ Severity (grep-able `Severity:` field):
 | nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
 | nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched, or Phase 28's info-finding triage |
 | nice | [Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`](active/2026-10-20-nothing-pins-that-build-passes-its-own-rm-to-chamfer-tips.md) | `_build` or `_chamfer_tips` is next touched, or a public per-build cost counter exists |
+| nice | [Phase 18's review leftovers and Phase 10's hard-coded chamfer bound](active/2026-10-21-phase-18-review-info-findings-deferred.md) | the next phase that changes the trochoid / hob-root maths in calc.py or its tests; for 10 IN-01, the next edit of bench/tip_chamfer_spike.py or the tip_chamfer bound |
+| must | [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](active/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | the human's decision: fix under a new Lxx or keep with a reason (D-13) |
 
 ## Resolved
 
