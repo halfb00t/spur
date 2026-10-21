@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 28-refuse-the-bad-link
 source: [28-VERIFICATION.md]
 started: 2026-10-21T13:22:02Z
@@ -13,6 +13,7 @@ updated: 2026-10-21T15:44:44.052Z
 ## Tests
 
 ### 1. Disposition Phase 28's own review findings (IN-01, IN-02, WR-01, WR-02, WR-03)
+
 expected: Each row in 28-REVIEW-DISPOSITION.md carries fixed + sha, deferred + debt/idea path, or skipped + reason; the '| info | open |' grep is clean for Phase 28.
 result: issue
 reported: "pass (then, after the on-disk check below contradicted it, chose: record as issue)"
@@ -20,6 +21,7 @@ severity: major
 evidence: 28-REVIEW-DISPOSITION.md lists all 5 findings (WR-01, WR-02, WR-03, IN-01, IN-02) as `open | -`; frontmatter open: 5
 
 ### 2. Decide WR-03 / Phase 10 IN-02: tip_chamfer_effective prints 0.0 for a chamfer asked for and not cut (src/spur/calc.py:1294)
+
 expected: Either a new Lxx plus a fix (gate on tch, print null) with its own make fixture.regen check, or keep-with-reason logged; the INDEX trigger names a concrete event instead of "the human's decision".
 result: issue
 reported: "pass (then, after the on-disk check below contradicted it, chose: record as issue)"
