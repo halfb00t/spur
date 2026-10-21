@@ -313,11 +313,14 @@ const scheduleUpdate = () => {
 
 // ---------------------------------------------------------------- selectors (L42)
 
-// Field name -> the string its box held when a pick zeroed it. A later pick that needs the
-// field above its threshold puts the user's own string back and never invents one: a flat
-// the user did not type would be a number the tool printed and nobody chose (L08). Memory
-// only. Reset clears it and so does a reload; a hash navigation leaves it, so a value typed
-// before a link was opened can still come back (D-08, D-19). A restore keeps the entry, and
+// Field name -> the string its box held when a pick zeroed it: what the user typed, a page
+// default the box still held, or a value from an earlier link. A later pick that needs the
+// field above its threshold puts that string back and never invents one: a flat nobody
+// entered would be a number the tool printed and nobody chose (L08). A hand edit of the box
+// does not update the entry, so a restore can bring back a string older than the last one
+// typed (24-REVIEW IN-01); dropping the entry on a hand edit is filed as
+// docs/ideas/2026-10-21-stash-entry-survives-a-hand-edit.md. Memory only. Reset clears it and
+// so does a reload; a hash navigation leaves it (D-08, D-19). A restore keeps the entry, and
 // the next zeroing pick overwrites it (PD-08).
 const stash = new Map();
 
