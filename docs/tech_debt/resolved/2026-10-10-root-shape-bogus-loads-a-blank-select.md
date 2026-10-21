@@ -1,7 +1,8 @@
 # A link with an invalid enum value loads a blank select and builds the default part
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: fix(28): send a link value its control cannot hold, so the 422 refuses it -- log L44
 Date: 2026-10-10
 Source: Phase 21, 21-04 -- the browser test's pin (step `root_shape=bogus as today`)
 Related files:

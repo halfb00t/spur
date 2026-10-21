@@ -6606,3 +6606,77 @@ Each deliberate break was run red once and reverted, or was the old code the fix
 | 27-05 | `tests/test_browser_pins.py::test_an_environ_read_is_allowed_by_its_statement_not_its_line` | the line rule: a `# SPUR_` comment on the line allowed the read | `assert 0 == 1` where `0 = len([])` for `_problems('a.py', 'import os\nos.environ["X"]  # SPUR_\n')`; `1 failed, 3 deselected in 0.02s`, log `27-05-red-environ-rule.log` | the fix replaced it: the allowance is a constant inside the read's own statement |
 | 27-05 | `tests/test_browser.py::test_the_oracle_reads_a_link_as_the_page_does`, `-0` | `_js_number` before its range check and its `-0` rule | `AssertionError: assert {'dep': 'Needs Gate above -0'} == {'dep': 'Needs Gate above 0'}`; `2 failed, 1 deselected in 0.15s` for the pair of rows, log `27-05-red-harness-info.log` | the fix replaced it: `_js_number` writes `-0` as `0` |
 | 27-05 | `tests/test_browser.py::test_a_fixture_link_refuses_a_value_no_person_would_type` | `fixture_hash` before it refused a non-scalar param | `Failed: DID NOT RAISE AssertionError`, log `27-05-red-harness-info.log` | the fix replaced it: `fixture_hash` refuses a bool or null param |
+
+## Refuse the bad link (Phase 28)
+
+What this section holds: v0.6's third phase makes a shared link carrying a value its form control cannot hold be sent and refused by the API's own 422, instead of being dropped and rebuilt as the default part (L44). Readings are appended per plan, never rewritten. Every whole log is under `.planning/phases/28-refuse-the-bad-link/investigation/`; later plans append.
+
+### The bad-link steps (28-01)
+
+Source: `28-01-green.log`, one run of `make test PYTEST_ARGS="tests/test_browser.py tests/test_browser_pins.py -s -n0 --no-cov -q"`, exit 0, `18 passed in 27.35s`; the browser test itself `26.70s call`. Host: `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`). The run measured `HEAD` `1ffad6b` plus the plan's uncommitted working-tree changes (D-07: the fix and its pins are one commit, made after this run). The 1-minute load read `4.26` (`sysctl -n vm.loadavg` printed `{ 4.26 4.14 3.93 }`) when this section was written, a few minutes after the run, not during it.
+
+| Step | Seconds |
+|---|---|
+| `bad link refused` | 1.06 |
+| `bad link cleared` | 1.83 |
+| `bad link on a fresh page` | 1.10 |
+| `blank, unknown and accepted tokens` | 0.20 |
+
+`bad link refused` includes the one 1 s settle (`DEBOUNCE_SETTLE_MS`) that proves no late STL request follows. What each bad link sent and what the page showed, copied from the printed lines of that log:
+
+| Link | Sent to `/api/info` | API | Marked | Text shown |
+|---|---|---|---|---|
+| `root_shape=bogus&teeth=22` | `teeth=22&root_shape=bogus` | 422 | Root shape | `Root shape: Input should be 'radial' or 'trochoid'` |
+| `recess_sides=bogus` | `recess_sides=bogus` | 422 | Recess sides | `Recess sides: Input should be 'both', 'top', 'bottom' or 'none'` |
+| `teeth=abc` | `teeth=abc` | 422 | Teeth | `Teeth: Input should be a valid integer, unable to parse string as an integer` |
+| `mate_teeth=abc` | `mate_teeth=abc` | 422 | nothing (D-05) | `Input should be a valid integer, unable to parse string as an integer` |
+| `root_shape=Trochoid` | `root_shape=Trochoid` | 422 | Root shape | `Root shape: Input should be 'radial' or 'trochoid'` |
+
+The fresh page opened on `root_shape=bogus&teeth=22` sent `teeth=22&root_shape=bogus`, was answered 422 with the same text, and sent no STL request.
+
+### Tokens a control cannot hold (28-01)
+
+Source: `28-01-tokens.log`. Chromium 153.0.8010.12 (the Playwright headless shell under `.venv/ms-playwright`) on a blank page holding one `<input type=number>` and one `<select>` with the options `radial` and `trochoid`; each token assigned through `.value` and read back. The API column is `TestClient(spur.app.app)` on `/api/info` with the token as `teeth` and as `face_width`.
+
+| Token | The number box reads | `teeth` | `face_width` |
+|---|---|---|---|
+| `abc` | `''` | 422 | 422 |
+| a single space | `''` | 422 | 422 |
+| `0x10` | `''` | 422 | 422 |
+| `NaN` | `''` | 422 | 422 |
+| `Infinity` | `''` | 422 | 422 |
+| `1e` | `''` | 422 | 422 |
+| `--5` | `''` | 422 | 422 |
+| `22,5` | `''` | 422 | 422 |
+| `1e400` | `''` | 422 | 422 |
+| ` 22` | `''` | 200 | 200 |
+| `22 ` | `''` | 200 | 200 |
+| `1_0` | `''` | 200 | 200 |
+| `22.` | `''` | 422 | 200 |
+| `5.` | `''` | 422 | 200 |
+| `+5` | `''` | 422 | 200 |
+| `.5` | `.5` | 422 | 422 |
+| `1e1` | `1e1` | 422 | 200 |
+| `-5` | `-5` | 422 | 422 |
+| `22.5` | `22.5` | 422 | 200 |
+
+The control blanks but the API accepts: ` 22`, `22 ` and `1_0` for both fields; `22.`, `5.` and `+5` for `face_width` only. The page now sends these as given and the part the server reads is built while the box shows blank (L44); no step uses one as a bad link, and `blank, unknown and accepted tokens` pins `face_width=5.` as built.
+
+| Token | The select reads | `selectedIndex` | `root_shape` |
+|---|---|---|---|
+| `bogus` | `''` | -1 | 422 |
+| `Trochoid` | `''` | -1 | 422 |
+| `trochoid ` (trailing space) | `''` | -1 | 422 |
+| the empty string | `''` | -1 | 422 |
+| `radial` | `radial` | 0 | 200 |
+
+The empty string reads back blank like the others but is never refused by the page: the read-back rule needs a non-empty token (D-02, D-06), so blank stays the default, and the API alone answers 422 for an empty value.
+
+### Seen red once (Phase 28)
+
+Each deliberate break was run red once and reverted, or was the old code the fix replaced. The first failure line is copied from the kept log named in the row (every log is under `.planning/phases/28-refuse-the-bad-link/investigation/`); later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 28-01 | `tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser`, step `root_shape=bogus as today` | the fix applied, the old pin untouched | `AssertionError: today's behaviour, filed as debt: docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md: /api/info was sent 'teeth=22&root_shape=bogus'`; `1 failed, 2 passed in 23.37s`, log `28-01-red-old-pin.log` | the pin was replaced in the same commit; its step name stays here as history |
+| 28-01 | the same test, step `bad link refused` | only `src/spur/static/app.js` reverted to `0efc87c` | `AssertionError: #root_shape=bogus&teeth=22: /api/info was sent 'teeth=22', the link's pairs are [('root_shape', 'bogus'), ('teeth', '22')]`; `1 failed, 2 passed in 23.05s`, log `28-01-red-new-pin.log` | yes, restored from a saved copy, `cmp` clean |

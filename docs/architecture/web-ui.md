@@ -31,7 +31,7 @@ parameter in the URL so a gear can be shared as a link.
 ## Shape
 
 `app.js`, roughly in this order: build the form from the schema; read the hash into the
-inputs, dim the fields whose relation does not hold and show the option each selector's fields
+inputs (a token an input cannot hold is kept aside and sent instead, L44), dim the fields whose relation does not hold and show the option each selector's fields
 single out (again on every input and on Reset, before the debounce); on change, debounce, cancel the in-flight request (`AbortController`), fetch
 `/api/info` and `/api/model.stl?quality=preview`, update the dimensions table, the
 warnings and the invalid-field marks, then load the STL into the scene. A `seq` counter
@@ -50,6 +50,8 @@ makes the bundle small.
 `derive()` render in the same strip in a different tone. An `invalid` field can also be
 `inactive` (the keyway pair under a hex bore): the two classes coexist, and the 422 mark is
 the stronger (L41).
+A link value its control cannot hold is kept aside and sent in the control's place, so the same
+path marks it; the mate box is not a form field, so it shows the message with no outline (L44).
 
 ## Known gap
 
@@ -77,8 +79,11 @@ bore-shape option with a Python derivation over `/api/schema`; the `bore shape` 
 option from every state and compares the sent query with a Python mirror of the write rule,
 follows the stash across Reset and links, and picks over a keyed bore, where the `422` stays
 the server's; and a recorder on every page asserts that no request or hash carries a key
-`GearParams` lacks (L42). `#root_shape=bogus` is pinned as today's
-behaviour and filed as debt. It runs inside `make verify` and CI's `test (3.12)`, which
+`GearParams` lacks (L42). A link value its control cannot hold (`#root_shape=bogus`,
+`#teeth=abc`) is kept in the fragment, sent, and refused through the 422 path with the server's
+text; no part is drawn for it, and an edit of that field, Reset or the next link clears it (L44).
+The steps `bad link refused`, `bad link cleared`, `bad link on a fresh page` and `blank, unknown
+and accepted tokens` prove it, each against the API's own 422 body. It runs inside `make verify` and CI's `test (3.12)`, which
 install the headless shell under `.venv` first; the commit-time `make verify.fast` never
 collects it.
 

@@ -2944,3 +2944,78 @@ Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand
 27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, pytest 9.1.1 (`importlib.metadata.version`);
 the readings on 2026-10-14 from 13:17Z to 13:24Z at 1-minute loads of 4.18 to 7.33 (A2, stopped, ran to 11.70); the waits
 before A1 read 1.60 to 8.77 (`sysctl -n vm.loadavg`).
+
+## L44 — A link value its control cannot hold is sent and refused by the API's 422, never rebuilt as the default part (amends L39's pin, supersedes L42's byte-identical observation; keeps L02, L03, L05 and L08)
+
+Date: 2026-10-21.
+
+L02, L03, L05 and L08 stay and are the argument: a parameter the user set must never silently change the part, an invalid one
+is a 422 and not a guess, and the server is the one that words a refusal. L39 and L42 stay as written. L44 amends L39's pin of
+`#root_shape=bogus` (the browser test's step `root_shape=bogus as today`, which pinned the blank select and the default part
+as today's behaviour and filed it as debt), and it supersedes L42's observation that the `gearQuery()` and `readHash()` text
+is byte-identical to what it was before the selectors: both now carry the `rejected` map. The `if (prop.enum)` branch of
+`buildForm()`, `problems()` and `fail()` are unchanged.
+
+**What is refused** (D-02). A non-blank token its control cannot hold, found by reading the control back after it was
+assigned the token: a non-empty token that reads back `''` is one the control could not hold. `bogus`, `Trochoid` (select
+options compare case-sensitively) and `abc` are refused. There is no enum or number check in `app.js`; the rule is one
+function, `refuse()`, applied over `fields` and the mate box and nothing else (a selector's select also sits at
+`selectedIndex` -1 when no option holds, is not a link field and is never swept in). A value the control holds, in range or
+not (`teeth=2`, which `invalid field marked` sends), reaches the API exactly as before.
+
+**The mechanism** (D-01, D-04). One `rejected` Map, filled by `readHash()` over `fields` and the mate box, is sent in the
+control's place by `gearQuery()` (one early branch inside its loop over `fields`, so the sent keys keep the schema's order)
+and by `update()` for the mate. The 422 marks the field through the unchanged `problems()`, and the unchanged `fail()` returns
+before the STL request, so no part is drawn for the link. The page never parses a rejected token: `teeth=abc` reaches pydantic
+and is refused as `int_parsing` text. The fragment keeps the token as given, so Copy link copies the link that was opened.
+The control that could not hold the token shows blank. The measured replies for the five links are in `bench/RESULTS.md`,
+`### The bad-link steps (28-01)`.
+
+**When it clears** (D-03). An edit of that field (a number box typed, a select picked, the mate box typed), Reset, or the next
+`readHash()`. An edit of a different field keeps sending the token and the 422. A selector pick that writes the rejected field
+keeps sending it too: the guard the research offered for that case was not adopted, and the token ends when that field is
+edited or the form is Reset.
+
+**Blank and unknown keys** (D-06). A blank value (`teeth=`, `root_shape=`, `mate_teeth=`) still means the default and an
+unknown key is still ignored, so `#teeth=&root_shape=&mate_teeth=&face_width=8` sends `face_width=8` and builds. This is the one
+place where the page is looser than the API: `/api/info` answers 422 for an empty value (`literal_error` for `root_shape`,
+`int_parsing` for `teeth` and `mate_teeth`), a stricter and separate boundary. It is recorded here with no code change and no
+debt item; the `blank, unknown and accepted tokens` step asserts both sides.
+
+**The mate box** (D-05). The mate box is not in `fields`, so `problems()` finds no field to outline: `#mate_teeth=abc` shows
+the server's bare message, `Input should be a valid integer, unable to parse string as an integer`, and marks nothing. This is
+the approved reading of success criterion 1 for a box outside `fields` ("mark the field" becomes "message, no outline" for it),
+a known gap and not a debt item.
+
+**The server decides.** Some tokens a number box blanks are accepted by the API, and they are now sent and built as the server
+reads them while the box shows blank. Before, the page dropped them and built the default part. The rows are in `bench/RESULTS.md`,
+`### Tokens a control cannot hold (28-01)`: ` 22`, `22 ` and `1_0` are blanked by the box and answered 200 for both `teeth` and
+`face_width`; `22.`, `5.` and `+5` are blanked and answered 200 for `face_width` only. The fragment carries the token, so the
+address bar names what was built from. No step uses such a token as a bad link, and `face_width=5.` is pinned as built.
+
+**The pins** (SC2). `tests/test_api.py` gains ten tokens in the shareable-link round trip (the map's declaration, its read-back
+rule, the clear at the top of `readHash()`, the read-back of every field and of the mate box, `gearQuery()`'s early branch,
+`update()`'s mate fallback, the two clearing listeners and Reset's clear) and loses none, and nothing is allow-listed; every
+earlier token holds byte for byte after whitespace collapse. The golden sweep step stays green and
+`git diff --exit-code v0.5 -- tests/regression/` is empty: every valid link sends what it sent before.
+
+**The proof** (D-08). Four browser steps replace the old pin: `bad link refused`, `bad link cleared`, `bad link on a fresh page`
+and `blank, unknown and accepted tokens`. The old step, run against the fix with the pin untouched, went red at its own first
+assertion: `/api/info was sent 'teeth=22&root_shape=bogus'`. The new step `bad link refused`, run with only `src/spur/static/app.js`
+reverted to `0efc87c`, went red at its first assertion: `/api/info was sent 'teeth=22', the link's pairs are [('root_shape',
+'bogus'), ('teeth', '22')]`. Both lines and their logs are under `### Seen red once (Phase 28)` in `bench/RESULTS.md`, in the
+order they ran.
+
+**Retired** (D-07). The amendment lives here and edits neither L39 nor L42; the fix, the pin flip, this entry, `web-ui.md` and
+`docs/tech_debt/resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md` are one commit. The `app.js:NNN`
+citations in `tests/test_browser.py` are function names now (26 IN-03), so this edit moves none of them.
+
+**Reversibility.** Costly: undoing it moves `app.js`, the `tests/test_api.py` tokens, the browser steps and `web-ui.md` together
+and needs a new Lxx superseding this one; no data and no fixture move.
+
+Reason: a link that says something else must not load as the default part (L03, L05), and the server stays the one that words a
+refusal (L02), so the page keeps what it cannot hold and sends it instead of validating anything itself.
+Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n machdep.cpu.brand_string`; `bench.machine_facts()` prints `18 CPUs, arm64,
+64.0 GiB RAM`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0,
+cadquery-ocp 7.9.3.1.1, pytest 9.1.1, playwright 1.63.0 (`importlib.metadata.version`); Chromium 153.0.8010.12 for the token
+table; the browser steps read on 2026-10-21 at a 1-minute load of 4.26 (`sysctl -n vm.loadavg`, read after the run).

@@ -250,6 +250,12 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # string back, otherwise the pick is pending), the stash, the pending pick's
     # `stopPropagation` and its note. `fields.set(` is counted once below: the select adds
     # no `fields` entry, so it is never sent and never in the hash.
+    #
+    # L44 added ten tokens and removed none: the `rejected` map's declaration, its read-back
+    # rule, the clear at the top of readHash(), the read-back of every field and of the mate
+    # box, gearQuery()'s early branch, update()'s mate fallback, the two clearing listeners and
+    # Reset's clear. A link value its control cannot hold is sent and refused by the server
+    # instead of being dropped; every earlier token is unchanged.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
@@ -285,6 +291,16 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "const stash = new Map();",
         "event.stopPropagation();",
         "reason.textContent = `${chosen.label} needs ${need(condition)}`;",
+        "const rejected = new Map();",
+        "if (token && input.value === '') rejected.set(name, token);",
+        "const h = new URLSearchParams(location.hash.slice(1)); rejected.clear();",
+        "for (const [name, { input }] of fields) refuse(name, input, h.get(name));",
+        "refuse('mate_teeth', mateInput, h.get('mate_teeth'));",
+        "if (rejected.has(name)) { q.set(name, rejected.get(name)); continue; }",
+        "const mate = mateInput.value || rejected.get('mate_teeth') || '';",
+        "form.addEventListener('input', (e) => rejected.delete(e.target.name));",
+        "mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));",
+        "rejected.clear(); mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",  # noqa: E501
     ):
         assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 

@@ -2,13 +2,15 @@
 
 `TestClient` tests prove the API answers; none of them runs `app.js`. This module opens the
 page the product ships, in Chrome Headless Shell, against a real `uvicorn`, and checks what
-only a browser can: that WebGL2 exists (without it the page builds no form at all,
-app.js:229), that the first part is actually drawn, that the scene holds as many triangles
-as the STL it was fed, that the download link appears only after the model was shown, and that
-a click on `#dl-stl` saves the file under the name the server gives the part, that a field
-the model says is inert is dimmed with its reason and is still typed into and sent (L41), and
-that a bore shape is picked from a select the schema describes, derived from the fields on
-load and written back as flat fields (L42).
+only a browser can: that WebGL2 exists (without it the page builds no form at all: app.js
+creates its WebGLRenderer at load, before the form), that the first part is actually drawn,
+that the scene holds as many triangles as the STL it was fed, that the download link appears
+only after the model was shown, and that a click on `#dl-stl` saves the file under the name
+the server gives the part, that a field the model says is inert is dimmed with its reason and
+is still typed into and sent (L41), that a bore shape is picked from a select the schema
+describes, derived from the fields on load and written back as flat fields (L42), and that a
+link value its control cannot hold is sent and refused through the 422 path with the server's
+text, and no part is drawn for it (L44).
 
 It runs inside `make verify`'s `test` -- so also the pre-push hook, `make worktree.land` and
 CI's `test (3.12)` -- and is excluded by name from `make verify.fast` and `make test-image`
@@ -32,7 +34,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 import pytest
 from browser_session import (
@@ -68,10 +70,10 @@ from browser_session import (
 )
 from playwright.sync_api import Page, Route, expect, sync_playwright
 
-# app.js's scheduleUpdate() sends its request 350 ms after the event (`setTimeout(update, 350)`,
-# app.js:289), so a request count taken sooner can pass before a stray request is sent (24
-# CX-05). The settle is that debounce plus margin for a runner about twice as slow as the dev
-# host. The CX-05 control (26-03) read the stray /api/info request 354 ms after its event here.
+# app.js's scheduleUpdate() sends its request 350 ms after the event (`setTimeout(update, 350)`),
+# so a request count taken sooner can pass before a stray request is sent (24 CX-05). The settle
+# is that debounce plus margin for a runner about twice as slow as the dev host. The CX-05
+# control (26-03) read the stray /api/info request 354 ms after its event here.
 DEBOUNCE_SETTLE_MS = 1_000
 
 # The four custom properties app.js reads for the scene (applyTheme, placeGrid): a rename in
@@ -101,13 +103,23 @@ LINK_B = "mate_teeth=45&recess_sides=bottom&pressure_angle=20&face_width=6&teeth
 # C sets `teeth` to its schema default (read at test time) beside a non-default `face_width`.
 LINK_C_OTHER = "face_width=8"
 
-# Named in every assertion of `root_shape=bogus as today`: the pin is today's behaviour and
-# not an endorsement, and the file says why it is debt and when to revisit it.
-BOGUS_LINK = "root_shape=bogus&teeth=22"
-TODAY = (
-    "today's behaviour, filed as debt: "
-    "docs/tech_debt/active/2026-10-10-root-shape-bogus-loads-a-blank-select.md"
+# Links the page must refuse (L44). Each token is one its control cannot hold AND the API
+# refuses, so the page sends it as given. A number box also blanks ` 22`, `1_0`, `22.`, `5.`
+# and `+5`, which the API accepts for some fields, so none of those may stand for a bad link
+# (28-RESEARCH); select options compare case-sensitively, so `Trochoid` is as bad as `bogus`.
+# The second member is the field the 422 names, or the mate box, which is not a schema field.
+BAD_LINKS = (
+    ("root_shape=bogus&teeth=22", "root_shape"),
+    ("recess_sides=bogus", "recess_sides"),
+    ("teeth=abc", "teeth"),
+    ("mate_teeth=abc", "mate_teeth"),
+    ("root_shape=Trochoid", "root_shape"),
 )
+# Blank is the default on the page (D-06), though the API answers 422 for an empty value.
+BLANK_LINK = "teeth=&root_shape=&mate_teeth=&face_width=8"
+UNKNOWN_KEY_LINK = "not_a_field=1&face_width=9"
+# The box blanks `5.`, the API reads it as 5: it is sent and built as the server reads it.
+ACCEPTED_LINK = "face_width=5."
 
 # The refused pair under a hex bore: a 422 naming the gate and both fields (23-RESEARCH,
 # reproduced), where `.invalid` and `.inactive` must coexist on the keyway fields (PD-07).
@@ -115,6 +127,9 @@ REFUSED_LINK = "bore_hex=6&keyway_width=3&keyway_depth=1.4"
 
 MATE_VALUE = "() => document.querySelector('#mate-teeth').value"
 FRAGMENT = "() => location.hash.slice(1)"
+CONTROL_VALUE = "(n) => document.querySelector(`form#params [name=${n}]`).value"
+CONTROL_INDEX = "(n) => document.querySelector(`form#params select[name=${n}]`).selectedIndex"
+CONTROL_OPTIONS = "(n) => document.querySelector(`form#params select[name=${n}]`).options.length"
 
 
 @pytest.fixture(scope="module")
@@ -227,6 +242,15 @@ def _follow_link(page: Page, fragment: str) -> str:
 def _pairs(query: str) -> list[tuple[str, str]]:
     """A query string as its (name, value) pairs, sorted: order is not what a link means."""
     return sorted(urllib.parse.parse_qsl(query, keep_blank_values=True))
+
+
+def _stl_requests(seen: list[str]) -> int:
+    """How many /api/model.stl requests the recorded pages sent.
+
+    The main page fulfils every STL request with the first build's bytes, so `data-triangles`
+    cannot tell a default part from another there; the request count is the evidence.
+    """
+    return sum(1 for url in seen if urllib.parse.urlsplit(url).path == "/api/model.stl")
 
 
 def _differing(
@@ -687,7 +711,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 renderer = eval_opt_str(page, WEBGL2_PROBE)
                 assert renderer is not None, (
                     "this browser gives no WebGL2 context: the viewer builds no form without "
-                    "WebGL (app.js:229)"
+                    "WebGL (app.js creates its renderer before it builds the form)"
                 )
                 print(f"webgl2 renderer: {renderer}")
 
@@ -1600,7 +1624,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     twins_page.route("**/api/schema", lambda route: route.fulfill(json=doubled))
                     twins_page.route(STL_ROUTE, lambda route: route.abort())
                     # The link's own build sends /api/info and, after that response,
-                    # /api/model.stl (app.js:262-272). The baseline once waited only for the
+                    # /api/model.stl (app.js update()). The baseline once waited only for the
                     # info request, so on a slow runner the STL request landed inside the
                     # counted window (main runs 38347283201 and 38680454993, one request
                     # each). Measured on the real app (26-03 arms): a parked STL route left
@@ -1611,8 +1635,9 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                         lambda request: "/api/model.stl" in request.url, timeout=BUILD_WAIT_MS
                     ):
                         twins_page.goto(server + "/#" + link)
-                    # No timer is pending at load (app.js:643-644); the settle keeps the
-                    # baseline true for any scheduleUpdate() a future load path queues.
+                    # No timer is pending at load (app.js's bootstrap runs readHash() and update());
+                    # the settle keeps the baseline true for any scheduleUpdate() a future
+                    # load path queues.
                     twins_page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                     assert eval_shown(twins_page) == (shown_at_link, shown_at_link), (
                         f"twin selectors: #{link} shows {eval_shown(twins_page)}"
@@ -1799,62 +1824,223 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"the download is named {name!r}, not the name the server gives this part"
                 )
 
-            with step("root_shape=bogus as today", no_foreign_key):
-                # Pinned as the page behaves, not fixed (REQUIREMENTS, Form follow-ups): the
-                # select takes a value it has no option for, so it reads '' with selectedIndex
-                # -1, gearQuery() drops it, and the page builds the default part with no word
-                # about the field. The API alone refuses the same link with a 422.
-                assert eval_str(page, FRAGMENT) != BOGUS_LINK, f"{TODAY}: already on the link"
-                # The info query is asserted inside the STL wait: a page that sent the blank
-                # field would be refused with a 422 and never ask for the STL at all.
+            with step("bad link refused", no_foreign_key):
+                # A token its control cannot hold is sent as given and refused by the API's own
+                # 422 through the path every other refusal takes (app.js readHash(), gearQuery()
+                # and update(); L44). The expectation is the 422 body for the query the page
+                # sent, never a literal. The page has no part to show for the link, so no STL
+                # request follows (D-04); the main page fulfils every STL request with the first
+                # build's bytes, so the request count is the evidence, not data-triangles.
+                stl_before = _stl_requests(seen)
+                for link, field in BAD_LINKS:
+                    sent = _follow_link(page, link)
+                    assert _pairs(sent) == _pairs(link), (
+                        f"#{link}: /api/info was sent {sent!r}, the link's pairs are {_pairs(link)}"
+                    )
+                    # gearQuery() walks the schema in order and update() adds the mate last;
+                    # _pairs sorts, so it cannot show the order.
+                    keys = [k for k, _ in urllib.parse.parse_qsl(link, keep_blank_values=True)]
+                    want_keys = [k for k in properties if k in keys]
+                    if "mate_teeth" in keys:
+                        want_keys.append("mate_teeth")
+                    sent_keys = [
+                        k for k, _ in urllib.parse.parse_qsl(sent, keep_blank_values=True)
+                    ]
+                    assert sent_keys == want_keys, (
+                        f"#{link}: the keys were sent in the order {sent_keys}, not {want_keys}"
+                    )
+                    status, body = _api_get(server, "/api/info", sent)
+                    assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                    marked, texts = _expected_422(properties, body)
+                    named = {_title(properties, field)} if field in properties else set()
+                    assert marked == named, (
+                        f"#{link}: the 422 names {sorted(marked)}, not the field {field}"
+                    )
+                    expect(page.locator("#messages .error")).to_have_text(texts)
+                    invalid = set(page.locator("label.field.invalid .name").all_text_contents())
+                    assert invalid == marked, (
+                        f"#{link}: marked {sorted(invalid)}, the 422 names {sorted(marked)}"
+                    )
+                    if field not in properties:
+                        # D-05: the mate box is not in `fields`, so the server's bare message
+                        # is shown with no outline anywhere.
+                        assert page.locator("label.field.invalid").count() == 0, (
+                            f"#{link}: a field is outlined for the mate box's refusal"
+                        )
+                    assert _pairs(eval_str(page, FRAGMENT)) == _pairs(link), (
+                        f"#{link}: the fragment is #{eval_str(page, FRAGMENT)}, not the link"
+                    )
+                    # D-01: the control that could not hold the token reads blank.
+                    if field in properties:
+                        held = eval_str(page, CONTROL_VALUE, field)
+                        enum = properties[field].get("enum")
+                        if isinstance(enum, list):
+                            index = eval_int(page, CONTROL_INDEX, field)
+                            count = eval_int(page, CONTROL_OPTIONS, field)
+                            assert (held, index, count) == ("", -1, len(enum)), (
+                                f"#{link}: the {field} select reads {held!r} at index {index} "
+                                f"with {count} options, not blank at -1 with {len(enum)}"
+                            )
+                        else:
+                            assert held == "", f"#{link}: the {field} box reads {held!r}"
+                    else:
+                        held = eval_str(page, MATE_VALUE)
+                        assert held == "", f"#{link}: the mate box reads {held!r}"
+                    assert page.locator("#dl-stl").get_attribute("href") is None, (
+                        f"#{link}: the STL link has an href for a refused link"
+                    )
+                    assert _stl_requests(seen) == stl_before, (
+                        f"#{link}: the page asked for an STL after the refusal"
+                    )
+                    print(
+                        f"bad link #{link}: sent {sent!r}, API {status}, marked "
+                        f"{sorted(marked)}, text {texts}"
+                    )
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _stl_requests(seen) == stl_before, "a late STL request followed a refusal"
+                kept = canvas.get_attribute("data-triangles")
+                assert kept == declared, f"a refusal changed data-triangles: {declared} to {kept}"
+
+            with step("bad link cleared", no_foreign_key):
+                # D-03: the token is kept while anything else is edited, and ends with an edit
+                # of its own field, a pick on its select, the mate box typed, Reset or a new link.
+                sent = _follow_link(page, "teeth=abc")
                 with page.expect_request(
-                    lambda request: "/api/model.stl" in request.url, timeout=BUILD_WAIT_MS
-                ) as stl_request:
+                    lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                ) as kept_request:
+                    page.fill("form#params [name=module]", "3")
+                sent = urllib.parse.urlsplit(kept_request.value.url).query
+                assert _pairs(sent) == [("module", "3"), ("teeth", "abc")], (
+                    f"editing module dropped the teeth token: /api/info was sent {sent!r}"
+                )
+                status, body = _api_get(server, "/api/info", sent)
+                assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                marked, texts = _expected_422(properties, body)
+                expect(page.locator("#messages .error")).to_have_text(texts)
+                expect(page.locator("label.field.invalid .name")).to_have_text(sorted(marked))
+                assert marked == {_title(properties, "teeth")}, f"the 422 names {sorted(marked)}"
+
+                def recovered(trigger: Callable[[], object], want: str, href: str | None) -> str:
+                    """Run `trigger`, and return the /api/info query the page sent for it; the
+                    build then ends green: `want` is that query, `href` the STL link."""
                     with page.expect_request(
                         lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
                     ) as info_request:
-                        page.evaluate("(f) => { location.hash = f; }", BOGUS_LINK)
-                    info_query = urllib.parse.urlsplit(info_request.value.url).query
-                    assert info_query == "teeth=22", f"{TODAY}: /api/info was sent {info_query!r}"
-                stl_query = urllib.parse.urlsplit(stl_request.value.url).query
-                assert stl_query == "teeth=22&quality=preview", (
-                    f"{TODAY}: the STL was requested with {stl_query!r}"
+                        trigger()
+                    got = urllib.parse.urlsplit(info_request.value.url).query
+                    assert _pairs(got) == _pairs(want), f"/api/info was sent {got!r}, not {want!r}"
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", href if href is not None else f"api/model.stl?{got}",
+                        timeout=BUILD_WAIT_MS,
+                    )
+                    assert page.locator("label.field.invalid").count() == 0, (
+                        f"{want!r}: a field is still marked invalid"
+                    )
+                    assert page.locator("#messages .error").count() == 0, (
+                        f"{want!r}: an error is still shown"
+                    )
+                    return got
+
+                recovered(
+                    lambda: page.fill("form#params [name=teeth]", "21"),
+                    "module=3&teeth=21", None,
                 )
 
-                select = "() => document.querySelector('select[name=root_shape]')"
-                select_value = eval_str(page, f"() => ({select})().value")
-                select_index = eval_int(page, f"() => ({select})().selectedIndex")
-                assert (select_value, select_index) == ("", -1), (
-                    f"{TODAY}: the root_shape select reads {select_value!r} at index {select_index}"
+                _follow_link(page, "recess_sides=bogus")
+                recovered(
+                    lambda: page.select_option("form#params select[name=recess_sides]", "top"),
+                    "recess_sides=top", None,
                 )
+
+                _follow_link(page, "root_shape=bogus&teeth=22")
+                recovered(lambda: page.locator("#reset").click(), "", "api/model.stl")
+                assert eval_str(page, FRAGMENT) == "", "Reset left a fragment"
+                assert eval_pairs(page) == default_pairs, "Reset did not restore the defaults"
+
+                _follow_link(page, "mate_teeth=abc")
+                recovered(
+                    lambda: page.fill("#mate-teeth", "30"), "mate_teeth=30", "api/model.stl"
+                )
+                assert eval_str(page, FRAGMENT) == "mate_teeth=30"
+
+                # A valid link leaves nothing marked.
+                sent = _follow_link(page, "teeth=23")
                 expect(page.locator("#dl-stl")).to_have_attribute(
-                    "href", "api/model.stl?teeth=22", timeout=BUILD_WAIT_MS
+                    "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
                 )
-                fragment = eval_str(page, "() => location.hash")
-                assert fragment == "#teeth=22", f"{TODAY}: the fragment is {fragment!r}"
-                assert page.locator("#messages .error").count() == 0, (
-                    f"{TODAY}: an error is shown for the dropped field"
-                )
-                status, body = _api_get(server, "/api/info", "teeth=22")
-                assert status == 200, f"{TODAY}: /api/info?teeth=22 answered {status}"
-                assert isinstance(body, dict), f"{TODAY}: /api/info?teeth=22 is not an object"
-                warned = page.locator("#messages .warning").all_text_contents()
-                assert warned == body["warnings"], (
-                    f"{TODAY}: the page warns {warned}, the API for teeth=22 says "
-                    f"{body['warnings']}"
-                )
+                assert page.locator("label.field.invalid").count() == 0
+                assert page.locator("#messages .error").count() == 0
+                print("bad link cleared: edit, pick, mate, Reset and a new link all recover")
 
-                status, refusal = _api_get(server, "/api/info", BOGUS_LINK)
-                assert status == 422, f"{TODAY}: the API answered {status} for #{BOGUS_LINK}"
-                assert isinstance(refusal, dict), f"{TODAY}: the 422 body is not an object"
-                messages = [str(item["msg"]) for item in refusal["detail"]]
-                assert any("'radial' or 'trochoid'" in msg for msg in messages), (
-                    f"{TODAY}: the 422 does not name the enum's options: {messages}"
+            with step("bad link on a fresh page", no_foreign_key):
+                # The strong form of "draws no default part": no STL route here, so a request
+                # would build for real, and a page that never drew has no data-triangles. The
+                # fragment rides the goto URL, as in `download name`.
+                stl_before = _stl_requests(seen)
+                fresh = record_api(browser.new_page(), seen)
+                try:
+                    with fresh.expect_request(
+                        lambda request: "/api/info" in request.url, timeout=BUILD_WAIT_MS
+                    ) as info_request:
+                        fresh.goto(server + "/#root_shape=bogus&teeth=22")
+                    sent = urllib.parse.urlsplit(info_request.value.url).query
+                    assert _pairs(sent) == _pairs("root_shape=bogus&teeth=22"), (
+                        f"the fresh page sent {sent!r}"
+                    )
+                    status, body = _api_get(server, "/api/info", sent)
+                    assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                    marked, texts = _expected_422(properties, body)
+                    expect(fresh.locator("#messages .error")).to_have_text(
+                        texts, timeout=BUILD_WAIT_MS
+                    )
+                    assert marked == {_title(properties, "root_shape")}, sorted(marked)
+                    expect(fresh.locator("label.field.invalid .name")).to_have_text(sorted(marked))
+                    fresh.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    assert _stl_requests(seen) == stl_before, "the fresh page asked for an STL"
+                    assert fresh.locator("#canvas").get_attribute("data-triangles") is None, (
+                        "the fresh page drew a part for a refused link"
+                    )
+                    assert fresh.locator("#dl-stl").get_attribute("href") is None
+                    assert _pairs(eval_str(fresh, FRAGMENT)) == _pairs("root_shape=bogus&teeth=22")
+                finally:
+                    fresh.close()
+                print(f"bad link on a fresh page: sent {sent!r}, API {status}, text {texts}")
+
+            with step("blank, unknown and accepted tokens", no_foreign_key):
+                # D-06: blank is the default and unknown keys are ignored, as before; the API
+                # alone is stricter about an empty value. A token the box blanks but the API
+                # accepts (`5.`) is sent and built as the server reads it (L44).
+                sent = _follow_link(page, BLANK_LINK)
+                assert _pairs(sent) == [("face_width", "8")], f"the blank link sent {sent!r}"
+                status, _ = _api_get(server, "/api/info", sent)
+                assert status == 200, f"/api/info?{sent} answered {status}, not 200"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
                 )
-                print(
-                    f"bogus: select {select_value!r} at {select_index}, sent {info_query!r}, "
-                    f"API {status}"
+                assert page.locator("label.field.invalid").count() == 0
+                assert page.locator("#messages .error").count() == 0
+                assert eval_str(page, FRAGMENT) == sent
+                status, _ = _api_get(server, "/api/info", BLANK_LINK)
+                assert status == 422, f"the API answered {status} for the raw blank link"
+
+                sent = _follow_link(page, UNKNOWN_KEY_LINK)
+                assert _pairs(sent) == [("face_width", "9")], f"the unknown key link sent {sent!r}"
+                status, _ = _api_get(server, "/api/info", sent)
+                assert status == 200, f"/api/info?{sent} answered {status}, not 200"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
                 )
+                assert eval_str(page, FRAGMENT) == sent
+
+                sent = _follow_link(page, ACCEPTED_LINK)
+                assert _pairs(sent) == [("face_width", "5.")], f"the accepted link sent {sent!r}"
+                status, _ = _api_get(server, "/api/info", sent)
+                assert status == 200, f"/api/info?{sent} answered {status}, not 200"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                )
+                assert page.locator("#messages .error").count() == 0
+                print("blank, unknown and accepted: face_width=8, face_width=9, face_width=5.")
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH
             # Finding 9): the count is what shows every page was watched.

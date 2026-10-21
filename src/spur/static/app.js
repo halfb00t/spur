@@ -9,6 +9,10 @@ const form = $('#params');
 const mateInput = $('#mate-teeth');
 const fields = new Map(); // name -> { input, wrap, title, rels, reason }
 const defaults = {};
+// Field name (or the mate box) -> the raw link token its control could not hold. It is sent
+// in place of the control's value so the server's 422 marks it (L44). A Map and not rows: a
+// line-leading row is harvested as a DIMS key by test_api.py.
+const rejected = new Map();
 
 const DIMS = [
   ['pitch_d', 'Pitch Ø'],
@@ -102,18 +106,33 @@ async function buildForm() {
   buildSelectors(schema.selectors ?? [], groups);
 }
 
+// Called after the control was assigned the token. A non-empty token that reads back empty is
+// one the control cannot hold (a select with no such option reads selectedIndex -1, a number
+// box sanitises it). No enum or number check of its own: the server decides (L02).
+function refuse(name, input, token) {
+  if (token && input.value === '') rejected.set(name, token);
+}
+
 function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
+  rejected.clear();
   for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];
+  for (const [name, { input }] of fields) refuse(name, input, h.get(name));
+  // Assigned twice on purpose: the pinned tail below runs straight into applyRelations(), so
+  // a read-back after it would sit outside readHash().
+  mateInput.value = h.get('mate_teeth') ?? '';
+  refuse('mate_teeth', mateInput, h.get('mate_teeth'));
   mateInput.value = h.get('mate_teeth') ?? '';
   applyRelations();
   deriveSelectors();
 }
 
-/** Query string with only the parameters that differ from the defaults. */
+/** Query string with only the parameters that differ from the defaults, plus every link
+ *  token its control could not hold, sent as given (L44). */
 function gearQuery() {
   const q = new URLSearchParams();
   for (const [name, { input }] of fields) {
+    if (rejected.has(name)) { q.set(name, rejected.get(name)); continue; }
     if (input.value !== '' && String(input.value) !== String(defaults[name])) q.set(name, input.value);
   }
   return q;
@@ -241,7 +260,7 @@ let inflight = null;
 
 async function update() {
   const q = gearQuery();
-  const mate = mateInput.value;
+  const mate = mateInput.value || rejected.get('mate_teeth') || '';
   const infoQ = new URLSearchParams(q);
   if (mate) infoQ.set('mate_teeth', mate);
   const hash = infoQ.toString();
@@ -605,8 +624,10 @@ function resize() {
 
 form.addEventListener('submit', (e) => e.preventDefault());
 form.addEventListener('input', completePending, true);
+form.addEventListener('input', (e) => rejected.delete(e.target.name));
 form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });
 mateInput.addEventListener('input', scheduleUpdate);
+mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));
 window.addEventListener('hashchange', () => { readHash(); update(); });
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 new ResizeObserver(resize).observe(canvas.parentElement);
@@ -614,6 +635,7 @@ new ResizeObserver(resize).observe(canvas.parentElement);
 $('#fit').addEventListener('click', fit);
 $('#reset').addEventListener('click', () => {
   for (const [name, { input }] of fields) input.value = defaults[name];
+  rejected.clear();
   mateInput.value = '';
   stash.clear();
   applyRelations();
