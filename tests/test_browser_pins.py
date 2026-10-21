@@ -178,7 +178,7 @@ def test_an_environ_read_is_allowed_by_its_statement_not_its_line() -> None:
         ),
     ],
 )
-def test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read(source: str) -> None:
+def test_a_marker_outside_the_reads_own_expression_does_not_allow_it(source: str) -> None:
     """27-REVIEW WR-01, IN-07, IN-08: the allowance looks at the read's own expression, never at
     the body of the `if`, `def` or `except` whose header holds the read, nor at a sibling default,
     nor at a lambda's parameter list when the read is in its body."""
@@ -199,8 +199,9 @@ def test_an_import_of_environ_is_reported_not_a_crash(source: str) -> None:
     assert len(_problems("e.py", source)) == 1
 
 
-def test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed() -> None:
-    """The legitimate shape: the marker is inside the read's own expression, in a header."""
+def test_an_environ_read_that_holds_its_own_marker_is_allowed() -> None:
+    """The legitimate shape: the marker is inside the read's own expression, whether that sits
+    in a header, a default or a lambda body."""
     scrub = 'import os\nif any(k.startswith("SPUR_") for k in os.environ):\n    pass\n'
     assert _problems("d.py", scrub) == []
     own_default = 'import os\ndef f(a=os.environ.get("PLAYWRIGHT_BROWSERS_PATH")):\n    pass\n'
