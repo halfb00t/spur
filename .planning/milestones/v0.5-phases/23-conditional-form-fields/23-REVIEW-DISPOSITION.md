@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: IN-08
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The driver check cannot tell `hex_cell eq 0.05` from `hex_cell gt 0`; only the forward check's incidental `ValidationError` catches it"
   - id: IN-11
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`_js_number` returns a string JavaScript would not write for -0.0 and outside 1e-6 <= |x| < 1e21, and nothing guards the range"
   - id: IN-01
     severity: info
@@ -59,17 +59,17 @@ findings:
     severity: warning
     disposition: fixed
     title: "The calc parity proof cannot tell a right driver from a wrong one for the seven cutout dependents (external: codex)"
-open: 2
+open: 0
 total: 14
-recorded: 2026-10-12T03:11:19.882Z
+recorded: 2026-10-21T00:00:00Z  # triage by hand; the gate's own stamp was 2026-10-12T03:11:19.882Z
 ---
 
 # Phase 23: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-08 | info | open | - |
-| IN-11 | info | open | - |
+| IN-08 | info | fixed | c30ebd0 test(27): walk the OpenAPI document for selectors, share the bore-off block, probe the honeycomb gate twice (`honeycomb (4)` joins `CUTOUT_STATES` and the meta-test probes the gate twice; Phase 27 branch, squashed into 1434a47) |
+| IN-11 | info | fixed | 4d43b64 test(27): check _js_number's range and -0, refuse a non-scalar fixture param, re-wrap a docstring (`_js_number` asserts the range JavaScript writes positionally and writes `-0` as `0`; Phase 27 branch, squashed into 1434a47) |
 | IN-01 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
 | IN-02 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |
 | IN-03 | info | fixed | 23-REVIEW-FIX.md (not in the current review) |

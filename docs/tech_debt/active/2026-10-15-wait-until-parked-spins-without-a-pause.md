@@ -19,7 +19,7 @@ the helper's bound and its signal (the request itself, not elapsed time) are rig
 
 ## Next step
 A short `page.wait_for_timeout(...)` per turn (a Playwright call, so route handlers still run). Revisit when
-`_wait_until_parked` is next touched, or at Phase 28's info-finding triage.
+`_wait_until_parked` is next touched (21 IN-04b is recorded `deferred` here, Phase 28).
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

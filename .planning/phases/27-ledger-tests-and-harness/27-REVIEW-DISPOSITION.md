@@ -5,11 +5,11 @@ titles: json
 findings:
   - id: IN-11
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The \"per statement\" comment misdescribes the unit the climb stops at"
   - id: IN-12
     severity: info
-    disposition: open
+    disposition: skipped
     title: "The over-allowance the comment documents has no test pin"
   - id: IN-09
     severity: info
@@ -67,17 +67,17 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 2
+open: 0
 total: 16
-recorded: 2026-10-21T07:04:04.594Z
+recorded: 2026-10-21T00:00:00Z  # triage by hand; the gate's own stamp was 2026-10-21T07:04:04.594Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-11 | info | open | - |
-| IN-12 | info | open | - |
+| IN-11 | info | fixed | 87d98ab docs(28): say the environ allowance is per top-level expression, not per statement (27 IN-11) (gsd/phase-28-refuse-the-bad-link) |
+| IN-12 | info | skipped | a safe-side limit, false positives only; a pin would freeze the looseness the comment documents |
 | IN-09 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | IN-10 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | IN-04 | info | skipped | 27-REVIEW-FIX.md (not in the current review) |
