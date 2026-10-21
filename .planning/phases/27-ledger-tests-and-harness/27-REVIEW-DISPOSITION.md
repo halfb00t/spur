@@ -3,6 +3,14 @@ phase: 27
 review: 27-REVIEW.md
 titles: json
 findings:
+  - id: IN-11
+    severity: info
+    disposition: open
+    title: "The \"per statement\" comment misdescribes the unit the climb stops at"
+  - id: IN-12
+    severity: info
+    disposition: open
+    title: "The over-allowance the comment documents has no test pin"
   - id: IN-09
     severity: info
     disposition: fixed
@@ -59,17 +67,19 @@ findings:
     severity: warning
     disposition: fixed
     title: "`stop_group` still lets a failure in the reader skip SIGKILL and the reap"
-open: 0
-total: 14
-recorded: 2026-10-21T07:01:28.171Z
+open: 2
+total: 16
+recorded: 2026-10-21T07:04:04.594Z
 ---
 
 # Phase 27: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-09 | info | fixed | 27-REVIEW-FIX.md |
-| IN-10 | info | fixed | 27-REVIEW-FIX.md |
+| IN-11 | info | open | - |
+| IN-12 | info | open | - |
+| IN-09 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
+| IN-10 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | IN-04 | info | skipped | 27-REVIEW-FIX.md (not in the current review) |
 | IN-08 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
 | IN-01 | info | fixed | 27-REVIEW-FIX.md (not in the current review) |
