@@ -27,7 +27,7 @@ covered_files:
   - tests/test_process_group.py
   - tests/test_selector.py
   - tests/test_trochoid.py
-covered_digest: "v3:sha256:2b8d7d1f873f56450eda45629cc92eef830644bf64e987dc4e53369f23a77723"
+covered_digest: "v3:sha256:333a6e4f0e53384856ee1e2128c7d03867c29cfe925c14563576e60aa01d3275"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
@@ -38,14 +38,14 @@ re_verification:
   regressions: []
 gaps: []
 advisory:
-  - finding: "IN-09 (27-REVIEW, commit 39cf27d): `test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read` and `test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed` keep names that no longer state what their tables pin (lambda and sibling-default rows were added)"
+  - finding: "IN-11 (27-REVIEW): the new comment in `tests/test_browser_pins.py:126-128` says the environ allowance is 'per statement', but the climb stops at the expression directly under a statement or clause node, so it is narrower than a statement in more places than the comment names (assignment target vs value, another with-item, another decorator, a return annotation, match subject vs case)"
     category: other
-    reason: "Test naming drift in the browser-pin hygiene test; no success criterion depends on the names. Disposition: open."
-    evidence_status: "read in 27-REVIEW.md; confirmed the table rows and names in tests/test_browser_pins.py"
-  - finding: "IN-10 (27-REVIEW): the environ pin's allowance is per statement with `arguments` and `lambda` as the only narrower units; sibling call arguments, conditional branches and comprehensions are not isolated, and the docstring reads stronger than the implementation"
+    reason: "Comment wording only. The error is on the safe side (false positives, never a missed read). No success criterion depends on the wording. Disposition: open."
+    evidence_status: "read in 27-REVIEW.md with its probe list; the climb condition at test_browser_pins.py:128-129 read directly"
+  - finding: "IN-12 (27-REVIEW): the over-allowance the comment documents (another call argument, the other branch of a conditional, a comprehension's iterable) has no test pin"
     category: other
-    reason: "Documentation gap in a tripwire test; no file in the real scan set has the shape; the REQ-launch-message-true pin on the real scan set returns no problems. Disposition: open."
-    evidence_status: "read in 27-REVIEW.md with its probe table"
+    reason: "A known, documented limit of a tripwire test. The REQ-launch-message-true pin on the real scan set returns no problems. Disposition: open."
+    evidence_status: "read in 27-REVIEW.md; confirmed no test row for those shapes in tests/test_browser_pins.py"
 ---
 
 # Phase 27: Ledger Tests and Harness Verification Report
@@ -53,7 +53,7 @@ advisory:
 **Phase Goal:** The tests that guard the ledger cannot pass vacuously and the browser harness cannot lie: `slug()` totality is guarded in the commit slice, the failed-build name test no longer depends on cache order, `stop_group` signals the group before it inspects it, and the records and messages that describe the harness say what was observed.
 **Verified:** 2026-10-21T00:00:00Z
 **Status:** passed (no gaps, no open warning)
-**Re-verification:** Yes. The prior report (c053794, status passed) went stale because the code-review fixes IN-01 to IN-08 changed test files. `git diff --stat c053794..HEAD -- tests src bench docs/architecture` lists exactly: `tests/test_bench.py` (IN-05), `tests/test_browser_pins.py` (IN-07, IN-08), `tests/test_process_group.py` (IN-01, IN-02), `tests/test_selector.py` (IN-03). `src/`, `bench/`, `docs/architecture/` and every other `tests/` file are unchanged since the prior pass.
+**Re-verification:** Yes. The prior report (299d527, status passed) went stale because commits 75b93f6 and 8e65fbc changed `tests/test_browser_pins.py`. `git diff --stat 299d527..HEAD -- . ':!.planning'` lists exactly that one file, 7 insertions and 3 deletions. `src/`, `bench/`, `docs/architecture/` and every other `tests/` file are unchanged since the prior pass.
 
 ## Goal Achievement
 
@@ -61,10 +61,10 @@ advisory:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | `slug()` totality guarded in the commit slice (seeded, stratified, reachable buckets non-empty, two unreachable reasons forced) | VERIFIED (regression check) | `tests/test_trochoid.py` is unchanged since the prior pass. Re-ran `pytest tests/test_trochoid.py -k slug`: 3 passed in 0.12 s. |
+| 1 | `slug()` totality guarded in the commit slice (seeded, stratified, reachable buckets non-empty, two unreachable reasons forced) | VERIFIED (regression check) | `tests/test_trochoid.py` unchanged since the prior pass. Re-ran `pytest tests/test_trochoid.py -k slug`: 3 passed. |
 | 2 | Failed-build name test reads 422 regardless of cache order | VERIFIED (regression check) | `tests/test_api.py` unchanged. Re-ran `-k failed_build_records_the_name`: 2 passed. |
-| 3 | `stop_group` signals before it reads; a failed `ps` fails as "survivors unknown" with the group already signalled; SIGTERM grace kept; unit test outside the `*browser*` glob | VERIFIED (re-checked against IN-01, IN-02) | `tests/process_group.py:84-108` unchanged: `_signal_group(pgid, sig)` is the first statement of the loop body, the `group_members` read sits inside `try` and a failed read sets `survivors = None; continue` so SIGKILL still goes out; `proc.wait` runs once after the loop. IN-01 (`_sleeper` skips `killpg` when `proc.returncode` is set) and IN-02 (dead `poll` recorder dropped) touch only test scaffolding in `tests/test_process_group.py`. **My mutation**, in a scratch copy of `tests/` under the scratchpad, never the repo: moved `_signal_group` after the first `group_members` read. Result: 5 failed, 1 passed (`test_the_group_is_signalled_before_ps_is_read_or_the_leader_reaped` and all four `ps`-failure params). The order test is still not vacuous after the edits. The unmutated suite passes. |
-| 4 | Harness describes itself truthfully: floor comment names observed members; dated corrections under both `bench/RESULTS.md` rows, nothing rewritten; launch message names a working reinstall; pinned literal kept | VERIFIED (re-checked against IN-07, IN-08) | `tests/browser_session.py:55-67` names uvicorn, `multiprocessing.resource_tracker` and one or two spawned workers, with the macOS 4/3/4 and ubuntu-latest run 39428298442 count of 4; `MIN_GROUP_MEMBERS = 3`. `bench/RESULTS.md` lines 4781 and 4907 hold the two `**Correction (2026-10-20, 27-06)**` paragraphs; `git diff --numstat v0.5 -- bench/RESULTS.md` reads `676 0` (append-only). `tests/test_browser_pins.py` now stops the environ climb under `ast.arguments` and `ast.Lambda` (lines 119-128), which only narrows the allowance; the four new rejection rows and the two new allowed-shape asserts pass, and `test_the_browser_test_has_no_path_that_passes_without_the_browser` still reads the real scan set with no problems. The file passes (15 tests). The reviewer's red-first evidence for IN-07 and IN-08 (2 failed, 9 passed with `| ast.Lambda` reverted) is recorded in 27-REVIEW.md; I did not repeat it. |
+| 3 | `stop_group` signals before it reads; a failed `ps` fails as "survivors unknown" with the group already signalled; SIGTERM grace kept; unit test outside the `*browser*` glob | VERIFIED (regression check) | `tests/process_group.py` and `tests/test_process_group.py` unchanged. Read lines 84-108 again: `_signal_group(pgid, sig)` is the first statement of the loop body, the `group_members` read sits inside `try`, a failed read sets `survivors = None; continue` so SIGKILL still goes out, `proc.wait` runs once after the loop, and the "survivors unknown" failure follows. `test_process_group.py` passes (inside the 21 passed below). The order mutation from the prior pass is not repeated: the file it mutates has not changed. |
+| 4 | Harness describes itself truthfully: floor comment names observed members; dated corrections under both `bench/RESULTS.md` rows, nothing rewritten; launch message names a working reinstall; pinned literal kept | VERIFIED (re-checked against IN-09, IN-10) | `tests/browser_session.py:55-67` names uvicorn, `multiprocessing.resource_tracker` and one or two spawned workers, with the macOS 4/3/4 and ubuntu-latest run 39428298442 count of 4; `MIN_GROUP_MEMBERS = 3` (line 67). `bench/RESULTS.md` lines 4781 and 4907 hold the two `**Correction (2026-10-20, 27-06)**` paragraphs; `git diff --numstat v0.5 -- bench/RESULTS.md` reads `676 0` (append-only). The launch message names `playwright install --only-shell chromium` (`browser_session.py:176`), matched by `INSTALL_COMMAND` in the pin (`test_browser_pins.py:44`). The pin file's full diff since the prior pass, read line by line, is: one 3-line comment inside `_problems`, and two test renames plus one docstring edit. The climb logic (`clause = ast.stmt \| ast.ExceptHandler \| ast.match_case \| ast.arguments \| ast.Lambda`, the `while` loop, the `ALLOWED_ENVIRON_MARKERS` check) is byte-identical. The pin passes on its tables and on the real scan set. |
 
 **Score:** 4/4 truths verified (0 present, behavior-unverified).
 
@@ -72,11 +72,8 @@ advisory:
 
 | Change | File | Effect on a must-have | Result |
 |--------|------|-----------------------|--------|
-| IN-01, IN-02 | `tests/test_process_group.py` | scaffolding only; truth 3 | order mutation still red (above) |
-| IN-07, IN-08 | `tests/test_browser_pins.py` | narrows the pin; REQ-launch-message-true | 15 passed, real scan set clean |
-| IN-03 | `tests/test_selector.py` | new test `test_the_page_string_reads_a_number_as_the_page_does`, outside the must-haves | passes within the 38-test targeted run |
-| IN-05 | `tests/test_bench.py` | host-state test patches `bench.trochoid_part.subprocess` instead of the shared module's `.run`; outside the must-haves | `-k host_state`: 2 passed |
-| debt filing | `docs/tech_debt/` | new nice item for the unpinned `rm` hand-off; resolved items now name short shas | no effect on a truth |
+| IN-09 (75b93f6) | `tests/test_browser_pins.py` | renames only. `test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read` is now `test_a_marker_outside_the_reads_own_expression_does_not_allow_it` (7 parametrized rows, unchanged). `test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed` is now `test_an_environ_read_that_holds_its_own_marker_is_allowed` (3 asserts, unchanged) with a docstring that names header, default and lambda body | 15 passed in the file. A grep for the two old names finds them only in `27-REVIEW-FIX.md` (the rename record) and in this phase's earlier report, which this rewrite replaces. No code or test refers to them. |
+| IN-10 (8e65fbc) | `tests/test_browser_pins.py` | a 3-line comment inside `_problems`; no executable line touched | file still parses and passes; the comment's own accuracy is IN-11 below |
 
 ### Requirements Coverage
 
@@ -86,7 +83,7 @@ advisory:
 | REQ-failed-build-name-isolated | 27-02 | failed-build name test independent of cache order | SATISFIED | Truth 2 |
 | REQ-stop-group-signals-first | 27-03 | `stop_group` signals before it reads | SATISFIED | Truth 3 |
 | REQ-group-floor-recorded-true | 27-01, 27-06 | floor comment and bench rows say what was observed | SATISFIED | Truth 4 (comment, both corrections) |
-| REQ-launch-message-true | 27-05 | launch message names a working reinstall; literal kept; pinned | SATISFIED | Truth 4; pin still clean on the real scan set |
+| REQ-launch-message-true | 27-05 | launch message names a working reinstall; literal kept; pinned | SATISFIED | Truth 4; the pin is clean on the real scan set |
 
 All five IDs are declared in PLAN `requirements:` fields (27-01 and 27-06, 27-02, 27-03, 27-05), present in REQUIREMENTS.md (lines 68-87, all `[x]`) and marked Complete in its traceability table (lines 182-186). No orphaned requirement. 27-04 declares `requirements: []` on purpose.
 
@@ -96,14 +93,14 @@ All five IDs are declared in PLAN `requirements:` fields (27-01 and 27-06, 27-02
 |-------|--------|
 | `git diff --exit-code v0.5 -- tests/regression/` | clean |
 | `bench/RESULTS.md` append-only against `v0.5` | `676 0` |
-| Files changed since the prior verification (tests/src/bench/architecture) | `test_bench.py`, `test_browser_pins.py`, `test_process_group.py`, `test_selector.py` |
-| Regression gate (orchestrator) | `make verify` exit 0, `1348 passed in 214.18s`; not re-run by me |
-| My targeted runs | pins + process_group + selector: 38 passed; `-k slug`: 3 passed; `test_api -k failed_build_records_the_name`: 2 passed; `test_bench -k host_state`: 2 passed; `test_browser_pins.py`: 15 passed |
-| Repo working tree | untouched by me (mutation ran in a scratch copy); `git status --short` empty before writing this report |
+| Files changed since the prior verification (non-`.planning`) | `tests/test_browser_pins.py` only |
+| Regression gate (orchestrator) | `make verify` exit 0, `1348 passed in 238.11s`; not re-run by me |
+| My targeted runs | `test_browser_pins.py` + `test_process_group.py`: 21 passed in 0.24s; `test_trochoid.py -k slug`: 3 passed; `test_api.py -k failed_build_records_the_name`: 2 passed |
+| Repo working tree | `git status --short` empty before writing this report; no source or test file touched by me |
 
 ### Anti-Patterns Found
 
-None. No `TBD`/`FIXME`/`XXX` in the four changed test files; no stubs or hollow data flows (all artifacts are test code or records). 27-REVIEW lists 0 critical, 0 warning, 2 info.
+None. No `TBD`/`FIXME`/`XXX` in `tests/test_browser_pins.py`; no stubs or hollow data flows (all artifacts are test code or records). 27-REVIEW lists 0 critical, 0 warning, 2 info.
 
 ### Human Verification Required
 
@@ -111,7 +108,7 @@ None.
 
 ### Gaps Summary
 
-No gaps. All four success criteria hold in the code as it is now. The two open info findings (IN-09 test names, IN-10 comment strength on a tripwire) are hygiene residuals tracked in 27-REVIEW.md and contradict no success criterion.
+No gaps. All four success criteria hold in the code as it is now. The change since the prior pass is two renames, a docstring edit and a comment, with no logic touched. The two open info findings are hygiene residuals tracked in 27-REVIEW.md and contradict no success criterion. IN-11 says the new "per statement" comment overstates the unit, and the error is on the safe side. IN-12 says the documented over-allowance has no pinning test.
 
 ---
 
