@@ -4,12 +4,11 @@ milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 28
 current_phase_name: Refuse the Bad Link
-status: planning
+status: "Phase 27 shipped — PR #44"
 stopped_at: Phase 27 complete, ready to plan Phase 28
-last_updated: "2026-10-20T14:34:07.596Z"
-last_activity: 2026-10-20
-last_activity_desc: Phase 27 complete, transitioned to Phase 28
-state_head: f4aa34129f072ce8389bb69a42c05b8067cf456a
+last_updated: "2026-10-21T06:16:51.614Z"
+last_activity: 2026-10-21
+state_head: 299d527c56d10a8986e4597d5ef2c38a664e98d1
 progress:
   total_phases: 4
   completed_phases: 7
@@ -32,10 +31,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 28 — Refuse the Bad Link
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-20 — Phase 27 complete, transitioned to Phase 28
+Status: Phase 27 shipped — PR #44
+Last activity: 2026-10-21
 
-Progress: [█████░░░░░] 50% (2 of 4 phases)
+Progress: [████████░░] 78% (2 of 4 phases)
 
 ## Performance Metrics
 
