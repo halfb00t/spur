@@ -4,18 +4,18 @@ milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 28
 current_phase_name: Refuse the Bad Link
-status: executing
-stopped_at: Completed 28-03-PLAN.md
-last_updated: "2026-10-21T12:59:25.137Z"
+status: verifying
+stopped_at: Completed 28-04-PLAN.md
+last_updated: "2026-10-21T13:09:56.197Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 28 execution started
-state_head: 90928023b74af80ba9524d33459ae4edf52d857e
+state_head: d526c409df79991498c42105bc3ebe1c14674dba
 progress:
   total_phases: 4
   completed_phases: 7
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -32,10 +32,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 28 (Refuse the Bad Link) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-21 — Phase 28 execution started
 
-Progress: [█████████░] 94% (2 of 4 phases)
+Progress: [██████████] 100% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -262,6 +262,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 28 P01 | 12 min | 3 tasks | 12 files |
 | Phase 28 P02 | 20 min | 3 tasks | 11 files |
 | Phase 28 P03 | 10min | 3 tasks | 4 files |
+| Phase 28 P04 | 25 min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -504,6 +505,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 28]: D-10: the root_fillet label keys on the loose d.root_form_d != null, so it follows the root the server built, not the request
 - [Phase 28]: D-14: stash comment reworded and its hand-edit invalidation filed as an idea; isolate-and-continue for 24 IN-02 not taken
 - [Phase 28]: D-15/D-17: 27 IN-11, 26 IN-04 and 18 IN-07 fixed in comment- or docstring-only commits (87d98ab, 54f3b53, 9092802); the statement-named test is left as a tangent
+- [Phase 28]: 18 IN-01 is recorded fixed by 767317b (already fixed in the tree) rather than filed as debt that does not exist
+- [Phase 28]: 10 IN-02 deferred to a must item as a decision for the human (new Lxx with its own fixture.regen, or keep with a reason), not fixed in Phase 28
+- [Phase 28]: 10 IN-01 shares the nice item with Phase 18 leftovers under its own trigger line (D-18)
 
 ### Pending Todos
 
@@ -800,8 +804,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-21T12:59:25.071Z
-Stopped at: Completed 28-03-PLAN.md
+Last session: 2026-10-21T13:09:56.130Z
+Stopped at: Completed 28-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
