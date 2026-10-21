@@ -1,68 +1,53 @@
 ---
 phase: 27-ledger-tests-and-harness
-fixed_at: 2026-10-20T00:00:00Z
+fixed_at: 2026-10-21T00:00:00Z
 review_path: .planning/phases/27-ledger-tests-and-harness/27-REVIEW.md
 iteration: 1
 findings_in_scope: 2
-fixed: 1
-skipped: 1
-status: partial
+fixed: 2
+skipped: 0
+status: all_fixed
 ---
 
 # Phase 27: Code Review Fix Report
 
-**Fixed at:** 2026-10-20
+**Fixed at:** 2026-10-21
 **Source review:** .planning/phases/27-ledger-tests-and-harness/27-REVIEW.md
-**Iteration:** 1 (this is the second Info-scope pass, `fix_scope: all`; only the two findings still open in the re-review, IN-04 and IN-08, were in scope. IN-01 to IN-03 and IN-05 to IN-07 were fixed by the earlier pass and are not repeated here; their commits are c22742e, d7426e0, d91ce2f, c8cf8b4, 0fd2b98 and 782fe9f.)
+**Iteration:** 1
 
 **Summary:**
-- Findings in scope: 2 (IN-04, IN-08; no Critical or Warning findings open)
-- Fixed: 1 (IN-08)
-- Skipped: 1 (IN-04, filed as a `nice` tech-debt item)
+- Findings in scope: 2
+- Fixed: 2
+- Skipped: 0
 
-**Verification ran in the main checkout** (`workflow.use_worktrees` is `false`, so no worktree was created). Final gate, run once after the last commit landed:
-
-```
-make verify
-======================= 1348 passed in 212.34s (0:03:32) =======================
-Required test coverage of 96.0% reached. Total coverage: 97.99%
-```
-
-Exit status 0. Each commit also passed the commit hook (`make verify.fast`).
+Edits and commits were made in the main checkout: `workflow.use_worktrees` is `false` in `.planning/config.json`, so no worktree or temp branch was created.
 
 ## Fixed Issues
 
-### IN-08: A lambda's parameter-list marker still allows a read in the lambda's body
+### IN-09: Test name still says compound statement after the table gained lambda rows
 
 **Files modified:** `tests/test_browser_pins.py`
-**Commit:** 39cf27d
-**Applied fix:** `ast.Lambda` joins the node types the environ pin's climb stops under. A lambda's parameter list and body are siblings under one expression node, so a read in the body used to climb to the whole lambda and take in the defaults' marker. With the stop, the body is its own unit and the defaults stay a separate unit (`arguments`). Chose the code change over the docstring-only option because it is one token, closes the gap instead of documenting it, and is simpler than the review's suggested condition: the `expression is not parents[expression].args` clause is not needed, because the climb never reaches the `arguments` node itself (it already stops one step below it).
+**Commit:** 75b93f6
+**Applied fix:** Renamed `test_a_marker_in_a_compound_statements_body_does_not_allow_a_header_read` to `test_a_marker_outside_the_reads_own_expression_does_not_allow_it`, and `test_an_environ_scrub_in_a_header_that_holds_its_own_marker_is_allowed` to `test_an_environ_read_that_holds_its_own_marker_is_allowed`. The second docstring now says the read's expression may sit in a header, a default or a lambda body. The old names appeared only in the test file, the review and `27-VERIFICATION.md` (a historical finding record, left as written). No logic change.
 
-- Two rows added to the existing compound-statement test: `g = lambda a="SPUR_": os.environ["SKIP"]` and `def f(a=lambda b="SPUR_": os.environ["SKIP"])`. With the token removed (reverted in place after backing the fixed file up to the scratchpad, then restored), exactly those two rows fail and the other 13 tests pass; with it, all 15 pass.
-- Two allowed shapes added to the existing "own marker" test so the stop cannot turn into a false positive: `def f(a=os.environ.get("PLAYWRIGHT_BROWSERS_PATH"))` and `lambda: any(k.startswith("SPUR_") for k in os.environ)` both report nothing.
-- Probe with `.venv/bin/python -I`: `_scan_problems()` over the real scan set returns `[]`.
-- `ruff check` and `mypy --strict` on the file: clean.
+### IN-10: The lambda stop is narrower than the statement-level allowance around it
 
-**Status note:** a logic change to the pin's own scan, so it carries "fixed: requires human verification" in the strict reading of the fixer rules. The scan is a test helper only; nothing printed to users depends on it.
+**Files modified:** `tests/test_browser_pins.py`
+**Commit:** 8e65fbc
+**Applied fix:** Added a three-line comment in `_problems` after the IN-08 note. It says the allowance is per statement, that `arguments` and `lambda` are the only narrower units, and that a marker among a call's other arguments, in the other branch of a conditional or in a comprehension's iterable still allows the read. Comment only. The pin's logic is unchanged, as instructed, so the review's optional "narrow the climb to the enclosing call argument" route was not taken.
 
-## Skipped Issues
+## Verification
 
-### IN-04: Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`
+Gate ran in the main checkout (no worktree).
 
-**File:** `tests/test_model.py:899, 926, 976` (with `src/spur/model.py:640, 783`)
-**Reason:** Both suggested tests assert an internal call: a counting wrapper on `spur.model.root_mode` is an internal call count, and a stand-in on `tip_chamfer_effective` that checks its `rm` argument asserts a private argument. `docs/CODING_VALUES.md` (Testing) bans both. The result is identical either way, because `tip_chamfer_effective(p)` re-derives the same `rm`; only the cost differs, and a cost claim is measured, not asserted. No test was forced. The skip is now a decision on file, as the review asked: a `nice` tech-debt item with a named trigger (`_build` or `_chamfer_tips` next touched, or a public per-build cost counter appearing), committed with its INDEX row in 2012d5e.
-**Debt item:** `docs/tech_debt/active/2026-10-20-nothing-pins-that-build-passes-its-own-rm-to-chamfer-tips.md`
-**Original issue:** The updated monkeypatches accept either calling shape, so reverting `_chamfer_tips` to `tip_chamfer_effective(p)` would leave every test green.
+- `.venv/bin/python -m pytest tests/test_browser_pins.py -q`: `15 passed in 0.16s` (after each commit)
+- `ruff check` and `ruff format --check` on `tests/test_browser_pins.py`: passed
+- `make verify` (final, after both commits): `======================= 1348 passed in 238.87s (0:03:58) =======================`
 
-## Notes for the orchestrator
-
-- Filed one tech-debt item (IN-04): the path above, `Severity: nice`, INDEX row added in the same commit.
-- `src/` was not touched.
-- The red check for IN-08 used a backup copy in the scratchpad and a restore with `cp`; no `git checkout --` was used, and the fix was never lost.
-- `git status` is clean apart from this report, which the orchestrator commits.
+Debt filed: none.
 
 ---
 
-_Fixed: 2026-10-20_
+_Fixed: 2026-10-21_
 _Fixer: Claude (gsd-code-fixer)_
 _Iteration: 1_
