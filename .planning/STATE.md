@@ -5,17 +5,17 @@ milestone_name: Clean Ledger
 current_phase: 28
 current_phase_name: Refuse the Bad Link
 status: executing
-stopped_at: Completed 28-05-PLAN.md
-last_updated: "2026-10-21T17:38:07.024Z"
+stopped_at: Completed 28-06-PLAN.md
+last_updated: "2026-10-21T17:46:54.672Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 28 execution started
-state_head: 523585889656e93ef7845d9ea937926184517815
+state_head: 600657bd3b82a1e68a380e2ccdef75d21412a137
 progress:
   total_phases: 4
   completed_phases: 7
   total_plans: 21
-  completed_plans: 18
-  percent: 86
+  completed_plans: 19
+  percent: 90
 ---
 
 # Project State
@@ -31,11 +31,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 28 (Refuse the Bad Link) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-10-21 — Phase 28 execution started
 
-Progress: [█████████░] 86% (2 of 4 phases)
+Progress: [█████████░] 90% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -264,6 +264,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 28 P03 | 10min | 3 tasks | 4 files |
 | Phase 28 P04 | 25 min | 3 tasks | 15 files |
 | Phase 28 P05 | 6 min | 2 tasks | 3 files |
+| Phase 28 P06 | 20 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -510,6 +511,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 28]: 10 IN-02 deferred to a must item as a decision for the human (new Lxx with its own fixture.regen, or keep with a reason), not fixed in Phase 28
 - [Phase 28]: 10 IN-01 shares the nice item with Phase 18 leftovers under its own trigger line (D-18)
 - [Phase 28]: 28-05: human disposed Phase 28 review findings: WR-01 fix, WR-02 defer (debt filed), WR-03/G-28-2 fix (L45 via 28-06), IN-01 fix, IN-02 fix (D-19..D-23)
+- [Phase 28]: L45: a tip chamfer asked for and not cut prints no number; tip_chamfer_effective is gated on the applied tch (D-21; amends L29, applies L08)
 
 ### Pending Todos
 
@@ -806,8 +808,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-21T17:38:06.932Z
-Stopped at: Completed 28-05-PLAN.md
+Last session: 2026-10-21T17:46:54.554Z
+Stopped at: Completed 28-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
