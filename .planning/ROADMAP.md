@@ -424,7 +424,20 @@ run `tests/test_api.py` early — its `app.js` regexes were not fully read in re
 the fix is client-side only. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — it needs the discuss-phase decisions above, not research.
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+- [ ] 28-01-PLAN.md — the rejected-token map in `app.js` (D-01..D-05), the old pin seen red against it, four new browser steps seen red without it, L44, web-ui.md, the bad-link debt item retired: one commit (D-07)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 28-02-PLAN.md — the `root_fillet` label keyed on `root_form_d` (red first, Phase 19 item retired), the 24 IN-01 stash comment plus its idea, the 24 IN-02 / CX-03 "Could not build the form" wording (red first): three commits
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 28-03-PLAN.md — comment- or docstring-only fixes: 27 IN-11 climb comment, 26 IN-04 durable citations, 18 IN-07 `root_mode` docstring
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 28-04-PLAN.md — the Phase 18/10 `nice` item and the 10 IN-02 `must` decision filed, 41 ledger rows closed across Phases 10, 18, 19, 21-24, 26, 27, retiring shas written, phase gate
 **UI hint**: yes
 
 ### Phase 29: Ubuntu 26 Final Reading
