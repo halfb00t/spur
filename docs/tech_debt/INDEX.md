@@ -37,8 +37,8 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
-| [Phase 19 code review: the root_fillet label finding is still deferred](resolved/2026-10-09-phase-19-review-info-findings-deferred.md) | fix(28): label the root_fillet row by the root the server built — see the file's own `Resolved in:` field |
-| [A link with an invalid enum value loads a blank select and builds the default part](resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | fix(28): send a link value its control cannot hold, so the 422 refuses it -- log L44 — see the file's own `Resolved in:` field |
+| [Phase 19 code review: the root_fillet label finding is still deferred](resolved/2026-10-09-phase-19-review-info-findings-deferred.md) | `61154d1` — see the file's own `Resolved in:` field |
+| [A link with an invalid enum value loads a blank select and builds the default part](resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | `cb93d4e` — see the file's own `Resolved in:` field |
 | [The environ pin raises `KeyError` on a module-level `from os import environ`](resolved/2026-10-20-environ-pin-raises-keyerror-on-module-level-import.md) | `27628ef` — see the file's own `Resolved in:` field |
 | [The group floor of 3 is recorded as "two pool workers"; the live group is uvicorn, the resource tracker and one worker](resolved/2026-10-10-group-floor-of-3-is-not-two-pool-workers.md) | `99e2b7d` — see the file's own `Resolved in:` field |
 | [The launch failure message names a stamp that skips the install](resolved/2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md) | `a393e50` — see the file's own `Resolved in:` field |

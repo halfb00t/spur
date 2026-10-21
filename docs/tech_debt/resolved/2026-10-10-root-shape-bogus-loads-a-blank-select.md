@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: fix(28): send a link value its control cannot hold, so the 422 refuses it -- log L44
+Resolved in: cb93d4e fix(28): send a link value its control cannot hold, so the 422 refuses it -- log L44 (gsd/phase-28-refuse-the-bad-link)
 Date: 2026-10-10
 Source: Phase 21, 21-04 -- the browser test's pin (step `root_shape=bogus as today`)
 Related files:

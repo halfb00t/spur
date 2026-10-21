@@ -2,7 +2,7 @@
 
 Severity: nice
 Status: resolved
-Resolved in: fix(28): label the root_fillet row by the root the server built
+Resolved in: 61154d1 fix(28): label the root_fillet row by the root the server built (gsd/phase-28-refuse-the-bad-link)
 Date: 2026-10-09
 Source: `.planning/phases/19-the-trochoid-in-the-part/19-REVIEW.md` IN-01 to IN-04 (gsd-code-reviewer, standard depth); the human chose `fix-now` for CR-01 and WR-01 only
 Related files:
