@@ -972,8 +972,9 @@ class DerivedDimensions(BaseModel):
         json_schema_extra={"unit": "mm"})
     tip_chamfer_effective: float | None = Field(
         description="Tip chamfer actually cut on the tooth-tip edges at both faces, "
-                    "after the cap; null when none is cut: none requested, or a "
-                    "request below the 0.001 mm resolution it is cut at.",
+                    "after the cap; null when no chamfer is cut: none requested, or "
+                    "the request or the cap rounds below the 0.001 mm resolution it "
+                    "is cut at.",
         json_schema_extra={"unit": "mm"})
     span_teeth: int = Field(description="Number of teeth the span measurement is taken over.")
     span: float = Field(

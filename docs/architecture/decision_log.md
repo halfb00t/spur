@@ -3056,3 +3056,5 @@ the replay's own tolerances: `fixture check: 44 records, no held field moved, ti
 
 Reason: L08's rule is no number rather than a plausible one, and the part with a chamfer not cut is the part with no chamfer, so
 it prints what no chamfer prints.
+
+**Amendment (2026-10-22, 28-REVIEW IN-04).** **What moves** says "Only a request under 0.0005 mm prints differently". It is wider: `tip_chamfer_effective()` is `round(min(request, limit), 3)`, so it also rounds to `0.0` when the cap (the tip-land, pitch-circle or flank limit) is under 0.0005 mm while `tip_chamfer > 0`, and the field then prints `null` where the old gate printed `0.0`. That case takes the "Tip chamfer reduced to 0 mm ..." warning, not the "below the 0.001 mm resolution" one. A 304-combination sweep of teeth, shift, angle, fillet and root shape found no such limit, so no pinned record moves; this corrects the sentence, not a reproduced misprint. The field's description now says null when no chamfer is cut: none requested, or the request or the cap rounds below the 0.001 mm resolution it is cut at. No existing sentence of this entry is edited.
