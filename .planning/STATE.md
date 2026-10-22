@@ -3,12 +3,11 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 29
-status: completed
+status: "Phase 29 shipped — PR #47"
 stopped_at: Phase 29 complete — all phases complete
-last_updated: "2026-10-22T13:43:39.641Z"
+last_updated: "2026-10-22T13:56:38.200Z"
 last_activity: 2026-10-22
-last_activity_desc: Phase 29 complete
-state_head: b4cc6a8480c1b906ff4723ae81df2ff96432323d
+state_head: d23bf5584904820f98599401535174ec8f4a1970
 progress:
   total_phases: 4
   completed_phases: 9
@@ -31,8 +30,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 29
 Plan: Not started
-Status: All phases complete
-Last activity: 2026-10-22 — Phase 29 complete
+Status: Phase 29 shipped — PR #47
+Last activity: 2026-10-22
 
 Progress: [██████████] 100% (2 of 4 phases)
 
