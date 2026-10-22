@@ -147,7 +147,7 @@ a value its form control cannot hold is refused instead of silently building the
 - [x] **Phase 28: Refuse the Bad Link** - A link carrying a value its form control cannot hold (completed 2026-10-22)
       is refused visibly through the existing 422 path under a new `L44`, the `root_fillet`
       label follows the root, and every open review info finding ends dispositioned
-- [x] **Phase 29: Ubuntu 26 Final Reading** - Date-gated and last: the first `ubuntu-latest` (closed, trigger not fired, 2026-10-22)
+- [ ] **Phase 29: Ubuntu 26 Final Reading** - Date-gated and last: the first `ubuntu-latest`
       run on Ubuntu 26.04 classified from its whole log; may close with the item still active
 
 ## Phase Details

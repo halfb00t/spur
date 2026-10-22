@@ -82,7 +82,7 @@ No job of any `ubuntu-latest` run read `ubuntu-26.04`, and no pinned-label run o
 
 ## Human's answer (Task 2)
 
-Recorded verbatim in `bench/RESULTS.md` as `Decision (2026-10-22T13:28Z): close -- "close, with the REQUIREMENTS.md edit exactly as proposed, parts (a)-(e), unedited"`. The REQUIREMENTS.md edit was applied as approved: (a) bullet removed, (b) `### CI — Ubuntu 26 (trigger not fired by the v0.6 close)` added under Future Requirements, (c) Traceability row removed, (d) coverage lines now 16 total and 16 mapped, (e) last-updated line. Every anchor was found verbatim; nothing was improvised.
+Recorded in `bench/RESULTS.md` as `Decision (2026-10-22T13:28Z): close -- "close with a", then, asked whether that meant part (a) alone, "Close, all edits (a)–(e)"`. The close commit c16daa8 first recorded a paraphrase; c5f14f6 replaced it with these literal answers. The REQUIREMENTS.md edit was applied as approved: (a) bullet removed, (b) `### CI — Ubuntu 26 (trigger not fired by the v0.6 close)` added under Future Requirements, (c) Traceability row removed, (d) coverage lines now 16 total and 16 mapped, (e) last-updated line. Every anchor was found verbatim; nothing was improvised.
 
 ## Close branch, as carried out
 

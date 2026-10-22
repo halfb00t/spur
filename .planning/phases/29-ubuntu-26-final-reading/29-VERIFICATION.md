@@ -1,6 +1,6 @@
 ---
 phase: 29-ubuntu-26-final-reading
-verified: 2026-10-22T14:10:00Z
+verified: 2026-10-22T13:42:45Z
 status: passed
 score: 11/11 must-haves verified (close branch)
 covered_files:
@@ -55,7 +55,7 @@ The phase did not end on the green or red branch. The trigger (an `ubuntu-latest
 | No `ci.yml` edit, pin or fix before the read and the human's answer | test | RESOLVED, enforced | `git diff --exit-code v0.5 -- tests/regression/ .github/workflows/ci.yml` exits 0 at HEAD and at each plan commit. The wired check is the plan's own Task 2 and Task 3 verify (run by me). |
 | No retiring the item, no REQ reported complete, no fabricated reading | test | RESOLVED, enforced | The item is active and not in `resolved/`. `requirements-completed: []`. The read commit 1aeeec9 touches only RESULTS and the tsv. I re-ran the close-branch checks (Progress row, N/A line, REQ move, Traceability row removed): `close checks ok`. |
 | No classification from `--log-failed`, a partial log, or an inferred image | judgment | Resolved on evidence | No reading set exists, so there was no classification. Each image cell is the job's own whole-log `Image:` token (I re-derived four independently). `--log-failed` appears only in "not `--log-failed`" notes. All attempts are 1. The verdict is mine, not a test, but it rests on direct observation. |
-| No push, PR, re-run or merge to make the trigger fire | judgment | Resolved on evidence | No `phase-29` remote branch and no PR on the head. The newest `ci` run is still 39768296581 (Phase 28's, 2026-10-22T11:08:06Z), with no run created after it. All runs are attempt 1 (no re-run). |
+| No push, PR, re-run or merge to make the trigger fire | judgment | Resolved on evidence | As of the verification snapshot (2026-10-22T13:42Z, before the ship pushed this branch and opened PR #47): no `phase-29` remote branch and no PR on the head. The newest `ci` run is still 39768296581 (Phase 28's, 2026-10-22T11:08:06Z), with no run created after it. All runs are attempt 1 (no re-run). |
 
 ### Required Artifacts
 

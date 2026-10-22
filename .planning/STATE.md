@@ -10,7 +10,7 @@ last_activity: 2026-10-22
 state_head: d23bf5584904820f98599401535174ec8f4a1970
 progress:
   total_phases: 4
-  completed_phases: 9
+  completed_phases: 4
   total_plans: 22
   completed_plans: 22
   percent: 100
@@ -29,11 +29,11 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 29
-Plan: Not started
+Plan: 1 of 1 (closed, trigger not fired)
 Status: Phase 29 shipped — PR #47
 Last activity: 2026-10-22
 
-Progress: [██████████] 100% (2 of 4 phases)
+Progress: [██████████] 100% (4 of 4 phases)
 
 ## Performance Metrics
 
@@ -822,4 +822,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- /gsd-discuss-phase 27, or /gsd-plan-phase 27 to plan directly
+- Merge PR #46, then PR #47, once CI is green and each run's `Image:` lines are read; then /gsd-complete-milestone v0.6
