@@ -6770,3 +6770,4 @@ so the two runs after it add 6 more jobs on 24.04 and nothing on 26.04. One read
 repository's own runs, not GitHub's fleet.
 
 Outcome: not fired -- no job of any `ubuntu-latest` run in the window reads `ubuntu-26.04` (30 of 30 jobs read `ubuntu-24.04`), so no rule for red, green or pending holds.
+Decision (2026-10-22T13:02Z): wait -- "wait"
