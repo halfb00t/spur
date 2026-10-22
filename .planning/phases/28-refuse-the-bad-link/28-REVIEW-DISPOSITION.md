@@ -9,11 +9,11 @@ findings:
     title: "A token the box blanks but the API accepts builds a non-default part under a blank box"
   - id: IN-03
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The old `input.value = to;` pin is now a substring of the new one and can never fail on its own"
   - id: IN-04
     severity: info
-    disposition: open
+    disposition: fixed
     title: "L45's \"only a request under 0.0005 mm prints differently\" and the field description both miss the capped-to-zero case"
   - id: WR-01
     severity: warning
@@ -31,9 +31,9 @@ findings:
     severity: info
     disposition: fixed
     title: "`web-ui.md` has a 190-character line inserted mid-paragraph"
-open: 2
+open: 0
 total: 7
-recorded: 2026-10-21T18:10:21.112Z
+recorded: 2026-10-22T01:12:18.210Z
 ---
 
 # Phase 28: Code Review Disposition
@@ -41,8 +41,8 @@ recorded: 2026-10-21T18:10:21.112Z
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | WR-02 | warning | deferred | docs/tech_debt/active/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md (D-20) |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
+| IN-03 | info | fixed | 28-REVIEW-FIX.md |
+| IN-04 | info | fixed | 28-REVIEW-FIX.md |
 | WR-01 | warning | fixed | 3224ec7 fix(28): a selector pick that writes a field ends its rejected link token (28-REVIEW WR-01) (gsd/phase-28-refuse-the-bad-link) (not in the current review) |
 | WR-03 | warning | fixed | 6497c28 fix(28): print no tip chamfer when none is cut -- log L45 (gsd/phase-28-refuse-the-bad-link); L45; G-28-2; docs/tech_debt/resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md (not in the current review) |
 | IN-01 | info | fixed | aede0fd refactor(28): assign the mate box once in readHash, its pin tightened through the read-back (28-REVIEW IN-01) (gsd/phase-28-refuse-the-bad-link) (not in the current review) |
