@@ -6771,3 +6771,39 @@ repository's own runs, not GitHub's fleet.
 
 Outcome: not fired -- no job of any `ubuntu-latest` run in the window reads `ubuntu-26.04` (30 of 30 jobs read `ubuntu-24.04`), so no rule for red, green or pending holds.
 Decision (2026-10-22T13:02Z): wait -- "wait"
+
+### The ubuntu-latest window, read 2026-10-22T13:13Z (29-01)
+
+This is a fresh read, started at Task 1 after the human's `wait` of 2026-10-22T13:02Z on the read above; that read is not
+rewritten. Window: every `ci` run (workflow `ci.yml`, every branch and event) created from 2026-10-19T00:00:00Z to the read
+time, in (`createdAt`, `databaseId`) order. `gh run list --workflow ci.yml --limit 200` listed 156 runs, so the list is not
+truncated; 10 fall in the window, the same 10 as the 12:08Z read (no `ci` run was created between that read and this one).
+For each, `gh run view {id} --attempt 1 --json jobs` named the jobs and `gh run view {id} --log --job {job-id}` gave each
+whole job log, piped through an awk filter that matches the `Image:` line and the first `Version:` after it. The match is on
+the message part of the line (after the timestamp), because the step column read `UNKNOWN STEP` on the logs read at
+planning. The raw lines are in `investigation/29-01-window-20261022T1313Z.tsv` (30 rows, one per job, plus the header line).
+Each image cell below is copied from that job's own log. Every run is attempt 1 and has no later attempt. Each job's log
+held exactly one distinct `Image:` value. Every run was `completed`, so none needed a wait.
+
+| Run | Created (UTC) | Event | Branch | Head | Attempt | Conclusion | test (3.12) | vendor-bundle | image |
+|---|---|---|---|---|---|---|---|---|---|
+| [39408236510](https://github.com/halfb00t/spur/actions/runs/39408236510) | 2026-10-20T10:28:54Z | pull_request | `gsd/phase-26-remainder` | `7301d36` | 1 | success | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261018.339.1` |
+| [39409577060](https://github.com/halfb00t/spur/actions/runs/39409577060) | 2026-10-20T10:40:20Z | push | `main` | `a4d55a6` | 1 | success | `ubuntu-24.04` `20261018.339.1` | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261012.334.1` |
+| [39428298442](https://github.com/halfb00t/spur/actions/runs/39428298442) | 2026-10-20T13:11:31Z | pull_request | `spike/27-group-listing` | `9c42559` | 1 | success | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261018.339.1` | `ubuntu-24.04` `20261012.334.1` |
+| [39538126212](https://github.com/halfb00t/spur/actions/runs/39538126212) | 2026-10-21T03:21:36Z | pull_request | `gsd/phase-27-ledger-tests-and-harness` | `299d527` | 1 | success | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261018.339.1` |
+| [39554840118](https://github.com/halfb00t/spur/actions/runs/39554840118) | 2026-10-21T06:20:50Z | pull_request | `gsd/phase-27-ledger-tests-and-harness` | `195c4b8` | 1 | success | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261012.334.1` |
+| [39561907526](https://github.com/halfb00t/spur/actions/runs/39561907526) | 2026-10-21T07:25:49Z | pull_request | `gsd/phase-27-ledger-tests-and-harness` | `12a3539` | 1 | success | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261018.339.1` | `ubuntu-24.04` `20261012.334.1` |
+| [39563588816](https://github.com/halfb00t/spur/actions/runs/39563588816) | 2026-10-21T07:40:03Z | push | `main` | `1434a47` | 1 | success | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261018.339.1` | `ubuntu-24.04` `20261012.334.1` |
+| [39568562205](https://github.com/halfb00t/spur/actions/runs/39568562205) | 2026-10-21T08:20:46Z | pull_request | `gsd/phase-26-reverify` | `f787860` | 1 | success | `ubuntu-24.04` `20261018.339.1` | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261018.339.1` |
+| [39767667333](https://github.com/halfb00t/spur/actions/runs/39767667333) | 2026-10-22T11:03:06Z | pull_request | `gsd/phase-28-refuse-the-bad-link` | `ae9f5cd` | 1 | success | `ubuntu-24.04` `20261018.339.1` | `ubuntu-24.04` `20261018.339.1` | `ubuntu-24.04` `20261018.339.1` |
+| [39768296581](https://github.com/halfb00t/spur/actions/runs/39768296581) | 2026-10-22T11:08:06Z | pull_request | `gsd/phase-28-refuse-the-bad-link` | `b40f949` | 1 | success | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261012.334.1` | `ubuntu-24.04` `20261012.334.1` |
+
+All 30 jobs of the 10 runs read `Image: ubuntu-24.04`; none reads `ubuntu-26.04`. The image `Version:` is the first
+`Version:` after the `Image:` line and differs between jobs of one run, as in the earlier reads (`20261012.334.1` and
+`20261018.339.1`, both `ubuntu-24.04`); the cause is not read here. Because no job reads 26.04, no head `ci.yml` check was
+needed and no job log is kept whole: there is no first `ubuntu-latest` run on 26.04 to classify yet. The newest `ci` run of
+the window (39768296581, created 2026-10-22T11:08:06Z) is unchanged from the 12:08Z read, so this read adds no job and no
+image that the earlier one did not hold. One read is not the migration, and these are the repository's own runs, not
+GitHub's fleet.
+
+Outcome: not fired -- no job of any `ubuntu-latest` run in the window reads `ubuntu-26.04` (30 of 30 jobs read `ubuntu-24.04`), so no rule for red, green or pending holds.
