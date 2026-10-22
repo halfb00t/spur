@@ -6,10 +6,10 @@ current_phase: 29
 current_phase_name: Ubuntu 26 Final Reading
 status: executing
 stopped_at: Phase 28 complete, ready to plan Phase 29
-last_updated: "2026-10-22T06:39:12.037Z"
+last_updated: "2026-10-22T06:57:50.885Z"
 last_activity: 2026-10-22
-last_activity_desc: Phase 28 complete, transitioned to Phase 29
-state_head: 76cd910426158ba77a2496e976b61fea23b97946
+last_activity_desc: Phase 29 execution started
+state_head: 0ffb33d9933f0ea9b7679603a290466bddbba1c3
 progress:
   total_phases: 4
   completed_phases: 8
@@ -30,10 +30,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 29 (Ubuntu 26 Final Reading) — READY TO EXECUTE
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-22 — Phase 28 complete, transitioned to Phase 29
+Phase: 29 (Ubuntu 26 Final Reading) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 29
+Last activity: 2026-10-22 — Phase 29 execution started
 
 Progress: [█████████░] 95% (2 of 4 phases)
 
@@ -805,6 +805,7 @@ None yet.
 - Phase 20 skipped (O4, flip deferred) under L38, 2026-10-09: the hob root is opt-in through root_shape; the flip waits on a real fit report or a mating-pair request below z_min (D-09).
 - v0.5 roadmap created: Phases 21–25 (Browser Test of the Viewer; Download Name Carries the Root; Conditional Form Fields; Bore-Shape Selector, discretionary; Gate Bar Re-Set, Venv Probe, Ledger Close) — 24/24 v0.5 requirements mapped, 0 orphans, numbering continues from Phase 20; Phase 24 is skipped, never deleted, if the human cuts it (its three requirements then move to Future Requirements by an explicit edit)
 - v0.6 roadmap created: Phases 26–29 (Gate Fails With a Cause; Ledger Tests and Harness; Refuse the Bad Link; Ubuntu 26 Final Reading, date-gated) — 17/17 v0.6 requirements mapped, 0 orphans, numbering continues from Phase 25; Phase 29 may close with its item still active (trigger restated, REQ-ubuntu26-classified-on-migration then moves to Future Requirements by an explicit edit with the human) and is never deleted
+- Phase 29 closed (trigger not fired), 2026-10-22: no ubuntu-latest run named Ubuntu 26.04 by the milestone close (last read 2026-10-22T13:13Z, bench/RESULTS.md); the Ubuntu 26 item stays active with its trigger restated; REQ-ubuntu26-classified-on-migration moved to Future Requirements with the human.
 
 ## Deferred Items
 

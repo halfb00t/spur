@@ -125,12 +125,6 @@ REQ-IDs continue the project's `REQ-slug` convention.
   `ubuntu-26.04` runs all three CI jobs before the `ubuntu-latest` rollout reaches the repo;
   its whole logs are classified in `bench/RESULTS.md` (`Image:` line, per-job result) before
   any `ci.yml` edit lands; nothing from the PR merges but the record.
-- [ ] **REQ-ubuntu26-classified-on-migration**: the first `ubuntu-latest` run whose
-  `Set up job` names 26.04 is classified from the whole log of all three jobs; green → dated
-  reading and the item resolved; red → options to the human (pin `ubuntu-24.04` only on their
-  call). If no migrated run happens by the close, the milestone closes with the item `active`
-  and its trigger restated (`2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`).
-
 ## Future Requirements
 
 ### Gate follow-ups (after a first captured hang)
@@ -149,6 +143,17 @@ REQ-IDs continue the project's `REQ-slug` convention.
   `z_min`).
 - Selector stash invalidation (the behavioural half of 24 IN-01) — filed as an idea.
 - Phase 10 IN-02 — `tip_chamfer_effective` gated on the raw request; changes a printed value.
+
+### CI — Ubuntu 26 (trigger not fired by the v0.6 close)
+
+- **REQ-ubuntu26-classified-on-migration**: the first `ubuntu-latest` run whose
+  `Set up job` names 26.04 is classified from the whole log of all three jobs; green → dated
+  reading and the item resolved; red → options to the human (pin `ubuntu-24.04` only on their
+  call). If no migrated run happens by the close, the milestone closes with the item `active`
+  and its trigger restated (`2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`).
+  Deferred: no `ubuntu-latest` run named Ubuntu 26.04 by the v0.6 close (Phase 29 closed on its
+  close condition, last read 2026-10-22T13:13Z, `bench/RESULTS.md`); the trigger stays on
+  `docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`.
 
 ## Out of Scope
 
@@ -189,7 +194,6 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-root-fillet-label-follows-root | Phase 28 | Complete |
 | REQ-info-findings-triaged | Phase 28 | Complete |
 | REQ-old-info-findings-triaged | Phase 28 | Complete |
-| REQ-ubuntu26-classified-on-migration | Phase 29 | Pending |
 
 Individual info-finding fixes ride the phase that touches their file (Phase 26: 24 CX-05, 21
 IN-04a; Phase 27: 21 IN-01..03, 22 IN-01..03, 23 IN-08, 23 IN-11, 24 IN-03, 19 IN-01/02; Phase 28:
@@ -197,10 +201,10 @@ IN-04a; Phase 27: 21 IN-01..03, 22 IN-01..03, 23 IN-08, 23 IN-11, 24 IN-03, 19 I
 disposition closes.
 
 **Coverage:**
-- v0.6 requirements: 17 total
-- Mapped to phases: 17 (Phase 26: 6, Phase 27: 5, Phase 28: 5, Phase 29: 1)
+- v0.6 requirements: 16 total (REQ-ubuntu26-classified-on-migration moved to Future Requirements at the Phase 29 close, 2026-10-22)
+- Mapped to phases: 16 (Phase 26: 6, Phase 27: 5, Phase 28: 5)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-15*
-*Last updated: 2026-10-15 after roadmap creation*
+*Last updated: 2026-10-22 at the Phase 29 close (trigger not fired)*

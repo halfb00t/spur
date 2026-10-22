@@ -6807,3 +6807,4 @@ image that the earlier one did not hold. One read is not the migration, and thes
 GitHub's fleet.
 
 Outcome: not fired -- no job of any `ubuntu-latest` run in the window reads `ubuntu-26.04` (30 of 30 jobs read `ubuntu-24.04`), so no rule for red, green or pending holds.
+Decision (2026-10-22T13:28Z): close -- "close, with the REQUIREMENTS.md edit exactly as proposed, parts (a)-(e), unedited"
