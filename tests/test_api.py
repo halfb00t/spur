@@ -260,6 +260,8 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # (D-22) replaced the readHash-end token with a longer one that also pins the mate
     # read-back between the assignment and the tail, which the human read as tightening
     # under SC2.
+    # 28-REVIEW IN-03 dropped `input.value = to;`: the longer write() token contains it, so it
+    # could not fail on its own and the longer one supersedes it as the pin of the box write.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
@@ -292,7 +294,6 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "if (op === 'eq') writes.push([field, String(value), true]);",
         "stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value",
         "if (zeroed) stash.set(field, input.value);",
-        "input.value = to;",
         "input.value = to; rejected.delete(field);",
         "const stash = new Map();",
         "event.stopPropagation();",
