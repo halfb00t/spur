@@ -22,11 +22,11 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-20)
+See: .planning/PROJECT.md (updated 2026-10-22)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 28 — Refuse the Bad Link
+**Current focus:** Phase 29 — Ubuntu 26 Final Reading
 
 ## Current Position
 
