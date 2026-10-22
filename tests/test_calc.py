@@ -666,7 +666,7 @@ def test_a_tip_chamfer_is_capped_to_whichever_limit_binds_first(
     p = GearParams.model_validate(kw)
     d = derive(p)
     assert tip_chamfer_effective(p) == pytest.approx(applied)
-    assert d.tip_chamfer_effective == (pytest.approx(applied) if p.tip_chamfer > 0 else None)
+    assert d.tip_chamfer_effective == (pytest.approx(applied) if applied > 0 else None)
     tip_warnings = [w for w in d.warnings if w.startswith("Tip chamfer")]
     assert tip_warnings == ([warning] if warning else [])
 
@@ -682,10 +682,14 @@ def test_a_sub_print_precision_tip_chamfer_request_still_warns() -> None:
     nowhere near 0.0004). The message must state the true cause (print resolution),
     and asserting only a prefix (startswith) cannot see a wrong suffix -- that is
     exactly how CR-01 slipped through the first fix's own test. Assert the full
-    string."""
+    string.
+
+    The printed field reads no number for a chamfer not cut, and the warning carries
+    the dropped request (L45, D-21)."""
     p = GearParams(tip_chamfer=0.0004)
     d = derive(p)
     assert tip_chamfer_effective(p) == 0.0
+    assert d.tip_chamfer_effective is None
     tip_warnings = [w for w in d.warnings if w.startswith("Tip chamfer")]
     assert tip_warnings == [
         "Tip chamfer 0.0004 mm is below the 0.001 mm resolution it is cut at and was "

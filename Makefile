@@ -223,7 +223,8 @@ image:  ## build the container image
 	docker build $(PLATFORM_ARG) -t $(IMAGE) .
 
 # What the image suite does not run, one --ignore per file, each traced to a red read on the
-# unfixed recipe (.planning/phases/26-gate-fails-with-a-cause/investigation/26-06-redset.md).
+# unfixed recipe (bench/RESULTS.md "make test-image (26-06)", which holds the red-set table;
+# the run's notes were in the Phase 26 investigation folder).
 # Whole files, not per-test --deselect ids: a renamed test would leave a stale id that fails
 # silently. The cost is passing tests dropped with them (47 in test_pr_land.py, 41 in
 # test_bench.py).

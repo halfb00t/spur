@@ -123,9 +123,13 @@ def _problems(name: str, source: str) -> list[str]:
             # must not allow another default's read (27-REVIEW IN-07). A `lambda` is one
             # expression whose parameter list and body are siblings, so it stops there too: a
             # marker in a lambda's defaults must not allow a read in its body (27-REVIEW IN-08).
-            # The allowance is per statement: `arguments` and `lambda` are the only narrower
-            # units, so a marker among a call's other arguments, in the other branch of a
-            # conditional or in a comprehension's iterable still allows the read (27-REVIEW IN-10).
+            # The allowance is per top-level expression of a statement (27-REVIEW IN-11): the
+            # climb stops under the statement (or clause), so a marker in an assignment's
+            # target, another with-item, a decorator or a return annotation does not allow
+            # this read. Inside that expression, only `arguments` and `lambda` split it
+            # further; a marker among a call's other arguments, in the other branch of a
+            # conditional or in a comprehension's iterable still allows the read
+            # (27-REVIEW IN-10).
             expression: ast.AST = node
             clause = ast.stmt | ast.ExceptHandler | ast.match_case | ast.arguments | ast.Lambda
             while not (isinstance(expression, ast.stmt) or isinstance(parents[expression], clause)):

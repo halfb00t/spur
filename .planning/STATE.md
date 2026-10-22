@@ -2,39 +2,39 @@
 gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
-current_phase: 28
-current_phase_name: Refuse the Bad Link
-status: "Phase 27 shipped — PR #44"
-stopped_at: Phase 27 complete, ready to plan Phase 28
-last_updated: "2026-10-21T06:16:51.614Z"
-last_activity: 2026-10-21
-state_head: 299d527c56d10a8986e4597d5ef2c38a664e98d1
+current_phase: 29
+current_phase_name: Ubuntu 26 Final Reading
+status: "Phase 28 shipped — PR #46"
+stopped_at: Phase 28 complete, ready to plan Phase 29
+last_updated: "2026-10-22T11:04:12.461Z"
+last_activity: 2026-10-22
+state_head: ae9f5cd1dbe874a8ecfaa26dbd004ae662a65c72
 progress:
   total_phases: 4
-  completed_phases: 7
-  total_plans: 13
-  completed_plans: 13
-  percent: 78
+  completed_phases: 8
+  total_plans: 22
+  completed_plans: 21
+  percent: 95
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-20)
+See: .planning/PROJECT.md (updated 2026-10-22)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 28 — Refuse the Bad Link
+**Current focus:** Phase 29 — Ubuntu 26 Final Reading
 
 ## Current Position
 
-Phase: 28 — Refuse the Bad Link
+Phase: 29 (Ubuntu 26 Final Reading) — READY TO EXECUTE
 Plan: Not started
-Status: Phase 27 shipped — PR #44
-Last activity: 2026-10-21
+Status: Phase 28 shipped — PR #46
+Last activity: 2026-10-22
 
-Progress: [████████░░] 78% (2 of 4 phases)
+Progress: [█████████░] 95% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -77,6 +77,7 @@ Progress: [████████░░] 78% (2 of 4 phases)
 | 25 | 5 | - | - |
 | 26 | 7 | - | - |
 | 27 | 6 | - | - |
+| 28 | 8 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -258,6 +259,14 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 27 P04 | 7 min | 2 tasks | 8 files |
 | Phase 27 P05 | 9 min | 3 tasks | 11 files |
 | Phase 27 P06 | 14 min | 3 tasks | 7 files |
+| Phase 28 P01 | 12 min | 3 tasks | 12 files |
+| Phase 28 P02 | 20 min | 3 tasks | 11 files |
+| Phase 28 P03 | 10min | 3 tasks | 4 files |
+| Phase 28 P04 | 25 min | 3 tasks | 15 files |
+| Phase 28 P05 | 6 min | 2 tasks | 3 files |
+| Phase 28 P06 | 20 min | 2 tasks | 8 files |
+| Phase 28 P07 | 25 min | 3 tasks | 5 files |
+| Phase 28 P08 | 8 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -496,6 +505,18 @@ pending; the next milestone starts this list fresh.
 - [Phase 27]: 27-05: the pins' environ allowance is equality with a string constant in the read's own statement (tripwire, not proof)
 - [Phase 27]: MIN_GROUP_MEMBERS stays 3 and names no member: 3 is every build on one executor slot, 4 is both, and either clears it (D-01)
 - [Phase 27]: The ubuntu correction says 21-02's count came from a ps that prints no command; the member set is 27-01's later listing (L08)
+- [Phase 28]: L44: a non-blank link token its control reads back as empty is sent as given and refused by the server's 422; blank stays the default, the mate box shows the bare message with no outline
+- [Phase 28]: D-10: the root_fillet label keys on the loose d.root_form_d != null, so it follows the root the server built, not the request
+- [Phase 28]: D-14: stash comment reworded and its hand-edit invalidation filed as an idea; isolate-and-continue for 24 IN-02 not taken
+- [Phase 28]: D-15/D-17: 27 IN-11, 26 IN-04 and 18 IN-07 fixed in comment- or docstring-only commits (87d98ab, 54f3b53, 9092802); the statement-named test is left as a tangent
+- [Phase 28]: 18 IN-01 is recorded fixed by 767317b (already fixed in the tree) rather than filed as debt that does not exist
+- [Phase 28]: 10 IN-02 deferred to a must item as a decision for the human (new Lxx with its own fixture.regen, or keep with a reason), not fixed in Phase 28
+- [Phase 28]: 10 IN-01 shares the nice item with Phase 18 leftovers under its own trigger line (D-18)
+- [Phase 28]: 28-05: human disposed Phase 28 review findings: WR-01 fix, WR-02 defer (debt filed), WR-03/G-28-2 fix (L45 via 28-06), IN-01 fix, IN-02 fix (D-19..D-23)
+- [Phase 28]: L45: a tip chamfer asked for and not cut prints no number; tip_chamfer_effective is gated on the applied tch (D-21; amends L29, applies L08)
+- [Phase 28]: 28-07 WR-01 (D-19): write() clears the rejected entry of each field it writes; L44 amended 2026-10-21
+- [Phase 28]: 28-07 IN-01 (D-22): readHash assigns the mate box once; readHash-end pin replaced by a longer token through the mate read-back; L44 amended 2026-10-21
+- [Phase 28]: 28-08: Phase 28 review ledger closed; each fixed cell leads with the sha read from git log by exact subject, WR-02 deferred to its active item, open 0 with hand-triage stamp
 
 ### Pending Todos
 
@@ -792,8 +813,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-20T14:12:18.717Z
-Stopped at: Phase 27 complete, ready to plan Phase 28
+Last session: 2026-10-21T18:04:31.088Z
+Stopped at: Phase 28 complete, ready to plan Phase 29
 Resume file: None
 
 ## Operator Next Steps

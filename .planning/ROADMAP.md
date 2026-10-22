@@ -144,7 +144,7 @@ a value its form control cannot hold is refused instead of silently building the
 - [x] **Phase 27: Ledger Tests and Harness** - Slug totality guarded in the commit slice, the (completed 2026-10-20)
       failed-build name test independent of cache order, `stop_group` signalling before it
       reads `ps`, and the harness's own records and launch message made true
-- [ ] **Phase 28: Refuse the Bad Link** - A link carrying a value its form control cannot hold
+- [x] **Phase 28: Refuse the Bad Link** - A link carrying a value its form control cannot hold (completed 2026-10-22)
       is refused visibly through the existing 422 path under a new `L44`, the `root_fillet`
       label follows the root, and every open review info finding ends dispositioned
 - [ ] **Phase 29: Ubuntu 26 Final Reading** - Date-gated and last: the first `ubuntu-latest`
@@ -424,7 +424,27 @@ run `tests/test_api.py` early — its `app.js` regexes were not fully read in re
 the fix is client-side only. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — it needs the discuss-phase decisions above, not research.
-**Plans**: TBD
+**Plans**: 8/8 plans complete (28-05..28-08 close UAT gaps G-28-1, G-28-2)
+
+Plans:
+**Wave 1**
+- [x] 28-01-PLAN.md — the rejected-token map in `app.js` (D-01..D-05), the old pin seen red against it, four new browser steps seen red without it, L44, web-ui.md, the bad-link debt item retired: one commit (D-07)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 28-02-PLAN.md — the `root_fillet` label keyed on `root_form_d` (red first, Phase 19 item retired), the 24 IN-01 stash comment plus its idea, the 24 IN-02 / CX-03 "Could not build the form" wording (red first): three commits
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 28-03-PLAN.md — comment- or docstring-only fixes: 27 IN-11 climb comment, 26 IN-04 durable citations, 18 IN-07 `root_mode` docstring
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 28-04-PLAN.md — the Phase 18/10 `nice` item and the 10 IN-02 `must` decision filed, 41 ledger rows closed across Phases 10, 18, 19, 21-24, 26, 27, retiring shas written, phase gate
+
+**Gap closure (UAT G-28-1, G-28-2)** *(sequential: each wave blocked on the one before)*
+- [x] 28-05-PLAN.md — wave 5: blocking-human decision on 28-REVIEW WR-01, WR-02, WR-03 (= G-28-2 = 10 IN-02), IN-01, IN-02; recorded as D-19..D-23, deferrals filed as debt
+- [x] 28-06-PLAN.md — wave 6: D-21 carried out once: L45 + the tch gate + red test + fixture check + item retired, or kept with a reason and an event trigger
+- [x] 28-07-PLAN.md — wave 7: D-19, D-20, D-22 in app.js, one red-first commit per `fix`, L44 dated amendments
+- [x] 28-08-PLAN.md — wave 8: IN-02 re-wrap per D-23, the retiring sha, 28-REVIEW-DISPOSITION.md closed, phase gate
+
 **UI hint**: yes
 
 ### Phase 29: Ubuntu 26 Final Reading
@@ -464,7 +484,11 @@ close unless the human chooses to wait.
 recorded; no fix before classification. **Phase close**: `git diff --exit-code v0.5 -- tests/regression/`
 empty.
 **Research flag**: No — the procedure is fixed by the debt file.
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+**Wave 1**
+- [ ] 29-01-PLAN.md — read every `ci` run since 2026-10-19 from each job's own log, classify the first `ubuntu-latest` run on 26.04 whole against 26-02; green retires the item in the reading's commit, red goes to the human (pin with L46, or hold), not fired or pending goes to the human (wait, resumable; or the close condition)
 
 ## Process Notes (carried forward)
 
@@ -499,5 +523,5 @@ empty.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
 | 27. Ledger Tests and Harness | v0.6 | 6/6 | Complete    | 2026-10-20 |
-| 28. Refuse the Bad Link | v0.6 | 0/? | Not started | - |
-| 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |
+| 28. Refuse the Bad Link | v0.6 | 8/8 | Complete    | 2026-10-22 |
+| 29. Ubuntu 26 Final Reading | v0.6 | 0/1 | Not started (date-gated; may close with its item active) | - |

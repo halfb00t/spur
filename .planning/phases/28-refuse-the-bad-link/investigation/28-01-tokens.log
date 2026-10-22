@@ -1,0 +1,29 @@
+Chromium: 153.0.8010.12
+
+Number box (token | box reads | teeth status | face_width status)
+'abc'        | ''       | teeth 422 | face_width 422
+' '          | ''       | teeth 422 | face_width 422
+'0x10'       | ''       | teeth 422 | face_width 422
+'NaN'        | ''       | teeth 422 | face_width 422
+'Infinity'   | ''       | teeth 422 | face_width 422
+'1e'         | ''       | teeth 422 | face_width 422
+'--5'        | ''       | teeth 422 | face_width 422
+'22,5'       | ''       | teeth 422 | face_width 422
+'1e400'      | ''       | teeth 422 | face_width 422
+' 22'        | ''       | teeth 200 | face_width 200
+'22 '        | ''       | teeth 200 | face_width 200
+'1_0'        | ''       | teeth 200 | face_width 200
+'22.'        | ''       | teeth 422 | face_width 200
+'5.'         | ''       | teeth 422 | face_width 200
+'+5'         | ''       | teeth 422 | face_width 200
+'.5'         | '.5'     | teeth 422 | face_width 422
+'1e1'        | '1e1'    | teeth 422 | face_width 200
+'-5'         | '-5'     | teeth 422 | face_width 422
+'22.5'       | '22.5'   | teeth 422 | face_width 200
+
+Select (token | select reads | selectedIndex | root_shape status)
+'bogus'      | ''         | -1 | root_shape 422
+'Trochoid'   | ''         | -1 | root_shape 422
+'trochoid '  | ''         | -1 | root_shape 422
+''           | ''         | -1 | root_shape 422
+'radial'     | 'radial'   | 0 | root_shape 200

@@ -1,0 +1,30 @@
+................F....                                                    [100%]
+=================================== FAILURES ===================================
+__________ test_a_sub_print_precision_tip_chamfer_request_still_warns __________
+
+    def test_a_sub_print_precision_tip_chamfer_request_still_warns() -> None:
+        """10-REVIEW.md WR-01: a request under 0.0005 mm rounds to 0.0, so no limit ever
+        binds and the request would be silently dropped without this branch -- the part
+        built is the unchamfered default, not what was asked for, so it must still warn.
+    
+        10-REVIEW.md CR-01: the WR-01 fix's first attempt reused tip_chamfer_limit(p)[1]
+        as the reason, which is only true when a limit actually bound the value -- here
+        none did (tip_chamfer_limit's pitch-circle bound for the default gear is 1.75 mm,
+        nowhere near 0.0004). The message must state the true cause (print resolution),
+        and asserting only a prefix (startswith) cannot see a wrong suffix -- that is
+        exactly how CR-01 slipped through the first fix's own test. Assert the full
+        string.
+    
+        The printed field reads no number for a chamfer not cut, and the warning carries
+        the dropped request (L45, D-21)."""
+        p = GearParams(tip_chamfer=0.0004)
+        d = derive(p)
+        assert tip_chamfer_effective(p) == 0.0
+>       assert d.tip_chamfer_effective is None
+E       AssertionError: assert 0.0 is None
+E        +  where 0.0 = DerivedDimensions(pitch_d=33.25, tip_d=36.75, root_d=28.875, base_d=30.135, caliper_over_tips=36.624, tip_thickness=0....fer 0.0004 mm is below the 0.001 mm resolution it is cut at and was not cut.',), mate_teeth=None, centre_distance=None).tip_chamfer_effective
+
+tests/test_calc.py:692: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_calc.py::test_a_sub_print_precision_tip_chamfer_request_still_warns
+1 failed, 20 passed, 484 deselected in 0.16s

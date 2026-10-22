@@ -653,13 +653,16 @@ pytest — L13). Full list with sources and acceptance evidence:
   passed; review 0 critical / 3 warning / 6 info all open — WR-03 lets a `ps` parse error skip
   SIGKILL, WR-02 left `tests/process_group.py` outside the pin scan)
 
+- ✓ A shared link carrying a value its control cannot hold is refused visibly through the
+  existing 422 path, never built as the default part — Phase 28 (L44, amended for WR-01 and
+  IN-03; every review info finding of the milestone dispositioned, none `open`; the uncut tip
+  chamfer prints `null` under L45; WR-02 deferred as `must` debt by the human, D-20; verified
+  5/5, `make verify` 1348 passed on `e6480cb`)
+
 ### Active
 
 - [ ] The Phase 22 and browser-harness `must` debts retired (v0.6)
-- [ ] A link with an invalid enum value is refused visibly, not built as the default (v0.6)
 - [ ] CI is green, or its failure classified, on Ubuntu 26 `ubuntu-latest` (v0.6)
-- [ ] Every open review info finding of Phases 19 and 21–24 triaged; three cheap `nice`
-  items retired (v0.6)
 - Full list with IDs: `.planning/REQUIREMENTS.md`.
 
 ### Out of Scope
@@ -812,6 +815,8 @@ quick reference.
 | L41 | A field the model says is inert is dimmed in the form and stays a field (supersedes 08 D-09, keeps L02): `enabled_when` is one key holding a bare JSON list of `{field, op, value}` conditions (`op` is `eq` or `gt`, the list is the AND; an OR or another op is a stop-and-ask), built by `when()` (`Literal["eq", "gt"]` so a bad op fails `mypy --strict`) and emitted by `_extra()`, the one builder of `json_schema_extra`; eleven rows declared, each only after `tests/test_relations.py` proves it forward (the dependent moves only the warning that names it) and reverse (every field `calc` ignores has a relation); `.field.inactive` dims with `--muted` text and a dashed border, the reason (`Needs {gate title} above 0`) is its own row linked by `aria-describedby`, the field is never `disabled`, hidden or cleared and is still sent; `applyRelations()` runs at `readHash()`, in the `input` listener before the debounce and at `#reset`, never on a build's success; two unbacked relations and the hex warning on default bore fields filed, not declared | ✓ Good — verified 4/4, UAT 2/2; `make verify` 1248 tests at 97.99 %; `inert fields` step 1.32 s mean, commit slice 15.14 s of L36's 30 s (`bench/RESULTS.md`); fixture and golden pin byte-unchanged; review 2 warnings + 5 info open (`23-REVIEW-DISPOSITION.md`, WR-01 to triage before Phase 24 widens the grammar); `workflow.ui_safety_gate` turned off for this repo (no UI-SPEC; design decisions live in CONTEXT and this log) |
 | L42 | A bore shape is picked in the form and written back as flat fields (follows L41, keeps L02 and L05): `GearParams.model_config` carries `selectors`, a list of `{title, group, options: [{label, when}]}` whose `when` is L41's `when()` list, so `holds()` is the one evaluator and `app.js` names no bore field; `/api/schema` gains that one key while `/openapi.json` stays byte-identical, and the pin asserts both halves; four options (Round, D-flat, Hex, No bore) of which exactly one holds on every non-negative triple — none or two holding leaves the select blank, the derivation caught per selector; `deriveSelectors()` runs at the three `applyRelations()` sites and never writes; a pick plans first and writes after — each unmet `eq` field is written the string `0` with its old string stashed, a `gt` field gets its stashed string back when it clears the threshold, otherwise the pick is pending (`.pending`, the needing field focused, its reason in the field's own row, no request, `stopPropagation`) and a writing pick bubbles so the form listener sends exactly one debounced request; the keyway is left to the server's 422; no `GearParams` field is added | ✓ Good — verified 6/6, UAT 2/2; `make verify` 1311 passed (288.08 s, 24-04); `bore shape` step 8.55 s mean, commit slice 15.60 s of L36's 30 s, no bar set (Phase 25 re-sets it); both regression files byte-unchanged; the Codex cross-review of PR #36 and a second internal review found and the branch fixed: the pending pick persisted until its number is typed (CX-01), the focus kept on the select (WR-01/CX-02), a pick on another selector restoring the ended one (CX-04), an emptied box kept pending (WR-02); L42 amended 2026-10-13, verification regenerated 8/8 |
 | L43 | The gate's bar is 300 s on the 18-CPU Apple M5 Max, set by the human from two non-decisive readings, and `make venv` installs under the closure (amends L34): a new idle-host method pre-registered before any reading (`1d5ce8a`: 1-min load under 1.5 for three samples 30 s apart, N = 5 green runs per arm interleaved A/B, candidate = `math.ceil` of the largest decisive B `real`, 900 s wait and run caps, 3 h session cap); the host never quieted (seven waits gave up, lowest load 1.60), the human waived the wait and cut the session to A1 195.23 s / B1 179.21 s (1315 / 1317 passed, both non-decisive, candidate `none`) and wrote `Bar: 300 s`; the venv probe GREEN in a linked worktree under `PIP_CONSTRAINT` (31/31 pins, `pip check` clean, 1317 passed), so `$(STAMP)` installs `-c requirements.txt`; no check enforces the bar (ARCH 7.4) | ✓ Recorded — verified 5/5 with three must-haves under the human's overrides; Nyquist 11 automated / 3 manual-only; security 23/23 closed; review 0 critical, 3 warnings, 5 info open (`25-REVIEW-DISPOSITION.md`); `make verify` 1317 passed on `ac129dc` (184.95 s); the bar's evidential weight is thin by L43's own wording, and WR-03 names 294–336 s green runs from Phase 24 on the same host under load |
+| L44 | A link value its control cannot hold is sent and refused by the API's 422, never rebuilt as the default part (amends L39's pin; keeps L02, L03, L05, L08); a selector pick that writes a field ends its rejected token (2026-10-21 amendment, WR-01) | ✓ Good — Phase 28 verified 5/5; WR-02 (a token the box blanks but the API accepts) deferred `must` with an event trigger |
+| L45 | A tip chamfer asked for and not cut prints no number: `tip_chamfer_effective` is gated on the applied `tch` (amends L29; applies L08); 2026-10-22 correction names the capped-to-zero case | ✓ Good — red-first test, 44 fixture records unmoved, `tests/regression/` byte-identical to `v0.5` |
 
 ## Success Metric (Milestone v0.1)
 
@@ -919,4 +924,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-20 after Phase 27.*
+*Last updated: 2026-10-22 after Phase 28.*

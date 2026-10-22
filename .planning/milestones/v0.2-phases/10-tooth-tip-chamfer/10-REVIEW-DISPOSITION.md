@@ -9,19 +9,19 @@ findings:
     title: "The tip-chamfer warning states a false geometric cause whenever rounding, not a limit, changes the value (external: codex)"
   - id: IN-01
     severity: info
-    disposition: open
+    disposition: deferred
     title: "Bench spike hardcodes the `tip_chamfer` field's `le=3` bound in two places"
   - id: IN-02
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`DerivedDimensions.tip_chamfer_effective`'s null-gate reads the raw field, not the applied value"
   - id: WR-01
     severity: warning
     disposition: fixed
     title: "A `tip_chamfer` request under 0.0005 mm is silently rounded to nothing, with no warning"
-open: 2
+open: 0
 total: 4
-recorded: 2026-09-28T14:46:00.058Z
+recorded: 2026-10-21T00:00:00Z  # triage by hand; the gate's own stamp was 2026-09-28T14:46:00.058Z
 ---
 
 # Phase 10: Code Review Disposition
@@ -29,8 +29,8 @@ recorded: 2026-09-28T14:46:00.058Z
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | CR-01 | critical | fixed | 10-REVIEW-FIX.md |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
+| IN-01 | info | deferred | docs/tech_debt/active/2026-10-21-phase-18-review-info-findings-deferred.md (its own trigger line: the next edit of bench/tip_chamfer_spike.py or of the tip_chamfer bound, D-18) |
+| IN-02 | info | fixed | 6497c28 (L45, D-21; docs/tech_debt/resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) |
 | WR-01 | warning | fixed | 10-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.

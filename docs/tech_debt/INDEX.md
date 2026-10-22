@@ -16,7 +16,6 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
-| must | [A link with an invalid enum value loads a blank select and builds the default part](active/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | Phase 23 or 24 touches buildForm's enum rendering, or a user reports a link that loaded a blank select (pinned as today's behaviour by the browser test's step `root_shape=bogus as today`) |
 | must | [CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the browser test's install has only run on 24.04](active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md) | the first CI run after 2026-10-19 whose `Set up job` group names Ubuntu 26 (read its whole log; classify before any fix) |
 | must | [A whole-suite `make verify` hung near the end with no failure, no crash report and no survivor](active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md) | the next `make verify` that neither passes nor fails: keep its whole log (`-v` and the faulthandler dump now name the test; the item's runbook covers a stall after the last test), or `BuildPool.shutdown` is next touched |
 | nice | [No server-side cancellation on client abort](active/2026-09-21-no-server-side-cancellation.md) | slider-dragging actually saturates the queue |
@@ -29,14 +28,18 @@ Severity (grep-able `Severity:` field):
 | nice | [A wedged worker holds process exit until it finishes or is killed](active/2026-10-06-wedged-worker-holds-process-exit.md) | `BuildPool.shutdown` is next touched, or a graceful shutdown is observed to hang |
 | nice | [The English-throughout rule has no check in the gate](active/2026-10-05-english-throughout-has-no-check-in-the-gate.md) | a non-English line next lands in a tracked file, or `no-fake-done` is next edited |
 | nice | [A pytest-xdist worker segfaults in OCCT at interpreter exit](active/2026-10-09-xdist-worker-segfaults-in-occt-at-exit.md) | the human names the command that crashed every run on 2026-10-09 07:19–08:36 (command, cwd, venv, environment), or a `BuildPool` worker exit ever logs SIGSEGV |
-| nice | [Phase 19 code review: the root_fillet label finding is still deferred](active/2026-10-09-phase-19-review-info-findings-deferred.md) | Phase 28 (REQ-root-fillet-label-follows-root), or the `DIMS` table in `src/spur/static/app.js` is next touched |
-| nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched, or Phase 28's info-finding triage |
+| nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched |
 | nice | [Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`](active/2026-10-20-nothing-pins-that-build-passes-its-own-rm-to-chamfer-tips.md) | `_build` or `_chamfer_tips` is next touched, or a public per-build cost counter exists |
+| nice | [Phase 18's review leftovers and Phase 10's hard-coded chamfer bound](active/2026-10-21-phase-18-review-info-findings-deferred.md) | the next phase that changes the trochoid / hob-root maths in calc.py or its tests; for 10 IN-01, the next edit of bench/tip_chamfer_spike.py or the tip_chamfer bound |
+| must | [A link token the number box blanks but the API accepts builds a non-default part under a blank box](active/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | the next edit of `refuse()` or `gearQuery()` in `src/spur/static/app.js`, or a report of a part that does not match a blank box |
 
 ## Resolved
 
 | Item | Resolved in |
 |---|---|
+| [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | `6497c28` — see the file's own `Resolved in:` field |
+| [Phase 19 code review: the root_fillet label finding is still deferred](resolved/2026-10-09-phase-19-review-info-findings-deferred.md) | `61154d1` — see the file's own `Resolved in:` field |
+| [A link with an invalid enum value loads a blank select and builds the default part](resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | `cb93d4e` — see the file's own `Resolved in:` field |
 | [The environ pin raises `KeyError` on a module-level `from os import environ`](resolved/2026-10-20-environ-pin-raises-keyerror-on-module-level-import.md) | `27628ef` — see the file's own `Resolved in:` field |
 | [The group floor of 3 is recorded as "two pool workers"; the live group is uvicorn, the resource tracker and one worker](resolved/2026-10-10-group-floor-of-3-is-not-two-pool-workers.md) | `99e2b7d` — see the file's own `Resolved in:` field |
 | [The launch failure message names a stamp that skips the install](resolved/2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md) | `a393e50` — see the file's own `Resolved in:` field |

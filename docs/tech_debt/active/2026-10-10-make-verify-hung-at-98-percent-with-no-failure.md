@@ -5,7 +5,8 @@ Status: active
 Date: 2026-10-10
 Source: the Phase 21 orchestrator's post-wave gate after plan 21-03 (`HEAD` `bf0650b`), run by
 the harness with a 600 s limit; the whole log is kept at
-`.planning/phases/21-browser-test-of-the-viewer/investigation/2026-10-10-wave3-make-verify-hang-at-600s.log`
+`.planning/milestones/v0.5-phases/21-browser-test-of-the-viewer/investigation/2026-10-10-wave3-make-verify-hang-at-600s.log`
+(the archived copy); the 26-05 evidence is recorded in `bench/RESULTS.md` "Hang evidence (26-05)"
 Related files:
 - `Makefile:185` (the `test` recipe: `pytest -n 8 --cov -v --durations=25`; was line 170 when the run hung)
 - `docs/tech_debt/active/2026-10-06-wedged-worker-holds-process-exit.md` (a wedged `BuildPool`
@@ -57,8 +58,9 @@ stall is captured; no cause is claimed.
 
 The gate now runs `pytest -n 8 --cov --cov-report=term -v --durations=25`, and
 `pyproject.toml` sets `faulthandler_timeout = 170`, dump-only (the run carries on). Proved
-once with a throwaway 30 s test at `-n 8 --cov` and a 5 s timeout
-(`.planning/phases/26-gate-fails-with-a-cause/investigation/26-05-stall.log`).
+once with a throwaway 30 s test at `-n 8 --cov` and a 5 s timeout (`bench/RESULTS.md` "Hang
+evidence (26-05)"; the raw log, a secondary pointer that moves when v0.6 is archived, is
+`.planning/phases/26-gate-fails-with-a-cause/investigation/26-05-stall.log`).
 
 ### What a stalled gate prints
 - Each test's start line from `-v`, `path::test_name`, with no worker id.

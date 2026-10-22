@@ -91,30 +91,30 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Bad links — refused, never guessed
 
-- [ ] **REQ-bad-link-refused**: a link carrying a non-blank value its form control cannot hold
+- [x] **REQ-bad-link-refused**: a link carrying a non-blank value its form control cannot hold
   — an enum outside its options (`root_shape=bogus`, `recess_sides=bogus`) or non-numeric
   text in a number box (`teeth=abc`, `mate_teeth=abc`) — keeps the token in the fragment,
   sends it, and is marked through the existing 422 path with the server's text; no part is
   built. Editing the field or Reset clears it. Generic over the schema: no field name in
   `app.js` outside `DIMS` (L02). A blank value (`teeth=`, `root_shape=`) still means "use the
   default", unchanged.
-- [ ] **REQ-bad-link-decision-logged**: `L44` records the boundary (what is refused, blank
+- [x] **REQ-bad-link-decision-logged**: `L44` records the boundary (what is refused, blank
   kept as default, unknown keys still ignored) and amends what L39 pinned; the browser step
   `root_shape=bogus as today` is rewritten in the same commit — the old pin seen red against
   the fix and the new one red with the fix reverted; `docs/architecture/web-ui.md` brought
   true; the debt item retired (`2026-10-10-root-shape-bogus-loads-a-blank-select.md`).
-- [ ] **REQ-root-fillet-label-follows-root**: the `root_fillet` derived-dimension label
+- [x] **REQ-root-fillet-label-follows-root**: the `root_fillet` derived-dimension label
   stops reading "Root fillet used" while a hob root is in force (Phase 19 IN-04a); text only —
   no part, number or request moves; own commit.
 
 ### Info findings — none left `open`
 
-- [ ] **REQ-info-findings-triaged**: every open review info finding of Phases 19 and 21–24
+- [x] **REQ-info-findings-triaged**: every open review info finding of Phases 19 and 21–24
   carries one disposition in its `*-REVIEW-DISPOSITION.md`: `fixed` + sha, `deferred` + debt or
   idea path, or `skipped` + a one-line reason; zero `open` at the milestone close. Findings
   that let a test pass vacuously (24 CX-05, 23 IN-08, 23 IN-11, 21 IN-03, 21 IN-04) are fixed,
   not skipped.
-- [ ] **REQ-old-info-findings-triaged**: Phase 18 IN-01..08 and Phase 10 IN-01/02 are
+- [x] **REQ-old-info-findings-triaged**: Phase 18 IN-01..08 and Phase 10 IN-01/02 are
   dispositioned the same way: overtaken ones closed with a reason (18 IN-02, IN-06), the
   18 IN-07 docstring fixed, the rest filed as one `nice` item with a named trigger, and 10 IN-02
   (it changes a printed value) filed as a decision for the human, not fixed.
@@ -184,11 +184,11 @@ explicit edit with the human (ROADMAP.md, Phase 29 close condition).
 | REQ-stop-group-signals-first | Phase 27 | Complete |
 | REQ-group-floor-recorded-true | Phase 27 | Complete |
 | REQ-launch-message-true | Phase 27 | Complete |
-| REQ-bad-link-refused | Phase 28 | Pending |
-| REQ-bad-link-decision-logged | Phase 28 | Pending |
-| REQ-root-fillet-label-follows-root | Phase 28 | Pending |
-| REQ-info-findings-triaged | Phase 28 | Pending |
-| REQ-old-info-findings-triaged | Phase 28 | Pending |
+| REQ-bad-link-refused | Phase 28 | Complete |
+| REQ-bad-link-decision-logged | Phase 28 | Complete |
+| REQ-root-fillet-label-follows-root | Phase 28 | Complete |
+| REQ-info-findings-triaged | Phase 28 | Complete |
+| REQ-old-info-findings-triaged | Phase 28 | Complete |
 | REQ-ubuntu26-classified-on-migration | Phase 29 | Pending |
 
 Individual info-finding fixes ride the phase that touches their file (Phase 26: 24 CX-05, 21

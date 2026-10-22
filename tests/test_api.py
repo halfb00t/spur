@@ -250,11 +250,24 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # string back, otherwise the pick is pending), the stash, the pending pick's
     # `stopPropagation` and its note. `fields.set(` is counted once below: the select adds
     # no `fields` entry, so it is never sent and never in the hash.
+    #
+    # L44 added ten tokens and removed none: the `rejected` map's declaration, its read-back
+    # rule, the clear at the top of readHash(), the read-back of every field and of the mate
+    # box, gearQuery()'s early branch, update()'s mate fallback, the two clearing listeners and
+    # Reset's clear. A link value its control cannot hold is sent and refused by the server
+    # instead of being dropped; every earlier token is unchanged. 28-REVIEW WR-01 (D-19) added
+    # one more, write()'s clear of the field it writes, and removed none. 28-REVIEW IN-01
+    # (D-22) replaced the readHash-end token with a longer one that also pins the mate
+    # read-back between the assignment and the tail, which the human read as tightening
+    # under SC2.
+    # 28-REVIEW IN-03 dropped `input.value = to;`: the longer write() token contains it, so it
+    # could not fail on its own and the longer one supersedes it as the pin of the box write.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
         "for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];",
-        "mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }",
+        # One exact token on one line, so a grep for it finds this pin: 162 columns.
+        "mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }",  # noqa: E501
         "q.set(name, input.value)",
         "const infoQ = new URLSearchParams(q);",
         "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
@@ -281,10 +294,20 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "if (op === 'eq') writes.push([field, String(value), true]);",
         "stash.has(field) && Number(kept === '' ? defaults[field] : kept) > value",
         "if (zeroed) stash.set(field, input.value);",
-        "input.value = to;",
+        "input.value = to; rejected.delete(field);",
         "const stash = new Map();",
         "event.stopPropagation();",
         "reason.textContent = `${chosen.label} needs ${need(condition)}`;",
+        "const rejected = new Map();",
+        "if (token && input.value === '') rejected.set(name, token);",
+        "const h = new URLSearchParams(location.hash.slice(1)); rejected.clear();",
+        "for (const [name, { input }] of fields) refuse(name, input, h.get(name));",
+        "refuse('mate_teeth', mateInput, h.get('mate_teeth'));",
+        "if (rejected.has(name)) { q.set(name, rejected.get(name)); continue; }",
+        "const mate = mateInput.value || rejected.get('mate_teeth') || '';",
+        "form.addEventListener('input', (e) => rejected.delete(e.target.name));",
+        "mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));",
+        "rejected.clear(); mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",  # noqa: E501
     ):
         assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 

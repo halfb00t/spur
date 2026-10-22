@@ -2944,3 +2944,117 @@ Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n hw.ncpu machdep.cpu.brand
 27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0, cadquery-ocp 7.9.3.1.1, pytest 9.1.1 (`importlib.metadata.version`);
 the readings on 2026-10-14 from 13:17Z to 13:24Z at 1-minute loads of 4.18 to 7.33 (A2, stopped, ran to 11.70); the waits
 before A1 read 1.60 to 8.77 (`sysctl -n vm.loadavg`).
+
+## L44 — A link value its control cannot hold is sent and refused by the API's 422, never rebuilt as the default part (amends L39's pin, supersedes L42's byte-identical observation; keeps L02, L03, L05 and L08)
+
+Date: 2026-10-21.
+
+L02, L03, L05 and L08 stay and are the argument: a parameter the user set must never silently change the part, an invalid one
+is a 422 and not a guess, and the server is the one that words a refusal. L39 and L42 stay as written. L44 amends L39's pin of
+`#root_shape=bogus` (the browser test's step `root_shape=bogus as today`, which pinned the blank select and the default part
+as today's behaviour and filed it as debt), and it supersedes L42's observation that the `gearQuery()` and `readHash()` text
+is byte-identical to what it was before the selectors: both now carry the `rejected` map. The `if (prop.enum)` branch of
+`buildForm()`, `problems()` and `fail()` are unchanged.
+
+**What is refused** (D-02). A non-blank token its control cannot hold, found by reading the control back after it was
+assigned the token: a non-empty token that reads back `''` is one the control could not hold. `bogus`, `Trochoid` (select
+options compare case-sensitively) and `abc` are refused. There is no enum or number check in `app.js`; the rule is one
+function, `refuse()`, applied over `fields` and the mate box and nothing else (a selector's select also sits at
+`selectedIndex` -1 when no option holds, is not a link field and is never swept in). A value the control holds, in range or
+not (`teeth=2`, which `invalid field marked` sends), reaches the API exactly as before.
+
+**The mechanism** (D-01, D-04). One `rejected` Map, filled by `readHash()` over `fields` and the mate box, is sent in the
+control's place by `gearQuery()` (one early branch inside its loop over `fields`, so the sent keys keep the schema's order)
+and by `update()` for the mate. The 422 marks the field through the unchanged `problems()`, and the unchanged `fail()` returns
+before the STL request, so no part is drawn for the link. The page never parses a rejected token: `teeth=abc` reaches pydantic
+and is refused as `int_parsing` text. The fragment keeps the token as given, so Copy link copies the link that was opened.
+The control that could not hold the token shows blank. The measured replies for the five links are in `bench/RESULTS.md`,
+`### The bad-link steps (28-01)`.
+
+**When it clears** (D-03). An edit of that field (a number box typed, a select picked, the mate box typed), Reset, or the next
+`readHash()`. An edit of a different field keeps sending the token and the 422. A selector pick that writes the rejected field
+keeps sending it too: the guard the research offered for that case was not adopted, and the token ends when that field is
+edited or the form is Reset. (superseded by the amendment of 2026-10-21 at the end of this entry.)
+
+**Blank and unknown keys** (D-06). A blank value (`teeth=`, `root_shape=`, `mate_teeth=`) still means the default and an
+unknown key is still ignored, so `#teeth=&root_shape=&mate_teeth=&face_width=8` sends `face_width=8` and builds. This is the one
+place where the page is looser than the API: `/api/info` answers 422 for an empty value (`literal_error` for `root_shape`,
+`int_parsing` for `teeth` and `mate_teeth`), a stricter and separate boundary. It is recorded here with no code change and no
+debt item; the `blank, unknown and accepted tokens` step asserts both sides.
+
+**The mate box** (D-05). The mate box is not in `fields`, so `problems()` finds no field to outline: `#mate_teeth=abc` shows
+the server's bare message, `Input should be a valid integer, unable to parse string as an integer`, and marks nothing. This is
+the approved reading of success criterion 1 for a box outside `fields` ("mark the field" becomes "message, no outline" for it),
+a known gap and not a debt item.
+
+**The server decides.** Some tokens a number box blanks are accepted by the API, and they are now sent and built as the server
+reads them while the box shows blank. Before, the page dropped them and built the default part. The rows are in `bench/RESULTS.md`,
+`### Tokens a control cannot hold (28-01)`: ` 22`, `22 ` and `1_0` are blanked by the box and answered 200 for both `teeth` and
+`face_width`; `22.`, `5.` and `+5` are blanked and answered 200 for `face_width` only. The fragment carries the token, so the
+address bar names what was built from. No step uses such a token as a bad link, and `face_width=5.` is pinned as built.
+
+**The pins** (SC2). `tests/test_api.py` gains ten tokens in the shareable-link round trip (the map's declaration, its read-back
+rule, the clear at the top of `readHash()`, the read-back of every field and of the mate box, `gearQuery()`'s early branch,
+`update()`'s mate fallback, the two clearing listeners and Reset's clear) and loses none, and nothing is allow-listed; every
+earlier token holds byte for byte after whitespace collapse. The golden sweep step stays green and
+`git diff --exit-code v0.5 -- tests/regression/` is empty: every valid link sends what it sent before.
+
+**The proof** (D-08). Four browser steps replace the old pin: `bad link refused`, `bad link cleared`, `bad link on a fresh page`
+and `blank, unknown and accepted tokens`. The old step, run against the fix with the pin untouched, went red at its own first
+assertion: `/api/info was sent 'teeth=22&root_shape=bogus'`. The new step `bad link refused`, run with only `src/spur/static/app.js`
+reverted to `0efc87c`, went red at its first assertion: `/api/info was sent 'teeth=22', the link's pairs are [('root_shape',
+'bogus'), ('teeth', '22')]`. Both lines and their logs are under `### Seen red once (Phase 28)` in `bench/RESULTS.md`, in the
+order they ran.
+
+**Retired** (D-07). The amendment lives here and edits neither L39 nor L42; the fix, the pin flip, this entry, `web-ui.md` and
+`docs/tech_debt/resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md` are one commit. The `app.js:NNN`
+citations in `tests/test_browser.py` are function names now (26 IN-03), so this edit moves none of them.
+
+**Reversibility.** Costly: undoing it moves `app.js`, the `tests/test_api.py` tokens, the browser steps and `web-ui.md` together
+and needs a new Lxx superseding this one; no data and no fixture move.
+
+Reason: a link that says something else must not load as the default part (L03, L05), and the server stays the one that words a
+refusal (L02), so the page keeps what it cannot hold and sends it instead of validating anything itself.
+Machine: 18 CPUs, Apple M5 Max, 64 GiB RAM (`sysctl -n machdep.cpu.brand_string`; `bench.machine_facts()` prints `18 CPUs, arm64,
+64.0 GiB RAM`); macOS 27.0.1 (`sw_vers -productVersion`), Darwin kernel 27.0.0 (`uname -r`); Python 3.12.15, cadquery 2.8.0,
+cadquery-ocp 7.9.3.1.1, pytest 9.1.1, playwright 1.63.0 (`importlib.metadata.version`); Chromium 153.0.8010.12 for the token
+table; the browser steps read on 2026-10-21 at a 1-minute load of 4.26 (`sysctl -n vm.loadavg`, read after the run).
+
+**Amendment (2026-10-21, 28-REVIEW WR-01, D-19).** A selector pick that writes a field now ends that field's rejected token: `write()` deletes the field's `rejected` entry as it assigns the box, so the request carries what the box shows and not the token the box no longer holds. The guard adopted is the write's own clear, not the empty-box check RESEARCH Pitfall 3 offered. The pick path never fires an `input` event on the field it writes, which is why the form's clearing listener never ran for it. Proof: the `bad link cleared` case `#bore_d=abc` then a pick of "No bore", which sends `bore_d=0` alone, a green build, no mark and no error. Run against the unfixed `write()` it went red at `AssertionError: /api/info was sent 'bore_d=abc', not 'bore_d=0'` (`1 failed, 17 passed in 27.85s`, log `28-07-red-selector-write.log`, `### Seen red once (Phase 28)` in `bench/RESULTS.md`). `tests/test_api.py` gains an eleventh token, `input.value = to; rejected.delete(field);`, and loses none. No existing sentence of this entry is edited; **When it clears** carries a pointer to this paragraph.
+
+**Amendment (2026-10-21, 28-REVIEW IN-01, D-22).** **The pins** said every earlier token holds byte for byte. One is now replaced by a longer token: the readHash-end token, `mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }`, becomes `mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }`. It keeps the old assignment and the old tail and also pins the mate read-back between them, which the human read as tightening the SC2 pin (D-22). The duplicate assignment the old token forced is gone: `readHash()` assigns the mate box once, because `refuse()` reads the box it assigned and nothing after the read-back touches it. Proof: the longer token, run against the double assignment, went red on exactly that token, `AssertionError: mateInput.value = h.get('mate_teeth') ?? ''; refuse('mate_teeth', mateInput, h.get('mate_teeth')); applyRelations(); deriveSelectors(); }` at `tests/test_api.py:311` (`1 failed, 61 deselected in 2.08s`, log `28-07-red-readhash-pin.log`, `### Seen red once (Phase 28)` in `bench/RESULTS.md`), and went green once the second assignment was deleted; the steps `bad link refused` and `bad link cleared` still refuse `#mate_teeth=abc` and build `#mate_teeth=30`.
+
+**Amendment (2026-10-22, 28-REVIEW IN-03).** The WR-01 amendment's "gains an eleventh token and loses none" no longer holds. The longer token `input.value = to; rejected.delete(field);` contains the older `input.value = to;`, so the older one was satisfied whenever the longer was and could not fail on its own; it is dropped. `tests/test_api.py` keeps the ten L44 tokens and the one WR-01 token, and loses `input.value = to;`. The "exactly one value write in the selectors section" count in the same test still reads `write()`'s assignment and is unchanged. No existing sentence of this entry is edited.
+
+## L45 — A tip chamfer asked for and not cut prints no number: tip_chamfer_effective is gated on the applied value (amends L29's number paragraph; applies L08)
+
+Date: 2026-10-21
+
+**The decision** (D-21). At the 28-05 checkpoint the human answered "WR-03 fix" to whether `tip_chamfer_effective` should keep
+gating on the request. It does not: `derive()` now gates the printed field on the applied chamfer `tch`, the value `model.py`
+cuts, so a chamfer asked for and not cut prints `null`. This closes 10 IN-02, 28-REVIEW WR-03 and UAT G-28-2, one finding
+under three names.
+
+**What moves.** `derive(GearParams(tip_chamfer=0.0004)).tip_chamfer_effective` read `0.0` and reads `null`; `GearParams()`
+reads `null` and `GearParams(tip_chamfer=0.4)` reads `0.4`, both as before. The warning, "Tip chamfer 0.0004 mm is below the
+0.001 mm resolution it is cut at and was not cut.", is unchanged and carries the dropped request, and `model.py` already cut
+nothing. Only a request under 0.0005 mm prints differently, because that is the only request `tip_chamfer_effective` rounds
+to `0.0`. The field's description now says null when no chamfer is cut: none requested, or a request below the resolution.
+
+**What it amends.** L29's **The number** paragraph says `tip_chamfer_effective` is `null` when `tip_chamfer` is 0. It is
+`null` when no chamfer is cut, which includes that case. L29 itself is not edited.
+
+**The proof.** The new null assertion in `test_a_sub_print_precision_tip_chamfer_request_still_warns` ran red against the old
+gate first: `AssertionError: assert 0.0 is None` (`1 failed, 20 passed`, `investigation/28-06-red-tip-chamfer-null.log`, the
+row in `bench/RESULTS.md` `### Seen red once (Phase 28)`), and the capped-chamfer test now states its rule on the applied
+value. `make fixture.regen` ran on the fixed tree and the fixture check read every held field of the 44 committed records at
+the replay's own tolerances: `fixture check: 44 records, no held field moved, tip_chamfer_effective null in all 44`
+(`investigation/28-06-fixture-check.log`). No record moved, so no fixture commit was made (D-13) and
+`git diff --exit-code v0.5 -- tests/regression/` is empty.
+
+**Reversibility.** Reversible: one line, one test and this entry; no data and no fixture move.
+
+Reason: L08's rule is no number rather than a plausible one, and the part with a chamfer not cut is the part with no chamfer, so
+it prints what no chamfer prints.
+
+**Amendment (2026-10-22, 28-REVIEW IN-04).** **What moves** says "Only a request under 0.0005 mm prints differently". It is wider: `tip_chamfer_effective()` is `round(min(request, limit), 3)`, so it also rounds to `0.0` when the cap (the tip-land, pitch-circle or flank limit) is under 0.0005 mm while `tip_chamfer > 0`, and the field then prints `null` where the old gate printed `0.0`. That case takes the "Tip chamfer reduced to 0 mm ..." warning, not the "below the 0.001 mm resolution" one. A 304-combination sweep of teeth, shift, angle, fillet and root shape found no such limit, so no pinned record moves; this corrects the sentence, not a reproduced misprint. The field's description now says null when no chamfer is cut: none requested, or the request or the cap rounds below the 0.001 mm resolution it is cut at. No existing sentence of this entry is edited.
