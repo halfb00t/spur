@@ -3,19 +3,18 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 29
-current_phase_name: Ubuntu 26 Final Reading
-status: executing
-stopped_at: Phase 28 complete, ready to plan Phase 29
-last_updated: "2026-10-22T06:57:50.885Z"
+status: completed
+stopped_at: Phase 29 complete — all phases complete
+last_updated: "2026-10-22T13:43:39.641Z"
 last_activity: 2026-10-22
-last_activity_desc: Phase 29 execution started
-state_head: 0ffb33d9933f0ea9b7679603a290466bddbba1c3
+last_activity_desc: Phase 29 complete
+state_head: b4cc6a8480c1b906ff4723ae81df2ff96432323d
 progress:
   total_phases: 4
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # Project State
@@ -30,12 +29,12 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 29 (Ubuntu 26 Final Reading) — EXECUTING
-Plan: 1 of 1
-Status: Executing Phase 29
-Last activity: 2026-10-22 — Phase 29 execution started
+Phase: 29
+Plan: Not started
+Status: All phases complete
+Last activity: 2026-10-22 — Phase 29 complete
 
-Progress: [█████████░] 95% (2 of 4 phases)
+Progress: [██████████] 100% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -79,6 +78,7 @@ Progress: [█████████░] 95% (2 of 4 phases)
 | 26 | 7 | - | - |
 | 27 | 6 | - | - |
 | 28 | 8 | - | - |
+| 29 | 1 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -531,7 +531,8 @@ None yet.
   The verifier judged none defeats a success criterion and recommends closing WR-02 and WR-03 before Phase 28's repeated browser runs.
 - ℹ️ [Phase 27] `spike/27-group-listing` (PR #43, closed unmerged) still exists locally and on `origin`; deleting it is the human's call.
 - ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 runs 2026-10-19 to 2026-11-19; Phase 26's pre-classification
-  ran green (26-02, run 38724011970), and the Ubuntu 26 item stays active for Phase 29.
+  ran green (26-02, run 38724011970). Phase 29 closed 2026-10-22 with the trigger not fired (last read
+  2026-10-22T13:13Z: 30 of 30 jobs on `ubuntu-24.04`); the Ubuntu 26 item stays active.
 - ✓ [Phase 26] The twin-selectors step read green on the first post-merge `main` run (38858407163 at `1981d93`). One
   green run is consistent with the fix, not conclusive (2 reds in 8 before it); later `main` runs add to it.
 - ✓ [Phase 26] PR #41 landed its pushed head `6c0e57b` without 13 unpushed commits (`faf376b` among them); they
@@ -587,6 +588,7 @@ None yet.
 - ⚠️ [Phase 21] CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the shell's `--with-deps`
   install has only run on 24.04 (`must`, `docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`).
   Read the first post-migration run's whole log before any fix; `runs-on: ubuntu-24.04` is the fallback.
+  Still open after Phase 29's close (trigger not fired): this phase's PR or the milestone-close PR may be the first 26.04 run.
 - ⚠️ [Phase 21] `make verify` hung once near 98 % for the 600 s background limit with no failure, no
   crash report and no survivors (wave 3 gate; `must`, `docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md`,
   log under `21-browser-test-of-the-viewer/investigation/`). The re-run was green in 175.80 s. Relevant to the
@@ -816,7 +818,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-21T18:04:31.088Z
-Stopped at: Phase 28 complete, ready to plan Phase 29
+Stopped at: Phase 29 complete — all phases complete
 Resume file: None
 
 ## Operator Next Steps

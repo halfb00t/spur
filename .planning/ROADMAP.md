@@ -147,7 +147,7 @@ a value its form control cannot hold is refused instead of silently building the
 - [x] **Phase 28: Refuse the Bad Link** - A link carrying a value its form control cannot hold (completed 2026-10-22)
       is refused visibly through the existing 422 path under a new `L44`, the `root_fillet`
       label follows the root, and every open review info finding ends dispositioned
-- [ ] **Phase 29: Ubuntu 26 Final Reading** - Date-gated and last: the first `ubuntu-latest`
+- [x] **Phase 29: Ubuntu 26 Final Reading** - Date-gated and last: the first `ubuntu-latest` (closed, trigger not fired, 2026-10-22)
       run on Ubuntu 26.04 classified from its whole log; may close with the item still active
 
 ## Phase Details
@@ -486,11 +486,11 @@ close unless the human chooses to wait.
 recorded; no fix before classification. **Phase close**: `git diff --exit-code v0.5 -- tests/regression/`
 empty.
 **Research flag**: No — the procedure is fixed by the debt file.
-**Plans**: 1 plan
+**Plans**: 1/1 plans complete
 
 Plans:
 **Wave 1**
-- [ ] 29-01-PLAN.md — read every `ci` run since 2026-10-19 from each job's own log, classify the first `ubuntu-latest` run on 26.04 whole against 26-02; green retires the item in the reading's commit, red goes to the human (pin with L46, or hold), not fired or pending goes to the human (wait, resumable; or the close condition)
+- [x] 29-01-PLAN.md — read every `ci` run since 2026-10-19 from each job's own log, classify the first `ubuntu-latest` run on 26.04 whole against 26-02; green retires the item in the reading's commit, red goes to the human (pin with L46, or hold), not fired or pending goes to the human (wait, resumable; or the close condition)
 
 ## Process Notes (carried forward)
 

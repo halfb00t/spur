@@ -41,18 +41,18 @@
     {
       "number": "28",
       "name": "Refuse the Bad Link",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "29",
       "name": "Ubuntu 26 Final Reading",
-      "status": "pending"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd-progress --next",
-    "label": "Advance to the next step (plan phase 28)",
-    "reason": "Phase 3 of 4 — needs a plan"
+    "command": "/gsd-new-milestone",
+    "label": "Start a new milestone",
+    "reason": "All phases complete — start a new milestone"
   },
-  "updated_at": "2026-10-20T14:34:07.607Z"
+  "updated_at": "2026-10-22T13:43:39.651Z"
 }
