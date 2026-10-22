@@ -4,12 +4,11 @@ milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 29
 current_phase_name: Ubuntu 26 Final Reading
-status: executing
+status: "Phase 28 shipped — PR #46"
 stopped_at: Phase 28 complete, ready to plan Phase 29
-last_updated: "2026-10-22T06:39:12.037Z"
+last_updated: "2026-10-22T11:04:12.461Z"
 last_activity: 2026-10-22
-last_activity_desc: Phase 28 complete, transitioned to Phase 29
-state_head: 76cd910426158ba77a2496e976b61fea23b97946
+state_head: ae9f5cd1dbe874a8ecfaa26dbd004ae662a65c72
 progress:
   total_phases: 4
   completed_phases: 8
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 29 (Ubuntu 26 Final Reading) — READY TO EXECUTE
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-22 — Phase 28 complete, transitioned to Phase 29
+Status: Phase 28 shipped — PR #46
+Last activity: 2026-10-22
 
 Progress: [█████████░] 95% (2 of 4 phases)
 
