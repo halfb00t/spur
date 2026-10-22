@@ -484,7 +484,11 @@ close unless the human chooses to wait.
 recorded; no fix before classification. **Phase close**: `git diff --exit-code v0.5 -- tests/regression/`
 empty.
 **Research flag**: No — the procedure is fixed by the debt file.
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+**Wave 1**
+- [ ] 29-01-PLAN.md — read every `ci` run since 2026-10-19 from each job's own log, classify the first `ubuntu-latest` run on 26.04 whole against 26-02; green retires the item in the reading's commit, red goes to the human (pin with L46, or hold), not fired or pending goes to the human (wait, resumable; or the close condition)
 
 ## Process Notes (carried forward)
 
@@ -520,4 +524,4 @@ empty.
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
 | 27. Ledger Tests and Harness | v0.6 | 6/6 | Complete    | 2026-10-20 |
 | 28. Refuse the Bad Link | v0.6 | 8/8 | Complete    | 2026-10-22 |
-| 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |
+| 29. Ubuntu 26 Final Reading | v0.6 | 0/1 | Not started (date-gated; may close with its item active) | - |
