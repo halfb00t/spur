@@ -13,7 +13,7 @@ findings:
     title: "Bench spike hardcodes the `tip_chamfer` field's `le=3` bound in two places"
   - id: IN-02
     severity: info
-    disposition: deferred
+    disposition: fixed
     title: "`DerivedDimensions.tip_chamfer_effective`'s null-gate reads the raw field, not the applied value"
   - id: WR-01
     severity: warning
@@ -30,7 +30,7 @@ recorded: 2026-10-21T00:00:00Z  # triage by hand; the gate's own stamp was 2026-
 |---------|----------|-------------|--------|
 | CR-01 | critical | fixed | 10-REVIEW-FIX.md |
 | IN-01 | info | deferred | docs/tech_debt/active/2026-10-21-phase-18-review-info-findings-deferred.md (its own trigger line: the next edit of bench/tip_chamfer_spike.py or of the tip_chamfer bound, D-18) |
-| IN-02 | info | deferred | docs/tech_debt/active/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md (a decision for the human, D-13) |
+| IN-02 | info | fixed | 6497c28 (L45, D-21; docs/tech_debt/resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) |
 | WR-01 | warning | fixed | 10-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
