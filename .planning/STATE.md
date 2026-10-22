@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
-current_phase: 28
-current_phase_name: Refuse the Bad Link
-status: executing
-stopped_at: Completed 28-08-PLAN.md
-last_updated: "2026-10-21T18:04:31.185Z"
-last_activity: 2026-10-21
-last_activity_desc: Phase 28 execution started
-state_head: 0568ee82d9249793e9c1449be4a82e021a10be92
+current_phase: 29
+current_phase_name: Ubuntu 26 Final Reading
+status: planning
+stopped_at: Phase 28 complete, ready to plan Phase 29
+last_updated: "2026-10-22T01:18:09.848Z"
+last_activity: 2026-10-22
+last_activity_desc: Phase 28 complete, transitioned to Phase 29
+state_head: e6480cb88cd637a2ec1dbc337628ef763d98e00c
 progress:
   total_phases: 4
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 21
   completed_plans: 21
-  percent: 100
+  percent: 89
 ---
 
 # Project State
@@ -30,12 +30,12 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 28 (Refuse the Bad Link) — EXECUTING
-Plan: 5 of 8
-Status: Ready to execute
-Last activity: 2026-10-21 — Phase 28 execution started
+Phase: 29 — Ubuntu 26 Final Reading
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-22 — Phase 28 complete, transitioned to Phase 29
 
-Progress: [██████████] 100% (2 of 4 phases)
+Progress: [█████████░] 89% (2 of 4 phases)
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Progress: [██████████] 100% (2 of 4 phases)
 | 25 | 5 | - | - |
 | 26 | 7 | - | - |
 | 27 | 6 | - | - |
+| 28 | 8 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -814,7 +815,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-21T18:04:31.088Z
-Stopped at: Completed 28-08-PLAN.md
+Stopped at: Phase 28 complete, ready to plan Phase 29
 Resume file: None
 
 ## Operator Next Steps

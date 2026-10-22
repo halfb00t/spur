@@ -144,7 +144,7 @@ a value its form control cannot hold is refused instead of silently building the
 - [x] **Phase 27: Ledger Tests and Harness** - Slug totality guarded in the commit slice, the (completed 2026-10-20)
       failed-build name test independent of cache order, `stop_group` signalling before it
       reads `ps`, and the harness's own records and launch message made true
-- [ ] **Phase 28: Refuse the Bad Link** - A link carrying a value its form control cannot hold
+- [x] **Phase 28: Refuse the Bad Link** - A link carrying a value its form control cannot hold (completed 2026-10-22)
       is refused visibly through the existing 422 path under a new `L44`, the `root_fillet`
       label follows the root, and every open review info finding ends dispositioned
 - [ ] **Phase 29: Ubuntu 26 Final Reading** - Date-gated and last: the first `ubuntu-latest`
@@ -424,7 +424,7 @@ run `tests/test_api.py` early — its `app.js` regexes were not fully read in re
 the fix is client-side only. **Phase close**: `make verify` result line recorded and
 `git diff --exit-code v0.5 -- tests/regression/` empty.
 **Research flag**: No — it needs the discuss-phase decisions above, not research.
-**Plans**: 8/8 plans executed (28-05..28-08 close UAT gaps G-28-1, G-28-2)
+**Plans**: 8/8 plans complete (28-05..28-08 close UAT gaps G-28-1, G-28-2)
 
 Plans:
 **Wave 1**
@@ -519,5 +519,5 @@ empty.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
 | 27. Ledger Tests and Harness | v0.6 | 6/6 | Complete    | 2026-10-20 |
-| 28. Refuse the Bad Link | v0.6 | 8/8 | In Progress | - |
+| 28. Refuse the Bad Link | v0.6 | 8/8 | Complete    | 2026-10-22 |
 | 29. Ubuntu 26 Final Reading | v0.6 | 0/? | Not started (date-gated; may close with its item active) | - |
