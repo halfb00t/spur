@@ -6732,3 +6732,4 @@ The last `ci` run of the window (39568562205, created 2026-10-21T08:20:46Z) is t
 the migration, and these are the repository's own runs, not GitHub's fleet.
 
 Outcome: not fired -- no job of any `ubuntu-latest` run in the window reads `ubuntu-26.04` (24 of 24 jobs read `ubuntu-24.04`), so no rule for red, green or pending holds.
+Decision (2026-10-22T07:12Z): wait -- "wait"
