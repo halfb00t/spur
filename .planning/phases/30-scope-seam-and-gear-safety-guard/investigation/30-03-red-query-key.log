@@ -1,0 +1,43 @@
+# 30-03 W9: a 'part' string field defaulting to 'gear' added to ModelQuery in src/spur/app.py
+$ git diff
+diff --git a/src/spur/app.py b/src/spur/app.py
+index 8f910f7..ec09e25 100644
+--- a/src/spur/app.py
++++ b/src/spur/app.py
+@@ -237,6 +237,7 @@ class InfoQuery(GearParams):
+ class ModelQuery(GearParams):
+     quality: Literal["preview", "fine"] = Field(
+         "fine", description="STL tessellation: preview (coarse, small) or fine.")
++    part: str = "gear"
+ 
+ 
+ def _gear(q: GearParams) -> GearParams:
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+________________ test_the_gear_routes_take_the_v0_6_query_keys _________________
+
+    def test_the_gear_routes_take_the_v0_6_query_keys() -> None:
+        """D-15: a gear route ignores a query key it does not know, so a key added to one
+        would change what an old link builds without any error. The keys are the gear's
+        fields plus each endpoint's own extra, and the two bare routes take none."""
+        fields = set(GearParams.model_fields)
+        assert _query_keys("/api/info") == fields | {"mate_teeth"}
+>       assert _query_keys("/api/model.{fmt}") == fields | {"quality"}
+E       AssertionError: assert {'backlash', ...ore_hex', ...} == {'backlash', ...ore_hex', ...}
+E         
+E         Extra items in the left set:
+E         'part'
+E         Use -v to get more diff
+
+tests/test_seam.py:151: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_seam.py::test_the_gear_routes_take_the_v0_6_query_keys - As...
+1 failed, 5 passed in 0.14s
+exit=1
+$ make gear.unchanged
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+exit=0
+$ git status --porcelain -- src pyproject.toml (after git checkout -- src/spur/app.py)
+(empty above = clean)

@@ -1,0 +1,146 @@
+python3.12 -m venv .venv
+.venv/bin/python -m pip install --quiet --upgrade pip
+.venv/bin/python -m pip install -e '.[dev]' -c requirements.txt
+Obtaining file:///Users/half/git/halfb00t/spur
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Installing backend dependencies: started
+  Installing backend dependencies: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: cadquery>=2.5 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (2.8.0)
+Requirement already satisfied: fastapi>=0.115 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (0.141.1)
+Requirement already satisfied: pydantic>=2.7 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (2.13.5)
+Requirement already satisfied: uvicorn>=0.30 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (0.53.0)
+Requirement already satisfied: httpx>=0.27 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (0.28.1)
+Requirement already satisfied: import-linter>=2.3 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (2.15)
+Requirement already satisfied: mypy>=1.18 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (2.4.0)
+Requirement already satisfied: playwright==1.63.0 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (1.63.0)
+Requirement already satisfied: pre-commit>=4 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (4.6.2)
+Requirement already satisfied: pytest-cov>=7.1 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (7.1.0)
+Requirement already satisfied: pytest-xdist>=3.8 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (3.8.0)
+Requirement already satisfied: pytest>=8 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (9.1.1)
+Requirement already satisfied: ruff>=0.14 in ./.venv/lib/python3.12/site-packages (from spur==0.1.0) (0.16.10)
+Requirement already satisfied: pyee<14,>=13 in ./.venv/lib/python3.12/site-packages (from playwright==1.63.0->spur==0.1.0) (13.0.1)
+Requirement already satisfied: greenlet<4.0.0,>=3.1.1 in ./.venv/lib/python3.12/site-packages (from playwright==1.63.0->spur==0.1.0) (3.5.6)
+Requirement already satisfied: typing-extensions in ./.venv/lib/python3.12/site-packages (from pyee<14,>=13->playwright==1.63.0->spur==0.1.0) (4.16.0)
+Requirement already satisfied: cadquery-ocp<8.0,>=7.9.3.1 in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (7.9.3.1.1)
+Requirement already satisfied: ezdxf>=1.3.0 in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (1.4.4)
+Requirement already satisfied: multimethod<2.0,>=1.11 in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (1.12)
+Requirement already satisfied: nlopt<3.0,>=2.9.0 in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (2.11.0)
+Requirement already satisfied: runtype in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (0.5.3)
+Requirement already satisfied: casadi in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (3.8.1)
+Requirement already satisfied: trame in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (4.0.0)
+Requirement already satisfied: trame-vtk in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (2.11.17)
+Requirement already satisfied: trame-components in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (2.5.0)
+Requirement already satisfied: trame-vuetify in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (3.3.0)
+Requirement already satisfied: pyparsing>=3.0.0 in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (3.3.3)
+Requirement already satisfied: scipy in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (1.18.1)
+Requirement already satisfied: numba in ./.venv/lib/python3.12/site-packages (from cadquery>=2.5->spur==0.1.0) (0.68.0)
+Requirement already satisfied: cadquery-ocp-proxy==7.9.3.1.1 in ./.venv/lib/python3.12/site-packages (from cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (7.9.3.1.1)
+Requirement already satisfied: vtk==9.6.2 in ./.venv/lib/python3.12/site-packages (from cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (9.6.2)
+Requirement already satisfied: matplotlib>=2.0.0 in ./.venv/lib/python3.12/site-packages (from vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (3.11.2)
+Requirement already satisfied: numpy<3,>=2 in ./.venv/lib/python3.12/site-packages (from nlopt<3.0,>=2.9.0->cadquery>=2.5->spur==0.1.0) (2.5.3)
+Requirement already satisfied: fonttools in ./.venv/lib/python3.12/site-packages (from ezdxf>=1.3.0->cadquery>=2.5->spur==0.1.0) (4.65.0)
+Requirement already satisfied: starlette>=0.46.0 in ./.venv/lib/python3.12/site-packages (from fastapi>=0.115->spur==0.1.0) (1.6.0)
+Requirement already satisfied: typing-inspection>=0.4.2 in ./.venv/lib/python3.12/site-packages (from fastapi>=0.115->spur==0.1.0) (0.4.4)
+Requirement already satisfied: annotated-doc>=0.0.2 in ./.venv/lib/python3.12/site-packages (from fastapi>=0.115->spur==0.1.0) (0.0.5)
+Requirement already satisfied: anyio in ./.venv/lib/python3.12/site-packages (from httpx>=0.27->spur==0.1.0) (4.15.1)
+Requirement already satisfied: certifi in ./.venv/lib/python3.12/site-packages (from httpx>=0.27->spur==0.1.0) (2026.7.22)
+Requirement already satisfied: httpcore==1.* in ./.venv/lib/python3.12/site-packages (from httpx>=0.27->spur==0.1.0) (1.0.9)
+Requirement already satisfied: idna in ./.venv/lib/python3.12/site-packages (from httpx>=0.27->spur==0.1.0) (3.20)
+Requirement already satisfied: h11>=0.16 in ./.venv/lib/python3.12/site-packages (from httpcore==1.*->httpx>=0.27->spur==0.1.0) (0.16.0)
+Requirement already satisfied: click>=6 in ./.venv/lib/python3.12/site-packages (from import-linter>=2.3->spur==0.1.0) (8.5.0)
+Requirement already satisfied: grimp>=3.17 in ./.venv/lib/python3.12/site-packages (from import-linter>=2.3->spur==0.1.0) (3.17)
+Requirement already satisfied: rich>=14.2.0 in ./.venv/lib/python3.12/site-packages (from import-linter>=2.3->spur==0.1.0) (15.0.0)
+Requirement already satisfied: contourpy>=1.0.1 in ./.venv/lib/python3.12/site-packages (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (1.4.0)
+Requirement already satisfied: cycler>=0.10 in ./.venv/lib/python3.12/site-packages (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (0.12.1)
+Requirement already satisfied: kiwisolver>=1.3.1 in ./.venv/lib/python3.12/site-packages (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (1.5.1)
+Requirement already satisfied: packaging>=20.0 in ./.venv/lib/python3.12/site-packages (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (26.3)
+Requirement already satisfied: pillow>=9 in ./.venv/lib/python3.12/site-packages (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (12.3.0)
+Requirement already satisfied: python-dateutil>=2.7 in ./.venv/lib/python3.12/site-packages (from matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (2.9.0.post0)
+Requirement already satisfied: mypy_extensions>=1.0.0 in ./.venv/lib/python3.12/site-packages (from mypy>=1.18->spur==0.1.0) (1.1.0)
+Requirement already satisfied: pathspec>=1.0.0 in ./.venv/lib/python3.12/site-packages (from mypy>=1.18->spur==0.1.0) (1.1.1)
+Requirement already satisfied: librt>=0.16.0 in ./.venv/lib/python3.12/site-packages (from mypy>=1.18->spur==0.1.0) (0.16.0)
+Requirement already satisfied: ast-serialize<1.0.0,>=0.11.2 in ./.venv/lib/python3.12/site-packages (from mypy>=1.18->spur==0.1.0) (0.12.1)
+Requirement already satisfied: cfgv>=2.0.0 in ./.venv/lib/python3.12/site-packages (from pre-commit>=4->spur==0.1.0) (3.5.0)
+Requirement already satisfied: identify>=1.0.0 in ./.venv/lib/python3.12/site-packages (from pre-commit>=4->spur==0.1.0) (2.6.20)
+Requirement already satisfied: nodeenv>=0.11.1 in ./.venv/lib/python3.12/site-packages (from pre-commit>=4->spur==0.1.0) (1.11.0)
+Requirement already satisfied: pyyaml>=5.1 in ./.venv/lib/python3.12/site-packages (from pre-commit>=4->spur==0.1.0) (6.0.3)
+Requirement already satisfied: virtualenv>=20.10.0 in ./.venv/lib/python3.12/site-packages (from pre-commit>=4->spur==0.1.0) (21.14.5)
+Requirement already satisfied: annotated-types>=0.6.0 in ./.venv/lib/python3.12/site-packages (from pydantic>=2.7->spur==0.1.0) (0.8.0)
+Requirement already satisfied: pydantic-core==2.46.5 in ./.venv/lib/python3.12/site-packages (from pydantic>=2.7->spur==0.1.0) (2.46.5)
+Requirement already satisfied: iniconfig>=1.0.1 in ./.venv/lib/python3.12/site-packages (from pytest>=8->spur==0.1.0) (2.3.1)
+Requirement already satisfied: pluggy<2,>=1.5 in ./.venv/lib/python3.12/site-packages (from pytest>=8->spur==0.1.0) (1.6.0)
+Requirement already satisfied: pygments>=2.7.2 in ./.venv/lib/python3.12/site-packages (from pytest>=8->spur==0.1.0) (2.21.0)
+Requirement already satisfied: coverage>=7.10.6 in ./.venv/lib/python3.12/site-packages (from coverage[toml]>=7.10.6->pytest-cov>=7.1->spur==0.1.0) (7.16.2)
+Requirement already satisfied: execnet>=2.1 in ./.venv/lib/python3.12/site-packages (from pytest-xdist>=3.8->spur==0.1.0) (2.1.2)
+Requirement already satisfied: six>=1.5 in ./.venv/lib/python3.12/site-packages (from python-dateutil>=2.7->matplotlib>=2.0.0->vtk==9.6.2->cadquery-ocp<8.0,>=7.9.3.1->cadquery>=2.5->spur==0.1.0) (1.17.0)
+Requirement already satisfied: markdown-it-py>=2.2.0 in ./.venv/lib/python3.12/site-packages (from rich>=14.2.0->import-linter>=2.3->spur==0.1.0) (4.2.0)
+Requirement already satisfied: mdurl~=0.1 in ./.venv/lib/python3.12/site-packages (from markdown-it-py>=2.2.0->rich>=14.2.0->import-linter>=2.3->spur==0.1.0) (0.1.2)
+Requirement already satisfied: distlib<1,>=0.3.7 in ./.venv/lib/python3.12/site-packages (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0) (0.4.3)
+Requirement already satisfied: filelock<5,>=3.24.2 in ./.venv/lib/python3.12/site-packages (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0) (4.0.12)
+Requirement already satisfied: platformdirs<5,>=3.9.1 in ./.venv/lib/python3.12/site-packages (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0) (4.12.4)
+Requirement already satisfied: python-discovery>=1.6 in ./.venv/lib/python3.12/site-packages (from virtualenv>=20.10.0->pre-commit>=4->spur==0.1.0) (1.6.1)
+Requirement already satisfied: llvmlite<0.51,>=0.50.0dev0 in ./.venv/lib/python3.12/site-packages (from numba->cadquery>=2.5->spur==0.1.0) (0.50.0)
+Requirement already satisfied: trame-client<5,>=4 in ./.venv/lib/python3.12/site-packages (from trame->cadquery>=2.5->spur==0.1.0) (4.1.4)
+Requirement already satisfied: trame-common<2,>=1.2.7 in ./.venv/lib/python3.12/site-packages (from trame->cadquery>=2.5->spur==0.1.0) (1.2.8)
+Requirement already satisfied: trame-server<5,>=4 in ./.venv/lib/python3.12/site-packages (from trame->cadquery>=2.5->spur==0.1.0) (4.0.0)
+Requirement already satisfied: wslink>=2.5.7 in ./.venv/lib/python3.12/site-packages (from trame->cadquery>=2.5->spur==0.1.0) (2.5.7)
+Requirement already satisfied: more-itertools in ./.venv/lib/python3.12/site-packages (from trame-server<5,>=4->trame->cadquery>=2.5->spur==0.1.0) (11.1.0)
+Requirement already satisfied: aiohttp<4 in ./.venv/lib/python3.12/site-packages (from wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (3.14.4)
+Requirement already satisfied: msgpack<2,>=1 in ./.venv/lib/python3.12/site-packages (from wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (1.2.3)
+Requirement already satisfied: aiohappyeyeballs>=2.5.0 in ./.venv/lib/python3.12/site-packages (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (2.7.1)
+Requirement already satisfied: aiosignal>=1.4.0 in ./.venv/lib/python3.12/site-packages (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (1.4.0)
+Requirement already satisfied: attrs>=17.3.0 in ./.venv/lib/python3.12/site-packages (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (26.1.0)
+Requirement already satisfied: frozenlist>=1.1.1 in ./.venv/lib/python3.12/site-packages (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (1.8.0)
+Requirement already satisfied: multidict<7.0,>=4.5 in ./.venv/lib/python3.12/site-packages (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (6.9.1)
+Requirement already satisfied: propcache>=0.2.0 in ./.venv/lib/python3.12/site-packages (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (0.5.4)
+Requirement already satisfied: yarl<2.0,>=1.25.1 in ./.venv/lib/python3.12/site-packages (from aiohttp<4->wslink>=2.5.7->trame->cadquery>=2.5->spur==0.1.0) (1.25.1)
+Building wheels for collected packages: spur
+  Building editable for spur (pyproject.toml): started
+  Building editable for spur (pyproject.toml): finished with status 'done'
+  Created wheel for spur: filename=spur-0.1.0-py3-none-any.whl size=10809 sha256=9e1b6258331f01bf8253a4a236c61045a9125231306a97f28a09db93987d49e1
+  Stored in directory: /private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pip-ephem-wheel-cache-1hedgn9k/wheels/ae/fa/f4/78ded43bff22a45c06b49307fdd4549e965e25c06bd403eaf3
+Successfully built spur
+Installing collected packages: spur
+  Attempting uninstall: spur
+    Found existing installation: spur 0.1.0
+    Uninstalling spur-0.1.0:
+      Successfully uninstalled spur-0.1.0
+Successfully installed spur-0.1.0
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 47 files, 86 dependencies.
+-----------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+The shaft maths stays free of the CAD kernel and the solid KEPT
+The shaft maths stays free of the logger KEPT
+The kernel doorways are model and shaft_model KEPT
+The gear maths does not know the shaft KEPT
+The shaft maths copies the gear maths, never imports it KEPT
+
+Contracts: 10 kept, 0 broken.
