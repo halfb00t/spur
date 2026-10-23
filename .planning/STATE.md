@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 30
 current_phase_name: Scope, Seam and Gear-Safety Guard
-status: executing
-stopped_at: Completed 30-04-PLAN.md
-last_updated: "2026-10-23T16:37:19.762Z"
+status: verifying
+stopped_at: Completed 30-05-PLAN.md
+last_updated: "2026-10-23T16:46:40.365Z"
 last_activity: 2026-10-23
 last_activity_desc: Phase 30 execution started
-state_head: 92fc0d4a74d722f3bb950f050b37564e5dd02fc4
+state_head: f3dc70dbbb73cd417b1c17d60030ff58002118f5
 progress:
   total_phases: 5
   completed_phases: 6
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 30 (Scope, Seam and Gear-Safety Guard) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-23 — Phase 30 execution started
 
 ## Performance Metrics
@@ -271,6 +271,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 30 P02 | 7 min | 2 tasks | 3 files |
 | Phase 30 P03 | 10 min | 3 tasks | 9 files |
 | Phase 30 P04 | 12 min | 3 tasks | 6 files |
+| Phase 30 P05 | 8 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -528,6 +529,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 30]: 30-03: C5 forbids spur.calc to the four shaft-maths modules, direct imports only (allow_indirect_imports = true set explicitly); C2 omits the key and import-linter 2.15's default is false, so it forbids indirect imports too
 - [Phase 30]: 30-03: Phase 32 adds ignore_imports = [spur.model -> spur.shaft_model] to C3 in the same commit that first imports shaft_model in model.py; wall commit is bdf224d
 - [Phase 30]: 30-04: Part is the name at the shared entry points; _serve_model is the one serving path (move ca60285, 115 lines proved identical); the 503 text counts parts (D-07, D-08, D-09)
+- [Phase 30]: 30-05: Phase 30's make verify read 1369 passed in 233.18s (real 234.48 s, load 16.75 -> 16.06) against the recorded 236.23 s with 239.51 s as cross-check; inside Phase 25's ~8 % spread, no precise delta claimed; all seven close checks PASS
 
 ### Pending Todos
 
@@ -539,11 +541,6 @@ None yet.
   is in Part 1, the size tables in Part 2). **Phase 31 needs anchor rows from the same copy** before it can close: formula
   confirmation by clause, the `h_fP` convention, at least two basic-dimension rows, a d_Ff row, an odd-z row if odd-z M_Re is
   to print a number. Nothing from the copy is committed except anchors the human approves by name.
-- ⚠️ [v0.7] **No `v0.6` tag exists**, locally or on `origin` (`git tag -l`, `git ls-remote --tags origin`: `v0.1`–`v0.5`),
-  but REQUIREMENTS.md's rule "Same gear, same links" names `git diff --exit-code v0.6 -- tests/regression/
-  .github/workflows/ci.yml`. The v0.6 close squash is `792b45c` on `main`, and the paths diff empty against both it and `v0.5`.
-  Phase 30's first task is a stop-and-ask: the human tags `792b45c` (creating and pushing a tag is the human's call), or the
-  check pins the sha until then.
 - ℹ️ [v0.7] The milestone releases as one unit: Phases 30–33 ship the shaft with fit-dependent numbers absent, and Phase 34
   adds them. All DIN 5480 formulas in the plan are ASSUMPTIONs until checked by clause against the copy.
 - ⚠️ [Phase 27] Code review `27-REVIEW-DISPOSITION.md`: 9 open (3 warning, 6 info). WR-03: a `ValueError` from parsing `ps` rows escapes
@@ -840,8 +837,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23T16:37:19.731Z
-Stopped at: Completed 30-04-PLAN.md
+Last session: 2026-10-23T16:46:40.343Z
+Stopped at: Completed 30-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
