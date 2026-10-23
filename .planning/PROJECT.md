@@ -72,14 +72,42 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Next Milestone
+## Current Milestone: v0.7 Splined Shaft
 
-Not set — `/gsd-new-milestone`. Carried in: the Ubuntu 26 `ubuntu-latest` rollout window runs
-to 2026-11-19 and its `must` item fires on the first run on 26.04; WR-02 (a link token the
-number box blanks but the API accepts, `must`) fires on the next edit of `refuse()` or
-`gearQuery()`; the `make verify` hang item (`must`) waits for a captured hang. Candidates: the
-gear family (helical first, Out of Scope below), the hob-root default flip on D-09's trigger,
-running `make test-image` in CI (idea filed 2026-10-15).
+**Goal:** Generate an external DIN 5480 involute splined shaft with a plain shank as a second
+part type beside the gear, every printed number derived from the standard (or from the copy
+of it the human supplies) or warned, with every existing gear link's part untouched.
+
+**Target features:**
+- Product scope widened — a new `Lxx` changes the product from "involute spur gear
+  generator" to a gear and spline generator; the shaft gets its own sibling parameter model
+  validated once at its own boundary, not new `GearParams` fields.
+- Shaft geometry — a DIN 5480 external spline from reference diameter, module and tooth
+  count (profile shift as the standard derives it), splined length, an end chamfer, and one
+  plain cylindrical shank (diameter, length).
+- Basic dimensions — reference diameter d_B, tip and root diameters, form diameter, tooth
+  thickness; each proved against the standard's dimension tables or warned with no number.
+- Measurement over pins/balls M_Re at the chosen fit, proved against an independent oracle.
+- Fit tolerances — DIN 5480-2 tolerance fields (e.g. 8f, 9g) on tooth thickness,
+  transcribed from the human's copy with clause/table citations and checked by a second read.
+- Designation — `W 25x1.25x18x8f` printed and accepted as input, round-tripping.
+- Parity — the same STL/STEP download, live preview and numbers from the web UI, the API and
+  the CLI.
+
+**Rules this milestone lives by:**
+- Every existing gear link builds the same part and sends the same fields (L05). No new
+  `GearParams` field; `tests/regression/pre_v0_2.json` byte-identical to the `v0.6` tag (L26).
+- A value outside the transcribed tables, or one that cannot be computed, is a warning and
+  no number (L08). No table value ships without a clause/table citation in the human's copy.
+- The tables phase is blocked until the human supplies the DIN 5480 copy's local path.
+- ASSUMPTION (settled at discuss-phase): current DIN 5480 editions (parts 1 and 2),
+  flank-centred fit only, the root form the standard's hob root.
+
+Picked 2026-10-23 as "full spline support", scoped by the human to the external shaft, DIN
+5480 first, fits from tables. ISO 4156 / ANSI B92.1, ISO 14 straight-sided and DIN 5481
+serrations queue as later milestones, one family each. Carried in on their own triggers, not
+in scope: the Ubuntu 26 `ubuntu-latest` item (window to 2026-11-19), WR-02 (next edit of
+`refuse()` or `gearQuery()`), the `make verify` hang (waits for a captured hang).
 
 <details>
 <summary>v0.6 Clean Ledger — scope as set at kickoff (shipped 2026-10-23)</summary>
@@ -682,8 +710,9 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 ### Active
 
-- (none) — v0.6 shipped 2026-10-23. The next milestone's hypotheses are set by
-  `/gsd-new-milestone` (its `REQUIREMENTS.md` is written fresh).
+- v0.7 Splined Shaft — a DIN 5480 external splined shaft with a plain shank, its basic
+  dimensions, M_Re over pins, DIN 5480-2 fit tolerances and the designation string, at parity
+  on all three interfaces (`.planning/REQUIREMENTS.md`, written by `/gsd-new-milestone`).
 - Carried, not active: CI green or its failure classified on Ubuntu 26 `ubuntu-latest`.
   Phase 29 closed on its close condition 2026-10-22 (trigger not fired; every read through
   run 39795628539 on `ubuntu-24.04`). REQ-ubuntu26-classified-on-migration sits in
@@ -711,7 +740,9 @@ pytest — L13). Full list with sources and acceptance evidence:
   with no check in the gate. Resolved since the v0.3 close: `make no-fake-done` blind on
   macOS (#23), the stale `.planning/intel/` figures (#24) (`docs/tech_debt/INDEX.md`).
 - Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
-  not a cut; keyway and hex cover the shafts a hobbyist actually has.
+  not a cut; keyway and hex cover the shafts a hobbyist actually has. v0.7 takes the external
+  splined shaft (DIN 5480 only) as its own part type; the internal spline in a gear's bore
+  stays out of scope.
 - Helical, internal/ring and rack gears (v0.2 decision, deferred at v0.3, v0.4, v0.5 and
   v0.6) — candidates for the next milestone, one type per phase, helical first; bevel needs a
   product-scope decision before it is even a candidate (it contradicts "involute spur gear
@@ -948,4 +979,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-23 after the v0.6 milestone.*
+*Last updated: 2026-10-23 at the v0.7 Splined Shaft milestone start.*
