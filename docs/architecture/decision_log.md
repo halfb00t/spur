@@ -3058,3 +3058,44 @@ Reason: L08's rule is no number rather than a plausible one, and the part with a
 it prints what no chamfer prints.
 
 **Amendment (2026-10-22, 28-REVIEW IN-04).** **What moves** says "Only a request under 0.0005 mm prints differently". It is wider: `tip_chamfer_effective()` is `round(min(request, limit), 3)`, so it also rounds to `0.0` when the cap (the tip-land, pitch-circle or flank limit) is under 0.0005 mm while `tip_chamfer > 0`, and the field then prints `null` where the old gate printed `0.0`. That case takes the "Tip chamfer reduced to 0 mm ..." warning, not the "below the 0.001 mm resolution" one. A 304-combination sweep of teeth, shift, angle, fillet and root shape found no such limit, so no pinned record moves; this corrects the sentence, not a reproduced misprint. The field's description now says null when no chamfer is cut: none requested, or the request or the cap rounds below the 0.001 mm resolution it is cut at. No existing sentence of this entry is edited.
+
+## L46 — spur is a gear and spline generator: one parameter model per part type, and a second frozen link contract for the shaft (amends L02 and L05; keeps L03, L04, L06, L08 and L44)
+
+Date: 2026-10-23
+
+**The decision** (D-16). spur is a gear and spline generator. "Spline" covers the later ISO 4156 / ANSI B92.1, ISO 14 and DIN 5481
+families without another scope entry; each family is still its own milestone (REQUIREMENTS.md "Future Requirements"). v0.7 adds the
+first one: the DIN 5480 external splined shaft with one plain shank. The involute spur gear is shipped (v0.6) and stays as it is.
+
+**What it amends** (D-17). L02 now reads "one parameter model per part type, three front ends each": the gear keeps `GearParams`
+and the shaft gets its own model, and each part type has the web form, the CLI flags and the API query parameters generated from
+it. L05 gains "a second frozen link contract: the shaft's field names and defaults", beside the gear's. Neither entry is edited;
+this entry is the amendment, as the header rule of this log says.
+
+**What it leaves alone** (D-17). L03, L04, L06 and L08; the gear's defaults; and L44's 422 rule for gear links. The gear's link
+contract is untouched, and it is proved at every phase close by `make gear.unchanged` (Phase 30's check: `tests/regression/`,
+`ci.yml` and the gear `/api/schema` bytes against the `v0.6` tag).
+
+**When the shaft's contract freezes** (D-18). Phase 31 pins the shaft's field names and defaults with a test, and they may still
+change by a logged decision until Phase 33 publishes the first shaft link. No shaft link exists before then, so none can break.
+From that publication on, L05's rule applies to them in full.
+
+**What changes for a gear link.** When Phase 33 adds the part switch, a gear link carrying a stray `part=` token moves from
+ignored to refused, visibly: an invalid link, the same class as L44, where invalid links may change behaviour and valid ones may
+not. No gear link in the repo carries one: `grep -c '"part' tests/regression/golden_requests.json tests/regression/pre_v0_2.json`
+reads 0 and 0, and `grep -c 'part=' README.md` reads 0 (run 2026-10-23).
+
+**How the shaft is kept off the gear** (D-12 to D-15). The shaft lives in flat modules whose names are frozen now: `parts`,
+`shaft_params`, `shaft_calc`, `din5480`, `din5480_tables` and `shaft_model`, all under `src/spur/`. Import-linter contracts keep
+the shaft maths free of the CAD kernel, the solid, the logger and the gear maths, keep the shaft solid reachable only through
+`model`, and keep the gear maths from knowing the shaft. Every new `/api/` route lives under `/api/shaft/`. Phase 30 puts them in
+force, after this entry and before any shaft code exists (D-20).
+
+**The proof.** This entry's commit precedes the first commit that adds a shaft module, checked at Phase 30's close with
+`git log --diff-filter=A` on the five placeholder files. The gear is proved unchanged by `make gear.unchanged`.
+
+**Reversibility.** Reversible until Phase 33 publishes the first shaft link. From then, narrowing the scope again would break
+published shaft links, which L05 forbids.
+
+Reason: the shaft is a second part type beside the gear, and naming it in the scope before any shaft code exists lets the walls
+and the gear-safety check be built first. No gear link changes, which is L05's standing rule.
