@@ -32,7 +32,7 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 
 .DEFAULT_GOAL := help
 .PHONY: help venv verify verify.static verify.fast lint typecheck lint-imports \
-        no-fake-done test test.fast serve \
+        no-fake-done gear.unchanged test test.fast serve \
         check image test-image smoke up down logs lock vendor vendor-check fixture.regen golden.regen \
         bench bench.latency bench.memory bench.build bench.export \
         worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
@@ -110,7 +110,7 @@ venv: $(STAMP) $(HOOKS)  ## create .venv with the dev extras, ~1.4 GB (override 
 # slice twice, about 11 s of repeated work on L34's gate. The gate's bar is 300 s on the
 # 18-CPU Apple M5 Max, a figure the human set from two non-decisive readings (L43,
 # bench/RESULTS.md "The gate re-set (Phase 25)"); no check enforces it.
-verify.static: $(HOOKS) lint typecheck lint-imports no-fake-done  ## the gate's static steps: ruff, mypy, import boundaries, unfinished-work scan
+verify.static: $(HOOKS) lint typecheck lint-imports no-fake-done gear.unchanged  ## the gate's static steps: ruff, mypy, import boundaries, unfinished-work scan, same gear as v0.6
 verify: verify.static test  ## the gate: lint, types, import boundaries, tests
 verify.fast: verify.static test.fast  ## the commit-time subset: the static steps + every test file but the five heavy ones, under 30 s (L36)
 
@@ -151,6 +151,19 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 	  echo "make: a mypy suppression in src/spur above. Narrow the type, or file it in docs/tech_debt/."; \
 	  exit 1; \
 	fi
+
+# REQUIREMENTS.md "Same gear, same links" as one command: tests/regression/, ci.yml and the
+# bytes /api/schema serves equal the v0.6 tag (D-01 to D-05). The tag is read at run time,
+# nothing is committed (D-02). git archive and read-only git, never a worktree: the check
+# runs in the pre-commit hook, and git exports GIT_INDEX_FILE there (30-RESEARCH
+# Pitfall 1). The prototype ran in 0.66 s wall (30-RESEARCH); this check's own reading is
+# in bench/RESULTS.md "The check, priced (30-01)". A prerequisite of verify.static, so
+# verify and verify.fast both run it (D-04), which tests/test_hooks.py requires because
+# the two gates share one static prefix (Pitfall 7). It needs the network only when the
+# tag is missing, as in CI's tagless shallow checkout; a failed fetch fails the gate
+# (D-05), it never skips.
+gear.unchanged: $(STAMP)  ## prove tests/regression/, ci.yml and the gear /api/schema bytes are unchanged since the v0.6 tag
+	$(PY) -m scripts.gear_unchanged
 
 # --cov gates every run on [tool.coverage.report] fail_under (bench/RESULTS.md, Phase 15,
 # Coverage floor). A run over part of the suite reads a low total and fails it: pass
@@ -240,6 +253,8 @@ image:  ## build the container image
 # which the image does not hold.
 # --ignore=tests/test_bench.py: two of its tests run git (bench/build_time.py), and the
 # image has no git.
+# tests/test_gear_unchanged.py (also ignored): runs git in scratch repos; the image has no
+# git, read red on the unfixed recipe (FileNotFoundError: 'git'), 30-01.
 # bench/ and scripts/ are mounted because tests import them (bench from test_calc.py and
 # test_trochoid.py, scripts from test_skip_tokens.py). PYTHONPATH's /app is redundant beside
 # `python -m pytest` with -w /app (the -m form puts the working directory on sys.path); the
@@ -258,7 +273,8 @@ test-image: image  ## run the test suite inside the image (needs no local python
 	      && python -m pytest -q -p no:cacheprovider \
 	      --ignore=tests/test_browser.py --ignore=tests/test_hooks.py \
 	      --ignore=tests/test_no_fake_done.py --ignore=tests/test_browser_pins.py \
-	      --ignore=tests/test_pr_land.py --ignore=tests/test_bench.py $(PYTEST_ARGS)"
+	      --ignore=tests/test_pr_land.py --ignore=tests/test_bench.py \
+	      --ignore=tests/test_gear_unchanged.py $(PYTEST_ARGS)"
 
 smoke: image  ## exercise the kernel, both exporters and the ASGI app inside the image
 	docker run --rm $(PLATFORM_ARG) --entrypoint python $(IMAGE) docker/smoke.py
