@@ -711,6 +711,13 @@ pytest — L13). Full list with sources and acceptance evidence:
   `resource_tracker` flake retired in their fixing commits; the end-of-run hang re-deferred
   with its capture in place, REQ-hang-leaves-evidence; the Ubuntu 26 item carried, see Active)
 
+- ✓ The product is declared a gear and spline generator before any shaft code exists, the
+  shaft is walled off by import contracts and its own route prefix, and `make gear.unchanged`
+  proves at every gate that no gear link builds a different part than at `v0.6` — Phase 30
+  (L46; REQ-scope-decision-logged, REQ-gear-unchanged-proof, REQ-shaft-routes-separate;
+  verified 4/4, `make verify` 1369 passed on `3eab3ce`; review 0 critical / 3 warning / 4 info,
+  WR-01, WR-03 and IN-02 deferred as `must` debt, four open)
+
 ### Active
 
 - v0.7 Splined Shaft — a DIN 5480 external splined shaft with a plain shank, its basic
@@ -875,6 +882,7 @@ quick reference.
 | L43 | The gate's bar is 300 s on the 18-CPU Apple M5 Max, set by the human from two non-decisive readings, and `make venv` installs under the closure (amends L34): a new idle-host method pre-registered before any reading (`1d5ce8a`: 1-min load under 1.5 for three samples 30 s apart, N = 5 green runs per arm interleaved A/B, candidate = `math.ceil` of the largest decisive B `real`, 900 s wait and run caps, 3 h session cap); the host never quieted (seven waits gave up, lowest load 1.60), the human waived the wait and cut the session to A1 195.23 s / B1 179.21 s (1315 / 1317 passed, both non-decisive, candidate `none`) and wrote `Bar: 300 s`; the venv probe GREEN in a linked worktree under `PIP_CONSTRAINT` (31/31 pins, `pip check` clean, 1317 passed), so `$(STAMP)` installs `-c requirements.txt`; no check enforces the bar (ARCH 7.4) | ✓ Recorded — verified 5/5 with three must-haves under the human's overrides; Nyquist 11 automated / 3 manual-only; security 23/23 closed; review 0 critical, 3 warnings, 5 info open (`25-REVIEW-DISPOSITION.md`); `make verify` 1317 passed on `ac129dc` (184.95 s); the bar's evidential weight is thin by L43's own wording, and WR-03 names 294–336 s green runs from Phase 24 on the same host under load |
 | L44 | A link value its control cannot hold is sent and refused by the API's 422, never rebuilt as the default part (amends L39's pin; keeps L02, L03, L05, L08); a selector pick that writes a field ends its rejected token (2026-10-21 amendment, WR-01) | ✓ Good — Phase 28 verified 5/5; WR-02 (a token the box blanks but the API accepts) deferred `must` with an event trigger |
 | L45 | A tip chamfer asked for and not cut prints no number: `tip_chamfer_effective` is gated on the applied `tch` (amends L29; applies L08); 2026-10-22 correction names the capped-to-zero case | ✓ Good — red-first test, 44 fixture records unmoved, `tests/regression/` byte-identical to `v0.5` |
+| L46 | spur is a gear and spline generator: one parameter model per part type, a second frozen link contract for the shaft (amends L02 and L05) | ✓ Good — logged before the first shaft module (`5d61f8e` ancestor of `bdf224d`); `gear.unchanged` green |
 
 ## Success Metric (Milestone v0.1)
 
@@ -982,4 +990,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-23 at the v0.7 Splined Shaft milestone start.*
+*Last updated: 2026-10-23 after Phase 30*

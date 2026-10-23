@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-10-23)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 30 — Scope, Seam and Gear-Safety Guard
+**Current focus:** Phase 31 — Shaft Maths, Parameters and Designation
 
 ## Current Position
 
@@ -538,6 +538,10 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 30] Code review `30-REVIEW-DISPOSITION.md`: 3 deferred to `must` debt (WR-01 no timeout on git/probe in
+  `gear.unchanged`; WR-03 `parts.py` "one-line widening" is false — Phase 31 must type `_build_checked`, `_write_export`,
+  `_gear_fields` when it widens `Part`; IN-02 a lightweight/moved local `v0.6` tag self-compares), 4 open (WR-02, IN-01,
+  IN-03, IN-04). A1 (GitHub's own shallow checkout fetching `v0.6`) reproduced locally, unseen in CI until the phase PR.
 - ⚠️ [v0.7] **Phase 34 is blocked until the human supplies the DIN 5480 copy's local path** (2006 series; the tolerance system
   is in Part 1, the size tables in Part 2). **Phase 31 needs anchor rows from the same copy** before it can close: formula
   confirmation by clause, the `h_fP` convention, at least two basic-dimension rows, a d_Ff row, an odd-z row if odd-z M_Re is
@@ -845,7 +849,7 @@ Resume file: None
 ## Operator Next Steps
 
 - Review `.planning/ROADMAP.md` (v0.7, Phases 30–34) and the Traceability table in `.planning/REQUIREMENTS.md`.
-- Decide the `v0.6` baseline: tag `792b45c` as `v0.6`, or let Phase 30's check pin the sha.
-- Plan the first phase with /gsd-discuss-phase 30 or /gsd-plan-phase 30.
+- Ship Phase 30 (`/gsd-ship 30`); its PR's first CI run is the proof for A1.
+- Plan Phase 31 with /gsd-discuss-phase 31 or /gsd-plan-phase 31.
 - Before Phase 31 can close: supply anchor rows from the DIN 5480 (2006 series) copy. Before Phase 34 can start: supply the
   copy's local path.
