@@ -161,7 +161,7 @@ numbers from the web page, the API and the CLI — with every existing gear link
 no new `GearParams` field, `tests/regression/` and `ci.yml` byte-identical to the `v0.6`
 baseline, the gear `/api/schema` response byte-equal.
 
-- [ ] **Phase 30: Scope, Seam and Gear-Safety Guard** - The widening to a gear and spline
+- [x] **Phase 30: Scope, Seam and Gear-Safety Guard** - The widening to a gear and spline (completed 2026-10-23)
       generator is a logged decision, the shaft is walled off from the gear by import contracts
       and its own route prefix, and one check proves at every phase close that no gear link moved
 - [ ] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams`
@@ -226,7 +226,7 @@ changes Phase 31's file layout, ask before choosing.
 `requirements.txt` byte-identical. **Phase close**: `make verify` result line recorded; the
 Phase 30 check green.
 **Research flag**: No — standard patterns (research Phases 1 and 4).
-**Plans**: 5/5 plans executed, run one at a time (one shared working tree; deliberate red edits)
+**Plans**: 5/5 plans complete, run one at a time (one shared working tree; deliberate red edits)
 
 Plans:
 **Wave 1**
@@ -475,7 +475,7 @@ comes from.
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
-| 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | In Progress | - |
+| 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 0/? | Not started (needs anchor rows from the DIN 5480 copy) | - |
 | 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
