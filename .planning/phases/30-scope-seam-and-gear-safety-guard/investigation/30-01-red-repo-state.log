@@ -1,0 +1,29 @@
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_gear_unchanged.py -k test_the_check_leaves_the_repository_as_it_found_it
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_the_check_leaves_the_repository_as_it_found_it ______________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-1169/test_the_check_leaves_the_repo0')
+
+    def test_the_check_leaves_the_repository_as_it_found_it(tmp_path: Path) -> None:
+        """The check runs inside the pre-commit hook: a git write there empties the commit in
+        progress (30-RESEARCH Pitfall 1). No index change, no worktree, no status change."""
+        work = _work_repo(tmp_path)
+        (work / "notes.txt").write_text("untracked\n", encoding="utf-8")
+        index_before = (work / ".git/index").read_bytes()
+        status_before = _git(work, "status", "--porcelain")
+    
+        check(work, _schema_json)
+    
+        assert (work / ".git/index").read_bytes() == index_before
+        assert _git(work, "status", "--porcelain") == status_before
+>       assert not (work / ".git/worktrees").exists()
+E       AssertionError: assert not True
+E        +  where True = exists()
+E        +    where exists = (PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-1169/test_the_check_leaves_the_repo0/work') / '.git/worktrees').exists
+
+tests/test_gear_unchanged.py:195: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_the_check_leaves_the_repository_as_it_found_it
+1 failed, 12 deselected in 0.30s
+exit=1

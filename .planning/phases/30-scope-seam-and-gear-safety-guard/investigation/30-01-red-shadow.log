@@ -1,0 +1,22 @@
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_gear_unchanged.py -k test_the_probe_refuses_a_tree_it_did_not_import
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______________ test_the_probe_refuses_a_tree_it_did_not_import ________________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-1167/test_the_probe_refuses_a_tree_0')
+
+    def test_the_probe_refuses_a_tree_it_did_not_import(tmp_path: Path) -> None:
+        """The editable install satisfies `import spur` from this repository whatever the tree
+        asked for; without the location check both probes read the same tree (T-30-02)."""
+        empty = tmp_path / "src"
+        empty.mkdir()
+    
+>       with pytest.raises(SystemExit, match="imported spur from"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SystemExit
+
+tests/test_gear_unchanged.py:204: Failed
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_the_probe_refuses_a_tree_it_did_not_import
+1 failed, 12 deselected in 0.40s
+exit=1

@@ -1,0 +1,5 @@
+$ make gear.unchanged
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: /api/schema bytes differ from v0.6 (8724 bytes now, 8723 at v0.6)
+make: *** [Makefile:166: gear.unchanged] Error 1
+exit=2

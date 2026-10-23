@@ -6808,3 +6808,39 @@ GitHub's fleet.
 
 Outcome: not fired -- no job of any `ubuntu-latest` run in the window reads `ubuntu-26.04` (30 of 30 jobs read `ubuntu-24.04`), so no rule for red, green or pending holds.
 Decision (2026-10-22T13:28Z): close -- "close with a", then, asked whether that meant part (a) alone, "Close, all edits (a)–(e)"
+
+## Scope, seam and gear-safety guard (Phase 30)
+
+What this section holds: v0.7's first phase widens the product to a gear and spline generator, walls the shaft off from the gear with import contracts and a route prefix, and proves with one command that no gear link builds a different part than at `v0.6`. Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/30-scope-seam-and-gear-safety-guard/investigation/`; later plans append rows to the table below.
+
+### The check, priced (30-01)
+
+Source: `30-01-price.log`. Host: `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max. Measured on `HEAD` `67177da`, the commit that adds `make gear.unchanged`, with only `.planning/` files uncommitted. The 1-minute load read `4.09` before the runs and `5.04` after (`sysctl -n vm.loadavg` printed `{ 4.09 3.15 3.54 }` and `{ 5.04 3.39 3.62 }`), so this is not an idle-host reading under Phase 25's rule, and each figure is one reading on this host.
+
+| Step | Real (`/usr/bin/time -p`) | Result |
+|---|---|---|
+| `make gear.unchanged`, run 1 | 0.45 s | `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| `make gear.unchanged`, run 2 | 0.46 s | the same line |
+| `make gear.unchanged`, run 3 | 0.46 s | the same line |
+| `make verify.fast`, with the check wired into `verify.static` | 10.01 s | `961 passed in 9.13s` |
+
+For comparison, 30-RESEARCH read the prototype at 0.66 s wall and `make verify.fast` (before the check existed) at 14.6 s wall, `947 passed in 13.86s`, at a 1-minute load of 11.39. The commit slice now reads 10.01 s against L36's 30 s budget, and the check's own 0.46 s is 1.5 % of that budget. The slice also holds this plan's 14 new tests (13 in `tests/test_gear_unchanged.py`, 1 in `tests/test_hooks.py`), which is the 961 against 947.
+
+D-04 decision: the check sits in `verify.static`, so `make verify` and `make verify.fast` both run it, because its cost is that measured share of L36's 30 s budget; it is also the only place the pre-commit hook can run it, so every commit of the phase proves the gear unchanged.
+
+### Seen red once (Phase 30)
+
+Each deliberate break was run red once and reverted, or was the old recipe the fix replaced. The first failure line is copied from the kept log named in the row (every log is under `.planning/phases/30-scope-seam-and-gear-safety-guard/investigation/`); later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 30-01 | `make gear.unchanged`, watched item `tests/regression/` | one blank line appended to `tests/regression/corpus.py` | `gear.unchanged: these watched paths differ from v0.6: tests/regression/corpus.py`, exit 2 from make, log `30-01-red-regression.log` | `git checkout -- tests/regression/corpus.py`; `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` clean |
+| 30-01 | `make gear.unchanged`, an untracked file in `tests/regression/` | `tests/regression/new.json` created holding `{}` | `gear.unchanged: these watched paths differ from v0.6: tests/regression/new.json`, exit 2 from make, log `30-01-red-untracked.log` | `rm tests/regression/new.json`; the same diff clean |
+| 30-01 | `make gear.unchanged`, watched item `.github/workflows/ci.yml` | one comment line appended to `ci.yml` | `gear.unchanged: these watched paths differ from v0.6: .github/workflows/ci.yml`, exit 2 from make, log `30-01-red-ci.log` | `git checkout -- .github/workflows/ci.yml`; the same diff clean |
+| 30-01 | `make gear.unchanged`, watched item `/api/schema` bytes | `src/spur/params.py` line 90, the field title `Teeth` changed to `Teeth!` | `gear.unchanged: /api/schema bytes differ from v0.6 (8724 bytes now, 8723 at v0.6)`, exit 2 from make, log `30-01-red-schema.log` | `git checkout -- src/spur/params.py`; `git diff --exit-code HEAD -- src scripts Makefile tests` clean |
+| 30-01 | `python -m scripts.gear_unchanged` in a `git clone --no-tags` of this repository | the clone's origin set to `/nonexistent`, so the tag could not be fetched | `gear.unchanged: tag v0.6 is not local and could not be fetched from origin: fatal: '/nonexistent' does not appear to be a git repository`, exit 1, log `30-01-red-missing-tag.log` | the clone was deleted; this repository was not touched |
+| 30-01 | `tests/test_gear_unchanged.py::test_the_probe_refuses_a_tree_it_did_not_import` | the `spur.__file__` location check removed from `schema_of` | `Failed: DID NOT RAISE SystemExit` at `tests/test_gear_unchanged.py:204`; `1 failed, 12 deselected in 0.40s`, log `30-01-red-shadow.log` | `git checkout -- scripts/gear_unchanged.py`; diff clean |
+| 30-01 | `tests/test_gear_unchanged.py::test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow` | `ensure_tag` always passing `--depth=1` | `AssertionError: assert 'true' == 'false'` at `tests/test_gear_unchanged.py:166`; `1 failed, 12 deselected in 0.34s`, log `30-01-red-depth.log` | `git checkout -- scripts/gear_unchanged.py`; diff clean |
+| 30-01 | `tests/test_gear_unchanged.py::test_the_check_leaves_the_repository_as_it_found_it` | `check` registering a detached `git worktree` of the tag in a temp dir and not removing it | `AssertionError: assert not True` where `True = exists()` of the scratch repo's `.git/worktrees`; `1 failed, 12 deselected in 0.30s`, log `30-01-red-repo-state.log` | `git checkout -- scripts/gear_unchanged.py`; the temp dir was never created in this repository, `git worktree list` shows the main checkout only |
+| 30-01 | `tests/test_hooks.py::test_both_gates_run_the_gear_safety_check` | `gear.unchanged` dropped from `verify.static`'s prerequisites | `AssertionError: ('verify', [])`; `1 failed, 9 deselected in 0.03s`, log `30-01-red-dry-run-pin.log` | `git checkout -- Makefile`; diff clean |
+| 30-01 | `make test-image PYTEST_ARGS="tests/test_gear_unchanged.py -q"` (as `make -o image test-image ...`) | the unfixed recipe, with no `--ignore` for the new git-driven file | `FileNotFoundError: [Errno 2] No such file or directory: 'git'`, `FAILED tests/test_gear_unchanged.py::test_an_unchanged_tree_reads_green_and_names_what_it_compared`, then `make: *** [Makefile:265: test-image] Error 1`, log `30-01-red-image.log` | the fix replaced it: `--ignore=tests/test_gear_unchanged.py` joined the recipe and `IMAGE_IGNORED` in the same commit. The first attempt rebuilt the image's apt layer and was stopped after about 19 minutes of package downloads; the red ran against the already-built `spur:latest` (created 2026-10-20) with the build skipped, which is enough because the image holds no git whatever its build date |
