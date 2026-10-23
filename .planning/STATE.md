@@ -2,38 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
-current_phase: 29
-status: "Phase 29 shipped — PR #47"
-stopped_at: Phase 29 complete — all phases complete
-last_updated: "2026-10-22T13:56:38.200Z"
-last_activity: 2026-10-22
-state_head: d23bf5584904820f98599401535174ec8f4a1970
+status: Awaiting next milestone
+stopped_at: Milestone v0.6 closed and archived — awaiting next milestone
+last_updated: "2026-10-23T01:50:11.188Z"
+last_activity: 2026-10-23
+last_activity_desc: Milestone v0.6 completed and archived
+state_head: 222608473e1c9b89c94d8628582870e4e33c23f3
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 22
   completed_plans: 22
   percent: 100
+current_phase: 29
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-22)
+See: .planning/PROJECT.md (updated 2026-10-23)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 29 — Ubuntu 26 Final Reading
+**Current focus:** Planning the next milestone (`/gsd-new-milestone`). Live triggers carried in: the Ubuntu 26 rollout window (to 2026-11-19, `must`), WR-02 on the next edit of `refuse()`/`gearQuery()` (`must`), the `make verify` hang on its next capture (`must`).
 
 ## Current Position
 
-Phase: 29
-Plan: 1 of 1 (closed, trigger not fired)
-Status: Phase 29 shipped — PR #47
-Last activity: 2026-10-22
-
-Progress: [██████████] 100% (4 of 4 phases)
+Phase: Milestone v0.6 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-10-23 — Milestone v0.6 completed and archived
 
 ## Performance Metrics
 
@@ -807,6 +806,7 @@ None yet.
 - v0.5 roadmap created: Phases 21–25 (Browser Test of the Viewer; Download Name Carries the Root; Conditional Form Fields; Bore-Shape Selector, discretionary; Gate Bar Re-Set, Venv Probe, Ledger Close) — 24/24 v0.5 requirements mapped, 0 orphans, numbering continues from Phase 20; Phase 24 is skipped, never deleted, if the human cuts it (its three requirements then move to Future Requirements by an explicit edit)
 - v0.6 roadmap created: Phases 26–29 (Gate Fails With a Cause; Ledger Tests and Harness; Refuse the Bad Link; Ubuntu 26 Final Reading, date-gated) — 17/17 v0.6 requirements mapped, 0 orphans, numbering continues from Phase 25; Phase 29 may close with its item still active (trigger restated, REQ-ubuntu26-classified-on-migration then moves to Future Requirements by an explicit edit with the human) and is never deleted
 - Phase 29 closed (trigger not fired), 2026-10-22: no ubuntu-latest run named Ubuntu 26.04 by the milestone close (last read 2026-10-22T13:13Z, bench/RESULTS.md); the Ubuntu 26 item stays active with its trigger restated; REQ-ubuntu26-classified-on-migration moved to Future Requirements with the human.
+- Milestone v0.6 closed 2026-10-23: audit `tech_debt` (16/16 requirements, 11/12 integration, 5/6 flows), verified closeout; archived to `milestones/v0.6-*`.
 
 ## Deferred Items
 
@@ -816,10 +816,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-21T18:04:31.088Z
-Stopped at: Phase 29 complete — all phases complete
+Last session: 2026-10-23
+Stopped at: Milestone v0.6 archived on `gsd/v0.6-close-gaps` (audit `tech_debt`, verified closeout; Phases 26/27 re-verified `3adc939`, Phase 28 UAT closed `3e42e23`, WR-02 debt item widened `2226084`)
 Resume file: None
 
 ## Operator Next Steps
 
-- Merge PR #46, then PR #47, once CI is green and each run's `Image:` lines are read; then /gsd-complete-milestone v0.6
+- Start the next milestone with /gsd-new-milestone

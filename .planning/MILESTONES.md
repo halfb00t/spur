@@ -1,5 +1,34 @@
 # Milestones
 
+## v0.6 Clean Ledger (Shipped: 2026-10-23)
+
+**Delivered:** The gate either passes or fails with a cause, and the debt ledger says what is true. The false reds were fixed from reproductions: the twin-selectors race and the `resource_tracker` flake. A stalled test now leaves its test id and stack in the log, and `make test-image` runs what it claims. The harness's tests and records were made true: slug totality, the failed-build name, `stop_group` signalling first, the group floor and the launch message. There is one deliberate visible change: a shared link carrying a value its form control cannot hold is refused through the API's own 422 instead of silently building the default part (L44). Two text corrections came with it: a tip chamfer asked for and not cut prints `null` (L45), and the `root_fillet` label follows the root. Every open review finding of Phases 10, 18, 19, 21–24 and 26–28 carries a disposition. No new `GearParams` field was added, and `tests/regression/` and `ci.yml` are byte-identical to the `v0.5` tag.
+
+**Phases completed:** 26–29 (22 plans, 51 tasks); Phase 29 closed on its close condition (Ubuntu 26 trigger not fired).
+
+**Key accomplishments:**
+- Gate (Phase 26): the twin-selectors race was fixed after the real app showed a late `/api/info` response (20/20 local runs, then five green `main` runs). The `resource_tracker` flake was reproduced on demand by a forced `gc.collect()`: red 3/3 before the fix, green 3/3 after. `-v --durations=25` plus a dump-only `faulthandler_timeout` (170 s after CI's 83.55 s slowest phase) makes a stalled test name itself; the gate cost was −0.51 %. `make test-image` reads `1201 passed in 888.34s`, with six host-only files ignored by name. Ubuntu 26.04 was pre-classified green from a throwaway PR (#40, closed unmerged).
+- Ledger (Phase 27): a seeded 1,300-draw `slug()` totality test sits in the commit slice. The failed-build name test gets a fresh `_BlobCache`. `stop_group` sends SIGTERM to the group before any `ps` read, and an unreadable `ps` fails the teardown as "survivors unknown". The group-floor text names the members `ps` listed. The launch failure names `rm -f .venv/.browser && make test`.
+- Bad links (Phase 28): a link value a control cannot hold is kept in a `rejected` map, sent as given and refused by the API's 422 (L44). The `root_fillet` row reads "Hob tip radius used" under a hob root. `tip_chamfer_effective` is gated on the applied chamfer (L45, `6497c28`).
+- Triage (Phase 28): 41 open review findings of Phases 10, 18, 19, 21–24, 26 and 27 each carry one evidenced disposition (28 fixed, 6 skipped with a reason, 7 deferred to a file that exists). Phase 28's own five findings were decided by the human (D-19..D-23).
+- Ubuntu 26 (Phase 29): three dated reads of the `ubuntu-latest` window found 30 of 30 jobs on `ubuntu-24.04`. The phase closed on the human's `close`, and the item stays active with its trigger restated.
+- Close: the milestone audit read 16/16 requirements, 11/12 integration seams and 5/6 flows; the partial one is the known WR-02 deferral, widened in its debt item at the close (`2226084`). Phases 26 and 27 were re-verified after later squashes (`3adc939`), and Phase 28's UAT was closed against its executed gap plans (`3e42e23`).
+
+**Stats:**
+- 307 files changed (+78,524 / −1,911) from the `v0.5` tag to the last squash; 51 outside `.planning/` (+3,067 / −290), 24 of them code, tests, bench or config (+2,336 / −252); `src/` +54 / −15 in `calc.py`, `model.py` and `app.js`
+- 4,158 lines of package Python, 17,664 of tests, 4,548 of bench, 671 of hand-written UI JS; 1,348 tests in `make verify` (1,318 at v0.5)
+- 4 phases, 22 plans, 51 tasks; 6 PRs (#41, #42, #44–#47) after the v0.5 close (#39); #40 the throwaway Ubuntu 26 PR, closed unmerged
+- 8 days from the v0.5 close squash (2026-10-15) to the last squash (2026-10-23)
+- 0 runtime dependencies added (`requirements.txt` 39 → 39 lines)
+
+**Git range:** `26ddd74` (Milestone v0.5: Honest Form — close and archive (#39)) → `a620399` (Phase 29: Ubuntu 26 Final Reading (#47))
+
+**Closeout:** `verified_closeout`. All four phases project `passed` (26 and 27 re-verified at the close), the open-artifact audit is clear, and the audit status is `tech_debt` (`milestones/v0.6-MILESTONE-AUDIT.md`). REQ-ubuntu26-classified-on-migration was deferred to Future Requirements by the human's approved Phase 29 close. Known verification overrides: 0 newly acknowledged, 0 carried forward.
+
+**What's next:** `/gsd-new-milestone`. The Ubuntu 26 rollout window runs to 2026-11-19, and its item fires on the first `ubuntu-latest` run on 26.04. WR-02 (an accepted link token under a blank box) fires on the next edit of `refuse()` or `gearQuery()`. The `make verify` hang item has its own trigger. Nyquist is partial: run `/gsd-validate-phase` for 26 and 28 if their records matter.
+
+---
+
 ## v0.5 Honest Form (Shipped: 2026-10-15)
 
 **Delivered:** The web form tells the user up front what each field does, and a real browser proves it — a headless test of the shipped `app.js` inside `make verify` and CI with the request of every one of the 44 fixture links pinned (L39), the hob-root part downloading as `..._trochoid` (L40), eleven `enabled_when` relations dimming an ignored field before it is typed, each proved against `calc` (L41), and a schema-carried Bore shape select that writes only the flat fields (L42); then the gate bar re-set by the human under a rule committed before the first reading and `make venv` installing under the closure (L43), with the Pi 5 claim softened and the reverify loop made a skill — no new `GearParams` field, the 44-record fixture and `requirements.txt` byte-identical to the `v0.4` tag.

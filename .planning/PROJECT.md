@@ -18,6 +18,10 @@ either computed honestly or reported as a warning, never guessed (L08). Everythi
 
 ## Current State
 
+**Shipped: v0.6 Clean Ledger (2026-10-23).** The gate passes or fails with a cause. The twin-selectors race and the `resource_tracker` flake were fixed from reproductions, a stalled test leaves its id and stack in the log, and `make test-image` runs what it claims (Phase 26). The harness's tests and records are true: slug totality is guarded in the commit slice, the failed-build name test is independent of cache order, `stop_group` signals before it reads `ps`, and the group floor and launch message say what was observed (Phase 27). A shared link carrying a value its control cannot hold is refused through the API's 422 instead of silently building the default part (L44). A tip chamfer asked for and not cut prints `null` (L45), and the `root_fillet` label follows the root (Phase 28). Every open review finding of Phases 10, 18, 19, 21–24 and 26–28 carries a disposition. Ubuntu 26 was pre-classified green, but no `ubuntu-latest` run reached 26.04 by the close, so Phase 29 closed with its item active (trigger not fired). No new `GearParams` field; `tests/regression/` and `ci.yml` byte-identical to the `v0.5` tag. Fifteen debt items retired; nine filed, four of them still active. Record: `.planning/MILESTONES.md`, `milestones/v0.6-ROADMAP.md`, `milestones/v0.6-MILESTONE-AUDIT.md` (status `tech_debt`: 16/16 requirements, 11/12 integration, 5/6 flows; the partial is the known WR-02 deferral; 16 active debt items with triggers, 3 `must`).
+
+Codebase at `a620399`: 4,158 lines of package Python, 17,664 of tests, 4,548 of bench, 671 lines of hand-written UI JS, 1,348 tests, 31 pinned runtime packages (unchanged since v0), `make verify` green under L43's 300 s bar on the 18-CPU M5 Max (`1348 passed in 236.23s` at the close re-verification).
+
 **Shipped: v0.5 Honest Form (2026-10-15).** The web form tells the user up front what each field does, and a real browser proves it: a headless test of the shipped `app.js` runs inside `make verify` and CI against a real uvicorn, with the request of each of the 44 fixture links pinned (L39); a hob-root part downloads as `..._trochoid` (L40); eleven `enabled_when` relations dim a field whose value would be ignored, each proved against `calc` in both directions (L41); a schema-carried Bore shape select writes only the flat fields (L42); the gate bar re-set to 300 s by the human under a rule committed before the first reading, and `make venv` installs under the closure after a green probe (L43); README names its hardware, the reverify loop is `.ai_skills/reverify-phase`; a hex bore warns only about bore fields set away from their defaults (#37, L27 amended). No new `GearParams` field; the 44-record fixture and `requirements.txt` byte-identical to the `v0.4` tag. One debt item retired, eleven filed (two `must` at the close: Phase 22's untriaged review warnings). Record: `.planning/MILESTONES.md`, `milestones/v0.5-ROADMAP.md`, `milestones/v0.5-MILESTONE-AUDIT.md` (status `tech_debt`: 24/24 requirements, 8/8 integration, 5/5 flows, 22 active debt items with triggers, 8 `must`).
 
 Codebase at `cbbe730`: 4,145 lines of package Python, 16,560 of tests, 4,544 of bench, 645 lines of hand-written UI JS, 1,318 tests, 31 pinned runtime packages (unchanged since v0), `make verify` green at 97.99 % coverage under L43's 300 s bar on the 18-CPU M5 Max.
@@ -68,7 +72,18 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Current Milestone: v0.6 Clean Ledger
+## Next Milestone
+
+Not set — `/gsd-new-milestone`. Carried in: the Ubuntu 26 `ubuntu-latest` rollout window runs
+to 2026-11-19 and its `must` item fires on the first run on 26.04; WR-02 (a link token the
+number box blanks but the API accepts, `must`) fires on the next edit of `refuse()` or
+`gearQuery()`; the `make verify` hang item (`must`) waits for a captured hang. Candidates: the
+gear family (helical first, Out of Scope below), the hob-root default flip on D-09's trigger,
+running `make test-image` in CI (idea filed 2026-10-15).
+
+<details>
+<summary>v0.6 Clean Ledger — scope as set at kickoff (shipped 2026-10-23)</summary>
+
 
 **Goal:** Retire the open `must` debt and the cheap `nice` items, and triage every open
 review info finding, so the gate either passes or fails with a cause — never hangs or flakes
@@ -350,6 +365,8 @@ Picked 2026-09-25 from the candidates gathered at v0.1 kickoff
 internal / rack — re-derives module, span and centre distance, the riskiest surface in
 the product, and rack needs a second parameter model) and "precision" (trochoidal fillet
 plus the waived latency bar — no trigger has fired). Both stay candidates for v0.3.
+
+</details>
 
 </details>
 
@@ -658,15 +675,19 @@ pytest — L13). Full list with sources and acceptance evidence:
   IN-03; every review info finding of the milestone dispositioned, none `open`; the uncut tip
   chamfer prints `null` under L45; WR-02 deferred as `must` debt by the human, D-20; verified
   5/5, `make verify` 1348 passed on `e6480cb`)
+- ✓ The Phase 22 and browser-harness `must` debts retired — v0.6 (Phase 22's `slug()`
+  totality and cache-order test, `stop_group`, the group floor, the launch message and the
+  `resource_tracker` flake retired in their fixing commits; the end-of-run hang re-deferred
+  with its capture in place, REQ-hang-leaves-evidence; the Ubuntu 26 item carried, see Active)
 
 ### Active
 
-- [ ] The Phase 22 and browser-harness `must` debts retired (v0.6)
-- [ ] CI is green, or its failure classified, on Ubuntu 26 `ubuntu-latest` — deferred past v0.6:
-  Phase 29 closed on its close condition 2026-10-22 (trigger not fired; last read
-  2026-10-22T13:13Z, 30 of 30 jobs on `ubuntu-24.04`, `bench/RESULTS.md`); REQ-ubuntu26-classified-on-migration
-  moved to Future Requirements with the human; the debt item stays `active`
-- Full list with IDs: `.planning/REQUIREMENTS.md`.
+- (none) — v0.6 shipped 2026-10-23. The next milestone's hypotheses are set by
+  `/gsd-new-milestone` (its `REQUIREMENTS.md` is written fresh).
+- Carried, not active: CI green or its failure classified on Ubuntu 26 `ubuntu-latest`.
+  Phase 29 closed on its close condition 2026-10-22 (trigger not fired; every read through
+  run 39795628539 on `ubuntu-24.04`). REQ-ubuntu26-classified-on-migration sits in
+  `milestones/v0.6-REQUIREMENTS.md` Future Requirements, and the debt item stays `active`.
 
 ### Out of Scope
 
@@ -680,7 +701,7 @@ pytest — L13). Full list with sources and acceptance evidence:
   the three `docs/ideas/` items v0.5 left filed: each has a named trigger that has not fired
   (D-09; a real part; D-12 plus a measured sweep), and taking one would supersede a logged
   decision on no evidence.
-- Twenty-two `docs/tech_debt/active/` items at the v0.5 close (eight `must`: the resource-tracker flake, the four Phase 21 browser-harness items — `stop_group`, the group floor, the end-of-run hang, the Ubuntu 26 runner — the `root_shape=bogus` blank select, and Phase 22's `slug()` totality and cache-order test; fourteen `nice`; eleven filed in v0.5, one retired — the hex-bore warning, #37; `milestones/v0.5-MILESTONE-AUDIT.md`). Twelve at the v0.4 close (one `must`: the resource-tracker flake, filed 17-04, re-deferred 18-05 and 19-03 with a named trigger; eleven `nice`, three of them filed in v0.4 — the wedged worker, the xdist worker segfault at exit, the Phase 19 review deferral — each with its trigger; `milestones/v0.4-MILESTONE-AUDIT.md`). At the v0.4 start: ten `docs/tech_debt/active/` items (after the 2026-10-06 ledger pass,
+- Sixteen `docs/tech_debt/active/` items at the v0.6 close (three `must`: the Ubuntu 26 runner, the end-of-run `make verify` hang, and WR-02, an accepted link token under a blank box; thirteen `nice`; nine filed in v0.6 (four still active), fifteen retired; `milestones/v0.6-MILESTONE-AUDIT.md`). Twenty-two at the v0.5 close (eight `must`: the resource-tracker flake, the four Phase 21 browser-harness items — `stop_group`, the group floor, the end-of-run hang, the Ubuntu 26 runner — the `root_shape=bogus` blank select, and Phase 22's `slug()` totality and cache-order test; fourteen `nice`; eleven filed in v0.5, one retired — the hex-bore warning, #37; `milestones/v0.5-MILESTONE-AUDIT.md`). Twelve at the v0.4 close (one `must`: the resource-tracker flake, filed 17-04, re-deferred 18-05 and 19-03 with a named trigger; eleven `nice`, three of them filed in v0.4 — the wedged worker, the xdist worker segfault at exit, the Phase 19 review deferral — each with its trigger; `milestones/v0.4-MILESTONE-AUDIT.md`). At the v0.4 start: ten `docs/tech_debt/active/` items (after the 2026-10-06 ledger pass,
   PRs #23–#25). The two `must` — the same-slot timeout-cleanup race (`pool.py:204`, D-17)
   and gsd's 30 s commit timeout against the ~64 s hook (trigger fired at L34) — retired in Phase 17
   (`c06749d` L36, `7af75af` L37). Eight `nice` stay deferred with their triggers: server-side
@@ -691,8 +712,8 @@ pytest — L13). Full list with sources and acceptance evidence:
   macOS (#23), the stale `.planning/intel/` figures (#24) (`docs/tech_debt/INDEX.md`).
 - Spline bores (v0.2 decision) — a standards surface (DIN 5480 and kin, many variants),
   not a cut; keyway and hex cover the shafts a hobbyist actually has.
-- Helical, internal/ring and rack gears (v0.2 decision, deferred at v0.3, v0.4 and again at
-  v0.5) — candidates for v0.6, one type per phase, helical first; bevel needs a
+- Helical, internal/ring and rack gears (v0.2 decision, deferred at v0.3, v0.4, v0.5 and
+  v0.6) — candidates for the next milestone, one type per phase, helical first; bevel needs a
   product-scope decision before it is even a candidate (it contradicts "involute spur gear
   generator").
 
@@ -700,7 +721,7 @@ pytest — L13). Full list with sources and acceptance evidence:
 
 - **This product already ships.** `spur` is a working generator with a web UI, HTTP API,
   and CLI; `make verify` passes at the current commit. This PROJECT.md documents the
-  shipped baseline (v0 through v0.5) and the next milestone's candidates.
+  shipped baseline (v0 through v0.6) and the next milestone's candidates.
 - The 2026-09-21 audit (`docs/review-2026-09-21.md`, findings F1–F8) is history: every
   finding — the unguarded Newton `centre_distance` solver, unbounded-by-bytes caches,
   infeasible absolute-mm defaults, no admission control, an under-pinned dependency
@@ -713,19 +734,19 @@ pytest — L13). Full list with sources and acceptance evidence:
 - Ingest intel: `.planning/intel/SYNTHESIS.md` (entry point), `decisions.md`,
   `requirements.md`, `constraints.md`, `context.md`; conflict report at
   `.planning/INGEST-CONFLICTS.md` (0 blockers, 0 warnings, 5 info).
-- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 22 active at the v0.5 close — 8
-  `must` and 14 `nice`; 25 resolved (10 in v0.1, 4 in v0.2, 6 in v0.3, 2 between v0.3 and
-  v0.4, 2 in v0.4, 1 in v0.5). Ideas backlog: `docs/ideas/` — 5 items at the v0.5 close: the
-  3 left filed at the v0.5 start with their triggers (trochoidal-root default flip, a cutout
-  rotation field, a teeth-dependent honeycomb cap) and 2 filed in v0.5 (the two relations
-  `calc` does not back, the hex warning naming fields by form title); v0.5 retired its 7.
+- Tech debt (own lifecycle, `docs/tech_debt/INDEX.md`): 16 active at the v0.6 close — 3
+  `must` and 13 `nice`; 40 resolved (10 in v0.1, 4 in v0.2, 6 in v0.3, 2 between v0.3 and
+  v0.4, 2 in v0.4, 1 in v0.5, 15 in v0.6). Ideas backlog: `docs/ideas/` — 7 items at the v0.6
+  close: the 5 carried from v0.5 and 2 filed in v0.6 (run `make test-image` in CI, a stash
+  entry that survives a hand edit).
 - Process since v0.1: phases run on `gsd/phase-NN-*` branches cut from `origin/main` and
   land only through `make pr.land PR=N` (L22/L25); `.planning/` rides the same PR as the
-  code; the milestone close is its own PR and the tag sits on its squash. Every close so far
-  (v0.1 through v0.5) was an `override_closeout` on proven-identical trees — the verifier's
+  code; the milestone close is its own PR and the tag sits on its squash. Every close from
+  v0.1 through v0.5 was an `override_closeout` on proven-identical trees — the verifier's
   digests go stale when STATE.md is rewritten (v0.1) or when a later phase legitimately
   changes a shared file an earlier report covers (v0.2, v0.3); the cause is recorded per
-  phase in `MILESTONES.md`.
+  phase in `MILESTONES.md`. v0.6 closed `verified_closeout` after re-verifying the stale
+  phases at the close.
 
 ## Constraints
 
@@ -927,4 +948,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-22 after Phase 29.*
+*Last updated: 2026-10-23 after the v0.6 milestone.*

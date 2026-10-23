@@ -353,6 +353,47 @@
 
 ---
 
+## Milestone: v0.6 — Clean Ledger
+
+**Shipped:** 2026-10-23
+**Phases:** 4 (26–29; Phase 29 closed, trigger not fired) | **Plans:** 22 | **Sessions:** not tracked
+
+### What Was Built
+- Gate (Phase 26): the twin-selectors race and the `resource_tracker` flake were fixed from reproductions, the flake from a forced `gc.collect()` that reds on demand. A stalled test now names itself through `--durations` plus a dump-only `faulthandler_timeout` (170 s, set from CI's slowest phase). `make test-image` runs what it claims. Ubuntu 26.04 was pre-classified green from a throwaway PR.
+- Ledger (Phase 27): a seeded 1,300-draw `slug()` totality test in the commit slice; the failed-build name test independent of cache order; `stop_group` signals before it reads `ps`; the group-floor text and the launch message say what was observed.
+- Bad links (Phase 28): a link value a control cannot hold is refused by the API's 422 instead of rebuilding the default part (L44). A tip chamfer not cut prints `null` (L45), and the `root_fillet` label follows the root. 41 open review findings across ten phases each carry an evidenced disposition.
+- Ubuntu 26 (Phase 29): three dated reads, 30 of 30 jobs still on `ubuntu-24.04`; closed on its close condition with the item active.
+
+### What Worked
+- Fix from a reproduction or re-defer with the measurement: the flake was made to red on demand before the fix, and the "consistent, not conclusive" natural-run result was written that way instead of as proof.
+- A date-gated last phase with a pre-agreed close condition: Phase 29 closed honestly without a reading, and the requirement moved to Future Requirements in words the human approved.
+- The human decided every review finding at a blocking checkpoint (D-19..D-23), and the ledger closed from those decisions with shas, not from a reviewer's default.
+- Codex cross-review of the Phase 29 PR found four real ledger defects: a ROADMAP checkbox, STATE counts, a paraphrased quote and a stale verification.
+
+### What Was Inefficient
+- Verification staleness recurred: Phases 26 and 27 went stale twice after later squashes and were re-verified at the close. This time the close re-ran the verifier rather than overriding, which made it a verified closeout. The cost was a full `make verify` (236 s) plus a verifier run.
+- `28-UAT.md` stayed `diagnosed` for two days after its gap-closure plans ran, which blocked the close's artifact audit. Reading the UAT without checking the code led to a wrong claim at the close that G-28-2 was a live L08 violation; it had been fixed under L45.
+- A squash-merged base made the stacked Phase 29 PR conflict on six ledger files, although the content was identical; it had to be resolved by merge.
+- Tool-written state needed hand correction again: `completed_phases` read 9, then 8, and a Progress row was set to `Complete` for a phase that closed without its reading.
+- A `git stash` in the middle of a merge dropped the merge state; redone the same way, nothing lost.
+
+### Patterns Established
+- A close condition named in the plan for a phase that waits on an external event, with the human's literal answer quoted in the record.
+- Re-verify stale phases at the close instead of overriding, when the cause is a later squash.
+- An integration probe through TestClient can widen a known deferral's scope; the debt item is updated at the audit, not left narrower than the evidence.
+
+### Key Lessons
+- Before reporting a gap as live, read the artifact it points at in the current tree, not the UAT or report that recorded it.
+- After a gap-closure plan executes, close the UAT (`reconcile_gaps` and `uat.complete-session`) in the same PR, or the milestone audit finds it later.
+- When a stacked base is squash-merged, merge `main` into the stacked branch: the conflicts are history-only, and the base tip already in the branch proves which side to keep.
+
+### Cost Observations
+- Model mix: orchestrator Opus 5.5 for Phase 29, its ship and the close (earlier phases not recorded here); verifier and integration-checker subagents (integration checker sonnet); Codex for the cross-review
+- Sessions: not tracked
+- Notable: Phase 29 spent about seven hours of wall time waiting on a rollout that had not reached the repo; the reads themselves were minutes each.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -363,6 +404,7 @@
 | v0.2 | n/a | 6 | Build-time gates as human checkpoints with probe-derived offers; cross-CLI (Codex) review lane on the last phase; Nyquist + security audits at verify:post |
 | v0.4 | n/a | 3 (+1 skipped) | Spikes before schema with human-set bars; an opt-in geometry field under L05 with the flip deferred under its own `Lxx`; a conditional phase skipped by decision; gate cost as a checkpoint; fix-now at the review gate |
 | v0.5 | n/a | 5 | A headless browser test in the gate with the 44 links' requests pinned first; UI behaviour as schema metadata proved in Python and JS; Codex cross-review finding behaviour bugs; a measurement rule pre-registered alone, its precondition unmet and overridden on the record; a recurring loop promoted to a project skill |
+| v0.6 | n/a | 4 | Debt sweep with every open review finding dispositioned by the human; a date-gated last phase with a pre-agreed close condition; stale phases re-verified at the close for the first verified closeout |
 | v0.3 | n/a | 4 | Debt-only milestone scoped from the ledger and the v0.2 audit; pre-registered measurement campaigns; UAT gap-closure plan (14-04); a draft PR mid-phase to read CI (15-05); retroactive Nyquist on archived phases |
 
 ### Cumulative Quality
@@ -373,11 +415,12 @@
 | v0.2 | 907 | not measured | 0 — 31 → 31 pins; `bench/export_cost.py` stdlib only |
 | v0.4 | 1,220 | 97.92 % against `fail_under = 96`; `make verify` 192.94 s mean vs the 66 s bar (accepted) | 0 — 31 → 31 pins; stdlib maths only under `src/spur/` |
 | v0.5 | 1,318 | 97.99 % against `fail_under = 96`; `make verify` bar re-set to 300 s (L43), readings 195.23 s / 179.21 s | 0 — 31 → 31 pins; `playwright` pinned in `[dev]` only |
+| v0.6 | 1,348 | not read at the close; `make verify` 236.23 s at the close re-verification against the 300 s bar | 0 — `requirements.txt` 39 → 39 lines |
 | v0.3 | 929 | 97.24 % against `fail_under = 96` (L34) | 0 — 31 → 31 pins; `pytest-xdist`, `pytest-cov` in `[dev]` only |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Verifier digests go stale for reasons that are not unverified code (v0.1: STATE.md fingerprinted; v0.2 and v0.3: shared files changed by a later phase) — prove the cause from the artefact and record the override, do not re-stamp. Five closes, five overrides (v0.4 and v0.5: later squashes touching covered files).
+1. Verifier digests go stale for reasons that are not unverified code (v0.1: STATE.md fingerprinted; v0.2 and v0.3: shared files changed by a later phase) — prove the cause from the artefact and record the override, do not re-stamp. Five closes, five overrides (v0.4 and v0.5: later squashes touching covered files). v0.6 broke the run by re-verifying the stale phases at the close instead (verified closeout); the staleness itself recurred.
 2. Measurement before knobs held across all three milestones: every runtime bound (`mem_limit`, timeout, gzip level, `le`s, `HEX_CELL_CAP`) cites the run that set it, the two bounds that moved in v0.2 moved on a probe's number, and v0.3's gate bar and coverage floor were set from a profile the human read first.
 3. A bar the instrument cannot resolve is not a bar, and a bar it can resolve is demonstrable: v0.1 waived the ≤2.00× latency bar at a 0.1 ms floor; v0.3 ruled the floor real by a pre-registered campaign and then demonstrated the same bar on the same harness behind a quiet gate (L32). The fix was the measurement protocol, not the server.
 
