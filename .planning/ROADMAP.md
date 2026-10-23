@@ -14,6 +14,8 @@
   `milestones/v0.5-ROADMAP.md`, audit in `milestones/v0.5-MILESTONE-AUDIT.md`
 - ✅ **v0.6 Clean Ledger** — Phases 26–29 (shipped 2026-10-23; Phase 29 closed, trigger not
   fired) — full detail in `milestones/v0.6-ROADMAP.md`, audit in `milestones/v0.6-MILESTONE-AUDIT.md`
+- 🚧 **v0.7 Splined Shaft** — Phases 30–34 (in progress; Phase 34 is blocked until the human
+  supplies the DIN 5480 copy's local path, and Phase 31 needs anchor rows from it)
 
 ## Phases
 
@@ -21,9 +23,9 @@
 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
-- Numbering continues across milestones — v0.6 starts at Phase 26, after v0.5's Phase 25; the
-  next milestone starts at Phase 30, after Phase 29 (Phase 29 keeps its number even if it closes
-  with its item still active).
+- Numbering continues across milestones — v0.6 starts at Phase 26, after v0.5's Phase 25;
+  v0.7 starts at Phase 30, after Phase 29 (Phase 29 keeps its number even if it closes with its
+  item still active); the next milestone starts at Phase 35.
 
 <details>
 <summary>✅ v0.1 Hardening (Phases 1–6) — SHIPPED 2026-09-25</summary>
@@ -150,6 +152,292 @@ decision. Audit `tech_debt`, 16/16; the one partial flow is the known WR-02 defe
 
 </details>
 
+### 🚧 v0.7 Splined Shaft (In Progress)
+
+**Milestone Goal:** Generate an external DIN 5480 involute splined shaft with a plain shank as a
+second part type beside the gear — every printed number derived from the standard (or from the
+copy of it the human supplies) or warned with no number, the same STL/STEP download, preview and
+numbers from the web page, the API and the CLI — with every existing gear link's part untouched:
+no new `GearParams` field, `tests/regression/` and `ci.yml` byte-identical to the `v0.6`
+baseline, the gear `/api/schema` response byte-equal.
+
+- [ ] **Phase 30: Scope, Seam and Gear-Safety Guard** - The widening to a gear and spline
+      generator is a logged decision, the shaft is walled off from the gear by import contracts
+      and its own route prefix, and one check proves at every phase close that no gear link moved
+- [ ] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams`
+      with frozen field names: profile shift from d_B, tip, root and thickness, M_Re at nominal,
+      d_Ff `null` until proven, and a designation that round-trips; needs anchor rows from the copy
+- [ ] **Phase 32: The Shaft Solid** - Splined section, plain shank and end chamfer as a valid solid
+      that exports to STL and STEP, its volume matched to a closed form, its heaviest build
+      measured against the memory ceiling and the timeout
+- [ ] **Phase 33: Interfaces and Parity** - The shaft served under `/api/shaft/...`, by
+      `spur shaft` and by a part switch on the web page, one parametrised test proving the three
+      agree, the designation accepted as input, and WR-02 fixed on the same edit
+- [ ] **Phase 34: Fit Tables and Tolerance Window** - The human's DIN 5480 values in a private
+      gitignored file, transcribed twice and checked; tooth-thickness windows, M_Re limits and the
+      maximum-material solid with them, `null` and warned without them; blocked until the copy's
+      local path is supplied
+
+## Phase Details
+
+### Phase 30: Scope, Seam and Gear-Safety Guard
+
+**Goal**: The product is declared a gear and spline generator, in the decision log, before any
+shaft code exists; the shaft is walled off from the gear by import contracts and its own route
+prefix; and one check, run at every phase close, proves that no existing gear link builds a
+different part. Every later phase adds shaft code under that guard instead of hoping.
+**Depends on**: Nothing new — builds on shipped v0.6 (`792b45c`, the close squash on `main`). The
+only phase of the milestone that edits gear-side files. **No `v0.6` tag exists** (`git tag -l` and
+`git ls-remote --tags origin` list `v0.1`–`v0.5`), yet every "byte-identical to `v0.6`" rule in
+REQUIREMENTS.md names it: the first task is a stop-and-ask — the human tags `792b45c` as `v0.6`
+(creating and pushing a tag is the human's call), or the check pins the sha until they do.
+`git diff v0.5 792b45c -- tests/regression/ .github/workflows/ci.yml` is empty today, so either
+baseline reads the same bytes.
+**Requirements**: REQ-scope-decision-logged, REQ-gear-unchanged-proof, REQ-shaft-routes-separate
+**Success Criteria** (what must be TRUE):
+
+  1. The scope is a logged decision before any shaft code lands. A new `L46` in
+     `docs/architecture/decision_log.md` widens the product from "involute spur gear generator"
+     to a gear and spline generator, amends L02 to one parameter model per part type and L05 to a
+     second frozen link contract (shaft field names and defaults), says what it supersedes and
+     what it leaves alone, and its commit precedes the first commit that adds a shaft module.
+  2. "Same gear, same links" is one command the human can run at any phase close. It fails when
+     `tests/regression/` or `.github/workflows/ci.yml` differ from the baseline, or when the gear
+     `/api/schema` response is not byte-equal to the baseline's; it reads green on the tree as it
+     stands and is seen red on a deliberate edit of each watched item, the reds recorded in
+     `bench/RESULTS.md`. Any gear-file edit this phase makes (see the seam work below) leaves it
+     green.
+  3. The shaft cannot leak into the gear. Import-linter contracts declare that the shaft maths
+     imports no `cadquery`, no logger and no gear maths, and that the shaft solid is reachable
+     only through `model`; a route-table pin states that every `/api/` route beyond the v0.6 set
+     lives under `/api/shaft/` while the gear routes' query keys and responses stay as they were.
+     Each contract and the pin is seen red once against a deliberate violation.
+  4. The gate delta is recorded: the `make verify` time of this phase against v0.6's close on the
+     same host, in `bench/RESULTS.md` (REQ-gate-cost-recorded, closed at Phase 34).
+
+**Seam work the research puts here (input, not requirement)**: a part-type seam (`parts.py`),
+type widening in `pool`/`records`/`model`, and `_serve_model` extracted from `app.py`'s `model()`
+as a pure-move commit — the move is a stop-and-ask for the planner, and each such edit is
+proved by criterion 2, never by reading the diff. ASSUMPTION to check in the plan: import-linter
+errors on a contract that names a module that does not exist, so either this phase creates the
+empty shaft module files or the contracts ride with the commit that creates them; if that
+changes Phase 31's file layout, ask before choosing.
+**Boundaries**: no shaft maths, no `ShaftParams`, no route that answers a shaft; no new
+`GearParams` field; `make fixture.regen` and `make golden.regen` are not run in v0.7;
+`requirements.txt` byte-identical. **Phase close**: `make verify` result line recorded; the
+Phase 30 check green.
+**Research flag**: No — standard patterns (research Phases 1 and 4).
+**Plans**: 5 plans, run one at a time (one shared working tree; deliberate red edits)
+
+Plans:
+**Wave 1**
+- [ ] 30-01-PLAN.md — `make gear.unchanged`: the tracer check against the `v0.6` tag, wired into both gates, tested on scratch repos, seen red per watched item, priced
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 30-02-PLAN.md — L46 (gear and spline generator; amends L02/L05), AGENTS.md brief, roadmap D-11 amendment, one docs commit before any shaft module
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 30-03-PLAN.md — the wall: five docstring-only shaft modules, `parts.py`, five import contracts, belts, existence guard, route-table pin, each seen red
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 30-04-PLAN.md — the seam: `Part` at the shared entry points, `_serve_model` pure move (own commit), part-neutral 503 text with its pin
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 30-05-PLAN.md — phase-close checks (D-20 order, byte-identical paths, no shaft behaviour) and the `make verify` gate delta
+
+### Phase 31: Shaft Maths, Parameters and Designation
+
+**Goal**: A user can ask the pure maths for a DIN 5480 external shaft from reference diameter,
+module, tooth count and tolerance field and get honest numbers: the profile shift the standard
+derives, tip and root diameters, nominal tooth thickness, measurement over pins at nominal
+thickness — each proved against an independent oracle and against rows of the copy, with the form
+diameter and odd-z M_Re `null` until proven — and a designation that prints and parses back to
+the same shaft. No solid, no route, no page yet.
+**Depends on**: Phase 30 (the contracts are in force before the maths module exists). **Needs the
+human before it can close**: the DIN 5480 (2006 series) copy's formulas confirmed by clause, the
+`h_fP` convention (hobbing 0.60, vendors differ), and **anchor rows from the copy** — at least two
+for the basic dimensions, one that reproduces (or fails to reproduce) the form-diameter
+construction, one with an odd tooth count if odd-z M_Re is to print a number, and ideally the
+range-edge W30x2x14. Anchor values the human approves by name may be committed with their part,
+clause and table; nothing else from the copy is. Without the rows the plan builds the maths and
+the oracle, then stops at a checkpoint: no number ships unproved (L08).
+**Requirements**: REQ-shaft-params, REQ-profile-shift-from-dB, REQ-shaft-basic-dims,
+REQ-form-diameter-honest, REQ-mre-nominal, REQ-designation-codec
+**Success Criteria** (what must be TRUE):
+
+  1. The shaft's inputs are one frozen contract and the profile shift comes from d_B.
+     `ShaftParams` (d_B, module, tooth count, tolerance field, splined length, end chamfer,
+     shank diameter and length) is validated once at its boundary, and a pinned test fails if
+     any field name or default changes, tolerance fields included (L46's second frozen link
+     contract). The shift is x·m = (d_B − z·m)/2 − 0.55·m (ASSUMPTION until checked by clause
+     against the copy, the check recorded in the plan summary); W30x2x14 (x = −0.05, computed as
+     −0.05000000000000004) is accepted by an epsilon, and a combination outside the standard's
+     shaft range is refused with an error naming the range (the same refusal the API serves as a
+     `422` in Phase 33). `GearParams` and `calc.py` are untouched.
+  2. The user sees d_B, tip diameter, root diameter and nominal tooth thickness, and each agrees
+     with an independent stdlib oracle that shares no code with the shaft maths (seen red once
+     against a mutated formula) and with at least two anchor rows from the copy.
+  3. A number that cannot be proved is absent, with a reason. The form diameter d_Ff prints
+     `null` with a sentence naming why, unless the oracle reproduces the copy's construction on an
+     anchor row, in which case it prints the number. M_Re and the pin diameter D_Re at nominal
+     thickness agree with the oracle for even z, and pin contact is checked to lie between the
+     form and tip diameters or the value is `null` with a warning; odd z stays `null` until an
+     odd-z anchor row confirms it.
+  4. The designation round-trips. `W <d_B>x<m>x<z>x<fit>` is printed for every shaft and parsed
+     back to the same parameters, with `.` and `,` decimals; an unparseable string is refused
+     naming the bad token. A tolerance token is checked for shape only — whether the fit exists
+     in the tables cannot be known until Phase 34.
+  5. The gate delta is recorded: this phase's `make verify` time against Phase 30's on the same
+     host, in `bench/RESULTS.md`; the Phase 30 check is green.
+
+**Boundaries**: no `cadquery` import and no logger in the shaft maths (the Phase 30 contracts);
+shaft maths copied from, never imported out of, `calc.py` (`_involute_angle` precedent), so gear
+and shaft numbers stay uncoupled; no scipy; no table value in the repo; every guard test seen
+red once, the red recorded. **Phase close**: `make verify` result line recorded and
+`git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
+**Research flag**: Yes — needs the human's copy (research Phase 2): formula confirmation by
+clause, `h_fP`, anchor rows incl. one odd z, the d_Ff construction.
+**Plans**: TBD
+
+### Phase 32: The Shaft Solid
+
+**Goal**: A shaft built from Phase 31's maths is a valid solid — splined section, plain shank and
+end chamfer — that exports to STL and STEP, whose volume matches a closed form, and whose
+heaviest allowed build is measured against the memory ceiling and the timeout, with the field
+bounds set from that sweep. The user reaches the downloads through Phase 33's interfaces.
+**Depends on**: Phase 31 (parameters and outline maths); Phase 30 (the kernel dispatches by part
+type inside `model._build`, under the one lock, through the same pool and caches). The solid
+carries the **nominal** tooth thickness until Phase 34 switches it to the effective
+maximum-material thickness.
+**Requirements**: REQ-shaft-solid, REQ-shaft-build-measured
+**Success Criteria** (what must be TRUE):
+
+  1. A shaft built through `model` is a valid solid and exports a valid STL and STEP of the
+     splined section, the plain shank and the end chamfer; its volume matches a closed form
+     derived without the kernel, within a tolerance recorded beside the test.
+  2. The joins and the chamfer are honest. A shank whose diameter equals the tip diameter still
+     builds a valid solid (the case research found invalid through `Workplane.union` + `.clean()`);
+     the applied end chamfer is read back from the solid, not assumed; a chamfer past the tooth
+     height is refused naming the field or capped and warned, never an invalid solid with a wrong
+     volume and no error (research: `Solid.chamfer` does that silently).
+  3. The heaviest allowed shaft is measured: build time, worker memory and STL size are recorded
+     in `bench/RESULTS.md` within L17's memory ceiling and L37's timeout, the field bounds are set
+     from that sweep (swept, not derived), and the bounds are pinned by a test.
+  4. The gate delta is recorded: this phase's `make verify` time against Phase 31's on the same
+     host, in `bench/RESULTS.md`; the Phase 30 check is green.
+
+**Boundaries**: `cadquery` objects do not escape `model.py`; the shank joins by `Shape.fuse`, the
+end chamfer by a revolved-cone `intersect` (the research spike's findings, to be re-proved at real
+DIN proportions); the existing gear caches and pool are reused, not forked. **Phase close**:
+`make verify` result line recorded and `git diff --exit-code v0.6 -- tests/regression/
+.github/workflows/ci.yml` empty.
+**Research flag**: Yes — a kernel spike at real DIN proportions first (research Phase 3);
+build times so far were measured on placeholder proportions only.
+**Plans**: TBD
+
+### Phase 33: Interfaces and Parity
+
+**Goal**: The same shaft — preview, numbers, designation and STL/STEP — comes from the web page,
+the API and the CLI, one set of numbers for all three, the designation can be given in place of
+the fields, and WR-02 is fixed on the same edit of the part switch that would otherwise trip it.
+**Depends on**: Phase 30 (route prefix and contracts), Phase 31 (maths, parameters, designation),
+Phase 32 (the solid). Does not depend on the tables: table-dependent numbers arrive in Phase 34
+through the same schema-carried row list, and no number printed here is a table value.
+**Requirements**: REQ-shaft-api, REQ-shaft-cli, REQ-shaft-web, REQ-designation-input,
+REQ-shaft-parity, REQ-wr02-fixed
+**Success Criteria** (what must be TRUE):
+
+  1. The API and the CLI serve the shaft. `/api/shaft/schema`, `/api/shaft/info`,
+     `/api/shaft/model.stl` and `/api/shaft/model.step` answer with the gear routes' admission,
+     cache and error contract (an invalid shaft is a `422` naming the field); `spur shaft ...`
+     builds the same part and prints the same numbers for the same parameters. Both accept a
+     designation in place of the fields; a designation together with an explicit field it
+     contradicts is a `422` naming the fields (L03); an unparseable designation names the bad token.
+     The gear routes, their query keys and the gear `/api/schema` response are unchanged.
+  2. The web page serves the shaft. A part switch changes between gear and shaft; the shaft shows
+     its preview, its numbers (from a schema-carried row list, not a second row table in
+     `app.js`) and its designation, and downloads STL and STEP; a shaft link (`part=shaft&...`)
+     round-trips; a gear link carries no `part` key; any other `part` value is refused visibly; a
+     browser test in `make verify` proves each.
+  3. Web, API and CLI agree. One parametrised test, over a fixed set of shafts, proves they report
+     the same value for every shaft number and the same download name, and is seen red once on a
+     deliberately perturbed number.
+  4. WR-02 is fixed where the part switch edits `refuse()`/`gearQuery()`. A link token the number
+     box blanks but the API accepts no longer builds a non-default part under a blank box — the
+     page and the part agree — proved in the browser over every number field and `mate_teeth`
+     (the debt item says the token list is wider than its table); the debt item
+     `2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md` is retired in the fixing
+     commit (status, sha, `git mv` into `resolved/`, INDEX row).
+  5. The gate delta is recorded: this phase's `make verify` time against Phase 32's on the same
+     host, in `bench/RESULTS.md`, browser test included; the Phase 30 check is green and the 44
+     fixture links still send the requests `tests/regression/golden_requests.json` pins.
+
+**Decisions the human takes at this phase's discuss-phase**: WR-02's shape (the debt item says the
+wording and placement of any notice have more than one honest shape — a discuss-phase choice, not
+a gap closure), logged as a new `Lxx` if it amends L44's "The server decides"; where the part
+switch sits (outside `#params`, per research).
+**Boundaries**: the shaft's rows live in a schema-carried `dims` key — two `app.js` pins forbid a
+second row table and quoted field names (`tests/test_api.py:176-180`, `:314-340`); the gear
+`/api/schema` stays byte-equal; no `part` key on any gear link; the CLI never imports
+`app`/`fastapi`/`starlette` (L04); no new dependency. **Phase close**: `make verify` result line
+recorded and `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
+**Research flag**: No — standard patterns (research Phase 4).
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 34: Fit Tables and Tolerance Window
+
+**Goal**: With the human's DIN 5480 (2006 series) values transcribed into a private, gitignored
+file, the user sees the tooth-thickness windows and the measurement-over-pins limits at the
+chosen fit, and the solid carries the effective maximum-material thickness; without the file, or
+for a size the tables do not list, the part still builds from the formulas and every
+table-dependent number is `null` with a warning that says why. The milestone releases as one
+unit when this phase closes.
+**Depends on**: Phase 33 (the new rows ride its schema-carried list and its parity test), Phase 31
+(the maths the tables extend). **Blocked until the human supplies the DIN 5480 copy's local
+path** — the transcription cannot start without it, and nothing here may be guessed from memory or
+from a vendor page (L08). If the path is not available when Phase 33 closes, stop and ask before
+anything else is planned.
+**Requirements**: REQ-tables-private-file, REQ-tables-transcribed-twice, REQ-fit-tolerance-window,
+REQ-mre-limits, REQ-solid-max-material, REQ-off-table-builds, REQ-gate-cost-recorded
+**Success Criteria** (what must be TRUE):
+
+  1. The tables are private and their absence is honest. Transcribed values load from a
+     gitignored file whose path is set by config or environment; with no such file every
+     table-dependent number is `null` with a warning naming the missing file, and the part still
+     builds. The repository holds no transcribed value beyond the anchors the human approved by
+     name.
+  2. The transcription is checked, not trusted. The file is produced by two independent reads
+     diffed to zero; every row carries its part, clause and table; a loader check enforces
+     structural invariants (`T_G = T_act + T_eff`, µm-versus-mm range, no Unicode minus) and is
+     seen red once against a deliberately broken row.
+  3. For a tabulated size and fit the user sees the effective and actual tooth-thickness windows
+     and M_Re max and min with D_Re from the copy, each proved against the oracle on the anchor
+     rows; a fit outside the tables is a warning and `null`; a d_B/m/z absent from the size tables
+     builds from the formulas with every table-dependent number `null` and warned. The new
+     numbers reach web, API and CLI through Phase 33's row list, and the parity test stays green
+     and covers them.
+  4. The solid follows the tables. With them loaded it carries the effective maximum-material
+     tooth thickness (s + es), read back from the solid; without them it carries the nominal
+     thickness and a warning says so.
+  5. The gate cost is recorded and read (REQ-gate-cost-recorded): each phase's `make verify` time
+     is on record against its predecessor's, and the milestone close reading is inside L43's 300 s
+     bar or the human decides — a reading above it is surfaced, not trimmed silently. The Phase 30
+     check is green at the milestone close.
+
+**Decisions the human takes at this phase's discuss-phase**: the config key or environment
+variable that names the private file; the method of the two independent reads; which anchor
+values the human approves by name for the public repo.
+**Boundaries**: no licensed value committed; no interpolation, no snapping to the nearest size
+(L08); no ISO-style `f8` aliases for DIN fit letters (one spelling per field, the frozen link
+contract); `make fixture.regen` still not run. **Phase close**: `make verify` result line
+recorded, `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty, and
+`git ls-files` holds no table file.
+**Research flag**: Yes — transcription risk (research Phase 5); the 2006 edition's tolerance
+system is in Part 1 and its size tables in Part 2, so the plan names which part each table
+comes from.
+**Plans**: TBD
+
 ## Process Notes (carried forward)
 
 - Phases run on `gsd/phase-NN-*` branches cut from `origin/main` and land only through
@@ -182,3 +470,8 @@ decision. Audit `tech_debt`, 16/16; the one partial flow is the known WR-02 defe
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
+| 30. Scope, Seam and Gear-Safety Guard | v0.7 | 0/5 | Planned | - |
+| 31. Shaft Maths, Parameters and Designation | v0.7 | 0/? | Not started (needs anchor rows from the DIN 5480 copy) | - |
+| 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
+| 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
+| 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |

@@ -1,239 +1,236 @@
 # Feature Research
 
-**Domain:** a debt sweep on an existing parametric spur-gear generator (schema-driven web form, URL-hash state, FastAPI, CLI), milestone v0.6 Clean Ledger
-**Researched:** 2026-10-15
-**Confidence:** HIGH for what the code does today (read and measured in a real browser); MEDIUM for "what other URL-state libraries do" (web search snippets, not cached through the research-store seam); LOW only where a row says UNVERIFIED.
+**Domain:** external DIN 5480 involute splined shaft (W-profile, flank-centred) as a second part type in an existing parametric gear generator; milestone v0.7 Splined Shaft
+**Researched:** 2026-10-23
+**Confidence:** MEDIUM overall. HIGH for what the standard's parts cover and which editions are current (publisher pages) and for what the commercial tools print (vendor brochures). HIGH that one published worked example reproduces from the formulas below (I ran it). LOW for every table value: none was read, none is stated here as fact, and the human's copy is the only source for them.
 
-Evidence tags used below: **MEASURED** = I ran it on 2026-10-15 (real uvicorn + Chrome Headless Shell from `.venv/ms-playwright`, script in the session scratchpad, not committed). **READ** = read in the file cited. **UNVERIFIED** = inferred, not run.
-
-"Feature" here means "behaviour of a fix". No new product capability is in scope. The one filter on everything: anything that would move a valid link's part, or change what a valid link sends, is an anti-feature (L05; the 44-record fixture and `tests/regression/golden_requests.json` stay byte-identical).
+Evidence tags: **PUBLISHER** = DIN Media / DIN page, read 2026-10-23. **VENDOR** = a vendor's own brochure or manual page. **REPRO** = I computed it in a scratch script (not committed) against a VENDOR data point. **ASSUMPTION** = inferred, must be settled against the human's copy. The research-store seam was not used (no digest cached); web search was `WebSearch`/`WebFetch`, so provider-tier confidence is MEDIUM at best for everything not from the publisher.
 
 ---
 
-## Part A. The bogus-enum link, and how general it really is
+## 1. How the field works (what the tools do)
 
-### A.1 What other URL-state apps do (convention)
-
-Three families, all seen in mainstream tooling [MEDIUM, web search, not cached]:
-
-| Family | Example | Behaviour on an out-of-domain value | Fit for spur |
+| Tool | Input model | Printed / produced | Source |
 |---|---|---|---|
-| Coerce to default | nuqs parsers: a value that is not valid state makes the parser return `null`, so the app shows its default; Zod `.catch()` in TanStack Router | silent fallback | Rejected by the human's pick. It is exactly today's bug (L03/L08: never guess). |
-| Refuse as an error state | TanStack Router `validateSearch` that throws: the route goes to its `errorComponent` | whole view replaced by an error | Heavier than needed; spur already has a per-field error surface. |
-| Keep the value, flag it | react-jsonschema-form: formData keeps the value, ajv reports "must be equal to one of the allowed values" against the field | field stays marked, nothing is built or submitted until fixed | This is spur's existing 422 path. Use it. |
+| **HEXAGON WN2 / WN2+** (DIN 5480 only) | reference diameter d_B, pressure angle, module, z, tolerance field; ships a database of "all combinations of spline connections to DIN 5480 (about 700 records)" the user picks from; WN2+ adds free addendum and profile-shift factors for non-standard profiles | all production data; tooth thickness (eff. max, actual max ref., actual min); form circle; **diametral two-roller measure and span width as min, max and nominal, with measuring tooth count and roller diameter changeable**; all deviations and form/angle/runout tolerances ("all table values supplied by WN2"); drawing tables with inspection rules; DXF/IGES and STL; strength (Niemann/Hohn, Roloff/Matek) | VENDOR, `hexagon.de/pdf/wn2_d.pdf` (MEDIUM) |
+| **HEXAGON WNXE** (any involute spline: ISO 4156, DIN 5480, ANSI B92.1, DIN 5482, DIN 9611) | module or pitch, z, tip/root diameters or height factors, profile shift **or** tooth thickness **or** two-roller measure **or** span (any one, the rest back-calculated) | tooth thickness, span, two-roller measure, tool dimensions, scale tooth profile for wire-EDM and 3D printing; **no tolerances** | VENDOR, `hexagon.de/pdf/wnxe_d.pdf` (MEDIUM) |
+| **GWJ eAssistant** "Zahnwelle nach DIN 5480 und weiteren Normen" | choose the standard, then **search the profile by d_B, module, z, tip diameter, profile shift** (or a custom geometry); tolerance quality 5-12, deviation series (letters), actual vs effective tolerance, measuring tooth count and ball diameter; hob / shaper / constructed tool | actual tooth thickness A_s and gap A_e with limits, span W_k with A_We/A_Wi, root and tip diameters, **effective vs actual values**, diametral ball measure M_d / two-ball measure, M_dR roller measure, coordinate table, DXF, STEP/IGES, strength per DIN 6892 | VENDOR, `eassistant.eu` handbook chapter 17 (MEDIUM) |
+| **MITCalc** spline | standard picked from a list, direct size input, strength coefficients | dimensions, strength check, 2D CAD output of shaft and hub profile | VENDOR via search snippet, page itself unreachable (LOW-MEDIUM) |
+| **KISSsoft** | its public spline page covers DIN 5481 and DIN 5482 only; user enters "effective and actual tolerances" | graphical profile, DXF | `geartechnology.com/kisssoft-implements-spline-connections` (MEDIUM). I found no public evidence of DIN 5480 in KISSsoft; do not claim it. |
+| **Catalogue shops** (Maedler, Ameco, OnDrives) | pick a designation `W 25 x 1.25 x 18` | a part; the calculator of OnDrives/MESYS takes a pair designation | search snippets (LOW) |
 
-Sources: [TanStack Router, validate search params](https://tanstack.com/router/latest/docs/framework/react/how-to/validate-search-params), [nuqs parsers](https://nuqs.dev/docs/parsers), [rjsf validation](https://react-jsonschema-form.readthedocs.io/en/v4.2.2/usage/validation/).
+What this means for the shape of the feature:
 
-Convention in one line: a library that silently coerces is making the choice spur's L03/L08 forbid; the "keep it and mark it, let the validator speak" family is the one that matches a server that already owns validation (L02).
+1. **Two input idioms coexist.** Calculators take d_B, m, z, tolerance as fields (WN2, eAssistant). Catalogues and drawings carry the designation string. Nobody makes the user type the profile shift: **x is derived from d_B, m, z** (REPRO below). The spur app's rule (one model, three front ends) says: fields are canonical, designation is a codec in both directions.
+2. **Every serious tool prints a window, not a point.** Tooth thickness and measure over rollers come as max and min, and they distinguish **effective** from **actual** (DIN 5480's effective-tolerance system, where the form deviation is carried inside the tolerance). A single "M_Re = 126.0" would be the one thing none of them print.
+3. **Strength, DXF, drawing tables and the hub (N) side are what the bigger tools add**; the table-stakes core is geometry + tolerances + inspection measures.
+4. **The 3D solid is not what these tools sell** (2D DXF and a scale outline are). spur's STL/STEP and live preview are already a differentiator before any new work.
 
-### A.2 What spur does today (MEASURED, 2026-10-15)
+---
 
-Page loaded at `/#<link>`, 2.5 s settle; "sent" is the `/api/*` requests the page made.
+## 2. What the standard defines, and where (edition state, 2026-10-23)
 
-| Link | Sent by the page | Hash after | Marked / error shown | Verdict |
+PUBLISHER facts (HIGH):
+
+| Part | Current edition | What it is | Notes |
+|---|---|---|---|
+| DIN 5480-1 | **2026-05** (30 pp). 2025-10 was withdrawn and replaced | Generalities: 30 degree pressure angle, one reference profile for all pitches, flank centring (diameter centring the exception), profile shifts to reach the reference diameters, fit system with tolerances for effective form deviations. Tables 1 and 2 revised in 2025, Annex A expanded | **DIN's own warning notice (2026-01-20) corrects Annex A.2 of the 2025-10 text: `M_1min = M_1 + (A_s + T_G)*A*_M1` must read `M_1min = M_1 + (A_s - T_G)*A*_M1`.** A copy dated 2025-10 carries the wrong sign. |
+| DIN 5480-2 | **2025-10** (89 pp). Replaces 2015-03 | Nominal and inspection dimensions: the per-size tables | "Table 1 'Fillet radii and dimensioning factors' has been deleted" in this edition. Where the root-fillet radii and height factors live now is unknown to me. |
+| DIN 5480-15 | 2025-10 (41 pp) | Inspection: gauges and measuring procedures; "formula in the third row corrected in Table 9" | Not in the milestone's "parts 1 and 2" scope. M over rollers may be cut across parts 1, 2 and 15. |
+| DIN 5480-16 | 2025-12 **draft** | Tools | A hob root defined only here would not be citable as a published standard. |
+
+Scope figures the publisher and vendors agree on (MEDIUM): module 0.5 to 10, z 6 to 82, alpha 30 degrees. **d_B 6 to 500 mm is UNVERIFIED**: the one search that "confirmed" it echoed my query. Old pre-2006 series was one part per module (part 5 = m 1.5 and 1.75, part 10 = m 5, publisher titles), so the module list is not 0.5..10 in uniform steps; read it from the copy.
+
+### 2a. Reproducible from public vendor data (REPRO, one data point)
+
+HEXAGON's own demo prints, for **W 120x3x38x8f** (DIN 5480:2006 output, page 2 of `wn2_d.pdf`): hfP/m 0.55, da1 119.40 h11, dFf1 113.91 max, df1 113.40, s v max 6.243, s max act ref 6.220, s min actual 6.180, roller DM 6.000, M1maxRef 126.017, M1min 125.956; tolerance panel A_s1 -0.028, T_act 0.040, T_eff 0.023, T_G 0.063; nominal e2 = s1 = 6.271.
+
+I computed these from textbook involute relations with x = d_B/(2m) - z/2 - 0.55 = 0.45 (script in session scratchpad, not committed):
+
+| Quantity | My computation | Vendor | Result |
+|---|---|---|---|
+| nominal thickness `s = m(pi/2 + 2 x tan 30)` | 6.2712 | 6.271 | match |
+| `d_f = m z + 2 x m - 2*0.55 m` | 113.40 | 113.40 | match |
+| `d_a1 = m z + 2 x m + 2*0.45 m` (= d_B - 0.2 m) | 119.40 | 119.40 | match |
+| M over 6.000 rollers, even z, at s = 6.220 | 126.0169 | 126.017 | match |
+| same at s = 6.180 | 125.9560 | 125.956 | match |
+| `s_eff,max = s + A_s = 6.271 - 0.028`; `s_act,min = s + A_s - T_G` = 6.180 | 6.243; 6.180 | 6.243; 6.180 | match; same sign structure as DIN's corrected Annex A.2 |
+| form diameter d_Ff: tangent point of a hob tip arc rho = 0.16 m on the 30 degree flank | 113.880 | 113.91 | **no match (0.03 mm)**. rho = 0.17 m gives 113.910, but WN2's own dialog shows rho_f/m = 0.16 for the shaft. Unresolved. |
+
+Reading: tooth thickness, root and tip diameters and M over rollers are **derivable and independently checkable** (x range consistent too: -0.05..+0.45, which for 25 / 1.25 gives z in {18, 19}, and the milestone's own example is z = 18 at x = 0.45). The **form diameter is not**: do not promise `d_Ff` until the standard's construction is read. Treat all of the above as ASSUMPTION until the same relations are confirmed from the human's copy with clause numbers; the vendor row is a cross-check vector, not a source.
+
+### 2b. Needs the tables (human's copy), do not guess
+
+- Tolerance deviations: the fundamental deviation A_s and tolerance T (actual, effective/form allowance, total T_G) per quality (vendors disagree on the range, 5-12 by eAssistant, 4-9 by a workshop article: **read it**) and per deviation letter (shaft letters a..v per eAssistant, hub F..M, also unverified). Whether they are tabulated per d_B and m ranges or formula-based: unknown (ASSUMPTION: tabulated, since WN2 says "all table values are supplied").
+- Roller/ball diameter D_Re (WN2 example 6.000 for m = 3, shaft; 5.250 hub): per size or per module, unknown. If per module, the transcription is small; if per size it is part 2's 89 pages.
+- Whether a listed size is required: ~700 standard (d_B, m, z) records exist (VENDOR). The x window above means a (d_B, m) pair admits at most two z.
+- Root form: fillet radius and height factors (WN2+ dialog: rho_f/m 0.16 shaft, 0.2 hub; hfP/m 0.55; ha/m 0.45 for the shaft), and the form diameter construction. See 2025 deletion of the part-2 table.
+- Where tolerance on d_a (h11 in the vendor demo) and d_f (shown "-1.15") come from.
+
+---
+
+## 3. Feature Landscape
+
+### Table Stakes (users expect these)
+
+| Feature | Why Expected | Complexity | Notes / dependency on existing |
+|---|---|---|---|
+| Shaft part type with its own sibling parameter model | Product widened by a new `Lxx`; every tool treats shaft and hub as distinct objects | MEDIUM | New model beside `GearParams`, validated once at its own boundary. Touches L02 ("one parameter model") by amendment, not new `GearParams` fields (L26 fixture stays byte-identical). |
+| Inputs as fields: d_B, module, z, tolerance quality, deviation letter, plus shank (d, length), splined length, end chamfer | WN2, eAssistant | LOW | Profile shift is **derived, never an input**; validate that derived x lies in the standard's window, else 422 naming the fields (L03, direct conflict). |
+| Designation printed **and** accepted, round-tripping (`W 25x1.25x18x8f`) | Drawings, catalogues, brief | MEDIUM | A codec over the fields, not a second source of truth. If both designation and fields arrive and disagree: 422. Parse: `x`/`×`, decimal point or comma, optional `DIN 5480 -` prefix, case-insensitive W; print one canonical form. Reject ISO-style `f8` ordering rather than guess. Property test: parse(print(p)) == p. |
+| Basic dimensions: d_B, reference d, x, tip d_a, root d_f, tooth thickness s | All tools | LOW-MEDIUM | Formulas reproduce (2a) once confirmed in the copy; pure maths in a new module with no `cadquery` import (import-boundary contract). Reuse `inv()`, the involute point and `Profile.half_angle` ideas from `calc.py`; **do not reuse `_dedendum`/`cutter`/`profile`** unchanged, they take `GearParams` and hard-code the 1.25 m dedendum. |
+| Tooth-thickness window: effective max, actual max, actual min, A_s, T_G | DIN 5480's effective-tolerance system; every tool | MEDIUM | Values need the tolerance tables; transcription with clause/table citation and second read. Outside the tables: warning and null (L08). |
+| Measure over rollers/balls M_Re, max and min (and nominal), with the roller diameter D_Re it assumes | WN2, eAssistant, brief | MEDIUM | Even and odd z differ (diametrically opposite vs offset roller, `cos(90/z)`). Proved against an independent oracle (REPRO shows a closed form agrees to 1e-3). Print D_Re next to M_Re, since a number without its roller is unusable. Mind the Annex A.2 erratum. |
+| Form diameter d_Ff | brief; WN2 prints it | HIGH (until construction known) | See 2a: not reproduced. If the construction cannot be settled from the copy, print a warning and **no number** (L08). Do not ship a plausible value. |
+| Solid: splined section (hob root), step, plain shank, end chamfer; STL and STEP | the product | MEDIUM-HIGH | New build path in `model.py` (kernel stays inside it, vendor types stop at the boundary). Spline outline can reuse the trochoid-root machinery's concept (`Cutter`, `trochoid_root`, swept-cutter oracle, `xi` form roll) but needs a cutter with hfP = 0.55 m and 30 degrees: generalise or fork, decision for discuss/plan. End chamfer is a revolve-cut cone; L29's tip-chamfer code is gear-face specific. |
+| Say what size the solid is | an honest tool | LOW | The solid is built at one stated tooth thickness (recommend effective max, i.e. s + A_s, the max-material limit), printed as such; never leave "nominal" implied. User decision at discuss-phase. |
+| Warnings instead of numbers outside the tables or when uncomputable | L08 | LOW | Reuse the `warnings` tuple pattern; a new typed result model (`ShaftDimensions`) with every key always present, `null` where it does not apply. |
+| Parity: live preview, numbers, STL/STEP from web UI, HTTP API and CLI | brief, REQ-three-interfaces | HIGH | Cross-cutting: a part-type discriminator through `/api/schema`, `/api/info`, `/api/model.{fmt}`, CLI subcommands, form generation, share links, download slug (L40: no cache keyed by slug), pool hash-affinity routing and both caches, and the browser test's per-fixture request pins (L39). Existing gear links must build and send exactly what they do now (L05). |
+| Shareable link for the shaft | REQ-shareable-links | LOW-MEDIUM | Same URL-hash mechanism; defaults absolute mm (L05). Bad enum or out-of-range link is sent and refused by the 422 (L44). |
+| Defence against bad geometry: shank vs tip/root diameters, spline length vs total, chamfer vs spline length | build safety | MEDIUM | Cap-and-warn only where nothing explicit is contradicted (L03); direct conflicts 422. Each gets a measured build time under `SPUR_BUILD_TIMEOUT`. |
+
+### Differentiators (competitive advantage)
+
+| Feature | Value Proposition | Complexity | Notes |
+|---|---|---|---|
+| A live 3D shaft with the printed numbers next to it | None of WN2/WNXE/eAssistant/MITCalc leads with a printable solid | (covered above) | WNXE does emit 3D-printing outlines only as 2D. |
+| Numbers proved against the **built solid**, not only against formulas | Matches the project's culture ("read back on the built solid within 1e-6 mm") | MEDIUM | Measure over simulated rollers on the kernel result; compare to M_Re within a stated tolerance. Independent of the closed form. |
+| Independent oracle for each printed value | Core Value; the one differentiator that fits "a number is a number someone cuts metal to" | MEDIUM | Use the vendor demo above as a cross-check vector (not a source), plus 2 to 3 rows from the copy chosen by the human. Oracle shares no code with the implementation. |
+| Span (base tangent) W_k alongside M_Re | WN2/eAssistant print it; calipers are cheaper than rollers | LOW-MEDIUM | Existing `span_measurement(p)` is gear-typed; the maths is the same family. k comes from the standard; ASSUMPTION that DIN 5480 gives a measuring tooth count. |
+| Citation per number | Unique among the tools: each tolerance value carries its clause/table | LOW | Metadata beside the transcribed table; shows in the docs, optionally in the response. |
+| DIN-style "drawing table" text block of the same numbers | WN2 makes drawing tables | LOW | A formatter over `ShaftDimensions`; no new numbers. Defer past v0.7 core. |
+| Hob-cut root through the same trochoid proof as the gear | Reuses L38's proven root; one root story across the product | MEDIUM-HIGH | Only after the standard's root form is read; otherwise radial root with a warning. |
+| Mating hub (N) numbers and clearance (c_v min/max, WN5 prints them) | Fit is the point of the standard | HIGH | Needs the hub tables too. Later milestone. |
+| Warning on the tooth-to-shank transition | A workshop article reports notch factors 3-5 without a relief groove (DIN 509) | LOW | A single sentence in `warnings`; no groove in v0.7. Source is a vendor/workshop article (LOW-MEDIUM). |
+| 2D profile DXF | WN2/WNXE/eAssistant all export it | MEDIUM | Not requested. Park in `docs/ideas/`. |
+
+### Anti-Features (commonly requested, often problematic)
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---|---|---|---|
+| Strength / torque capacity (Niemann, DIN 6892, Roloff) | Every commercial tool has it | A load number is exactly "a number someone loads"; needs materials, K factors, load distribution; unverifiable here; L08 | Out of scope; state so. |
+| Inventing or interpolating table values outside the copy | Covers more sizes | Silent wrong numbers; violates the milestone rule and L08 | Warn, null; only transcribed values ship. |
+| Snapping a non-standard (d_B, m, z) to the nearest standard size | Forgiving | A parameter the user set changing the part (L03, L05) | 422 naming the fields. |
+| Non-standard profiles with free addendum / profile shift (WN2+ "Sonderverzahnung") | Flexible | Breaks "every number from the standard"; a second product | Not in v0.7. |
+| Diameter-centred fit, hub (internal) spline, ISO 4156 / ANSI B92.1, DIN 5481 / 5482, ISO 14 | "Full spline support" | Each is a family with its own tables; the brief queues one family per milestone | Flank-centred external W only (ASSUMPTION). |
+| Extra print-clearance / offset field that moves the tooth | Printer users want a tuned fit | Moves s and M_Re away from the standard; numbers must follow or lie; new field | Defer. If added: M_Re and s computed at the offset or null. |
+| Accepting ISO-style `f8` / hub `H9` designations | Looks friendly | Order-of-letters ambiguity; round-trip breaks | Print and accept DIN's `8f` only. |
+| Helical / worm-like splines, relief groove (DIN 509), hardened-zone modelling | Real shafts have them | Separate standards and decisions | Warning sentence only. |
+
+---
+
+## 4. Feature Dependencies
+
+```
+Tables transcribed from the human's copy (clause/table cited, second read)
+    |--requires--> human supplies the local path (milestone blocker)
+    |--requires--> decide: per-size tables vs per-module tables vs formulas
+    |--enables---> tolerance window (A_s, T, T_G) --enables--> M_Re max/min, s limits
+    '--enables---> D_Re --enables--> M_Re
+
+Basic dimensions (x, d_a, d_f, s)      -- needs only formulas (confirm in copy)
+    |--enables--> designation codec (validates x window)
+    |--enables--> solid outline (involute flanks)
+    '--enables--> M_Re nominal, span
+
+Root form (rho_fP, hfP, d_Ff construction) --requires--> copy (2025-10 deleted the part-2 table)
+    |--enables--> d_Ff
+    '--enables--> hob-cut root in the solid (else radial root + warning)
+
+Sibling shaft model --requires--> part-type discriminator through schema/info/model/CLI/UI
+    |--requires--> amendment to L02 and the product-scope Lxx
+    '--conflicts--> any change to GearParams, tests/regression/pre_v0_2.json (L26)
+
+Built-solid proof --requires--> solid + M_Re closed form (two independent paths)
+Drawing table, DXF, hub N, strength   --depend on--> everything above; deferred
+```
+
+### Dependency Notes
+
+- **Tables block three things, not all of them.** Geometry, codec, solid shape and the x window need only formulas and can go first (confirm each in the copy). Tolerance window, D_Re, M_Re limits and probably d_Ff wait on the copy. A phase order that builds the geometry and the part-type plumbing while the path is outstanding avoids idling.
+- **The designation depends on the tolerance letters being known** to validate `8f`; until the table is in, the codec can parse and round-trip but must report the field "cannot be checked" rather than accept anything.
+- **Parity is the expensive part**, not the maths: the gear is assumed throughout (`GearParams`, `DerivedDimensions`, `app.js`'s `gearQuery()`, the model cache key, the slug, CLI flags generated from the model). WR-02 (`refuse()` / `gearQuery()`) is carried in "on its own trigger" and will fire the moment those functions are edited for a second part type.
+- **Existing machinery to keep out of the way:** `calc.py` must not import `cadquery`; vendor types stop at `model.py`; the 44-record fixture is untouched.
+
+---
+
+## 5. MVP Definition
+
+### Launch With (v0.7)
+
+- [ ] Part-type plumbing and the sibling `ShaftParams`/`ShaftDimensions`, parity on all three interfaces, share link, preview and STL/STEP of the shank + spline + chamfer solid (radial root, stated so).
+- [ ] Basic dimensions from formulas (d_B, d, x, d_a, d_f, s), each with an independent oracle and the vendor vector as a cross-check.
+- [ ] Designation codec, round-trip tested, x-window validation as 422.
+- [ ] Tolerance window (A_s, T_G, s eff max, s act min) and M_Re max/min with D_Re from the copy; M_Re proved against an oracle and against the built solid.
+- [ ] Everything not in the tables: warning, no number.
+
+### Add After Validation (v0.7.x / next)
+
+- [ ] d_Ff and the hob-cut root once the construction is read and reproduces (2a) - trigger: copy read, vendor vector reproduced to 0.005 mm.
+- [ ] Span W_k - trigger: the copy gives k.
+- [ ] Drawing-table text block.
+
+### Future Consideration (v0.8+)
+
+- [ ] Hub (N) and fit clearance; ISO 4156 / ANSI; DIN 5481 / ISO 14 serrations (one family per milestone, per the brief).
+- [ ] DXF profile, print-offset field, relief groove.
+
+---
+
+## 6. Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---|---|---|---|
+| Part-type plumbing + parity | HIGH | HIGH | P1 |
+| Basic dimensions + oracle | HIGH | LOW-MEDIUM | P1 |
+| Solid (spline, shank, step, chamfer) | HIGH | MEDIUM-HIGH | P1 |
+| Designation codec | HIGH | MEDIUM | P1 |
+| Tolerance window + M_Re max/min | HIGH | MEDIUM (gated on copy) | P1 |
+| Built-solid proof of M_Re | MEDIUM-HIGH | MEDIUM | P1 |
+| Form diameter d_Ff | MEDIUM | HIGH until construction known | P2 |
+| Hob-cut root | MEDIUM | MEDIUM-HIGH | P2 |
+| Span W_k | MEDIUM | LOW-MEDIUM | P2 |
+| Drawing-table block | LOW-MEDIUM | LOW | P3 |
+| DXF, hub, clearance, print offset | MEDIUM | HIGH | P3 |
+| Strength | n/a (anti) | n/a | none |
+
+---
+
+## 7. Competitor Feature Analysis
+
+| Feature | WN2 | eAssistant | WNXE | Our approach |
 |---|---|---|---|---|
-| `root_shape=bogus&teeth=22` | `info?teeth=22`, `model.stl?teeth=22&quality=preview` | `#teeth=22` | none, none | silent drop (the debt item); select `""` at index -1 |
-| `recess_sides=bogus&teeth=22` | same | `#teeth=22` | none | same defect, second enum field |
-| `root_shape=&teeth=22` (blank) | same | `#teeth=22` | none | blank select, default part |
-| `teeth=abc` | `info?` (nothing), `model.stl?quality=preview` | `` (empty) | none | **same defect on a number box**: default 19-tooth part built from a link that said `teeth=abc` |
-| `mate_teeth=abc&teeth=22` | `info?teeth=22` | `#teeth=22` | none | same defect on the mate box |
-| `foo=1&teeth=22` | `info?teeth=22` | `#teeth=22` | none | unknown key dropped; API also ignores unknown keys (200), so not a defect |
-| `teeth=22.5` | `info?teeth=22.5` | kept | `Teeth` marked; "Teeth: Input should be a valid integer, unable to parse string as an integer" | **already refused through the 422 path** |
-| `teeth=-5` | `info?teeth=-5` | kept | `Teeth` marked; "Teeth: Input should be greater than or equal to 6" | already refused |
-| `teeth=1e1` | `info?teeth=1e1` | kept | `Teeth` marked; int parse message | already refused |
-
-API side (TestClient, MEASURED): `root_shape=bogus`, `recess_sides=bogus`, `root_shape=` and `root_shape=Trochoid` are 422 `literal_error` with `loc: ["query", "<field>"]`; `teeth=abc`, `teeth=` and `mate_teeth=abc` are 422 `int_parsing`; `foo=1` is 200; `root_shape=trochoid&root_shape=radial` is 200 (page resolves repeats first-wins, READ `URLSearchParams.get`, `tests/browser_session.py` `_given`).
-
-### A.3 Why it drops (READ)
-
-- `readHash()` (`src/spur/static/app.js:105-111`) does `input.value = h.get(name) ?? defaults[name]`. A `<select>` assigned a value with no matching option reads `''` / `selectedIndex -1`. An `<input type=number>` assigned text that is not a valid floating-point number is sanitised to `''` by the browser (MEASURED: `teeth` reads `''` after `#teeth=abc`).
-- `gearQuery()` (`app.js:114-120`) skips `input.value === ''`, and `update()` rewrites the hash from that query (`app.js:247-248`), so the evidence also leaves the address bar.
-- Numbers that parse but are out of range or the wrong integer-ness are never sanitised, so they already travel to the API and hit the 422 path. The gap is exactly the set of values a control **cannot hold**: an enum string with no option, and non-numeric text in a number box.
-
-### A.4 What the 422 marking path does (READ, MEASURED)
-
-`update()` clears `.invalid` on every field, hides downloads, aborts the previous request, fetches `api/info?...`. On a non-ok answer, `problems()` (`app.js:187-202`) takes the body's `detail[]`; for each item it adds `.invalid` to `fields.get(d.loc[1])` and to every name in `d.ctx.fields`, and returns `"<Field title>: <msg>"` (the `Value error, ` prefix removed). `fail()` (`app.js:258-263`) puts those in `#messages`, empties `#dims`, and sets the status to "Showing the last valid gear" only if a mesh already exists. The STL request is never made (info is fetched first and returns early). Downloads stay disabled. CSS: `.field.invalid input, .field.invalid select` gets the accent border and outline (`style.css:112`).
-
-It is **field-agnostic**: it keys on `loc[1]` and `ctx.fields`, so it works for any `GearParams` field, enum or number, with no per-field code. It is exercised today for `bore_flat=3` (via `ctx.fields`), `teeth=2` (via `loc[1]`), and the hex+keyway pair (`tests/test_browser.py:764-799`, `:1099-1134`). `mate_teeth` is not a form field, so its 422 shows the message text but marks nothing (`fields.get('mate_teeth')` is undefined; READ).
-
-Two enum fields exist (`root_shape`, `recess_sides`; READ `src/spur/params.py:115,168`) and neither is an `enabled_when` gate (READ, grep `when(` in params.py), so keeping a bad enum value interacts with no relation or selector logic.
-
-### A.5 Is the fix general or root_shape-only? General.
-
-The defect is one mechanism: **the page loses a link value its control cannot represent, before the request is built**. It affects both enums (MEASURED) and any non-numeric text in a number box including `mate_teeth` (MEASURED). A root_shape-only fix would leave `recess_sides=bogus` and `teeth=abc` building the default part silently, which is the same L03/L08 violation. The 422 path needs no change; the fix lives entirely in how `readHash`/`gearQuery` carry an unrepresentable value to the API so the server's own message and `loc` do the marking.
-
-Recommended mechanism (one for all field types, smallest change): in `readHash`, after assigning, if the raw token is non-empty and the control cannot hold it (`select.selectedIndex === -1`, or number `input.value === ''`), remember it in a `rejected` map (name to raw string). `gearQuery` sends `rejected.get(name)` for that field. The map entry is cleared when the user edits that field, on Reset, and at the next `readHash`. Consequences, all following from existing code: the hash keeps the raw token (the address bar stays truthful and Copy link copies the bad link); the API's text appears unchanged ("Root shape: Input should be 'radial' or 'trochoid'"); the field is outlined; nothing builds; an unrelated edit does not silently drop the bad value because the map persists until that field is touched. For a select, showing the stray value as a temporary, removable option is a nicer variant of the same idea; for a number box nothing can show it (browser sanitisation), so the shared map is the common denominator. Complexity: Low (select) to Low-Medium (shared map plus the clear rules).
-
-### A.6 Feature categories for the bogus-link fix
-
-**Table stakes**
-
-| Behaviour | Why | Complexity | Notes |
-|---|---|---|---|
-| A non-empty enum token with no matching option is sent to the API unchanged and refused through `problems()` (field marked, server text shown, no STL request, downloads disabled) | The human's pick; L03/L08; matches API and CLI (argparse choices) | Low | Same path as `teeth=2`; text comes from the server, no new client wording (L02) |
-| The fragment keeps the offending token after the refusal | The evidence of what was asked must stay in the address bar; today it is rewritten away | Low | Falls out of sending the value: `update()` builds the hash from the same query |
-| Same treatment for `recess_sides` | Second enum field, identical mechanism | Low | Free once the mechanism is shared |
-| Same treatment for non-numeric text in number boxes (`teeth=abc`, `mate_teeth=abc`) | Same defect class measured today; otherwise a link meaning "teeth=abc" builds the 19-tooth default | Low-Medium | Needs the shared map because `type=number` cannot hold the text. This extends the human's enum-only pick: surface at discuss-phase as a scope confirmation, my recommendation is yes |
-| Valid links unchanged: every one of the 44 fixture requests and every valid enum/number token sends exactly what it sent | L05, L26 | Low | Proved by `golden_requests.json` and `pre_v0_2.json` staying byte-identical; fixture's only string params are the valid `recess_sides` values `none` and `top` (MEASURED) |
-| Recovery: choosing a real option or typing a number in the refused field clears the refusal and builds | A refusal with no exit is a trap | Low | Clear the map entry on that field's `input` event; Reset and a new hash navigation also clear it |
-| The `root_shape=bogus as today` pin (`tests/test_browser.py:1754-1808`, `BOGUS_LINK`/`TODAY` at `:97-103`) flips in the same commit; add steps for `recess_sides`, a non-numeric number, recovery, and "valid link leaves nothing marked" | CLAUDE.md: a pin is changed by the commit that fixes the debt | Medium | The step's own oracle already uses `_api_get` + `_expected_422`; reuse them. The debt file moves to `resolved/` in the same commit |
-| A new decision `L44` (L43 is the last) recording the shape | Debt file and PROJECT.md both require it | Low | Names: what is refused, what stays default (blank), where the text comes from |
-
-**Differentiators (optional, low priority)**
-
-| Behaviour | Value | Complexity | Notes |
-|---|---|---|---|
-| Show the rejected value in the select as a temporary option (`bogus`) | The user sees what the link said | Low | Select only; must be removed on next input. Not needed for the contract |
-| Add the rejected input to the message ("got 'bogus'") from `detail[].input` | Clearer than the server's bare "Input should be ..." | Low-Medium | Changes the text `tests/test_browser.py::_expected_422` compares for equality; do only if the oracle changes with it |
-| Mark the mate box invalid on a `mate_teeth` 422 | `mate_teeth` errors currently mark nothing | Low | Pre-existing, orthogonal; file as an idea rather than widen this fix |
-
-**Anti-features (do not build)**
-
-| Anti-feature | Why requested | Why problematic | Alternative |
-|---|---|---|---|
-| Client-side validation or a client-written error string for an unknown option | Looks like the fast fix | Duplicates the domain (the form is generated from `/api/schema`, L02); second wording to keep in sync with the API | Send it and let the 422 speak |
-| Refusing a blank value (`root_shape=`, `teeth=`) | API answers 422 for blank | The page defines blank as the default everywhere (`effective()` `app.js:126-129`; test oracle `_given` blank-to-default, `IN-06` of Phase 23). The page never emits blanks, but a hand-edited link with one currently works. Refusing is a behaviour change for a link that today builds the default intentionally | Keep blank = default; state it in L44 |
-| Switching number inputs to `type=text` so garbage can be held | Would let the box show `abc` | Loses spinners/min/max/inputmode behaviour for every valid user | Shared `rejected` map |
-| Refusing unknown keys (`foo=1`) | Tidy | The API ignores them (200, MEASURED); links from older/newer versions would break | Keep ignoring; same as API |
-| Falling back to default plus a warning banner | Gentler | It is the coerce-to-default family: it builds a part the user did not ask for (L03/L08) | Refuse |
-| Reworking duplicate-key handling (first-wins vs API last-wins) | Parity | Not an invalid-link problem; the page sends its own single value | Out of scope |
+| Input | d_B, m, z, tolerance, database of ~700 | search by d_B/m/z/da/x or custom | m, z + any of x/s/M/W | fields canonical, designation codec, x derived |
+| Tolerances | all, from tables | actual and effective, quality 5-12 | none | transcribed from the copy, cited, null outside |
+| Measures | M over rollers and span, min/max/nom | M_d, M_dK, M_dR, W_k | s, W, M | M_Re window first, span later |
+| Output | numbers, drawing, DXF/IGES, STL | numbers, DXF, STEP/IGES, GDE | numbers, DXF | numbers + STL/STEP + live preview |
+| Strength | yes | yes (DIN 6892) | no | no (anti-feature) |
+| Hub | yes | yes | yes | no (later) |
 
 ---
 
-## Part B. Open review info findings: complete inventory
+## 8. Open questions for the human (before the tables phase)
 
-Scope as stated: Phases 19 and 21-24. Every `open` or `deferred` info row in the REVIEW-DISPOSITION files, re-read against the tree at HEAD (`3726242`). IDs are as the review files use them. Class: **FIX** (do now, cheap, no part moves), **FILE** (becomes a `docs/ideas` or `docs/tech_debt` item with a trigger), **CLOSE** (closed with a written reason). "Co-fix" = same file/function as a milestone item, so it rides that commit.
-
-Counts: 19 rows in scope (19: 4, 21: 4, 22: 3, 23: 2, 24: 6). 1 is already resolved (19 IN-03), 1 already filed (24 IN-04), 1 is a duplicate (24 CX-03 = IN-02), leaving 16 distinct findings to act on.
-
-| ID | File:line (READ at HEAD) | One line | State | Class | Cost |
-|---|---|---|---|---|---|
-| 19 IN-01 | `src/spur/model.py:625-636` (`_chamfer_tips` calls `tip_chamfer_effective(p)` with no `rm`), comment at `:770` | `_build` says root_mode is asked once; `_chamfer_tips` re-solves it. Pure, cannot diverge today | live | FIX: pass `rm` through (`calc.tip_chamfer_effective(p, rm)` already takes it, `calc.py:371`), or soften the comment. Fixture and trochoid builds must stay byte-identical | Low |
-| 19 IN-02 | `bench/trochoid_part.py:111-117` | stale "does not exist until 19-04" paragraph; re-solves with `trochoid_root(rm.cutter)` though `RootMode.curve` exists (`calc.py:1668`); `:1355` same | live | FIX (read `rm.curve`, delete the paragraph) | Low |
-| 19 IN-02b | `bench/trochoid_part.py:172-210` vs `tests/test_model.py:68,86` | near-copies of `_root_edges`/`_oracle_reading` | live | CLOSE with reason: bench is outside the gate and importing `tests` from `bench` adds a dependency the contracts do not describe (18 IN-04 already notes this); revisit only if the slug-totality test wants a shared helper | none |
-| 19 IN-03 | `Makefile` gate-cost comments | quoted the 63.555 s gate | **resolved** by 34270c8; the Makefile now cites L43 and 300 s (`Makefile:110-111,180`) | CLOSE (stale line in the debt file's Context; the file is retired when IN-01/02/04 land) | none |
-| 19 IN-04a | `src/spur/static/app.js:23` | `['root_fillet', 'Root fillet used']` while a hob root is in force, where the value is the hob's tip radius | live | FIX as a label function of the document (same shape as the `span` and `hex_cell` rows, `app.js:17,39`). **Text-only change visible on valid trochoid links; no part, number or request moves.** Surface to the human: it is a second user-visible change beside the bogus link, and PROJECT.md's rule allows it (only parts/requests are frozen) | Low |
-| 19 IN-04b | `bench/trochoid_part.py:329-334` | `_host_state` `check=True` on `git rev-parse` crashes outside a git checkout | live | FIX (print "unknown") | Low |
-| 21 IN-01 | `tests/browser_session.py:117-118,130-133` | dead `survivors =` and `bound =` assignments; failure message names only the SIGKILL bound | live | FIX, co-fix with `stop_group` (must item) | Low |
-| 21 IN-02 | `tests/browser_session.py:668-677` (`fixture_hash`) | `str(value)` would mis-encode a bool/null | live, latent (fixture holds only int/float/str, MEASURED) | FIX (one `isinstance` assert) since the file is already open | Low |
-| 21 IN-03 | `tests/test_browser_pins.py:96-101` | the "no path that passes without the browser" scan is line- and spelling-based | live | CLOSE with reason (it is a tripwire, not a proof) plus soften its docstring | Low |
-| 21 IN-04a | `tests/test_browser.py:204-215` (`_follow_link`) | waits at Playwright's 30 s default while other waits use `BUILD_WAIT_MS` (45 s) | live | FIX (pass `timeout=BUILD_WAIT_MS`); relevant to starved-runner flake reading and the Ubuntu 26 first run | Low |
-| 21 IN-04b | `tests/test_browser.py:584-593` (`_wait_until_parked`) | `page.evaluate("0")` loop with no pause | live | CLOSE with reason: the comment at `:585-587` explains the round trip is what lets the route handler run; no measured cost. Reopen only if CPU burn is measured | none |
-| 22 IN-01 | `tests/test_api.py:926,1293`, `tests/test_trochoid.py:88,208` | bore-off block duplicated | live | CLOSE (review: low value either way). If the slug-totality test adds a third copy, share `_BORE_OFF` instead | none/Low |
-| 22 IN-02 | `tests/browser_session.py` `serve_stl_from` docstring | ragged reflow ("must be served and not the" / "request aborted") | live | FIX (re-wrap), co-fix in `browser_session.py` | Low |
-| 22 IN-03 | `docs/architecture/decision_log.md:2573` | L40 quotes 1.13 s; the bench reads 1.13 to 3.56 s | live | FIX by a dated correction under the entry (the log's own convention: append, do not rewrite readings; same rule as the group-floor item) | Low |
-| 23 IN-08 | `tests/test_relations.py:253-262,289` | `CUTOUT_STATES` gives the honeycomb gate only `hex_cell` 0.05, so `eq 0.05` is indistinguishable from `gt 0` except through an incidental `ValidationError` | live | FIX: add `"honeycomb (4)": {"hex_cell": 4, "hex_wall": 1}`, raise the cell count assertion, add the meta-test row, reword the docstring "each gate". Backs an L08 claim (a dimmed field must be one `calc` ignores) | Low-Medium |
-| 23 IN-11 | `tests/browser_session.py:325-333` (`_js_number`) | silent mismatch with JS for `-0.0`, below 1e-6, at or above 1e21 | live, latent (thresholds are 0, 0.05, 1) | FIX (range assert, `+ 0` for -0), co-fix in `browser_session.py` | Low |
-| 24 IN-01 | `src/spur/static/app.js:292-300,401` | stash can restore an older/default string or one from another link; comment says "the user's own string" | live | FIX the **comment only**. The behavioural fix (delete the stash entry on hand edit) changes what a pick writes and was accepted knowingly (D-19); FILE it as an idea, not a fix here | Low |
-| 24 IN-02 = CX-03 | `src/spur/static/app.js:637-643` | selector build error is reported as "Could not load the parameter schema" and leaves a blank form | live; no test pins the string (MEASURED by grep) | FIX the wording ("Could not build the form: ..."). CLOSE Codex's larger proposal (isolate bad selectors and continue): speculative flexibility for a schema this repo serves itself; `tests/test_selector.py` and `test_schema_drives_the_form` catch a malformed entry before it ships | Low |
-| 24 IN-03 | `tests/test_api.py:143` | `"selectors" not in client.get("/openapi.json").text` is a substring test; a description word turns the gate red | live | FIX (parse the JSON, walk for a key named `selectors`); same class as the hook-pin item (a gate red for no code reason) | Low |
-| 24 IN-04 | (calc hex warning wording) | field names vs form titles | default-values half resolved by #37; title half filed as `docs/ideas/2026-10-14-hex-warning-names-fields-by-form-title.md` | CLOSE (already filed; cite the path in the disposition) | none |
-| 24 CX-05 | `tests/test_browser.py:1580-1595` (`requests_before` ... `len(seen) == requests_before`) | zero-request assertion can pass before the 350 ms debounce fires | live | FIX (observe past the debounce before asserting); otherwise the assertion can pass vacuously | Low |
-
-### Open info findings outside the stated scope (surfaced, not triaged)
-
-The requirements step should decide whether these are in or out; the milestone text names only 19 and 21-24, but the dispositions still say `open`:
-
-- **Phase 18, IN-01 to IN-08** (`v0.4-phases/18-*/18-REVIEW.md`, all `open`; the v0.4 close in MILESTONES.md named them as a candidate and the v0.5 close dropped the mention). One-liners: IN-01 cap sentence says "the largest" for a floored 3-dp value (`calc.py:961` region); IN-02 mode and curve not carried together (**largely overtaken**: `RootMode.curve` now exists, `calc.py:1668`); IN-03 epsilon bench cannot fail on the shipped constant (`bench/trochoid.py:54,216`); IN-04 bench hygiene (`sys.path.insert` per call, bare `ValueError` on `--stride 0`); IN-05 `ROOT_CURVE_POINTS` evidence not regenerable (`calc.py:66-72`); IN-06 flake trigger rolled forward on non-discriminating evidence (**superseded** by this milestone's flake work); IN-07 `root_mode` docstring does not state it can raise `ValueError` (`calc.py:1415`); IN-08 the `-0.0` row cannot tell signs apart. Liveness: IN-02, IN-06 overtaken; the rest not re-run [UNVERIFIED beyond the grep hits above]. Recommendation: close IN-02/IN-06 with reasons, FIX IN-07's docstring line, FILE the rest as one nice debt item with the trigger "`bench/trochoid.py` or `calc.cutter` next touched". Because several touch `calc.py` (a printed-number path), none should ride this sweep unless trivially documentary.
-- **Phase 10, IN-01 and IN-02** (`v0.2-phases/10-*/10-REVIEW-DISPOSITION.md`, `open`): `bench/tip_chamfer_spike.py:201,286` hard-codes the `le=3` bound; `calc.py:1294` gates `tip_chamfer_effective` on the raw request (`p.tip_chamfer > 0`) rather than the applied value. Both live (READ). IN-02 is an L08 question about `0.0` vs `null` and would change a printed value: **not for this milestone**; FILE as `must`-candidate decision, do not fix in a debt sweep. IN-01 is bench-only: FILE or CLOSE.
-- Every other `REVIEW-DISPOSITION.md` under `.planning/milestones/` (Phases 11-17, 25) has zero `open` rows (MEASURED by script).
-
----
-
-## Part C. The other milestone items: expected behaviour of each fix
-
-| Item | Expected behaviour when done | Evidence-based design notes | Complexity |
-|---|---|---|---|
-| `slug()` totality (must, `2026-10-15-slug-totality-is-not-guarded-in-the-gate.md`) | A seeded test drives `slug()` over a few hundred validated `root_shape="trochoid"` requests **including a case per `root_mode` refusal reason** (`bracket degenerate`, `curve invalid`, `tooth severed` are never reached today, READ debt file) and asserts `slug().endswith("_trochoid") == (root_mode(...).mode == "trochoid")` with no exception | In the commit slice (milliseconds). Reuse a slice of `bench.trochoid.sweep_cases()` if it reaches every reason; assert reason coverage inside the test so it cannot silently stop reaching one | Low-Medium |
-| Failed-build name test (must) | Passes regardless of test order and xdist scheduling | Make the key private: `face_width=7.7` in both rows (no other test uses it) or `_EXPORTS.clear()` at the top. Prefer the private key: `_EXPORTS` is module state shared with the rest of `test_api.py` | Low |
-| `stop_group` (must) | Sends SIGTERM, then SIGKILL after the bound, whether or not `ps` works; a failed `ps` is reported as "survivors unknown", never as a `CalledProcessError` that skipped the kill; the leader-only red from `bench/RESULTS.md` 21-01 still fires | Rides with 21 IN-01 (dead assignments). Fall back to a final unconditional `killpg(SIGKILL)` in `serve`'s `finally` | Low |
-| Group-floor comment (must) | Comment and the two `bench/RESULTS.md` rows name the observed members (uvicorn, `multiprocessing.resource_tracker`, one spawned worker); dated corrections under the rows, readings not rewritten | List the group with `ps -o pid=,pgid=,command=` once per host first (the debt file flags this as ASSUMPTION). Decide whether the floor names the tracker or a second build is forced | Low |
-| Flake: `resource_tracker` (must) | Whole-suite `make test` loops at `-n 8 --cov` and `-n 8 --no-cov` run now; outcome is a fix **from a captured reproduction** or a re-deferral carrying the loop counts | Four prior occurrences all came from whole-suite runs; two-file loops 0 of 60 (READ debt file). Rate is about 1 in 12 to 43 per gate (READ); to say "0 occurrences" with any confidence the loop count must be stated against that rate, not just "green". L08: never closed on a guess | Medium (mostly wall time) |
-| 98 % hang (must) | No fix. The gate leaves evidence on the next hang: per-test ids and durations (`-v --durations=20`) kept in a log, plus a process-tree/stack snapshot at a watchdog limit before the harness kills it | The hang happened after about 1200 of 1220 reports, in the worker-exit / `BuildPool` shutdown / pytest-cov flush window (READ). pytest's `faulthandler_timeout` is per-test and so does not cover that window, and its output under xdist workers is UNVERIFIED; capture needs a session-level watchdog or an external stack dump. Choose the mechanism in discuss/plan with the gate's 300 s bar (L43) and the output volume in mind | Medium |
-| Browser harness comment | Comment says what `ps` observes | Same commit family as the group-floor item | Low |
-| Ubuntu 26 CI (must, date-gated) | Nothing changes before the first CI run whose `Set up job` names Ubuntu 26; that run is classified from its whole log (apt, WebGL, timeout) before any fix; green means a dated `bench/RESULTS.md` reading and the item resolves; red may pin `runs-on: ubuntu-24.04` only on the human's decision | Migration begins 2026-10-19 and completes by 2026-11-19 [MEDIUM, [runner-images#14748](https://github.com/actions/runner-images/issues/14748), fetched]. Notable: `setup-python` cannot install old patch versions on 26.04 (spur's CI passes `${{ matrix.python }}`; whether that is a minor pin is READ-able, not checked here), kernel 7.0, systemd 259.5. Playwright 1.63 names `ubuntu26.04` platforms (READ debt file). Today is 2026-10-15, so the phase is blocked on the clock and must be last or independently schedulable | Low to run, unknown if red |
-| Hook pin reads `PYTEST_ARGS` (nice) | `make verify PYTEST_ARGS="--ignore=..."` no longer fails `test_verify_and_verify_fast_share_...` | Drop `PYTEST_ARGS` from `_make_env()` or pass `PYTEST_ARGS=` on the dry run; add a case with the variable set | Low |
-| Launch-failure message (nice) | Message prints Playwright's own error first, then accurate advice (`rm .venv/.browser && make test`; Linux libraries via `--with-deps`) | Co-fix with 21 WR-03 wording; no test pins the old text (READ debt file) | Low |
-| `make test-image` (nice) | Image suite no longer collects tests that read host-only files | Exclude by name as 21-06 did for `tests/test_browser.py`; Docker was not running when filed, so first step is to run it for real [ASSUMPTION in the debt file] | Low-Medium |
-
----
-
-## Feature Dependencies
-
-```
-bogus-link fix (app.js readHash/gearQuery)
-    ├──requires──> existing 422 path problems()/fail() (unchanged)
-    ├──requires──> browser-test step flip (same commit) ──requires──> golden_requests.json unchanged (proof valid links unmoved)
-    ├──guarded by─> tests/test_api.py app.js scans (write() statement count, "never disables/hides/clears a field" guard, DIMS-key and ['word', harvests)
-    └──records───> new L44 + debt file moved to resolved/ (same commit)
-
-app.js label (19 IN-04a) ──same file as──> bogus fix        (separate commit: one concern per commit)
-app.js wording (24 IN-02) ──same file as──> bogus fix       (separate commit)
-
-stop_group fix ──co-fix──> 21 IN-01, 21 IN-02, 22 IN-02, 23 IN-11   (all tests/browser_session.py)
-group-floor comment ──after──> one live `ps` listing
-slug totality test ──may share──> _BORE_OFF (22 IN-01)
-failed-build name test ──independent of──> slug totality test (different file regions, same test_api.py)
-test_browser.py edits: bogus pin flip + 21 IN-04a + 24 CX-05    (batch; one run of the 165-300 s gate)
-flake loops ──precede──> 98 % hang evidence capture ──both touch──> Makefile `test` recipe / pytest invocation
-Ubuntu 26 classification ──blocked until──> 2026-10-19 CI run
-```
-
-### Dependency notes
-
-- The `app.js` fix is guarded by `tests/test_api.py` scans of `app.js` source (READ comments at `app.js:131-133,395-396`): the number of `write(` field writes in the selectors section, the no-disable/hide/clear guard, and harvests of `['word',` rows and `DIMS` keys. A `rejected` map that never disables, hides or clears a field is consistent with L41's rule; the exact regexes were not read, so run `tests/test_api.py` early. [UNVERIFIED]
-- `tests/browser_session.py` is edited by four findings plus `stop_group`; do them as one concern ("browser harness teardown and helper hygiene") so the gate runs once.
-- Everything that edits `tests/test_browser.py` reruns the browser step list inside `make verify`; batch them.
-
-## MVP Definition (for the requirements step)
-
-### Launch with (the milestone's table stakes)
-
-- [ ] Bogus-enum refusal via the 422 path, general to both enums and non-numeric number text, blank = default, fragment keeps the token, pin flipped, `L44` logged, debt file retired in the same commit
-- [ ] The two Phase 22 `must` tests (slug totality across all refusal reasons; failed-build name test order-independent)
-- [ ] `stop_group` signals before it reads; group-floor comment and dated RESULTS corrections
-- [ ] Flake loops run and outcome recorded (fix from a reproduction, or re-deferral with the loop counts); hang evidence capture
-- [ ] Ubuntu 26 classified from the whole log, once the run exists
-- [ ] Info findings: the 15 FIX rows plus 6 CLOSE-with-reason rows (and one FILE: the stash-invalidation idea) of Part B, each disposition written into the `*-REVIEW-DISPOSITION.md`
-- [ ] The three nice items
-
-### Add after (only if the human widens scope)
-
-- [ ] Temporary-option display of the rejected value; "got '...'" in the message (changes `_expected_422`)
-- [ ] Marking the mate box on its 422
-- [ ] Stash invalidation on hand edit (24 IN-01 behaviour)
-- [ ] Phase 18 and Phase 10 info findings (Part B tail)
-
-### Defer
-
-- [ ] Phase 10 IN-02 (`tip_chamfer_effective` null-gate): changes a printed value, not a sweep item
-- [ ] Hex-warning titles (already an idea)
-
-## Prioritisation
-
-| Item | User value | Cost | Priority |
-|---|---|---|---|
-| Bogus link refusal (general) | HIGH (the only user-visible correctness fix) | LOW-MED | P1 |
-| slug totality + failed-build name tests | MEDIUM (a 500 hides the real cause; order-dependent red) | LOW | P1 |
-| stop_group + group-floor + harness co-fixes | MEDIUM | LOW | P1 |
-| Flake loops + hang evidence | HIGH for the gate | MED | P1 |
-| Ubuntu 26 classification | HIGH if it breaks CI | LOW-unknown | P1, date-gated |
-| Info FIX rows | LOW each | LOW | P2 |
-| Nice items | LOW | LOW | P2 |
-| Label fix 19 IN-04a | LOW-MEDIUM (L08 honesty of a label) | LOW | P2, needs human OK as a second visible change |
-| Differentiators in A.6 | LOW | LOW-MED | P3 |
+1. Edition of the copy: DIN 5480-1 **2026-05** (corrected) or **2025-10** (A.2 sign error)? DIN 5480-2 2025-10? Is **part 15** also in hand (inspection, "corrected Table 9")?
+2. Where in the copy are the tolerance deviations and tolerance values, the roller diameter D_Re, and the root-fillet radii (the 2025-10 part 2 deleted its fillet table)? Per size, per module, or formula?
+3. Which sizes does the copy list (d_B range, module list), and may a combination absent from the table be built (recommend: 422 in v0.7)?
+4. What tooth thickness should the solid carry: effective max (recommended), nominal, or mid-window?
+5. Does the standard define the form diameter's construction and its tolerance (the 0.03 mm gap in 2a)?
 
 ## Sources
 
-- Local reads (HIGH): `src/spur/static/app.js`, `src/spur/static/index.html`, `src/spur/static/style.css`, `src/spur/params.py`, `tests/test_browser.py`, `tests/browser_session.py`, `tests/test_relations.py`, `docs/tech_debt/INDEX.md` and `active/*.md`, `docs/architecture/decision_log.md` (L02, L03, L05, L08, L39-L43), all `.planning/milestones/*/*-REVIEW*.md` and `*-REVIEW-DISPOSITION.md`, `.planning/milestones/v0.5-MILESTONE-AUDIT.md` (its line 126 lists the same untriaged set).
-- Measured (HIGH): the browser and API probe tables in A.2 (2026-10-15, script in the session scratchpad, not committed).
-- [TanStack Router: validate search params](https://tanstack.com/router/latest/docs/framework/react/how-to/validate-search-params) (MEDIUM, search snippet)
-- [nuqs parsers](https://nuqs.dev/docs/parsers) (MEDIUM, search snippet; `parseAsStringEnum`'s exact invalid-value result was not shown, only the general "return null when invalid" contract)
-- [react-jsonschema-form validation](https://react-jsonschema-form.readthedocs.io/en/v4.2.2/usage/validation/) (MEDIUM, search snippet)
-- [actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748) (MEDIUM, fetched summary: migration 2026-10-19 to 2026-11-19)
-
-Not done: the `research-plan` / `research-store` / `classify-confidence` seam was not invoked; the external findings above are tagged MEDIUM by hand and were not cached.
+- DIN Media, DIN 5480-1:2025-10 (withdrawn) and 2026-05 listing: `https://www.dinmedia.de/en/standard/din-5480-1/394645155`, `https://www.dinmedia.de/en/standard/din-5480-1/399672170` (PUBLISHER, HIGH)
+- DIN Media, DIN 5480-2:2025-10, 89 pp, replaces 2015-03: `https://www.dinmedia.de/en/standard/din-5480-2/394645667`, also `https://www.din.de/en/wdc-beuth:din21:394645667` (HIGH)
+- DIN Media, DIN 5480-15:2025-10: `https://www.dinmedia.de/en/standard/din-5480-15/394645765`; DIN 5480-16 draft via search results (HIGH / MEDIUM)
+- DIN warning notice 2026-01-20 on DIN 5480-1:2025-10 Annex A.2: `https://www.dinmedia.de/en/fachdaten-einzelsicht/wdc-beuth:din21:399323168/infoPdf-download` (PUBLISHER, HIGH)
+- HEXAGON WN2/WN2+ brochure (incl. the W 120x3x38x8f example): `https://www.hexagon.de/pdf/wn2_d.pdf`; WNXE: `https://www.hexagon.de/pdf/wnxe_d.pdf`; WN5: `https://hexagon.de/info111/index.htm` (VENDOR, MEDIUM)
+- GWJ eAssistant handbook ch. 17: `https://www.eassistant.eu/fileadmin/dokumente/eassistant/etc/HTMLHandbuch/de/eAssistantHandbch17.html` (VENDOR, MEDIUM)
+- KISSsoft spline note: `https://www.geartechnology.com/kisssoft-implements-spline-connections` (MEDIUM)
+- Workshop article on fits and relief grooves: `https://dswerk.de/kerbverzahnung-zahnwellen-din-5480/` (LOW-MEDIUM)
+- Catalogue designation format: Maedler / Ameco / OnDrives product listings for "W 25 x 1.25 x 18" (LOW; several pages unreachable)
+- MITCalc, grabcad "Tolerances in DIN 5480 splines" and eng-tips threads: reached only as search snippets or HTTP 403/404 (LOW; used for the effective/actual concept only)
+- Existing code read for dependency notes: `src/spur/calc.py` (`Profile`, `_dedendum`, `cutter`, `span_measurement`, `DerivedDimensions`), `src/spur/params.py`, `docs/architecture/decision_log.md` (L02, L03, L05, L08)
 
 ---
-*Feature research for: spur v0.6 Clean Ledger (debt sweep)*
-*Researched: 2026-10-15*
+*Feature research for: DIN 5480 external splined shaft, spur milestone v0.7*
+*Researched: 2026-10-23*

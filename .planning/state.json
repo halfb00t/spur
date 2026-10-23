@@ -1,7 +1,7 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v0.6 — Clean Ledger",
+  "milestone": "v0.7 — Splined Shaft",
   "phases": [
     {
       "number": "1",
@@ -30,29 +30,39 @@
     },
     {
       "number": "26",
-      "name": "Gate Fails With a Cause",
+      "name": "29",
       "status": "complete"
     },
     {
-      "number": "27",
-      "name": "Ledger Tests and Harness",
-      "status": "complete"
+      "number": "30",
+      "name": "Scope, Seam and Gear-Safety Guard",
+      "status": "in_progress"
     },
     {
-      "number": "28",
-      "name": "Refuse the Bad Link",
-      "status": "complete"
+      "number": "31",
+      "name": "Shaft Maths, Parameters and Designation",
+      "status": "pending"
     },
     {
-      "number": "29",
-      "name": "Ubuntu 26 Final Reading",
+      "number": "32",
+      "name": "The Shaft Solid",
+      "status": "pending"
+    },
+    {
+      "number": "33",
+      "name": "Interfaces and Parity",
+      "status": "pending"
+    },
+    {
+      "number": "34",
+      "name": "Fit Tables and Tolerance Window",
       "status": "pending"
     }
   ],
   "next": {
-    "command": "/gsd-progress",
-    "label": "Show progress",
-    "reason": "Unsure of state — showing progress"
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 1 of 5 · 0% · executing"
   },
-  "updated_at": "2026-10-23T01:50:11.199Z"
+  "updated_at": "2026-10-23T14:45:44.437Z"
 }

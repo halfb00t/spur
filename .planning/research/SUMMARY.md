@@ -1,164 +1,181 @@
 # Project Research Summary
 
-**Project:** spur — milestone v0.6 Clean Ledger (debt sweep)
-**Domain:** verification gate, test harness, CI and one form behaviour of a shipped parametric gear generator
-**Researched:** 2026-10-15
-**Confidence:** MEDIUM-HIGH (mechanisms and repo facts HIGH; the 98 % hang and Ubuntu 26 on a real runner unresolved by design)
+**Project:** spur — milestone v0.7 Splined Shaft
+**Domain:** DIN 5480 external involute splined shaft as a second part type beside the spur gear
+**Researched:** 2026-10-23
+**Confidence:** MEDIUM (no researcher read the standard; every DIN formula is an ASSUMPTION until checked against the human's copy)
 
-Tags follow the inputs: **MEASURED** (run 2026-10-15 by a researcher), **READ** (source/repo/fetched page), **UNVERIFIED** (inference). **READ-from-STACK** marks a STACK.md MEASURED claim the synthesis did not re-run.
+*Synthesised from STACK.md, FEATURES.md, ARCHITECTURE.md and PITFALLS.md. The synthesizer's
+file write was refused (#222); the orchestrator persisted its returned synthesis and folded in
+the human's three answers given after research (edition, licence, carried thickness).*
 
 ## Executive Summary
 
-v0.6 adds no feature and no `GearParams` field. It makes the gate fail with a cause or pass, retires the open `must` debt, triages every open review info finding, and changes exactly one behaviour: a bogus shared link is refused instead of silently building the default part. Every valid link, the 44-record fixture and `tests/regression/*.json` stay byte-identical to `v0.5` (L05, L26). Nothing new is installed; Playwright stays 1.63.0 and Python 3.12 (L23).
+v0.7 adds the shaft as a clean sibling part type, not a generalisation of the gear. No
+dependency is added (stdlib `math`/`re`, the pinned Pydantic and CadQuery). A new
+`ShaftParams` sits beside `GearParams`; `params.py` and `calc.py` are not edited for shaft
+maths. The shaft gets its own `/api/shaft/...` routes: an unknown query key on a gear route is
+silently ignored (ARCHITECTURE probe: `/api/model.stl?part=shaft&bogus=1` returns 200), so a
+`part=` key on shared routes would build a default gear. The kernel dispatches inside
+`model._build` by type, so the one lock, both caches and the pool are reused.
 
-Central result: the `resource_tracker` flake is no longer a "run loops and hope" item. STACK located the cause (READ-from-STACK): three `tests/test_pool.py` tests leave one executor's five semaphores to cyclic garbage; a GC pass landing inside the tracker lock turns the CPython 3.12 reentrancy warning into five unraisable errors under `filterwarnings = error`. Test hygiene — not xdist, coverage or `src/spur`. A 12-line stdlib script reproduces it on demand, and a forced-GC check separated the fix arms. The 98 % hang stays evidence-capture only (dump-only `faulthandler_timeout` plus `-v --durations`), no guessed fix.
+The main risks are a plausible-but-wrong printed number (L08), the wrong edition or a
+transcription error in the tables, and regressing the gear through the shared routes, page,
+CLI and pool (L05/L26).
 
-Main risks are over-claiming and pin breakage. Mitigations: tag every claim; never write "flake gone" — write "located, fixed from a reproduction, acceptance recorded"; see each new guard test red first; edit `app.js` around `tests/test_api.py`'s token pins; keep the date-gated Ubuntu 26 item from blocking the close.
-
-One recurring defect is on nobody's list. **`main` CI is red on 2 of the last 8 runs** (orchestrator-verified: 38347283201 at 94dfc19, 38680454993 at 26ddd74 = the v0.5 tag), both at browser step "twin selectors"; PR runs of the same commits were green. Not filed in `docs/tech_debt`. It joins the gate-reliability phase.
-
-## Conflicts Between the Four Files — Resolved
-
-| # | Conflict | Winner | Why |
-|---|---|---|---|
-| C1 | **Flake plan.** PITFALLS/ARCHITECTURE: whole-suite `-n 8 --cov` vs `--no-cov` loops with a pre-committed stop rule. STACK: located cause, reproduction, forced-GC check. | **STACK** (READ-from-STACK) | A deterministic reproduction satisfies L08. STACK explains why loops cannot separate arms: 2026-10-09 isolation read 0/60 because garbage only matters when GC lands in a µs lock window. `--no-cov` also fails (1/1 whole-suite, 1/4 two-file, `ubuntu:26.04` container), so coverage is not necessary. Loops demoted to one before/after acceptance run keeping PITFALLS' discipline (committed cap and arms, signature-classified reds, no "resolved" on a quiet fortnight). PITFALLS' `gc.set_threshold` amplifier dropped (STACK: 0/6, hides the bug). ARCHITECTURE's test `shutdown(wait=True)` superseded by STACK's arms. |
-| C2 | **Hang evidence.** STACK: `faulthandler_timeout=120` + `-v --durations`. PITFALLS: flushed per-worker journal. `tests/test_hooks.py` pins the recipe. | **STACK by default, journal as fallback** | STACK MEASURED under xdist + cov that `-v` prints controller-side test ids on start and finish and worker stack dumps reach the terminal; PITFALLS had both UNVERIFIED/wrong. ARCHITECTURE READ the pin: it compares the two pytest lines only through `-n <N>`, so a flag after the worker count is safe; an ini option in `pyproject.toml` applies to both targets with no recipe fork. Journal (~10 lines in `conftest.py`, timestamps, survives SIGTERM) only if `-v` proves insufficient. All three agree `faulthandler_timeout` cannot see a post-last-test stall. |
-| C3 | **Phase labels.** ARCHITECTURE 26–29; PITFALLS A–F. | **ARCHITECTURE numbering** | Continues from Phase 25. PITFALLS' letters kept as scope tags. |
-| C4 | **Slug totality scope.** Milestone/FEATURES: "every refusal reason". ARCHITECTURE/PITFALLS: 2 of 6 reasons (`bracket degenerate`, `curve invalid`) are unreachable by validated parameters. | **ARCHITECTURE + PITFALLS** (both MEASURED; `tests/test_calc.py:1603-1604`) | Real seeded cases for reachable reasons with per-bucket non-empty asserts; the two unreachable forced by patching `spur.calc._root_curve` and labelled forced. PITFALLS: uniform draws hit the cheap branch 89 %, so stratify to the undercut region. The milestone sentence is met in a qualified form. |
-| C5 | **Failed-build name test.** FEATURES: private key (`face_width=7.7`). ARCHITECTURE/PITFALLS: `monkeypatch.setattr` a fresh `_BlobCache`. | **monkeypatch** | `_BlobCache` has no `clear()`; a unique-key convention is the hand-kept rule being removed. |
-| C6 | **Bogus-link breadth.** FEATURES (MEASURED in a real browser): general — enums plus non-numeric text in number boxes. ARCHITECTURE: enums in, number boxes filed. PITFALLS: enums only, empty-string policy undecided. | **FEATURES for the facts; scope is a human decision** | Only FEATURES ran it: `teeth=abc`, `mate_teeth=abc` silently build the default today. `recess_sides=bogus` is the same defect regardless, so the fix must be generic over enums (L02; `test_api.py:277-283` forbids per-field code). |
-| C7 | **Info 19 IN-01/02.** FEATURES/ARCHITECTURE: fix (one `model.py` line + bench cleanup). PITFALLS: refactor, defer. | **FEATURES + ARCHITECTURE, guarded** | Cheap; the fixture proves no number moves. Own commit; `tests/test_model.py:899` patches `_chamfer_tips` with a 3-arg lambda and must change with the signature. Lowest-risk row to drop if the human wants no `model.py` diff. |
-| C8 | **Launch-failure message.** STACK: run `playwright install` on every `make test` (0.24 s when present). Others: message-only. | **Message-only** | Smaller; no `Makefile` stamp change, no `tests/test_hooks.py` pin churn. File STACK's idea in `docs/ideas/`. Keep the literal `playwright install --only-shell chromium` `test_browser_pins.py:105-127` requires. |
-| C9 | **Hook pin fix.** ARCHITECTURE: strip `PYTEST_ARGS` in `_make_env()`. STACK: `PYTEST_ARGS=` on the dry-run command line. | **Either; test both forms** | STACK MEASURED both work on GNU Make 4.4.1. PITFALLS: the command-line form is what bit 21-07, so the new test must be red for both forms before the fix. |
-| C10 | **Ubuntu 26 timing.** STACK: pre-classify now on a throwaway `runs-on: ubuntu-26.04` PR. ARCHITECTURE: optional. PITFALLS: human decision. | **Recommend, flagged for the human** | The label exists today; the rollout runs 2026-10-19 → 2026-11-19, so "first run naming 26" is not a clean date. STACK's container run passed the Playwright install and the browser test (5 passed). A real runner is unproven. Pinning `ubuntu-24.04` stays the human's call. |
+**Human answers after research (2026-10-23):** the copy is the **DIN 5480 2006 series**; the
+transcribed values live in a **private, gitignored local file** (the public repo ships code,
+formulas, clause/table citations and only human-approved anchor values); the solid carries the
+**effective maximum-material tooth thickness** (s + es).
 
 ## Key Findings
 
-### Stack (STACK.md)
+### Recommended Stack
 
-Add nothing. Hold pytest 9.1.1, pytest-xdist 3.8.0, pytest-cov 7.1.0, `playwright==1.63.0` (1.64.0 out 2026-10-13 would move the headless-shell revision and the canvas-PNG bar), CPython 3.12. 3.12 is security-only, so gh-131788 will not arrive there — fix in tests.
+No new runtime or dev dependency; `requirements.txt` byte-identical (STACK, measured against the
+venv and `docker/refresh-requirements.sh`).
 
-- **Flake fix (READ-from-STACK):** module-level autouse fixture in `tests/test_pool.py` whose teardown calls `gc.collect()` (arm B, 4 lines); optionally `del manager` in the three producer tests (arm C, 3 lines). Forced-GC check: baseline fails 3/3, B and C 0/3. Container natural loop: baseline 1/10, B and C 0/10 — consistent, not conclusive. Cost ~10 ms/test in one file. Do not touch `src/spur/pool.py`; do not filter the warning.
-- **Producers:** `test_a_wedged_build_is_terminated_and_its_worker_replaced`, `test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error`, `test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal`. The failing test is a victim of whichever GC pass fired, never the producer.
-- **Hang:** `faulthandler_timeout = 120` in `[tool.pytest.ini_options]` (dump-only) and `-v --durations=25` in the `test` recipe. 120 s ≈ 2.3× the estimated CI slowest test (~52 s); re-read from the first CI `--durations` (UNVERIFIED for CI). Evidence runs go through `make` — only `make` exports `PLAYWRIGHT_BROWSERS_PATH`.
-- **Small-item facts (MEASURED):** `BuildPool` slots by `hash(p) % workers` with a per-process hash seed, so after two builds the group is uvicorn + `resource_tracker` + 1 or 2 workers — the floor of 3 is a valid non-vacuity bound. `make test-image` has no `.git`, so two `tests/test_bench.py` tests fail with exit 128. `GET /api/info?root_shape=bogus` already answers 422 `literal_error`, so the bogus-link fix is client-side only.
+**Core technologies:**
+- stdlib `math` — involute, profile shift, M_Re; a guarded bisection for inv(α) inversion
+  (`calc._involute_angle` precedent: 2.9e-15 rad over 20,000 angles, 2.8 µs/call). Copied into
+  the shaft maths module, not shared (keeps gear and shaft numbers uncoupled).
+- stdlib `re` — designation codec (`W 25x1.25x18x8f`; accept `.` and `,` decimals).
+- CadQuery 2.8.0 — one extruded outline, `Shape.fuse` with the shank (never `Workplane.union`
+  + `.clean()`: invalid when shank d = tip d), end chamfer as a revolved-cone `intersect`
+  (`Solid.chamfer` past the tooth height returns an invalid solid with wrong volume, no error).
+- No scipy (dev-only, pruned from the image). No open-source DIN 5480 oracle is usable
+  (unlicensed or geometry-only).
 
-### Features (FEATURES.md)
+### Expected Features
 
 **Must have (table stakes):**
-- **Bogus link refused** through the existing field-agnostic 422 path (`problems()`/`fail()`): server text (L02), fragment keeps the offending token, no STL request, editing the field or Reset clears it, valid links send exactly what they sent. Pin `root_shape=bogus as today` flips in the same commit (`tests/test_browser.py:1754-1808`, `BOGUS_LINK`/`TODAY` `:97-103`); new `L44`; debt file to `resolved/` in that commit.
-- The two Phase 22 `must` tests; `stop_group` signal-before-`ps`; group-floor comment + dated corrections under the two `bench/RESULTS.md` rows (readings never rewritten).
-- Flake outcome recorded; hang evidence armed (item stays `active`); Ubuntu 26 classified from the whole log.
-- Every open info finding of Phases 19, 21–24 dispositioned: 19 rows, 16 distinct (19 IN-03 already resolved; 24 IN-04 already filed; 24 CX-03 duplicates 24 IN-02). ≈15 FIX, 6 CLOSE with a written reason, 1 FILE (stash invalidation, the behavioural half of 24 IN-01).
-- The three `nice` items.
+- Input by d_B, m, z and tolerance field; designation printed and parsed.
+- Profile shift from d_B: `x·m = (d_B − z·m)/2 − 0.55·m` (reproduces KISSsoft W70x3x22 and
+  Hexagon W120x3x38; shaft range x ∈ [−0.05, +0.45] needs an epsilon — W30x2x14 computes to
+  −0.05000000000000004).
+- d_a, d_f, tooth thickness s; effective vs actual thickness windows; M_Re max/min with pin
+  diameter D_Re.
+- Splined length, plain shank, end chamfer; STL/STEP; parity web/API/CLI.
 
-**Defer / reject:** client-written error wording; refusing blank values; `type=text` number inputs; refusing unknown keys; a fallback-to-default banner; Phase 10 IN-02 (changes a printed value); hex-warning titles (already an idea); marking the mate box on a `mate_teeth` 422 (file as idea).
+**Should have (differentiators):**
+- Every number proved against an independent oracle or warned (L08).
+- Shareable shaft link with frozen field names and defaults.
 
-**Info findings that are not cosmetic** (PITFALLS: the test can pass vacuously): 24 CX-05 (zero-request assert can pass before the 350 ms debounce), 23 IN-08 (`CUTOUT_STATES` gives the honeycomb gate one open value), 23 IN-11 (`_js_number` range, `-0.0`), 21 IN-03, 21 IN-04.
+**Defer / anti-features:**
+- d_Ff (form diameter) prints `null` + a sentence in v0.7: the public construction gave 113.880
+  against a vendor's 113.91, and KISSsoft prints two different values (63.718 vs 63.920) for
+  one shaft.
+- Strength/torque, table interpolation, snapping to the nearest size, free-profile splines, the
+  hub side, ISO-style `f8` aliases, hob root on the shaft (v0.7.x).
 
-### Architecture (ARCHITECTURE.md)
+### Architecture Approach
 
-No new component. The only runtime edit is one generic branch in `src/spur/static/app.js` (`readHash`/`gearQuery`); everything else is the verification chain.
+Sibling part type behind path-prefixed routes; dispatch inside `model._build`.
 
-**Constraints the plans must carry:**
-1. `tests/test_api.py:240-241` pins exact lines: the `readHash` line `input.value = h.get(name) ?? defaults[name]`, the `readHash` end, the `gearQuery` token, the Reset line. `test_api.py:277-283` forbids quoted field names outside `DIMS`. The bogus-link code is a pre-pass around the pinned lines, generic over `prop.enum`. A new row-shaped `['word',` table is harvested as a `DIMS` key.
-2. `tests/test_hooks.py` pins the recipe prefix, the five heavy files, the `test-image` `--ignore`, the stamps. Hook pin goes first.
-3. `tests/test_browser_pins.py::_scan_set()` globs `tests/*browser*.py` with a no-skip spelling scan, so the new `stop_group` unit test lives in a file without `browser` in its name (e.g. `tests/test_group_teardown.py`), well under a second for `make verify.fast`.
-4. `git diff --exit-code tests/regression/` empty at every phase close; `bench/RESULTS.md` append-only with dated corrections; next free decision id `L44`; L40 takes a dated amendment, not a rewrite.
-5. `make no-fake-done` greps `TODO|FIXME|XXX|HACK|NotImplementedError` as whole words in `*.py *.js *.sh`; `mypy --strict` covers `tests bench scripts docker`; `verify.fast` is killed at 30 s (≈11 s used), so new commit-slice tests must be milliseconds.
+**Major components:**
+1. `ShaftParams` (new) — validated once at its boundary; field names and defaults frozen when the
+   interface ships, including the tolerance fields (L05).
+2. Shaft maths module (new, pure) — import-linter contract: no `cadquery`, no logger, no gear
+   coupling.
+3. `shaft_model` (new) — reachable only through `model`; under `_LOCK`.
+4. `/api/shaft/{schema,info,model.{stl,step}}`, `spur shaft` CLI group, web part select outside
+   `#params`; shaft result rows in a schema-carried `dims` key (two `app.js` pins forbid a second
+   row table and quoted field names, `tests/test_api.py:176-180`, `:314-340`).
+5. `_serve_model` extracted from `app.py`'s `model()` as a pure-move commit (stop-and-ask).
+6. The private tables file — gitignored, path by config/env; absent → table-dependent numbers
+   warned, never guessed.
 
-### Critical Pitfalls (PITFALLS.md, filtered by the resolutions above)
+### Critical Pitfalls
 
-1. **Declaring the flake gone on a quiet run.** Zero reds in N only bounds the rate near 3/N. The fix rests on the captured reproduction; the acceptance run has its cap and arms committed before it starts; the success line says "located and fixed from a reproduction".
-2. **Symptom fixes.** No `filterwarnings` entry, no blanket `ignore::pytest.PytestUnraisableExceptionWarning`, no `shutdown(wait=True)` in `BuildPool`, no rerun plugin. Call arm B a mitigation of the precondition, not a removal of the warning.
-3. **Vacuous guard tests.** Slug totality: stratified undercut draws, per-bucket non-empty asserts, local `random.Random(n)`, red against a patched `_junction`/`_root_curve`. Name test: `monkeypatch` self-restores; prove it by pre-seeding the cache so the old test reds.
-4. **`stop_group` reorder hazards.** No `proc.poll()`/`wait()` before the signals (PID reuse); keep the SIGTERM grace; a failed `ps` means "survivors unknown" and still fails; the leader-only break (`bench/RESULTS.md` row 21-01) must still red; the unit test cleans up its own group.
-5. **L05 trap and pin flip.** Fixture and golden byte-identical to `v0.5`; old pin seen red against the fix, new pin seen red with the fix reverted, both recorded in "Seen red once".
-6. **Ubuntu 26.** No fix before classification; one run is not the migration; record the `Image:` line per run in the window; read all three jobs (`test (3.12)`, `vendor-bundle`, `image`); classification table in `bench/RESULTS.md` before any `ci.yml` edit.
-7. **Info triage without reasons.** One disposition per finding in its `*-REVIEW-DISPOSITION.md`: `fixed` + sha, `deferred` + path, or `skipped` + one-line reason. Zero `open` at close.
+1. **Wrong profile-shift formula** — the brief's `−1.1m` was off by 2×; test the range edge with
+   an epsilon.
+2. **Edition drift** — in the 2006 series the tolerance system and the root-diameter allowance
+   are in Part 1, the dimension tables in Part 2; PROJECT.md's "DIN 5480-2 tolerance fields" is
+   wrong and is corrected at requirements.
+3. **Transcription errors** — two independent reads diffed to zero, structural invariants
+   (`T_G = T_act + T_eff`, µm-vs-mm range), Unicode-minus guard, a citation on every row.
+4. **Gear regression** — shared names (`module`, `teeth`), the stray-key-ignored behaviour,
+   WR-02 firing on any edit of `refuse()`/`gearQuery()`. Every phase re-checks
+   `git diff v0.6 -- tests/regression/ .github/workflows/ci.yml`; `make fixture.regen` forbidden.
+5. **M_Re** — the theoretical pin touches at `m·z + 2xm`, not d_B; contact must lie between the
+   form and tip diameters; odd z (`cos(90°/z)`) has no oracle row yet.
+6. **Gate budget** — `make verify` 236 s against the 300 s bar (L43); shaft tests mostly pure.
 
 ## Implications for Roadmap
 
-Phase numbers continue at 26. PITFALLS' scope letters in brackets. One concern per commit; each debt item retired in its fixing commit.
+### Phase 1: Seam, scope and gear-safety guard
+**Rationale:** the only phase that edits gear files; everything else depends on it.
+**Delivers:** product-scope `Lxx` and the L02/L05 amendments, `parts.py`, type widening in
+`pool`/`records`/`model`, `_serve_model` pure-move, import-linter contracts, the regression
+proof harness (`git diff --exit-code` on `tests/regression/` and `ci.yml`, byte-equal
+`/api/schema`).
 
-### Phase 26: Gate Fails With a Cause [A + F1 + cheap gate items]
-**Rationale:** the flake, the "twin selectors" red and the hook-pin failure pollute every later gate reading with false reds. Touches `Makefile`, `pyproject.toml`, `tests/test_hooks.py`, `tests/test_pool.py`, `tests/test_browser.py`.
-**Delivers, in order:**
-1. Hook pin ignores the caller's `PYTEST_ARGS` (env-var and command-line forms both red first).
-2. **Twin-selectors race** (runs 38347283201, 38680454993): wait for the STL request, settle past the 350 ms debounce, then take the baseline. Folds in 24 CX-05 and 21 IN-04a (`_follow_link` → `BUILD_WAIT_MS`). File the debt item and retire it in the fixing commit. The mechanism is ARCHITECTURE's ASSUMPTION from two logs with no local reproduction; logs plus a delayed-route red proof serve as the capture.
-3. **Flake:** arm B (optionally C) in `tests/test_pool.py` from STACK's reproduction. Acceptance: forced-GC red → green, plus one interleaved before/after run with a pre-committed cap; record effective `-n`, tool versions and signature-classified reds in `bench/RESULTS.md`; retire the item quoting the table.
-4. **Hang evidence:** `faulthandler_timeout` + `-v --durations`; one `--durations` reading sets the final timeout; cost priced against the 300 s bar (L43). The item stays `active` and gains a runbook stating the exit-window limit.
-5. **`make test-image`:** run it first, read the reds, then the option the human picks.
-6. Ubuntu 26 pre-classification on a throwaway PR before 2026-10-19, if the human agrees.
+### Phase 2: Shaft maths, parameters and designation (pure)
+**Delivers:** `ShaftParams` (frozen names/defaults), profile shift, d_a/d_f/s, M_Re even and odd
+with contact guard, designation codec ("cannot be checked" for tolerance letters until tables
+load), an independent stdlib oracle.
 
-**Avoids:** pitfalls 1, 2, 3 (first part), 6 (partly), 16, 17.
+### Phase 3: Solid
+**Delivers:** `build_shaft` with closed-form volume and section read-back; build time, worker
+memory and STL size in `bench/RESULTS.md` against L17/L37; field bounds from a sweep.
 
-### Phase 27: Ledger Tests and Harness [B + C + F]
-**Rationale:** test-only plus one `model.py` line — low behaviour risk; finish before 2026-10-19 where small. `stop_group` must precede Phase 28, whose red-first protocol runs the browser repeatedly.
-**Delivers:** slug totality and failed-build name tests (22 IN-01, 24 IN-03 in the same files); `stop_group` fix with a non-browser unit test; group-floor comment and dated corrections under both RESULTS rows (macOS listing MEASURED today: 2 → 3 → 4; Linux listing from a member-command print in the next CI log); text-only launch message; info 21 IN-01/02/03, 22 IN-02, 23 IN-08, 23 IN-11; 19 IN-01/02 and `_host_state`; L40 dated amendment (22 IN-03); draft triage table.
-**Avoids:** pitfalls 3 (second part), 4, 7, 8, 12, 13, 15.
+### Phase 4: Interfaces and parity
+**Delivers:** API routes, `spur shaft`, web part select, `part=shaft` hashes only for shafts, a
+stray `part=` on the gear page refused (L44-class), an explicit WR-02 decision, a browser
+scenario.
 
-### Phase 28: Refuse the Bogus Link [D]
-**Rationale:** the only user-visible change, so it needs a decision record (`L44`); edits the most-pinned file. Discuss-phase first with the open decisions below.
-**Delivers:** generic `readHash`/`gearQuery` pre-pass (shared `rejected` map per FEATURES, or a stray option per ARCHITECTURE — settled at discuss-phase); `problems()`/`fail()` unchanged; browser step rewritten with both reds recorded; `L44`; `docs/architecture/web-ui.md:80` rewritten; debt item retired. Same file, separate commits: 24 IN-02 wording ("Could not build the form"), 24 IN-01 comment, optionally the 19 IN-04a label. Phase close: `git diff --exit-code tests/regression/` empty; info triage zero `open`.
-**Avoids:** pitfalls 5, 12.
+### Phase 5: Fit tables and tolerance window
+**Delivers:** private tables file loaded from config, two-reader transcription with citations,
+thickness limits, M_Re max/min, the solid switching to the effective maximum-material thickness.
+v0.7 releases as one unit.
 
-### Phase 29: Ubuntu 26 Final Reading [E] — date-gated, last
-**Rationale:** cannot be scheduled; the rollout runs 2026-10-19 → 2026-11-19.
-**Delivers:** starting at the first `ubuntu-latest` run whose `Set up job` names 26.04, classification from the whole log of all three jobs before any `ci.yml` edit. Green → dated `bench/RESULTS.md` reading, item resolved. Red → offer `runs-on: ubuntu-24.04` to the human only. If no 26.04 run by the close, the milestone closes with the item open and its trigger restated.
+### Phase Ordering Rationale
+
+- Tables last: only table-dependent values wait on the copy; formulas don't.
+- Licence, edition, carried thickness answered (2026-10-23); `h_fP` process and anchor rows
+  still needed before Phase 2 planning.
 
 ### Research Flags
 
-- **Needs discuss-phase, not more research:** Phase 28 (scope, label, mechanism); Phase 26 `test-image`.
-- **Needs a first real measurement before planning:** `make test-image` (never run in research); CI `--durations` for the timeout; a real Ubuntu 26 runner.
-- **Standard patterns (skip research-phase):** Phase 27; Phase 26 items 1–3; Phase 29 (procedure fixed by the debt file).
-
-## Open Human Decisions (listed, not decided)
-
-1. **Bogus-link scope.** (a) Enum-only (`root_shape`, `recess_sides`) vs also non-numeric number-box text (`teeth=abc`, `mate_teeth=abc`) — FEATURES recommends including number boxes, MEASURED as silently building the default. (b) Blank (`root_shape=`, `teeth=`): keep "blank means default" (FEATURES recommends; the page defines it today) or refuse (the API answers 422). `L44` must state whichever boundary is chosen.
-2. **IN-04a label change.** Make `['root_fillet', 'Root fillet used']` a function of the document while a hob root is in force. Text-only — no part, number or request moves — but a second visible change beside the bogus link. Fix, or close with a reason?
-3. **Phase 18 and Phase 10 info findings — in or out.** Outside the milestone text, still `open`: Phase 18 IN-01..08, Phase 10 IN-01/02. FEATURES recommends closing 18 IN-02, IN-06 (overtaken), fixing the IN-07 docstring line, filing the rest as one `nice` item (trigger: `bench/trochoid.py` or `calc.cutter` next touched), and filing Phase 10 IN-02 as a decision (it changes a printed value). Liveness of most rows UNVERIFIED.
-4. **`faulthandler_exit_on_timeout` — now or later.** Turns a hang into a named failure (MEASURED under xdist + cov) but changes gate semantics, raises the dev floor to `pytest>=9`, and drops coverage data (so `fail_under = 96` adds a second failure line). STACK recommends dump-only now; decide after the first captured hang.
-5. **`make test-image` — mount `bench/` and `scripts/`, or exclude by name.** Excluding `tests/test_calc.py` and `tests/test_trochoid.py` (both import `bench`) would gut the image suite. ARCHITECTURE/PITFALLS recommend mounting read-only with `PYTHONPATH=/app/src:/app` and `--ignore` only for files needing `make`/git/Dockerfile/`.github`. Run `make test-image` once first.
-
-Non-blocking, also the human's call: the Ubuntu 26 pre-classification PR (C10); keeping the group floor at 3 with a comment-only fix vs forcing a second build; the `model.py` touch in 19 IN-01/02 (C7).
+- Phase 2: needs the human's copy (formula confirmation, h_fP, anchor rows incl. one odd z).
+- Phase 3: kernel spike with real DIN proportions.
+- Phase 5: transcription risk.
+- Phases 1, 4: standard patterns.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
-|---|---|---|
-| Stack | HIGH | Mechanism READ in installed CPython/pytest source; reproduction and arm table are STACK's, not re-run by the synthesis. MEDIUM on Ubuntu 26.04 (container only). |
-| Features | HIGH | Browser and API probes MEASURED; info inventory re-read against HEAD. MEDIUM on other URL-state libraries (search snippets). |
-| Architecture | HIGH | File/line facts and pins READ at `3726242`. Debt-file line numbers are stale (ARCHITECTURE F8) — plan from ARCHITECTURE §3. LOW on the twin-selectors mechanism. |
-| Pitfalls | MEDIUM-HIGH | Repo-specific parts HIGH; its hang-evidence claims and loop-heavy flake plan superseded by STACK. |
+|------|------------|-------|
+| Stack | HIGH | Measured in the venv; third-party tool survey LOW |
+| Features | MEDIUM | One vendor data point reproduced; tables not read |
+| Architecture | HIGH / MEDIUM | File facts HIGH; module shape MEDIUM |
+| Pitfalls | MEDIUM | Repo-integration HIGH; standard content MEDIUM |
 
-**Overall:** MEDIUM-HIGH.
+**Overall confidence:** MEDIUM
 
 ### Gaps to Address
 
-- Flake fix natural-loop acceptance is consistent, not conclusive (0/10 has a 15–30 % chance by luck); the forced-GC result is the proof. Re-run STACK's reproduction and arm table before landing.
-- 98 % hang: no reproduction. STACK's arithmetic (~23 outstanding of ~1220 fits a global stall better than one stuck worker) is UNVERIFIED; `faulthandler_timeout` does not cover the post-last-test window; `kill -ABRT <pid>` on a stalled worker UNVERIFIED (not run, to avoid muddying the xdist OCCT segfault investigation); a shared root with the tracker flake is UNVERIFIED.
-- Twin-selectors mechanism rests on two CI logs; no local reproduction.
-- Unmeasured: `make test-image` red list; Linux process-group listing; a real Ubuntu 26 runner image.
-- Number-box garbage MEASURED only by FEATURES; ARCHITECTURE/PITFALLS inferred.
-- `faulthandler_timeout = 120` sized from local timings and one CI wall time; confirm against the first CI `--durations`.
-- Which 3.12.x first carried the reentrancy guard is unchecked; quote no version in a decision.
-- `tests/test_api.py` regexes guarding `app.js` not fully read; run that file early in Phase 28.
+- Every DIN formula is an ASSUMPTION until checked against the 2006 copy by clause.
+- `h_fP` convention (hobbing 0.60 vs others) — vendors differ.
+- No odd-z M_Re oracle row; without one, odd-z M_Re stays `null`.
+- d_Ff construction and root-fillet radius location in the 2006 copy.
+- Build times measured on placeholder proportions only.
+- Whether a size absent from the tables may be built (recommend: build it, withhold
+  table-dependent numbers).
 
 ## Sources
 
-### Primary (HIGH)
-- Installed CPython 3.12.15 `multiprocessing/{resource_tracker,synchronize}.py`; pytest 9.1.1 `_pytest/{unraisableexception,faulthandler}.py`; pytest-xdist 3.8.0, execnet 2.1.2, coverage 7.16.2, pytest-cov 7.1.0 sources; Playwright 1.63.0 driver `coreBundle.js` and `browsers.json`.
-- Repo at `3726242`: `app.js`, `params.py`, `pool.py`, `app.py`, `Makefile`, `pyproject.toml`, `ci.yml`, `tests/*`, `bench/RESULTS.md`, `decision_log.md`, `docs/tech_debt/active/*`, v0.5 phase REVIEW and DISPOSITION files (21–24).
-- GitHub Actions runs 38347283201, 38680454993; orchestrator-verified red count on `main`.
-- Each researcher's MEASURED probes of 2026-10-15 (forced-GC reproduction, `ubuntu:26.04` container runs, browser/API probe table, slug reason counts, process-group listing).
+### Primary (HIGH confidence)
+- Repo code and probes: `src/spur/`, `tests/`, decision log, `.planning/codebase/`.
+- CadQuery 2.8.0 spikes in the repo venv (STACK, PITFALLS).
 
-### Secondary (MEDIUM)
-- cpython#109629, #131788 / PR #131787 (reentrancy; not backported to 3.12; 3.13 backport reverted); halfb00t/screw PR #7 (same cause, `del manager`); devguide.python.org/versions; GitHub changelog 2026-09-17 and actions/runner-images#14748, #14226; microsoft/playwright#40117 (Ubuntu 26.04 from 1.61.0); `actions/python-versions` manifest.
+### Secondary (MEDIUM confidence)
+- KISSsoft W70x3x22 report; Hexagon W120x3x38x8f example; DIN publisher pages and the
+  2026-01-20 warning notice (FEATURES).
 
-### Tertiary (LOW)
-- TanStack Router, nuqs, react-jsonschema-form docs (search snippets; convention only).
+### Tertiary (LOW confidence)
+- GitHub/PyPI oracle survey; workshop articles on size ranges.
 
 ---
-*Research completed: 2026-10-15*
-*Ready for roadmap: yes, after the five open decisions go to the human; Phases 26, 27 and 29 can be planned without them.*
+*Research completed: 2026-10-23*
+*Ready for roadmap: yes*

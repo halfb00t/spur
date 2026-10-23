@@ -1,20 +1,21 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.6
-milestone_name: Clean Ledger
-status: Awaiting next milestone
-stopped_at: Milestone v0.6 closed and archived — awaiting next milestone
-last_updated: "2026-10-23T01:50:11.188Z"
+milestone: v0.7
+milestone_name: Splined Shaft
+current_phase: 30
+current_phase_name: Scope, Seam and Gear-Safety Guard
+status: executing
+stopped_at: Phase 30 context gathered
+last_updated: "2026-10-23T14:45:44.413Z"
 last_activity: 2026-10-23
-last_activity_desc: Milestone v0.6 completed and archived
-state_head: 222608473e1c9b89c94d8628582870e4e33c23f3
+last_activity_desc: v0.7 roadmap created (Phases 30–34, 24/24 requirements mapped)
+state_head: a51658149b94618dff52f9089a1bfe724edaf1e8
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 22
-  completed_plans: 22
-  percent: 100
-current_phase: 29
+  total_phases: 5
+  completed_phases: 6
+  total_plans: 5
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,14 +26,14 @@ See: .planning/PROJECT.md (updated 2026-10-23)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`). Live triggers carried in: the Ubuntu 26 rollout window (to 2026-11-19, `must`), WR-02 on the next edit of `refuse()`/`gearQuery()` (`must`), the `make verify` hang on its next capture (`must`).
+**Current focus:** Milestone v0.7 Splined Shaft, Phases 30–34, roadmap written; Phase 30 (Scope, Seam and Gear-Safety Guard) is next. Live triggers carried in: the Ubuntu 26 rollout window (to 2026-11-19, `must`), the `make verify` hang on its next capture (`must`); WR-02 (`must`) is mapped to Phase 33 (REQ-wr02-fixed), where the part switch edits `refuse()`/`gearQuery()`.
 
 ## Current Position
 
-Phase: Milestone v0.6 complete
+Phase: 30 (Scope, Seam and Gear-Safety Guard) — READY TO EXECUTE
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-10-23 — Milestone v0.6 completed and archived
+Status: Ready to execute
+Last activity: 2026-10-23 — v0.7 roadmap created (Phases 30–34, 24/24 requirements mapped)
 
 ## Performance Metrics
 
@@ -523,6 +524,17 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [v0.7] **Phase 34 is blocked until the human supplies the DIN 5480 copy's local path** (2006 series; the tolerance system
+  is in Part 1, the size tables in Part 2). **Phase 31 needs anchor rows from the same copy** before it can close: formula
+  confirmation by clause, the `h_fP` convention, at least two basic-dimension rows, a d_Ff row, an odd-z row if odd-z M_Re is
+  to print a number. Nothing from the copy is committed except anchors the human approves by name.
+- ⚠️ [v0.7] **No `v0.6` tag exists**, locally or on `origin` (`git tag -l`, `git ls-remote --tags origin`: `v0.1`–`v0.5`),
+  but REQUIREMENTS.md's rule "Same gear, same links" names `git diff --exit-code v0.6 -- tests/regression/
+  .github/workflows/ci.yml`. The v0.6 close squash is `792b45c` on `main`, and the paths diff empty against both it and `v0.5`.
+  Phase 30's first task is a stop-and-ask: the human tags `792b45c` (creating and pushing a tag is the human's call), or the
+  check pins the sha until then.
+- ℹ️ [v0.7] The milestone releases as one unit: Phases 30–33 ship the shaft with fit-dependent numbers absent, and Phase 34
+  adds them. All DIN 5480 formulas in the plan are ASSUMPTIONs until checked by clause against the copy.
 - ⚠️ [Phase 27] Code review `27-REVIEW-DISPOSITION.md`: 9 open (3 warning, 6 info). WR-03: a `ValueError` from parsing `ps` rows escapes
   `stop_group` after SIGTERM, skipping SIGKILL and the reap, and `ps` has no timeout. WR-02: `tests/process_group.py` is outside
   the browser pins' `tests/*browser*.py` scan. WR-01: the pins' `environ` allowance is bypassable in a compound statement's header.
@@ -807,6 +819,7 @@ None yet.
 - v0.6 roadmap created: Phases 26–29 (Gate Fails With a Cause; Ledger Tests and Harness; Refuse the Bad Link; Ubuntu 26 Final Reading, date-gated) — 17/17 v0.6 requirements mapped, 0 orphans, numbering continues from Phase 25; Phase 29 may close with its item still active (trigger restated, REQ-ubuntu26-classified-on-migration then moves to Future Requirements by an explicit edit with the human) and is never deleted
 - Phase 29 closed (trigger not fired), 2026-10-22: no ubuntu-latest run named Ubuntu 26.04 by the milestone close (last read 2026-10-22T13:13Z, bench/RESULTS.md); the Ubuntu 26 item stays active with its trigger restated; REQ-ubuntu26-classified-on-migration moved to Future Requirements with the human.
 - Milestone v0.6 closed 2026-10-23: audit `tech_debt` (16/16 requirements, 11/12 integration, 5/6 flows), verified closeout; archived to `milestones/v0.6-*`.
+- v0.7 roadmap created: Phases 30–34 (Scope, Seam and Gear-Safety Guard; Shaft Maths, Parameters and Designation; The Shaft Solid; Interfaces and Parity; Fit Tables and Tolerance Window) — 24/24 v0.7 requirements mapped, 0 orphans, numbering continues from Phase 29; Phase 31 needs anchor rows from the human's DIN 5480 copy and Phase 34 is blocked on the copy's local path; REQ-gate-cost-recorded is cross-cutting and closes at Phase 34; REQ-wr02-fixed (Phase 33) retires the WR-02 debt item in its fixing commit
 
 ## Deferred Items
 
@@ -816,10 +829,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23
-Stopped at: Milestone v0.6 archived on `gsd/v0.6-close-gaps` (audit `tech_debt`, verified closeout; Phases 26/27 re-verified `3adc939`, Phase 28 UAT closed `3e42e23`, WR-02 debt item widened `2226084`)
-Resume file: None
+Last session: 2026-10-23T13:47:51.698Z
+Stopped at: Phase 30 context gathered
+Resume file: .planning/phases/30-scope-seam-and-gear-safety-guard/30-CONTEXT.md
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Review `.planning/ROADMAP.md` (v0.7, Phases 30–34) and the Traceability table in `.planning/REQUIREMENTS.md`.
+- Decide the `v0.6` baseline: tag `792b45c` as `v0.6`, or let Phase 30's check pin the sha.
+- Plan the first phase with /gsd-discuss-phase 30 or /gsd-plan-phase 30.
+- Before Phase 31 can close: supply anchor rows from the DIN 5480 (2006 series) copy. Before Phase 34 can start: supply the
+  copy's local path.

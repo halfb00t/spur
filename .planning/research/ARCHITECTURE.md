@@ -1,322 +1,254 @@
-# Architecture Research: v0.6 Clean Ledger (integration points)
+# Architecture Research: v0.7 Splined Shaft (a second part type)
 
-**Domain:** debt sweep on the shipped spur app (gate, test harness, CI, one form behaviour)
-**Researched:** 2026-10-15
-**Confidence:** HIGH for file/line facts and pins (read in the tree, three claims re-measured here); MEDIUM for the resource-tracker mechanism and the Ubuntu 26 schedule (upstream sources, summarised); LOW where marked `ASSUMPTION`.
+**Domain:** adding an external DIN 5480 splined shaft with plain shank as a SIBLING part beside the gear, on the shipped spur app
+**Researched:** 2026-10-23
+**Confidence:** HIGH for every file/line fact (read in the tree at `2772480`) and for the one probe run (FastAPI query models, below); MEDIUM for the recommended module split and web-form shape (design judgement, not yet built); LOW where marked `ASSUMPTION`.
 
-Scope: no new component. Every item edits an existing seam. This file says which seam,
-what pins it, what moves downstream, which items collide, and the order. Line numbers are
-current as of `3726242` and differ from the debt files in several places (flagged inline).
+Scope: how a second part type plugs into the existing seams. Standard-specific content (DIN 5480 formulas, tables, M_Re method) belongs to STACK/FEATURES/PITFALLS and is only touched here where it changes the build order.
 
 ## 1. Findings that change the plan (read first)
 
 | # | Finding | Evidence | Consequence |
 |---|---------|----------|-------------|
-| F1 | **`main` CI is red twice on a browser-test race that is in no debt file and not in the milestone list.** Both failures are `tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` -> `AssertionError: twin selectors: 1 request(s) sent by two pending picks` (`assert 266 == 265`). Run `38347283201` (push of Phase 24, 2026-10-13, `1 failed, 1310 passed`) and run `38680454993` (push of the v0.5 close, 2026-10-15, `1 failed, 1317 passed in 401.82s`). The PR runs of the same trees were green. | `gh run view --log-failed`. Code: `tests/test_browser.py:1576` reads `requests_before = len(seen)` right after `expect_request(/api/info)` plus two Playwright round trips; the page's own `api/model.stl` request (aborted by the route, but still a `request` event the recorder counts) is sent after the info response, so on a slow runner it lands after the baseline and before the `:1611` assertion. | Add it to the milestone. It is the same family as the already-filed CX-05 (24 info finding: the same assertion is also too weak before the 350 ms debounce). One fix covers both: wait for the STL request, then settle past the debounce, then take the baseline. `ASSUMPTION` on the mechanism: two identical logs, no local reproduction. Under the milestone's own rule (fix a flake only from a captured reproduction) the two logs are the capture; the fix is deterministic and cheap, so file the debt item and fix in one commit. |
-| F2 | **`slug()` cannot be driven to all six `root_mode` reasons with real parameters.** `bracket degenerate` and `curve invalid` are never produced by a validated `GearParams`: `tests/test_calc.py:1603-1604` asserts `tally["bracket degenerate"] == 0` and `tally["curve invalid"] == 0` over the 10,326-curve sweep, and `bench/trochoid.py:387` (`_REFUSALS`) names only three refusals. Existing tests reach those two only with hand-built `Cutter`s (`tests/test_trochoid.py:436-439`, `:1229`, `:1254`). | read | The debt file's "slice of `sweep_cases()` covering every refusal reason" and the milestone's "reaching every `root_mode` refusal reason" cannot be met literally by real inputs. Reach the two by `monkeypatch.setattr("spur.calc._root_curve", ...)` returning the reason, and label those rows as forced (L08: do not claim reachability). The four reachable outcomes (`not requested`, `nothing radial to replace`, `tip land gone`, `tooth severed`, plus `trochoid`) come from real seeded parameters. |
-| F3 | **Group floor: the debt file's claim is confirmed, measured today.** macOS, Python 3.12.15, real `uvicorn spur.app:app --fd` in its own session: after `/api/health` reports a pool the group holds **2** (uvicorn + `multiprocessing.resource_tracker`); after one preview build **3** (+ one spawned worker); after six builds on different gears **4** (the second worker appears only when a gear hashes to the other slot, `pool.py:101` `hash(p) % workers`). | scratch script, `ps -A -o pgid=,stat=,pid=,command=`; command lines read | The comment at `tests/browser_session.py:55-57` and both `bench/RESULTS.md` rows (`:4768`, `:4902`) are wrong about what 3 means. The floor still works as a non-vacuity check for the kill. Linux is not yet listed: make the `print` at `browser_session.py:200` emit member commands so the next CI log carries the Linux listing for free. |
-| F4 | **The resource-tracker warning is the *post-fix* face of CPython gh-109629.** That fix (merged to main, backported to 3.12 as PR #109898 and 3.11) added a recursion-count check so a garbage-collection-triggered re-entry into `ResourceTracker` warns ("ResourceTracker called reentrantly ... might leak") instead of deadlocking. That is exactly the message in the debt file. | WebFetch of cpython#109629 (summary, MEDIUM) | (a) The trigger is GC timing inside the process that owns the executor, which fits "whole-suite only" better than any xdist-versus-coverage story. (b) `ASSUMPTION`: the unexplained 98 % hang may be a related uncaught re-entry path; the two items may share a root. Do them in one phase, hang evidence second. (c) The honest fix is an explicit `shutdown(wait=True)` in `tests/test_pool.py` for executors left to the finalizer, or a narrow `filterwarnings` entry (the latter weakens `filterwarnings = ["error"]`, so it needs a human decision and an `Lxx`). |
-| F5 | **`make test-image` is almost certainly red on collection, for more files than the debt names.** The image mounts only `src/`, `tests/`, `pyproject.toml` (Makefile `:219-226`); `README.md` is in `/app` from the Dockerfile `COPY`. Importing host-only trees: `tests/test_calc.py:27` and `tests/test_trochoid.py:21` and `tests/test_bench.py:45-65` (`bench`), `tests/test_pr_land.py:29` and `tests/test_skip_tokens.py:20` (`scripts`). Reading/running host files: `tests/test_hooks.py` (Makefile, `.pre-commit-config.yaml`, runs `make`), `tests/test_browser_pins.py` (Dockerfile), `tests/test_no_fake_done.py` (Makefile, git), `tests/test_pr_land.py:273` (`.github`). `tests/test_calc.py` is the largest unit file, so "exclude by name" gives away most of the image suite's value. | grep; no image built (no `spur:*` image locally, Docker is up) | Step 1 of that item is the run the debt file asks for (`make test-image`), not a design. Likely best shape: mount `bench/` and `scripts/` read-only, set `PYTHONPATH=/app/src:/app`, and `--ignore` only the files that need `make`/git/Dockerfile/`.github`. The choice is the human's (two options, one recommendation, per CLAUDE.md). |
-| F6 | **`#root_shape=bogus` has a second victim and one more sibling.** `recess_sides=bogus` is the same defect (the second enum select in the schema). A number box has the mirror: `#teeth=abc` is sanitised by `<input type=number>` to `''` and dropped by `gearQuery()`. And `#root_shape=` (empty) is a 422 at the API (verified: `literal_error`, input `''`) but the page treats `''` as "default". | `TestClient` run today; HTML number-input value sanitisation (spec behaviour, not browser-tested here) | The fix must be generic over every `prop.enum` select, not `root_shape`-specific (a pin forbids quoted field names outside `DIMS`, see 3.7). Decide at discuss-phase whether `''` and non-numeric number boxes are in or out; recommended: enums and the `''`-on-enum case in, number boxes filed as new debt (an `Lxx` that names the boundary). |
-| F7 | **The Ubuntu 26 flip is a four-week window, not a day.** `actions/runner-images#14748`: migration begins 2026-10-19 and completes 2026-11-19, gradually. `actions/setup-python` on 26.04 only installs recent patch versions; `ci.yml` asks for `"3.12"` (a minor), so it is not the hazard the issue describes. All three required jobs (`test (3.12)`, `vendor-bundle`, `image`) run on `ubuntu-latest`. | WebFetch of the issue (MEDIUM, summarised); `ci.yml` read | Any PR from 10-19 on may land on either image. A red `test (3.12)` is ambiguous unless the `Set up job` group is read first (it prints `Image: ubuntu-24.04`, verified on run 38680454993). Land the code phases that touch CI-visible behaviour before 10-19 where possible. |
-| F8 | **Debt-file line numbers are stale** (Makefile `:170` is `:177`; `tests/test_hooks.py:90` is `:120`; `browser_session.py:49` is `:55-57`, `:91/116/120` are `:90/122/127`, `:217` is `:224-226`). The hook-pin failure is reproduced today: `PYTEST_ARGS=--ignore=tests/test_browser.py pytest tests/test_hooks.py::test_verify_and_verify_fast_share_...` fails at `:120`. | run today | Plan from the numbers in section 3, not from the debt files. |
+| F1 | **Every gear URL stays safe only if the shaft gets its own routes.** An unknown query key on a gear route is silently ignored today: `GET /api/model.stl?part=shaft&bogus=1` returns 200 (probe run in the repo venv, 2026-10-23). A `part=` switch on `/api/info` or `/api/model.{fmt}` would therefore make a typo or a stale link build the default gear without a word (L08 spirit) and would force `model()` to branch on a key it cannot validate. | probe: `Annotated[Model, Query()]` route, extra key -> 200; `app.py:378-387` | Dispatch by **path prefix** `/api/shaft/...`, never by a query key. The three gear routes (`app.py:373-387`) are not touched, so `/api/schema`, `/api/info`, `/api/model.*` and every shared link are byte-for-byte what they are. |
+| F2 | **`model_fields_set` cannot tell "user set it" from "default" on a FastAPI query model.** Probe: a request with no query string reports `model_fields_set == {'module','teeth'}` (all fields). CLI is different: `cli._params` builds its dict from non-`None` flags only (`cli.py:59-61`). | probe output `['module','teeth']` for an empty query | Any "designation conflicts with an explicit field" rule (L03: direct conflict = 422) must read **`request.query_params` keys** on the API and the non-`None` dict on the CLI, then call ONE shared pure function. Do not use `model_fields_set`. |
+| F3 | **The 90-line `model()` body (`app.py:386-504`) is the product's admission/cache/error contract and must not be copied.** It owns `_EXPORTS` keying (`:401`), `_build_slot` (`:417`), the four exception->status mappings (`:435-471`), `export_served` and `Content-Disposition` from `params.slug()` (`:496`). A shaft route that duplicates it forks a pinned contract (L04, L12, L19, L37). | read | First commit of the interface work is a **pure move**: extract `async def _serve_model(params, fmt, quality, request, backend) -> Response` from `model()`; gear `model()` becomes `_serve_model(_gear(q), ...)`. Proof: the whole existing `tests/test_api.py` + golden requests unchanged. This is a boundary refactor, scoped and surfaced (CODING_VALUES "Tech debt and refactoring"), so it goes to the human as a stop-and-ask with the recommendation "extract, do not duplicate". |
+| F4 | **The kernel lock, the solid cache and the export cache already key correctly for a second class.** `_build_cached = lru_cache(...)(_build_checked)` (`model.py:801`) and `_EXPORTS` key `(params, fmt, quality, encoding)` (`app.py:401`) hash the params object; pydantic equality includes the class (`app.py:244-247` says so) and a probe shows `hash(GearParams()) != hash(ShaftParams())`, `G() != S()`. `pool.executor_for` is `hash(p) % workers` (`pool.py:100-101`), `_write_export` uses only `p.slug()` (`model.py:811`), `records._gear_fields` uses `p.slug()` and `model_dump(exclude_defaults=True)` (`records.py:180`). | read + probe | The worker pool, the export path, both caches and the log records are reused **with type widening only**, provided `ShaftParams` is frozen, hashable and has `slug()`. No new cache, no new pool, no new lock. |
+| F5 | **`app.js` pins make a second hard-coded dims table and any quoted field name a test failure.** `test_every_key_the_ui_reads_is_a_derived_dimensions_field` requires every line shaped `['word',` in the whole file to lie inside `const DIMS = [...]` (`tests/test_api.py:176-180`), and `test_the_shareable_link_round_trips_every_field_through_generic_code` forbids any quoted `GearParams` field name outside DIMS (`:314-335`) and counts exactly one `fields.set(` (`:340`). The shaft shares two names with the gear (`teeth`, `module`). | read | Shaft result rows must **not** be a second row table in `app.js`. Carry them in the shaft schema (section 4.5) so the page stays generic (L02). Part-specific URLs live in one descriptor object keyed by an unquoted-field-free structure. |
+| F6 | **The browser sweep pins the gear page's every request.** `tests/regression/golden_requests.json` holds the exact `api/info` query for each of the 44 fixture links; the browser test also asserts the hash never carries a key outside `set(properties) | {"mate_teeth"}` (`tests/test_browser.py:697-714`). | read | The gear path through `app.js` must emit byte-identical requests and a hash with no `part` key. `part=shaft` appears only after the user picks the shaft. `golden_requests.json` and `pre_v0_2.json` get **no diff** (`git diff --exit-code`), and are never `regen`'d by this milestone (L26/D-09). |
+| F7 | **A tolerance field is a public URL token the day it ships (L05).** Field names, defaults and (for a `Literal`) the existing allowed values of `ShaftParams` become a contract exactly like `GearParams`'. The fit tables arrive last, but the field that selects a fit cannot be renamed or re-defaulted after the interface ships. | L05; PROJECT.md "tables phase blocked" | Freeze the **name set and defaults** of `ShaftParams` in the first phase (including the tolerance fields), even though the tables that give them numbers come last. Allowed values may grow later (additive); a default may not move. |
+| F8 | **DIN-5480-specific constants are needed by the maths and the solid, not only by the tolerance tables.** Tip, root, form diameters and the tooth thickness the solid is cut to come from the standard, and PROJECT.md says the tables phase is blocked on the human's copy. | PROJECT.md "Rules this milestone lives by" | The user-proposed order (maths -> solid -> interfaces -> tables) only holds if "tables" is split in two (section 8): **T1 dimension tables / constants** (feeds the maths oracle) and **T2 fit-tolerance tables** (feeds fit limits, M_Re at fit, the designation's fit). Ask the human for the copy's path **before Phase 1 starts**; it is the long-lead dependency. |
 
-## 2. The architecture this milestone touches
-
-No runtime module changes shape except `static/app.js` (one generic branch). The rest is the
-verification chain. Arrows are "calls / reads"; the number is the item (section 3).
+## 2. System overview (target state)
 
 ```
-developer / agent
-   |  make verify  (pre-push, CI)          make verify.fast (pre-commit, <30 s)
-   v                                          v
-Makefile:  verify.static ----------------- verify.static          <- pins: tests/test_hooks.py
-           test  (:176-177)                 test.fast (:201-205)       (recipe prefix, 5 heavy files,
-             pytest -n 8 --cov $(PYTEST_ARGS)                           test-image --ignore, stamps)
-             [1 loops, 2 hang evidence, 9 hook pin]
-           test-image (:219-226) [12]
-   |
-   v
-tests/ ---- test_pool.py -> BuildPool (spawn ctx, 2 single-worker executors)  [1 tracker flake]
-       |--- test_api.py  -> TestClient + module-level app._EXPORTS byte cache   [4 cache order, 12]
-       |--- test_trochoid.py -> GearParams.slug() -> calc.root_mode             [3 slug totality]
-       |--- test_browser.py + browser_session.py -> real uvicorn (own process group) + Playwright
-       |        stop_group / MIN_GROUP_MEMBERS / launch() message               [5, 6, 13]
-       |        step "root_shape=bogus as today"                                [7]
-       |        step "twin selectors"                                           [F1]
-       '--- regression/pre_v0_2.json + golden_requests.json (frozen; must show an empty diff)
-   |
-   v
-src/spur/static/app.js: buildForm (enum select) -> readHash -> gearQuery -> update -> problems()
-                        [7 bogus enum; info: stash, bootstrap message, DIMS label]
-.github/workflows/ci.yml: runs-on ubuntu-latest x3 jobs  [8 Ubuntu 26]
-bench/RESULTS.md: append-only record of readings        [1, 2, 5, 6, 8 all write here]
-docs/architecture/decision_log.md: L44+ for 7 (and 1 or 2 if the gate or filter changes)
+                       web UI (static/app.js)          CLI (cli.py)            HTTP client
+                       part select + PARTS descriptor  `spur ...`  `spur shaft ...`
+                              |                              |                      |
+   GET /api/schema ---------->|                              |                      |
+   GET /api/shaft/schema ---->|   (gear routes UNCHANGED)    |                      |
+   GET /api/info, /api/model.{stl,step}                      |                      |
+   GET /api/shaft/info, /api/shaft/model.{stl,step}          |                      |
+                              v                              v                      v
+ +----------------------- app.py (serving process, kernel-free) ---------------------------+
+ | gear routes ---------+                                                                  |
+ | shaft routes --------+--> _serve_model(params: Part, fmt, quality, request, backend)    |
+ |   _shaft(q) resolves designation / strips query extras                                  |
+ |   _EXPORTS (bytes LRU)  BUILD_QUEUE (one admission bound for both parts)  gzip L19      |
+ +------------------------------------------+---------------------------------------------+
+                                            | backend = pool.export(p: Part, fmt, quality)
+                                            v
+ +-------------------------------- pool.py (BuildPool, N spawn workers) -----------------+
+ |   executor_for(p) = hash(p) % N      _run_with_timeout (30 s, terminate, replace)      |
+ +------------------------------------------+---------------------------------------------+
+                                            | importlib "spur.model"  (inside a worker only)
+                                            v
+ +-------------------------------- worker process (kernel) -------------------------------+
+ |  model.export(p: Part, fmt, quality)   _LOCK   _build_cached   _write_export   malloc_trim|
+ |        |  isinstance(p, ShaftParams)?                                                    |
+ |        +--> gear pipeline (_build, unchanged)                                            |
+ |        +--> shaft_model.build_shaft(p)   <- NEW, the only other module that imports cq   |
+ +--------------------------------------------------------------------------------------+
+
+ pure, kernel-free, logger-free:
+   gear : params.py  calc.py                          (UNCHANGED)
+   shaft: shaft_params.py  shaft_calc.py  din5480.py  din5480_tables.py     (NEW)
+   shared type only: parts.py  (Part = GearParams | ShaftParams)            (NEW)
 ```
 
-## 3. Item by item
+## 3. Component responsibilities: new vs modified
 
-Legend for downstream: **R** records (`records.py`), **F** fixture (`tests/regression/pre_v0_2.json`), **G** `golden_requests.json`, **B** browser-test pins, **RES** `bench/RESULTS.md`, **DL** decision log, **DOC** other docs/debt ledger. "New" = new file/test/function; "Mod" = edit.
+### New modules (src/spur/)
 
-### 3.1 Item 1 - `resource_tracker` flake (`2026-10-06-resource-tracker-flake-fails-the-gate.md`)
+| Module | Responsibility | May import | Must not import |
+|--------|----------------|------------|-----------------|
+| `shaft_params.py` | `ShaftParams`: frozen, hashable pydantic model, field metadata (`group`/`unit`/`step`) via the existing `_f`/`when` builders, `_feasible` validator calling `shaft_calc.check_shaft` by local import (the `params.py:255-265` pattern), `slug()`, schema-carried result rows (4.5), `resolve_shaft(designation, given)` (4.3) | `pydantic`, `spur.params` (builders only), local import of `shaft_calc`, `din5480` | `cadquery`/`OCP`, `spur.model`, `spur.shaft_model`, `spur.records`, `logging` |
+| `shaft_calc.py` | `check_shaft(p)` (refuse/cap lists, the `calc.check` role), `derive_shaft(p) -> ShaftDimensions` (typed frozen model, every key always present, `null` where it does not apply, `warnings` list: the `DerivedDimensions` role, L21), shaft outline description the solid consumes (radii/angles, no kernel types) | `pydantic`, `math`, `din5480` | same as above, plus `spur.calc` (see 4.7: independence) |
+| `din5480.py` | Pure DIN 5480 maths: basic dimensions from d_B/m/z, profile shift, tooth thickness at a diameter, M_Re over pins/balls, designation format and parse. Constants live in one block with clause citations | `math`, `din5480_tables` | as `shaft_calc` |
+| `din5480_tables.py` | Transcribed data only: typed literal tables, one citation (clause/table) per entry, `None` for anything not transcribed. A lookup outside the data returns `None` and the caller warns (L08) | nothing | everything else |
+| `shaft_model.py` | `build_shaft(p) -> cq.Solid`: spline outline extrude, end chamfer, shank, `isValid`/one-solid assertion, edge selectors that raise `BuildError` on empty selection (L26 rule) | `cadquery`, `spur.model` (the `_body`, `_shape_of`, `TOL` narrowers), `spur.shaft_calc`, `spur.build_errors` | `spur.app`, `fastapi`, `spur.pool` |
+| `parts.py` | `Part = GearParams | ShaftParams` and nothing else, so `pool`, `app`, `records`, `model`, `cli` name the union without importing each other | `spur.params`, `spur.shaft_params` | everything else |
 
-| Aspect | Detail |
-|---|---|
-| Step 1 (no code) | Whole-suite `make test` loops, unmodified recipe: `make test PYTEST_ARGS="-v --durations=20" 2>&1 \| tee <log>`, N=20 at `-n 8 --cov` and N=20 at `-n 8 --no-cov`, interleaved, stop-and-keep on the first failure. `PYTEST_ARGS` is caller-wins (`Makefile:158`), so no recipe edit is needed to get ids. Rate on file: 2 in 12 local whole-suite runs plus the 5th occurrence (1 in 2) and one CI hit; at 15 %, 20 loops miss with p about 4 %. About 40 runs x 3-5 min = 2-3.5 h of an idle host; record 1-minute load per run. Nothing else may run `make verify` meanwhile (load changes the rate). |
-| Files if a fix is chosen | `tests/test_pool.py` (executors left to the finalizer: explicit `shutdown(wait=True)`); **not** `src/spur/pool.py` unless a leak is localised to it. Touching `BuildPool.shutdown` fires three other triggers at once (the 98 % hang, the wedged-worker item, the worker-coverage-flush item). |
-| Alternative | A `filterwarnings` entry in `pyproject.toml` (`[tool.pytest.ini_options]` currently `error` plus two ignores) naming `ResourceTracker called reentrantly`. Weakens the gate: human decision plus an `Lxx` (L13). |
-| Downstream | R none. F/G none. B none. RES: new section with the per-loop table, host load, the 95 % bound (about 3/N). DL: only if a filter or a recipe change lands. DOC: debt file gets the measurement (re-deferral) or `Status: resolved` + sha + `git mv` + INDEX row, same commit. |
-| Conflict | None with an `Lxx`. Milestone rule (fix only from a capture) holds. |
-| Shares files with | Item 2 (same reading, same `Makefile` `test`), item 4 no, F1 no. |
+Why a flat `shaft_*`/`din5480*` split and not a subpackage: the package is flat (`.planning/codebase/STRUCTURE.md`), the import-linter contracts name modules, and the docs say "promote to a directory when it stops holding it". `shaft_*` names the **part type**, `din5480*` names the **standard**; a later ISO 4156 / DIN 5481 family adds `iso4156.py` beside `din5480.py` and reuses `ShaftParams` only if the human decides the parameter model generalises (it may not: out of scope here).
 
-### 3.2 Item 2 - 98 % hang evidence (`2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md`)
+### Modified modules (smallest edit each)
 
-| Aspect | Detail |
-|---|---|
-| Deliverable | Evidence capture, not a fix. The log shows about 1,200 of 1,220 items reported, so roughly 20 tests were still unreported: the stall may be inside a test, not only in worker exit. |
-| Change | Smallest zero-dependency form: `faulthandler_timeout = <measured seconds>` in `[tool.pytest.ini_options]` (dumps every thread's traceback of a test that overruns; it dumps, never fails) and per-test ids in the log via `-v` in the `test` recipe only (`Makefile:177`; `test.fast` stays quiet). Pick the timeout from one `--durations` reading of the heaviest healthy test (the browser test is one long test), not a guess (L34: a gate cost is measured first). `pytest-timeout` is the heavier alternative (a new dev dependency; `requirements.txt` stays byte-identical because it is the runtime closure). |
-| What it cannot catch | A stall after every test has reported (xdist worker exit, coverage data flush). That window needs the captured whole log plus `ps` at the time; say so in the debt file rather than claim coverage. |
-| Pins that move | `tests/test_hooks.py::test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe` compares the two pytest lines only through `-n <N>` (`:116-120`), so a flag after the worker count is safe; `--ignore=` and `--cov`/`--no-cov` assertions stay. `pyproject.toml` is mounted into `test-image`, so an ini option applies there too. |
-| Downstream | RES: one reading of the log-size and gate-time cost against the 300 s bar (L43; no check enforces it). DL: a short `Lxx` is advisable if the gate recipe changes (it amends L13/L34's "one definition of passing"). DOC: debt file revised to name the new evidence and keep its trigger; **do not close it** (no repro). |
-| Shares files with | Item 1 (Makefile `test` recipe, RES), item 9 (`tests/test_hooks.py`). Do item 9 first. |
+| File:line | Change | Gear-visible effect |
+|-----------|--------|---------------------|
+| `model.py:772` `_build(p)`, `:791`, `:804`, `:809`, `:833` | Widen `p: GearParams` to `Part`. At the top of `_build`: `if isinstance(p, ShaftParams): from .shaft_model import build_shaft; return build_shaft(p)` (local import: `shaft_model` imports `model`'s narrowers, so a module-level import would be circular; same pattern as `params.py:257`, `slug()` `:283`). Everything else in `export`/`_write_export` is already part-agnostic | none; `_build_cached` key space gains a second class |
+| `pool.py:53`, `:100`, `:103`, `:164`, `:252` | Type-only: `GearParams` -> `Part`. `_warm` (`:41`) also imports `spur.shaft_model` so the first shaft request does not pay the import | none |
+| `records.py:171`, `:211-259` | Type-only widening to `Part`. **Do not add a `part` key** to records: `tests/test_records.py:60` pins the key set and the shaft is already identified by its `slug` prefix (`spur_shaft_...` vs `spur_z...`) | none |
+| `app.py` | (a) extract `_serve_model` (F3, own commit); (b) widen `BuildBackend` (`:117`) to `Part`; (c) `_build_slot`'s 503 text says "gears" (`:285`): reword to a part-neutral noun in the same commit, one test; (d) add `ShaftInfoQuery`/`ShaftModelQuery` (the `InfoQuery`/`ModelQuery` pattern, `:232-239`), `_shaft(q, request)` (the `_gear` role, `:242`), three routes under `/api/shaft/` | gear routes, schema, status codes, headers unchanged; only the 503 prose changes (a response string, not a request or a part) |
+| `cli.py:42`, `:59`, `:99`, `:119` | Parametrise `_add_gear_args`/`_params` on the model class (keep the gear header string `"gear parameters (defaults in brackets)"` byte-identical: `tests/test_cli.py:199-263` partitions on it). Add a `shaft` sub-command group with `info` and `export` (4.4) | `spur info/export/serve` argv and output unchanged |
+| `static/app.js`, `index.html`, `style.css` | Part descriptor + part select + hash `part=shaft` (section 5) | gear requests and hash unchanged (F6) |
+| `pyproject.toml:177-222` | Import-linter contracts (section 6) | none |
+| `docs/architecture/overview.md`, `http-api.md`, `cli.md`, `web-ui.md`, new `shaft.md`; `README.md`; `AGENTS.md` "What we're building" | Product scope text. `README` shell examples are tests (`tests/test_cli.py:101`), so every shaft example added there runs in the gate | doc only |
 
-### 3.3 Item 3 - `slug()` totality (`2026-10-15-slug-totality-is-not-guarded-in-the-gate.md`)
+### Explicitly NOT touched
 
-| Aspect | Detail |
-|---|---|
-| Code today | `src/spur/params.py:285-287` `slug()` calls `calc.root_mode(self, profile(self), requested=self.root_shape, rho=self.root_fillet)`; records call it at `src/spur/records.py` `_gear_fields` (`"slug": p.slug()`); the header at `src/spur/app.py:496`. |
-| New test | Beside `tests/test_trochoid.py:225` (`test_the_download_name_follows_the_root_root_mode_builds`), in the commit slice (`test_trochoid.py` is not one of the five heavy files; `slug()` costs 2-38 microseconds). Seeded draws of validated `root_shape="trochoid"` requests; assert no exception and `slug().endswith("_trochoid") == (root_mode(...).mode == "trochoid")`. Assert the set of reasons actually reached equals the four reachable ones so a silent narrowing fails; force `bracket degenerate` and `curve invalid` by patching `spur.calc._root_curve` (works because `root_mode` resolves it at call time and `slug()` imports `root_mode` locally). |
-| Red proof (project convention) | Make `root_mode` raise on one reachable case and see the test fail; revert. |
-| Downstream | R: no change; a `build.failed` row with the forced reasons is optional, not needed. F/G none (the corpus is frozen at v0.1 `b3ca789`; `tests/regression/corpus.py` header says later test edits never enter it). DL: L40 D-02 ("slug stays total") gains its guard; no new `Lxx`. DOC: debt file retired in the same commit. |
-| Conflict | F2 above (literal "every reason" is not reachable by real inputs). Wording in the retirement note must say which two were forced. |
-| Shares files with | `tests/test_trochoid.py` (also imports `bench.trochoid`, so it cannot run in the image: item 12), 22-IN-01 (`_BORE_OFF` duplicate lives at `test_trochoid.py:208` and `test_api.py:~1120`). |
+`params.py`, `calc.py` (zero lines), `tests/regression/pre_v0_2.json`, `tests/regression/golden_requests.json`, `requirements.txt`, `ci.yml`. If a diff to any of them appears, it is a bug in the phase (L26, D-03/D-09).
 
-### 3.4 Item 4 - failed-build name test isolation (`2026-10-15-failed-build-name-test-depends-on-cache-order.md`)
+## 4. Integration decisions (each needs a logged `Lxx` before the phase that builds it)
 
-| Aspect | Detail |
-|---|---|
-| Code today | `tests/test_api.py:1296` `test_a_failed_build_records_the_name_of_the_part_it_would_have_been` gets its 422 from a raising backend only while `spur.app._EXPORTS` (`src/spur/app.py:88`, a `_BlobCache`) lacks the key; isolation is a comment (25-tooth trochoid and the 33.5 degree gear are "downloaded by no other test"). The cache is per process, so xdist scheduling matters too. |
-| Recommended change | Give the test its own cache: `monkeypatch.setattr("spur.app._EXPORTS", _BlobCache(<small budget>))` (the endpoint reads the module global at call time). Hermetic and independent of both rows. The debt file's alternatives (`face_width=7.7`, or clearing `_EXPORTS`) also work but leave a uniqueness convention to maintain. Do not apply a module-wide autouse reset: many `test_api.py` tests rely on cache hits within themselves and every rebuild is about a second of `test_api.py`'s share of the gate. |
-| Same convention elsewhere | `test_api.py:1267-1271` (`teeth=71`), `:1339-1342` (`teeth=73`), `:1370`; same fixture could serve them, but the milestone item names one test. Surgical default: fix the one, note the others. |
-| Downstream | F/G none: golden has a key for the sibling `test_a_failed_build_emits_build_failed_naming_the_class_and_the_level` (`teeth=71`) only because the frozen corpus tagged it at v0.1; do not alter that sibling's params. R none. DOC: debt retired in the same commit; the docstring at `test_api.py:539` ("same convention") can lose the claim. |
-| Red proof | Add a download of the same gear earlier in the file, see the old test go 200, see the new one stay 422. |
+### 4.1 Where the shaft parameter model lives
 
-### 3.5 Item 5 - `stop_group` ordering (`2026-10-10-stop-group-reads-ps-before-it-signals.md`)
+`shaft_params.ShaftParams`, sibling of `GearParams`, never fields on it (PROJECT.md target feature 1; L05 forbids moving the gear). It reuses `params._f`, `params.when` and `params._extra` by import: zero edits to `params.py`, so the gear schema cannot move. Cost: importing underscore names across modules. The alternative (moving the four helpers to a `fieldmeta.py`) is a cleaner module graph but a diff on `params.py`; recommend the import, and move the helpers only if the human prefers (then prove `GearParams.model_json_schema()` equal before and after).
 
-| Aspect | Detail |
-|---|---|
-| Code today | `tests/browser_session.py:90-105` `group_members` (`ps ... check=True`); `:115-139` `stop_group`: dead first read at `:122` (overwritten at `:127`), a read after each signal at `:127` and `:130`; a `CalledProcessError` there skips the next signal. Also `bound` is overwritten by the loop target (21-REVIEW IN-01: the failure text names only the SIGKILL bound). |
-| Change | `_signal_group(SIGTERM)` first, no read before it; read the group only to decide how long to wait and for the final assertion; a failed `ps` becomes "survivors unknown" and still sends SIGKILL, then fails with that wording; drop the dead assignment; format the message with `TERM_BOUND_S` and `KILL_BOUND_S` (absorbs 21-IN-01). |
-| New test | `stop_group` has no unit test today (grep: only `browser_session.py` and `capture_requests.py` use it). Add one that starts a real two-process group with `start_new_session`, patches `group_members` to raise, and asserts the group is dead afterwards plus the failure wording. Name the file without `browser` (for example `tests/test_group_teardown.py`): `tests/test_browser_pins.py::_scan_set()` globs `tests/*browser*.py` and applies the no-skip spelling scan (`skip`, `xfail`, `environ`, `getenv`, `pytestmark`) to every match. A file outside the glob is not heavy and joins `make verify.fast` by design (L36); keep it well under a second. |
-| Red proof | The 21-01 "Seen red once" row (`bench/RESULTS.md:4817`, leader-only SIGKILL) must still go red; re-run and add a dated reading, never rewrite the row. |
-| Downstream | B: `test_browser_pins.py` must stay green (no new watched spelling in `browser_session.py`). RES: new dated reading. DOC: debt retired, INDEX row moved. DL none. |
-| Shares files with | Items 6 and 13 (all three edit `browser_session.py`; one phase, one pass). |
+Field set (names frozen by F7; `ASSUMPTION`: the numeric defaults are the PROJECT.md example `W 25x1.25x18x8f`, so the default shaft is the standard's own designation): reference diameter `d_B`, `module`, `teeth`, tolerance fit (quality + deviation), splined length, end chamfer, shank diameter, shank length. d_B, module and teeth are three inputs with the profile shift **derived** (per PROJECT.md "profile shift as the standard derives it"), so there is no redundant triple to reconcile. Pressure angle is not a field (the standard fixes it).
 
-### 3.6 Item 6 - group-floor comment (`2026-10-10-group-floor-of-3-is-not-two-pool-workers.md`)
+### 4.2 Dispatch by part type
 
-| Aspect | Detail |
-|---|---|
-| Change | Comment at `tests/browser_session.py:55-57` ("uvicorn plus the shipped pool of 2 workers") becomes the observed members: uvicorn, the resource tracker, at least one worker; a second worker only when a second gear hashes to the other slot. `serve()` docstring `:169-171` and the assertion text `:201-205` say "pool workers (>= 3)": correct them too. Optional: print `members` with commands at `:200` (Linux listing in the next CI log). |
-| RES | Dated correction **under** the two rows (`bench/RESULTS.md:4768` macOS, `:4902` ubuntu-latest), not edits to them; the macOS listing is item F3's measurement (2026-10-15). The ubuntu-latest listing waits for a CI log (free if the print is extended; do it before the Ubuntu 26 reading so one run serves both). |
-| Decision for the human | Keep the floor at 3 (honest comment only), or force a second concurrent build so both workers appear. Recommendation: keep 3 and fix the comment; the floor's job is non-vacuity of the kill, and forcing a second build adds a build to every browser test run. |
-| Conflict | None. Debt file's own `ASSUMPTION` is now measured on macOS. |
+| Layer | Mechanism | Why |
+|-------|-----------|-----|
+| HTTP | Path prefix: `/api/shaft/schema`, `/api/shaft/info`, `/api/shaft/model.{stl,step}` | F1. No collision with `/api/model.{fmt}`: probe shows both resolve independently |
+| Pool / worker | Type of the params object (`isinstance` in `model._build`) | the object already crosses the process boundary by pickle; no string tag to get wrong |
+| Records / logs | None needed; `slug()` prefix distinguishes | F4 |
+| CLI | Sub-command group `spur shaft info|export` | gear and shaft share flag names (`--teeth`, `--module`) with different ranges and defaults; one shared flag namespace would need two-phase parsing. Existing `spur info/export` argv untouched |
+| Web | Part descriptor in `app.js` (section 5) | |
+| Slug / download name | `ShaftParams.slug()` -> `spur_shaft_W{d_B:g}x{m:g}x{z}_{fit}` (filename-safe, no space) | cannot collide with `spur_z...`; like the gear slug it is a name, not a cache key (L40) |
 
-### 3.7 Item 7 - bogus enum link refused visibly (`2026-10-10-root-shape-bogus-loads-a-blank-select.md`)
+Rejected: a `part` query key on shared routes (F1); `/api/{part}/...` generic path (would shadow `/api/health` and `/api/schema`); one union-typed `GearParams`-style model with `part` as a field (breaks L05, the schema and 44 golden requests).
 
-Only item with a runtime data-flow change, and the only one needing a new `Lxx`
-(`L44`, names the boundary, amends L39's pin, keeps L02/L03/L05/L08).
+### 4.3 Designation as input, one rule in one place
 
-**Today** (`src/spur/static/app.js`): `buildForm()` enum branch `:66-69` -> `readHash()` `:105-111`
-runs `input.value = h.get(name) ?? defaults[name]`; a select given a value it has no option for
-reads `''` (`selectedIndex` -1) -> `gearQuery()` `:114-120` skips `''` -> `update()` `:242-284`
-sends no `root_shape`, rewrites the fragment without it, builds the default part, shows no error.
+`din5480.parse_designation(text)` returns the four flat values (d_B, module, teeth, fit) or raises a message; `shaft_params.resolve_shaft(designation, given: Mapping[str, object]) -> ShaftParams` is the only place that (a) refuses `designation` together with any explicit flat field (L03, names the fields), (b) builds the model. API: `_shaft(q, request)` passes `request.query_params` keys as `given` (F2); CLI passes its non-`None` dict; the web page does not hold the grammar (L02): if it accepts a pasted designation, it calls a small read-only `GET /api/shaft/designation?text=` that returns the flat fields, and writes only flat fields into the form, the L42 pattern. The link carries flat fields, never the designation. The printed designation is a result row (`designation`, string). Open for discuss-phase: ship the paste box or print-only in the web UI (print-only is the cheaper first cut).
 
-**After** (shape settled at discuss-phase; recommended):
+Check on the error shape: `loc` for a bad designation must be `["query","designation"]`, same envelope as `app.py:438` so `problems()` in `app.js:206-221` renders it.
+
+### 4.4 CLI
 
 ```
-#root_shape=bogus&teeth=22
-  readHash(): for each select, drop a previous stray option, then if the hash value is not an
-              option add one (marked, e.g. data-stray) BEFORE the pinned assignment line runs
-  -> input.value = 'bogus' (kept)  -> gearQuery() sends root_shape=bogus (not default, not '')
-  -> GET api/info?teeth=22&root_shape=bogus -> 422 literal_error loc [query, root_shape]
-  -> problems() (:187-202) marks label.field.invalid + "Root shape: Input should be 'radial' or 'trochoid'"
-  -> fail() keeps the downloads off (setDownloads(null)); fragment keeps root_shape=bogus
+spur shaft info   [--d-b ... --module ... --teeth ... --fit ... | --designation "W 25x1.25x18x8f"]
+spur shaft export -o shaft.step [--format] [--quality] [same flags]
 ```
 
-| Aspect | Detail |
-|---|---|
-| Pinned tokens that constrain the edit | `tests/test_api.py:240-241` pins, whitespace-collapsed, the exact line `for (const [name, { input }] of fields) input.value = h.get(name) ?? defaults[name];` and the end of `readHash` (`mateInput.value = h.get('mate_teeth') ?? ''; applyRelations(); deriveSelectors(); }`). So the new code is a pre-pass before that line, never a rewrite of it. Also pinned: the `gearQuery` token (`q.set(name, input.value)`), `fields.set(` counted once, `form.addEventListener('input', ...)`, the Reset line `mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();`. |
-| Generic only | `test_api.py:277-283` fails any quoted GearParams field name or `.<field>` access outside the `DIMS` block. The code must detect `SELECT`/`prop.enum` generically; `root_shape` and `recess_sides` are then both covered. A new row-shaped table (`['word',` at line start) is harvested as a `DIMS` key and fails (`test_api.py:157-165`). |
-| Reset | Reset (`app.js:615-622`) sets `input.value = defaults[name]`; a stray option must not stay selectable afterwards. Clean it in the same pre-pass helper (call it from `readHash` and `#reset`; the Reset token above is pinned, so add the call on a new line before the pinned one). |
-| Browser step | `tests/test_browser.py:1754-1806` step `root_shape=bogus as today` is rewritten in the same commit: constants `BOGUS_LINK`/`TODAY` (`:97-103`) go or change; new assertions: the request carries `root_shape=bogus`, `/api/info` answers 422, `label.field` for `root_shape` has `.invalid`, `#messages .error` names the field, the fragment keeps the value, downloads stay disabled, no STL request. Keep the `no_foreign_key` recorder: `root_shape` is a GearParams key. Step name changes (`... as today` -> e.g. `root_shape=bogus is refused`); step names appear in RES (`:5071`, `:5293`, `:5365`, `:5473`) as history, leave them. |
-| G / F | Unchanged by construction: valid links send what they sent. Verify with an empty `git diff --exit-code tests/regression/` at the close (L26, L39 "later phases must do"). |
-| Downstream docs | `docs/architecture/web-ui.md:80` ("pinned as today's behaviour and filed as debt") is rewritten; L39 text `decision_log.md:2393-2394` and `:2448` get the amendment through L44, not an edit. Debt file retired in the same commit; INDEX row moved. |
-| Open design edges for discuss-phase | (a) `#root_shape=` (empty) and number boxes with garbage (F6). (b) Whether the invalid select shows the bad value as its text (recommended: yes, so the address bar and the control agree). (c) `deriveSelectors()` / `holds()` read `Number(effective(field))`; gates on enum fields would be NaN, but today's relations gate only numeric fields (`enabled_when` `eq`/`gt`), so no change. |
-| Conflict | Mild: L42's "`if (prop.enum)` branch ... byte-identical" is a recorded observation of 24-01, not a rule; L44 supersedes it. The rule that actually binds is the token list above. |
+`cmd_shaft_export` is `cmd_export` with `ShaftParams` and `derive_shaft(p).warnings`; calls `model.export` (the dispatching one), so no CLI-side kernel dispatch. Exit codes follow L03/`cli.py:59-68`: refusal exit 2, `BuildError` exit 1. Duplicate the ~15 lines rather than abstract over the part (three similar lines beat a premature abstraction); revisit at the third part. The `cli` import-linter contracts already cover it (it imports `model` lazily, `cli.py:102`).
 
-### 3.8 Item 8 - Ubuntu 26 CI (`2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`), **date-gated**
+### 4.5 Web form and result rows stay schema-driven
 
-| Aspect | Detail |
-|---|---|
-| What changes | Probably nothing if green. Files in play: `.github/workflows/ci.yml` (`runs-on: ubuntu-latest` on `test`, `vendor-bundle`, `image`; `BROWSER_INSTALL_ARGS: --with-deps` on the `test` step), the Makefile `$(BROWSER)` stamp (`:91-93`), `bench/RESULTS.md` (new reading: image version, install seconds). `.github/workflows/required-jobs.txt` unchanged (`tests/test_pr_land.py:273-283` ties the two). |
-| Gate | Classify the first run whose `Set up job` group prints `Image: ubuntu-26.04` (find it with `gh run view <id> --log \| grep "Image:"`), from the **whole** log, before any fix. Red candidates in order of likelihood: apt package set under `playwright install --with-deps`, SwiftShader frame (`PNG_RATIO_BAR = 4.9`, `browser_session.py` read on one Linux renderer only), `ps` flags (`group_members` uses `ps -A -o pgid=,stat=,pid=`), the kernel 6.17 -> 7.0 jump. Playwright 1.63.0 names `ubuntu26.04-x64/arm64` as known platforms (static check in the debt file); that is not proof `--with-deps` is complete there. |
-| Fallback | Pin `runs-on: ubuntu-24.04`. Human's decision, not the executor's. |
-| Optional pre-classification | A throwaway-branch run with `runs-on: ubuntu-26.04` (the issue recommends testing early). It classifies early but is not the debt's literal trigger; offer it, do not assume it. |
-| Downstream | RES reading; debt file resolved with the image version and install seconds, or re-filed with the log's classification. DL only if `runs-on` is pinned (small `Lxx` amending L22/L23's CI statement). |
-| Ordering | Phase last, open-ended (see section 6). Do not let it hold the milestone close beyond the 2026-11-19 end of the window; if no 26.04 run has happened, close it as "not yet fired, trigger carried" with today's reading. |
+`/api/shaft/schema` returns `ShaftParams.model_json_schema()`; the generic `buildForm()` already renders `properties` by `group`/`unit`/`step`/`enum`/`enabled_when` (`app.js:54-110`). For the result rows add a model-level key in `json_schema_extra`, **`dims`: a list of `{key, label, unit}`** (the same trick as `selectors`, `params.py:87`), rendered by generic code. Reasons: F5 (no second `['key', 'Label']` table in JS, no per-part knowledge in the page, L02), and the "every key the UI reads is a field of the response model" test becomes a **Python** test on `ShaftDimensions` instead of a regex over JS. `unit: ""` rows render as text (the `designation`), since `renderInfo` today assumes `fmt(v) + " mm"` (`app.js:231`). Fit-limit pairs (min/max tooth thickness, M_Re min/max) are separate flat scalar keys, not nested objects.
 
-### 3.9 Item 9 - hook pin reads `PYTEST_ARGS` (`2026-10-10-hook-pin-reads-the-callers-pytest-args.md`)
+### 4.6 Worker pool and export path reuse (no new work)
 
-| Aspect | Detail |
-|---|---|
-| Code | `tests/test_hooks.py:34-38` `_make_env()` strips `MAKEFLAGS`, `MFLAGS`, `MAKELEVEL` but not `PYTEST_ARGS`; make exports a command-line variable to the recipe's environment and `PYTEST_ARGS ?=` (`Makefile:6`) takes it. Failing assertions: `:120` (`"--ignore=" not in whole_pytest`) and the `ignored == {...}` set after it. Reproduced today. |
-| Change | Add `"PYTEST_ARGS"` to the stripped names (or pass `PYTEST_ARGS=` on `_dry_run`'s command line, which wins over the environment). `_make_env()` also feeds `_clean_git_env`, the `-W` dry runs and the worktree test; stripping is harmless to all. |
-| New test | A case that sets `PYTEST_ARGS` (`monkeypatch.setenv`) and asserts the recipes are unchanged. Cheap (`make -n`); lives in the commit slice. |
-| Downstream | None beyond DOC. Unblocks narrowed `make verify PYTEST_ARGS="--ignore=..."` runs, which loops and phase work will want. |
-| Order | First in its phase (item 2 and the loops assume narrowed runs are safe). |
+Admission (`BUILD_QUEUE`, `app.py:102`), gzip inside the slot (L19), `_EXPORTS` LRU, `BuildPool` affinity/timeout/replacement, `malloc_trim`, `SPUR_SOLID_CACHE` (4 entries shared across parts) all apply unchanged. What must be **measured, not assumed** (CLAUDE.md, L07/L17/L37): (a) heaviest allowed shaft build time against `SPUR_BUILD_TIMEOUT=30` s (a long, many-toothed spline fused with a shank and chamfered is a boolean on a many-faced prism; the field `le` bounds are set from a sweep, the way `spoke_count` was lowered 200->40->32, `params.py:182-199`); (b) resident memory with one shaft solid beside gear solids in a worker (L17's 4 GiB `mem_limit` was measured on gear corpora only); (c) STL size at `quality=fine` for a long shaft (gzip level was chosen on 9 MB and 17 MB gear STLs, `app.py:172-210`). Add a `bench/` row for each; no estimate goes in a comment.
 
-### 3.10 Item 10 - launch-failure message (`2026-10-10-launch-failure-message-names-a-stamp-that-skips-the-install.md`)
+### 4.7 Sibling independence
 
-| Aspect | Detail |
-|---|---|
-| Code | `tests/browser_session.py:212-231` `launch()`; text at `:224-226`. |
-| Change | Message-only (recommended): print Playwright's own error first, then the advice `rm .venv/.browser && make test` (and, on Linux, `BROWSER_INSTALL_ARGS=--with-deps`). Changing the stamp to depend on the revision directory instead touches the `Makefile` `$(BROWSER)` rule and `tests/test_hooks.py` (`BROWSER_STAMP = ".venv/.browser"`, the `-o`/`-W` dry runs): more surface for a cosmetic item. |
-| Pins | `tests/test_browser_pins.py:105-127` requires `launch()` to call `pytest.fail` and to hold a string constant containing `playwright install --only-shell chromium`; keep that literal. |
-| Downstream | RES `bench/RESULTS.md:4817` quotes the old message as a historic reading: leave it. DOC: debt retired. |
-| Shares files with | Items 5, 6. |
+Shaft maths shares no code with `calc.py`: it re-writes the 3-line `inv()` (`calc.py:117-119`) instead of importing it. This keeps the oracle independent (precedent: `tests/trochoid_oracle.py` shares no code with `calc`) and means a future change to gear maths cannot move a shaft number, nor the reverse (L05/L26 in both directions). `shaft_model` importing `model`'s `_body`/`_shape_of`/`TOL` is the one deliberate cross-edge (kernel narrowers, L35); if the human dislikes importing private names, move those two functions to a `kernel_types.py` as its own commit.
 
-### 3.11 Item 11 - info-finding triage (Phases 19, 21-24)
+## 5. Web form: switching part type and encoding it in links
 
-16 open items after removing 19-IN-03 (resolved, `34270c8`) and 24-IN-04 (already filed as `docs/ideas/2026-10-14-hex-warning-names-fields-by-form-title.md`). Sources: `docs/tech_debt/active/2026-10-09-phase-19-review-info-findings-deferred.md` and `.planning/milestones/v0.5-phases/{21..24}-*/*-REVIEW.md` plus `*-REVIEW-DISPOSITION.md` (the dispositions still read `open`). Several are already absorbed by named items.
+State: `part` in `{gear, shaft}`; a `PARTS` descriptor object holds, per part: schema URL, info URL, model URL base, whether the mate box shows, header/aria text. `fields`, `defaults`, `rejected`, `stash`, `selectors` are cleared and rebuilt on a switch (they are module-level today: `app.js:8-15`, `:322`, `:329`).
 
-| Finding | File(s) now | Verdict | Folds into |
-|---|---|---|---|
-| 19-IN-01 `_build` comment overstates "asked once"; `_chamfer_tips` re-solves | `src/spur/model.py:625-636` (`tip_chamfer_effective(p)` without `rm`), `:768-779` | fix: pass `rm` | solo, `model.py` change; **pin**: `tests/test_model.py:899` patches `_chamfer_tips` with a 3-argument lambda, update with the signature |
-| 19-IN-02 bench stale paragraph, near-copy helpers | `bench/trochoid_part.py:109-121`, `:172-195` vs `tests/test_model.py:68`, `:86` | fix or close (drift risk, no user effect) | solo; `bench/` is in `mypy` scope |
-| 19-IN-04 `root_fillet` label under hob root; `_host_state` crash outside git | `src/spur/static/app.js:23` (DIMS), `bench/trochoid_part.py:333` | fix both | `app.js` with item 7; label as a function row in `DIMS` (`test_api.py:157-165` pins the key shape, `(d) =>` rows like `span` are fine) |
-| 21-IN-01 dead assignment, wrong bound | `browser_session.py:122`, `:123-139` | absorbed | item 5 |
-| 21-IN-02 `fixture_hash` accepts `bool`/`None` | `browser_session.py:668-710` | fix (assert scalar types) | item 5/6 pass |
-| 21-IN-03 pin scan is line- and spelling-based | `tests/test_browser_pins.py:46-101` | soften docstring or match on `ast.Constant`; recommend docstring | browser-test pass |
-| 21-IN-04 `_follow_link` 30 s vs `BUILD_WAIT_MS`; hot park loop | `tests/test_browser.py:204`, `:584-593` | fix | browser-test pass (item F1) |
-| 22-IN-01 `_BORE_OFF` duplicated | `tests/test_api.py` (inline literal beside `:1296`), `tests/test_trochoid.py:208` | fix or close | items 3-4 (same two files) |
-| 22-IN-02 ragged docstring | `browser_session.py:646` (`serve_stl_from`) | fix | item 5/6 pass |
-| 22-IN-03 L40 quotes the best-case reading (1.13 s) | `docs/architecture/decision_log.md` L40 "The browser proof"; `bench/RESULTS.md` | amend with the range 1.13-3.56 s | docs; the log is the locked record, so edit as a dated amendment line, not silently |
-| 23-IN-08 honeycomb gate has one open value | `tests/test_relations.py:253` `CUTOUT_STATES`, `:274` meta-test | fix (add `honeycomb (4)`; count 12 -> 14 per the review) | test pass |
-| 23-IN-11 `_js_number` unguarded range | `browser_session.py:325` | fix (assert range, normalise `-0`) | item 5/6 pass |
-| 24-IN-01 stash comment overstates / stale restore | `app.js:292-300`, `:398-402` | reword comment (cheapest) or delete the stash entry on hand edit | `app.js` with item 7; pinned tokens `const stash = new Map();`, `if (zeroed) stash.set(field, input.value);` must survive |
-| 24-IN-02 = CX-03 bootstrap message | `app.js:633-641` | reword to "Could not build the form" | `app.js` with item 7 |
-| 24-IN-03 OpenAPI substring pin | `tests/test_api.py:143` | parse the JSON, walk for a `selectors` key | items 3-4 file |
-| 24-CX-05 zero-request assertion too early | `tests/test_browser.py:1576-1612` | fix | **same edit as F1** |
+| Aspect | Gear (unchanged) | Shaft (new) |
+|--------|------------------|-------------|
+| Hash | non-default fields (+ `mate_teeth`), **no `part` key**, ever | `part=shaft&` + non-default shaft fields |
+| `buildForm` source | `api/schema` | `api/shaft/schema` |
+| Info / STL / download | `api/info`, `api/model.stl`, `api/model.{kind}` | `api/shaft/info`, `api/shaft/model.stl`, `api/shaft/model.{kind}` |
+| Mate-teeth row | shown | hidden, `mate_teeth` neither read nor sent |
+| `gearQuery()` | byte-identical output (F6) | same function over the shaft `fields` |
+| Unknown `part=` value | n/a | any non-empty `part` other than `shaft` is **refused visibly** (L44 precedent: invalid links may change behaviour, valid ones may not). `part=gear` is not accepted as a second spelling of the gear link |
 
-Disposition ledger: the archived `*-REVIEW-DISPOSITION.md` files are history. Record the v0.6 triage as one table in the phase directory plus a `docs/tech_debt/active/` file for anything "filed", and flip the Phase 19 debt file only when its last open item is closed (it retires as a whole; if IN-01/02 are fixed and one is not, edit the file to say which, do not move it).
+Mechanics to keep right:
+- `buildForm()` is async and `readHash()` sync (`app.js:119-128`, `:240-252`): boot becomes read `part` from the hash, `await buildForm(part)`, `readHash()`, `update()`. A `hashchange` that changes `part` must await a rebuild before `readHash()`; a same-part `hashchange` stays the synchronous path of today.
+- The part select lives in `<aside>` **outside** `#params`, so `form`'s `input` listeners (`app.js:211-213`) never see it and it is never a field (the L42 rule: a view, not a field; the `fields.set(` count stays 1).
+- `Reset` resets the current part only. Switching part does not carry values across (the names overlap but the ranges and defaults do not: sending gear `teeth=19` into a shaft is a different part).
+- `showModel` refits when size changes more than 30 % (`app.js:609-613`), so a switch refits; camera/grid assume a part standing on Z. A shaft is long on Z; check `placeGrid()`/`fit()` visually (the browser test reads only `canvas.dataset.triangles`).
+- Headings: `index.html` has gear-only strings (`<title>`, `.sub`, `aria-label="3D preview of the gear"`, the `.hint`). Gear defaults stay as the static text; the descriptor swaps them on the shaft.
 
-### 3.12 Item 12 - `make test-image` collects host-only tests (`2026-10-10-test-image-collects-tests-that-read-host-files.md`)
+Risk to flag: a pre-existing gear link that happens to carry a stray `part=...` token used to load the default gear; after v0.7 it is refused. That is an invalid link, the same class as L44, and no fixture or README link carries one (`grep -c '"part'` over both `tests/regression/*.json` files reads 0); record it in the `Lxx`.
 
-| Aspect | Detail |
-|---|---|
-| Step 1 | Run it (`docker info` answers; no image yet, the build installs the pinned closure and takes minutes) and read the red list. See F5 for the expected collection errors. |
-| Files | `Makefile:219-226` (mounts, `PYTHONPATH`, `--ignore`s); `tests/test_hooks.py:181-190` `test_the_image_suite_ignores_the_browser_test` **pins this recipe** (`--ignore=tests/test_browser.py` in the dry-run text) and must be updated in the same commit; docs `README.md:322` and `docs/HOW_TO_DEVELOP.md:114` describe the target. |
-| Constraint | `tests/test_hooks.py` also asserts the commit slice's five heavy names (`HEAVY_TEST_FILES`); changing what the image runs must not touch `test.fast`. |
-| Downstream | RES none required; DOC: HOW_TO_DEVELOP/README sentence if the image suite now runs fewer files; debt retired. CI's `image` job does not run `test-image` (it builds and smoke-tests), so nothing in CI changes. |
-| Conflict | None with an `Lxx`; L36/L39 only fix the browser test's exclusion. |
+## 6. Import-boundary contracts to add (`pyproject.toml`, after line 222)
 
-### 3.13 Item F1 - twin-selectors race (new)
+Today's contracts list `spur.calc`, `spur.params`, `spur.cli` for the kernel (`:186`), `spur.calc` for the logger (`:210`), `spur.app` indirectly for the kernel (`:221`). New modules are not covered by any of them until listed, and the first contract is `allow_indirect_imports = true`, so a pure module could reach the kernel through `spur.model` unnoticed. Add (each in the same commit that adds the module, since import-linter rejects names that do not exist yet):
 
-| Aspect | Detail |
-|---|---|
-| Change | `tests/test_browser.py:1556-1612`: after `expect_request(/api/info)` also wait for the page's STL request (the route aborts it: `page.expect_event("requestfailed")` or `expect_request` on `STL_ROUTE`), then settle beyond the 350 ms debounce (`app.js:286-290`), then take `requests_before`. Waits on content, not clocks, per L39 "the test's waits stay on content"; the settle is the one place a bounded wait is the condition (document it, it is CX-05's own wording). |
-| Proof | Red-first: make the page slow (`route` delay on `/api/info`) and see the old assertion fail with "1 request(s)"; the new one passes. |
-| Downstream | B: step name `twin selectors` kept (L39). RES: a dated note naming runs 38347283201 and 38680454993. DOC: file the debt item and retire it in the fixing commit, or file-and-fix in one commit; state the file path in the reply (CLAUDE.md). |
+1. **"The shaft maths stays free of the CAD kernel and the solid"**: `source_modules = [spur.shaft_params, spur.shaft_calc, spur.din5480, spur.din5480_tables]`, `forbidden_modules = [cadquery, OCP, spur.model, spur.shaft_model]`, `allow_indirect_imports = false`. Stricter than the gear's (which allows indirect), cheap to satisfy, closes the hole above.
+2. **"The shaft maths stays free of the logger"**: same four sources, forbidden `spur.records`, `logging` (mirrors `:202-211`; `shaft_params` imports `spur.params`, which does not import records).
+3. **Extend the existing "serving process" contract** only by being true already: `spur.app` -> `shaft_params`/`shaft_calc`/`parts` are kernel-free, `shaft_model` is reached only through `model`'s local import inside a worker. Its `allow_indirect_imports = false` therefore proves the shaft never entered the parent. Verify by deliberately importing `shaft_model` from `app` once and watching `make lint-imports` fail (the repo's own standard: "verified by deliberately introducing one", CODING_VALUES "Coupling").
+4. **"The kernel doorways are model and shaft_model"**: `type = "forbidden"`, `source_modules = [spur.app, spur.cli, spur.pool, spur.records, spur.parts]`, `forbidden_modules = [spur.shaft_model]`, `allow_indirect_imports = false`. `cli` and `pool` import the kernel only at runtime through `model`/`importlib` (`pool.py:63`, `cli.py:102`), so none may name `shaft_model`; this keeps "one doorway through `model.export`" true in the module graph after a second kernel module exists. (`pool._warm` imports it by `importlib` string, which import-linter does not see; that is the established pattern, `pool.py:41-50`.)
+5. **"Gear maths does not know the shaft"**: `source_modules = [spur.calc, spur.params]`, `forbidden_modules = [spur.shaft_params, spur.shaft_calc, spur.din5480, spur.din5480_tables, spur.shaft_model, spur.parts]`, `allow_indirect_imports = false`. This is the structural half of "every gear link builds the same part".
+6. **Tests that pin the contracts' claims** (the repo pairs each contract with a regex test: `tests/test_records.py:246`): a test that `shaft_calc`/`din5480` source files contain no `import logging`/`cadquery`, and that `ShaftParams` is frozen and hashable, and `hash(ShaftParams()) != hash(GearParams())`.
 
-## 4. Shared-file matrix (what must share a phase or be ordered)
+`spur.model` importing `shaft_model` lazily is a gear-side edge to a shaft module, so contract 5 deliberately excludes `spur.model` from its sources.
 
-| File | Items | Rule |
-|---|---|---|
-| `tests/browser_session.py` | 5, 6, 10, 21-IN-01/02, 22-IN-02, 23-IN-11 | one phase, one pass; keep every `test_browser_pins.py` tripwire green |
-| `tests/test_browser.py` | 7 (step rewrite), F1/CX-05, 21-IN-04 | F1 and the info items first; the bogus step rewrite rides with the `app.js` change in its own phase |
-| `src/spur/static/app.js` | 7, 19-IN-04, 24-IN-01, 24-IN-02 | one phase; every edit checked against the `test_api.py:240-280` token list; `golden_requests.json` and `pre_v0_2.json` must show an empty diff |
-| `tests/test_hooks.py` | 9, 12, (2 if the recipe prefix changes) | item 9 first; item 12's pin update in the same commit as the Makefile edit |
-| `Makefile` (`test`, `test-image`) | 1/2 (recipe flags), 12, 10 (only if the stamp route is chosen) | sequential commits, one concern each |
-| `tests/test_api.py` + `tests/test_trochoid.py` | 3, 4, 22-IN-01, 24-IN-03 | one pass |
-| `bench/RESULTS.md` | 1, 2, 5, 6, 8, F1 | append-only; dated corrections beside, never over, a reading; phases are sequential so no merge conflicts |
-| `docs/architecture/decision_log.md` | 7 (L44), 22-IN-03 (L40 amendment), 2/1/8 only if the gate, the filter or `runs-on` change | next free id is L44 (last is L43) |
-| `docs/tech_debt/INDEX.md` | every retirement | row moved in the fixing commit; the Phase 19 file moves only when whole |
-| `tests/regression/*.json` | none | `git diff --exit-code tests/regression/` at every phase close |
+## 7. Data flow
 
-## 5. Locked decisions and code state: conflicts
+### Request flow: shaft STL preview
 
-| Item | Conflict | Resolution |
-|---|---|---|
-| 3 slug totality | Debt/milestone wording asks for every reason; two are unreachable by real inputs (F2) | Force those two by patching `_root_curve`, label them forced; no `Lxx` |
-| 7 bogus enum | L39 pins today's behaviour and says the pin is edited by whoever fixes the debt, "in the same commit"; L42 records `if (prop.enum)`/`gearQuery`/`readHash` as byte-identical; `test_api.py:240-280` pins `readHash` tokens | New `L44` supersedes the L39 pin and states the boundary (enums in, number boxes out unless chosen). Edit around the pinned tokens. L03/L05/L08 are honoured (an invalid link is refused, a valid one is unchanged) |
-| 1/2 filter or recipe | `filterwarnings = error` is a gate property (L13); a filter is the "narrowest entry" the debt file allows, but it hides a symptom whose cause is unlocated; a changed `test` recipe amends L13/L34 | Human decision plus `Lxx`; default is re-deferral with the measurement |
-| 2 hang capture | Debt file says "no repro, so only watch"; faulthandler cannot see a post-report stall (3.2) | State the limit in the debt file; keep it `active` |
-| 8 Ubuntu pin | Pinning is "the human's decision" | Present as an option only |
-| 12 test-image | Debt says "mount the files or exclude by name"; F5 shows exclusion-by-name drops `test_calc.py` | Offer both with a recommendation (mount `bench/` + `scripts/`) |
-| 6 floor | Debt file offers "name the tracker" or "force a second build" | Recommend neither; honest comment only |
-| 11 / 22-IN-03 | L40 is a locked record | Dated amendment line, not an in-place rewrite |
-| F1 | Not in the milestone list | Add; same rule family as the milestone's (fix from captured evidence) |
-| CLAUDE.md rule | "Blocker -> fix now or stop and ask" | None of these is a blocker; the three `must` flakes (items 1, 2, F1) are the highest-cost |
+```
+page: #part=shaft&teeth=20
+  -> buildForm(api/shaft/schema)  -> fields rendered from ShaftParams schema (groups/units/enabled_when)
+  -> update():  GET api/shaft/info?teeth=20          -> ShaftDimensions (typed, nulls + warnings)
+                GET api/shaft/model.stl?teeth=20&quality=preview
+     app.py:  ShaftModelQuery (FastAPI validates ranges) -> _shaft(q, request) -> ShaftParams (validated ONCE, check_shaft in the model validator)
+              _serve_model(params, "stl", "preview"):  _EXPORTS key (params, fmt, quality, enc)
+              miss -> _build_slot -> pool.export(params) -> worker: model.export -> _build -> build_shaft
+              -> bytes -> gzip in slot -> Content-Disposition spur_shaft_...stl
+```
 
-## 6. Date gate and build order
+### Parity (the REQ-three-interfaces pattern, reused)
 
-**Today is 2026-10-15; the Ubuntu 26 window opens 2026-10-19 and closes 2026-11-19.** Treat item 8 as an open-ended final phase that starts when a `Set up job` log names Ubuntu 26, not on a calendar day. Land the CI-visible phases before 10-19 where they are small (phases 26-27), so a red `test (3.12)` after the flip is not ambiguous.
+CLI and API print the same document: `spur shaft info` prints `derive_shaft(p).model_dump_json(indent=2)` as `cli.py:96` does for the gear; `tests/test_cli.py:67` (`test_cli_and_api_print_the_same_document`) is the template, one parity test per shaft feature. A refusal reads the same on both (`test_every_refusal_reads_the_same_on_the_api_and_the_cli`, `:434`).
 
-Suggested phases (numbering continues at 26; each is a branch `gsd/phase-NN-...`, one `make verify` green, one concern per commit):
+### State
 
-1. **Phase 26 - The gate fails with a cause** (Makefile, `pyproject.toml`, `tests/test_hooks.py`, `tests/test_browser.py`, `test_pool.py` if fixed)
-   - 26a Item 9 first (hook pin, small, unblocks narrowed runs).
-   - 26b **Start the tracker loops (item 1) now, unattended, on the otherwise unmodified tree**, while doing only non-gate work (reading, writing the L44 options). Gate runs during the window invalidate the measurement.
-   - 26c F1 + CX-05 + 21-IN-04 (twin-selectors race; `test_browser.py`).
-   - 26d Item 2 evidence capture (after the loops finish, so the loops measured the recipe the five prior occurrences came from; measure `--durations` once to set `faulthandler_timeout`).
-   - 26e Item 1 outcome: fix in `test_pool.py` if localised, or re-deferral carrying the table; filter only on the human's say.
-   - 26f Item 12 (`test-image`), pin update in the same commit.
-2. **Phase 27 - The ledger's tests and harness** (test-only, plus one `model.py` line)
-   - Items 3 and 4 with 22-IN-01 and 24-IN-03 (`test_api.py`/`test_trochoid.py`).
-   - Items 5, 6, 10 with 21-IN-01/02/03, 22-IN-02, 23-IN-08/IN-11 (`browser_session.py`, `test_browser_pins.py`, `test_relations.py`); the macOS listing correction under both `RESULTS.md` rows; the member-command print for the Linux listing.
-   - 19-IN-01/IN-02 (`model.py`, `bench/trochoid_part.py`), then 22-IN-03 (L40 amendment), then the triage table.
-3. **Phase 28 - Refuse the bogus link** (the only behaviour change; discuss-phase first, `L44`)
-   - Items 7 + 19-IN-04 label + 24-IN-01 + 24-IN-02 in `app.js`; browser step rewrite; `web-ui.md`; debt retired. Needs the human's pick on the number-box boundary and the empty-enum case.
-4. **Phase 29 - Ubuntu 26** (date-gated, last, may close as "carried")
-   - Item 8. Starts at the first 26.04 `Set up job`; classify from the whole log; reading into `RESULTS.md`; pin only on the human's word.
+Nothing persisted, nothing new (CODING_VALUES "State"). The shaft adds no module-level state; the one lock and the one solid cache stay in `model.py`.
 
-Why this order: item 9 and F1 remove false reds that would pollute every later gate reading; the loops need an idle host and an unmodified recipe; evidence capture changes the recipe so it follows the measurement; test-only phases carry no behaviour risk and finish before 10-19; the one user-visible change gets its own phase because it needs a decision record and edits the most heavily pinned file; the date-gated item cannot be scheduled and must not block the close.
+## 8. Suggested build order (phases)
 
-## 7. Patterns to follow (project conventions the plans must carry)
+Honouring dependencies and the human's order (maths -> solid -> interfaces -> tables), with the one correction from F8 and F7.
 
-- **Red first, then green.** Every new test is seen failing against a deliberately broken tree (RES has the "Seen red once" tables); record the mutation and the failure text.
-- **Caller-wins `PYTEST_ARGS`** (`Makefile:157-160`): extra evidence for a one-off run goes through it; only permanent evidence changes the recipe.
-- **Dated correction beside a reading, never over it** (`bench/RESULTS.md`).
-- **Retire a debt item in its fixing commit:** `Status: resolved`, sha, `git mv` to `resolved/`, INDEX row moved. A re-deferral edits the file with the measurement and leaves `active`.
-- **Fixture and golden stay byte-identical:** `git diff --exit-code tests/regression/` at each phase close; the frozen corpus (`tests/regression/corpus.py` header) never follows later test edits, so editing a test whose params it tagged does not move it.
-- **Gate hygiene traps:** `make no-fake-done` greps `TODO|FIXME|XXX|HACK|NotImplementedError` as whole words in `*.py *.js *.sh`, so comments must avoid them; `mypy --strict` covers `tests bench scripts docker`; the commit hook runs `make verify.fast` under 30 s, so any new unit test must be milliseconds.
+| Phase | Content | Gear-safety proof | Needs the DIN copy? |
+|-------|---------|-------------------|---------------------|
+| **A. Seam and contracts** | New `Lxx` widening product scope and amending L02 ("one parameter model **per part type**, three front ends each"). `parts.py`; type widening in `pool`/`records`/`model` signatures; `model._build` dispatch stub; the extract-`_serve_model` pure move; 503 wording; import-linter contracts 1-5 with empty-but-real modules | `git diff --exit-code tests/regression/`, `make verify` unchanged count, `/api/schema` JSON equal before/after | no |
+| **B. Shaft maths (pure)** | `ShaftParams` with the **frozen field set and defaults** (F7), `shaft_calc`, `din5480` basic dimensions, profile shift, tooth thickness, M_Re. Independent oracle for M_Re from the built outline geometry (shares no code, like `trochoid_oracle.py`); every DIN-specific constant behind one cited block; anything not yet proved returns `None` + warning | n/a (new files) | **yes for the constants and the dimension-table oracle (T1)**; M_Re's geometric oracle needs only the maths |
+| **C. Solid** | `shaft_model.build_shaft`: outline, extrude, chamfer, shank; one-valid-solid assertion; edge selectors that raise on empty (L26); proved against the closed-form cross-section area x length + shank volume, watertight STL, bbox; heaviest-allowed build time and worker RSS measured and recorded (4.6), `le` bounds set from the sweep | gear fixture replay still 85 cases green | uses T1 constants |
+| **D. Interfaces** | API routes + `ShaftInfoQuery`/`ShaftModelQuery`/`_shaft`; `resolve_shaft` and designation round trip; CLI `shaft` group; web part select, descriptor, `dims` rows, hash `part=shaft`; parity tests per feature; browser scenario for shaft (load, edit, 422 marks, link round trip, switch back to gear emits no `part`); README examples; docs | `golden_requests.json` no diff, 44-link browser sweep green | no |
+| **E. Fit tables (T2)** | Transcribe DIN 5480-2 tolerance fields with clause/table citations, second read, then fit limits on tooth thickness, M_Re at fit, designation fit, allowed tolerance values grow (additive); out-of-table values warn with no number | n/a | **yes (T2)** |
 
-## 8. Anti-patterns to avoid
+Ordering rationale: A first because every later phase leans on `Part`, the contracts and the extracted `_serve_model`, and A is the only phase that edits gear files, so its gear-safety proof is cleanest alone. B before C because the solid consumes only numbers B proves (the `calc` decides / `model` acts split). C before D so the interfaces never expose a part the kernel cannot build. E last because T2 is blocked on the human's copy and only feeds the tolerance-dependent rows, which the earlier phases already print as `null` with a sentence. If the copy arrives early, T1 can be transcribed inside B; if it arrives late, A and the geometry-only part of B proceed and B's DIN constants wait.
 
-- **Fixing a flake or hang on a guess** (items 1, 2): without a captured failure the deliverable is a measurement.
-- **A blanket `ignore::pytest.PytestUnraisableExceptionWarning`** or any filter wider than the message (the debt file already forbids it).
-- **Rewriting `readHash`/`gearQuery` lines that tests pin token-for-token** (3.7); add around them.
-- **A page-specific fix for `root_shape`** (breaks the generic-code pins and leaves `recess_sides` broken).
-- **A module-wide autouse `_EXPORTS` reset** (3.4): cost without need.
-- **Claiming a number-box or Linux-listing result that was not read** (L08).
+### Research flags for phases
 
-## 9. Scalability of the sweep
+- A: stop-and-ask on the `_serve_model` extraction and the `Lxx` wording; standard patterns otherwise.
+- B: **needs the copy and deeper standard-specific research** (formulas, M_Re method for the DIN 5480 flank-centred case, pin/ball size rule); keep out of this file.
+- C: needs a kernel spike: spline outline as 16-point flank polylines vs `makeSpline` (the gear uses polylines + arcs, `FLANK_POINTS = 16`, `model.py:58`; the trochoid root uses one `makeSpline` per side), build-time and facet-count at the largest tooth count; the end chamfer's edge selection must follow the L26 "never silently select nothing" rule.
+- D: standard patterns; the web hash/boot rewrite (section 5) is the only delicate part, covered by the browser test.
+- E: transcription risk, not architecture.
 
-Not applicable beyond gate cost: the permanent additions (`-v`, a `faulthandler_timeout`, a few millisecond tests, one process-group unit test) are priced against L43's 300 s bar with one reading in `bench/RESULTS.md`; the CI log grows with `-v` (the v0.5 close run printed a 400 s pytest section already).
+## 9. Anti-patterns to avoid
+
+1. **Adding `part` (or any shaft field) to `GearParams`, or a `part` query key to gear routes.** Breaks L05 and F1.
+2. **Importing `calc` helpers into shaft code "to save lines".** Couples the oracle to the thing it checks and lets a gear change move a shaft number (4.7).
+3. **Copying `model()` into a shaft route.** Forks admission, caching, error mapping (F3).
+4. **A second pool or lock for shafts.** Every kernel call must be inside `model._LOCK` (L06/L18); dispatching inside `model._build` guarantees it, a separate `shaft_model.export` would not.
+5. **A second hard-coded rows table in `app.js` or a regenerated golden file.** Breaks F5/F6 pins and the "form is generated from the schema" rule (L02, v0.5 rule).
+6. **Printing a DIN-specific number from an unverified constant while the tables are pending.** Return `None` + a sentence (L08); the number appears in the phase that cites its clause.
+7. **Silently accepting a stray `part=` or a designation that disagrees with explicit fields.** Refuse (L03, L44).
+
+## 10. Decisions this research raises against the log (flag, do not decide)
+
+| Lxx | Tension | Recommendation |
+|-----|---------|----------------|
+| **L02** "`GearParams` is the single definition of a gear" | Two models now. The spirit (one model per part feeding schema, flags, query) holds; the sentence does not | New `Lxx` amending L02 to "one model per part type", same entry widens the product scope (PROJECT.md target feature 1) |
+| **L05** | Shaft links become a second frozen contract; a stray `part=` on the gear page changes from ignored to refused | Freeze shaft names/defaults in Phase B (F7); log the `part=` refusal as an L44-class invalid-link change |
+| **L06/L18** | "Every OCCT call goes through one RLock **in `model.py`**" | Stays literally true if dispatch is in `model._build`; if `shaft_model` ever gets its own `export`, it breaks. Keep the single entry |
+| **L12, L19, L37** | One admission bound, one gzip level, one 30 s timeout now cover a second part with unmeasured cost | Measure (4.6) before accepting; amend L37 only if a shaft row exceeds 30 s |
+| **L17** | `mem_limit: 4g` was measured on gear corpora | One N=2 sweep with a shaft in the mix, recorded in `bench/RESULTS.md`; no change unless it moves the peak |
+| **L21** | `ShaftDimensions` must be typed, frozen, every key present, no explicit `Any` | Follow the pattern; `init_typed`/`init_forbid_extra` already set globally |
+| **L26** | Regression fixture is gear-only | Do not extend `pre_v0_2.json`. Optionally add a separate small `tests/regression/shaft_v0_7.json` with its own `make` target so later spline families inherit a guard; not required for v0.7 |
+| **L41/L42** | `enabled_when` / `selectors` are `GearParams` conventions | Reuse the same vocabulary on `ShaftParams` (e.g. the shank fields dim when shank length is 0); no new grammar |
+| **L43** | Gate bar 300 s | Shaft tests add cost; measure the delta in `make verify` before Phase D closes and record it, as every prior milestone did |
+
+None of the above contradicts a logged decision outright; L02's wording and the L05 corner are the two that need a new entry before code lands.
 
 ## Sources
 
-- Tree reads at `3726242`: the 21 active debt files, `docs/tech_debt/INDEX.md`, `Makefile`, `pyproject.toml`, `.github/workflows/ci.yml`, `src/spur/{app,params,records,pool,calc,model}.py`, `src/spur/static/app.js`, `tests/{browser_session,test_browser,test_browser_pins,test_hooks,test_api,test_trochoid,test_calc,test_model,test_relations}.py`, `tests/regression/*`, `bench/{trochoid,trochoid_part}.py`, `bench/RESULTS.md`, `docs/architecture/{overview,web-ui,decision_log}.md`, `.planning/milestones/v0.5-phases/{21..24}-*/*-REVIEW*.md` (HIGH).
-- Run today: hook-pin reproduction under `PYTEST_ARGS`; `TestClient` 422 shapes for `root_shape=`, `root_shape=bogus`, `recess_sides=bogus`, `teeth=abc`; process-group listing of a real `uvicorn --fd` server by `ps` (HIGH).
-- CI: `gh run view` for runs 38347283201 and 38680454993 (failure text, `Image: ubuntu-24.04` line) (HIGH).
-- [CPython gh-109629](https://github.com/python/cpython/issues/109629) - reentrancy fix in `ResourceTracker`, backported to 3.12 and 3.11 (MEDIUM, page summarised by a small model; confirm the exact 3.12.x release before quoting it in a decision).
-- [actions/runner-images#14748](https://github.com/actions/runner-images/issues/14748) - Ubuntu 26.04 migration, 2026-10-19 to 2026-11-19, setup-python patch-version limit (MEDIUM, summarised).
-- [CPython `resource_tracker.py` on main](https://git.adamlamers.com/PublicArchive/cpython/src/branch/main/Lib/multiprocessing/resource_tracker.py) - `_reentrant_call_error` and the lock recursion check (MEDIUM, search-result description).
+- Code read at `2772480`: `src/spur/{params,app,cli,pool,model,records,build_errors,calc}.py`, `src/spur/static/{app.js,index.html}`, `pyproject.toml` (import-linter contracts `:166-222`), `tests/test_api.py`, `tests/test_cli.py`, `tests/test_browser.py`, `tests/regression/*`, `docker/smoke.py` (HIGH).
+- `docs/architecture/{overview,http-api,web-ui}.md`, `docs/architecture/decision_log.md` L02-L06, L12, L17-L19, L21, L26, L37, L40-L45, `docs/CODING_VALUES.md`, `AGENTS.md`, `.planning/PROJECT.md` "Current Milestone v0.7", `.planning/codebase/STRUCTURE.md` (HIGH).
+- Probe run 2026-10-23 in the repo venv (FastAPI `Annotated[Model, Query()]`): extra query key ignored; `model_fields_set` reports defaults as set; `/api/model.{fmt}` and `/api/shaft/model.{fmt}` coexist; `hash`/`==` differ across two frozen pydantic classes (HIGH, reproducible; script in the session scratchpad only).
+- DIN 5480 content deliberately not researched here: see STACK/FEATURES/PITFALLS.
 
-## Gaps
-
-- No local reproduction of F1 or of the tracker flake; both rest on captured logs.
-- `make test-image` was not run (no image built); F5 is from imports and mounts.
-- Ubuntu 26 behaviour (apt set, SwiftShader frame) is unread by design; the date gate is the point.
-- Number-box garbage in a link (`#teeth=abc`) is from HTML spec behaviour, not a browser run.
-- Linux process-group listing is unmeasured until a CI log prints it.
+---
+*Architecture research for: spur v0.7 Splined Shaft (second part type)*
+*Researched: 2026-10-23*
