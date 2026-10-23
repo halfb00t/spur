@@ -43,6 +43,15 @@ peels to `792b45c` (`git rev-parse v0.6^{commit}`; `git ls-remote --tags origin`
   - The gear schema is produced from a temporary `git worktree` of `v0.6` under the same venv.
   - A committed snapshot was rejected: it is a second source of truth that someone could
     regenerate by mistake.
+  - **Clarified at plan-phase (2026-10-23, human's choice):** the v0.6 tree is materialised
+    with `git archive v0.6 src` extracted into a `TemporaryDirectory`, not `git worktree add`.
+    Research reproduced `git worktree add` run from the pre-commit hook producing an empty
+    commit, because git exports `GIT_INDEX_FILE` to hooks; a killed run also leaves
+    `.git/worktrees/<id>` behind. `git archive` is read-only, leaves no repo state and cost
+    the same (0.66 s). D-02's intent, the baseline read from the tag at run time with nothing
+    committed, is unchanged.
+  - **Watched paths (human's choice):** only `tests/regression/` and `.github/workflows/ci.yml`,
+    plus the `/api/schema` bytes. `requirements.txt` is not watched by this check.
 - **D-03:** The schema comparison is on raw HTTP response bytes. Fetch `GET /api/schema`
   through FastAPI's TestClient on both trees and compare bytes, not dicts. This catches
   serialization and ordering drift in the route layer as well.
