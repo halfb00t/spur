@@ -6828,6 +6828,63 @@ For comparison, 30-RESEARCH read the prototype at 0.66 s wall and `make verify.f
 
 D-04 decision: the check sits in `verify.static`, so `make verify` and `make verify.fast` both run it, because its cost is that measured share of L36's 30 s budget; it is also the only place the pre-commit hook can run it, so every commit of the phase proves the gear unchanged.
 
+### The gate delta (30-05)
+
+Source logs: `30-05-verify.log` (the whole `/usr/bin/time -p make verify` output) and `30-05-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/30-scope-seam-and-gear-safety-guard/investigation/`. Every figure below is copied from them, not re-rounded. One reading.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `fc00d77` (the tree is the final Phase 30 code; only `.planning/` files and the two logs were uncommitted) |
+| UTC start -> end | `2026-10-23T16:40:02Z` -> `2026-10-23T16:43:56Z` |
+| 1-minute load before -> after | `16.75` -> `16.06` (`sysctl -n vm.loadavg` printed `{ 16.75 17.43 16.08 }` and `{ 16.06 19.17 17.41 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 1369 passed in 233.18s (0:03:53) =======================` |
+| `/usr/bin/time -p` | `real 234.48`, `user 671.57`, `sys 537.41` |
+| Coverage TOTAL line | `TOTAL                         1363     22    386     13  98.00%` (`Required test coverage of 96.0% reached. Total coverage: 98.00%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+The five placeholders in the coverage table, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`): each is 0 statements and 100.00 %, so they add nothing to the total.
+
+```
+src/spur/din5480.py              0      0      0      0 100.00%
+src/spur/din5480_tables.py       0      0      0      0 100.00%
+src/spur/shaft_calc.py           0      0      0      0 100.00%
+src/spur/shaft_model.py          0      0      0      0 100.00%
+src/spur/shaft_params.py         0      0      0      0 100.00%
+```
+
+`src/spur/parts.py` (the one assignment `Part = GearParams`) reads `2      0      0      0 100.00%`.
+
+#### Against v0.6's close
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Baseline of record: v0.6 close | `1348 passed` | `236.23 s` | not recorded | not recorded | `.planning/PROJECT.md` |
+| Same-host cross-check: `HEAD 760ac4e`, v0.6-equivalent code, 2026-10-23 | `1348 passed` | `239.51 s` | `4:00.37` = `240.37 s` | 11 to 37, other sessions active | 30-RESEARCH |
+| This reading: Phase 30 close, `HEAD fc00d77` | `1369 passed` | `233.18 s` | `234.48 s` | 16.75 -> 16.06 | `30-05-verify.log` |
+
+| This reading minus | pytest `passed in` | `real` |
+|---|---|---|
+| baseline of record (`236.23 s`) | `-3.05 s` (`-1.29 %`) | `-1.75 s` (`-0.74 %`), not like for like: the baseline has only the pytest figure |
+| cross-check (`239.51 s` / `240.37 s`) | `-6.33 s` (`-2.64 %`) | `-5.89 s` (`-2.45 %`) |
+
+The delta is read against the recorded 236.23 s, per 30-RESEARCH's recommendation, with the same-host 239.51 s beside it; the like-for-like column is `passed in` against `passed in`. Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 18.9 s of 236.23 s: all four differences are a fraction of that, so the difference sits inside the spread, and in the faster direction.
+
+What the phase added to the gate: 21 tests (`1369 passed` against `1348 passed`: 14 from 30-01, 6 in `tests/test_seam.py`, 1 in `tests/test_api.py`), `make gear.unchanged` (priced at 0.46 s in `### The check, priced (30-01)`) and `make lint-imports` with five more contracts. The reading is under L43's 300 s bar by 65.52 s. This is one reading at a 1-minute load of 16 and above on a host that was not idle, so it supports "no measurable gate cost", and a precise delta, or a claim that the phase made the gate faster, is not claimed: the faster sign is inside the noise of the two baselines, which themselves differ by 3.28 s at different loads. REQ-gate-cost-recorded stays open and closes at Phase 34's milestone reading.
+
+### Phase close checks (30-05)
+
+Source: `30-05-close-checks.log`, run on `HEAD fc00d77` with the final Phase 30 tree; every check read `PASS` and the word `FAIL` appears nowhere in the log.
+
+1. `make gear.unchanged`: exit 0, `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` (D-06).
+2. `git diff --exit-code v0.6 -- requirements.txt tests/regression/ .github/workflows/ci.yml README.md src/spur/calc.py src/spur/params.py`: exit 0, empty (D-11, D-19).
+3. D-20 order: `D-20 order: L46 5d61f8e3d82c2751164dfa22cf5e3381b35415b1 precedes 1 placeholder commit(s)`; the list of placeholder-adding commits was non-empty and the L46 commit is a strict ancestor of it. The five placeholders were added in one commit.
+4. No shaft behaviour: no `class Shaft...` under `src` and no `/api/shaft` route decorator under `src`, both `git grep` exits 1 (no match) (D-10, D-12).
+5. The five placeholders are one docstring each: `docstring-only: 5 of 5 []`.
+6. D-10: `src/spur/model.py`'s diff since v0.6 adds 0 lines that mention isinstance or shaft.
+7. `make lint-imports`: `Contracts: 10 kept, 0 broken.`; `pytest tests/test_seam.py tests/test_gear_unchanged.py`: `19 passed in 2.25s`.
+
 ### Seen red once (Phase 30)
 
 Each deliberate break was run red once and reverted, or was the old recipe the fix replaced. The first failure line is copied from the kept log named in the row (every log is under `.planning/phases/30-scope-seam-and-gear-safety-guard/investigation/`); later plans append rows.
