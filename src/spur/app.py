@@ -36,6 +36,7 @@ from . import __version__, int_env
 from .build_errors import BuildError, BuildTimeout
 from .calc import DerivedDimensions, derive
 from .params import GearParams
+from .parts import Part
 from .pool import BuildPool
 from .records import build_failed, build_started, configure, export_served, queue_refused
 
@@ -114,7 +115,7 @@ _in_flight_builds = 0
 # model.Format/model.Quality) because this module has no static import path to model.py
 # to name them with (D-02); the endpoint's own Literal types are still checked at the
 # call site.
-BuildBackend = Callable[[GearParams, str, str], Awaitable[bytes]]
+BuildBackend = Callable[[Part, str, str], Awaitable[bytes]]
 
 
 @asynccontextmanager
@@ -260,7 +261,7 @@ def _gzip(data: bytes) -> bytes:
 
 
 @contextmanager
-def _build_slot(request_id: str, p: GearParams, fmt: str, quality: str) -> Iterator[None]:
+def _build_slot(request_id: str, p: Part, fmt: str, quality: str) -> Iterator[None]:
     """Admission control: refuse work we cannot start soon rather than queue it.
 
     A slot now covers a build *and* the first gzip encode of its result (quick task

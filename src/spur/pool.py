@@ -29,7 +29,7 @@ from concurrent.futures.process import BrokenProcessPool
 from typing import ParamSpec, cast
 
 from .build_errors import BuildTimeout
-from .params import GearParams
+from .parts import Part
 from .records import worker_replaced
 
 _SPAWN = mp.get_context("spawn")  # portable, and with D-02 the parent has no OCP to fork
@@ -50,7 +50,7 @@ def _warm() -> None:
     importlib.import_module("spur.model")
 
 
-def build_export(p: GearParams, fmt: str, quality: str) -> bytes:
+def build_export(p: Part, fmt: str, quality: str) -> bytes:
     """The function submitted across the process boundary (D-05).
 
     Deliberately a dynamic import, not `from .model import export` (even nested inside
@@ -97,10 +97,10 @@ class BuildPool:
             for _ in range(workers)
         ]
 
-    def executor_for(self, p: GearParams) -> ProcessPoolExecutor:
+    def executor_for(self, p: Part) -> ProcessPoolExecutor:
         return self._executors[hash(p) % self.workers]  # D-07: affinity, not load-balance
 
-    def recreate_for(self, p: GearParams, executor: ProcessPoolExecutor, cause: str) -> None:
+    def recreate_for(self, p: Part, executor: ProcessPoolExecutor, cause: str) -> None:
         """Discard a broken/wedged single-worker executor and replace it (D-10, D-12).
 
         `executor` is the one the *caller's own* failing request actually used --
@@ -162,7 +162,7 @@ class BuildPool:
         worker_replaced(slot=i, cause=cause)
 
     async def _run_with_timeout(
-        self, p: GearParams, func: Callable[P, bytes], *args: P.args, **kwargs: P.kwargs,
+        self, p: Part, func: Callable[P, bytes], *args: P.args, **kwargs: P.kwargs,
     ) -> bytes:
         """Route `func(*args, **kwargs)` to `p`'s worker, enforcing the per-build
         timeout (D-10) and replacing the worker if it wedges or dies (D-12).
@@ -249,7 +249,7 @@ class BuildPool:
             self.recreate_for(p, executor, "broken_pool")
             raise
 
-    async def export(self, p: GearParams, fmt: str, quality: str) -> bytes:
+    async def export(self, p: Part, fmt: str, quality: str) -> bytes:
         return await self._run_with_timeout(p, build_export, p, fmt, quality)
 
     def shutdown(self) -> None:

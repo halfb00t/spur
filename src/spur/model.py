@@ -49,6 +49,7 @@ from .calc import (
     tip_chamfer_effective,
 )
 from .params import GearParams
+from .parts import Part
 
 Format = Literal["stl", "step"]
 Quality = Literal["preview", "fine"]
@@ -801,7 +802,7 @@ def _build_checked(p: GearParams) -> cq.Solid:
 _build_cached = lru_cache(maxsize=int_env("SPUR_SOLID_CACHE", 4))(_build_checked)
 
 
-def build(p: GearParams) -> cq.Solid:
+def build(p: Part) -> cq.Solid:
     with _LOCK:
         return _build_cached(p)
 
@@ -830,7 +831,7 @@ def _write_export(shape: cq.Solid, p: GearParams, fmt: Format, quality: Quality)
         return path.read_bytes()
 
 
-def export(p: GearParams, fmt: Format, quality: Quality = "fine") -> bytes:
+def export(p: Part, fmt: Format, quality: Quality = "fine") -> bytes:
     with _LOCK:
         data = _write_export(_build_cached(p), p, fmt, quality)
         _release_arenas()
