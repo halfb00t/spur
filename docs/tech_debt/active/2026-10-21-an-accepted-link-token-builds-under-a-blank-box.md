@@ -22,6 +22,13 @@ page built the default part, which at least matched the blank box. L44's paragra
 built. The address bar names the token and the dimensions table is the server's; the form gives no sign of which field
 carries the hidden value, and Reset is the only visible cue.
 
+The token list above is not the whole class (v0.6 milestone audit, 2026-10-23). `/api/info` (FastAPI TestClient, on
+`3adc939`) also answers 200 for `teeth=+22`, `mate_teeth=+22`, `mate_teeth=%2022`, `pressure_angle=20.`, `module=+2`
+and `module=2.`. The `bench/RESULTS.md:6637` table probed only `teeth` and `face_width`; its `teeth=+5` row is a 422
+because 5 is out of range, not because `+` is refused. That the number box blanks these tokens is inferred from the HTML
+rule for a number input's value (no leading `+`, no trailing `.`, no leading space), not observed in Chromium; a fix
+should probe every number field and `mate_teeth` in the browser first.
+
 The review's suggested fix shape (page-written wording beside the server's messages, for example `<field title> was opened
 as "<token>" and is built as the server reads it.` after a 200 from `/api/info`) was not taken: L44 and success
 criterion 1 kept every message in the server's words (L02), and showing the token inside the control was rejected as D-01.
