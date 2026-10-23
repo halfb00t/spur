@@ -146,15 +146,46 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Filled by the roadmap (2026-10-23). Phase numbers continue from v0.6's Phase 29. Phase 34 is
+blocked until the human supplies the DIN 5480 copy's local path, and Phase 31 needs anchor rows
+from the same copy (ROADMAP.md, Phases 31 and 34). `REQ-gate-cost-recorded` is cross-cutting:
+every phase records its `make verify` delta in its own criteria, and the requirement closes at
+Phase 34, where the milestone close reading is taken. `REQ-shaft-routes-separate` is mapped to
+Phase 30, where its import contracts and route-prefix pin are put in force; Phase 33 serves the
+shaft routes under that rule and cites it, it does not re-map it.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| REQ-scope-decision-logged | Phase 30 | Pending |
+| REQ-gear-unchanged-proof | Phase 30 | Pending |
+| REQ-shaft-routes-separate | Phase 30 | Pending |
+| REQ-shaft-params | Phase 31 | Pending |
+| REQ-profile-shift-from-dB | Phase 31 | Pending |
+| REQ-shaft-basic-dims | Phase 31 | Pending |
+| REQ-form-diameter-honest | Phase 31 | Pending |
+| REQ-mre-nominal | Phase 31 | Pending |
+| REQ-designation-codec | Phase 31 | Pending |
+| REQ-shaft-solid | Phase 32 | Pending |
+| REQ-shaft-build-measured | Phase 32 | Pending |
+| REQ-shaft-api | Phase 33 | Pending |
+| REQ-shaft-cli | Phase 33 | Pending |
+| REQ-shaft-web | Phase 33 | Pending |
+| REQ-designation-input | Phase 33 | Pending |
+| REQ-shaft-parity | Phase 33 | Pending |
+| REQ-wr02-fixed | Phase 33 | Pending |
+| REQ-tables-private-file | Phase 34 | Pending |
+| REQ-tables-transcribed-twice | Phase 34 | Pending |
+| REQ-fit-tolerance-window | Phase 34 | Pending |
+| REQ-mre-limits | Phase 34 | Pending |
+| REQ-solid-max-material | Phase 34 | Pending |
+| REQ-off-table-builds | Phase 34 | Pending |
+| REQ-gate-cost-recorded | Phase 34 | Pending |
 
 **Coverage:**
 - v0.7 requirements: 24 total
-- Mapped to phases: 0 (roadmap pending)
+- Mapped to phases: 24 (Phase 30: 3, Phase 31: 6, Phase 32: 2, Phase 33: 6, Phase 34: 7)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-10-23*
-*Last updated: 2026-10-23 after research and scoping*
+*Last updated: 2026-10-23 after roadmap creation*
