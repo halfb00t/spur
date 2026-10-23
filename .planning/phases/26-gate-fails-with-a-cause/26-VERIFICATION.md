@@ -1,6 +1,6 @@
 ---
 phase: 26-gate-fails-with-a-cause
-verified: 2026-10-21T08:30:00Z
+verified: 2026-10-23T01:37:17Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -24,12 +24,12 @@ covered_files:
   - "tests/test_browser.py"
   - "tests/test_hooks.py"
   - "tests/test_pool.py"
-covered_digest: "v3:sha256:51441535f6fc88641759aed4b96e55894fd5fe5ab902506b2bd162401dec8cec"
+covered_digest: "v3:sha256:760b87a650355ebe683c9170d1cab5856ad6d2d44a62be873042b7f65b46a603"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: passed
-  previous_score: 4/5 must-haves verified
+  previous_score: 5/5 must-haves verified
   gaps_closed: []
   gaps_remaining: []
   regressions: []
@@ -38,17 +38,23 @@ re_verification:
 # Phase 26: Gate Fails With a Cause Verification Report
 
 **Phase Goal:** `make verify` and `main` CI stop failing for reasons that are not the product, and the failures and stalls that remain leave their cause in the log: false reds fixed from reproductions (or honestly re-deferred), a hang leaves its test id and a stack dump, the image recipe tests what it claims, the Ubuntu 26 runner is read before the migration reaches the repo.
-**Verified:** 2026-10-21
+**Verified:** 2026-10-23T01:37:17Z, at HEAD `43fbf721ecb9b30049d3bc3a6953592257c0fa7f` (branch `gsd/v0.6-close-gaps`). `43fbf72` sits on `a620399` and changes only `.planning/phases/28-refuse-the-bad-link/28-UAT.md`; the code is `a620399`'s.
 **Status:** passed
-**Re-verification:** Yes. The earlier report went stale when Phase 27 (1434a47, PR #44) changed `bench/RESULTS.md` and `tests/test_browser.py`. I re-checked every claim against HEAD and did not copy the old report.
+**Re-verification:** Yes. The previous report (commit `7cd616c`, PR #45, status passed 5/5) went stale when Phase 28 (`fc7338a`, PR #46) and Phase 29 (`a620399`, PR #47) changed `Makefile`, `bench/RESULTS.md` and `tests/test_browser.py`. I re-checked every truth against HEAD and did not copy the old verdicts.
 
 ## What changed since the previous report
 
-1. The one open human item is closed. The previous report held the twin-selectors truth open because no `main` push run of the fix existed. Three `main` push runs now exist, and all are green at the browser test (see Truth 2).
-2. The `bench/RESULTS.md` change is additive only. Phase 27 appended a `#### The D-05 post-merge read (2026-10-20)` section, two dated `Correction` paragraphs, and a `## Ledger tests and harness (Phase 27)` section. It rewrote nothing Phase 26 recorded. The two corrections rename the members of the browser test's server process group. That is Phase 25/27 content and no Phase 26 claim cites it.
-3. The `tests/test_browser.py` change touches only the oracle test and a new `fixture_hash` test, plus one import. The twin-selectors step is byte-identical to what the old report cited.
-4. The twin carrying item `2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md` has moved from `active/` to `resolved/` (`Status: resolved`).
-5. The gate size grew from 1321 to 1348 tests. The orchestrator's `make verify` on this HEAD read `1348 passed in 196.80s`, exit 0. I cite it and did not re-run it.
+`git diff --stat 7cd616c..HEAD` over the covered files: `Makefile` 3 lines, `bench/RESULTS.md` +202/-0, `tests/test_browser.py` 401 lines. `pyproject.toml`, `tests/test_hooks.py`, `tests/test_pool.py` and every 26 PLAN/SUMMARY are unchanged.
+
+| Stale file | Commit | What changed | Touches a Phase 26 claim? |
+| ---------- | ------ | ------------ | ------------------------- |
+| `Makefile` | `fc7338a` (Phase 28, 54f3b53, 26 IN-04) | The comment over the `test-image` ignores now cites `bench/RESULTS.md` "make test-image (26-06)" in place of the phase-scoped `investigation/26-06-redset.md` path. Comment only. | No. The `test` recipe (`-v --durations=25`) and the six named `--ignore`s in `test-image` are unchanged. |
+| `bench/RESULTS.md` | `fc7338a`, `a620399` | Append only: `## Refuse the bad link (Phase 28)` and `## Ubuntu 26 final reading (Phase 29)` added after line 6606. No line removed (`git diff --numstat v0.5` reads `878 0`). | No. The Phase 26 sections (26-01 to 26-07, the D-05 post-merge read) are untouched. |
+| `tests/test_browser.py` | `fc7338a` (Phase 28) | New steps for refused links (`form build error`, bad-link steps), a `_stl_requests` helper, `_follow_link` callers now use the page's sent query. In the twin-selectors step, only two comments changed: `app.js:262-272` became `app.js update()` and `app.js:643-644` became a description of the bootstrap (26 IN-03). | Twin step: comments only, no executable line. `DEBOUNCE_SETTLE_MS = 1_000` (line 77), the STL-request baseline wait (lines 1640-1647), the second settle before the zero-request count (line 1689) and `_follow_link`'s `timeout=BUILD_WAIT_MS` (lines 241-243) are intact. |
+
+Also changed, not covered: `26-REVIEW-DISPOSITION.md` moved IN-01..IN-05 from `open` to fixed/skipped (Phase 28 triage); the hang item gained a pointer to `bench/RESULTS.md` "Hang evidence (26-05)"; the Ubuntu item gained the Phase 29 close paragraph and stays `active`.
+
+New evidence for Truth 2: two more `main` push runs are green at the browser test, `39812587970` (head `7cd616c`, `1348 passed in 447.26s`) and `39883204624` (head `a620399`, `1348 passed in 768.55s`). That makes five consecutive green `main` push runs of the fix. `gh run list` shows no separate `main` push run for `fc7338a`.
 
 ## Goal Achievement
 
@@ -56,11 +62,11 @@ re_verification:
 
 | #   | Truth | Status | Evidence |
 | --- | ----- | ------ | -------- |
-| 1 | SC1: Recipes tell the truth. The hook pin passes with a caller's `PYTEST_ARGS`; `make test-image` red set recorded, then passes with every skip named; both debt items retired | VERIFIED | `git diff a4d55a6 HEAD --stat -- Makefile pyproject.toml tests/test_hooks.py tests/test_pool.py` is empty, so these files are unchanged since the old verification. `tests/test_hooks.py:27` has `_MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL", "PYTEST_ARGS")`, and the two caller-form tests are at lines 157-173. I ran `PYTEST_ARGS=--ignore=tests/test_browser.py .venv/bin/python -m pytest tests/test_hooks.py --no-cov -n0 -q`: `9 passed in 0.54s`. The kept logs `26-01-tests-red.log` and `26-06-first*.log` are in the phase directory. Both items are under `docs/tech_debt/resolved/`: `2026-10-10-hook-pin-reads-the-callers-pytest-args.md` and `2026-10-10-test-image-collects-tests-that-read-host-files.md`. I did not re-run the 15-minute `make test-image`. I relied on the kept `26-06-after.log` (`1201 passed`, no skips), as the old report did. |
-| 2 | SC2: The "twin selectors" red on `main` is gone and its mechanism proved; baseline after the link's own STL request plus the debounce; CX-05 and IN-04a folded in; debt retired | VERIFIED | Code at HEAD (`tests/test_browser.py`): `DEBOUNCE_SETTLE_MS = 1_000` (line 75). The twin step waits for `/api/model.stl` with `expect_request(..., timeout=BUILD_WAIT_MS)` and then settles (lines 1559-1620). A second settle precedes the zero-request assertion (line 1658, the CX-05 fix). `_follow_link` is at line 211 and its wait carries `timeout=BUILD_WAIT_MS` (line 221, the IN-04a fix). The step's comment records the departure from the SC wording: the `/api/info` response is the lever, not the STL route. The mechanism proof (three-run arms and the CX-05 control) is in `bench/RESULTS.md`, `### Twin selectors (26-03)`, and that section is unchanged since the last report. **The post-merge `main` read now exists.** I read the saved logs `26-postmerge-run-38858407163-test.log` (head `1981d93`, `1321 passed in 469.99s`) and `26-postmerge-run-39409577060-test.log` (head `a4d55a6`, `1322 passed in 580.19s`). Each holds the line `PASSED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` once, and neither prints `twin selectors` (a failure would). `gh run list --branch main --workflow ci` shows both runs, and the next push to `main`, run 39563588816 (head `1434a47`), as `success`. I fetched that third job log: the same PASSED line once, `1348 passed in 714.58s`. The earlier reds were runs 38347283201 and 38680454993, both `main` push runs. Strength: the evidence is consistent with the fix and is not statistically conclusive. bench/RESULTS.md says so itself: two greens at the old 2-in-8 red rate happen by luck about 56 % of the time, and three greens about 42 %. The goal clause is "no longer reds on `main`". Three consecutive `main` push runs of the fix are green on the place and event that failed, and the mechanism is proved on the real app. A later red at the step re-opens the twin item, and the resolved item says so. I count this as verified, and the residual luck-risk is disclosed. The carrying item is in `resolved/`. |
-| 3 | SC3: The `resource_tracker` flake is located and fixed from a reproduction, in `tests/test_pool.py` only | VERIFIED | `git diff v0.5 --stat -- src/spur/pool.py` is empty. `tests/test_pool.py` is unchanged since the old report. I ran `pytest tests/test_pool.py -k forced_gc --no-cov -n0 -q`: `1 passed, 20 deselected`. The old report's red-without-fix result on a scratch copy (`check_alive calls: 94`) is a recorded reading. I did not repeat it, and nothing it depends on has changed. The "consistent, not conclusive" wording (natural rate did not reproduce) stands. The item is in `resolved/`. |
-| 4 | SC4: A stalled test names itself (`-v` test id plus dump-only `faulthandler_timeout`), set from a recorded `--durations` reading, cost measured against 300 s, hang item stays active with a runbook | VERIFIED | `Makefile:185` is `... --cov --cov-report=term -v --durations=25 $(PYTEST_ARGS)`. `pyproject.toml:133` is `faulthandler_timeout = 170`, with the sizing comment citing 83.55 s from CI's first `--durations` reading (2 x 83.55 = 167.1, rounded up to 170). Both files are unchanged since the old report. The orchestrator's gate read `196.80s` on this HEAD, under the 300 s bar. The hang item `2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md` is `Status: active`. The stall proof is in kept log `26-05-stall.log`. |
-| 5 | SC5: Ubuntu 26 pre-classified from a throwaway `runs-on`-only PR, whole logs read, nothing merged but the record, debt item stays active | VERIFIED | `gh pr view 40` reads `state: CLOSED`, `mergedAt: null`. `git diff v0.5 --stat -- .github` is empty. The Ubuntu item `2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md` is `Status: active`. Phase 27's note that its own `ubuntu-latest` run was still on 24.04 on 2026-10-20 does not contradict the Phase 26 reading. It adds to it, and `REQ-ubuntu26-classified-on-migration` stays Pending in Phase 29. |
+| 1 | SC1: Recipes tell the truth. The hook pin passes with a caller's `PYTEST_ARGS`; `make test-image` red set recorded, then passes with every skip named; both debt items retired | VERIFIED | `tests/test_hooks.py:27` `_MAKE_VARIABLES = ("MAKEFLAGS", "MFLAGS", "MAKELEVEL", "PYTEST_ARGS")`, file unchanged since `7cd616c`. Ran `PYTEST_ARGS=--ignore=tests/test_browser.py .venv/bin/python -m pytest tests/test_hooks.py --no-cov -n0 -q -p no:cacheprovider`: `9 passed in 0.73s`. `Makefile:251-261` `test-image` keeps six named whole-file `--ignore`s; only the comment above it changed. Both items in `docs/tech_debt/resolved/` (`2026-10-10-hook-pin-reads-the-callers-pytest-args.md`, `2026-10-10-test-image-collects-tests-that-read-host-files.md`, `Status: resolved`). Not re-run: the 15-minute `make test-image`; relied on the kept `26-06-after.log`, as both earlier reports did. |
+| 2 | SC2: The "twin selectors" red on `main` is gone and its mechanism proved; baseline after the link's own STL request plus the debounce; CX-05 and IN-04a folded in; debt retired | VERIFIED | Code at HEAD: the twin step (`tests/test_browser.py:1589` onwards) waits on `expect_request("/api/model.stl", timeout=BUILD_WAIT_MS)` around `goto`, then `wait_for_timeout(DEBOUNCE_SETTLE_MS)` (line 1647); the second settle precedes the zero-request assertion (line 1689, CX-05); `_follow_link` waits with `timeout=BUILD_WAIT_MS` (line 242, IN-04a). Phase 28 changed only comments in this step. Mechanism record `### Twin selectors (26-03)` in `bench/RESULTS.md` unchanged. `main` reads: runs 38858407163, 39409577060, 39563588816 (from the last report) plus 39812587970 and 39883204624, all `success`; I read the last two job logs: `PASSED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` once each, no `twin selectors` failure text. Local gate: the browser test PASSED (log line 1998). Strength as before: consistent with the fix, not statistically conclusive by itself; at the old 2-in-8 red rate five greens happen by luck about 24 % of the time. The mechanism is proved on the real app. Item `2026-10-15-twin-selectors-fix-awaits-the-post-merge-main-read.md` in `resolved/`. |
+| 3 | SC3: The `resource_tracker` flake is located and fixed from a reproduction, in `tests/test_pool.py` only | VERIFIED | `tests/test_pool.py` unchanged since `7cd616c`; `src/spur/pool.py` unchanged since `v0.5` (Phase 28 touched only `calc.py` and `static/app.js` under `src/`). Ran `pytest tests/test_pool.py -k forced_gc --no-cov -n0 -q -p no:cacheprovider`: `1 passed, 20 deselected in 10.90s`. Recorded red-without-fix reading not repeated (nothing it depends on changed). Item `2026-10-06-resource-tracker-flake-fails-the-gate.md` in `resolved/`. |
+| 4 | SC4: A stalled test names itself (`-v` test id plus dump-only `faulthandler_timeout`), set from a recorded `--durations` reading, cost measured against 300 s, hang item stays active with a runbook | VERIFIED | `Makefile:185` `$(PY) -m pytest -n $(PYTEST_WORKERS) --cov --cov-report=term -v --durations=25 $(PYTEST_ARGS)`; `pyproject.toml:133` `faulthandler_timeout = 170`; both executable lines unchanged. My gate run: `1348 passed in 236.23s`, under the 300 s bar (L43). Hang item `docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md` is `Status: active`; Phase 28 only re-pointed its evidence paths (archived v0.5 path, `bench/RESULTS.md` "Hang evidence (26-05)"), the runbook stands. Kept `26-05-stall.log` still in the phase directory. |
+| 5 | SC5: Ubuntu 26 pre-classified from a throwaway `runs-on`-only PR, whole logs read, nothing merged but the record, debt item stays active | VERIFIED | PR #40 closed unmerged (prior report's `gh pr view 40`, unchanged fact). `### Ubuntu 26.04, pre-classified (26-02)` in `bench/RESULTS.md` unchanged. Ubuntu item `docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md` stays `Status: active`; Phase 29 appended its close paragraph (30 of 30 jobs still on `Image: ubuntu-24.04`, trigger restated), which builds on the 26-02 reading and does not contradict it. `REQ-ubuntu26-classified-on-migration` moved to Future Requirements at Phase 29 close (`.planning/REQUIREMENTS.md:176,204`), which is not this phase's requirement. The `a620399` main run still read `Image: ubuntu-24.04`. |
 
 **Score:** 5/5 truths verified (0 present-but-behavior-unverified)
 
@@ -68,22 +74,22 @@ re_verification:
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `tests/test_hooks.py` | strips `PYTEST_ARGS`; two caller-form tests | VERIFIED | Unchanged since the last report. 9 passed under an env `PYTEST_ARGS`. |
-| `tests/test_browser.py` | twin baseline after the STL request, settle, `BUILD_WAIT_MS` | VERIFIED | Twin step intact at HEAD. The oracle and `fixture_hash` tests added by Phase 27 pass: `pytest -k "oracle or fixture_link"` gives `2 passed`. |
-| `tests/test_pool.py` | autouse GC fixture, `del manager` x3, forced-GC gate test | VERIFIED | Unchanged. The forced-GC test passes. |
-| `Makefile` | `-v --durations=25`; `test-image` recipe with named ignores | VERIFIED | Unchanged. |
+| `tests/test_hooks.py` | strips `PYTEST_ARGS`; two caller-form tests | VERIFIED | Unchanged. 9 passed under an env `PYTEST_ARGS`. |
+| `tests/test_browser.py` | twin baseline after the STL request, settle, `BUILD_WAIT_MS` | VERIFIED | Twin step executable lines unchanged by Phase 28; browser test passes in the gate. |
+| `tests/test_pool.py` | autouse GC fixture, `del manager` x3, forced-GC gate test | VERIFIED | Unchanged. Forced-GC test passes. |
+| `Makefile` | `-v --durations=25`; `test-image` recipe with named ignores | VERIFIED | Recipes unchanged; one comment re-pointed to `bench/RESULTS.md`. |
 | `pyproject.toml` | `faulthandler_timeout = 170` | VERIFIED | Unchanged. |
-| `bench/RESULTS.md` | Phase 26 records for 26-01 to 26-07 | VERIFIED | The Phase 26 sections are intact. Phase 27 appended after them and the post-merge section closes the twin read. |
-| `docs/tech_debt/` | hook, test-image, tracker and twin items resolved; hang and Ubuntu items active | VERIFIED | All four are in `resolved/` and both stay in `active/`. |
+| `bench/RESULTS.md` | Phase 26 records for 26-01 to 26-07 | VERIFIED | Append-only since `v0.5` (`878 0`); Phase 26 sections intact. |
+| `docs/tech_debt/` | hook, test-image, tracker and twin items resolved; hang and Ubuntu items active | VERIFIED | Four in `resolved/`, two in `active/`. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
-| `tests/test_hooks.py` pins | `Makefile` recipes | dry-run text comparison | WIRED | 9 passed under a caller's `PYTEST_ARGS`. |
+| `tests/test_hooks.py` pins | `Makefile` recipes | dry-run text comparison | WIRED | 9 passed; recipes unchanged, only a comment moved. |
 | forced-GC test | `tests/test_pool.py` producer tests | child `pytest.main` | WIRED | Passes at HEAD. |
-| `faulthandler_timeout` | `-v` ids and `--durations` | ini plus recipe | WIRED | Both strings present in the files. |
-| twin step baseline | the page's own STL request | `expect_request` on `/api/model.stl`, then `DEBOUNCE_SETTLE_MS` | WIRED | Lines 1605-1620 of `tests/test_browser.py`. |
+| `faulthandler_timeout` | `-v` ids and `--durations` | ini plus recipe | WIRED | Both present; the gate log prints per-test `-v` lines. |
+| twin step baseline | the page's own STL request | `expect_request` on `/api/model.stl`, then `DEBOUNCE_SETTLE_MS` | WIRED | `tests/test_browser.py:1640-1647`. |
 
 ### Data-Flow Trace (Level 4)
 
@@ -93,11 +99,10 @@ Not applicable. The phase changes gate recipes, tests and records and renders no
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Hook pin under env `PYTEST_ARGS` | `PYTEST_ARGS=--ignore=tests/test_browser.py .venv/bin/python -m pytest tests/test_hooks.py --no-cov -n0 -q` | 9 passed | PASS |
-| Forced-GC test | `pytest tests/test_pool.py -k forced_gc --no-cov -n0 -q` | 1 passed | PASS |
-| `test_browser.py` still collects and the new oracle tests pass | `pytest tests/test_browser.py -k "oracle or fixture_link" --no-cov -n0 -q` | 2 passed | PASS |
-| `main` CI reads the browser test green | `gh run view 39563588816 --log --job {test}` | PASSED line x1, `1348 passed in 714.58s` | PASS |
-| Full gate | orchestrator-run `make verify` | exit 0, `1348 passed in 196.80s` | Relied on, not re-run |
+| Hook pin under env `PYTEST_ARGS` | `PYTEST_ARGS=--ignore=tests/test_browser.py .venv/bin/python -m pytest tests/test_hooks.py --no-cov -n0 -q -p no:cacheprovider` | `9 passed in 0.73s` | PASS |
+| Forced-GC test | `.venv/bin/python -m pytest tests/test_pool.py -k forced_gc --no-cov -n0 -q -p no:cacheprovider` | `1 passed, 20 deselected in 10.90s` | PASS |
+| `main` CI reads the browser test green | `gh run view --job 119942521894 --log`, `gh run view --job 120185199233 --log` | PASSED line x1 each; `1348 passed in 447.26s`, `1348 passed in 768.55s` | PASS |
+| Full gate | `make verify` (run by me, 01:32:56-01:36:52Z, no other gate running) | exit 0; ruff `All checks passed!`, mypy `Success: no issues found in 51 source files`, `Contracts: 5 kept, 0 broken.`, `======================= 1348 passed in 236.23s (0:03:56) =======================` | PASS |
 
 ### Probe Execution
 
@@ -108,29 +113,29 @@ Not applicable. The plans declare no `probe-*.sh`.
 | Requirement | Source Plan | Status | Evidence |
 | ----------- | ---------- | ------ | -------- |
 | REQ-hook-pin-ignores-caller-args | 26-01 | SATISFIED | Truth 1. |
-| REQ-twin-selectors-race-fixed | 26-03, 26-07 | SATISFIED | Truth 2. The post-merge read the old report waited on is done, on three `main` runs. |
+| REQ-twin-selectors-race-fixed | 26-03, 26-07 | SATISFIED | Truth 2. Five green `main` push runs. |
 | REQ-tracker-flake-fixed-from-repro | 26-04 | SATISFIED | Truth 3. |
 | REQ-hang-leaves-evidence | 26-05, 26-07 | SATISFIED | Truth 4. |
 | REQ-test-image-runs-what-it-claims | 26-06 | SATISFIED | Truth 1. |
 | REQ-ubuntu26-preclassified | 26-02, 26-07 | SATISFIED | Truth 5. |
 
-All six IDs appear in `.planning/REQUIREMENTS.md` (lines 39-124, `[x]`) and in its traceability table (lines 176-181, Phase 26, Complete). There are no orphans. `REQ-ubuntu26-classified-on-migration` is Pending under Phase 29, which is correct. The `[x]` on the twin requirement, which the old report called ahead of the evidence, now matches it.
+All six IDs are `[x]` in `.planning/REQUIREMENTS.md` (lines 39-124) and Complete in its traceability table (lines 181-186). No orphans.
 
 ### Anti-Patterns Found
 
-None new. Files unchanged since the last scan show the same results. In `tests/test_browser.py` I grepped the Phase 27 hunks and found no `TBD`, `FIXME`, `XXX`, `TODO` or `HACK`. The two review warnings in `26-REVIEW-DISPOSITION.md` (WR-01, WR-02) are documentation-only. WR-02's target, the twin carrying item, has since been retired.
+None. The Phase 28 hunks in `tests/test_browser.py` and `Makefile` carry no `TBD`, `FIXME` or `XXX`; the gate's unfinished-work scan (`tests/test_no_fake_done.py`) passed inside `make verify`.
 
 ### Human Verification Required
 
-None. The single item in the old report (post-merge `main` read) was performed and recorded in `bench/RESULTS.md` under `#### The D-05 post-merge read (2026-10-20)`. I confirmed it against the saved logs and `gh`.
+None.
 
 ### Gaps Summary
 
-There are no gaps. All five roadmap success criteria and all six requirement IDs hold on HEAD `1434a47`. The twin-selectors truth moved from UNCERTAIN (human) to VERIFIED, and the evidence is three green `main` push runs. That evidence is not conclusive by chance alone, and the record says so. If the step reds on a later `main` run, the resolved twin item says to re-open it.
+No gaps. All five success criteria and six requirement IDs hold at HEAD `43fbf72` (code identical to `a620399`). The three stale files were changed by Phase 28 and 29 without touching a Phase 26 claim: a re-pointed comment in `Makefile`, appended sections in `bench/RESULTS.md`, and new browser steps plus two comment edits inside the twin step in `tests/test_browser.py`. The twin-selectors evidence grew from three to five green `main` push runs; still not conclusive by chance alone, as the record says.
 
-Unverified by me: the 15-minute `make test-image` (I relied on the kept log) and the scratch-copy red run of the forced-GC test (I relied on the recorded reading, since the files are unchanged). No debt item was filed by this re-verification.
+Not re-run by me: the 15-minute `make test-image` (kept log relied on) and the scratch-copy red run of the forced-GC test (recorded reading relied on; its files are unchanged). No debt item filed.
 
 ---
 
-_Verified: 2026-10-21_
+_Verified: 2026-10-23T01:37:17Z_
 _Verifier: Claude (gsd-verifier)_
