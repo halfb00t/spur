@@ -2,10 +2,10 @@
 phase: "30"
 slug: "scope-seam-and-gear-safety-guard"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
-# audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
+# audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: true) (#2117)
+status: validated
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-10-23"
 ---
 
@@ -41,13 +41,13 @@ created: "2026-10-23"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD by planner | — | — | REQ-scope-decision-logged | — | N/A | doc + git order | `grep -n '^## L46 ' docs/architecture/decision_log.md` | ✅ | ⬜ pending |
-| TBD by planner | — | — | REQ-gear-unchanged-proof | T-30-* | never compares a tree with itself; fetch failure fails with cause | unit + target | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_gear_unchanged.py` ; `make gear.unchanged` | ❌ W0 | ⬜ pending |
-| TBD by planner | — | — | REQ-gear-unchanged-proof | — | N/A | dry-run pin | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_hooks.py` | ✅ (new test W0) | ⬜ pending |
-| TBD by planner | — | — | REQ-shaft-routes-separate | — | N/A | contract | `make lint-imports` | ✅ | ⬜ pending |
-| TBD by planner | — | — | REQ-shaft-routes-separate | — | N/A | unit | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py` | ❌ W0 | ⬜ pending |
-| TBD by planner | — | — | D-07 / D-09 | — | N/A | existing + unit | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_api.py tests/regression` | ✅ | ⬜ pending |
-| TBD by planner | — | — | REQ-gate-cost-recorded | — | N/A | measurement | `make verify` | n/a | ⬜ pending |
+| 30-02 T1 | 30-02 | 2 | REQ-scope-decision-logged | — | N/A | doc + git order | `grep -n '^## L46 ' docs/architecture/decision_log.md` | ✅ | ✅ green |
+| 30-01 T1-T3 | 30-01 | 1 | REQ-gear-unchanged-proof | T-30-* | never compares a tree with itself; fetch failure fails with cause | unit + target | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_gear_unchanged.py` ; `make gear.unchanged` | ✅ | ✅ green |
+| 30-01 T2 | 30-01 | 1 | REQ-gear-unchanged-proof | — | N/A | dry-run pin | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_hooks.py` | ✅ | ✅ green |
+| 30-03 T1 | 30-03 | 3 | REQ-shaft-routes-separate | — | N/A | contract | `make lint-imports` | ✅ | ✅ green |
+| 30-03 T1-T2 | 30-03 | 3 | REQ-shaft-routes-separate | — | N/A | unit | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py` | ✅ | ✅ green |
+| 30-04 T1-T3 | 30-04 | 4 | D-07 / D-09 | — | N/A | existing + unit | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_api.py tests/regression` | ✅ | ✅ green |
+| 30-05 T1 | 30-05 | 5 | REQ-gate-cost-recorded | — | N/A | measurement | `make verify` | n/a | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -83,3 +83,11 @@ created: "2026-10-23"
 - [ ] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
+
+## Validation Audit 2026-10-23
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
