@@ -88,8 +88,10 @@ of it the human supplies) or warned, with every existing gear link's part untouc
 - Basic dimensions — reference diameter d_B, tip and root diameters, form diameter, tooth
   thickness; each proved against the standard's dimension tables or warned with no number.
 - Measurement over pins/balls M_Re at the chosen fit, proved against an independent oracle.
-- Fit tolerances — DIN 5480-2 tolerance fields (e.g. 8f, 9g) on tooth thickness,
-  transcribed from the human's copy with clause/table citations and checked by a second read.
+- Fit tolerances — DIN 5480 (2006 series; the tolerance system is in Part 1, the size tables in
+  Part 2) tolerance fields (e.g. 8f, 9g) on tooth thickness, transcribed from the human's copy
+  with clause/table citations into a private gitignored file (the repo is public), checked by a
+  second read; the solid carries the effective maximum-material thickness.
 - Designation — `W 25x1.25x18x8f` printed and accepted as input, round-tripping.
 - Parity — the same STL/STEP download, live preview and numbers from the web UI, the API and
   the CLI.
@@ -100,8 +102,9 @@ of it the human supplies) or warned, with every existing gear link's part untouc
 - A value outside the transcribed tables, or one that cannot be computed, is a warning and
   no number (L08). No table value ships without a clause/table citation in the human's copy.
 - The tables phase is blocked until the human supplies the DIN 5480 copy's local path.
-- ASSUMPTION (settled at discuss-phase): current DIN 5480 editions (parts 1 and 2),
-  flank-centred fit only, the root form the standard's hob root.
+- The copy is the DIN 5480 2006 series (human, 2026-10-23). ASSUMPTION (settled at
+  discuss-phase): flank-centred fit only; a radial root with fillet (hob root deferred);
+  d_Ff prints `null` until the copy's construction is reproduced by an oracle.
 
 Picked 2026-10-23 as "full spline support", scoped by the human to the external shaft, DIN
 5480 first, fits from tables. ISO 4156 / ANSI B92.1, ISO 14 straight-sided and DIN 5481
