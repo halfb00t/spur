@@ -226,7 +226,7 @@ changes Phase 31's file layout, ask before choosing.
 `requirements.txt` byte-identical. **Phase close**: `make verify` result line recorded; the
 Phase 30 check green.
 **Research flag**: No — standard patterns (research Phases 1 and 4).
-**Plans**: 3/5 plans executed, run one at a time (one shared working tree; deliberate red edits)
+**Plans**: 4/5 plans executed, run one at a time (one shared working tree; deliberate red edits)
 
 Plans:
 **Wave 1**
@@ -239,7 +239,7 @@ Plans:
 - [x] 30-03-PLAN.md — the wall: five docstring-only shaft modules, `parts.py`, five import contracts, belts, existence guard, route-table pin, each seen red
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 30-04-PLAN.md — the seam: `Part` at the shared entry points, `_serve_model` pure move (own commit), part-neutral 503 text with its pin
+- [x] 30-04-PLAN.md — the seam: `Part` at the shared entry points, `_serve_model` pure move (own commit), part-neutral 503 text with its pin
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 30-05-PLAN.md — phase-close checks (D-20 order, byte-identical paths, no shaft behaviour) and the `make verify` gate delta
@@ -475,7 +475,7 @@ comes from.
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
-| 30. Scope, Seam and Gear-Safety Guard | v0.7 | 3/5 | In Progress | - |
+| 30. Scope, Seam and Gear-Safety Guard | v0.7 | 4/5 | In Progress | - |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 0/? | Not started (needs anchor rows from the DIN 5480 copy) | - |
 | 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |

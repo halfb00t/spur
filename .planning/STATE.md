@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 30
 current_phase_name: Scope, Seam and Gear-Safety Guard
 status: executing
-stopped_at: Completed 30-03-PLAN.md
-last_updated: "2026-10-23T16:22:54.134Z"
+stopped_at: Completed 30-04-PLAN.md
+last_updated: "2026-10-23T16:37:19.762Z"
 last_activity: 2026-10-23
 last_activity_desc: Phase 30 execution started
-state_head: 77f41feea0b8275fc515c7f1b0241419800f71ac
+state_head: 92fc0d4a74d722f3bb950f050b37564e5dd02fc4
 progress:
   total_phases: 5
   completed_phases: 6
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 30 (Scope, Seam and Gear-Safety Guard) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-23 — Phase 30 execution started
 
@@ -270,6 +270,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 30 P01 | 35 min | 3 tasks | 5 files |
 | Phase 30 P02 | 7 min | 2 tasks | 3 files |
 | Phase 30 P03 | 10 min | 3 tasks | 9 files |
+| Phase 30 P04 | 12 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -526,6 +527,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 30]: 30-02: shaft field names and defaults may change by logged decision until Phase 33 publishes the first shaft link; a stray part= on a gear link becomes refused then (L44-class), grep counts 0
 - [Phase 30]: 30-03: C5 forbids spur.calc to the four shaft-maths modules, direct imports only (allow_indirect_imports = true set explicitly); C2 omits the key and import-linter 2.15's default is false, so it forbids indirect imports too
 - [Phase 30]: 30-03: Phase 32 adds ignore_imports = [spur.model -> spur.shaft_model] to C3 in the same commit that first imports shaft_model in model.py; wall commit is bdf224d
+- [Phase 30]: 30-04: Part is the name at the shared entry points; _serve_model is the one serving path (move ca60285, 115 lines proved identical); the 503 text counts parts (D-07, D-08, D-09)
 
 ### Pending Todos
 
@@ -838,8 +840,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23T16:22:54.107Z
-Stopped at: Completed 30-03-PLAN.md
+Last session: 2026-10-23T16:37:19.731Z
+Stopped at: Completed 30-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
