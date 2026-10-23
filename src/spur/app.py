@@ -382,24 +382,28 @@ def info(q: Annotated[InfoQuery, Query()]) -> DerivedDimensions:
     return derive(_gear(q), mate_teeth=q.mate_teeth)
 
 
-@app.get("/api/model.{fmt}", response_class=Response,
-         responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
-async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
-                request: Request,
-                backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
+async def _serve_model(params: Part, fmt: Literal["stl", "step"],
+                       quality: Literal["preview", "fine"], request: Request,
+                       backend: BuildBackend) -> Response:
+    """The serving half of every model route: the export cache, the admission slot, the
+    build, the in-slot gzip, the error mapping and the records.
+
+    Moved byte for byte out of `model()` so a second part type's routes call it instead of
+    copying it (D-07, ARCHITECTURE F3). `params` is the part's validated parameters, already
+    stripped of the per-endpoint extras.
+    """
     # D-13: a plain local, not middleware or contextvars -- minted once here and passed
     # to every record this request emits, so two concurrent requests for the same gear
     # (the one case params + time cannot disambiguate; D-07 affinity's same-slot
     # scenario) are still distinguishable in the log.
     request_id = uuid.uuid4().hex[:8]
-    params = _gear(q)
     # Same test GZipMiddleware itself makes (installed starlette's own
     # middleware/gzip.py:66, `"gzip" in headers.get("Accept-Encoding", "")`) -- endpoint
     # and middleware must agree on who gets encoded bytes, or a client that asked for
     # identity could be served gzip bytes cached for a previous gzip-accepting client.
     wants_gzip = "gzip" in request.headers.get("Accept-Encoding", "")
     encoding = "gzip" if wants_gzip else "identity"
-    key = (params, fmt, q.quality, encoding)
+    key = (params, fmt, quality, encoding)
     # A plain cache hit never enters the slot below, so its duration is zero by
     # construction (D-12) and its source is "cache" -- both set here, not as a branch,
     # so the cache-hit path that skips the block below still has a defined value for
@@ -415,13 +419,13 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # compresses only after the endpoint has already returned and the slot is
             # gone (see _build_slot's own docstring for the measured mechanism this
             # fixes).
-            with _build_slot(request_id, params, fmt, q.quality):
-                raw_key = (params, fmt, q.quality, "identity")
+            with _build_slot(request_id, params, fmt, quality):
+                raw_key = (params, fmt, quality, "identity")
                 raw = _EXPORTS.get(raw_key)
                 if raw is None:
                     source = "built"
-                    build_started(request_id, params, fmt, q.quality)
-                    raw = await backend(params, fmt, q.quality)
+                    build_started(request_id, params, fmt, quality)
+                    raw = await backend(params, fmt, quality)
                     _EXPORTS.put(raw_key, raw)
                 else:
                     source = "compressed"
@@ -434,7 +438,7 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 else:
                     data = raw
         except BuildError as exc:
-            build_failed(request_id, params, fmt, q.quality, exc=exc,
+            build_failed(request_id, params, fmt, quality, exc=exc,
                         duration_s=time.monotonic() - start)
             raise HTTPException(422, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "build_error"}]) from exc
@@ -445,7 +449,7 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # a gear that is fine. Same busy-refusal shape as _build_slot above (reused,
             # not reinvented), with its own `type` so a client can tell "come back in a
             # moment" from "your gear is impossible".
-            build_failed(request_id, params, fmt, q.quality, exc=exc,
+            build_failed(request_id, params, fmt, quality, exc=exc,
                         duration_s=time.monotonic() - start)
             raise HTTPException(503, detail=[{"loc": ["query"], "msg": str(exc),
                                               "type": "timeout"}],
@@ -459,7 +463,7 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # overran its own timeout (D-07 affinity) -- that queued request's worker
             # was terminated by this service, not by a crash, so "died unexpectedly"
             # alone stopped being true of every caller reaching this branch.
-            build_failed(request_id, params, fmt, q.quality, exc=exc,
+            build_failed(request_id, params, fmt, quality, exc=exc,
                         duration_s=time.monotonic() - start)
             raise HTTPException(
                 503,
@@ -488,11 +492,11 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
             # still what serves the response (CR-01's fix means that record now carries a
             # traceback too); this only adds spur's own build.failed record to what would
             # otherwise be the *only* remaining evidence of a request that actually failed.
-            build_failed(request_id, params, fmt, q.quality, exc=exc,
+            build_failed(request_id, params, fmt, quality, exc=exc,
                         duration_s=time.monotonic() - start)
             raise
         duration_s = time.monotonic() - start
-    export_served(request_id, params, fmt, q.quality, source=source, encoding=encoding,
+    export_served(request_id, params, fmt, quality, source=source, encoding=encoding,
                   duration_s=duration_s)
     headers = {"Content-Disposition": f'attachment; filename="{params.slug()}.{fmt}"',
                "Vary": "Accept-Encoding"}
@@ -503,3 +507,12 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
         # the body passes through unchanged").
         headers["Content-Encoding"] = "gzip"
     return Response(data, media_type=MEDIA_TYPES[fmt], headers=headers)
+
+
+@app.get("/api/model.{fmt}", response_class=Response,
+         responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
+async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
+                request: Request,
+                backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
+    # The route builds the gear's params; everything after that is _serve_model's.
+    return await _serve_model(_gear(q), fmt, q.quality, request, backend)
