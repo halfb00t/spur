@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 28-refuse-the-bad-link
 source: [28-VERIFICATION.md]
 started: 2026-10-21T13:22:02Z
-updated: 2026-10-21T15:44:44.052Z
+updated: 2026-10-23T01:30:58.669Z
 ---
 
 ## Current Test
@@ -41,7 +41,9 @@ blocked: 0
 
 - gap_id: G-28-1
   truth: "Every Phase 28 review finding (WR-01, WR-02, WR-03, IN-01, IN-02) carries a disposition: fixed + sha, deferred + debt/idea path, or skipped + reason"
-  status: failed
+  status: resolved
+  resolved_by: 28-08-PLAN.md
+  resolved_at: 2026-10-23
   reason: "User reported: pass; on-disk check contradicted it (all 5 rows open) and user chose to record as issue"
   severity: major
   test: 1
@@ -58,7 +60,9 @@ blocked: 0
 
 - gap_id: G-28-2
   truth: "WR-03 / Phase 10 IN-02 (tip_chamfer_effective prints 0.0 for a chamfer not cut, calc.py:1294) is decided: new Lxx + fix (gate on tch, print null) with a make fixture.regen check, or keep-with-reason logged; INDEX trigger names a concrete event"
-  status: failed
+  status: resolved
+  resolved_by: 28-08-PLAN.md
+  resolved_at: 2026-10-23
   reason: "User reported: pass; on-disk check contradicted it (no Lxx, code unchanged, INDEX trigger still 'the human's decision') and user chose to record as issue"
   severity: major
   test: 2
