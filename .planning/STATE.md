@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 30
 current_phase_name: Scope, Seam and Gear-Safety Guard
 status: executing
-stopped_at: Completed 30-01-PLAN.md
-last_updated: "2026-10-23T16:04:20.507Z"
+stopped_at: Completed 30-02-PLAN.md
+last_updated: "2026-10-23T16:11:21.152Z"
 last_activity: 2026-10-23
 last_activity_desc: Phase 30 execution started
-state_head: dfc76c3b93e944b1ee8d78e389bee1d82ec46238
+state_head: 5d61f8e3d82c2751164dfa22cf5e3381b35415b1
 progress:
   total_phases: 5
   completed_phases: 6
   total_plans: 5
-  completed_plans: 1
-  percent: 20
+  completed_plans: 2
+  percent: 40
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 30 (Scope, Seam and Gear-Safety Guard) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-23 — Phase 30 execution started
 
@@ -268,6 +268,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 28 P07 | 25 min | 3 tasks | 5 files |
 | Phase 28 P08 | 8 min | 3 tasks | 4 files |
 | Phase 30 P01 | 35 min | 3 tasks | 5 files |
+| Phase 30 P02 | 7 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -520,6 +521,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 28]: 28-08: Phase 28 review ledger closed; each fixed cell leads with the sha read from git log by exact subject, WR-02 deferred to its active item, open 0 with hand-triage stamp
 - [Phase 30]: D-04 (30-01): gear.unchanged is a verify.static prerequisite; measured 0.45-0.46 s, make verify.fast 10.01 s against L36's 30 s
 - [Phase 30]: 30-01: a missing v0.6 tag is fetched at depth 1 only in a shallow clone; a depth-1 fetch into a full clone writes .git/shallow
+- [Phase 30]: 30-02: L46 (2026-10-23) widens spur to a gear and spline generator; amends L02 and L05 by reference, L02/L05 untouched; commit 5d61f8e precedes every shaft module (D-20)
+- [Phase 30]: 30-02: shaft field names and defaults may change by logged decision until Phase 33 publishes the first shaft link; a stray part= on a gear link becomes refused then (L44-class), grep counts 0
 
 ### Pending Todos
 
@@ -832,8 +835,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23T16:04:20.487Z
-Stopped at: Completed 30-01-PLAN.md
+Last session: 2026-10-23T16:11:21.131Z
+Stopped at: Completed 30-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
