@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 30
 current_phase_name: Scope, Seam and Gear-Safety Guard
 status: executing
-stopped_at: Phase 30 context gathered
-last_updated: "2026-10-23T14:45:44.413Z"
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-10-23T16:04:20.507Z"
 last_activity: 2026-10-23
-last_activity_desc: v0.7 roadmap created (Phases 30–34, 24/24 requirements mapped)
-state_head: a51658149b94618dff52f9089a1bfe724edaf1e8
+last_activity_desc: Phase 30 execution started
+state_head: dfc76c3b93e944b1ee8d78e389bee1d82ec46238
 progress:
   total_phases: 5
   completed_phases: 6
   total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -26,14 +26,14 @@ See: .planning/PROJECT.md (updated 2026-10-23)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.7 Splined Shaft, Phases 30–34, roadmap written; Phase 30 (Scope, Seam and Gear-Safety Guard) is next. Live triggers carried in: the Ubuntu 26 rollout window (to 2026-11-19, `must`), the `make verify` hang on its next capture (`must`); WR-02 (`must`) is mapped to Phase 33 (REQ-wr02-fixed), where the part switch edits `refuse()`/`gearQuery()`.
+**Current focus:** Phase 30 — Scope, Seam and Gear-Safety Guard
 
 ## Current Position
 
-Phase: 30 (Scope, Seam and Gear-Safety Guard) — READY TO EXECUTE
-Plan: —
+Phase: 30 (Scope, Seam and Gear-Safety Guard) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-10-23 — v0.7 roadmap created (Phases 30–34, 24/24 requirements mapped)
+Last activity: 2026-10-23 — Phase 30 execution started
 
 ## Performance Metrics
 
@@ -267,6 +267,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 28 P06 | 20 min | 2 tasks | 8 files |
 | Phase 28 P07 | 25 min | 3 tasks | 5 files |
 | Phase 28 P08 | 8 min | 3 tasks | 4 files |
+| Phase 30 P01 | 35 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -517,6 +518,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 28]: 28-07 WR-01 (D-19): write() clears the rejected entry of each field it writes; L44 amended 2026-10-21
 - [Phase 28]: 28-07 IN-01 (D-22): readHash assigns the mate box once; readHash-end pin replaced by a longer token through the mate read-back; L44 amended 2026-10-21
 - [Phase 28]: 28-08: Phase 28 review ledger closed; each fixed cell leads with the sha read from git log by exact subject, WR-02 deferred to its active item, open 0 with hand-triage stamp
+- [Phase 30]: D-04 (30-01): gear.unchanged is a verify.static prerequisite; measured 0.45-0.46 s, make verify.fast 10.01 s against L36's 30 s
+- [Phase 30]: 30-01: a missing v0.6 tag is fetched at depth 1 only in a shallow clone; a depth-1 fetch into a full clone writes .git/shallow
 
 ### Pending Todos
 
@@ -829,9 +832,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23T13:47:51.698Z
-Stopped at: Phase 30 context gathered
-Resume file: .planning/phases/30-scope-seam-and-gear-safety-guard/30-CONTEXT.md
+Last session: 2026-10-23T16:04:20.487Z
+Stopped at: Completed 30-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
