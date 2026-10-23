@@ -1,0 +1,48 @@
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+gear-unchanged-exit=0
+The kernel doorways are model and shaft_model KEPT
+The gear maths does not know the shaft KEPT
+The shaft maths copies the gear maths, never imports it KEPT
+
+Contracts: 10 kept, 0 broken.
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term -v --durations=25 tests/test_api.py tests/test_pool.py tests/test_records.py tests/regression tests/test_browser.py --no-cov -q
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [185 items]
+
+........................................................................ [ 38%]
+........................................................................ [ 77%]
+.........................................                                [100%]
+============================= slowest 25 durations =============================
+32.54s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+16.55s call     tests/test_pool.py::test_forced_gc_inside_the_resource_tracker_lock_finds_no_reentrant_cleanup
+8.12s call     tests/test_pool.py::test_a_wedged_build_is_terminated_and_its_worker_replaced
+7.64s call     tests/test_pool.py::test_four_same_slot_requests_all_refuse_without_cancellation
+5.29s call     tests/test_pool.py::test_three_same_tick_same_slot_timeouts_each_end_in_a_documented_refusal
+5.02s call     tests/test_pool.py::test_a_dying_worker_surfaces_as_broken_pool_and_is_replaced
+4.40s call     tests/test_pool.py::test_a_real_worker_builds_and_downloads
+2.97s call     tests/test_pool.py::test_a_stale_executor_timeout_is_a_build_timeout_not_an_attribute_error
+2.52s call     tests/test_pool.py::test_two_same_slot_deaths_from_one_incident_replace_the_worker_once
+1.71s call     tests/test_api.py::test_a_repeat_download_is_served_from_cache_with_zero_duration_and_no_build_started
+1.67s call     tests/test_api.py::test_a_spoke_link_is_served_with_the_fillet_it_cut
+1.44s call     tests/test_api.py::test_a_tip_chamfer_that_selects_no_tip_arcs_is_a_422_naming_the_defect
+1.35s call     tests/test_api.py::test_the_download_name_carries_the_root_the_part_has[23-spur_z23_m1.75_pa25_trochoid-step-model/step-ISO-10303-21;]
+1.32s call     tests/test_api.py::test_a_tip_chamfer_link_is_served_with_the_chamfer_it_cut
+1.31s call     tests/regression/test_pre_v0_2.py::test_a_pre_v0_2_parameter_set_builds_the_same_solid[test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids]
+1.24s call     tests/test_api.py::test_a_honeycomb_link_is_served_with_its_cells
+1.22s call     tests/test_api.py::test_a_keyed_link_is_served_with_its_two_numbers
+1.16s call     tests/test_api.py::test_a_root_shape_link_is_served_with_the_root_it_cut
+1.14s call     tests/test_api.py::test_a_gzip_request_after_an_identity_download_emits_source_compressed
+1.06s call     tests/test_api.py::test_a_fresh_build_emits_build_started_then_export_served_with_source_built
+1.06s call     tests/test_api.py::test_two_requests_for_one_gear_get_two_different_request_ids
+1.05s call     tests/regression/test_pre_v0_2.py::test_a_pre_v0_2_parameter_set_builds_the_same_solid[test_calc.py::test_root_fillet_is_capped_with_a_warning]
+1.04s call     tests/regression/test_pre_v0_2.py::test_a_pre_v0_2_parameter_set_builds_the_same_solid[test_api.py::test_a_failed_build_emits_build_failed_naming_the_class_and_the_level]
+1.01s call     tests/regression/test_pre_v0_2.py::test_a_pre_v0_2_parameter_set_builds_the_same_solid[test_api.py::test_an_unclassified_exception_still_emits_build_failed_and_is_not_swallowed]
+0.97s call     tests/regression/test_pre_v0_2.py::test_a_pre_v0_2_parameter_set_builds_the_same_solid[test_calc.py::test_recess_fillet_is_capped_to_the_narrowed_groove]
+============================= 185 passed in 44.90s =============================
+test-exit=0

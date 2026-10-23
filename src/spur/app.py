@@ -283,7 +283,7 @@ def _build_slot(request_id: str, p: Part, fmt: str, quality: str) -> Iterator[No
         raise HTTPException(
             503,
             detail=[{"loc": ["query"], "type": "busy",
-                     "msg": f"Busy: {MAX_QUEUED_BUILDS} gears are already being built or "
+                     "msg": f"Busy: {MAX_QUEUED_BUILDS} parts are already being built or "
                             "compressed. Try again in a moment."}],
             headers={"Retry-After": "5"},
         )

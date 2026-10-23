@@ -999,6 +999,27 @@ def test_a_saturated_service_refuses_instead_of_queueing() -> None:
             app_module.BUILD_QUEUE.release()
 
 
+def test_a_saturated_service_names_its_queue_in_parts() -> None:
+    """D-09: the busy message must stay true once a second part type is built, so it
+    counts parts, not gears. Status, Retry-After and type are the same as above."""
+    from spur import app as app_module
+
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/model.stl", params={"quality": "preview"})
+        assert r.status_code == 503
+        assert r.headers["retry-after"] == "5"
+        detail = r.json()["detail"][0]
+        assert detail["type"] == "busy"
+        assert detail["msg"] == (f"Busy: {app_module.MAX_QUEUED_BUILDS} parts are already "
+                                 "being built or compressed. Try again in a moment.")
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()
+
+
 def test_a_saturated_service_emits_queue_refused_naming_the_gear_and_the_ceiling(
         caplog: pytest.LogCaptureFixture) -> None:
     """D-09, D-10, D-15: a refusal says which gear was turned away and how close to
