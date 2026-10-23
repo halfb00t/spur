@@ -147,6 +147,13 @@ peels to `792b45c` (`git rev-parse v0.6^{commit}`; `git ls-remote --tags origin`
      - `allow_indirect_imports = false`.
   5. The existing "serving process never imports the CAD kernel" contract stays as it is. It
      already covers the shaft through `allow_indirect_imports = false`.
+  6. **Added at plan-phase (2026-10-23, human's choice): the shaft maths copies the gear maths,
+     never imports it (C5).**
+     - Sources: the four shaft-maths modules. Forbidden: `spur.calc`.
+     - `allow_indirect_imports = true`, so the direct import is forbidden but
+       `shaft_params -> params -> calc` stays legal.
+     - It closes the gap between REQ-shaft-routes-separate ("free of ... gear maths") and
+       contracts 1-4.
 
   Each contract is seen red once against a deliberate violation, and the red is recorded.
 
