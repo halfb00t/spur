@@ -3,18 +3,17 @@ gsd_state_version: "1.0"
 milestone: v0.6
 milestone_name: Clean Ledger
 current_phase: 29
-current_phase_name: Ubuntu 26 Final Reading
-status: "Phase 28 shipped — PR #46"
-stopped_at: Phase 28 complete, ready to plan Phase 29
-last_updated: "2026-10-22T11:04:12.461Z"
+status: "Phase 29 shipped — PR #47"
+stopped_at: Phase 29 complete — all phases complete
+last_updated: "2026-10-22T13:56:38.200Z"
 last_activity: 2026-10-22
-state_head: ae9f5cd1dbe874a8ecfaa26dbd004ae662a65c72
+state_head: d23bf5584904820f98599401535174ec8f4a1970
 progress:
   total_phases: 4
-  completed_phases: 8
+  completed_phases: 4
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # Project State
@@ -29,12 +28,12 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 29 (Ubuntu 26 Final Reading) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 28 shipped — PR #46
+Phase: 29
+Plan: 1 of 1 (closed, trigger not fired)
+Status: Phase 29 shipped — PR #47
 Last activity: 2026-10-22
 
-Progress: [█████████░] 95% (2 of 4 phases)
+Progress: [██████████] 100% (4 of 4 phases)
 
 ## Performance Metrics
 
@@ -78,6 +77,7 @@ Progress: [█████████░] 95% (2 of 4 phases)
 | 26 | 7 | - | - |
 | 27 | 6 | - | - |
 | 28 | 8 | - | - |
+| 29 | 1 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -530,7 +530,8 @@ None yet.
   The verifier judged none defeats a success criterion and recommends closing WR-02 and WR-03 before Phase 28's repeated browser runs.
 - ℹ️ [Phase 27] `spike/27-group-listing` (PR #43, closed unmerged) still exists locally and on `origin`; deleting it is the human's call.
 - ⚠️ [v0.6] The `ubuntu-latest` rollout to Ubuntu 26.04 runs 2026-10-19 to 2026-11-19; Phase 26's pre-classification
-  ran green (26-02, run 38724011970), and the Ubuntu 26 item stays active for Phase 29.
+  ran green (26-02, run 38724011970). Phase 29 closed 2026-10-22 with the trigger not fired (last read
+  2026-10-22T13:13Z: 30 of 30 jobs on `ubuntu-24.04`); the Ubuntu 26 item stays active.
 - ✓ [Phase 26] The twin-selectors step read green on the first post-merge `main` run (38858407163 at `1981d93`). One
   green run is consistent with the fix, not conclusive (2 reds in 8 before it); later `main` runs add to it.
 - ✓ [Phase 26] PR #41 landed its pushed head `6c0e57b` without 13 unpushed commits (`faf376b` among them); they
@@ -586,6 +587,7 @@ None yet.
 - ⚠️ [Phase 21] CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the shell's `--with-deps`
   install has only run on 24.04 (`must`, `docs/tech_debt/active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md`).
   Read the first post-migration run's whole log before any fix; `runs-on: ubuntu-24.04` is the fallback.
+  Still open after Phase 29's close (trigger not fired): this phase's PR or the milestone-close PR may be the first 26.04 run.
 - ⚠️ [Phase 21] `make verify` hung once near 98 % for the 600 s background limit with no failure, no
   crash report and no survivors (wave 3 gate; `must`, `docs/tech_debt/active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md`,
   log under `21-browser-test-of-the-viewer/investigation/`). The re-run was green in 175.80 s. Relevant to the
@@ -804,6 +806,7 @@ None yet.
 - Phase 20 skipped (O4, flip deferred) under L38, 2026-10-09: the hob root is opt-in through root_shape; the flip waits on a real fit report or a mating-pair request below z_min (D-09).
 - v0.5 roadmap created: Phases 21–25 (Browser Test of the Viewer; Download Name Carries the Root; Conditional Form Fields; Bore-Shape Selector, discretionary; Gate Bar Re-Set, Venv Probe, Ledger Close) — 24/24 v0.5 requirements mapped, 0 orphans, numbering continues from Phase 20; Phase 24 is skipped, never deleted, if the human cuts it (its three requirements then move to Future Requirements by an explicit edit)
 - v0.6 roadmap created: Phases 26–29 (Gate Fails With a Cause; Ledger Tests and Harness; Refuse the Bad Link; Ubuntu 26 Final Reading, date-gated) — 17/17 v0.6 requirements mapped, 0 orphans, numbering continues from Phase 25; Phase 29 may close with its item still active (trigger restated, REQ-ubuntu26-classified-on-migration then moves to Future Requirements by an explicit edit with the human) and is never deleted
+- Phase 29 closed (trigger not fired), 2026-10-22: no ubuntu-latest run named Ubuntu 26.04 by the milestone close (last read 2026-10-22T13:13Z, bench/RESULTS.md); the Ubuntu 26 item stays active with its trigger restated; REQ-ubuntu26-classified-on-migration moved to Future Requirements with the human.
 
 ## Deferred Items
 
@@ -814,9 +817,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-10-21T18:04:31.088Z
-Stopped at: Phase 28 complete, ready to plan Phase 29
+Stopped at: Phase 29 complete — all phases complete
 Resume file: None
 
 ## Operator Next Steps
 
-- /gsd-discuss-phase 27, or /gsd-plan-phase 27 to plan directly
+- Merge PR #46, then PR #47, once CI is green and each run's `Image:` lines are read; then /gsd-complete-milestone v0.6

@@ -662,7 +662,10 @@ pytest — L13). Full list with sources and acceptance evidence:
 ### Active
 
 - [ ] The Phase 22 and browser-harness `must` debts retired (v0.6)
-- [ ] CI is green, or its failure classified, on Ubuntu 26 `ubuntu-latest` (v0.6)
+- [ ] CI is green, or its failure classified, on Ubuntu 26 `ubuntu-latest` — deferred past v0.6:
+  Phase 29 closed on its close condition 2026-10-22 (trigger not fired; last read
+  2026-10-22T13:13Z, 30 of 30 jobs on `ubuntu-24.04`, `bench/RESULTS.md`); REQ-ubuntu26-classified-on-migration
+  moved to Future Requirements with the human; the debt item stays `active`
 - Full list with IDs: `.planning/REQUIREMENTS.md`.
 
 ### Out of Scope
@@ -924,4 +927,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-22 after Phase 28.*
+*Last updated: 2026-10-22 after Phase 29.*

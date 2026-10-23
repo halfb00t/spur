@@ -470,6 +470,8 @@ orphaned silently nor reported complete. This phase never holds Phases 26–28 o
 close unless the human chooses to wait.
 **Success Criteria** (what must be TRUE; not applicable when closed on the condition above):
 
+  Not applicable: closed 2026-10-22 on the close condition: no ubuntu-latest run named Ubuntu 26.04 by the milestone close (last read 2026-10-22T13:13Z, bench/RESULTS.md).
+
   1. The migrated run is classified from the whole log. The first `ubuntu-latest` run whose
      `Set up job` names 26.04 has its run id, head sha and `Image:` line recorded in
      `bench/RESULTS.md`, and all three jobs (`test (3.12)`, `vendor-bundle`, `image`) are read
@@ -484,11 +486,11 @@ close unless the human chooses to wait.
 recorded; no fix before classification. **Phase close**: `git diff --exit-code v0.5 -- tests/regression/`
 empty.
 **Research flag**: No — the procedure is fixed by the debt file.
-**Plans**: 1 plan
+**Plans**: 1/1 plans complete
 
 Plans:
 **Wave 1**
-- [ ] 29-01-PLAN.md — read every `ci` run since 2026-10-19 from each job's own log, classify the first `ubuntu-latest` run on 26.04 whole against 26-02; green retires the item in the reading's commit, red goes to the human (pin with L46, or hold), not fired or pending goes to the human (wait, resumable; or the close condition)
+- [x] 29-01-PLAN.md — read every `ci` run since 2026-10-19 from each job's own log, classify the first `ubuntu-latest` run on 26.04 whole against 26-02; green retires the item in the reading's commit, red goes to the human (pin with L46, or hold), not fired or pending goes to the human (wait, resumable; or the close condition)
 
 ## Process Notes (carried forward)
 
@@ -524,4 +526,4 @@ Plans:
 | 26. Gate Fails With a Cause | v0.6 | 7/7 | Complete    | 2026-10-20 |
 | 27. Ledger Tests and Harness | v0.6 | 6/6 | Complete    | 2026-10-20 |
 | 28. Refuse the Bad Link | v0.6 | 8/8 | Complete    | 2026-10-22 |
-| 29. Ubuntu 26 Final Reading | v0.6 | 0/1 | Not started (date-gated; may close with its item active) | - |
+| 29. Ubuntu 26 Final Reading | v0.6 | 1/1 | Closed — trigger not fired | 2026-10-22 |

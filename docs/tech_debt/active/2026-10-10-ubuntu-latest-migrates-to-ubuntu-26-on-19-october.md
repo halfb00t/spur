@@ -39,5 +39,16 @@ Pre-classified on 2026-10-15 on draft PR #40, run 38724011970: test (3.12) green
 image green (all three on `Image: ubuntu-26.04` `20261012.163.1`; `1318 passed`, install 14.44 s); record
 `bench/RESULTS.md` `### Ubuntu 26.04, pre-classified (26-02)`. Phase 29 reads the first migrated run against it.
 
+Phase 29 closed on its close condition on 2026-10-22 (human's call, `close`). Its last read is
+`bench/RESULTS.md` `### The ubuntu-latest window, read 2026-10-22T13:13Z (29-01)`: 10 `ci` runs created
+since 2026-10-19T00:00:00Z, 30 of 30 jobs on `Image: ubuntu-24.04` (versions `20261012.334.1` and
+`20261018.339.1`), outcome not fired. No pinned-label run on 26.04 is in that window. The item stays
+`active`. Trigger, restated: the first `ubuntu-latest` run of `ci` whose job log holds the line
+`Image: ubuntu-26.04`, matched on the message and not on the step column (which printed `UNKNOWN STEP`
+on 2026-10-22); Phase 29's own PR and the v0.6 milestone-close PR count. Read all three jobs whole
+against `bench/RESULTS.md` `### Ubuntu 26.04, pre-classified (26-02)` (run 38724011970, image
+`20261012.163.1`, install 14.44 s) before any fix. Green resolves the item; red goes to the human, and
+`runs-on: ubuntu-24.04` stays their call.
+
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
