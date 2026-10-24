@@ -36,7 +36,7 @@ from typing import TextIO
 
 from . import __version__
 from .build_errors import BuildError
-from .params import GearParams
+from .parts import Part
 
 _LOG = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ def configure() -> None:
     root.setLevel(_parse_level(os.environ.get("SPUR_LOG_LEVEL", "INFO")))
 
 
-def _gear_fields(p: GearParams) -> dict[str, object]:
+def _gear_fields(p: Part) -> dict[str, object]:
     """The gear identity every per-request record carries (D-10): `slug` for the human
     eye and grep, plus `params` -- only the fields that differ from default -- so a
     failed build is reproducible by pasting `params` back into `/api/model.stl?...`,
@@ -208,7 +208,7 @@ def _emit(level: int, event: str, fields: dict[str, object]) -> None:
     _LOG.log(level, event, extra={"event": event, **fields})
 
 
-def build_started(request: str, p: GearParams, fmt: str, quality: str) -> None:
+def build_started(request: str, p: Part, fmt: str, quality: str) -> None:
     """`build.started` at INFO (D-15), emitted immediately before the backend call --
     the one place a build actually begins. No `duration_ms`: D-12 puts duration on
     `export.served` and `build.failed` only, because a start record has nothing to time
@@ -218,7 +218,7 @@ def build_started(request: str, p: GearParams, fmt: str, quality: str) -> None:
           {"request": request, **_gear_fields(p), "fmt": fmt, "quality": quality})
 
 
-def export_served(request: str, p: GearParams, fmt: str, quality: str, *,
+def export_served(request: str, p: Part, fmt: str, quality: str, *,
                    source: str, encoding: str, duration_s: float) -> None:
     """`export.served` at INFO (D-15) -- the one record every `/api/model` request
     emits, whichever of the three paths served it. `source` is one of exactly three
@@ -232,7 +232,7 @@ def export_served(request: str, p: GearParams, fmt: str, quality: str, *,
            "encoding": encoding, "source": source, "duration_ms": _ms(duration_s)})
 
 
-def build_failed(request: str, p: GearParams, fmt: str, quality: str, *,
+def build_failed(request: str, p: Part, fmt: str, quality: str, *,
                   exc: Exception, duration_s: float) -> None:
     """`build.failed` -- one record per failing request, at the level D-15's "whose
     fault is it" rule picks: WARNING for `BuildError` (a 422, the user's gear, and
@@ -256,7 +256,7 @@ def build_failed(request: str, p: GearParams, fmt: str, quality: str, *,
            "exception": type(exc).__name__, "duration_ms": _ms(duration_s)})
 
 
-def queue_refused(request: str, p: GearParams, fmt: str, quality: str, *,
+def queue_refused(request: str, p: Part, fmt: str, quality: str, *,
                    in_flight: int, max_queued: int) -> None:
     """`queue.refused` at WARNING (D-15 -- capacity, not breakage): one record per
     refused request, carrying the identity of the gear that was turned away (D-10 --

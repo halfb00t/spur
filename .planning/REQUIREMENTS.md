@@ -37,13 +37,13 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Scope and seam — the gear does not move
 
-- [ ] **REQ-scope-decision-logged**: a new `Lxx` widens the product to a gear and spline
+- [x] **REQ-scope-decision-logged**: a new `Lxx` widens the product to a gear and spline
   generator, amends L02 to one parameter model per part type and L05 to a second frozen link
   contract (shaft field names and defaults), logged before any shaft code lands.
-- [ ] **REQ-gear-unchanged-proof**: a check run at every phase close proves the rule "Same gear,
+- [x] **REQ-gear-unchanged-proof**: a check run at every phase close proves the rule "Same gear,
   same links" (regression dir, `ci.yml`, gear `/api/schema` byte-equal); seen red once on a
   deliberate edit.
-- [ ] **REQ-shaft-routes-separate**: the shaft is served under `/api/shaft/...`; the gear routes,
+- [x] **REQ-shaft-routes-separate**: the shaft is served under `/api/shaft/...`; the gear routes,
   their query keys and responses are unchanged; import-linter contracts keep the shaft maths
   free of `cadquery`, the logger and gear maths, and the shaft solid reachable only through
   `model`.
@@ -156,9 +156,9 @@ shaft routes under that rule and cites it, it does not re-map it.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-scope-decision-logged | Phase 30 | Pending |
-| REQ-gear-unchanged-proof | Phase 30 | Pending |
-| REQ-shaft-routes-separate | Phase 30 | Pending |
+| REQ-scope-decision-logged | Phase 30 | Complete |
+| REQ-gear-unchanged-proof | Phase 30 | Complete |
+| REQ-shaft-routes-separate | Phase 30 | Complete |
 | REQ-shaft-params | Phase 31 | Pending |
 | REQ-profile-shift-from-dB | Phase 31 | Pending |
 | REQ-shaft-basic-dims | Phase 31 | Pending |

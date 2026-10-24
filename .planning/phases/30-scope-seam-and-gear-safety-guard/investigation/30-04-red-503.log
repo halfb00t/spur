@@ -1,0 +1,35 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_a_saturated_service_names_its_queue_in_parts _______________
+
+    def test_a_saturated_service_names_its_queue_in_parts() -> None:
+        """D-09: the busy message must stay true once a second part type is built, so it
+        counts parts, not gears. Status, Retry-After and type are the same as above."""
+        from spur import app as app_module
+    
+        held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+                for _ in range(app_module.MAX_QUEUED_BUILDS)]
+        try:
+            assert all(held)
+            r = client.get("/api/model.stl", params={"quality": "preview"})
+            assert r.status_code == 503
+            assert r.headers["retry-after"] == "5"
+            detail = r.json()["detail"][0]
+            assert detail["type"] == "busy"
+>           assert detail["msg"] == (f"Busy: {app_module.MAX_QUEUED_BUILDS} parts are already "
+                                     "being built or compressed. Try again in a moment.")
+E                                    AssertionError: assert 'Busy: 4 gear... in a moment.' == 'Busy: 4 part... in a moment.'
+E                                      
+E                                      Skipping 54 identical trailing characters in diff, use -v to show
+E                                      - Busy: 4 parts are alr
+E                                      ?         ^  -
+E                                      + Busy: 4 gears are alr
+E                                      ?         ^^
+
+tests/test_api.py:1016: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  spur.records:records.py:208 queue.refused
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_a_saturated_service_names_its_queue_in_parts
+1 failed, 62 deselected in 1.66s
+pytest-exit=1

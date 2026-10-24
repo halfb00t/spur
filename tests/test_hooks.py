@@ -34,6 +34,7 @@ IMAGE_IGNORED = {
     "tests/test_browser_pins.py",
     "tests/test_pr_land.py",
     "tests/test_bench.py",
+    "tests/test_gear_unchanged.py",
 }
 HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli", "test_browser")
 # The browser stamp, the Makefile's `BROWSER := $(VENV)/.browser`. The commit slice never
@@ -148,6 +149,19 @@ def test_verify_and_verify_fast_share_one_static_prefix_and_one_pytest_recipe() 
         w.removeprefix("--ignore=") for w in fast_pytest.split() if w.startswith("--ignore=")
     }
     assert ignored == {f"tests/{n}.py" for n in HEAVY_TEST_FILES}
+
+
+def test_both_gates_run_the_gear_safety_check() -> None:
+    """D-04 puts `gear.unchanged` in `verify.static`, so a dry run of `verify` and of
+    `verify.fast` each print its recipe before the pytest line. Dropping the prerequisite
+    would leave `make gear.unchanged` working by hand while no gate ran it, and the shared
+    static prefix would still match itself, so the test above cannot see it."""
+    for target in ("verify", "verify.fast"):
+        lines = _dry_run(target)
+        check = [i for i, ln in enumerate(lines) if "-m scripts.gear_unchanged" in ln]
+        pytest_at = next(i for i, ln in enumerate(lines) if " -m pytest " in ln)
+        assert len(check) == 1, (target, check)
+        assert check[0] < pytest_at, target
 
 
 def test_the_pin_ignores_pytest_args_set_in_the_environment(

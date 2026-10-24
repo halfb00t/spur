@@ -221,3 +221,70 @@ type = "forbidden"
 source_modules = ["spur.app"]
 forbidden_modules = ["cadquery", "OCP"]
 allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+name = "The shaft maths stays free of the CAD kernel and the solid"
+# The shaft numbers run on every keystroke like calc.py's, so the same property has to
+# hold: pure arithmetic, nothing that can reach OpenCascade. The gear's version of this
+# rule allows indirect imports; this one does not, so the shaft maths cannot reach the
+# kernel even through params or model, which the human accepted as the stricter form
+# (D-14). shaft_model is listed as forbidden because it is the shaft's doorway to the
+# kernel. tests/test_seam.py's test_the_shaft_maths_imports_no_kernel_no_solid_no_logger_and_no_gear_maths
+# is the regex belt for this claim.
+type = "forbidden"
+source_modules = ["spur.shaft_params", "spur.shaft_calc", "spur.din5480", "spur.din5480_tables"]
+forbidden_modules = ["cadquery", "OCP", "spur.model", "spur.shaft_model"]
+allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+name = "The shaft maths stays free of the logger"
+# Same reason as the gear's logger contract above: a logging import would let pure
+# arithmetic raise from handler I/O. No allow_indirect_imports key, so import-linter's
+# default applies, which is false (importlinter/contracts/forbidden.py, 2.15): indirect
+# imports are forbidden here too. Belt: the same test as the contract above.
+type = "forbidden"
+source_modules = ["spur.shaft_params", "spur.shaft_calc", "spur.din5480", "spur.din5480_tables"]
+forbidden_modules = ["spur.records", "logging"]
+
+[[tool.importlinter.contracts]]
+name = "The kernel doorways are model and shaft_model"
+# One doorway to the solid stays true in the module graph once a second kernel module
+# exists: nothing that serves, logs or lists parts may import shaft_model. pool reaches
+# model by an importlib string the linter does not see (pool.py), so that path stays as
+# it is. Belt: tests/test_seam.py's test_only_model_may_import_the_shaft_solid.
+#
+# Handoff to Phase 32: when model.py first imports shaft_model statically, this contract
+# breaks through cli -> model -> shaft_model (measured in 30-RESEARCH Pitfall 4). That
+# same commit adds ignore_imports = ["spur.model -> spur.shaft_model"] to this contract;
+# added any earlier, import-linter errors with "No matches for ignored import".
+type = "forbidden"
+source_modules = ["spur.app", "spur.cli", "spur.pool", "spur.records", "spur.parts"]
+forbidden_modules = ["spur.shaft_model"]
+allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+name = "The gear maths does not know the shaft"
+# The structural half of "every gear link builds the same part": gear numbers must not
+# move because shaft code did, and a gear module that cannot name a shaft module cannot
+# depend on one. parts is listed because it will name ShaftParams from Phase 31. Belt:
+# tests/test_seam.py's test_the_gear_maths_imports_no_shaft_module.
+type = "forbidden"
+source_modules = ["spur.calc", "spur.params"]
+forbidden_modules = ["spur.shaft_params", "spur.shaft_calc", "spur.din5480",
+                     "spur.din5480_tables", "spur.shaft_model", "spur.parts"]
+allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+name = "The shaft maths copies the gear maths, never imports it"
+# REQUIREMENTS REQ-shaft-routes-separate and the roadmap's Phase 30 criterion 3 say the
+# shaft maths imports no gear maths, and the four contracts above do not say it. Phase 31
+# copies calc.py's patterns and never imports out of it (the _involute_angle precedent),
+# so gear and shaft numbers stay uncoupled. Direct imports only, with the key set
+# explicitly because import-linter's default is false: shaft_params is expected to import
+# spur.params, and params imports calc inside its validators (params.py), which makes
+# calc an indirect import of the shaft maths by design. Belt: the same test as the first
+# shaft contract.
+type = "forbidden"
+source_modules = ["spur.shaft_params", "spur.shaft_calc", "spur.din5480", "spur.din5480_tables"]
+forbidden_modules = ["spur.calc"]
+allow_indirect_imports = true

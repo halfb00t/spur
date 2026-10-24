@@ -1,0 +1,53 @@
+# loadavg before
+{ 4.09 3.15 3.54 }
+# gear.unchanged run 1
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+real 0.45
+user 0.37
+sys 0.07
+# gear.unchanged run 2
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+real 0.46
+user 0.37
+sys 0.07
+# gear.unchanged run 3
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+real 0.46
+user 0.37
+sys 0.07
+# verify.fast
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+testpaths: tests
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [961 items]
+
+........................................................................ [  7%]
+........................................................................ [ 14%]
+........................................................................ [ 22%]
+........................................................................ [ 29%]
+........................................................................ [ 37%]
+........................................................................ [ 44%]
+........................................................................ [ 52%]
+........................................................................ [ 59%]
+........................................................................ [ 67%]
+........................................................................ [ 74%]
+........................................................................ [ 82%]
+........................................................................ [ 89%]
+........................................................................ [ 97%]
+.........................                                                [100%]
+============================= 961 passed in 9.13s ==============================
+real 10.01
+user 45.73
+sys 23.43
+# loadavg after
+{ 5.04 3.39 3.62 }
+# HEAD
+67177da
+# host
+18 CPUs, arm64, 64.0 GiB RAM
+Apple M5 Max

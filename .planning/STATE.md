@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Splined Shaft
-current_phase: 30
-current_phase_name: Scope, Seam and Gear-Safety Guard
-status: executing
-stopped_at: Phase 30 context gathered
-last_updated: "2026-10-23T14:45:44.413Z"
-last_activity: 2026-10-23
-last_activity_desc: v0.7 roadmap created (Phases 30–34, 24/24 requirements mapped)
-state_head: a51658149b94618dff52f9089a1bfe724edaf1e8
+current_phase: 31
+current_phase_name: Shaft Maths, Parameters and Designation
+status: "Phase 30 shipped — PR #50"
+stopped_at: Phase 30 complete, ready to plan Phase 31
+last_updated: "2026-10-24T02:19:00.155Z"
+last_activity: 2026-10-24
+last_activity_desc: Phase 30 shipped as PR #50
+state_head: afe2e4b511b7a8b043817a43b50f9112e45aaa38
 progress:
   total_phases: 5
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_plans: 5
+  percent: 64
 ---
 
 # Project State
@@ -26,14 +26,14 @@ See: .planning/PROJECT.md (updated 2026-10-23)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Milestone v0.7 Splined Shaft, Phases 30–34, roadmap written; Phase 30 (Scope, Seam and Gear-Safety Guard) is next. Live triggers carried in: the Ubuntu 26 rollout window (to 2026-11-19, `must`), the `make verify` hang on its next capture (`must`); WR-02 (`must`) is mapped to Phase 33 (REQ-wr02-fixed), where the part switch edits `refuse()`/`gearQuery()`.
+**Current focus:** Phase 31 — Shaft Maths, Parameters and Designation
 
 ## Current Position
 
-Phase: 30 (Scope, Seam and Gear-Safety Guard) — READY TO EXECUTE
-Plan: —
-Status: Ready to execute
-Last activity: 2026-10-23 — v0.7 roadmap created (Phases 30–34, 24/24 requirements mapped)
+Phase: 31 — Shaft Maths, Parameters and Designation
+Plan: Not started
+Status: Phase 30 shipped — PR #50
+Last activity: 2026-10-24 — Phase 30 shipped as PR #50
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Last activity: 2026-10-23 — v0.7 roadmap created (Phases 30–34, 24/24 requir
 | 27 | 6 | - | - |
 | 28 | 8 | - | - |
 | 29 | 1 | - | - |
+| 30 | 5 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -267,6 +268,11 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 28 P06 | 20 min | 2 tasks | 8 files |
 | Phase 28 P07 | 25 min | 3 tasks | 5 files |
 | Phase 28 P08 | 8 min | 3 tasks | 4 files |
+| Phase 30 P01 | 35 min | 3 tasks | 5 files |
+| Phase 30 P02 | 7 min | 2 tasks | 3 files |
+| Phase 30 P03 | 10 min | 3 tasks | 9 files |
+| Phase 30 P04 | 12 min | 3 tasks | 6 files |
+| Phase 30 P05 | 8 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -517,6 +523,14 @@ pending; the next milestone starts this list fresh.
 - [Phase 28]: 28-07 WR-01 (D-19): write() clears the rejected entry of each field it writes; L44 amended 2026-10-21
 - [Phase 28]: 28-07 IN-01 (D-22): readHash assigns the mate box once; readHash-end pin replaced by a longer token through the mate read-back; L44 amended 2026-10-21
 - [Phase 28]: 28-08: Phase 28 review ledger closed; each fixed cell leads with the sha read from git log by exact subject, WR-02 deferred to its active item, open 0 with hand-triage stamp
+- [Phase 30]: D-04 (30-01): gear.unchanged is a verify.static prerequisite; measured 0.45-0.46 s, make verify.fast 10.01 s against L36's 30 s
+- [Phase 30]: 30-01: a missing v0.6 tag is fetched at depth 1 only in a shallow clone; a depth-1 fetch into a full clone writes .git/shallow
+- [Phase 30]: 30-02: L46 (2026-10-23) widens spur to a gear and spline generator; amends L02 and L05 by reference, L02/L05 untouched; commit 5d61f8e precedes every shaft module (D-20)
+- [Phase 30]: 30-02: shaft field names and defaults may change by logged decision until Phase 33 publishes the first shaft link; a stray part= on a gear link becomes refused then (L44-class), grep counts 0
+- [Phase 30]: 30-03: C5 forbids spur.calc to the four shaft-maths modules, direct imports only (allow_indirect_imports = true set explicitly); C2 omits the key and import-linter 2.15's default is false, so it forbids indirect imports too
+- [Phase 30]: 30-03: Phase 32 adds ignore_imports = [spur.model -> spur.shaft_model] to C3 in the same commit that first imports shaft_model in model.py; wall commit is bdf224d
+- [Phase 30]: 30-04: Part is the name at the shared entry points; _serve_model is the one serving path (move ca60285, 115 lines proved identical); the 503 text counts parts (D-07, D-08, D-09)
+- [Phase 30]: 30-05: Phase 30's make verify read 1369 passed in 233.18s (real 234.48 s, load 16.75 -> 16.06) against the recorded 236.23 s with 239.51 s as cross-check; inside Phase 25's ~8 % spread, no precise delta claimed; all seven close checks PASS
 
 ### Pending Todos
 
@@ -524,15 +538,14 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 30] Code review `30-REVIEW-DISPOSITION.md`: 3 deferred to `must` debt (WR-01 no timeout on git/probe in
+  `gear.unchanged`; WR-03 `parts.py` "one-line widening" is false — Phase 31 must type `_build_checked`, `_write_export`,
+  `_gear_fields` when it widens `Part`; IN-02 a lightweight/moved local `v0.6` tag self-compares), 4 open (WR-02, IN-01,
+  IN-03, IN-04). A1 (GitHub's own shallow checkout fetching `v0.6`) reproduced locally, unseen in CI until the phase PR.
 - ⚠️ [v0.7] **Phase 34 is blocked until the human supplies the DIN 5480 copy's local path** (2006 series; the tolerance system
   is in Part 1, the size tables in Part 2). **Phase 31 needs anchor rows from the same copy** before it can close: formula
   confirmation by clause, the `h_fP` convention, at least two basic-dimension rows, a d_Ff row, an odd-z row if odd-z M_Re is
   to print a number. Nothing from the copy is committed except anchors the human approves by name.
-- ⚠️ [v0.7] **No `v0.6` tag exists**, locally or on `origin` (`git tag -l`, `git ls-remote --tags origin`: `v0.1`–`v0.5`),
-  but REQUIREMENTS.md's rule "Same gear, same links" names `git diff --exit-code v0.6 -- tests/regression/
-  .github/workflows/ci.yml`. The v0.6 close squash is `792b45c` on `main`, and the paths diff empty against both it and `v0.5`.
-  Phase 30's first task is a stop-and-ask: the human tags `792b45c` (creating and pushing a tag is the human's call), or the
-  check pins the sha until then.
 - ℹ️ [v0.7] The milestone releases as one unit: Phases 30–33 ship the shaft with fit-dependent numbers absent, and Phase 34
   adds them. All DIN 5480 formulas in the plan are ASSUMPTIONs until checked by clause against the copy.
 - ⚠️ [Phase 27] Code review `27-REVIEW-DISPOSITION.md`: 9 open (3 warning, 6 info). WR-03: a `ValueError` from parsing `ps` rows escapes
@@ -829,14 +842,14 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23T13:47:51.698Z
-Stopped at: Phase 30 context gathered
-Resume file: .planning/phases/30-scope-seam-and-gear-safety-guard/30-CONTEXT.md
+Last session: 2026-10-23T16:46:40.343Z
+Stopped at: Phase 30 complete, ready to plan Phase 31
+Resume file: None
 
 ## Operator Next Steps
 
 - Review `.planning/ROADMAP.md` (v0.7, Phases 30–34) and the Traceability table in `.planning/REQUIREMENTS.md`.
-- Decide the `v0.6` baseline: tag `792b45c` as `v0.6`, or let Phase 30's check pin the sha.
-- Plan the first phase with /gsd-discuss-phase 30 or /gsd-plan-phase 30.
+- Ship Phase 30 (`/gsd-ship 30`); its PR's first CI run is the proof for A1.
+- Plan Phase 31 with /gsd-discuss-phase 31 or /gsd-plan-phase 31.
 - Before Phase 31 can close: supply anchor rows from the DIN 5480 (2006 series) copy. Before Phase 34 can start: supply the
   copy's local path.

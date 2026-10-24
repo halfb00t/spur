@@ -1,0 +1,5 @@
+$ make gear.unchanged
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: these watched paths differ from v0.6: .github/workflows/ci.yml
+make: *** [Makefile:166: gear.unchanged] Error 1
+exit=2

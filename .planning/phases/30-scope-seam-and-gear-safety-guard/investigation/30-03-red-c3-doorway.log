@@ -1,0 +1,77 @@
+# 30-03 deliberate break: append 'from . import shaft_model' to src/spur/app.py (C3 and its belt)
+# 2026-10-23T16:16:29Z
+$ git diff --stat
+ src/spur/app.py | 1 +
+ 1 file changed, 1 insertion(+)
+$ make lint-imports
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 47 files, 87 dependencies.
+-----------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+The shaft maths stays free of the CAD kernel and the solid KEPT
+The shaft maths stays free of the logger KEPT
+The kernel doorways are model and shaft_model BROKEN
+The gear maths does not know the shaft KEPT
+The shaft maths copies the gear maths, never imports it KEPT
+
+Contracts: 9 kept, 1 broken.
+
+
+----------------
+Broken contracts
+----------------
+
+The kernel doorways are model and shaft_model
+---------------------------------------------
+
+spur.app is not allowed to import spur.shaft_model:
+
+-   spur.app -> spur.shaft_model (l.505)
+
+
+make: *** [Makefile:124: lint-imports] Error 1
+exit=2
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py
+..F...                                                                   [100%]
+=================================== FAILURES ===================================
+__________________ test_only_model_may_import_the_shaft_solid __________________
+
+    def test_only_model_may_import_the_shaft_solid() -> None:
+        """Belt for 'The kernel doorways are model and shaft_model': nothing that serves,
+        logs or lists parts names the shaft's solid."""
+        found = {n: _import_lines(_read(n), ("shaft_model",))
+                 for n in ("app", "cli", "pool", "records", "parts")}
+>       assert not any(found.values()), found
+E       AssertionError: {'app': ['from . import shaft_model'], 'cli': [], 'pool': [], 'records': [], ...}
+E       assert not True
+E        +  where True = any(dict_values([['from . import shaft_model'], [], [], [], []]))
+E        +    where dict_values([['from . import shaft_model'], [], [], [], []]) = <built-in method values of dict object at 0x107cd3cc0>()
+E        +      where <built-in method values of dict object at 0x107cd3cc0> = {'app': ['from . import shaft_model'], 'cli': [], 'pool': [], 'records': [], ...}.values
+
+tests/test_seam.py:108: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_seam.py::test_only_model_may_import_the_shaft_solid - Asser...
+1 failed, 5 passed in 0.16s
+exit=1
+$ git status --porcelain -- src pyproject.toml   (after git checkout -- src/spur/app.py)
+(empty above = clean)

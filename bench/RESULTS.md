@@ -6808,3 +6808,106 @@ GitHub's fleet.
 
 Outcome: not fired -- no job of any `ubuntu-latest` run in the window reads `ubuntu-26.04` (30 of 30 jobs read `ubuntu-24.04`), so no rule for red, green or pending holds.
 Decision (2026-10-22T13:28Z): close -- "close with a", then, asked whether that meant part (a) alone, "Close, all edits (a)–(e)"
+
+## Scope, seam and gear-safety guard (Phase 30)
+
+What this section holds: v0.7's first phase widens the product to a gear and spline generator, walls the shaft off from the gear with import contracts and a route prefix, and proves with one command that no gear link builds a different part than at `v0.6`. Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/30-scope-seam-and-gear-safety-guard/investigation/`; later plans append rows to the table below.
+
+### The check, priced (30-01)
+
+Source: `30-01-price.log`. Host: `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max. Measured on `HEAD` `67177da`, the commit that adds `make gear.unchanged`, with only `.planning/` files uncommitted. The 1-minute load read `4.09` before the runs and `5.04` after (`sysctl -n vm.loadavg` printed `{ 4.09 3.15 3.54 }` and `{ 5.04 3.39 3.62 }`), so this is not an idle-host reading under Phase 25's rule, and each figure is one reading on this host.
+
+| Step | Real (`/usr/bin/time -p`) | Result |
+|---|---|---|
+| `make gear.unchanged`, run 1 | 0.45 s | `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| `make gear.unchanged`, run 2 | 0.46 s | the same line |
+| `make gear.unchanged`, run 3 | 0.46 s | the same line |
+| `make verify.fast`, with the check wired into `verify.static` | 10.01 s | `961 passed in 9.13s` |
+
+For comparison, 30-RESEARCH read the prototype at 0.66 s wall and `make verify.fast` (before the check existed) at 14.6 s wall, `947 passed in 13.86s`, at a 1-minute load of 11.39. The commit slice now reads 10.01 s against L36's 30 s budget, and the check's own 0.46 s is 1.5 % of that budget. The slice also holds this plan's 14 new tests (13 in `tests/test_gear_unchanged.py`, 1 in `tests/test_hooks.py`), which is the 961 against 947.
+
+D-04 decision: the check sits in `verify.static`, so `make verify` and `make verify.fast` both run it, because its cost is that measured share of L36's 30 s budget; it is also the only place the pre-commit hook can run it, so every commit of the phase proves the gear unchanged.
+
+### The gate delta (30-05)
+
+Source logs: `30-05-verify.log` (the whole `/usr/bin/time -p make verify` output) and `30-05-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/30-scope-seam-and-gear-safety-guard/investigation/`. Every figure below is copied from them, not re-rounded. One reading.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `fc00d77` (the tree is the final Phase 30 code; only `.planning/` files and the two logs were uncommitted) |
+| UTC start -> end | `2026-10-23T16:40:02Z` -> `2026-10-23T16:43:56Z` |
+| 1-minute load before -> after | `16.75` -> `16.06` (`sysctl -n vm.loadavg` printed `{ 16.75 17.43 16.08 }` and `{ 16.06 19.17 17.41 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 1369 passed in 233.18s (0:03:53) =======================` |
+| `/usr/bin/time -p` | `real 234.48`, `user 671.57`, `sys 537.41` |
+| Coverage TOTAL line | `TOTAL                         1363     22    386     13  98.00%` (`Required test coverage of 96.0% reached. Total coverage: 98.00%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+The five placeholders in the coverage table, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`): each is 0 statements and 100.00 %, so they add nothing to the total.
+
+```
+src/spur/din5480.py              0      0      0      0 100.00%
+src/spur/din5480_tables.py       0      0      0      0 100.00%
+src/spur/shaft_calc.py           0      0      0      0 100.00%
+src/spur/shaft_model.py          0      0      0      0 100.00%
+src/spur/shaft_params.py         0      0      0      0 100.00%
+```
+
+`src/spur/parts.py` (the one assignment `Part = GearParams`) reads `2      0      0      0 100.00%`.
+
+#### Against v0.6's close
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Baseline of record: v0.6 close | `1348 passed` | `236.23 s` | not recorded | not recorded | `.planning/PROJECT.md` |
+| Same-host cross-check: `HEAD 760ac4e`, v0.6-equivalent code, 2026-10-23 | `1348 passed` | `239.51 s` | `4:00.37` = `240.37 s` | 11 to 37, other sessions active | 30-RESEARCH |
+| This reading: Phase 30 close, `HEAD fc00d77` | `1369 passed` | `233.18 s` | `234.48 s` | 16.75 -> 16.06 | `30-05-verify.log` |
+
+| This reading minus | pytest `passed in` | `real` |
+|---|---|---|
+| baseline of record (`236.23 s`) | `-3.05 s` (`-1.29 %`) | `-1.75 s` (`-0.74 %`), not like for like: the baseline has only the pytest figure |
+| cross-check (`239.51 s` / `240.37 s`) | `-6.33 s` (`-2.64 %`) | `-5.89 s` (`-2.45 %`) |
+
+The delta is read against the recorded 236.23 s, per 30-RESEARCH's recommendation, with the same-host 239.51 s beside it; the like-for-like column is `passed in` against `passed in`. Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 18.9 s of 236.23 s: all four differences are a fraction of that, so the difference sits inside the spread, and in the faster direction.
+
+What the phase added to the gate: 21 tests (`1369 passed` against `1348 passed`: 14 from 30-01, 6 in `tests/test_seam.py`, 1 in `tests/test_api.py`), `make gear.unchanged` (priced at 0.46 s in `### The check, priced (30-01)`) and `make lint-imports` with five more contracts. The reading is under L43's 300 s bar by 65.52 s. This is one reading at a 1-minute load of 16 and above on a host that was not idle, so it supports "no measurable gate cost", and a precise delta, or a claim that the phase made the gate faster, is not claimed: the faster sign is inside the noise of the two baselines, which themselves differ by 3.28 s at different loads. REQ-gate-cost-recorded stays open and closes at Phase 34's milestone reading.
+
+### Phase close checks (30-05)
+
+Source: `30-05-close-checks.log`, run on `HEAD fc00d77` with the final Phase 30 tree; every check read `PASS` and the word `FAIL` appears nowhere in the log.
+
+1. `make gear.unchanged`: exit 0, `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` (D-06).
+2. `git diff --exit-code v0.6 -- requirements.txt tests/regression/ .github/workflows/ci.yml README.md src/spur/calc.py src/spur/params.py`: exit 0, empty (D-11, D-19).
+3. D-20 order: `D-20 order: L46 5d61f8e3d82c2751164dfa22cf5e3381b35415b1 precedes 1 placeholder commit(s)`; the list of placeholder-adding commits was non-empty and the L46 commit is a strict ancestor of it. The five placeholders were added in one commit.
+4. No shaft behaviour: no `class Shaft...` under `src` and no `/api/shaft` route decorator under `src`, both `git grep` exits 1 (no match) (D-10, D-12).
+5. The five placeholders are one docstring each: `docstring-only: 5 of 5 []`.
+6. D-10: `src/spur/model.py`'s diff since v0.6 adds 0 lines that mention isinstance or shaft.
+7. `make lint-imports`: `Contracts: 10 kept, 0 broken.`; `pytest tests/test_seam.py tests/test_gear_unchanged.py`: `19 passed in 2.25s`.
+
+### Seen red once (Phase 30)
+
+Each deliberate break was run red once and reverted, or was the old recipe the fix replaced. The first failure line is copied from the kept log named in the row (every log is under `.planning/phases/30-scope-seam-and-gear-safety-guard/investigation/`); later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 30-01 | `make gear.unchanged`, watched item `tests/regression/` | one blank line appended to `tests/regression/corpus.py` | `gear.unchanged: these watched paths differ from v0.6: tests/regression/corpus.py`, exit 2 from make, log `30-01-red-regression.log` | `git checkout -- tests/regression/corpus.py`; `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` clean |
+| 30-01 | `make gear.unchanged`, an untracked file in `tests/regression/` | `tests/regression/new.json` created holding `{}` | `gear.unchanged: these watched paths differ from v0.6: tests/regression/new.json`, exit 2 from make, log `30-01-red-untracked.log` | `rm tests/regression/new.json`; the same diff clean |
+| 30-01 | `make gear.unchanged`, watched item `.github/workflows/ci.yml` | one comment line appended to `ci.yml` | `gear.unchanged: these watched paths differ from v0.6: .github/workflows/ci.yml`, exit 2 from make, log `30-01-red-ci.log` | `git checkout -- .github/workflows/ci.yml`; the same diff clean |
+| 30-01 | `make gear.unchanged`, watched item `/api/schema` bytes | `src/spur/params.py` line 90, the field title `Teeth` changed to `Teeth!` | `gear.unchanged: /api/schema bytes differ from v0.6 (8724 bytes now, 8723 at v0.6)`, exit 2 from make, log `30-01-red-schema.log` | `git checkout -- src/spur/params.py`; `git diff --exit-code HEAD -- src scripts Makefile tests` clean |
+| 30-01 | `python -m scripts.gear_unchanged` in a `git clone --no-tags` of this repository | the clone's origin set to `/nonexistent`, so the tag could not be fetched | `gear.unchanged: tag v0.6 is not local and could not be fetched from origin: fatal: '/nonexistent' does not appear to be a git repository`, exit 1, log `30-01-red-missing-tag.log` | the clone was deleted; this repository was not touched |
+| 30-01 | `tests/test_gear_unchanged.py::test_the_probe_refuses_a_tree_it_did_not_import` | the `spur.__file__` location check removed from `schema_of` | `Failed: DID NOT RAISE SystemExit` at `tests/test_gear_unchanged.py:204`; `1 failed, 12 deselected in 0.40s`, log `30-01-red-shadow.log` | `git checkout -- scripts/gear_unchanged.py`; diff clean |
+| 30-01 | `tests/test_gear_unchanged.py::test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow` | `ensure_tag` always passing `--depth=1` | `AssertionError: assert 'true' == 'false'` at `tests/test_gear_unchanged.py:166`; `1 failed, 12 deselected in 0.34s`, log `30-01-red-depth.log` | `git checkout -- scripts/gear_unchanged.py`; diff clean |
+| 30-01 | `tests/test_gear_unchanged.py::test_the_check_leaves_the_repository_as_it_found_it` | `check` registering a detached `git worktree` of the tag in a temp dir and not removing it | `AssertionError: assert not True` where `True = exists()` of the scratch repo's `.git/worktrees`; `1 failed, 12 deselected in 0.30s`, log `30-01-red-repo-state.log` | `git checkout -- scripts/gear_unchanged.py`; the temp dir was never created in this repository, `git worktree list` shows the main checkout only |
+| 30-01 | `tests/test_hooks.py::test_both_gates_run_the_gear_safety_check` | `gear.unchanged` dropped from `verify.static`'s prerequisites | `AssertionError: ('verify', [])`; `1 failed, 9 deselected in 0.03s`, log `30-01-red-dry-run-pin.log` | `git checkout -- Makefile`; diff clean |
+| 30-01 | `make test-image PYTEST_ARGS="tests/test_gear_unchanged.py -q"` (as `make -o image test-image ...`) | the unfixed recipe, with no `--ignore` for the new git-driven file | `FileNotFoundError: [Errno 2] No such file or directory: 'git'`, `FAILED tests/test_gear_unchanged.py::test_an_unchanged_tree_reads_green_and_names_what_it_compared`, then `make: *** [Makefile:265: test-image] Error 1`, log `30-01-red-image.log` | the fix replaced it: `--ignore=tests/test_gear_unchanged.py` joined the recipe and `IMAGE_IGNORED` in the same commit. The first attempt rebuilt the image's apt layer and was stopped after about 19 minutes of package downloads; the red ran against the already-built `spur:latest` (created 2026-10-20) with the build skipped, which is enough because the image holds no git whatever its build date |
+| 30-03 | The shaft maths stays free of the CAD kernel and the solid (C1), and the shaft-maths belt `tests/test_seam.py::test_the_shaft_maths_imports_no_kernel_no_solid_no_logger_and_no_gear_maths` | `import cadquery` appended to `src/spur/shaft_calc.py` | `make lint-imports`: `spur.shaft_calc is not allowed to import cadquery:` and `Contracts: 9 kept, 1 broken.`; pytest: `AssertionError: {'shaft_params': [], 'shaft_calc': ['import cadquery'], 'din5480': [], 'din5480_tables': []}`, `1 failed, 5 passed in 0.15s`, log `30-03-red-c1-cadquery.log` | `git checkout -- src/spur/shaft_calc.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-03 | C1 on the solid, and the same belt on the `from . import name` shape | `from . import model` appended to `src/spur/shaft_calc.py` | `spur.shaft_calc is not allowed to import spur.model:` and `Contracts: 9 kept, 1 broken.` (the `cadquery` line above it is the indirect path `spur.shaft_calc -> spur.model -> cadquery`, which this contract forbids because its indirect flag is off); the belt fails on the same file, `1 failed, 5 passed in 0.15s`, log `30-03-red-c1-model.log` | `git checkout -- src/spur/shaft_calc.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-03 | The shaft maths stays free of the logger (C2), and the same belt | `import logging` appended to `src/spur/shaft_params.py` | `spur.shaft_params is not allowed to import logging:` and `Contracts: 9 kept, 1 broken.`; the belt fails, `1 failed, 5 passed in 0.16s`, log `30-03-red-c2-logging.log` | `git checkout -- src/spur/shaft_params.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-03 | The shaft maths copies the gear maths, never imports it (C5), and the same belt | `from . import calc` appended to `src/spur/din5480.py` | `spur.din5480 is not allowed to import spur.calc:` and `Contracts: 9 kept, 1 broken.`; the belt fails, `1 failed, 5 passed in 0.15s`, log `30-03-red-c5-calc.log` | `git checkout -- src/spur/din5480.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-03 | The kernel doorways are model and shaft_model (C3), and `tests/test_seam.py::test_only_model_may_import_the_shaft_solid` | `from . import shaft_model` appended to `src/spur/app.py` | `spur.app is not allowed to import spur.shaft_model:` and `Contracts: 9 kept, 1 broken.`; pytest: `AssertionError: {'app': ['from . import shaft_model'], 'cli': [], 'pool': [], 'records': [], ...}`, `1 failed, 5 passed in 0.16s`, log `30-03-red-c3-doorway.log` | `git checkout -- src/spur/app.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-03 | The gear maths does not know the shaft (C4), and `tests/test_seam.py::test_the_gear_maths_imports_no_shaft_module` | `from . import parts` appended to `src/spur/calc.py` | `spur.calc is not allowed to import spur.parts:` and `Contracts: 9 kept, 1 broken.` (`spur.params is not allowed to import spur.parts:` follows, through `params -> calc` inside its validators); pytest: `AssertionError: {'calc': ['from . import parts'], 'params': []}`, `1 failed, 5 passed in 0.16s`, log `30-03-red-c4-gear-maths.log` | `git checkout -- src/spur/calc.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-03 | `tests/test_seam.py::test_every_module_a_contract_names_exists_and_the_layout_is_frozen` (the hazard: import-linter accepts a missing forbidden module) | C3's forbidden `spur.shaft_model` changed to `spur.shaftmodel` in `pyproject.toml` | `make lint-imports` still reads `Contracts: 10 kept, 0 broken.` (the silent acceptance the guard exists for); pytest: `AssertionError: contracts name modules with no file: ['spur.shaftmodel']`, `1 failed, 5 passed in 0.15s`, log `30-03-red-existence.log` | `git checkout -- pyproject.toml`, `git status --porcelain -- src pyproject.toml` empty; the next `make lint-imports` read `Contracts: 10 kept, 0 broken.` |
+| 30-03 | `tests/test_seam.py::test_every_route_beyond_v0_6_lives_under_the_shaft_prefix` | `@app.get("/api/foo")` returning `{}` appended to `src/spur/app.py` | `AssertionError: /api/ routes outside /api/shaft/: ['/api/foo']`, `1 failed, 5 passed in 0.15s`, log `30-03-red-route.log` | `git checkout -- src/spur/app.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-03 | `tests/test_seam.py::test_the_gear_routes_take_the_v0_6_query_keys`, and `make gear.unchanged` beside it | `part: str = "gear"` added to `ModelQuery` in `src/spur/app.py` | pytest: `Extra items in the left set: 'part'`, `1 failed, 5 passed in 0.14s`; `make gear.unchanged` in the same log stays green, `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`, because `/api/schema` is `GearParams`'s own schema and only the pin sees a stray key on a gear route; log `30-03-red-query-key.log` | `git checkout -- src/spur/app.py`, `git status --porcelain -- src pyproject.toml` empty |
+| 30-04 | `tests/test_api.py::test_a_saturated_service_names_its_queue_in_parts` | the old wording (`gears are already being built or compressed`), the new pin added | `AssertionError: assert 'Busy: 4 gear... in a moment.' == 'Busy: 4 part... in a moment.'` at the message assertion only (status, `retry-after` and `type` passed), `1 failed, 62 deselected in 1.66s`, log `30-04-red-503.log` | the fix replaced it: `_build_slot`'s message now says `parts`, and `-k saturated` read `3 passed, 60 deselected` |

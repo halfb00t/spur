@@ -8,9 +8,10 @@ and is read on demand.
 
 ## What we're building
 
-A parametric involute spur gear generator: set the parameters, get a live 3D preview, the
-numbers you would measure on the real part, and an STL or STEP download — from a web UI,
-an HTTP API or a CLI, all driven by the same parameter model.
+A parametric gear and spline generator (L46): the involute spur gear is shipped, a DIN 5480
+splined shaft is in progress (v0.7). Set the parameters, get a live 3D preview, the numbers
+you would measure on the real part, and an STL or STEP download — from a web UI, an HTTP API
+or a CLI, all driven by one parameter model per part type.
 
 Full intent: gsd `.planning/PROJECT.md` (not written yet — run `gsd-map-codebase`, then
 `gsd-ingest-docs`). System map: `docs/architecture/overview.md`. Global requirements:

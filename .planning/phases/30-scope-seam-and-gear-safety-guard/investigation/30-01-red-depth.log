@@ -1,0 +1,30 @@
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_gear_unchanged.py -k test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow _______
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-1168/test_a_missing_tag_is_fetched_0')
+
+    def test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow(tmp_path: Path) -> None:
+        """A depth-1 fetch into a full clone wrote .git/shallow and hid its history (plan-time
+        reproduction); the depth is for shallow clones only."""
+        work = _work_repo(tmp_path)
+        clone = tmp_path / "clone"
+        _git(tmp_path, "clone", "-q", "--no-tags", str(work), str(clone))
+        assert _git(clone, "tag") == ""
+    
+        line = check(clone, _schema_json)
+    
+        assert line.endswith("are byte-equal to v0.6")
+        assert _git(clone, "rev-parse", "--verify", "v0.6^{commit}")
+>       assert _git(clone, "rev-parse", "--is-shallow-repository") == "false"
+E       AssertionError: assert 'true' == 'false'
+E         
+E         - false
+E         + true
+
+tests/test_gear_unchanged.py:166: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow
+1 failed, 12 deselected in 0.34s
+exit=1

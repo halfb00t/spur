@@ -1,0 +1,46 @@
+.venv/bin/python -m ruff check .
+All checks passed!
+.venv/bin/python -m mypy src tests docker bench scripts
+Success: no issues found in 60 source files
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 47 files, 88 dependencies.
+-----------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+The shaft maths stays free of the CAD kernel and the solid KEPT
+The shaft maths stays free of the logger KEPT
+The kernel doorways are model and shaft_model KEPT
+The gear maths does not know the shaft KEPT
+The shaft maths copies the gear maths, never imports it KEPT
+
+Contracts: 10 kept, 0 broken.
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+make-exit=0
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [ 46%]
+........................................................................ [ 93%]
+..........                                                               [100%]
+154 passed in 22.47s
+pytest-exit=0

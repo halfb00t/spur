@@ -1,0 +1,45 @@
+# 30-03 W8: a GET route /api/foo returning an empty dict appended to src/spur/app.py
+$ git diff
+diff --git a/src/spur/app.py b/src/spur/app.py
+index 8f910f7..7ab50a9 100644
+--- a/src/spur/app.py
++++ b/src/spur/app.py
+@@ -502,3 +502,8 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
+         # the body passes through unchanged").
+         headers["Content-Encoding"] = "gzip"
+     return Response(data, media_type=MEDIA_TYPES[fmt], headers=headers)
++
++
++@app.get("/api/foo")
++def foo() -> dict[str, str]:
++    return {}
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py
+....F.                                                                   [100%]
+=================================== FAILURES ===================================
+__________ test_every_route_beyond_v0_6_lives_under_the_shaft_prefix ___________
+
+    def test_every_route_beyond_v0_6_lives_under_the_shaft_prefix() -> None:
+        """D-15: the /api/ routes contain the v0.6 four exactly as (path, methods), every
+        other /api/ route starts with /api/shaft/, and nothing outside /api/ is added."""
+        api: set[tuple[str, frozenset[str]]] = set()
+        other: set[str] = set()
+        for route in app.routes:
+            if isinstance(route, APIRoute) and route.path.startswith("/api/"):
+                api.add((route.path, frozenset(route.methods or ())))
+            elif isinstance(route, Route | Mount):
+                other.add(route.path)
+            else:
+                raise AssertionError(f"route of an unexpected type: {type(route).__name__}")
+        assert api >= V06_API, f"v0.6 routes missing or changed: {sorted(V06_API - api)}"
+        stray = sorted(p for p, _ in api - V06_API if not p.startswith("/api/shaft/"))
+>       assert not stray, f"/api/ routes outside /api/shaft/: {stray}"
+E       AssertionError: /api/ routes outside /api/shaft/: ['/api/foo']
+E       assert not ['/api/foo']
+
+tests/test_seam.py:133: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_seam.py::test_every_route_beyond_v0_6_lives_under_the_shaft_prefix
+1 failed, 5 passed in 0.15s
+exit=1
+$ git status --porcelain -- src pyproject.toml (after git checkout -- src/spur/app.py)
+(empty above = clean)

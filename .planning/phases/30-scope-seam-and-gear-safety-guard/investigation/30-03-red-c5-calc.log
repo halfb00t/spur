@@ -1,0 +1,88 @@
+# 30-03 deliberate break: append 'from . import calc' to src/spur/din5480.py (C5 and the belt)
+# 2026-10-23T16:16:29Z
+$ git diff --stat
+ src/spur/din5480.py | 1 +
+ 1 file changed, 1 insertion(+)
+$ make lint-imports
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 47 files, 87 dependencies.
+-----------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+The shaft maths stays free of the CAD kernel and the solid KEPT
+The shaft maths stays free of the logger KEPT
+The kernel doorways are model and shaft_model KEPT
+The gear maths does not know the shaft KEPT
+The shaft maths copies the gear maths, never imports it BROKEN
+
+Contracts: 9 kept, 1 broken.
+
+
+----------------
+Broken contracts
+----------------
+
+The shaft maths copies the gear maths, never imports it
+-------------------------------------------------------
+
+spur.din5480 is not allowed to import spur.calc:
+
+-   spur.din5480 -> spur.calc (l.12)
+
+
+make: *** [Makefile:124: lint-imports] Error 1
+exit=2
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py
+.F....                                                                   [100%]
+=================================== FAILURES ===================================
+_ test_the_shaft_maths_imports_no_kernel_no_solid_no_logger_and_no_gear_maths __
+
+    def test_the_shaft_maths_imports_no_kernel_no_solid_no_logger_and_no_gear_maths() -> None:
+        """Belt for 'The shaft maths stays free of the CAD kernel and the solid', '... of the
+        logger' and 'The shaft maths copies the gear maths, never imports it'. It first proves
+        the helper sees each way to write an import of `model` and lets `shaft_model` and
+        `params` through, so a belt over docstring-only files cannot pass for the wrong reason."""
+        for line in ("import model", "import spur.model", "from model import x",
+                     "from .model import x", "from spur.model import x", "from . import model",
+                     "from . import params, model", "from spur import model",
+                     "    from . import model  # inside a function"):
+            assert _import_lines(line, ("model",)), line
+        for line in ("import shaft_model", "from .shaft_model import x", "from . import shaft_model",
+                     "from .params import GearParams", "from . import params  # model",
+                     "import models"):
+            assert not _import_lines(line, ("model",)), line
+        forbidden = ("cadquery", "OCP", "model", "shaft_model", "records", "logging", "calc")
+        found = {n: _import_lines(_read(n), forbidden) for n in SHAFT_MATHS}
+>       assert not any(found.values()), found
+E       AssertionError: {'shaft_params': [], 'shaft_calc': [], 'din5480': ['from . import calc'], 'din5480_tables': []}
+E       assert not True
+E        +  where True = any(dict_values([[], [], ['from . import calc'], []]))
+E        +    where dict_values([[], [], ['from . import calc'], []]) = <built-in method values of dict object at 0x10a60b640>()
+E        +      where <built-in method values of dict object at 0x10a60b640> = {'shaft_params': [], 'shaft_calc': [], 'din5480': ['from . import calc'], 'din5480_tables': []}.values
+
+tests/test_seam.py:100: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_seam.py::test_the_shaft_maths_imports_no_kernel_no_solid_no_logger_and_no_gear_maths
+1 failed, 5 passed in 0.15s
+exit=1
+$ git status --porcelain -- src pyproject.toml   (after git checkout -- src/spur/din5480.py)
+(empty above = clean)

@@ -1,0 +1,24 @@
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_hooks.py -k test_both_gates_run_the_gear_safety_check
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________________ test_both_gates_run_the_gear_safety_check ___________________
+
+    def test_both_gates_run_the_gear_safety_check() -> None:
+        """D-04 puts `gear.unchanged` in `verify.static`, so a dry run of `verify` and of
+        `verify.fast` each print its recipe before the pytest line. Dropping the prerequisite
+        would leave `make gear.unchanged` working by hand while no gate ran it, and the shared
+        static prefix would still match itself, so the test above cannot see it."""
+        for target in ("verify", "verify.fast"):
+            lines = _dry_run(target)
+            check = [i for i, ln in enumerate(lines) if "-m scripts.gear_unchanged" in ln]
+            pytest_at = next(i for i, ln in enumerate(lines) if " -m pytest " in ln)
+>           assert len(check) == 1, (target, check)
+E           AssertionError: ('verify', [])
+E           assert 0 == 1
+E            +  where 0 = len([])
+
+tests/test_hooks.py:163: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_hooks.py::test_both_gates_run_the_gear_safety_check - Asser...
+1 failed, 9 deselected in 0.03s
+exit=1

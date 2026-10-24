@@ -1,0 +1,93 @@
+30-05 phase-close checks
+UTC: 2026-10-23T16:39:43Z
+HEAD: fc00d77cb758906d97aa414b29ffd3bb1bd4433f
+v0.6 tag object: tag, commit 792b45c033c38b0fef12f85cdbba1df36adb3a69
+git status --porcelain: ?? .planning/milestone.lock;?? .planning/phases/30-scope-seam-and-gear-safety-guard/investigation/30-05-close-checks.log;
+
+## 1. make gear.unchanged (D-06)
+$ make gear.unchanged
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+exit status: 0
+verdict: PASS
+
+## 2. byte-identical to v0.6 (REQUIREMENTS 'Same gear, same links', D-11, D-19)
+$ git diff --exit-code v0.6 -- requirements.txt tests/regression/ .github/workflows/ci.yml README.md src/spur/calc.py src/spur/params.py
+exit status: 0
+verdict: PASS
+
+## 3. D-20 order: the L46 commit precedes every commit adding a placeholder
+$ L=$(git log -1 --format=%H -G'^## L46 — ' -- docs/architecture/decision_log.md)
+$ A=$(git log --diff-filter=A --format=%H -- src/spur/shaft_params.py src/spur/shaft_calc.py src/spur/din5480.py src/spur/din5480_tables.py src/spur/shaft_model.py)
+$ test -n "$L" && test -n "$A"; for c in $A: test "$c" != "$L" && git merge-base --is-ancestor "$L" "$c"
+L46 commit L: 5d61f8e3d82c2751164dfa22cf5e3381b35415b1
+  5d61f8e docs(decisions): L46 widens spur to a gear and spline generator
+placeholder-adding commits A:
+  bdf224d528e53accd58b7a24b3908395faddf047 feat(boundaries): wall the shaft modules off the gear before they hold code
+  L46 is an ancestor of bdf224d528e53accd58b7a24b3908395faddf047: yes
+D-20 order: L46 5d61f8e3d82c2751164dfa22cf5e3381b35415b1 precedes 1 placeholder commit(s)
+exit status: 0
+verdict: PASS
+
+## 4. no shaft behaviour: no shaft parameter class, no /api/shaft route (D-10, D-12)
+$ git grep -nE '^[[:space:]]*class[[:space:]]+Shaft' -- src
+git grep exit status: 1 (1 means no match)
+$ git grep -nE '@[A-Za-z_.]+\.(get|post|put|delete|patch|api_route|route)\([[:space:]]*["'\'']/api/shaft' -- src
+git grep exit status: 1 (1 means no match)
+exit status: 0
+verdict: PASS
+
+## 5. the five placeholders are one docstring each (30-03 Task 1 AST check)
+$ .venv/bin/python -c "import ast,sys; n=[...five names...]; ... print('docstring-only:', 5-len(bad), 'of 5', bad)"
+docstring-only: 5 of 5 []
+exit status: 0
+verdict: PASS
+
+## 6. D-10: model.py's diff since v0.6 adds no isinstance test and names no shaft module
+$ D=$(git diff v0.6 -- src/spur/model.py); added lines mentioning isinstance or shaft (case-insensitive)
+model.py diff since v0.6: 30 lines, 3 added lines
+added lines mentioning isinstance or shaft: 0
+exit status: 0
+verdict: PASS
+
+## 7. ten contracts kept; the seam and gear-check tests pass
+$ make lint-imports
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 47 files, 88 dependencies.
+-----------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+The shaft maths stays free of the CAD kernel and the solid KEPT
+The shaft maths stays free of the logger KEPT
+The kernel doorways are model and shaft_model KEPT
+The gear maths does not know the shaft KEPT
+The shaft maths copies the gear maths, never imports it KEPT
+
+Contracts: 10 kept, 0 broken.
+exit status: 0
+$ .venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py tests/test_gear_unchanged.py
+...................                                                      [100%]
+19 passed in 2.25s
+exit status: 0
+verdict: PASS
+
+git status --porcelain at the end: ?? .planning/milestone.lock;?? .planning/phases/30-scope-seam-and-gear-safety-guard/investigation/30-05-close-checks.log;

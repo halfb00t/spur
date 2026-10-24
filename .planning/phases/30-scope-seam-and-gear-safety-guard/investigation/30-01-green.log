@@ -1,0 +1,2 @@
+.venv/bin/python -m scripts.gear_unchanged
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6

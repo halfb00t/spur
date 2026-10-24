@@ -161,7 +161,7 @@ numbers from the web page, the API and the CLI — with every existing gear link
 no new `GearParams` field, `tests/regression/` and `ci.yml` byte-identical to the `v0.6`
 baseline, the gear `/api/schema` response byte-equal.
 
-- [ ] **Phase 30: Scope, Seam and Gear-Safety Guard** - The widening to a gear and spline
+- [x] **Phase 30: Scope, Seam and Gear-Safety Guard** - The widening to a gear and spline (completed 2026-10-23)
       generator is a logged decision, the shaft is walled off from the gear by import contracts
       and its own route prefix, and one check proves at every phase close that no gear link moved
 - [ ] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams`
@@ -187,12 +187,11 @@ shaft code exists; the shaft is walled off from the gear by import contracts and
 prefix; and one check, run at every phase close, proves that no existing gear link builds a
 different part. Every later phase adds shaft code under that guard instead of hoping.
 **Depends on**: Nothing new — builds on shipped v0.6 (`792b45c`, the close squash on `main`). The
-only phase of the milestone that edits gear-side files. **No `v0.6` tag exists** (`git tag -l` and
-`git ls-remote --tags origin` list `v0.1`–`v0.5`), yet every "byte-identical to `v0.6`" rule in
-REQUIREMENTS.md names it: the first task is a stop-and-ask — the human tags `792b45c` as `v0.6`
-(creating and pushing a tag is the human's call), or the check pins the sha until they do.
-`git diff v0.5 792b45c -- tests/regression/ .github/workflows/ci.yml` is empty today, so either
-baseline reads the same bytes.
+`v0.6` tag exists, annotated and pushed, and peels to `792b45c` (found at discuss-phase), so every
+"byte-identical to `v0.6`" rule in REQUIREMENTS.md names a real baseline. Later phases make only
+additive edits to the shared modules `model.py`, `pool.py` and `app.py`, each proved by
+`make gear.unchanged`; `calc.py`, `params.py`, `tests/regression/`, `.github/workflows/ci.yml` and
+`requirements.txt` are not edited for the rest of the milestone (D-11).
 **Requirements**: REQ-scope-decision-logged, REQ-gear-unchanged-proof, REQ-shaft-routes-separate
 **Success Criteria** (what must be TRUE):
 
@@ -227,23 +226,23 @@ changes Phase 31's file layout, ask before choosing.
 `requirements.txt` byte-identical. **Phase close**: `make verify` result line recorded; the
 Phase 30 check green.
 **Research flag**: No — standard patterns (research Phases 1 and 4).
-**Plans**: 5 plans, run one at a time (one shared working tree; deliberate red edits)
+**Plans**: 5/5 plans complete, run one at a time (one shared working tree; deliberate red edits)
 
 Plans:
 **Wave 1**
-- [ ] 30-01-PLAN.md — `make gear.unchanged`: the tracer check against the `v0.6` tag, wired into both gates, tested on scratch repos, seen red per watched item, priced
+- [x] 30-01-PLAN.md — `make gear.unchanged`: the tracer check against the `v0.6` tag, wired into both gates, tested on scratch repos, seen red per watched item, priced
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 30-02-PLAN.md — L46 (gear and spline generator; amends L02/L05), AGENTS.md brief, roadmap D-11 amendment, one docs commit before any shaft module
+- [x] 30-02-PLAN.md — L46 (gear and spline generator; amends L02/L05), AGENTS.md brief, roadmap D-11 amendment, one docs commit before any shaft module
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 30-03-PLAN.md — the wall: five docstring-only shaft modules, `parts.py`, five import contracts, belts, existence guard, route-table pin, each seen red
+- [x] 30-03-PLAN.md — the wall: five docstring-only shaft modules, `parts.py`, five import contracts, belts, existence guard, route-table pin, each seen red
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 30-04-PLAN.md — the seam: `Part` at the shared entry points, `_serve_model` pure move (own commit), part-neutral 503 text with its pin
+- [x] 30-04-PLAN.md — the seam: `Part` at the shared entry points, `_serve_model` pure move (own commit), part-neutral 503 text with its pin
 
 **Wave 5** *(blocked on Wave 4 completion)*
-- [ ] 30-05-PLAN.md — phase-close checks (D-20 order, byte-identical paths, no shaft behaviour) and the `make verify` gate delta
+- [x] 30-05-PLAN.md — phase-close checks (D-20 order, byte-identical paths, no shaft behaviour) and the `make verify` gate delta
 
 ### Phase 31: Shaft Maths, Parameters and Designation
 
@@ -308,7 +307,11 @@ bounds set from that sweep. The user reaches the downloads through Phase 33's in
 **Depends on**: Phase 31 (parameters and outline maths); Phase 30 (the kernel dispatches by part
 type inside `model._build`, under the one lock, through the same pool and caches). The solid
 carries the **nominal** tooth thickness until Phase 34 switches it to the effective
-maximum-material thickness.
+maximum-material thickness. Its edits to `model._build` and `pool._warm` are additive and proved
+by `make gear.unchanged`; when `model.py` first imports `shaft_model` statically, the contract
+"The kernel doorways are model and shaft_model" gains
+`ignore_imports = ["spur.model -> spur.shaft_model"]` in that same commit (30-RESEARCH Pitfall 4:
+it errors if added earlier).
 **Requirements**: REQ-shaft-solid, REQ-shaft-build-measured
 **Success Criteria** (what must be TRUE):
 
@@ -342,7 +345,9 @@ the API and the CLI, one set of numbers for all three, the designation can be gi
 the fields, and WR-02 is fixed on the same edit of the part switch that would otherwise trip it.
 **Depends on**: Phase 30 (route prefix and contracts), Phase 31 (maths, parameters, designation),
 Phase 32 (the solid). Does not depend on the tables: table-dependent numbers arrive in Phase 34
-through the same schema-carried row list, and no number printed here is a table value.
+through the same schema-carried row list, and no number printed here is a table value. Its routes
+are additions to `app.py` under `/api/shaft/`, calling `_serve_model` as its second caller, proved
+by `make gear.unchanged` and Phase 30's route-table pin.
 **Requirements**: REQ-shaft-api, REQ-shaft-cli, REQ-shaft-web, REQ-designation-input,
 REQ-shaft-parity, REQ-wr02-fixed
 **Success Criteria** (what must be TRUE):
@@ -470,7 +475,7 @@ comes from.
 | 17–20 | v0.4 | 22/22 (Phase 20 skipped under L38) | Complete | 2026-10-09 |
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
-| 30. Scope, Seam and Gear-Safety Guard | v0.7 | 0/5 | Planned | - |
+| 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 0/? | Not started (needs anchor rows from the DIN 5480 copy) | - |
 | 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
