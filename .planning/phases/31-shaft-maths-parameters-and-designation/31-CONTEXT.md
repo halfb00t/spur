@@ -158,6 +158,27 @@ anchor rows (ROADMAP Phase 31 "Needs the human before it can close").
   - takes plain floats.
 - The exact `fit` regex, within D-02.
 
+### Post-research resolutions (2026-10-24)
+
+The research (`31-RESEARCH.md`, Open Questions 1-4) found that two decisions above do not
+survive the numbers. The human resolved them, and two open choices, after reading it.
+
+- **D-19 (amends D-04):** The default stays **W 25x1.25x18x8f**, and the pinned test still
+  asserts that its x is the range edge. The default does **not** exercise the range epsilon: it
+  computes to exactly 0.45 (or 0.44999999999999996 under another expression order), never
+  above. The epsilon is proved by dedicated cases instead: upper edge `(17.6, 0.8, 20)` →
+  0.4500000000000008; lower edge `(30, 2, 14)` and `(25, 1.25, 19)`. Each is seen red once
+  with the epsilon set to 0. The plan summary records the corrected D-04 wording.
+- **D-20 (amends D-12):** The pin-contact guard cannot fire through `derive_shaft` in this
+  phase. Over 7,392 cases the theoretical pin's contact sits at least 0.62·m above the internal
+  d_Ff and at least 0.886·m below d_a. The guard is therefore a function of an explicit
+  `pin_d`, tested by direct calls. Its comment states that it goes live when Phase 34 brings
+  the copy's D_Re.
+- **D-21 (confirms D-05):** The parser accepts only D-05's variants. Spaces around `x` (the
+  catalogue form `W 25 x 1,25 x 18 x 8f`) are refused, naming the bad token.
+- **D-22 (refines D-13):** For odd z, D_Re prints (it is parity-independent and
+  oracle-proved); M_Re is `null` with its warning until an odd-z anchor row confirms it.
+
 </decisions>
 
 <canonical_refs>
