@@ -96,6 +96,8 @@ class ShaftDimensions(BaseModel):
                     "Null for an odd tooth count (unconfirmed) and when the pin does not "
                     "touch the flanks within the contact window.",
         json_schema_extra={"unit": "mm"})
+    designation: str = Field(description="The DIN 5480 designation of these parameters, as "
+                                         "the codec prints it.")
     warnings: tuple[str, ...] = Field(description="Sentences about values that were capped "
                                                   "or cannot be computed honestly.")
 
@@ -176,5 +178,6 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
         form_d=None,
         pin_d=reading.pin_d,
         measure_over_pins=None if reading.measure is None else r3(reading.measure),
+        designation=din5480.format_designation(p.reference_d, p.module, p.teeth, p.fit),
         warnings=(FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, *reading.warnings),
     )

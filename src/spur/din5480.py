@@ -12,6 +12,8 @@ metal to.
 from __future__ import annotations
 
 import math
+import re
+from typing import NamedTuple
 
 # One constants block. Each line carries unit, source and the slot the copy's clause fills.
 ALPHA = math.radians(30.0)  # rad, pressure angle fixed at 30 deg; ASSUMPTION (clause slot)
@@ -155,3 +157,85 @@ def form_diameter(m: float, z: int, xm: float, h_fp: float, rho_fp: float) -> fl
     d_b = d * math.cos(ALPHA)
     h = h_fp * m - xm - rho_fp * m * (1 - math.sin(ALPHA))
     return math.hypot(d_b, d * math.sin(ALPHA) - 2 * h / math.sin(ALPHA))
+
+
+# The designation codec. The notation is the standard's, `W <d_B>x<m>x<z>x<fit>`. Every
+# character class below is ASCII on purpose: `\d` matches Unicode digits and `float("\u0663")`
+# succeeds, so a permissive pattern would build a part from text nobody typed as a number
+# (31-RESEARCH Pitfall 6).
+# The longest real designation, W 835.000000x10.000000x82x11a, is 29 characters; the bound
+# caps the input of every regex below.
+DESIGNATION_MAX_LENGTH = 64
+
+_NUMBER = r"[0-9]+(?:[.,][0-9]+)?"
+_TEETH = r"[0-9]+"
+
+
+class Designation(NamedTuple):
+    """The four fields a designation names; the names equal ShaftParams' own."""
+
+    reference_d: float
+    module: float
+    teeth: int
+    fit: str
+
+
+class DesignationError(ValueError):
+    """An unparseable designation; `token` is the text that was refused."""
+
+    def __init__(self, token: str, message: str) -> None:
+        super().__init__(message)
+        self.token = token
+
+
+def _number(v: float) -> str:
+    # repr is the shortest string that round-trips a float (`:g` keeps six significant
+    # digits and loses 25.123456); the fields' bounds keep it out of exponent form.
+    return repr(float(v)).removesuffix(".0")
+
+
+def format_designation(reference_d: float, module: float, teeth: int, fit: str) -> str:
+    """The one canonical form: `W 25x1.25x18x8f`."""
+    return f"W {_number(reference_d)}x{_number(module)}x{teeth}x{fit}"
+
+
+def parse_designation(text: str) -> Designation:
+    """The four fields of a designation, or a DesignationError naming the bad token.
+
+    Accepts exactly the canonical form plus no space after W, an upper-case X and `,` for
+    the decimal mark. Nothing else is repaired: spaces around x, a multiplication sign, an
+    upper-case fit letter or a fractional tooth count are refused, never read as a nearby
+    shaft (D-05, D-21).
+    """
+    if len(text) > DESIGNATION_MAX_LENGTH:
+        raise DesignationError(
+            text[:DESIGNATION_MAX_LENGTH],
+            f"The designation is {len(text)} characters long; the longest accepted is "
+            f"{DESIGNATION_MAX_LENGTH}.")
+    if not text.startswith("W"):
+        word = text.split(" ", 1)[0]
+        if word[:1] == "N" and not word[1:2].isalpha():
+            raise DesignationError(
+                "N", "The designation 'N' is for an internal spline (hub), which is not "
+                     "supported; only the shaft, W, is.")
+        raise DesignationError(
+            word, f"The designation must start with the type letter W, not {word!r}.")
+    rest = text[1:]
+    if rest.startswith(" "):
+        rest = rest[1:]
+    tokens = re.split(r"[xX]", rest, maxsplit=3)  # maxsplit keeps an x inside the fit token
+    if len(tokens) != 4:
+        raise DesignationError(
+            rest, f"The designation needs four parts, W <d_B>x<m>x<z>x<fit>; {rest!r} "
+                  f"does not split into them.")
+    d_b, m, z, fit = tokens
+    if not re.fullmatch(_NUMBER, d_b):
+        raise DesignationError(d_b, f"The reference diameter {d_b!r} is not a number such "
+                                    f"as 25 or 25.5.")
+    if not re.fullmatch(_NUMBER, m):
+        raise DesignationError(m, f"The module {m!r} is not a number such as 1.25.")
+    if not re.fullmatch(_TEETH, z):
+        raise DesignationError(z, f"The tooth count {z!r} is not a whole number.")
+    if not re.fullmatch(FIT_PATTERN, fit):
+        raise DesignationError(fit, f"The fit {fit!r} is not a fit such as 8f.")
+    return Designation(float(d_b.replace(",", ".")), float(m.replace(",", ".")), int(z), fit)

@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from test_din5480 import M_GRID
 
 from spur import din5480
+from spur.din5480 import Designation, parse_designation
 from spur.shaft_calc import (
     FORM_DIAMETER_UNPROVEN,
     ODD_Z_UNCONFIRMED,
@@ -44,6 +45,15 @@ def test_the_default_shaft_derives_its_basic_dimensions() -> None:
     assert d.root_d == 22.25
     assert d.nominal_thickness == 2.613
     assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN)
+
+
+def test_the_default_shaft_is_designated_w_25x1_25x18x8f() -> None:
+    """The designation is the standard's notation, and the default's parses back to the
+    default (D-05): the codec and the parameter model name the same shaft."""
+    designation = derive_shaft(ShaftParams()).designation
+    assert designation == "W 25x1.25x18x8f"
+    assert parse_designation(designation) == Designation(25.0, 1.25, 18, "8f")
+    assert ShaftParams(**parse_designation(designation)._asdict()) == ShaftParams()
 
 
 def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
