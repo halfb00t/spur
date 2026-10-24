@@ -1,0 +1,89 @@
+....................FF..F....FF........                                  [100%]
+=================================== FAILURES ===================================
+_ test_an_unparseable_designation_is_refused_naming_its_token[spaced-catalogue-form] _
+
+text = 'W 25 x 1,25 x 18 x 8f', token = '25 '
+
+    @pytest.mark.parametrize(
+        ("text", "token"),
+        [pytest.param(text, token, id=name) for name, text, token in REFUSED_DESIGNATIONS],
+    )
+    def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token: str) -> None:
+        """Nothing is repaired (D-21): each refusal names the token it stopped at, and a Phase 33
+        422 reads that token from the exception, not from its message."""
+>       with pytest.raises(din5480.DesignationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DesignationError
+
+tests/test_din5480.py:358: Failed
+_ test_an_unparseable_designation_is_refused_naming_its_token[double-space-after-w] _
+
+text = 'W  25x1.25x18x8f', token = ' 25'
+
+    @pytest.mark.parametrize(
+        ("text", "token"),
+        [pytest.param(text, token, id=name) for name, text, token in REFUSED_DESIGNATIONS],
+    )
+    def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token: str) -> None:
+        """Nothing is repaired (D-21): each refusal names the token it stopped at, and a Phase 33
+        422 reads that token from the exception, not from its message."""
+>       with pytest.raises(din5480.DesignationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DesignationError
+
+tests/test_din5480.py:358: Failed
+_ test_an_unparseable_designation_is_refused_naming_its_token[no-break-space-after-w] _
+
+text = 'W\xa025x1.25x18x8f', token = '\xa025'
+
+    @pytest.mark.parametrize(
+        ("text", "token"),
+        [pytest.param(text, token, id=name) for name, text, token in REFUSED_DESIGNATIONS],
+    )
+    def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token: str) -> None:
+        """Nothing is repaired (D-21): each refusal names the token it stopped at, and a Phase 33
+        422 reads that token from the exception, not from its message."""
+>       with pytest.raises(din5480.DesignationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DesignationError
+
+tests/test_din5480.py:358: Failed
+_ test_an_unparseable_designation_is_refused_naming_its_token[trailing-newline] _
+
+text = 'W 25x1.25x18x8f\n', token = '8f\n'
+
+    @pytest.mark.parametrize(
+        ("text", "token"),
+        [pytest.param(text, token, id=name) for name, text, token in REFUSED_DESIGNATIONS],
+    )
+    def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token: str) -> None:
+        """Nothing is repaired (D-21): each refusal names the token it stopped at, and a Phase 33
+        422 reads that token from the exception, not from its message."""
+>       with pytest.raises(din5480.DesignationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DesignationError
+
+tests/test_din5480.py:358: Failed
+_ test_an_unparseable_designation_is_refused_naming_its_token[trailing-space] __
+
+text = 'W 25x1.25x18x8f ', token = '8f '
+
+    @pytest.mark.parametrize(
+        ("text", "token"),
+        [pytest.param(text, token, id=name) for name, text, token in REFUSED_DESIGNATIONS],
+    )
+    def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token: str) -> None:
+        """Nothing is repaired (D-21): each refusal names the token it stopped at, and a Phase 33
+        422 reads that token from the exception, not from its message."""
+>       with pytest.raises(din5480.DesignationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DesignationError
+
+tests/test_din5480.py:358: Failed
+=========================== short test summary info ============================
+FAILED tests/test_din5480.py::test_an_unparseable_designation_is_refused_naming_its_token[spaced-catalogue-form]
+FAILED tests/test_din5480.py::test_an_unparseable_designation_is_refused_naming_its_token[double-space-after-w]
+FAILED tests/test_din5480.py::test_an_unparseable_designation_is_refused_naming_its_token[no-break-space-after-w]
+FAILED tests/test_din5480.py::test_an_unparseable_designation_is_refused_naming_its_token[trailing-newline]
+FAILED tests/test_din5480.py::test_an_unparseable_designation_is_refused_naming_its_token[trailing-space]
+5 failed, 34 passed, 729 deselected in 0.07s

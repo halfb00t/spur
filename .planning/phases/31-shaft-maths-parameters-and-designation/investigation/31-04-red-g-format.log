@@ -1,0 +1,18 @@
+..........F............................                                  [100%]
+=================================== FAILURES ===================================
+____________ test_the_designation_round_trips[W 25.1235x0.75x31x7e] ____________
+
+values = (25.123456, 0.75, 31, '7e')
+
+    @pytest.mark.parametrize("values", ROUND_TRIPS, ids=lambda v: din5480.format_designation(*v))
+    def test_the_designation_round_trips(values: tuple[float, float, int, str]) -> None:
+>       assert din5480.parse_designation(din5480.format_designation(*values)) == values
+E       AssertionError: assert Designation(r...=31, fit='7e') == (25.123456, 0.75, 31, '7e')
+E         
+E         At index 0 diff: 25.1235 != 25.123456
+E         Use -v to get more diff
+
+tests/test_din5480.py:348: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480.py::test_the_designation_round_trips[W 25.1235x0.75x31x7e]
+1 failed, 38 passed, 729 deselected in 0.06s
