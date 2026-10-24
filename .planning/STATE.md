@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 31
 current_phase_name: Shaft Maths, Parameters and Designation
 status: "Phase 30 shipped — PR #50"
-stopped_at: Phase 30 complete, ready to plan Phase 31
-last_updated: "2026-10-24T02:19:00.155Z"
+stopped_at: Phase 31 context gathered
+last_updated: "2026-10-24T08:21:42.177Z"
 last_activity: 2026-10-24
-last_activity_desc: Phase 30 shipped as PR #50
-state_head: afe2e4b511b7a8b043817a43b50f9112e45aaa38
+last_activity_desc: Phase 30 shipped as PR
+state_head: e0af596cf204f7d86bab25947b1ff340d7743818
 progress:
   total_phases: 5
   completed_phases: 7
   total_plans: 5
   completed_plans: 5
-  percent: 64
+  percent: 100
 ---
 
 # Project State
@@ -842,9 +842,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23T16:46:40.343Z
-Stopped at: Phase 30 complete, ready to plan Phase 31
-Resume file: None
+Last session: 2026-10-24T08:21:42.121Z
+Stopped at: Phase 31 context gathered
+Resume file: .planning/phases/31-shaft-maths-parameters-and-designation/31-CONTEXT.md
 
 ## Operator Next Steps
 
