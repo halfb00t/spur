@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from spur import din5480
-from spur.din5480 import X_EPS, X_MAX, X_MIN
+from spur.din5480 import X_MAX, X_MIN
 from spur.shaft_params import ShaftParams
 
 FLOAT_FIELDS = ("reference_d", "module", "splined_length", "end_chamfer", "shank_d",
@@ -157,6 +157,8 @@ def test_the_shift_range_edges_are_accepted_through_the_epsilon(
     # The case stops meaning anything the day the expression order changes: the raw shift
     # must sit outside the bare range, by less than the epsilon. If this line fails, the
     # case no longer proves the epsilon and needs another combination.
+    # The tolerance is a literal, so that a zeroed epsilon fails on the refusal below and
+    # not on this line.
     outside = x - edge if edge == X_MAX else edge - x
-    assert 0 < outside <= X_EPS
+    assert 0 < outside <= 1e-9
     ShaftParams(reference_d=reference_d, module=module, teeth=teeth)
