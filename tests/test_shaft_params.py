@@ -52,7 +52,9 @@ def test_the_default_shaft_validates_and_sits_on_the_upper_shift_edge() -> None:
     0.44999999999999996, never above 0.45. The epsilon is proved by the three dedicated
     cases of test_the_shift_range_edges_are_accepted_through_the_epsilon."""
     ShaftParams()
-    assert abs(din5480.profile_shift(25.0, 1.25, 18) - X_MAX) <= X_EPS
+    # A literal tolerance, not X_EPS: the default must read as the edge whatever the
+    # epsilon is, which is what lets the epsilon-zero red leave this test green.
+    assert abs(din5480.profile_shift(25.0, 1.25, 18) - X_MAX) <= 1e-9
 
 
 def test_a_shaft_parameter_set_is_frozen_and_hashable() -> None:
