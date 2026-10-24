@@ -285,3 +285,94 @@ def test_the_oracle_refuses_a_mutated_odd_z_factor() -> None:
         assert result is not None
         even_formula = (result[0] - pin) / math.cos(math.pi / (2 * z)) + pin
         assert abs(even_formula - shaft_oracle.measure(m, z, x, pin)) > 1e-3
+
+
+# (id, text, the token the refusal names). Non-ASCII rows are written as escapes so the
+# file shows which character is meant: a no-break space is not a space.
+REFUSED_DESIGNATIONS: list[tuple[str, str, str]] = [
+    ("empty", "", ""),
+    ("only-w", "W", ""),
+    ("w-and-space", "W ", ""),
+    ("empty-fit", "W 25x1.25x18x", ""),
+    ("hub-n", "N 25x1.25x18x8f", "N"),
+    ("din-prefix", "DIN 5480 W 25x1.25x18x8f", "DIN"),
+    ("lower-case-w", "w 25x1.25x18x8f", "w"),
+    ("spaced-catalogue-form", "W 25 x 1,25 x 18 x 8f", "25 "),
+    ("double-space-after-w", "W  25x1.25x18x8f", " 25"),
+    ("multiplication-sign", "W 25\u00d71.25\u00d718\u00d78f", "25\u00d71.25\u00d718\u00d78f"),
+    ("full-width-x", "W 25\uff581.25\uff5818\uff588f", "25\uff581.25\uff5818\uff588f"),
+    ("no-break-space-after-w", "W\u00a025x1.25x18x8f", "\u00a025"),
+    ("fractional-teeth", "W 25x1.25x18.5x8f", "18.5"),
+    ("upper-case-fit", "W 25x1.25x18x8F", "8F"),
+    ("iso-spelling", "W 25x1.25x18xf8", "f8"),
+    ("arabic-indic-digit", "W \u06625x1.25x18x8f", "\u06625"),
+    ("trailing-newline", "W 25x1.25x18x8f\n", "8f\n"),
+    ("trailing-space", "W 25x1.25x18x8f ", "8f "),
+    ("inf", "W infx1.25x18x8f", "inf"),
+    ("exponent", "W 1e3x1.25x18x8f", "1e3"),
+    ("underscore", "W 2_5x1.25x18x8f", "2_5"),
+    ("lone-decimal-mark", "W 25.x1.25x18x8f", "25."),
+    ("leading-decimal-mark", "W 25x.5x18x8f", ".5"),
+    ("extra-token", "W 25x1.25x18x8fx9", "8fx9"),
+    ("three-tokens", "W 25x1.25x18", "25x1.25x18"),
+]
+ROUND_TRIPS: list[tuple[float, float, int, str]] = [
+    (25.0, 1.25, 18, "8f"),
+    (30.0, 2.0, 14, "9h"),
+    (17.6, 0.8, 20, "10f"),
+    (120.0, 3.0, 38, "8f"),
+    (70.0, 3.0, 22, "6f"),
+    (25.123456, 0.75, 31, "7e"),  # `:g` would print 25.1235 and lose this one
+    (835.0, 10.0, 82, "11a"),
+    (3.75, 0.5, 6, "8f"),
+]
+
+
+def test_the_designation_prints_in_one_canonical_form() -> None:
+    assert din5480.format_designation(25.0, 1.25, 18, "8f") == "W 25x1.25x18x8f"
+    assert din5480.format_designation(30.0, 2.0, 14, "9h") == "W 30x2x14x9h"
+    assert din5480.format_designation(17.6, 0.8, 20, "10f") == "W 17.6x0.8x20x10f"
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["W25x1.25x18x8f", "W 25X1.25X18X8f", "W 25x1,25x18x8f", "W25X1,25X18X8f"],
+)
+def test_the_designation_parser_accepts_the_listed_variants(text: str) -> None:
+    """D-05's variants: no space after W, an upper-case X, a comma for the decimal mark."""
+    assert din5480.parse_designation(text) == din5480.Designation(25.0, 1.25, 18, "8f")
+
+
+@pytest.mark.parametrize("values", ROUND_TRIPS, ids=lambda v: din5480.format_designation(*v))
+def test_the_designation_round_trips(values: tuple[float, float, int, str]) -> None:
+    assert din5480.parse_designation(din5480.format_designation(*values)) == values
+
+
+@pytest.mark.parametrize(
+    ("text", "token"),
+    [pytest.param(text, token, id=name) for name, text, token in REFUSED_DESIGNATIONS],
+)
+def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token: str) -> None:
+    """Nothing is repaired (D-21): each refusal names the token it stopped at, and a Phase 33
+    422 reads that token from the exception, not from its message."""
+    with pytest.raises(din5480.DesignationError) as raised:
+        din5480.parse_designation(text)
+    assert isinstance(raised.value, ValueError)
+    assert raised.value.token == token
+    if token:
+        assert repr(token) in str(raised.value)
+
+
+def test_a_designation_longer_than_the_bound_is_refused_before_parsing() -> None:
+    """The bound is checked first, so no regex sees more than 64 characters. 65 characters
+    that would otherwise parse are refused with a message that does not echo them."""
+    too_long = "W 25." + "0" * 48 + "1x1.25x18x8f"
+    assert len(too_long) == din5480.DESIGNATION_MAX_LENGTH + 1
+    with pytest.raises(din5480.DesignationError) as raised:
+        din5480.parse_designation(too_long)
+    assert raised.value.token == too_long[: din5480.DESIGNATION_MAX_LENGTH]
+    assert too_long not in str(raised.value)
+    assert "start with" not in str(raised.value)
+    at_bound = "W 25." + "0" * 47 + "1x1.25x18x8f"
+    assert len(at_bound) == din5480.DESIGNATION_MAX_LENGTH
+    assert din5480.parse_designation(at_bound).teeth == 18

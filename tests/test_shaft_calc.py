@@ -56,6 +56,17 @@ def test_the_default_shaft_is_designated_w_25x1_25x18x8f() -> None:
     assert ShaftParams(**parse_designation(designation)._asdict()) == ShaftParams()
 
 
+def test_the_shaft_dimensions_keys_are_fixed() -> None:
+    """These keys become Phase 33's dims rows, in this order; renaming or moving one after
+    Phase 33 changes the API document. The warnings are the same on every call."""
+    assert list(ShaftDimensions.model_fields) == [
+        "reference_d", "profile_shift", "profile_shift_mm", "pitch_d", "tip_d", "root_d",
+        "nominal_thickness", "form_d", "pin_d", "measure_over_pins", "designation",
+        "warnings",
+    ]
+    assert derive_shaft(ShaftParams()).warnings == derive_shaft(ShaftParams()).warnings
+
+
 def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
     """D_Re 2.73 is the theoretical pin rounded to 0.01 mm; M_Re is for that pin. The form
     diameter stays null, with its reason, because no DIN 5480 row proves the construction."""
