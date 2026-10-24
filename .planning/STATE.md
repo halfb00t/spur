@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 31
 current_phase_name: Shaft Maths, Parameters and Designation
 status: executing
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-10-24T11:02:11.289Z"
+stopped_at: Completed 31-02-PLAN.md
+last_updated: "2026-10-24T11:11:53.283Z"
 last_activity: 2026-10-24
 last_activity_desc: Phase 31 execution started
-state_head: d818af4c3a6d7e5e051e485a9903bd8a5640d153
+state_head: de6a54adfb5f64a165c34be84fbaf799e7867056
 progress:
   total_phases: 5
   completed_phases: 7
   total_plans: 11
-  completed_plans: 6
-  percent: 55
+  completed_plans: 7
+  percent: 64
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 31 (Shaft Maths, Parameters and Designation) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-10-24 — Phase 31 execution started
 
@@ -274,6 +274,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 30 P04 | 12 min | 3 tasks | 6 files |
 | Phase 30 P05 | 8 min | 2 tasks | 4 files |
 | Phase 31 P01 | 14 min | 3 tasks | 12 files |
+| Phase 31 P02 | 7 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -535,6 +536,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 31]: 31-01: profile shift pinned as x = (d_B - z*m)/(2*m) - SHIFT_TERM; the only measured order under which all three D-19 epsilon cases fall outside the bare range (default computes to 0.44999999999999996 and does not exercise the epsilon)
 - [Phase 31]: 31-01: SHIFT_TERM and H_FP are two named constants (both 0.55 today); the range refusal lives in shaft_calc.check_shaft, reached from ShaftParams._feasible by local import (the gear's infeasible 422 shape)
 - [Phase 31]: 31-01: solid-only fields splined_length 30 (1-500), end_chamfer 1.0 (0-10), shank_d 25 (1-850), shank_length 20 (0-500) are provisional for the human's review; cross-field rules among them are Phase 32's
+- [Phase 31]: 31-02: the shaft oracle places its involute by the base-thickness identity and reads thickness with atan2; vendor rows compared at print precision, never loosening 1e-9
 
 ### Pending Todos
 
@@ -846,8 +848,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-24T11:02:11.242Z
-Stopped at: Completed 31-01-PLAN.md
+Last session: 2026-10-24T11:11:53.235Z
+Stopped at: Completed 31-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
