@@ -296,7 +296,7 @@ red once, the red recorded. **Phase close**: `make verify` result line recorded 
 `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: Yes — needs the human's copy (research Phase 2): formula confirmation by
 clause, `h_fP`, anchor rows incl. one odd z, the d_Ff construction.
-**Plans**: 3/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
+**Plans**: 4/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
 DIN 5480 checkpoint and 31-06 cannot start until the human answers
 
 Plans:
@@ -310,7 +310,7 @@ Plans:
 - [x] 31-03-PLAN.md — the theoretical pin, M_Re at nominal for even and odd z, d_Ff null with its reason, the pin-contact guard over an explicit pin; oracle-proved and seen red
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 31-04-PLAN.md — the designation codec (print, parse, round trip, refusals naming the token); `parts.py` docstring and the WR-03 debt item re-targeted to Phase 32
+- [x] 31-04-PLAN.md — the designation codec (print, parse, round trip, refusals naming the token); `parts.py` docstring and the WR-03 debt item re-targeted to Phase 32
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 31-05-PLAN.md — the gate green and the prediction table, then `checkpoint:human-action`: the human confirms each formula by clause and approves the anchor rows
@@ -496,7 +496,7 @@ comes from.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
-| 31. Shaft Maths, Parameters and Designation | v0.7 | 3/6 | In Progress (needs anchor rows from the DIN 5480 copy) | - |
+| 31. Shaft Maths, Parameters and Designation | v0.7 | 4/6 | In Progress (needs anchor rows from the DIN 5480 copy) | - |
 | 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |

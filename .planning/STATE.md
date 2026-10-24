@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 31
 current_phase_name: Shaft Maths, Parameters and Designation
 status: executing
-stopped_at: Completed 31-03-PLAN.md
-last_updated: "2026-10-24T11:23:27.610Z"
+stopped_at: Completed 31-04-PLAN.md
+last_updated: "2026-10-24T11:38:46.641Z"
 last_activity: 2026-10-24
 last_activity_desc: Phase 31 execution started
-state_head: 24e3572a2dcdf62bc80447c09c9f610072edede1
+state_head: 4b6f66f1363570c693a325280db5885d33987d4a
 progress:
   total_phases: 5
   completed_phases: 7
   total_plans: 11
-  completed_plans: 8
-  percent: 73
+  completed_plans: 9
+  percent: 82
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 31 (Shaft Maths, Parameters and Designation) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-10-24 — Phase 31 execution started
 
@@ -276,6 +276,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 31 P01 | 14 min | 3 tasks | 12 files |
 | Phase 31 P02 | 7 min | 3 tasks | 8 files |
 | Phase 31 P03 | 9 min | 3 tasks | 12 files |
+| Phase 31 P04 | 12 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -541,6 +542,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 31]: 31-03: gauge step 0.01 mm (PIN_DECIMALS=2, D-11 default; no documented series found, A4)
 - [Phase 31]: 31-03: pin-contact guard margin 0.1*m on both ends, 1.5x the larger observed vendor gap (0.067*m at m 3); scaling with m is an assumption
 - [Phase 31]: 31-03: form_d is None for every shaft; odd z prints its pin and no M_Re until a DIN 5480 row confirms the formula; the guard goes live in Phase 34
+- [Phase 31]: 31-04: designation codec lives in din5480.py; Designation fields equal ShaftParams', DesignationError carries token, length bound 64
+- [Phase 31]: 31-04: D-14 debt item re-targeted to Phase 32 and kept active (option 2); parts.py docstring and pyproject C4 comment name Phase 32
 
 ### Pending Todos
 
@@ -852,8 +855,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-24T11:23:27.562Z
-Stopped at: Completed 31-03-PLAN.md
+Last session: 2026-10-24T11:38:46.578Z
+Stopped at: Completed 31-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
