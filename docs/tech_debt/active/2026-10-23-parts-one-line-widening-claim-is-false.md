@@ -1,24 +1,26 @@
-# `parts.py` says widening `Part` is a one-line edit; the gear-typed internals behind it make that false
+# Widening `Part` to the shaft must type `model._build_checked`, `model._write_export` and `records._gear_fields` in the same change
 
 Severity: must
 Status: active
 Date: 2026-10-23
-Source: Phase 30 code review, WR-03; confirmed by the Phase 30 verifier
+Source: Phase 30 code review, WR-03; confirmed by the Phase 30 verifier; docstring half corrected in Phase 31 (D-14)
 Related files:
-- src/spur/parts.py:3-5
+- src/spur/parts.py:3-8
 - src/spur/model.py (`_build_checked`, `_write_export`, typed `GearParams`)
 - src/spur/records.py:171 (`_gear_fields`)
 
 ## Context
-The `parts.py` docstring says Phase 31 widens `Part` to `GearParams | ShaftParams` with a one-line
-edit here, so that no signature behind the seam is touched again. `model.build`/`model.export`
-take `Part` but pass it straight to `_build_checked(p: GearParams)` and
-`_write_export(..., p: GearParams, ...)`, and `records._gear_fields` reads gear-only attributes.
+The Phase 30 review (WR-03) found that the `parts.py` docstring called widening `Part` a one-line
+edit, which was false. Phase 31 corrected the docstring: it now names Phase 32 and the three
+internals. What remains is the widening itself: `model.build`/`model.export` take `Part` but pass
+it straight to `_build_checked(p: GearParams)` and `_write_export(..., p: GearParams, ...)`, and
+`records._gear_fields` reads gear-only attributes, so widening `Part` fails `mypy --strict` there.
 
 ## Why it matters
-Under `mypy --strict` the widening fails at those call sites. The docstring sets a wrong
-expectation for the phase that relies on it. No Phase 30 success criterion depends on the claim.
+The phase that makes model build a shaft cannot widen `Part` by editing `parts.py` alone. No
+Phase 31 success criterion depends on it: nothing passes a `ShaftParams` to pool, records or model
+before Phase 32.
 
 ## Next step
-Phase 31 (trigger): when `Part` is widened, either type or dispatch those internals in the same
-change, or first correct the docstring to name them. Resolve in that commit.
+Phase 32 (trigger): in the change that makes model build a shaft, widen `Part` and type or
+dispatch `_build_checked`, `_write_export` and `_gear_fields`. Resolve in that commit.
