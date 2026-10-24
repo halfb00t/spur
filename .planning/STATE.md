@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 31
 current_phase_name: Shaft Maths, Parameters and Designation
-status: "Phase 30 shipped — PR #50"
-stopped_at: Phase 31 context gathered
-last_updated: "2026-10-24T10:06:04.088Z"
+status: executing
+stopped_at: Completed 31-01-PLAN.md
+last_updated: "2026-10-24T11:02:11.289Z"
 last_activity: 2026-10-24
-last_activity_desc: Phase 30 shipped as PR
-state_head: 12b5e8daed933747800b68477621858a04c72c87
+last_activity_desc: Phase 31 execution started
+state_head: d818af4c3a6d7e5e051e485a9903bd8a5640d153
 progress:
   total_phases: 5
   completed_phases: 7
   total_plans: 11
-  completed_plans: 5
-  percent: 45
+  completed_plans: 6
+  percent: 55
 ---
 
 # Project State
@@ -30,10 +30,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 31 (Shaft Maths, Parameters and Designation) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 30 shipped — PR #50
-Last activity: 2026-10-24 — Phase 30 shipped as PR #50
+Phase: 31 (Shaft Maths, Parameters and Designation) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-10-24 — Phase 31 execution started
 
 ## Performance Metrics
 
@@ -273,6 +273,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 30 P03 | 10 min | 3 tasks | 9 files |
 | Phase 30 P04 | 12 min | 3 tasks | 6 files |
 | Phase 30 P05 | 8 min | 2 tasks | 4 files |
+| Phase 31 P01 | 14 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -531,6 +532,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 30]: 30-03: Phase 32 adds ignore_imports = [spur.model -> spur.shaft_model] to C3 in the same commit that first imports shaft_model in model.py; wall commit is bdf224d
 - [Phase 30]: 30-04: Part is the name at the shared entry points; _serve_model is the one serving path (move ca60285, 115 lines proved identical); the 503 text counts parts (D-07, D-08, D-09)
 - [Phase 30]: 30-05: Phase 30's make verify read 1369 passed in 233.18s (real 234.48 s, load 16.75 -> 16.06) against the recorded 236.23 s with 239.51 s as cross-check; inside Phase 25's ~8 % spread, no precise delta claimed; all seven close checks PASS
+- [Phase 31]: 31-01: profile shift pinned as x = (d_B - z*m)/(2*m) - SHIFT_TERM; the only measured order under which all three D-19 epsilon cases fall outside the bare range (default computes to 0.44999999999999996 and does not exercise the epsilon)
+- [Phase 31]: 31-01: SHIFT_TERM and H_FP are two named constants (both 0.55 today); the range refusal lives in shaft_calc.check_shaft, reached from ShaftParams._feasible by local import (the gear's infeasible 422 shape)
+- [Phase 31]: 31-01: solid-only fields splined_length 30 (1-500), end_chamfer 1.0 (0-10), shank_d 25 (1-850), shank_length 20 (0-500) are provisional for the human's review; cross-field rules among them are Phase 32's
 
 ### Pending Todos
 
@@ -842,9 +846,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-24T08:21:42.121Z
-Stopped at: Phase 31 context gathered
-Resume file: .planning/phases/31-shaft-maths-parameters-and-designation/31-CONTEXT.md
+Last session: 2026-10-24T11:02:11.242Z
+Stopped at: Completed 31-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
