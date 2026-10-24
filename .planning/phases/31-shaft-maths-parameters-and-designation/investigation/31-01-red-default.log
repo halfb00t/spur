@@ -1,0 +1,41 @@
+F..........................................................F..           [100%]
+=================================== FAILURES ===================================
+______________ test_the_shaft_field_names_and_defaults_are_frozen ______________
+
+    def test_the_shaft_field_names_and_defaults_are_frozen() -> None:
+        """A failure here means a published-link contract moved (L05, L46): a changed name,
+        order or default needs a logged decision before Phase 33 publishes the first shaft
+        link, and is a broken link after it."""
+        assert list(ShaftParams.model_fields) == list(ALL_FIELDS)
+>       assert {n: f.default for n, f in ShaftParams.model_fields.items()} == {
+            "reference_d": 25.0,
+            "module": 1.25,
+            "teeth": 18,
+            "fit": "8f",
+            "splined_length": 30.0,
+            "end_chamfer": 1.0,
+            "shank_d": 25.0,
+            "shank_length": 20.0,
+        }
+E       AssertionError: assert {'reference_d...t': '8f', ...} == {'reference_d...t': '8f', ...}
+E         
+E         Omitting 7 identical items, use -vv to show
+E         Differing items:
+E         {'teeth': 19} != {'teeth': 18}
+E         Use -v to get more diff
+
+tests/test_shaft_params.py:37: AssertionError
+_____________ test_the_default_shaft_derives_its_basic_dimensions ______________
+
+    def test_the_default_shaft_derives_its_basic_dimensions() -> None:
+        d = derive_shaft(ShaftParams())
+        assert d.reference_d == 25.0
+>       assert d.profile_shift == 0.45
+E       assert -0.05 == 0.45
+E        +  where -0.05 = ShaftDimensions(reference_d=25.0, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=23.75, tip_d=24.75, root_d=22.25, nominal_thickness=1.891, warnings=()).profile_shift
+
+tests/test_shaft_calc.py:18: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_params.py::test_the_shaft_field_names_and_defaults_are_frozen
+FAILED tests/test_shaft_calc.py::test_the_default_shaft_derives_its_basic_dimensions
+2 failed, 60 passed in 0.08s

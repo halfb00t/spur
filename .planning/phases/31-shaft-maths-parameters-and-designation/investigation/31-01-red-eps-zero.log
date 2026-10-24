@@ -1,0 +1,146 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+collecting ... collected 59 items
+
+tests/test_shaft_params.py::test_the_shaft_field_names_and_defaults_are_frozen PASSED [  1%]
+tests/test_shaft_params.py::test_the_default_shaft_validates_and_sits_on_the_upper_shift_edge PASSED [  3%]
+tests/test_shaft_params.py::test_a_shaft_parameter_set_is_frozen_and_hashable PASSED [  5%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[8f-True] PASSED [  6%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[9h-True] PASSED [  8%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[10f-True] PASSED [ 10%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[f8-False] PASSED [ 11%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[08f-False] PASSED [ 13%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[8F-False] PASSED [ 15%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[8-False] PASSED [ 16%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[-False] PASSED [ 18%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[8ff-False] PASSED [ 20%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[8f\n-False] PASSED [ 22%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[\u0663f-False] PASSED [ 23%]
+tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[\uff18f-False] PASSED [ 25%]
+tests/test_shaft_params.py::test_each_field_bound_is_inclusive_and_one_step_outside_is_refused[reference_d-3-850] PASSED [ 27%]
+tests/test_shaft_params.py::test_each_field_bound_is_inclusive_and_one_step_outside_is_refused[module-0.5-10] PASSED [ 28%]
+tests/test_shaft_params.py::test_each_field_bound_is_inclusive_and_one_step_outside_is_refused[teeth-6-82] PASSED [ 30%]
+tests/test_shaft_params.py::test_each_field_bound_is_inclusive_and_one_step_outside_is_refused[splined_length-1-500] PASSED [ 32%]
+tests/test_shaft_params.py::test_each_field_bound_is_inclusive_and_one_step_outside_is_refused[end_chamfer-0-10] PASSED [ 33%]
+tests/test_shaft_params.py::test_each_field_bound_is_inclusive_and_one_step_outside_is_refused[shank_d-1-850] PASSED [ 35%]
+tests/test_shaft_params.py::test_each_field_bound_is_inclusive_and_one_step_outside_is_refused[shank_length-0-500] PASSED [ 37%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[nan-reference_d] PASSED [ 38%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[nan-module] PASSED [ 40%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[nan-splined_length] PASSED [ 42%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[nan-end_chamfer] PASSED [ 44%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[nan-shank_d] PASSED [ 45%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[nan-shank_length] PASSED [ 47%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf0-reference_d] PASSED [ 49%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf0-module] PASSED [ 50%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf0-splined_length] PASSED [ 52%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf0-end_chamfer] PASSED [ 54%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf0-shank_d] PASSED [ 55%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf0-shank_length] PASSED [ 57%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[-inf-reference_d] PASSED [ 59%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[-inf-module] PASSED [ 61%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[-inf-splined_length] PASSED [ 62%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[-inf-end_chamfer] PASSED [ 64%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[-inf-shank_d] PASSED [ 66%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[-inf-shank_length] PASSED [ 67%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf1-reference_d] PASSED [ 69%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf1-module] PASSED [ 71%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf1-splined_length] PASSED [ 72%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf1-end_chamfer] PASSED [ 74%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf1-shank_d] PASSED [ 76%]
+tests/test_shaft_params.py::test_non_finite_numbers_are_refused[inf1-shank_length] PASSED [ 77%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[reference_d] PASSED [ 79%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[module] PASSED [ 81%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[teeth] PASSED [ 83%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[fit] PASSED [ 84%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[splined_length] PASSED [ 86%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[end_chamfer] PASSED [ 88%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[shank_d] PASSED [ 89%]
+tests/test_shaft_params.py::test_a_missing_or_null_field_is_refused_by_its_type[shank_length] PASSED [ 91%]
+tests/test_shaft_params.py::test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields[25.05-18] PASSED [ 93%]
+tests/test_shaft_params.py::test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields[24.95-19] PASSED [ 94%]
+tests/test_shaft_params.py::test_the_shift_range_edges_are_accepted_through_the_epsilon[upper-17.6x0.8x20] FAILED [ 96%]
+tests/test_shaft_params.py::test_the_shift_range_edges_are_accepted_through_the_epsilon[lower-30x2x14] FAILED [ 98%]
+tests/test_shaft_params.py::test_the_shift_range_edges_are_accepted_through_the_epsilon[lower-25x1.25x19] FAILED [100%]
+
+=================================== FAILURES ===================================
+_ test_the_shift_range_edges_are_accepted_through_the_epsilon[upper-17.6x0.8x20] _
+
+reference_d = 17.6, module = 0.8, teeth = 20, edge = 0.45
+
+    @pytest.mark.parametrize(("reference_d", "module", "teeth", "edge"), [
+        pytest.param(17.6, 0.8, 20, X_MAX, id="upper-17.6x0.8x20"),
+        pytest.param(30, 2, 14, X_MIN, id="lower-30x2x14"),
+        pytest.param(25, 1.25, 19, X_MIN, id="lower-25x1.25x19"),
+    ])
+    def test_the_shift_range_edges_are_accepted_through_the_epsilon(
+            reference_d: float, module: float, teeth: int, edge: float) -> None:
+        x = din5480.profile_shift(reference_d, module, teeth)
+        # The case stops meaning anything the day the expression order changes: the raw shift
+        # must sit outside the bare range, by less than the epsilon. If this line fails, the
+        # case no longer proves the epsilon and needs another combination.
+        # The tolerance is a literal, so that a zeroed epsilon fails on the refusal below and
+        # not on this line.
+        outside = x - edge if edge == X_MAX else edge - x
+        assert 0 < outside <= 1e-9
+>       ShaftParams(reference_d=reference_d, module=module, teeth=teeth)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ShaftParams
+E         A reference diameter of 17.6 mm with module 0.8 and 20 teeth needs a profile shift of +0.450, outside the range -0.05 to +0.45. Pick another reference diameter, module or tooth count. [type=infeasible, input_value={'reference_d': 17.6, 'module': 0.8, 'teeth': 20}, input_type=dict]
+
+tests/test_shaft_params.py:164: ValidationError
+__ test_the_shift_range_edges_are_accepted_through_the_epsilon[lower-30x2x14] __
+
+reference_d = 30, module = 2, teeth = 14, edge = -0.05
+
+    @pytest.mark.parametrize(("reference_d", "module", "teeth", "edge"), [
+        pytest.param(17.6, 0.8, 20, X_MAX, id="upper-17.6x0.8x20"),
+        pytest.param(30, 2, 14, X_MIN, id="lower-30x2x14"),
+        pytest.param(25, 1.25, 19, X_MIN, id="lower-25x1.25x19"),
+    ])
+    def test_the_shift_range_edges_are_accepted_through_the_epsilon(
+            reference_d: float, module: float, teeth: int, edge: float) -> None:
+        x = din5480.profile_shift(reference_d, module, teeth)
+        # The case stops meaning anything the day the expression order changes: the raw shift
+        # must sit outside the bare range, by less than the epsilon. If this line fails, the
+        # case no longer proves the epsilon and needs another combination.
+        # The tolerance is a literal, so that a zeroed epsilon fails on the refusal below and
+        # not on this line.
+        outside = x - edge if edge == X_MAX else edge - x
+        assert 0 < outside <= 1e-9
+>       ShaftParams(reference_d=reference_d, module=module, teeth=teeth)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ShaftParams
+E         A reference diameter of 30 mm with module 2 and 14 teeth needs a profile shift of -0.050, outside the range -0.05 to +0.45. Pick another reference diameter, module or tooth count. [type=infeasible, input_value={'reference_d': 30, 'module': 2, 'teeth': 14}, input_type=dict]
+
+tests/test_shaft_params.py:164: ValidationError
+_ test_the_shift_range_edges_are_accepted_through_the_epsilon[lower-25x1.25x19] _
+
+reference_d = 25, module = 1.25, teeth = 19, edge = -0.05
+
+    @pytest.mark.parametrize(("reference_d", "module", "teeth", "edge"), [
+        pytest.param(17.6, 0.8, 20, X_MAX, id="upper-17.6x0.8x20"),
+        pytest.param(30, 2, 14, X_MIN, id="lower-30x2x14"),
+        pytest.param(25, 1.25, 19, X_MIN, id="lower-25x1.25x19"),
+    ])
+    def test_the_shift_range_edges_are_accepted_through_the_epsilon(
+            reference_d: float, module: float, teeth: int, edge: float) -> None:
+        x = din5480.profile_shift(reference_d, module, teeth)
+        # The case stops meaning anything the day the expression order changes: the raw shift
+        # must sit outside the bare range, by less than the epsilon. If this line fails, the
+        # case no longer proves the epsilon and needs another combination.
+        # The tolerance is a literal, so that a zeroed epsilon fails on the refusal below and
+        # not on this line.
+        outside = x - edge if edge == X_MAX else edge - x
+        assert 0 < outside <= 1e-9
+>       ShaftParams(reference_d=reference_d, module=module, teeth=teeth)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ShaftParams
+E         A reference diameter of 25 mm with module 1.25 and 19 teeth needs a profile shift of -0.050, outside the range -0.05 to +0.45. Pick another reference diameter, module or tooth count. [type=infeasible, input_value={'reference_d': 25, 'module': 1.25, 'teeth': 19}, input_type=dict]
+
+tests/test_shaft_params.py:164: ValidationError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_params.py::test_the_shift_range_edges_are_accepted_through_the_epsilon[upper-17.6x0.8x20]
+FAILED tests/test_shaft_params.py::test_the_shift_range_edges_are_accepted_through_the_epsilon[lower-30x2x14]
+FAILED tests/test_shaft_params.py::test_the_shift_range_edges_are_accepted_through_the_epsilon[lower-25x1.25x19]
+========================= 3 failed, 56 passed in 0.07s =========================

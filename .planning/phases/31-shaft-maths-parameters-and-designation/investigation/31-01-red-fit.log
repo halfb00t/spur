@@ -1,0 +1,32 @@
+.......F......................................................           [100%]
+=================================== FAILURES ===================================
+___________ test_the_fit_token_is_checked_for_shape_only[08f-False] ____________
+
+fit = '08f', accepted = False
+
+    @pytest.mark.parametrize(("fit", "accepted"), [
+        ("8f", True),
+        ("9h", True),
+        ("10f", True),
+        ("f8", False),        # the ISO spelling is refused (REQUIREMENTS Out of Scope)
+        ("08f", False),       # no leading zero
+        ("8F", False),        # lower-case letter only
+        ("8", False),         # the letter is required
+        ("", False),
+        ("8ff", False),       # one letter
+        ("8f\n", False),      # a trailing newline is not a match
+        ("\u0663f", False),   # Arabic-Indic digit three: ASCII classes only
+        ("\uff18f", False),   # full-width digit eight
+    ])
+    def test_the_fit_token_is_checked_for_shape_only(fit: str, accepted: bool) -> None:
+        errors = _errors(fit=fit)
+        if accepted:
+            assert errors == []
+            return
+>       assert errors
+E       assert []
+
+tests/test_shaft_params.py:87: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_params.py::test_the_fit_token_is_checked_for_shape_only[08f-False]
+1 failed, 61 passed in 0.07s

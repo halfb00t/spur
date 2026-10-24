@@ -1,0 +1,32 @@
+......................................................FF......           [100%]
+=================================== FAILURES ===================================
+_ test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields[25.05-18] _
+
+reference_d = 25.05, teeth = 18
+
+    @pytest.mark.parametrize(("reference_d", "teeth"), [(25.05, 18), (24.95, 19)])
+    def test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields(
+            reference_d: float, teeth: int) -> None:
+        errors = _errors(reference_d=reference_d, module=1.25, teeth=teeth)
+>       assert errors[0]["type"] == "infeasible"
+               ^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_shaft_params.py:139: IndexError
+_ test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields[24.95-19] _
+
+reference_d = 24.95, teeth = 19
+
+    @pytest.mark.parametrize(("reference_d", "teeth"), [(25.05, 18), (24.95, 19)])
+    def test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields(
+            reference_d: float, teeth: int) -> None:
+        errors = _errors(reference_d=reference_d, module=1.25, teeth=teeth)
+>       assert errors[0]["type"] == "infeasible"
+               ^^^^^^^^^
+E       IndexError: list index out of range
+
+tests/test_shaft_params.py:139: IndexError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_params.py::test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields[25.05-18]
+FAILED tests/test_shaft_params.py::test_a_shift_outside_the_shaft_range_is_refused_naming_the_range_and_fields[24.95-19]
+2 failed, 60 passed in 0.08s
