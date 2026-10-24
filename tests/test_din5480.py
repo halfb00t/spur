@@ -24,6 +24,18 @@ GRID: list[tuple[float, int, float]] = list(
         (-0.05, 0.1, 0.25, 0.45),
     )
 )
+# 4 modules x 6 tooth counts x 3 shifts = 72 pin cases; both parities, the smallest and the
+# largest count, and the whole shift range. Each oracle call is a tangency search (about
+# 8 ms), so the sweep stays in the low hundreds (31-RESEARCH Pitfall 10).
+M_GRID: list[tuple[float, int, float]] = list(
+    itertools.product((0.5, 1.25, 3, 10), (6, 7, 18, 19, 38, 82), (-0.05, 0.2, 0.45))
+)
+# Worst contact-diameter disagreement over M_GRID, din5480 against the oracle: 5.14e-7 mm
+# at the rounded pin and 6.97e-7 mm at the unrounded theoretical pin (the oracle's golden
+# section finds the touching point to about the square root of machine epsilon). 2e-6
+# leaves a factor of 2.9 over the larger; the measure itself agrees to 2.3e-13, so it keeps
+# 1e-9.
+CONTACT_ABS = 2e-6
 H_FP_BOTH = (0.55, 0.60)  # the provisional value and hobbing's, so both stay covered
 
 # Vendor cross-check, not the standard (D-08): KISSsoft report 12 Spline (DIN 5480),
@@ -172,3 +184,104 @@ def test_the_oracle_refuses_a_mutated_thickness() -> None:
         abs(with_sin(m, x * m) - shaft_oracle.tooth_thickness(m, z, x)) > 1e-3
         for m, z, x in GRID
     )
+
+
+def _m_case(case: tuple[float, int, float]) -> tuple[float, int, float, float, float]:
+    """(m, z, x, thickness s, rounded theoretical pin) of one M_GRID case."""
+    m, z, x = case
+    xm = x * m
+    pin = round(din5480.theoretical_pin_diameter(m, z, xm), 2)
+    return m, z, x, din5480.tooth_thickness(m, xm), pin
+
+
+@pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+    case: tuple[float, int, float],
+) -> None:
+    m, z, x, s, pin = _m_case(case)
+    result = din5480.measure_over_pins(m, z, s, pin)
+    assert result is not None
+    measure, contact = result
+    assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+    assert contact == pytest.approx(
+        shaft_oracle.contact_diameter(m, z, x, pin), abs=CONTACT_ABS
+    )
+
+
+@pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+def test_the_theoretical_pin_touches_on_the_shifted_reference_circle(
+    case: tuple[float, int, float],
+) -> None:
+    m, z, x = case
+    pin = din5480.theoretical_pin_diameter(m, z, x * m)
+    assert shaft_oracle.contact_diameter(m, z, x, pin) == pytest.approx(
+        m * z + 2 * x * m, abs=CONTACT_ABS
+    )
+
+
+def test_the_measure_over_pins_matches_the_vendor_cross_checks() -> None:
+    # Vendor cross-check, not the standard (D-08): Hexagon WN2 brochure, page 2,
+    # https://www.hexagon.de/pdf/wn2_d.pdf, W 120x3x38x8f, pin 6.000. The M values are at the
+    # vendor's actual thicknesses 6.220 and 6.180, not the nominal 6.271 (31-RESEARCH
+    # Pitfall 7), so the thickness is passed in; compared at the print precision.
+    for s, printed in ((6.220, 126.017), (6.180, 125.956)):
+        result = din5480.measure_over_pins(3.0, 38, s, 6.000)
+        assert result is not None
+        assert result[0] == pytest.approx(printed, abs=5e-4)
+
+    # Vendor cross-check, not the standard (D-08): KISSsoft report 12 Spline (DIN 5480),
+    # W 70x3x22x6f, https://www.kadkraft.com/wp-content/uploads/2022/11/12-Spline-DIN-5480.pdf
+    # Theoretical pin 5.8253, effective pin 6.0000, M 76.1835. KISSsoft prints x*m 0.3501
+    # where the formula gives 0.35 (it rounds x first), so M at xm 0.35 is 76.18337, 1.3e-4
+    # below the print, and xm 0.3501 gives 76.18354. The first is compared at abs 2e-4.
+    assert din5480.theoretical_pin_diameter(3.0, 22, 0.35) == pytest.approx(5.8253, abs=1e-4)
+    result = din5480.measure_over_pins(3.0, 22, din5480.tooth_thickness(3.0, 0.35), 6.000)
+    assert result is not None
+    assert result[0] == pytest.approx(76.1835, abs=2e-4)
+    result = din5480.measure_over_pins(3.0, 22, din5480.tooth_thickness(3.0, 0.3501), 6.000)
+    assert result is not None
+    assert result[0] == pytest.approx(76.18354, abs=1e-5)
+
+
+def test_a_pin_that_cannot_touch_the_involute_has_no_measure() -> None:
+    """The default shaft's pin, undersize and then just over what its space allows."""
+    m, z, xm = 1.25, 18, 0.5625
+    s = din5480.tooth_thickness(m, xm)
+    d = m * z
+    assert din5480.measure_over_pins(m, z, s, 0.01) is None  # no root: target below zero
+    # With eta = -(s/d + inv(a) - pi/z), a pin d_b*eta fits the space exactly at the base
+    # circle; one more 1e-12 gives a root whose tangent point is at or below it.
+    eta = -(s / d + din5480.inv(din5480.ALPHA) - math.pi / z)
+    pin = d * math.cos(din5480.ALPHA) * (eta + 1e-12)
+    assert din5480.measure_over_pins(m, z, s, pin) is None
+    assert din5480.measure_over_pins(m, z, s, 2.73) is not None
+
+
+def test_the_internal_form_diameter_agrees_with_the_oracle_and_the_vendors() -> None:
+    for m, z, x in M_GRID:
+        for h_fp in H_FP_BOTH:
+            assert din5480.form_diameter(m, z, x * m, h_fp, 0.16) == pytest.approx(
+                shaft_oracle.form_diameter(m, z, x, h_fp, 0.16), abs=1e-9
+            )
+    # Vendor cross-check, not the standard (D-08): KISSsoft report 12 Spline (DIN 5480),
+    # https://www.kadkraft.com/wp-content/uploads/2022/11/12-Spline-DIN-5480.pdf: dFf 63.718
+    # "calculated on the basis of the constructed involute" at h_fP 0.60, W 70x3x22.
+    assert din5480.form_diameter(3.0, 22, 0.35, 0.60, 0.16) == pytest.approx(63.718, abs=5e-4)
+    # Hexagon WN2, https://www.hexagon.de/pdf/wn2_d.pdf, W 120x3x38x8f prints dFf 113.91 max,
+    # a limit. The public construction gives 113.880, 0.030 mm below it; that gap sized the
+    # guard's margin (D-12, GUARD_MARGIN_FACTOR). It is recorded, never asserted equal.
+    gap = 113.91 - din5480.form_diameter(3.0, 38, 1.35, 0.55, 0.16)
+    assert gap == pytest.approx(0.030, abs=1e-3)
+
+
+def test_the_oracle_refuses_a_mutated_odd_z_factor() -> None:
+    """The even formula applied to an odd count (no cos(pi/(2z)) on the centre distance)
+    disagrees with the oracle by more than 1e-3 mm on every odd grid case."""
+    odd = [case for case in M_GRID if case[1] % 2]
+    assert odd
+    for case in odd:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        even_formula = (result[0] - pin) / math.cos(math.pi / (2 * z)) + pin
+        assert abs(even_formula - shaft_oracle.measure(m, z, x, pin)) > 1e-3
