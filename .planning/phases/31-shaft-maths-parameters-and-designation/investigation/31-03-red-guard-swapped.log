@@ -1,0 +1,1340 @@
+........................................................................ [  8%]
+........................................................................ [ 16%]
+........................................................................ [ 24%]
+........................................................................ [ 32%]
+........................................................................ [ 40%]
+........................................................................ [ 49%]
+........................................................................ [ 57%]
+........................................................................ [ 65%]
+........................................................................ [ 73%]
+........................................................................ [ 81%]
+.........FF..F.......................................................... [ 90%]
+..............FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 98%]
+FFFFFFFFFFFFFFFF                                                         [100%]
+=================================== FAILURES ===================================
+_____________ test_the_default_shaft_derives_its_basic_dimensions ______________
+
+    def test_the_default_shaft_derives_its_basic_dimensions() -> None:
+        d = derive_shaft(ShaftParams())
+        assert d.reference_d == 25.0
+        assert d.profile_shift == 0.45
+        # 0.5625 is an exact tie in binary64 and round() sends it to the even digit: the same
+        # behaviour as the gear's r3 in calc.py.
+        assert d.profile_shift_mm == 0.562
+        assert d.pitch_d == 22.5
+        assert d.tip_d == 24.75
+        assert d.root_d == 22.25
+        assert d.nominal_thickness == 2.613
+>       assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN)
+E       AssertionError: assert ('The form di...is measured.') == ('The form di...or this pin.')
+E         
+E         Left contains one more item: 'M_Re and D_Re not given: a pin of 2.73 mm touches at a diameter of 23.625 mm, outside the window 24.625 to 22.575 mm in which the flank is measured.'
+E         Use -v to get more diff
+
+tests/test_shaft_calc.py:46: AssertionError
+_________ test_the_default_shaft_prints_its_pin_and_measure_over_pins __________
+
+    def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
+        """D_Re 2.73 is the theoretical pin rounded to 0.01 mm; M_Re is for that pin. The form
+        diameter stays null, with its reason, because no DIN 5480 row proves the construction."""
+        d = derive_shaft(ShaftParams())
+>       assert d.pin_d == 2.73
+E       AssertionError: assert None == 2.73
+E        +  where None = ShaftDimensions(reference_d=25.0, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=22.5, tip_d=24.75, root_d=22.25,...f 2.73 mm touches at a diameter of 23.625 mm, outside the window 24.625 to 22.575 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:53: AssertionError
+_______ test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins ________
+
+    def test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins() -> None:
+        """W25x1.25x19: the pin is given, M_Re waits for a DIN 5480 row that confirms the odd
+        formula (D-13), and the sentences say both."""
+        d = derive_shaft(ShaftParams(teeth=19))
+>       assert d.pin_d == 2.36
+E       AssertionError: assert None == 2.36
+E        +  where None = ShaftDimensions(reference_d=25.0, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=23.75, tip_d=24.75, root_d=22....f 2.36 mm touches at a diameter of 23.625 mm, outside the window 24.625 to 22.688 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:88: AssertionError
+_____________ test_the_pin_contact_guard_nulls_a_pin_off_the_flank _____________
+
+    def test_the_pin_contact_guard_nulls_a_pin_off_the_flank() -> None:
+        """Direct calls, not through derive_shaft: at the theoretical pin the guard cannot fire
+        (31-RESEARCH Pitfall 4, D-20); it goes live when Phase 34 passes the copy's D_Re."""
+        p = ShaftParams()
+        for pin in (1.0, 5.0, 0.01):
+            reading = pin_measurement(p, pin)
+            assert reading.pin_d is None
+            assert reading.measure is None
+            assert len(reading.warnings) == 1
+            assert reading.warnings[0].startswith("M_Re and D_Re not given")
+        ok = pin_measurement(p, 2.73)
+>       assert ok.pin_d == 2.73
+E       AssertionError: assert None == 2.73
+E        +  where None = PinReading(pin_d=None, measure=None, warnings=('M_Re and D_Re not given: a pin of 2.73 mm touches at a diameter of 23.625 mm, outside the window 24.625 to 22.575 mm in which the flank is measured.',)).pin_d
+
+tests/test_shaft_calc.py:120: AssertionError
+____________________ test_the_pin_contact_window_is_closed _____________________
+
+    def test_the_pin_contact_window_is_closed() -> None:
+        """The window's two ends are inside it. The pins that touch exactly on each end are
+        found by bisection, then moved 1e-6 mm either way. The calls are direct because the
+        theoretical pin never reaches an end (31-RESEARCH Pitfall 4, D-20)."""
+        p = ShaftParams()
+        m, z = p.module, p.teeth
+        s = din5480.tooth_thickness(m, din5480.profile_shift(p.reference_d, m, z) * m)
+    
+        def contact(pin: float) -> float:
+            result = din5480.measure_over_pins(m, z, s, pin)
+            assert result is not None
+            return result[1]
+    
+        def pin_touching_at(bound: float) -> float:
+            lo, hi = 1.0, 5.0  # contact 21.756 below the low end, 25.144 above the high end
+            for _ in range(100):
+                mid = 0.5 * (lo + hi)
+                if contact(mid) < bound:
+                    lo = mid
+                else:
+                    hi = mid
+            return 0.5 * (lo + hi)
+    
+        low, high = pin_contact_window(p)
+        at_low, at_high = pin_touching_at(low), pin_touching_at(high)
+>       assert at_low == pytest.approx(1.6379, abs=1e-3)
+E       assert 4.117981652958864 == 1.6379 ± 0.001
+E         
+E         comparison failed
+E         Obtained: 4.117981652958864
+E         Expected: 1.6379 ± 0.001
+
+tests/test_shaft_calc.py:150: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z6-x-0.05] _
+
+case = (0.5, 6, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=3.5000000000000004, profile_shift=-0.05, profile_shift_mm=-0.025, pitch_d=3.0, tip_d=3.4, ...n of 1.05 mm touches at a diameter of 2.950 mm, outside the window 3.350 to 2.688 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z6-x0.2] _
+
+case = (0.5, 6, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=3.7500000000000004, profile_shift=0.2, profile_shift_mm=0.1, pitch_d=3.0, tip_d=3.65, root...n of 1.33 mm touches at a diameter of 3.200 mm, outside the window 3.600 to 2.820 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z6-x0.45] _
+
+case = (0.5, 6, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=4.0, profile_shift=0.45, profile_shift_mm=0.225, pitch_d=3.0, tip_d=3.9, root_d=2.9, nomin...n of 1.73 mm touches at a diameter of 3.449 mm, outside the window 3.850 to 3.030 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z7-x-0.05] _
+
+case = (0.5, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=4.0, profile_shift=-0.05, profile_shift_mm=-0.025, pitch_d=3.5, tip_d=3.9, root_d=2.9, nom...n of 1.02 mm touches at a diameter of 3.447 mm, outside the window 3.850 to 3.163 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z7-x0.2] _
+
+case = (0.5, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=4.25, profile_shift=0.2, profile_shift_mm=0.1, pitch_d=3.5, tip_d=4.15, root_d=3.15, nomin...n of 1.24 mm touches at a diameter of 3.698 mm, outside the window 4.100 to 3.314 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z7-x0.45] _
+
+case = (0.5, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=4.5, profile_shift=0.45, profile_shift_mm=0.225, pitch_d=3.5, tip_d=4.4, root_d=3.4, nomin...n of 1.55 mm touches at a diameter of 3.950 mm, outside the window 4.350 to 3.530 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z18-x-0.05] _
+
+case = (0.5, 18, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=9.499999999999998, profile_shift=-0.05, profile_shift_mm=-0.025, pitch_d=9.0, tip_d=9.4, r...n of 0.95 mm touches at a diameter of 8.954 mm, outside the window 9.350 to 8.578 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z18-x0.2] _
+
+case = (0.5, 18, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=9.749999999999998, profile_shift=0.2, profile_shift_mm=0.1, pitch_d=9.0, tip_d=9.65, root_...n of 1.01 mm touches at a diameter of 9.200 mm, outside the window 9.600 to 8.793 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z18-x0.45] _
+
+case = (0.5, 18, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=9.999999999999998, profile_shift=0.45, profile_shift_mm=0.225, pitch_d=9.0, tip_d=9.9, roo...n of 1.09 mm touches at a diameter of 9.448 mm, outside the window 9.850 to 9.030 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z19-x-0.05] _
+
+case = (0.5, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=9.999999999999998, profile_shift=-0.05, profile_shift_mm=-0.025, pitch_d=9.5, tip_d=9.9, r...n of 0.94 mm touches at a diameter of 9.446 mm, outside the window 9.850 to 9.075 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z19-x0.2] _
+
+case = (0.5, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=10.249999999999998, profile_shift=0.2, profile_shift_mm=0.1, pitch_d=9.5, tip_d=10.15, roo...pin of 1 mm touches at a diameter of 9.696 mm, outside the window 10.100 to 9.292 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z19-x0.45] _
+
+case = (0.5, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=10.499999999999998, profile_shift=0.45, profile_shift_mm=0.225, pitch_d=9.5, tip_d=10.4, r... of 1.08 mm touches at a diameter of 9.949 mm, outside the window 10.350 to 9.530 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z38-x-0.05] _
+
+case = (0.5, 38, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=19.5, profile_shift=-0.05, profile_shift_mm=-0.025, pitch_d=19.0, tip_d=19.4, root_d=18.4,...f 0.92 mm touches at a diameter of 18.944 mm, outside the window 19.350 to 18.552 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z38-x0.2] _
+
+case = (0.5, 38, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=19.75, profile_shift=0.2, profile_shift_mm=0.1, pitch_d=19.0, tip_d=19.65, root_d=18.65, n...f 0.95 mm touches at a diameter of 19.197 mm, outside the window 19.600 to 18.786 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z38-x0.45] _
+
+case = (0.5, 38, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=20.0, profile_shift=0.45, profile_shift_mm=0.225, pitch_d=19.0, tip_d=19.9, root_d=18.9, n...f 0.99 mm touches at a diameter of 19.453 mm, outside the window 19.850 to 19.030 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z82-x-0.05] _
+
+case = (0.5, 82, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=41.50000000000001, profile_shift=-0.05, profile_shift_mm=-0.025, pitch_d=41.0, tip_d=41.4,...f 0.91 mm touches at a diameter of 40.943 mm, outside the window 41.350 to 40.540 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z82-x0.2] _
+
+case = (0.5, 82, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=41.75000000000001, profile_shift=0.2, profile_shift_mm=0.1, pitch_d=41.0, tip_d=41.65, roo...f 0.93 mm touches at a diameter of 41.204 mm, outside the window 41.600 to 40.783 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z82-x0.45] _
+
+case = (0.5, 82, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=42.00000000000001, profile_shift=0.45, profile_shift_mm=0.225, pitch_d=41.0, tip_d=41.9, r...f 0.94 mm touches at a diameter of 41.446 mm, outside the window 41.850 to 41.030 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z6-x-0.05] _
+
+case = (1.25, 6, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=8.75, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=7.5, tip_d=8.5, root_d=6.0, no...n of 2.62 mm touches at a diameter of 7.373 mm, outside the window 8.375 to 6.721 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z6-x0.2] _
+
+case = (1.25, 6, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=9.375, profile_shift=0.2, profile_shift_mm=0.25, pitch_d=7.5, tip_d=9.125, root_d=6.625, n...n of 3.33 mm touches at a diameter of 8.002 mm, outside the window 9.000 to 7.049 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z6-x0.45] _
+
+case = (1.25, 6, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=10.0, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=7.5, tip_d=9.75, root_d=7.25, no...n of 4.33 mm touches at a diameter of 8.624 mm, outside the window 9.625 to 7.576 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z7-x-0.05] _
+
+case = (1.25, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=10.0, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=8.75, tip_d=9.75, root_d=7.25,...n of 2.56 mm touches at a diameter of 8.625 mm, outside the window 9.625 to 7.908 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z7-x0.2] _
+
+case = (1.25, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=10.625, profile_shift=0.2, profile_shift_mm=0.25, pitch_d=8.75, tip_d=10.375, root_d=7.875... of 3.11 mm touches at a diameter of 9.250 mm, outside the window 10.250 to 8.284 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z7-x0.45] _
+
+case = (1.25, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=11.25, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=8.75, tip_d=11.0, root_d=8.5, n... of 3.87 mm touches at a diameter of 9.874 mm, outside the window 10.875 to 8.825 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z18-x-0.05] _
+
+case = (1.25, 18, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=23.75, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=22.5, tip_d=23.5, root_d=21.0...f 2.37 mm touches at a diameter of 22.380 mm, outside the window 23.375 to 21.444 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z18-x0.2] _
+
+case = (1.25, 18, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=24.375, profile_shift=0.2, profile_shift_mm=0.25, pitch_d=22.5, tip_d=24.125, root_d=21.62...f 2.53 mm touches at a diameter of 23.004 mm, outside the window 24.000 to 21.981 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z18-x0.45] _
+
+case = (1.25, 18, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=25.0, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=22.5, tip_d=24.75, root_d=22.25,...f 2.73 mm touches at a diameter of 23.625 mm, outside the window 24.625 to 22.575 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z19-x-0.05] _
+
+case = (1.25, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=25.0, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=23.75, tip_d=24.75, root_d=22....f 2.36 mm touches at a diameter of 23.625 mm, outside the window 24.625 to 22.688 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z19-x0.2] _
+
+case = (1.25, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=25.625, profile_shift=0.2, profile_shift_mm=0.25, pitch_d=23.75, tip_d=25.375, root_d=22.8...f 2.51 mm touches at a diameter of 24.250 mm, outside the window 25.250 to 23.230 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z19-x0.45] _
+
+case = (1.25, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=26.25, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=23.75, tip_d=26.0, root_d=23.5,...of 2.7 mm touches at a diameter of 24.873 mm, outside the window 25.875 to 23.825 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z38-x-0.05] _
+
+case = (1.25, 38, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=48.75, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=47.5, tip_d=48.5, root_d=46.0...f 2.31 mm touches at a diameter of 47.373 mm, outside the window 48.375 to 46.380 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z38-x0.2] _
+
+case = (1.25, 38, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=49.375, profile_shift=0.2, profile_shift_mm=0.25, pitch_d=47.5, tip_d=49.125, root_d=46.62...f 2.38 mm touches at a diameter of 47.999 mm, outside the window 49.000 to 46.965 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z38-x0.45] _
+
+case = (1.25, 38, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=50.0, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=47.5, tip_d=49.75, root_d=47.25,...f 2.47 mm touches at a diameter of 48.626 mm, outside the window 49.625 to 47.575 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z82-x-0.05] _
+
+case = (1.25, 82, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=103.75, profile_shift=-0.05, profile_shift_mm=-0.063, pitch_d=102.5, tip_d=103.5, root_d=1....29 mm touches at a diameter of 102.379 mm, outside the window 103.375 to 101.350 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z82-x0.2] _
+
+case = (1.25, 82, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=104.375, profile_shift=0.2, profile_shift_mm=0.25, pitch_d=102.5, tip_d=104.125, root_d=10....32 mm touches at a diameter of 103.002 mm, outside the window 104.000 to 101.957 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z82-x0.45] _
+
+case = (1.25, 82, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=105.0, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=102.5, tip_d=104.75, root_d=102....36 mm touches at a diameter of 103.629 mm, outside the window 104.625 to 102.575 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z6-x-0.05] _
+
+case = (3, 6, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=21.0, profile_shift=-0.05, profile_shift_mm=-0.15, pitch_d=18.0, tip_d=20.4, root_d=14.4, ...of 6.3 mm touches at a diameter of 17.700 mm, outside the window 20.100 to 16.131 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z6-x0.2] _
+
+case = (3, 6, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=22.5, profile_shift=0.2, profile_shift_mm=0.6, pitch_d=18.0, tip_d=21.9, root_d=15.9, nomi...f 7.98 mm touches at a diameter of 19.199 mm, outside the window 21.600 to 16.919 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z6-x0.45] _
+
+case = (3, 6, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=24.0, profile_shift=0.45, profile_shift_mm=1.35, pitch_d=18.0, tip_d=23.4, root_d=17.4, no...f 10.4 mm touches at a diameter of 20.700 mm, outside the window 23.100 to 18.181 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z7-x-0.05] _
+
+case = (3, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=24.0, profile_shift=-0.05, profile_shift_mm=-0.15, pitch_d=21.0, tip_d=23.4, root_d=17.4, ...f 6.15 mm touches at a diameter of 20.703 mm, outside the window 23.100 to 18.979 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z7-x0.2] _
+
+case = (3, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=25.5, profile_shift=0.2, profile_shift_mm=0.6, pitch_d=21.0, tip_d=24.9, root_d=18.9, nomi...f 7.46 mm touches at a diameter of 22.198 mm, outside the window 24.600 to 19.882 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z7-x0.45] _
+
+case = (3, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=27.0, profile_shift=0.45, profile_shift_mm=1.35, pitch_d=21.0, tip_d=26.4, root_d=20.4, no...f 9.29 mm touches at a diameter of 23.699 mm, outside the window 26.100 to 21.181 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z18-x-0.05] _
+
+case = (3, 18, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=57.00000000000001, profile_shift=-0.05, profile_shift_mm=-0.15, pitch_d=54.0, tip_d=56.4, ...f 5.68 mm touches at a diameter of 53.703 mm, outside the window 56.100 to 51.466 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z18-x0.2] _
+
+case = (3, 18, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=58.50000000000001, profile_shift=0.2, profile_shift_mm=0.6, pitch_d=54.0, tip_d=57.9, root...f 6.06 mm touches at a diameter of 55.199 mm, outside the window 57.600 to 52.755 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z18-x0.45] _
+
+case = (3, 18, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=60.00000000000001, profile_shift=0.45, profile_shift_mm=1.35, pitch_d=54.0, tip_d=59.4, ro...f 6.55 mm touches at a diameter of 56.697 mm, outside the window 59.100 to 54.180 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z19-x-0.05] _
+
+case = (3, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=60.00000000000001, profile_shift=-0.05, profile_shift_mm=-0.15, pitch_d=57.0, tip_d=59.4, ...f 5.66 mm touches at a diameter of 56.696 mm, outside the window 59.100 to 54.450 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z19-x0.2] _
+
+case = (3, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=61.50000000000001, profile_shift=0.2, profile_shift_mm=0.6, pitch_d=57.0, tip_d=60.9, root...f 6.02 mm touches at a diameter of 58.196 mm, outside the window 60.600 to 55.751 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z19-x0.45] _
+
+case = (3, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=63.00000000000001, profile_shift=0.45, profile_shift_mm=1.35, pitch_d=57.0, tip_d=62.4, ro...f 6.49 mm touches at a diameter of 59.704 mm, outside the window 62.100 to 57.180 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z38-x-0.05] _
+
+case = (3, 38, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=117.0, profile_shift=-0.05, profile_shift_mm=-0.15, pitch_d=114.0, tip_d=116.4, root_d=110....55 mm touches at a diameter of 113.703 mm, outside the window 116.100 to 111.312 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z38-x0.2] _
+
+case = (3, 38, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=118.5, profile_shift=0.2, profile_shift_mm=0.6, pitch_d=114.0, tip_d=117.9, root_d=111.9, ....71 mm touches at a diameter of 115.194 mm, outside the window 117.600 to 112.715 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z38-x0.45] _
+
+case = (3, 38, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=120.0, profile_shift=0.45, profile_shift_mm=1.35, pitch_d=114.0, tip_d=119.4, root_d=113.4....93 mm touches at a diameter of 116.705 mm, outside the window 119.100 to 114.180 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z82-x-0.05] _
+
+case = (3, 82, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=248.99999999999997, profile_shift=-0.05, profile_shift_mm=-0.15, pitch_d=246.0, tip_d=248.....49 mm touches at a diameter of 245.701 mm, outside the window 248.100 to 243.240 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z82-x0.2] _
+
+case = (3, 82, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=250.49999999999997, profile_shift=0.2, profile_shift_mm=0.6, pitch_d=246.0, tip_d=249.9, r....56 mm touches at a diameter of 247.195 mm, outside the window 249.600 to 244.696 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z82-x0.45] _
+
+case = (3, 82, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=251.99999999999997, profile_shift=0.45, profile_shift_mm=1.35, pitch_d=246.0, tip_d=251.4,....66 mm touches at a diameter of 248.703 mm, outside the window 251.100 to 246.180 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z6-x-0.05] _
+
+case = (10, 6, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=70.0, profile_shift=-0.05, profile_shift_mm=-0.5, pitch_d=60.0, tip_d=68.0, root_d=48.0, n... of 21 mm touches at a diameter of 59.001 mm, outside the window 67.000 to 53.770 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z6-x0.2] _
+
+case = (10, 6, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=75.0, profile_shift=0.2, profile_shift_mm=2.0, pitch_d=60.0, tip_d=73.0, root_d=53.0, nomi... 26.61 mm touches at a diameter of 64.001 mm, outside the window 72.000 to 56.395 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z6-x0.45] _
+
+case = (10, 6, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=80.0, profile_shift=0.45, profile_shift_mm=4.5, pitch_d=60.0, tip_d=78.0, root_d=58.0, nom... 34.67 mm touches at a diameter of 69.001 mm, outside the window 77.000 to 60.604 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z7-x-0.05] _
+
+case = (10, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=80.0, profile_shift=-0.05, profile_shift_mm=-0.5, pitch_d=70.0, tip_d=78.0, root_d=58.0, n... 20.48 mm touches at a diameter of 68.997 mm, outside the window 77.000 to 63.263 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z7-x0.2] _
+
+case = (10, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=85.0, profile_shift=0.2, profile_shift_mm=2.0, pitch_d=70.0, tip_d=83.0, root_d=63.0, nomi... 24.88 mm touches at a diameter of 73.999 mm, outside the window 82.000 to 66.274 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z7-x0.45] _
+
+case = (10, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=90.0, profile_shift=0.45, profile_shift_mm=4.5, pitch_d=70.0, tip_d=88.0, root_d=68.0, nom... 30.97 mm touches at a diameter of 78.999 mm, outside the window 87.000 to 70.603 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z18-x-0.05] _
+
+case = (10, 18, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=190.0, profile_shift=-0.05, profile_shift_mm=-0.5, pitch_d=180.0, tip_d=188.0, root_d=168.....92 mm touches at a diameter of 178.997 mm, outside the window 187.000 to 171.554 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z18-x0.2] _
+
+case = (10, 18, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=195.0, profile_shift=0.2, profile_shift_mm=2.0, pitch_d=180.0, tip_d=193.0, root_d=173.0, ...0.2 mm touches at a diameter of 183.996 mm, outside the window 192.000 to 175.850 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z18-x0.45] _
+
+case = (10, 18, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=200.0, profile_shift=0.45, profile_shift_mm=4.5, pitch_d=180.0, tip_d=198.0, root_d=178.0,....84 mm touches at a diameter of 188.997 mm, outside the window 197.000 to 180.601 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z19-x-0.05] _
+
+case = (10, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=200.0, profile_shift=-0.05, profile_shift_mm=-0.5, pitch_d=190.0, tip_d=198.0, root_d=178.....88 mm touches at a diameter of 189.002 mm, outside the window 197.000 to 181.501 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z19-x0.2] _
+
+case = (10, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=205.0, profile_shift=0.2, profile_shift_mm=2.0, pitch_d=190.0, tip_d=203.0, root_d=183.0, ....08 mm touches at a diameter of 193.998 mm, outside the window 202.000 to 185.837 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z19-x0.45] _
+
+case = (10, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=210.0, profile_shift=0.45, profile_shift_mm=4.5, pitch_d=190.0, tip_d=208.0, root_d=188.0,....62 mm touches at a diameter of 199.001 mm, outside the window 207.000 to 190.601 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z38-x-0.05] _
+
+case = (10, 38, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=390.0, profile_shift=-0.05, profile_shift_mm=-0.5, pitch_d=380.0, tip_d=388.0, root_d=368.....49 mm touches at a diameter of 378.997 mm, outside the window 387.000 to 371.039 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z38-x0.2] _
+
+case = (10, 38, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=395.0, profile_shift=0.2, profile_shift_mm=2.0, pitch_d=380.0, tip_d=393.0, root_d=373.0, ....05 mm touches at a diameter of 384.001 mm, outside the window 392.000 to 375.717 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z38-x0.45] _
+
+case = (10, 38, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=400.0, profile_shift=0.45, profile_shift_mm=4.5, pitch_d=380.0, tip_d=398.0, root_d=378.0,....75 mm touches at a diameter of 388.997 mm, outside the window 397.000 to 380.601 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z82-x-0.05] _
+
+case = (10, 82, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=830.0, profile_shift=-0.05, profile_shift_mm=-0.5, pitch_d=820.0, tip_d=828.0, root_d=808....8.3 mm touches at a diameter of 819.002 mm, outside the window 827.000 to 810.800 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z82-x0.2] _
+
+case = (10, 82, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=835.0, profile_shift=0.2, profile_shift_mm=2.0, pitch_d=820.0, tip_d=833.0, root_d=813.0, ....55 mm touches at a diameter of 824.005 mm, outside the window 832.000 to 815.654 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+_ test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z82-x0.45] _
+
+case = (10, 82, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x = case
+        d = derive_shaft(_grid_shaft(case))
+        theoretical = din5480.theoretical_pin_diameter(m, z, x * m)
+>       assert d.pin_d is not None
+E       AssertionError: assert None is not None
+E        +  where None = ShaftDimensions(reference_d=840.0, profile_shift=0.45, profile_shift_mm=4.5, pitch_d=820.0, tip_d=838.0, root_d=818.0,....86 mm touches at a diameter of 829.002 mm, outside the window 837.000 to 820.600 mm in which the flank is measured.')).pin_d
+
+tests/test_shaft_calc.py:166: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_calc.py::test_the_default_shaft_derives_its_basic_dimensions
+FAILED tests/test_shaft_calc.py::test_the_default_shaft_prints_its_pin_and_measure_over_pins
+FAILED tests/test_shaft_calc.py::test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins
+FAILED tests/test_shaft_calc.py::test_the_pin_contact_guard_nulls_a_pin_off_the_flank
+FAILED tests/test_shaft_calc.py::test_the_pin_contact_window_is_closed - asse...
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z6-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z6-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z6-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z7-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z7-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z7-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z18-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z18-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z18-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z19-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z19-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z19-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z38-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z38-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z38-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z82-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z82-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m0.5-z82-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z6-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z6-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z6-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z7-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z7-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z7-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z18-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z18-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z18-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z19-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z19-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z19-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z38-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z38-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z38-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z82-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z82-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m1.25-z82-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z6-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z6-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z6-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z7-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z7-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z7-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z18-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z18-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z18-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z19-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z19-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z19-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z38-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z38-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z38-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z82-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z82-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m3-z82-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z6-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z6-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z6-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z7-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z7-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z7-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z18-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z18-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z18-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z19-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z19-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z19-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z38-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z38-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z38-x0.45]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z82-x-0.05]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z82-x0.2]
+FAILED tests/test_shaft_calc.py::test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin[m10-z82-x0.45]
+77 failed, 803 passed in 3.36s

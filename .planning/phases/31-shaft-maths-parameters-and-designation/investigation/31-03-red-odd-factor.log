@@ -1,0 +1,520 @@
+........................................................................ [  8%]
+........................................................................ [ 16%]
+........................................................................ [ 24%]
+........................................................................ [ 32%]
+........................................................................ [ 40%]
+........................................................................ [ 49%]
+........................................................................ [ 57%]
+........................................................................ [ 65%]
+........FFF...FFF.........FFF...FFF.........FFF...FFF.........FFF...FFF. [ 73%]
+........................................................................ [ 81%]
+........................................................................ [ 90%]
+........................................................................ [ 98%]
+................                                                         [100%]
+=================================== FAILURES ===================================
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z7-x-0.05] _
+
+case = (0.5, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 5.054267476134026 == 4.953119967690381 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 5.054267476134026
+E         Expected: 4.953119967690381 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z7-x0.2] _
+
+case = (0.5, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 5.764108305341935 == 5.6506794646114615 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 5.764108305341935
+E         Expected: 5.6506794646114615 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z7-x0.45] _
+
+case = (0.5, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 6.635518567197339 == 6.5080139990795995 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 6.635518567197339
+E         Expected: 6.5080139990795995 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z19-x-0.05] _
+
+case = (0.5, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 10.881427937418344 == 10.847472920774402 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 10.881427937418344
+E         Expected: 10.847472920774402 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z19-x0.2] _
+
+case = (0.5, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 11.26043606970757 == 11.225391478556865 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.26043606970757
+E         Expected: 11.225391478556865 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z19-x0.45] _
+
+case = (0.5, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 11.674213493538348 == 11.638028883262335 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.674213493538348
+E         Expected: 11.638028883262335 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z7-x-0.05] _
+
+case = (1.25, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 12.660807340252184 == 12.407559011582899 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 12.660807340252184
+E         Expected: 12.407559011582899 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z7-x0.2] _
+
+case = (1.25, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 14.433734549200897 == 14.149824882153615 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 14.433734549200897
+E         Expected: 14.149824882153615 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z7-x0.45] _
+
+case = (1.25, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 16.57756867068144 == 16.258963393014607 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 16.57756867068144
+E         Expected: 16.258963393014607 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z19-x-0.05] _
+
+case = (1.25, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 27.231369872606194 == 27.1464215348726 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 27.231369872606194
+E         Expected: 27.1464215348726 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z19-x0.2] _
+
+case = (1.25, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 28.177815729022093 == 28.090147124896106 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 28.177815729022093
+E         Expected: 28.090147124896106 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z19-x0.45] _
+
+case = (1.25, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 29.185533733845865 == 29.095072208155838 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 29.185533733845865
+E         Expected: 29.095072208155838 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z7-x-0.05] _
+
+case = (3, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 30.401009840797457 == 29.792986392389523 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 30.401009840797457
+E         Expected: 29.792986392389523 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z7-x0.2] _
+
+case = (3, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 34.63157957165789 == 33.95033134247872 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 34.63157957165789
+E         Expected: 33.95033134247872 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z7-x0.45] _
+
+case = (3, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 39.790656189056136 == 39.02594105857211 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 39.790656189056136
+E         Expected: 39.02594105857211 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z19-x-0.05] _
+
+case = (3, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 65.34417228396943 == 65.14032057614241 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 65.34417228396943
+E         Expected: 65.14032057614241 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z19-x0.2] _
+
+case = (3, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 67.61607079135104 == 67.40568898080153 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 67.61607079135104
+E         Expected: 67.40568898080153 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z19-x0.45] _
+
+case = (3, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 70.07115046042054 == 69.853988596379 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 70.07115046042054
+E         Expected: 69.853988596379 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z7-x-0.05] _
+
+case = (10, 7, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 101.28645872201747 == 99.26047209266319 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 101.28645872201747
+E         Expected: 99.26047209266319 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z7-x0.2] _
+
+case = (10, 7, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 115.46987639360718 == 113.19859905722892 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 115.46987639360718
+E         Expected: 113.19859905722892 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z7-x0.45] _
+
+case = (10, 7, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 132.6430061222175 == 130.09385158398328 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 132.6430061222175
+E         Expected: 130.09385158398328 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z19-x-0.05] _
+
+case = (10, 19, -0.05)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 217.85095898084955 == 217.1713722789808 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 217.85095898084955
+E         Expected: 217.1713722789808 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z19-x0.2] _
+
+case = (10, 19, 0.2)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 225.42252583217675 == 224.72117699916885 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 225.42252583217675
+E         Expected: 224.72117699916885 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+_ test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z19-x0.45] _
+
+case = (10, 19, 0.45)
+
+    @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
+    def test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth(
+        case: tuple[float, int, float],
+    ) -> None:
+        m, z, x, s, pin = _m_case(case)
+        result = din5480.measure_over_pins(m, z, s, pin)
+        assert result is not None
+        measure, contact = result
+>       assert measure == pytest.approx(shaft_oracle.measure(m, z, x, pin), abs=1e-9)
+E       assert 233.53601127499778 == 232.8122106564894 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 233.53601127499778
+E         Expected: 232.8122106564894 ± 1.0e-09
+
+tests/test_din5480.py:205: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z7-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z19-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m0.5-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z7-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z19-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m1.25-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z7-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z19-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m3-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z7-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z19-x0.2]
+FAILED tests/test_din5480.py::test_the_measure_over_pins_agrees_with_the_oracle_for_even_and_odd_teeth[m10-z19-x0.45]
+24 failed, 856 passed in 3.13s
