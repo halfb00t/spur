@@ -40,18 +40,19 @@ created: "2026-10-24"
 
 Filled by the planner per task; requirement-to-test mapping from `31-RESEARCH.md` § Validation Architecture:
 
-| Requirement | Behavior | Test Type | Automated Command | File Exists | Status |
-|-------------|----------|-----------|-------------------|-------------|--------|
-| REQ-shaft-params | field names/order, literal defaults, frozen, fit shape | unit | `pytest tests/test_shaft_params.py -x` | ❌ W0 | ⬜ pending |
-| REQ-profile-shift-from-dB | xm for 5 shafts; epsilon edges (30,2,14), (25,1.25,19), (17.6,0.8,20); range refusal; H_FP independent of shift | unit | `pytest tests/test_din5480.py -k shift -x` | ❌ W0 | ⬜ pending |
-| REQ-shaft-basic-dims | d_a, d_f, s vs oracle and vendor sets | unit | `pytest tests/test_din5480.py -k dims -x` | ❌ W0 | ⬜ pending |
-| REQ-form-diameter-honest | form_d None + reason; internal construction not exposed | unit | `pytest tests/test_shaft_calc.py -k form -x` | ❌ W0 | ⬜ pending |
-| REQ-mre-nominal | even/odd M_Re vs oracle; odd z null + warning; D_Re prints odd z; guard by explicit pin_d | unit | `pytest tests/test_din5480.py tests/test_shaft_calc.py -k "pin or measure" -x` | ❌ W0 | ⬜ pending |
-| REQ-designation-codec | print canonical, parse D-05 variants, round trip, refusal names token | unit | `pytest tests/test_din5480.py -k designation -x` | ❌ W0 | ⬜ pending |
-| Seam | contracts + belts green | contract | `make lint-imports && pytest tests/test_seam.py` | ✅ | ⬜ pending |
-| Oracle independence / sensitivity | no `spur` import; mutation seen red | unit | `pytest tests/test_din5480.py -k "oracle or mutat" -x` | ❌ W0 | ⬜ pending |
-| Gear unchanged | v0.6 byte-equal | gate | `make gear.unchanged` | ✅ | ⬜ pending |
-| Gate cost | delta in bench/RESULTS.md | measurement | `/usr/bin/time -p make verify` | n/a | ⬜ pending |
+| Requirement | Behavior | Plan / Task | Test Type | Automated Command | File Exists | Status |
+|-------------|----------|-------------|-----------|-------------------|-------------|--------|
+| REQ-shaft-params | field names/order, literal defaults, frozen, hashable, fit shape, bounds, non-finite, null | 31-01 T1-T2 (red T3) | unit | `pytest tests/test_shaft_params.py -x` | ❌ W0 (31-01) | ⬜ pending |
+| REQ-profile-shift-from-dB | one pinned order; epsilon edges (17.6,0.8,20), (30,2,14), (25,1.25,19); range refusal; H_FP moves only the root | 31-01 T2 (red T3), oracle 31-02 | unit | `pytest tests/test_shaft_params.py tests/test_shaft_calc.py tests/test_din5480.py -k shift -x` | ❌ W0 (31-01) | ⬜ pending |
+| REQ-shaft-basic-dims | d_a, d_f (0.55/0.60), s vs oracle on a 192-case grid and both vendor sets; key order | 31-01 T1, 31-02 T1-T2 (red T3), 31-04 T2 | unit | `pytest tests/test_din5480.py -k dims -x` | ❌ W0 (31-02) | ⬜ pending |
+| REQ-form-diameter-honest | form_d None + reason on every shaft; internal construction vs oracle and vendors, never exposed | 31-03 T1-T2 (red T3) | unit | `pytest tests/test_din5480.py tests/test_shaft_calc.py -k form -x` | ❌ W0 (31-03) | ⬜ pending |
+| REQ-mre-nominal | even/odd M_Re and contact vs oracle (72 cases); odd z null + warning, D_Re prints; guard by explicit pin_d; closed window; gauge step | 31-03 T1-T2 (red T3) | unit | `pytest tests/test_din5480.py tests/test_shaft_calc.py -k "pin or measure" -x` | ❌ W0 (31-03) | ⬜ pending |
+| REQ-designation-codec | print canonical, parse D-05 variants, round trip, 25 refusals naming the token, length bound | 31-04 T1-T2 | unit | `pytest tests/test_din5480.py tests/test_shaft_calc.py -k designat -x` | ❌ W0 (31-04) | ⬜ pending |
+| Copy anchors | ≥2 basic-dimension rows, d_Ff row, odd-z row, cited; each seen red | 31-05 T2 (checkpoint), 31-06 T1-T2 | unit | `pytest tests/test_din5480_anchors.py -x` | ❌ (31-06) | ⬜ pending |
+| Seam | contracts + belts green | every plan | contract | `make lint-imports && pytest tests/test_seam.py` | ✅ | ⬜ pending |
+| Oracle independence / sensitivity | no `spur` import; durable mutation tests; mutated formulas seen red | 31-02 T1-T3, 31-03 T2-T3 | unit | `pytest tests/test_din5480.py -k "oracle_imports or mutat" -x` | ❌ W0 (31-02) | ⬜ pending |
+| Gear unchanged | v0.6 byte-equal | every plan; close 31-06 T3 | gate | `make gear.unchanged` | ✅ | ⬜ pending |
+| Gate cost | delta in bench/RESULTS.md against Phase 30 | 31-06 T3 | measurement | `/usr/bin/time -p make verify` | n/a | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

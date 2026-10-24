@@ -296,7 +296,27 @@ red once, the red recorded. **Phase close**: `make verify` result line recorded 
 `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: Yes — needs the human's copy (research Phase 2): formula confirmation by
 clause, `h_fP`, anchor rows incl. one odd z, the d_Ff construction.
-**Plans**: TBD
+**Plans**: 6 plans, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
+DIN 5480 checkpoint and 31-06 cannot start until the human answers
+
+Plans:
+**Wave 1**
+- [ ] 31-01-PLAN.md — tracer: the default shaft through `ShaftParams` -> `derive_shaft` -> `din5480` to its basic dimensions; the frozen contract, the range refusal and the epsilon cases pinned and seen red
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 31-02-PLAN.md — the independent stdlib oracle; shift, tip, root and thickness on a 192-case grid and the two vendor sets; each comparison seen red against a mutated formula
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 31-03-PLAN.md — the theoretical pin, M_Re at nominal for even and odd z, d_Ff null with its reason, the pin-contact guard over an explicit pin; oracle-proved and seen red
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 31-04-PLAN.md — the designation codec (print, parse, round trip, refusals naming the token); `parts.py` docstring and the WR-03 debt item re-targeted to Phase 32
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 31-05-PLAN.md — the gate green and the prediction table, then `checkpoint:human-action`: the human confirms each formula by clause and approves the anchor rows
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 31-06-PLAN.md — anchor rows as cited tests, D-09 for any contradiction, the conditional d_Ff / odd-z outcomes, the gate delta, the close checks and the closing `Lxx`
 
 ### Phase 32: The Shaft Solid
 
