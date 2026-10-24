@@ -1,0 +1,3677 @@
+........................................................................ [ 12%]
+........................................................................ [ 24%]
+.................................................FFFFFFFFFFFFFFFFFFFFFFF [ 37%]
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 49%]
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF [ 61%]
+FFFFFFFFFFFFFFFFFFFFFFFFF............................................... [ 74%]
+........................................................................ [ 86%]
+........................................................................ [ 99%]
+..F..                                                                    [100%]
+=================================== FAILURES ===================================
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x-0.05] ___________
+
+case = (0.5, 6, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 3.3000000000000003 == 3.4000000000000004 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 3.3000000000000003
+E         Expected: 3.4000000000000004 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x0.1] ____________
+
+case = (0.5, 6, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 3.45 == 3.5500000000000003 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 3.45
+E         Expected: 3.5500000000000003 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x0.25] ___________
+
+case = (0.5, 6, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 3.6 == 3.7 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 3.6
+E         Expected: 3.7 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x0.45] ___________
+
+case = (0.5, 6, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 3.8 == 3.9000000000000004 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 3.8
+E         Expected: 3.9000000000000004 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x-0.05] ___________
+
+case = (0.5, 7, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 3.8 == 3.9000000000000004 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 3.8
+E         Expected: 3.9000000000000004 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x0.1] ____________
+
+case = (0.5, 7, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 3.9499999999999993 == 4.05 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 3.9499999999999993
+E         Expected: 4.05 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x0.25] ___________
+
+case = (0.5, 7, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 4.1 == 4.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 4.1
+E         Expected: 4.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x0.45] ___________
+
+case = (0.5, 7, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 4.3 == 4.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 4.3
+E         Expected: 4.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x-0.05] __________
+
+case = (0.5, 14, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 7.3 == 7.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 7.3
+E         Expected: 7.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x0.1] ___________
+
+case = (0.5, 14, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 7.449999999999999 == 7.55 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 7.449999999999999
+E         Expected: 7.55 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x0.25] ___________
+
+case = (0.5, 14, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 7.6 == 7.7 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 7.6
+E         Expected: 7.7 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x0.45] ___________
+
+case = (0.5, 14, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 7.8 == 7.9 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 7.8
+E         Expected: 7.9 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x-0.05] __________
+
+case = (0.5, 18, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.299999999999999 == 9.399999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.299999999999999
+E         Expected: 9.399999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x0.1] ___________
+
+case = (0.5, 18, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.45 == 9.549999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.45
+E         Expected: 9.549999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x0.25] ___________
+
+case = (0.5, 18, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.6 == 9.7 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.6
+E         Expected: 9.7 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x0.45] ___________
+
+case = (0.5, 18, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.799999999999999 == 9.899999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.799999999999999
+E         Expected: 9.899999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x-0.05] __________
+
+case = (0.5, 19, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.799999999999999 == 9.899999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.799999999999999
+E         Expected: 9.899999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x0.1] ___________
+
+case = (0.5, 19, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.95 == 10.049999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.95
+E         Expected: 10.049999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x0.25] ___________
+
+case = (0.5, 19, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 10.1 == 10.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 10.1
+E         Expected: 10.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x0.45] ___________
+
+case = (0.5, 19, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 10.299999999999999 == 10.399999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 10.299999999999999
+E         Expected: 10.399999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x-0.05] __________
+
+case = (0.5, 22, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 11.299999999999999 == 11.399999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.299999999999999
+E         Expected: 11.399999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x0.1] ___________
+
+case = (0.5, 22, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 11.45 == 11.549999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.45
+E         Expected: 11.549999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x0.25] ___________
+
+case = (0.5, 22, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 11.6 == 11.7 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.6
+E         Expected: 11.7 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x0.45] ___________
+
+case = (0.5, 22, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 11.799999999999999 == 11.899999999999999 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.799999999999999
+E         Expected: 11.899999999999999 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x-0.05] __________
+
+case = (0.5, 38, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 19.3 == 19.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 19.3
+E         Expected: 19.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x0.1] ___________
+
+case = (0.5, 38, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 19.450000000000003 == 19.55 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 19.450000000000003
+E         Expected: 19.55 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x0.25] ___________
+
+case = (0.5, 38, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 19.6 == 19.7 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 19.6
+E         Expected: 19.7 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x0.45] ___________
+
+case = (0.5, 38, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 19.8 == 19.9 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 19.8
+E         Expected: 19.9 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x-0.05] __________
+
+case = (0.5, 82, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 41.300000000000004 == 41.400000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 41.300000000000004
+E         Expected: 41.400000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x0.1] ___________
+
+case = (0.5, 82, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 41.45 == 41.550000000000004 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 41.45
+E         Expected: 41.550000000000004 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x0.25] ___________
+
+case = (0.5, 82, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 41.6 == 41.7 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 41.6
+E         Expected: 41.7 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x0.45] ___________
+
+case = (0.5, 82, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 41.800000000000004 == 41.900000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 41.800000000000004
+E         Expected: 41.900000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x-0.05] ___________
+
+case = (0.8, 6, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 5.28 == 5.44 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 5.28
+E         Expected: 5.44 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x0.1] ____________
+
+case = (0.8, 6, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 5.5200000000000005 == 5.680000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 5.5200000000000005
+E         Expected: 5.680000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x0.25] ___________
+
+case = (0.8, 6, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 5.760000000000001 == 5.920000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 5.760000000000001
+E         Expected: 5.920000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x0.45] ___________
+
+case = (0.8, 6, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 6.08 == 6.24 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 6.08
+E         Expected: 6.24 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x-0.05] ___________
+
+case = (0.8, 7, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 6.08 == 6.24 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 6.08
+E         Expected: 6.24 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x0.1] ____________
+
+case = (0.8, 7, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 6.32 == 6.48 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 6.32
+E         Expected: 6.48 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x0.25] ___________
+
+case = (0.8, 7, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 6.5600000000000005 == 6.720000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 6.5600000000000005
+E         Expected: 6.720000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x0.45] ___________
+
+case = (0.8, 7, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 6.88 == 7.04 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 6.88
+E         Expected: 7.04 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x-0.05] __________
+
+case = (0.8, 14, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 11.680000000000001 == 11.840000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.680000000000001
+E         Expected: 11.840000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x0.1] ___________
+
+case = (0.8, 14, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 11.920000000000002 == 12.080000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 11.920000000000002
+E         Expected: 12.080000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x0.25] ___________
+
+case = (0.8, 14, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 12.160000000000002 == 12.320000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 12.160000000000002
+E         Expected: 12.320000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x0.45] ___________
+
+case = (0.8, 14, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 12.480000000000002 == 12.640000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 12.480000000000002
+E         Expected: 12.640000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x-0.05] __________
+
+case = (0.8, 18, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 14.88 == 15.040000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 14.88
+E         Expected: 15.040000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x0.1] ___________
+
+case = (0.8, 18, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.120000000000001 == 15.280000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.120000000000001
+E         Expected: 15.280000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x0.25] ___________
+
+case = (0.8, 18, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.360000000000001 == 15.520000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.360000000000001
+E         Expected: 15.520000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x0.45] ___________
+
+case = (0.8, 18, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.68 == 15.840000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.68
+E         Expected: 15.840000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x-0.05] __________
+
+case = (0.8, 19, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.68 == 15.840000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.68
+E         Expected: 15.840000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x0.1] ___________
+
+case = (0.8, 19, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.920000000000002 == 16.080000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.920000000000002
+E         Expected: 16.080000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x0.25] ___________
+
+case = (0.8, 19, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 16.16 == 16.32 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 16.16
+E         Expected: 16.32 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x0.45] ___________
+
+case = (0.8, 19, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 16.48 == 16.64 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 16.48
+E         Expected: 16.64 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x-0.05] __________
+
+case = (0.8, 22, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 18.080000000000002 == 18.240000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 18.080000000000002
+E         Expected: 18.240000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x0.1] ___________
+
+case = (0.8, 22, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 18.32 == 18.48 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 18.32
+E         Expected: 18.48 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x0.25] ___________
+
+case = (0.8, 22, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 18.56 == 18.72 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 18.56
+E         Expected: 18.72 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x0.45] ___________
+
+case = (0.8, 22, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 18.88 == 19.04 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 18.88
+E         Expected: 19.04 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x-0.05] __________
+
+case = (0.8, 38, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 30.880000000000003 == 31.040000000000003 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 30.880000000000003
+E         Expected: 31.040000000000003 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x0.1] ___________
+
+case = (0.8, 38, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 31.12 == 31.28 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 31.12
+E         Expected: 31.28 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x0.25] ___________
+
+case = (0.8, 38, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 31.36 == 31.52 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 31.36
+E         Expected: 31.52 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x0.45] ___________
+
+case = (0.8, 38, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 31.68 == 31.84 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 31.68
+E         Expected: 31.84 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x-0.05] __________
+
+case = (0.8, 82, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 66.08000000000001 == 66.24000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 66.08000000000001
+E         Expected: 66.24000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x0.1] ___________
+
+case = (0.8, 82, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 66.32000000000001 == 66.48 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 66.32000000000001
+E         Expected: 66.48 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x0.25] ___________
+
+case = (0.8, 82, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 66.56000000000002 == 66.72000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 66.56000000000002
+E         Expected: 66.72000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x0.45] ___________
+
+case = (0.8, 82, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 66.88000000000001 == 67.04 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 66.88000000000001
+E         Expected: 67.04 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x-0.05] __________
+
+case = (1.25, 6, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 8.25 == 8.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 8.25
+E         Expected: 8.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x0.1] ___________
+
+case = (1.25, 6, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 8.625 == 8.875 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 8.625
+E         Expected: 8.875 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x0.25] ___________
+
+case = (1.25, 6, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.0 == 9.25 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.0
+E         Expected: 9.25 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x0.45] ___________
+
+case = (1.25, 6, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.5 == 9.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.5
+E         Expected: 9.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x-0.05] __________
+
+case = (1.25, 7, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.5 == 9.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.5
+E         Expected: 9.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x0.1] ___________
+
+case = (1.25, 7, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 9.875 == 10.125 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 9.875
+E         Expected: 10.125 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x0.25] ___________
+
+case = (1.25, 7, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 10.25 == 10.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 10.25
+E         Expected: 10.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x0.45] ___________
+
+case = (1.25, 7, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 10.75 == 11.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 10.75
+E         Expected: 11.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+_________ test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x-0.05] __________
+
+case = (1.25, 14, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 18.25 == 18.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 18.25
+E         Expected: 18.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x0.1] ___________
+
+case = (1.25, 14, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 18.625 == 18.875 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 18.625
+E         Expected: 18.875 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x0.25] __________
+
+case = (1.25, 14, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 19.0 == 19.25 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 19.0
+E         Expected: 19.25 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x0.45] __________
+
+case = (1.25, 14, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 19.5 == 19.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 19.5
+E         Expected: 19.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+_________ test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x-0.05] __________
+
+case = (1.25, 18, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 23.25 == 23.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 23.25
+E         Expected: 23.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x0.1] ___________
+
+case = (1.25, 18, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 23.625 == 23.875 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 23.625
+E         Expected: 23.875 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x0.25] __________
+
+case = (1.25, 18, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 24.0 == 24.25 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 24.0
+E         Expected: 24.25 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x0.45] __________
+
+case = (1.25, 18, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 24.5 == 24.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 24.5
+E         Expected: 24.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+_________ test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x-0.05] __________
+
+case = (1.25, 19, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 24.5 == 24.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 24.5
+E         Expected: 24.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x0.1] ___________
+
+case = (1.25, 19, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 24.875 == 25.125 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 24.875
+E         Expected: 25.125 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x0.25] __________
+
+case = (1.25, 19, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 25.25 == 25.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 25.25
+E         Expected: 25.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x0.45] __________
+
+case = (1.25, 19, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 25.75 == 26.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 25.75
+E         Expected: 26.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+_________ test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x-0.05] __________
+
+case = (1.25, 22, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 28.25 == 28.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 28.25
+E         Expected: 28.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x0.1] ___________
+
+case = (1.25, 22, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 28.625 == 28.875 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 28.625
+E         Expected: 28.875 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x0.25] __________
+
+case = (1.25, 22, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 29.0 == 29.25 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 29.0
+E         Expected: 29.25 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x0.45] __________
+
+case = (1.25, 22, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 29.5 == 29.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 29.5
+E         Expected: 29.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+_________ test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x-0.05] __________
+
+case = (1.25, 38, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 48.25 == 48.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 48.25
+E         Expected: 48.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x0.1] ___________
+
+case = (1.25, 38, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 48.625 == 48.875 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 48.625
+E         Expected: 48.875 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x0.25] __________
+
+case = (1.25, 38, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 49.0 == 49.25 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 49.0
+E         Expected: 49.25 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x0.45] __________
+
+case = (1.25, 38, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 49.5 == 49.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 49.5
+E         Expected: 49.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+_________ test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x-0.05] __________
+
+case = (1.25, 82, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 103.25 == 103.5 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 103.25
+E         Expected: 103.5 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x0.1] ___________
+
+case = (1.25, 82, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 103.625 == 103.875 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 103.625
+E         Expected: 103.875 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x0.25] __________
+
+case = (1.25, 82, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 104.0 == 104.25 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 104.0
+E         Expected: 104.25 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x0.45] __________
+
+case = (1.25, 82, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 104.5 == 104.75 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 104.5
+E         Expected: 104.75 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z6-x-0.05] ____________
+
+case = (2, 6, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 13.200000000000001 == 13.600000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 13.200000000000001
+E         Expected: 13.600000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z6-x0.1] _____________
+
+case = (2, 6, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 13.8 == 14.200000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 13.8
+E         Expected: 14.200000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z6-x0.25] ____________
+
+case = (2, 6, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 14.4 == 14.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 14.4
+E         Expected: 14.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z6-x0.45] ____________
+
+case = (2, 6, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.2 == 15.600000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.2
+E         Expected: 15.600000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z7-x-0.05] ____________
+
+case = (2, 7, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.2 == 15.600000000000001 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.2
+E         Expected: 15.600000000000001 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z7-x0.1] _____________
+
+case = (2, 7, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 15.799999999999997 == 16.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 15.799999999999997
+E         Expected: 16.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z7-x0.25] ____________
+
+case = (2, 7, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 16.4 == 16.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 16.4
+E         Expected: 16.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z7-x0.45] ____________
+
+case = (2, 7, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 17.2 == 17.6 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 17.2
+E         Expected: 17.6 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z14-x-0.05] ___________
+
+case = (2, 14, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 29.2 == 29.6 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 29.2
+E         Expected: 29.6 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z14-x0.1] ____________
+
+case = (2, 14, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 29.799999999999997 == 30.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 29.799999999999997
+E         Expected: 30.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z14-x0.25] ____________
+
+case = (2, 14, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 30.4 == 30.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 30.4
+E         Expected: 30.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z14-x0.45] ____________
+
+case = (2, 14, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 31.2 == 31.6 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 31.2
+E         Expected: 31.6 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z18-x-0.05] ___________
+
+case = (2, 18, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 37.199999999999996 == 37.599999999999994 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 37.199999999999996
+E         Expected: 37.599999999999994 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z18-x0.1] ____________
+
+case = (2, 18, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 37.8 == 38.199999999999996 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 37.8
+E         Expected: 38.199999999999996 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z18-x0.25] ____________
+
+case = (2, 18, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 38.4 == 38.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 38.4
+E         Expected: 38.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z18-x0.45] ____________
+
+case = (2, 18, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 39.199999999999996 == 39.599999999999994 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 39.199999999999996
+E         Expected: 39.599999999999994 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z19-x-0.05] ___________
+
+case = (2, 19, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 39.199999999999996 == 39.599999999999994 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 39.199999999999996
+E         Expected: 39.599999999999994 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z19-x0.1] ____________
+
+case = (2, 19, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 39.8 == 40.199999999999996 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 39.8
+E         Expected: 40.199999999999996 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z19-x0.25] ____________
+
+case = (2, 19, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 40.4 == 40.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 40.4
+E         Expected: 40.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z19-x0.45] ____________
+
+case = (2, 19, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 41.199999999999996 == 41.599999999999994 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 41.199999999999996
+E         Expected: 41.599999999999994 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z22-x-0.05] ___________
+
+case = (2, 22, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 45.199999999999996 == 45.599999999999994 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 45.199999999999996
+E         Expected: 45.599999999999994 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z22-x0.1] ____________
+
+case = (2, 22, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 45.8 == 46.199999999999996 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 45.8
+E         Expected: 46.199999999999996 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z22-x0.25] ____________
+
+case = (2, 22, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 46.4 == 46.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 46.4
+E         Expected: 46.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z22-x0.45] ____________
+
+case = (2, 22, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 47.199999999999996 == 47.599999999999994 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 47.199999999999996
+E         Expected: 47.599999999999994 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z38-x-0.05] ___________
+
+case = (2, 38, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 77.2 == 77.6 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 77.2
+E         Expected: 77.6 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z38-x0.1] ____________
+
+case = (2, 38, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 77.80000000000001 == 78.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 77.80000000000001
+E         Expected: 78.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z38-x0.25] ____________
+
+case = (2, 38, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 78.4 == 78.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 78.4
+E         Expected: 78.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z38-x0.45] ____________
+
+case = (2, 38, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 79.2 == 79.6 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 79.2
+E         Expected: 79.6 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z82-x-0.05] ___________
+
+case = (2, 82, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 165.20000000000002 == 165.60000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 165.20000000000002
+E         Expected: 165.60000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m2-z82-x0.1] ____________
+
+case = (2, 82, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 165.8 == 166.20000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 165.8
+E         Expected: 166.20000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z82-x0.25] ____________
+
+case = (2, 82, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 166.4 == 166.8 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 166.4
+E         Expected: 166.8 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m2-z82-x0.45] ____________
+
+case = (2, 82, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 167.20000000000002 == 167.60000000000002 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 167.20000000000002
+E         Expected: 167.60000000000002 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z6-x-0.05] ____________
+
+case = (3, 6, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 19.8 == 20.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 19.8
+E         Expected: 20.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z6-x0.1] _____________
+
+case = (3, 6, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 20.700000000000003 == 21.3 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 20.700000000000003
+E         Expected: 21.3 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z6-x0.25] ____________
+
+case = (3, 6, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 21.6 == 22.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 21.6
+E         Expected: 22.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z6-x0.45] ____________
+
+case = (3, 6, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 22.8 == 23.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 22.8
+E         Expected: 23.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z7-x-0.05] ____________
+
+case = (3, 7, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 22.8 == 23.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 22.8
+E         Expected: 23.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z7-x0.1] _____________
+
+case = (3, 7, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 23.700000000000003 == 24.3 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 23.700000000000003
+E         Expected: 24.3 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z7-x0.25] ____________
+
+case = (3, 7, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 24.6 == 25.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 24.6
+E         Expected: 25.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z7-x0.45] ____________
+
+case = (3, 7, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 25.8 == 26.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 25.8
+E         Expected: 26.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z14-x-0.05] ___________
+
+case = (3, 14, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 43.800000000000004 == 44.400000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 43.800000000000004
+E         Expected: 44.400000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z14-x0.1] ____________
+
+case = (3, 14, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 44.7 == 45.300000000000004 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 44.7
+E         Expected: 45.300000000000004 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z14-x0.25] ____________
+
+case = (3, 14, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 45.6 == 46.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 45.6
+E         Expected: 46.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z14-x0.45] ____________
+
+case = (3, 14, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 46.800000000000004 == 47.400000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 46.800000000000004
+E         Expected: 47.400000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z18-x-0.05] ___________
+
+case = (3, 18, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 55.800000000000004 == 56.400000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 55.800000000000004
+E         Expected: 56.400000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z18-x0.1] ____________
+
+case = (3, 18, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 56.7 == 57.300000000000004 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 56.7
+E         Expected: 57.300000000000004 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z18-x0.25] ____________
+
+case = (3, 18, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 57.6 == 58.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 57.6
+E         Expected: 58.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z18-x0.45] ____________
+
+case = (3, 18, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 58.800000000000004 == 59.400000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 58.800000000000004
+E         Expected: 59.400000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z19-x-0.05] ___________
+
+case = (3, 19, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 58.800000000000004 == 59.400000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 58.800000000000004
+E         Expected: 59.400000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z19-x0.1] ____________
+
+case = (3, 19, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 59.7 == 60.300000000000004 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 59.7
+E         Expected: 60.300000000000004 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z19-x0.25] ____________
+
+case = (3, 19, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 60.6 == 61.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 60.6
+E         Expected: 61.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z19-x0.45] ____________
+
+case = (3, 19, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 61.800000000000004 == 62.400000000000006 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 61.800000000000004
+E         Expected: 62.400000000000006 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z22-x-0.05] ___________
+
+case = (3, 22, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 67.8 == 68.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 67.8
+E         Expected: 68.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z22-x0.1] ____________
+
+case = (3, 22, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 68.69999999999999 == 69.3 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 68.69999999999999
+E         Expected: 69.3 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z22-x0.25] ____________
+
+case = (3, 22, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 69.6 == 70.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 69.6
+E         Expected: 70.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z22-x0.45] ____________
+
+case = (3, 22, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 70.8 == 71.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 70.8
+E         Expected: 71.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z38-x-0.05] ___________
+
+case = (3, 38, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 115.8 == 116.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 115.8
+E         Expected: 116.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z38-x0.1] ____________
+
+case = (3, 38, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 116.69999999999999 == 117.3 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 116.69999999999999
+E         Expected: 117.3 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z38-x0.25] ____________
+
+case = (3, 38, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 117.6 == 118.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 117.6
+E         Expected: 118.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z38-x0.45] ____________
+
+case = (3, 38, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 118.8 == 119.4 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 118.8
+E         Expected: 119.4 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z82-x-0.05] ___________
+
+case = (3, 82, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 247.79999999999998 == 248.39999999999998 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 247.79999999999998
+E         Expected: 248.39999999999998 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m3-z82-x0.1] ____________
+
+case = (3, 82, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 248.7 == 249.29999999999998 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 248.7
+E         Expected: 249.29999999999998 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z82-x0.25] ____________
+
+case = (3, 82, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 249.6 == 250.2 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 249.6
+E         Expected: 250.2 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m3-z82-x0.45] ____________
+
+case = (3, 82, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 250.79999999999998 == 251.39999999999998 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 250.79999999999998
+E         Expected: 251.39999999999998 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z6-x-0.05] ___________
+
+case = (10, 6, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 66.0 == 68.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 66.0
+E         Expected: 68.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m10-z6-x0.1] ____________
+
+case = (10, 6, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 69.0 == 71.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 69.0
+E         Expected: 71.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z6-x0.25] ____________
+
+case = (10, 6, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 72.0 == 74.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 72.0
+E         Expected: 74.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z6-x0.45] ____________
+
+case = (10, 6, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 76.0 == 78.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 76.0
+E         Expected: 78.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z7-x-0.05] ___________
+
+case = (10, 7, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 76.0 == 78.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 76.0
+E         Expected: 78.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+____________ test_the_basic_dims_agree_with_the_oracle[m10-z7-x0.1] ____________
+
+case = (10, 7, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 79.0 == 81.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 79.0
+E         Expected: 81.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z7-x0.25] ____________
+
+case = (10, 7, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 82.0 == 84.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 82.0
+E         Expected: 84.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z7-x0.45] ____________
+
+case = (10, 7, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 86.0 == 88.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 86.0
+E         Expected: 88.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m10-z14-x-0.05] ___________
+
+case = (10, 14, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 146.0 == 148.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 146.0
+E         Expected: 148.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z14-x0.1] ____________
+
+case = (10, 14, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 149.0 == 151.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 149.0
+E         Expected: 151.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z14-x0.25] ___________
+
+case = (10, 14, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 152.0 == 154.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 152.0
+E         Expected: 154.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z14-x0.45] ___________
+
+case = (10, 14, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 156.0 == 158.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 156.0
+E         Expected: 158.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m10-z18-x-0.05] ___________
+
+case = (10, 18, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 186.0 == 188.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 186.0
+E         Expected: 188.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z18-x0.1] ____________
+
+case = (10, 18, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 189.0 == 191.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 189.0
+E         Expected: 191.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z18-x0.25] ___________
+
+case = (10, 18, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 192.0 == 194.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 192.0
+E         Expected: 194.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z18-x0.45] ___________
+
+case = (10, 18, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 196.0 == 198.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 196.0
+E         Expected: 198.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m10-z19-x-0.05] ___________
+
+case = (10, 19, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 196.0 == 198.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 196.0
+E         Expected: 198.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z19-x0.1] ____________
+
+case = (10, 19, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 199.0 == 201.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 199.0
+E         Expected: 201.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z19-x0.25] ___________
+
+case = (10, 19, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 202.0 == 204.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 202.0
+E         Expected: 204.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z19-x0.45] ___________
+
+case = (10, 19, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 206.0 == 208.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 206.0
+E         Expected: 208.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m10-z22-x-0.05] ___________
+
+case = (10, 22, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 226.0 == 228.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 226.0
+E         Expected: 228.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z22-x0.1] ____________
+
+case = (10, 22, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 229.0 == 231.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 229.0
+E         Expected: 231.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z22-x0.25] ___________
+
+case = (10, 22, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 232.0 == 234.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 232.0
+E         Expected: 234.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z22-x0.45] ___________
+
+case = (10, 22, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 236.0 == 238.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 236.0
+E         Expected: 238.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m10-z38-x-0.05] ___________
+
+case = (10, 38, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 386.0 == 388.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 386.0
+E         Expected: 388.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z38-x0.1] ____________
+
+case = (10, 38, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 389.0 == 391.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 389.0
+E         Expected: 391.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z38-x0.25] ___________
+
+case = (10, 38, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 392.0 == 394.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 392.0
+E         Expected: 394.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z38-x0.45] ___________
+
+case = (10, 38, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 396.0 == 398.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 396.0
+E         Expected: 398.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+__________ test_the_basic_dims_agree_with_the_oracle[m10-z82-x-0.05] ___________
+
+case = (10, 82, -0.05)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 826.0 == 828.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 826.0
+E         Expected: 828.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z82-x0.1] ____________
+
+case = (10, 82, 0.1)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 829.0 == 831.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 829.0
+E         Expected: 831.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z82-x0.25] ___________
+
+case = (10, 82, 0.25)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 832.0 == 834.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 832.0
+E         Expected: 834.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+___________ test_the_basic_dims_agree_with_the_oracle[m10-z82-x0.45] ___________
+
+case = (10, 82, 0.45)
+
+    @pytest.mark.parametrize("case", GRID, ids=_case_id)
+    def test_the_basic_dims_agree_with_the_oracle(case: tuple[float, int, float]) -> None:
+        m, z, x = case
+        reference_d = shaft_oracle.reference_diameter(m, z, x)
+>       assert din5480.tip_diameter(reference_d, m) == pytest.approx(
+            shaft_oracle.tip_diameter(m, z, x), abs=1e-9
+        )
+E       assert 836.0 == 838.0 ± 1.0e-09
+E         
+E         comparison failed
+E         Obtained: 836.0
+E         Expected: 838.0 ± 1.0e-09
+
+tests/test_din5480.py:88: AssertionError
+______________ test_the_basic_dims_match_the_vendor_cross_checks _______________
+
+    def test_the_basic_dims_match_the_vendor_cross_checks() -> None:
+        """Vendor cross-checks, not the standard: each is compared at its own print precision,
+        and the oracle's 1e-9 is never loosened to meet a vendor."""
+        k = KISSSOFT_W70
+        k_m, k_z = k["m"], int(k["z"])
+        k_x = din5480.profile_shift(k["reference_d"], k_m, k_z)
+>       assert din5480.tip_diameter(k["reference_d"], k_m) == pytest.approx(k["d_a"], abs=5e-4)
+E       assert 68.8 == 69.4 ± 5.0e-04
+E         
+E         comparison failed
+E         Obtained: 68.8
+E         Expected: 69.4 ± 5.0e-04
+
+tests/test_din5480.py:132: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z6-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z14-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z18-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z22-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z38-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.5-z82-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z6-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z14-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z18-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z22-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z38-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m0.8-z82-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z6-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z14-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z18-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z22-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z38-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m1.25-z82-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z6-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z6-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z6-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z6-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z7-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z7-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z14-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z14-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z14-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z14-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z18-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z18-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z18-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z18-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z19-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z19-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z22-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z22-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z22-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z22-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z38-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z38-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z38-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z38-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z82-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z82-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z82-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m2-z82-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z6-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z6-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z6-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z6-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z7-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z7-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z14-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z14-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z14-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z14-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z18-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z18-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z18-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z18-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z19-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z19-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z22-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z22-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z22-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z22-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z38-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z38-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z38-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z38-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z82-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z82-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z82-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m3-z82-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z6-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z6-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z6-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z6-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z7-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z7-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z7-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z7-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z14-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z14-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z14-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z14-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z18-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z18-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z18-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z18-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z19-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z19-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z19-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z19-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z22-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z22-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z22-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z22-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z38-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z38-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z38-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z38-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z82-x-0.05]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z82-x0.1]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z82-x0.25]
+FAILED tests/test_din5480.py::test_the_basic_dims_agree_with_the_oracle[m10-z82-x0.45]
+FAILED tests/test_din5480.py::test_the_basic_dims_match_the_vendor_cross_checks
+193 failed, 388 passed in 0.46s
