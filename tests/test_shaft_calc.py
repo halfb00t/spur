@@ -8,7 +8,12 @@ import pytest
 from pydantic import ValidationError
 
 from spur import din5480
-from spur.shaft_calc import ShaftDimensions, derive_shaft
+from spur.shaft_calc import (
+    FORM_DIAMETER_UNPROVEN,
+    THEORETICAL_PIN,
+    ShaftDimensions,
+    derive_shaft,
+)
 from spur.shaft_params import ShaftParams
 
 
@@ -23,7 +28,17 @@ def test_the_default_shaft_derives_its_basic_dimensions() -> None:
     assert d.tip_d == 24.75
     assert d.root_d == 22.25
     assert d.nominal_thickness == 2.613
-    assert d.warnings == ()
+    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN)
+
+
+def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
+    """D_Re 2.73 is the theoretical pin rounded to 0.01 mm; M_Re is for that pin. The form
+    diameter stays null, with its reason, because no DIN 5480 row proves the construction."""
+    d = derive_shaft(ShaftParams())
+    assert d.pin_d == 2.73
+    assert d.measure_over_pins == 27.999
+    assert d.form_d is None
+    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN)
 
 
 def test_a_shaft_dimensions_result_cannot_be_changed() -> None:

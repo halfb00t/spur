@@ -35,6 +35,32 @@ X_EPS = 1e-9  # comparison epsilon on both range edges (D-19)
 FIT_PATTERN = r"^[1-9][0-9]?[a-z]$"
 
 
+def inv(a: float) -> float:
+    """The involute function, tan(a) - a.
+
+    A copy of calc.py's `inv`, never an import, so gear and shaft numbers stay uncoupled
+    (contract C5, the `_involute_angle` precedent). ASSUMPTION (clause slot)
+    """
+    return math.tan(a) - a
+
+
+def _involute_angle(target: float) -> float:
+    """Inverse of inv() on (0, pi/2): the angle whose involute function is `target`.
+
+    A copy of calc.py's `_involute_angle` (C5: never imported). Bisection rather than Newton:
+    inv is monotonic here, 60 halvings reach full double precision, and no starting guess
+    can send it outside the bracket. ASSUMPTION (clause slot)
+    """
+    lo, hi = 1e-12, math.radians(89.0)
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        if inv(mid) < target:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
 def profile_shift(reference_d: float, m: float, z: int) -> float:
     """The profile shift x that puts the reference diameter d_B on the shaft.
 
@@ -64,3 +90,68 @@ def root_diameter(m: float, z: int, xm: float, h_fp: float) -> float:
 def tooth_thickness(m: float, xm: float) -> float:
     """The nominal tooth thickness s on the circle m*z: pi*m/2 + 2*xm*tan(ALPHA)."""
     return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)  # ASSUMPTION (clause slot)
+
+
+def theoretical_pin_diameter(m: float, z: int, xm: float) -> float:
+    """The pin that touches both flanks on the circle m*z + 2*xm, in closed form.
+
+    d = m*z, d_b = d*cos(ALPHA), contact circle d_c = d + 2*xm, a_c = acos(d_b/d_c),
+    s = tooth_thickness(m, xm), a_m = tan(a_c) - s/d - inv(ALPHA) + pi/z, and the pin is
+    d_b*(tan(a_m) - tan(a_c)). The pin diameter cancels out of the contact equation, so no
+    solver is needed. Reproduces KISSsoft's theoretical pin 5.8253 for W70x3x22.
+    ASSUMPTION (clause slot)
+    """
+    d = m * z
+    d_b = d * math.cos(ALPHA)
+    a_c = math.acos(d_b / (d + 2 * xm))
+    s = tooth_thickness(m, xm)
+    a_m = math.tan(a_c) - s / d - inv(ALPHA) + math.pi / z
+    return d_b * (math.tan(a_m) - math.tan(a_c))
+
+
+def measure_over_pins(m: float, z: int, s: float, pin_d: float) -> tuple[float, float] | None:
+    """(measure over pins, contact diameter) for a tooth thickness s on the circle m*z.
+
+    target = pin_d/d_b + s/d + inv(ALPHA) - pi/z is inv(a_m) at the pin centre; the pin
+    touches where tan(a_c) = tan(a_m) - pin_d/d_b. The centre circle is d_b/cos(a_m), times
+    cos(pi/(2*z)) for an odd count, where the two pins sit half a space apart; the measure
+    is that plus pin_d. It takes the thickness, not the shift, so a vendor row runs at its
+    actual thickness and Phase 34 can pass limit thicknesses unchanged.
+
+    None when there is no honest root: the target outside (0, inv(89 deg)), or a pin that
+    would touch at or below the base circle, where it is not on the involute and not a
+    flank measurement (L08, 31-RESEARCH Pitfall 5). ASSUMPTION (clause slot)
+    """
+    d = m * z
+    d_b = d * math.cos(ALPHA)
+    target = pin_d / d_b + s / d + inv(ALPHA) - math.pi / z
+    if not 0 < target < inv(math.radians(89.0)):
+        return None
+    a_m = _involute_angle(target)
+    tangent = math.tan(a_m) - pin_d / d_b
+    if tangent <= 0:
+        return None
+    contact = d_b * math.hypot(1, tangent)
+    centre_circle = d_b / math.cos(a_m)
+    if z % 2:
+        centre_circle *= math.cos(math.pi / (2 * z))
+    return centre_circle + pin_d, contact
+
+
+def form_diameter(m: float, z: int, xm: float, h_fp: float, rho_fp: float) -> float:
+    """The form diameter of the public construction: where the rack's flank meets its tip arc.
+
+    That point lies h = h_fp*m - xm - rho_fp*m*(1 - sin(ALPHA)) below the shifted datum
+    (xm in millimetres) and is generated at
+    sqrt(d_b**2 + (d*sin(ALPHA) - 2*h/sin(ALPHA))**2), with d = m*z and d_b = d*cos(ALPHA).
+    Valid where that point generates above the base circle, which holds over z 6 to 82 and
+    x -0.05 to +0.45 for h_fP up to 0.65 (plan-time check).
+
+    This is the pin-contact guard's internal lower bound and is never printed as d_Ff: the
+    vendors print the standard's form diameter as a limit that depends on the mating hub,
+    and no DIN 5480 row proves this construction yet (D-12, L08). ASSUMPTION (clause slot)
+    """
+    d = m * z
+    d_b = d * math.cos(ALPHA)
+    h = h_fp * m - xm - rho_fp * m * (1 - math.sin(ALPHA))
+    return math.hypot(d_b, d * math.sin(ALPHA) - 2 * h / math.sin(ALPHA))

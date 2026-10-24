@@ -12,7 +12,7 @@ the front ends print and into the one refusal the parameter model raises.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,6 +20,41 @@ from . import din5480
 
 if TYPE_CHECKING:
     from .shaft_params import ShaftParams
+
+
+# D-11 gauge step 0.01 mm. 31-RESEARCH A4 found no documented series for a theoretical
+# pin (the vendors' effective pins are round values, 6.000 and 5.500), so 0.01 mm is D-11's
+# default; the 31-05 checkpoint asks whether the copy names one. ASSUMPTION (clause slot)
+PIN_DECIMALS = 2
+# D-12 margin, times m, on both ends of the pin-contact window. The two observed gaps
+# between a constructed and a published form diameter are 0.030 mm (Hexagon, 0.01*m at m 3)
+# and 0.202 mm (KISSsoft, 0.067*m); 1.5 times the larger is 0.1*m. Scaling with m is an
+# assumption, both gaps are at m 3. Over 7,392 cases the theoretical pin's contact sits at
+# least 0.62*m above the internal d_Ff and 0.886*m below d_a (D-20), so a wrong margin
+# costs nothing until Phase 34.
+GUARD_MARGIN_FACTOR = 0.1
+
+FORM_DIAMETER_UNPROVEN = (
+    "The form diameter d_Ff is not given: its construction is not yet proven against a "
+    "DIN 5480 row, and the vendors print it as a limit that depends on the mating hub."
+)
+THEORETICAL_PIN = (
+    "The pin diameter D_Re is the theoretical pin that touches the flanks on the circle "
+    "m*z + 2*x*m, rounded to 0.01 mm. It is not the D_Re that DIN 5480 tabulates, and M_Re "
+    "is for this pin."
+)
+ODD_Z_UNCONFIRMED = (
+    "The measurement over pins M_Re is not given for an odd tooth count until a DIN 5480 "
+    "row confirms the odd-tooth formula; the pin diameter is still given."
+)
+
+
+class PinReading(NamedTuple):
+    """A pin and its measurement over pins, or None for what cannot be said honestly."""
+
+    pin_d: float | None
+    measure: float | None
+    warnings: tuple[str, ...]
 
 
 class ShaftDimensions(BaseModel):
@@ -48,6 +83,19 @@ class ShaftDimensions(BaseModel):
     nominal_thickness: float = Field(
         description="Nominal tooth thickness, as an arc on the reference circle.",
         json_schema_extra={"unit": "mm"})
+    form_d: float | None = Field(
+        description="Form diameter d_Ff. Null for every shaft: its construction is not yet "
+                    "proven against a DIN 5480 row (the warnings say so).",
+        json_schema_extra={"unit": "mm"})
+    pin_d: float | None = Field(
+        description="Pin diameter D_Re: the theoretical pin rounded to 0.01 mm. Null when "
+                    "the pin does not touch the involute flanks within the contact window.",
+        json_schema_extra={"unit": "mm"})
+    measure_over_pins: float | None = Field(
+        description="Measurement over pins M_Re at nominal thickness, for the printed pin. "
+                    "Null for an odd tooth count (unconfirmed) and when the pin does not "
+                    "touch the flanks within the contact window.",
+        json_schema_extra={"unit": "mm"})
     warnings: tuple[str, ...] = Field(description="Sentences about values that were capped "
                                                   "or cannot be computed honestly.")
 
@@ -70,6 +118,43 @@ def check_shaft(p: ShaftParams) -> list[tuple[str, tuple[str, ...]]]:
     return []
 
 
+def pin_contact_window(p: ShaftParams) -> tuple[float, float]:
+    """The contact diameters a pin may touch at: the internal form diameter plus the margin,
+    up to the tip diameter minus the margin. Closed on both ends."""
+    xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+    margin = GUARD_MARGIN_FACTOR * p.module
+    form = din5480.form_diameter(p.module, p.teeth, xm, din5480.H_FP, din5480.RHO_FP)
+    return form + margin, din5480.tip_diameter(p.reference_d, p.module) - margin
+
+
+def pin_measurement(p: ShaftParams, pin_d: float) -> PinReading:
+    """The reading for an explicit pin: its measure, or nothing and the reason (L08).
+
+    From derive_shaft at the theoretical pin the two null branches below cannot be reached:
+    that pin's contact sits well inside the window (D-20, 31-RESEARCH Pitfall 4). They go
+    live in Phase 34, when the copy's tabulated D_Re replaces the computed pin, and are
+    covered by direct calls until then. The odd-count gate stays until a DIN 5480 row
+    confirms the odd formula (D-13).
+    """
+    xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+    s = din5480.tooth_thickness(p.module, xm)
+    result = din5480.measure_over_pins(p.module, p.teeth, s, pin_d)
+    if result is None:
+        return PinReading(None, None, (
+            f"M_Re and D_Re not given: a pin of {pin_d:g} mm does not touch the involute "
+            f"flanks of this shaft.",))
+    measure, contact = result
+    low, high = pin_contact_window(p)
+    if not low <= contact <= high:
+        return PinReading(None, None, (
+            f"M_Re and D_Re not given: a pin of {pin_d:g} mm touches at a diameter of "
+            f"{contact:.3f} mm, outside the window {low:.3f} to {high:.3f} mm in which the "
+            f"flank is measured.",))
+    if p.teeth % 2:
+        return PinReading(pin_d, None, (ODD_Z_UNCONFIRMED,))
+    return PinReading(pin_d, measure, ())
+
+
 def derive_shaft(p: ShaftParams) -> ShaftDimensions:
     """The basic dimensions of a validated shaft."""
 
@@ -78,6 +163,8 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
 
     x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
     xm = x * p.module
+    pin = round(din5480.theoretical_pin_diameter(p.module, p.teeth, xm), PIN_DECIMALS)
+    reading = pin_measurement(p, pin)
     return ShaftDimensions(
         reference_d=p.reference_d,
         profile_shift=r3(x),
@@ -86,5 +173,8 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
         tip_d=r3(din5480.tip_diameter(p.reference_d, p.module)),
         root_d=r3(din5480.root_diameter(p.module, p.teeth, xm, din5480.H_FP)),
         nominal_thickness=r3(din5480.tooth_thickness(p.module, xm)),
-        warnings=(),
+        form_d=None,
+        pin_d=reading.pin_d,
+        measure_over_pins=None if reading.measure is None else r3(reading.measure),
+        warnings=(FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, *reading.warnings),
     )
