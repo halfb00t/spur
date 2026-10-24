@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 31
 current_phase_name: Shaft Maths, Parameters and Designation
 status: executing
-stopped_at: Completed 31-02-PLAN.md
-last_updated: "2026-10-24T11:11:53.283Z"
+stopped_at: Completed 31-03-PLAN.md
+last_updated: "2026-10-24T11:23:27.610Z"
 last_activity: 2026-10-24
 last_activity_desc: Phase 31 execution started
-state_head: de6a54adfb5f64a165c34be84fbaf799e7867056
+state_head: 24e3572a2dcdf62bc80447c09c9f610072edede1
 progress:
   total_phases: 5
   completed_phases: 7
   total_plans: 11
-  completed_plans: 7
-  percent: 64
+  completed_plans: 8
+  percent: 73
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 31 (Shaft Maths, Parameters and Designation) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-10-24 — Phase 31 execution started
 
@@ -275,6 +275,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 30 P05 | 8 min | 2 tasks | 4 files |
 | Phase 31 P01 | 14 min | 3 tasks | 12 files |
 | Phase 31 P02 | 7 min | 3 tasks | 8 files |
+| Phase 31 P03 | 9 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -537,6 +538,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 31]: 31-01: SHIFT_TERM and H_FP are two named constants (both 0.55 today); the range refusal lives in shaft_calc.check_shaft, reached from ShaftParams._feasible by local import (the gear's infeasible 422 shape)
 - [Phase 31]: 31-01: solid-only fields splined_length 30 (1-500), end_chamfer 1.0 (0-10), shank_d 25 (1-850), shank_length 20 (0-500) are provisional for the human's review; cross-field rules among them are Phase 32's
 - [Phase 31]: 31-02: the shaft oracle places its involute by the base-thickness identity and reads thickness with atan2; vendor rows compared at print precision, never loosening 1e-9
+- [Phase 31]: 31-03: gauge step 0.01 mm (PIN_DECIMALS=2, D-11 default; no documented series found, A4)
+- [Phase 31]: 31-03: pin-contact guard margin 0.1*m on both ends, 1.5x the larger observed vendor gap (0.067*m at m 3); scaling with m is an assumption
+- [Phase 31]: 31-03: form_d is None for every shaft; odd z prints its pin and no M_Re until a DIN 5480 row confirms the formula; the guard goes live in Phase 34
 
 ### Pending Todos
 
@@ -848,8 +852,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-24T11:11:53.235Z
-Stopped at: Completed 31-02-PLAN.md
+Last session: 2026-10-24T11:23:27.562Z
+Stopped at: Completed 31-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
