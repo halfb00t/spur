@@ -11,13 +11,14 @@ import shaft_oracle
 from pydantic import ValidationError
 from test_din5480 import M_GRID
 
-from spur import din5480
+from spur import din5480, shaft_calc
 from spur.din5480 import Designation, parse_designation
 from spur.shaft_calc import (
     FORM_DIAMETER_UNPROVEN,
     MEASURE_AT_NOMINAL_THICKNESS,
     ODD_Z_UNCONFIRMED,
     THEORETICAL_PIN,
+    PinReading,
     ShaftDimensions,
     derive_shaft,
     pin_contact_window,
@@ -129,6 +130,29 @@ def test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins() -> None:
     assert THEORETICAL_PIN in d.warnings
     # No M_Re is printed, so there is no measure to qualify.
     assert MEASURE_AT_NOMINAL_THICKNESS not in d.warnings
+
+
+def test_the_pin_sentence_says_the_pin_is_computed_and_not_compared_with_a_table() -> None:
+    """The 31-05 checkpoint saw no tabulated D_Re in Part 1, so the sentence must not claim
+    to know what the standard tabulates (31-REVIEW IN-03)."""
+    assert THEORETICAL_PIN.endswith(
+        "The tool computes this pin; it has not been compared with a tabulated D_Re, and M_Re "
+        "is for this pin.")
+    assert "It is not the D_Re that DIN 5480 tabulates" not in THEORETICAL_PIN
+
+
+def test_no_pin_sentence_is_printed_when_no_pin_is_given(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """pin_measurement cannot return a null pin for the theoretical pin today (D-20), so the
+    null reading is injected: it goes live in Phase 34. "M_Re is for this pin" beside "M_Re
+    and D_Re not given" would contradict itself."""
+    reason = "M_Re and D_Re not given: injected."
+    monkeypatch.setattr(shaft_calc, "pin_measurement",
+                        lambda _p, _pin_d: PinReading(None, None, (reason,)))
+    d = derive_shaft(ShaftParams())
+    assert d.pin_d is None
+    assert reason in d.warnings
+    assert THEORETICAL_PIN not in d.warnings
 
 
 @pytest.mark.parametrize("case", M_GRID, ids=_case_id)

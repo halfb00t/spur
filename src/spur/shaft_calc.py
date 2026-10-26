@@ -42,8 +42,8 @@ FORM_DIAMETER_UNPROVEN = (
 )
 THEORETICAL_PIN = (
     "The pin diameter D_Re is the theoretical pin that touches the flanks on the circle "
-    "m*z + 2*x*m, rounded to 0.01 mm. It is not the D_Re that DIN 5480 tabulates, and M_Re "
-    "is for this pin."
+    "m*z + 2*x*m, rounded to 0.01 mm. The tool computes this pin; it has not been compared "
+    "with a tabulated D_Re, and M_Re is for this pin."
 )
 # The designation prints a fit, but M_Re is computed at the nominal thickness. The copy's own
 # M1 minimum for W 120x3x38x8f is taken 0.091 mm below it (tests/test_din5480_anchors.py), so
@@ -213,6 +213,8 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
     reading = pin_measurement(p, pin)
     root_d = r3(din5480.root_diameter(p.module, p.teeth, xm, din5480.H_FP))
     measure_warnings = () if reading.measure is None else (MEASURE_AT_NOMINAL_THICKNESS,)
+    # "M_Re is for this pin" would contradict pin_measurement's "M_Re and D_Re not given".
+    pin_warnings = () if reading.pin_d is None else (THEORETICAL_PIN,)
     return ShaftDimensions(
         reference_d=p.reference_d,
         profile_shift=r3(x),
@@ -225,6 +227,6 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
         pin_d=reading.pin_d,
         measure_over_pins=None if reading.measure is None else r3(reading.measure),
         designation=din5480.format_designation(p.reference_d, p.module, p.teeth, p.fit),
-        warnings=(FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, hobbed_root_warning(root_d, p.module),
+        warnings=(FORM_DIAMETER_UNPROVEN, *pin_warnings, hobbed_root_warning(root_d, p.module),
                   *measure_warnings, *reading.warnings),
     )
