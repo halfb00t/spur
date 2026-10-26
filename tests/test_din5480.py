@@ -6,8 +6,10 @@ shared with src/spur/din5480.py (L08). The vendors are cross-checks, not the sta
 """
 
 import ast
+import copy
 import itertools
 import math
+import pickle
 from pathlib import Path
 
 import pytest
@@ -361,6 +363,13 @@ def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token
     assert raised.value.token == token
     if token:
         assert repr(token) in str(raised.value)
+    # The worker pool ships exceptions between processes and frameworks copy them: the clone
+    # must be a DesignationError with the same token and message, not a TypeError.
+    for clone in (pickle.loads(pickle.dumps(raised.value)), copy.copy(raised.value),
+                  copy.deepcopy(raised.value)):
+        assert isinstance(clone, din5480.DesignationError)
+        assert clone.token == token
+        assert str(clone) == str(raised.value)
 
 
 def test_a_designation_longer_than_the_bound_is_refused_before_parsing() -> None:

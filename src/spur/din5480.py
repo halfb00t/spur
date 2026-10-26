@@ -202,8 +202,14 @@ class DesignationError(ValueError):
     """An unparseable designation; `token` is the text that was refused."""
 
     def __init__(self, token: str, message: str) -> None:
-        super().__init__(message)
+        # args carries both, because pickle and copy rebuild an exception as cls(*args): with
+        # args == (message,) the rebuild raised a TypeError for the missing second argument.
+        super().__init__(token, message)
         self.token = token
+        self.message = message
+
+    def __str__(self) -> str:
+        return self.message
 
 
 def _number(v: float) -> str:
