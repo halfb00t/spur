@@ -16,7 +16,6 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
-| must | [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](active/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | pages of DIN 5480 Part 2 or Part 15 become available (before Phase 34 pins fit-dependent numbers) |
 | must | [The shaft profile-shift cap refuses shifts DIN 5480-1 allows as exceptions at larger tooth counts](active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md) | Part 2, or the copy's exception table, gives the z-dependent limits |
 | must | [The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows](active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md) | Phase 34 makes the pin-contact guard live |
 | nice | [FIT_PATTERN accepts deviation letters and tolerance classes outside DIN 5480-1 Table 7/9](active/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md) | Phase 34 takes the fit tables |
@@ -44,6 +43,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap |
 | [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | `6497c28` — see the file's own `Resolved in:` field |
 | [Phase 19 code review: the root_fillet label finding is still deferred](resolved/2026-10-09-phase-19-review-info-findings-deferred.md) | `61154d1` — see the file's own `Resolved in:` field |
 | [A link with an invalid enum value loads a blank select and builds the default part](resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | `cb93d4e` — see the file's own `Resolved in:` field |

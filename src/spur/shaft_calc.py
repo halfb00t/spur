@@ -56,8 +56,8 @@ MEASURE_AT_NOMINAL_THICKNESS = (
     "allowance or tolerance for the fit."
 )
 ODD_Z_UNCONFIRMED = (
-    "The measurement over pins M_Re is not given for an odd tooth count until a DIN 5480 "
-    "row confirms the odd-tooth formula; the pin diameter is still given."
+    "The measurement over pins M_Re is not given for an odd tooth count yet; the pin "
+    "diameter is still given."
 )
 
 
@@ -188,8 +188,9 @@ def pin_measurement(p: ShaftParams, pin_d: float) -> PinReading:
     From derive_shaft at the theoretical pin the two null branches below cannot be reached:
     that pin's contact sits well inside the window (D-20, 31-RESEARCH Pitfall 4). They go
     live in Phase 34, when the copy's tabulated D_Re replaces the computed pin, and are
-    covered by direct calls until then. The odd-count gate stays until a DIN 5480 row
-    confirms the odd formula (D-13).
+    covered by direct calls until then. The odd-count gate stays although DIN 5480-2 rows now
+    confirm the odd formula: printing it is a separate decision (D-13; docs/ideas/2026-10-26-
+    print-odd-tooth-count-measure-over-pins.md).
     """
     xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
     s = din5480.tooth_thickness(p.module, xm)

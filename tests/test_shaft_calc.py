@@ -130,8 +130,8 @@ def test_the_dedendum_constant_moves_the_root_and_not_the_shift(
 
 
 def test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins() -> None:
-    """W25x1.25x19: the pin is given, M_Re waits for a DIN 5480 row that confirms the odd
-    formula (D-13), and the sentences say both."""
+    """W25x1.25x19: the pin is given, M_Re is not given while the odd-count gate stays
+    (D-13), and the sentences say both."""
     d = derive_shaft(ShaftParams(teeth=19))
     assert d.pin_d == 2.36
     assert d.measure_over_pins is None

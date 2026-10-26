@@ -1,0 +1,6 @@
+mutation: 'centre_circle *= math.cos(math.pi / (2 * z))' -> 'centre_circle *= 1.0'
+E         comparison failed
+E         comparison failed
+FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 26x1.25x19x8f]
+FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 30x2x13x8f]
+2 failed, 6 passed, 3 deselected in 0.06s

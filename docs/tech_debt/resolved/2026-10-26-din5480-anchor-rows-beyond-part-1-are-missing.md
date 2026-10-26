@@ -1,7 +1,8 @@
 # DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap
 Date: 2026-10-26
 Source: Phase 31 plan 31-05, the D-06 checkpoint. The human read an unofficial English translation of DIN 5480-1:2006-03 and found that Part 1 holds no basic-dimension size tables, so the plan's anchor minimum (two basic-dimension rows, W30x2x14 ideally) could not be met. The human decided: partial pass, plus this item.
 Related files:
@@ -31,6 +32,17 @@ each value by name (nothing else of the copy enters the repo):
 - the clause source of D_Re / M_Re (Part 15, 5.2.4.3 as Part 1 points to it) and any gauge pin series;
 - a construction d_Ff value if Part 2 prints one (otherwise d_Ff stays a limit, checked as predicted <= printed max for shafts);
 - then remove the odd-z gate and the unproven-form warning only if the rows agree to the last printed digit.
+
+## Resolution
+On 2026-10-26 the human supplied DIN 5480-2:2006-05 and approved four rows by name. They are W 25x1.25x18, W 26x1.25x19 (odd), W 30x2x14 (shift -0.05) and W 30x2x13 (shift +0.45), from Tables 12/13 and 18/19. Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each assertion was seen red once (`investigation/31-part2-red-*.log`). A scratch comparison over every Part 2 size table agrees to the printed digit:
+- x*m, s1, da1 and df1 on 705 of 706 rows. The one other row is internally inconsistent in the copy: its M1 fits its d_B, while its nominal columns fit another d_B.
+- M1 at the tabulated pin on 492 of 492 even-count rows and 208 of 208 odd-count rows.
+
+Where each bullet of the next step went:
+- Anchor rows: done (above).
+- Odd-z gate: kept by the human's choice; the change is `docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md`.
+- d_Ff: Part 2 prints only a maximum, so `form_d` stays null. The internal construction sits above that maximum on 470 rows: `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
+- D_Re / M_Re clause source (Part 15, 5.2.4.3): still unread. It stays as the `measure_over_pins` ASSUMPTION marker. Part 2 tabulates the pin D_M per row, which is Phase 34's tabulated pin.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

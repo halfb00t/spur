@@ -139,9 +139,12 @@ def measure_over_pins(m: float, z: int, s: float, pin_d: float) -> tuple[float, 
 
     The even count reproduces M1 minimum of DIN 5480-1:2006-03, cl. 9.1, Fig. 6, at the
     gauge pin 6.000 and the row's own thickness (tests/test_din5480_anchors.py). The odd
-    factor is DIN 5480-1:2006, cl. 4, eq. (1), but no odd-count row was supplied, so shaft_calc
-    never prints it (D-13). Part 1 names these D_M, M1 and M2 and points to DIN 5480-15,
-    5.2.4.3 for D_Re and M_Re; that clause has not been read. ASSUMPTION (clause: DIN 5480-15,
+    factor is DIN 5480-1:2006, cl. 4, eq. (1). Both counts reproduce M1 of DIN 5480-2:2006-05,
+    Tables 13 and 19, at the tabulated pin and the nominal thickness (four approved rows, one
+    odd, in the same test file). shaft_calc still prints no odd-count M_Re: the human kept the
+    gate (D-13; docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md).
+    Part 1 names these D_M, M1 and M2 and points to DIN 5480-15, 5.2.4.3 for D_Re and
+    M_Re; that clause has not been read. ASSUMPTION (clause: DIN 5480-15,
     5.2.4.3 unread)
     """
     d = m * z
