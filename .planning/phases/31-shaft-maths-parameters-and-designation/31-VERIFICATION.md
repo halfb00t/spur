@@ -1,6 +1,6 @@
 ---
 phase: 31-shaft-maths-parameters-and-designation
-verified: 2026-10-26T23:00:00Z
+verified: 2026-10-26T16:31:31Z
 status: passed
 score: 5/5 must-haves verified (0 overrides relied on)
 covered_files:
@@ -30,7 +30,7 @@ covered_files:
   - "tests/test_din5480_anchors.py"
   - "tests/test_shaft_calc.py"
   - "tests/test_shaft_params.py"
-covered_digest: "v3:sha256:4d4c723a3653f9801c601a94f12b6a9f22e199b23575c8f06f12ea2562cba947"
+covered_digest: "v3:sha256:c197bbd21855bedfcef41b2d314635c5c90d5045f2352d4c33286d393859a8d7"
 behavior_unverified: 0
 overrides_applied: 0
 # History only. This override was the basis of the previous report's pass of truth 2. It is no
