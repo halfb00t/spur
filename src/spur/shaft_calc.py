@@ -61,13 +61,13 @@ ODD_Z_UNCONFIRMED = (
 )
 
 
-# h_fP/m of hobbing, DIN 5480-1 cl. 6, Table 3, as din5480.H_FP's comment records it. h_fP
-# is a radial depth and root_d a diameter, so the hobbed root is the theoretical root less
-# 2 * (0.60 - 0.55) = 0.1 times m (cl. 7.1). Rounded, because 0.60 - 0.55 is not exact in
-# binary64. The sentence below and the root_d field description print this constant, so one
-# edit moves the number and the words together (31-REVIEW IN-04).
-H_FP_HOBBING = 0.60
-HOBBED_ROOT_DROP = round(2 * (H_FP_HOBBING - din5480.H_FP), 3)
+# h_fP is a radial depth and root_d a diameter, so the hobbed root is the theoretical root
+# less 2 * (0.60 - 0.55) = 0.1 times m (cl. 7.1). Rounded, because 0.60 - 0.55 is not exact
+# in binary64. The sentence below and the root_d field description print this constant, so
+# one edit moves the number and the words together (31-REVIEW IN-04). The two depths are in
+# din5480's constants block (31-REVIEW IN-09); tests/test_shaft_calc.py asserts the drop
+# stays above 0, so a sentence reading "0*m smaller" cannot ship.
+HOBBED_ROOT_DROP = round(2 * (din5480.H_FP_HOBBING - din5480.H_FP), 3)
 
 
 def hobbed_root_warning(root_d: float, module: float) -> str:

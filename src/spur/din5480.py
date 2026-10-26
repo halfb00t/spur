@@ -31,6 +31,9 @@ SHIFT_TERM = ADDENDUM_FACTOR + TIP_DIAMETER_OFFSET / 2
 # in shaft_calc says so). 0.55 reproduces Hexagon W120x3x38 d_f 113.40; KISSsoft hobbing uses
 # 0.60 and gets 63.10 for W70x3x22. Not a user field.
 H_FP = 0.55
+# h_fP/m of hobbing, same source as H_FP above (DIN 5480-1:2006, cl. 6, Table 3 and cl. 7.1).
+# Only shaft_calc's hobbed-root sentence reads it; the root diameter itself uses H_FP.
+H_FP_HOBBING = 0.60
 # rho_fP/m, both vendors; used only by the internal form diameter. ASSUMPTION (clause slot)
 RHO_FP = 0.16
 # The shaft's profile-shift range, DIN 5480-1:2006, cl. 4 and Table 3. The copy allows

@@ -280,7 +280,11 @@ def test_the_root_warning_prints_the_factor_the_value_is_computed_from(
 
 def test_the_hobbed_root_drop_is_twice_the_gap_between_the_hobbing_and_broaching_depths() -> None:
     """h_fP is a radial depth and root_d a diameter: 2 * (0.60 - 0.55) = 0.1 times m."""
+    assert din5480.H_FP_HOBBING == 0.60
     assert shaft_calc.HOBBED_ROOT_DROP == 0.1
+    # A drop of 0 would make the sentence read "0*m smaller": H_FP moving onto the hobbing
+    # depth is a decision for a person, not a sentence to ship (31-REVIEW IN-09).
+    assert shaft_calc.HOBBED_ROOT_DROP > 0
     assert f"{shaft_calc.HOBBED_ROOT_DROP}*m" in (
         ShaftDimensions.model_fields["root_d"].description or "")
 
