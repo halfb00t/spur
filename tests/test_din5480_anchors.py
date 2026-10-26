@@ -1,16 +1,17 @@
-"""The DIN 5480 anchor values the human approved by name at the 31-05 checkpoint.
+"""The DIN 5480 anchor values the human approved by name: one Part 1 row and four Part 2 rows.
 
-The checkpoint ran on 2026-10-26. The human read DIN 5480-1:2006-03 in an unofficial English
-translation marked as an uncontrolled copy and approved three values of one designation,
-W 120x3x38x8f, from cl. 9.1, Fig. 6 (an example in the standard, not a normative table).
-Each test below carries its part, clause and figure. No other value of the standard is in
-this repository (REQUIREMENTS "No licensed value in the public repo").
+The 31-05 checkpoint ran on 2026-10-26. The human read DIN 5480-1:2006-03 in an unofficial
+English translation marked as an uncontrolled copy and approved three values of one
+designation, W 120x3x38x8f, from cl. 9.1, Fig. 6 (an example in the standard, not a
+normative table). Each test below carries its part and clause, figure or table. No value of
+the standard other than these and the Part 2 rows below is in this repository
+(REQUIREMENTS "No licensed value in the public repo").
 
 Agreement is to the copy's last printed digit: half a unit of that digit, never wider.
 Part 1 holds no size tables. On 2026-10-26 the human supplied DIN 5480-2:2006-05 (an English
 translation) and approved four rows by name, from Tables 12/13 (m = 1.25) and 18/19 (m = 2):
-W 25x1.25x18 (the default shaft), W 26x1.25x19 (an odd tooth count), W 30x2x14 (shift -0.05)
-and W 30x2x13 (shift +0.45). Each row's x*m, s1, da1, df1, D_M and M1 are pinned below; no
+W 25x1.25x18 (the default shaft), W 26x1.25x19 (odd), W 30x2x14 (shift -0.05) and
+W 30x2x13 (shift +0.45, also odd). Each row's x*m, s1, da1, df1, D_M and M1 are pinned below; no
 other value of Part 2 is in this repository. This closes docs/tech_debt/resolved/2026-10-26-
 din5480-anchor-rows-beyond-part-1-are-missing.md.
 """
@@ -91,7 +92,7 @@ def _params(designation: str) -> ShaftParams:
 
 
 @pytest.mark.parametrize(("row", "tables", "xm", "xm_places", "s1", "da1", "df1", "pin", "m1"),
-                         PART_2_ROWS, ids=[r[0] for r in PART_2_ROWS])
+                         PART_2_ROWS, ids=[f"{r[0]}, {r[1]}" for r in PART_2_ROWS])
 def test_anchor_part_2_basic_dimensions(row: str, tables: str, xm: float, xm_places: int,
                                         s1: float, da1: float, df1: float, pin: float,
                                         m1: float) -> None:
@@ -99,7 +100,8 @@ def test_anchor_part_2_basic_dimensions(row: str, tables: str, xm: float, xm_pla
     tooth thickness s1, tip diameter da1 and theoretical root df1 (h_fP = 0.55*m, Part 2
     cl. 1) agree with the printed digits; x*m is compared unrounded at the table's digit and
     as printed at the tool's. W 30x2x14 and W 30x2x13 sit on the
-    two edges of the shift range, -0.05 and +0.45, so the range is the standard's at m = 2."""
+    two edges of the shift range, -0.05 and +0.45, and are accepted, so both edges reach rows
+    the standard prints."""
     p = _params(row)
     dims = derive_shaft(p)
     computed_xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
@@ -113,7 +115,7 @@ def test_anchor_part_2_basic_dimensions(row: str, tables: str, xm: float, xm_pla
 
 
 @pytest.mark.parametrize(("row", "tables", "xm", "xm_places", "s1", "da1", "df1", "pin", "m1"),
-                         PART_2_ROWS, ids=[r[0] for r in PART_2_ROWS])
+                         PART_2_ROWS, ids=[f"{r[0]}, {r[1]}" for r in PART_2_ROWS])
 def test_anchor_part_2_measure_over_pins_at_the_tabulated_pin(row: str, tables: str, xm: float,
                                                               xm_places: int, s1: float,
                                                               da1: float, df1: float,
@@ -121,8 +123,9 @@ def test_anchor_part_2_measure_over_pins_at_the_tabulated_pin(row: str, tables: 
     """DIN 5480-2:2006-05, the inspection-dimensions table of the row's module: M1 over two
     pins D_M at the nominal thickness, three decimals, so half a unit is 0.0005. The row is
     compared at the tabulated pin, not the tool's theoretical pin, which Part 2 does not
-    print. W 26x1.25x19 is an odd tooth count, so this is the first row behind the odd-count
-    factor cos(pi/(2*z)); the shaft still prints no M_Re for it (ODD_Z_UNCONFIRMED, D-13)."""
+    print. W 26x1.25x19 and W 30x2x13 are odd tooth counts, the first rows behind the
+    odd-count factor cos(pi/(2*z)); the shaft still prints no M_Re for them
+    (ODD_Z_UNCONFIRMED, D-13)."""
     p = _params(row)
     x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
     s = din5480.tooth_thickness(p.module, x * p.module)

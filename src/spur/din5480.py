@@ -32,7 +32,8 @@ SHIFT_TERM = ADDENDUM_FACTOR + TIP_DIAMETER_OFFSET / 2
 # 0.60 and gets 63.10 for W70x3x22. Not a user field.
 H_FP = 0.55
 # h_fP/m of hobbing, same source as H_FP above (DIN 5480-1:2006, cl. 6, Table 3 and cl. 7.1).
-# Only shaft_calc's hobbed-root sentence reads it; the root diameter itself uses H_FP.
+# shaft_calc's hobbed-root sentence and the root_d field description read it (through
+# HOBBED_ROOT_DROP); the root diameter itself uses H_FP.
 H_FP_HOBBING = 0.60
 # rho_fP/m, both vendors; used only by the internal form diameter. ASSUMPTION (clause slot)
 RHO_FP = 0.16
@@ -140,7 +141,7 @@ def measure_over_pins(m: float, z: int, s: float, pin_d: float) -> tuple[float, 
     The even count reproduces M1 minimum of DIN 5480-1:2006-03, cl. 9.1, Fig. 6, at the
     gauge pin 6.000 and the row's own thickness (tests/test_din5480_anchors.py). The odd
     factor is DIN 5480-1:2006, cl. 4, eq. (1). Both counts reproduce M1 of DIN 5480-2:2006-05,
-    Tables 13 and 19, at the tabulated pin and the nominal thickness (four approved rows, one
+    Tables 13 and 19, at the tabulated pin and the nominal thickness (four approved rows, two
     odd, in the same test file). shaft_calc still prints no odd-count M_Re: the human kept the
     gate (D-13; docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md).
     Part 1 names these D_M, M1 and M2 and points to DIN 5480-15, 5.2.4.3 for D_Re and
@@ -175,7 +176,10 @@ def form_diameter(m: float, z: int, xm: float, h_fp: float, rho_fp: float) -> fl
 
     This is the pin-contact guard's internal lower bound and is never printed as d_Ff: the
     vendors print the standard's form diameter as a limit that depends on the mating hub,
-    and no DIN 5480 row proves this construction yet (D-12, L08). ASSUMPTION (clause slot)
+    and no DIN 5480 row proves this construction yet (D-12, L08). DIN 5480-2 prints d_Ff1 as
+    a maximum, and this construction exceeds it on most rows at h_fP 0.55: docs/tech_debt/
+    active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md.
+    ASSUMPTION (clause slot)
     """
     d = m * z
     d_b = d * math.cos(ALPHA)

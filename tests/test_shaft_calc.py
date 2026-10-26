@@ -157,8 +157,8 @@ def test_the_pin_sentence_says_the_standard_tabulates_a_different_pin() -> None:
 def test_no_pin_sentence_is_printed_when_no_pin_is_given(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """pin_measurement cannot return a null pin for the theoretical pin today (D-20), so the
-    null reading is injected: it goes live in Phase 34. "M_Re is for this pin" beside "M_Re
-    and D_Re not given" would contradict itself."""
+    null reading is injected: it goes live in Phase 34. THEORETICAL_PIN describes a D_Re,
+    and none is printed here, so it would sit beside "M_Re and D_Re not given"."""
     reason = "M_Re and D_Re not given: injected."
     monkeypatch.setattr(shaft_calc, "pin_measurement",
                         lambda _p, _pin_d: PinReading(None, None, (reason,)))

@@ -32,7 +32,9 @@ PIN_DECIMALS = 2
 # and 0.202 mm (KISSsoft, 0.067*m); 1.5 times the larger is 0.1*m. Scaling with m is an
 # assumption, both gaps are at m 3. Over 7,392 cases the theoretical pin's contact sits at
 # least 0.62*m above the internal d_Ff and 0.886*m below d_a (D-20), so a wrong margin
-# costs nothing until Phase 34.
+# costs nothing until Phase 34. DIN 5480-2 puts the internal d_Ff above the standard's
+# maximum by up to 0.174*m: docs/tech_debt/active/2026-10-26-form-diameter-construction-
+# exceeds-din5480-2-maximum.md.
 GUARD_MARGIN_FACTOR = 0.1
 
 FORM_DIAMETER_UNPROVEN = (
