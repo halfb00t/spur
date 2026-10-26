@@ -143,11 +143,13 @@ def test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins() -> None:
     assert not any("M_Re is for this pin" in w for w in d.warnings)
 
 
-def test_the_pin_sentence_says_the_pin_is_computed_and_not_compared_with_a_table() -> None:
-    """The 31-05 checkpoint saw no tabulated D_Re in Part 1, so the sentence must not claim
-    to know what the standard tabulates (31-REVIEW IN-03)."""
+def test_the_pin_sentence_says_the_standard_tabulates_a_different_pin() -> None:
+    """DIN 5480-2 tabulates a measuring pin D_M per size, and it differs from the theoretical
+    pin for most sizes (the default shaft: D_M 2.75, theoretical 2.73; tests/
+    test_din5480_anchors.py), so the sentence says so (31-REVIEW IN-03, WR-11)."""
     assert THEORETICAL_PIN.endswith(
-        "The tool computes this pin; it has not been compared with a tabulated D_Re.")
+        "DIN 5480-2 tabulates its own measuring pin D_M for the sizes it lists, and for most "
+        "of them it differs from this pin.")
     assert "M_Re" not in THEORETICAL_PIN
     assert "It is not the D_Re that DIN 5480 tabulates" not in THEORETICAL_PIN
 

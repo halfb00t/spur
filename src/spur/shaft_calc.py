@@ -42,8 +42,8 @@ FORM_DIAMETER_UNPROVEN = (
 )
 THEORETICAL_PIN = (
     "The pin diameter D_Re is the theoretical pin that touches the flanks on the circle "
-    "m*z + 2*x*m, rounded to 0.01 mm. The tool computes this pin; it has not been compared "
-    "with a tabulated D_Re."
+    "m*z + 2*x*m, rounded to 0.01 mm. DIN 5480-2 tabulates its own measuring pin D_M for the "
+    "sizes it lists, and for most of them it differs from this pin."
 )
 # The designation prints a fit, but M_Re is computed at the nominal thickness. The copy's own
 # M1 minimum for W 120x3x38x8f is taken 0.091 mm below it (tests/test_din5480_anchors.py), so
