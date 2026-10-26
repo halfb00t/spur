@@ -1,56 +1,87 @@
 ---
 phase: 31-shaft-maths-parameters-and-designation
-fixed_at: 2026-10-26T12:00:00Z
+fixed_at: 2026-10-26T00:00:00Z
 review_path: .planning/phases/31-shaft-maths-parameters-and-designation/31-REVIEW.md
 iteration: 1
-findings_in_scope: 3
-fixed: 3
+findings_in_scope: 13
+fixed: 13
 skipped: 0
 status: all_fixed
 ---
 
-# Phase 31: Code Review Fix Report
+# Phase 31: Code Review Fix Report (the DIN 5480-2 anchor follow-up)
 
-**Fixed at:** 2026-10-26T12:00:00Z
 **Source review:** .planning/phases/31-shaft-maths-parameters-and-designation/31-REVIEW.md
-**Iteration:** 1
 
-**Summary:**
-- Findings in scope: 3 (IN-07, IN-08, IN-09; no critical, no warning)
-- Fixed: 3
-- Skipped: 0
+The orchestrator applied the fixes, because it wrote the diff under review. They are re-reviewed independently before re-verification.
 
-Each changed test was run against the unfixed code first and failed (red): IN-07 failed 3 tests (default shaft, odd count, pin sentence), IN-08 failed on a temporary revert of `_exact(p.module)` to `{p.module:g}` (message read "module 1.25 and 18 teeth"), IN-09 failed with an AttributeError on `din5480.H_FP_HOBBING`. The IN-08 revert was undone with `git checkout --` before the commit.
-
-Verification ran in the main checkout (`workflow.use_worktrees` is false), so the numbers below are reproducible from the tree as it stands.
-
-- `make verify`: exit status 0, final pytest line `2379 passed in 211.21s (0:03:31)`.
-- `make gear.unchanged`: exit status 0, `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
-
-T-31-13: no DIN 5480 table value or clause text was added. The only dedendum values touched are the committed 0.55 and 0.60, and 0.60 moved from `shaft_calc.py` into `din5480.py` next to `H_FP`. L05: no default changed. L08: no printed number changed. The W 120x3x38x8f hobbed root is still 113.100 (root_d 113.4) and the default's is still 22.125, checked by running `derive_shaft` after the last commit.
+- **WR-11:** this changed warning text, and the review asked for the human's decision. The orchestrator took option 1, the review's recommendation, because the old sentence is false. It is reversible and no number moved.
+- **Numbers:** no printed number, default or bound changed. T-31-13: no DIN 5480 value was added beyond the 24 approved ones.
+- **Tests:** `tests/test_din5480_anchors.py tests/test_shaft_calc.py tests/test_din5480.py tests/test_shaft_params.py` gave `1018 passed`. Every commit passed `make verify.fast` in the pre-commit hook.
 
 ## Fixed Issues
 
-### IN-07: `THEORETICAL_PIN` still says "M_Re is for this pin" for an odd tooth count, where no M_Re is printed
+### WR-07: Two of the four approved rows have an odd tooth count, but every new text says one
 
-**Files modified:** `src/spur/shaft_calc.py`, `tests/test_shaft_calc.py`
-**Commit:** 4ee29af
-**Applied fix:** Took the clause out of `THEORETICAL_PIN` and folded it into `MEASURE_AT_NOMINAL_THICKNESS`, which is already gated on `reading.measure`. It now reads "M_Re is for this pin and is the measure at the nominal tooth thickness; ...". Folding kept the warning list the same length and order, so no other test or consumer moved. The odd-count test asserts "M_Re is for this pin" is absent from every warning, the default (even) test asserts it is present, and the pin-sentence test asserts `THEORETICAL_PIN` ends at "tabulated D_Re." and holds no "M_Re". Warning text only.
+**Commit:** 195e38c, c4fc1ac
+**Applied fix:** The L47 amendment, the resolved debt item, the idea, the `measure_over_pins` docstring and the anchor test docstrings now name two odd rows: W 26x1.25x19 and W 30x2x13.
 
-### IN-08: The `module` branch of `_exact` has no test, and the hobbed-root test indexes `warnings[2]`
+### WR-08: "Each assertion was seen red once" is false for da1, for the odd-row null, and for the oracle cross-check
 
-**Files modified:** `tests/test_shaft_params.py`, `tests/test_shaft_calc.py`
-**Commit:** ae7bbfc
-**Applied fix:** Added `test_a_refused_module_is_printed_in_full_and_not_as_the_default_1_25` (`module=1.2499999`, `teeth=18`, `reference_d=25`): it asserts "module 1.2499999 " is in the message and that the printed shift differs from `X_MAX`. The three hobbed-root tests now take the sentence from a `_hobbed_warning(p)` helper that picks the warning containing "hobbed", so no test reads `warnings[2]` any more. Test-only change.
+**Commit:** 8c77302
+**Applied fix:** Eight mutation runs, each reaching one assertion alone: lines 108, 111, 112, 113, 114, 134, 135 and 137 of `tests/test_din5480_anchors.py`. The logs carry the failing line (`--tb=line`). The misleading `31-part2-red-tip.log` is replaced by `31-part2-red-tip-only.log`, and the runs join `bench/RESULTS.md` `### Seen red once (Phase 31)`. The docs now say "each value assertion": the `reading is not None` precondition has no break of its own.
 
-### IN-09: `H_FP_HOBBING` is a second hand-copied 0.60, outside the constants block
+### WR-09: The amendment quotes the guard margin as 0.067*m; the margin is 0.1*m
 
-**Files modified:** `src/spur/din5480.py`, `src/spur/shaft_calc.py`, `tests/test_shaft_calc.py`
-**Commit:** a2d125c
-**Applied fix:** Moved `H_FP_HOBBING = 0.60` into the `din5480.py` constants block right after `H_FP`, with the same source line (DIN 5480-1:2006, cl. 6, Table 3 and cl. 7.1). `shaft_calc.HOBBED_ROOT_DROP` is now `round(2 * (din5480.H_FP_HOBBING - din5480.H_FP), 3)`. The drop test asserts `din5480.H_FP_HOBBING == 0.60` and `HOBBED_ROOT_DROP > 0`, so a sentence reading "0*m smaller" cannot ship. The root diameter still uses `H_FP`; the new constant is read only by the hobbed-root sentence and the `root_d` description.
+**Commit:** 195e38c
+**Applied fix:** The amendment now says the margin is 0.1*m, sized from gaps of at most 0.067*m.
 
----
+### WR-10: The published `measure_over_pins` description still says an odd count is "unconfirmed"
 
-_Fixed: 2026-10-26T12:00:00Z_
-_Fixer: Claude (gsd-code-fixer)_
-_Iteration: 1_
+**Commit:** 3bedcc7
+**Applied fix:** The field description now says "Null for an odd tooth count (not given yet)". The constant name `ODD_Z_UNCONFIRMED` is kept: renaming it is churn, and the idea file names it as the thing to retire.
+
+### WR-11: The printed pin sentence says the pin "has not been compared with a tabulated D_Re"; this diff compares it, and it differs for the default shaft
+
+**Commit:** ee75aae
+**Applied fix:** Option 1. `THEORETICAL_PIN` now ends: "DIN 5480-2 tabulates its own measuring pin D_M for the sizes it lists, and for most of them it differs from this pin." (684 of 700 rows read.) The test pins the new ending. Warning text only.
+
+### IN-10: The null-pin test's docstring still gives the pre-IN-07 reason for withholding `THEORETICAL_PIN`
+
+**Commit:** c4fc1ac
+**Applied fix:** The docstring now says THEORETICAL_PIN describes a D_Re that is not printed.
+
+### IN-11: `H_FP_HOBBING`'s comment says only the hobbed-root sentence reads it; the `root_d` field description reads it too
+
+**Commit:** c4fc1ac
+**Applied fix:** The comment names both readers: the hobbed-root sentence and the `root_d` description, through `HOBBED_ROOT_DROP`.
+
+### IN-12: The basic-dimensions docstring claims more about the shift range than the test proves
+
+**Commit:** c4fc1ac
+**Applied fix:** The docstring now says both edges are accepted and reach rows the standard prints.
+
+### IN-13: 706 nominal rows but 700 M1 rows, and the amendment says "all"
+
+**Commit:** 195e38c
+**Applied fix:** The amendment, the resolved item and the idea say the parser read 706 nominal and 700 inspection rows and misses a few at page breaks, in both tables. The difference is a parser artifact, not a property of the standard.
+
+### IN-14: The anchor module docstring's first paragraph is now stale, and `tables` is never read
+
+**Commit:** c4fc1ac
+**Applied fix:** The module docstring covers both approvals. The `tables` column now goes into the test ids.
+
+### IN-15: The L47 amendment spans five paragraphs, and one of them opens like an original section
+
+**Commit:** 195e38c
+**Applied fix:** The amendment is split into two labelled `**Amendment (...)**` paragraphs, and the bold on "The guard" is gone from the body.
+
+### IN-16: Resolving the anchor item drops the gauge-series bullet and leaves REQ-shaft-basic-dims "can close" untracked
+
+**Commit:** 195e38c
+**Applied fix:** The resolved item has the gauge-series bullet and says REQ-shaft-basic-dims closes with the re-verification. REQUIREMENTS.md is updated at re-verification.
+
+### IN-17: The code that the new form-diameter debt item is about does not point to it
+
+**Commit:** c4fc1ac
+**Applied fix:** The `form_diameter` docstring and the `GUARD_MARGIN_FACTOR` comment point to the form-diameter debt item.
