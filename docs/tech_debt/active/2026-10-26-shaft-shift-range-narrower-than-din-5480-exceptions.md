@@ -5,8 +5,8 @@ Status: active
 Date: 2026-10-26
 Source: Phase 31 plan 31-05 checkpoint, divergence D3 (the human's reading of DIN 5480-1:2006-03 cl. 4 and Table 3).
 Related files:
-- src/spur/din5480.py:34 (X_MAX)
-- src/spur/shaft_calc.py:105 (check_shaft)
+- src/spur/din5480.py (`X_MAX`)
+- src/spur/shaft_calc.py (`check_shaft`)
 - .planning/phases/31-shaft-maths-parameters-and-designation/31-05-SUMMARY.md (`## Checkpoint result`, D3)
 
 ## Context
