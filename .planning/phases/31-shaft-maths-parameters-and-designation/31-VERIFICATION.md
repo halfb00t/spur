@@ -1,8 +1,8 @@
 ---
 phase: 31-shaft-maths-parameters-and-designation
-verified: 2026-10-26T20:00:00Z
+verified: 2026-10-26T23:00:00Z
 status: passed
-score: 5/5 must-haves verified (includes 1 override)
+score: 5/5 must-haves verified (0 overrides relied on)
 covered_files:
   - ".planning/phases/31-shaft-maths-parameters-and-designation/31-01-PLAN.md"
   - ".planning/phases/31-shaft-maths-parameters-and-designation/31-01-SUMMARY.md"
@@ -17,7 +17,10 @@ covered_files:
   - ".planning/phases/31-shaft-maths-parameters-and-designation/31-06-PLAN.md"
   - ".planning/phases/31-shaft-maths-parameters-and-designation/31-06-SUMMARY.md"
   - "bench/RESULTS.md"
-  - "docs/tech_debt/active/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md"
+  - "docs/architecture/decision_log.md"
+  - "docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md"
+  - "docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md"
+  - "docs/tech_debt/resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md"
   - "src/spur/din5480.py"
   - "src/spur/parts.py"
   - "src/spur/shaft_calc.py"
@@ -27,9 +30,11 @@ covered_files:
   - "tests/test_din5480_anchors.py"
   - "tests/test_shaft_calc.py"
   - "tests/test_shaft_params.py"
-covered_digest: "v3:sha256:89bf1943ab111792a8ff789bfd8a8394559813f6098dd3d9783a2a2d80a79d0f"
+covered_digest: "v3:sha256:4d4c723a3653f9801c601a94f12b6a9f22e199b23575c8f06f12ea2562cba947"
 behavior_unverified: 0
-overrides_applied: 1
+overrides_applied: 0
+# History only. This override was the basis of the previous report's pass of truth 2. It is no
+# longer relied on: truth 2 is VERIFIED directly on the DIN 5480-2 anchors (see below).
 overrides:
   - must_have: "d_B, tip, root and nominal thickness agree with at least two anchor rows from the copy"
     reason: "DIN 5480 Part 1 has no size tables; one designation (W 120x3x38x8f, cl. 9.1 Fig. 6) is anchored for the tip; the rest is filed as must-severity debt 2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing. Accepted at the 31-05 checkpoint (partial pass + debt); accepted_by entered by the agent on the human's explicit instruction."
@@ -37,20 +42,25 @@ overrides:
     accepted_at: "2026-10-26"
 re_verification:
   previous_status: passed
-  previous_score: 5/5
-  gaps_closed: []
+  previous_score: 5/5 (includes 1 override)
+  gaps_closed:
+    - "SC2 / REQ-shaft-basic-dims: at least two copy anchor rows (previously carried by the override and a must-severity debt item)"
   gaps_remaining: []
   regressions: []
 deferred: []
 advisory:
-  - finding: "IN-10: the docstring of test_no_pin_sentence_is_printed_when_no_pin_is_given (tests/test_shaft_calc.py:158-161) still gives the pre-IN-07 reason, 'M_Re is for this pin' beside 'M_Re and D_Re not given'. THEORETICAL_PIN no longer contains M_Re."
+  - finding: "The resolved anchor debt item and its INDEX row give `Resolved in:` as a commit subject ('test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap'), not a sha. CLAUDE.md asks for the sha. The commit is 45b6565, found with git log."
     category: other
-    reason: "Stale comment. The test body asserts the right thing; only the stated reason is out of date. Reword the last sentence."
-    evidence_status: "reproduced: read at the cited lines; assert 'M_Re' not in THEORETICAL_PIN passes"
-  - finding: "IN-11: the H_FP_HOBBING comment (src/spur/din5480.py:34-35) says only the hobbed-root sentence reads it; HOBBED_ROOT_DROP also feeds the root_d field description in the published schema"
+    reason: "Bookkeeping. The subject is unique and resolves to 45b6565 today. The repo already tracks the wider problem of shas that squash-merge orphans (docs/tech_debt/active/2026-10-05-resolved-in-shas-point-at-squashed-branch-commits.md), which is probably why a subject was chosen. Add the sha beside the subject."
+    evidence_status: "reproduced: read the file header; git log --oneline -1 45b6565"
+  - finding: "T-31-13 residue: three docs state derived statistics of unnamed Part 2 rows (shift of the 11 refused rows 0.617 to 0.879, z >= 60, m 0.6 to 1.75; construction minus maximum -0.031 to +0.174*m; 16 of 721 pins match). No row can be identified from them."
     category: other
-    reason: "Stale comment. Someone editing H_FP_HOBBING on this comment's word would not expect the schema text to move. Name both readers, as the shaft_calc.py comment already does."
-    evidence_status: "reproduced: read at the cited lines"
+    reason: "Aggregates and extremes, not table values. They are not in the approved set, but they carry no per-row figure and no designation. Say so if the human wants a stricter reading of 'nothing else from the copy is committed'."
+    evidence_status: "reproduced: read the three files"
+  - finding: "ROADMAP SC3 / REQ-mre-nominal say odd z stays null until an odd-z anchor row confirms it. Two odd rows now confirm the factor (M1 at the tabulated pin, 211 of 211 odd rows in the scratch comparison) and the shaft still prints null for odd z, by the human's choice."
+    category: other
+    reason: "Not a gap: the criterion bounds when null is required, not when a number must print, and an honest null is the L08 default. The choice is filed as docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md with the caveat that an odd M_Re at the tool's theoretical pin is not the tabulated pin's M1."
+    evidence_status: "reproduced: 0 of 29,668 accepted odd-z shafts in the grid print measure_over_pins"
 coincidental_reliance_items: []
 human_verification: []
 ---
@@ -58,89 +68,108 @@ human_verification: []
 # Phase 31: Shaft Maths, Parameters and Designation Verification Report
 
 **Phase Goal:** A user can ask the pure maths for a DIN 5480 external shaft from reference diameter, module, tooth count and tolerance field and get honest numbers: the profile shift the standard derives, tip and root diameters, nominal tooth thickness, measurement over pins at nominal thickness, each proved against an independent oracle and against rows of the copy, with the form diameter and odd-z M_Re `null` until proven, and a designation that prints and parses back to the same shaft. No solid, no route, no page yet.
-**Verified:** 2026-10-26T20:00:00Z
+**Verified:** 2026-10-26T23:00:00Z (HEAD `16746fe`)
 **Status:** passed
-**Re-verification:** Yes. The prior report went stale because the IN-07, IN-08 and IN-09 fixes (4ee29af, ae7bbfc, a2d125c) changed `din5480.py`, `shaft_calc.py`, `tests/test_shaft_calc.py` and `tests/test_shaft_params.py`.
+**Re-verification:** Yes. Scope is `a7a7df3..HEAD`: the DIN 5480-2 anchor follow-up (45b6565 and the two debt/idea filings), the review of it (33 of 33 findings fixed) and the resulting text changes.
 
-## Re-verification scope
+## What changed, read from the diff
 
-`git diff 63172e7..HEAD -- src tests` is four files: 3 added lines in `din5480.py`, 25 lines moved in `shaft_calc.py`, and test edits. I read the whole diff. It does three things.
+`git diff a7a7df3..HEAD -- src` is two files and three kinds of change: comments and docstrings in `din5480.py` and `shaft_calc.py`, and three printed strings (`THEORETICAL_PIN`, `ODD_Z_UNCONFIRMED` and the `measure_over_pins` field description). No formula, bound, default or constant moved. `git diff v0.6 --stat -- src/spur/calc.py src/spur/params.py requirements.txt` is empty. The tests gain the Part 2 anchors and a reworded pin-sentence test.
 
-1. **IN-07.** The clause "and M_Re is for this pin" leaves `THEORETICAL_PIN` and moves into `MEASURE_AT_NOMINAL_THICKNESS`, which is emitted only when `reading.measure` is non-null. On an odd tooth count, where `measure_over_pins` is null and `ODD_Z_UNCONFIRMED` says M_Re is not given, the pin sentence no longer mentions M_Re. The previous report's advisory is therefore closed, not carried.
-2. **IN-08.** A test is added for the `module` branch of the refusal message, and the hobbed-root tests find their sentence by content (`"hobbed" in w`) instead of `warnings[2]`.
-3. **IN-09.** `H_FP_HOBBING = 0.60` moves into the `din5480.py` constants block. `HOBBED_ROOT_DROP` is computed from it and `H_FP`. A test asserts the drop is above 0.
+## Truth 2, checked directly (previously PASSED by override)
 
-No formula, bound or default is touched. Only string literals and the constant's location moved.
+Truth: "d_B, tip, root and nominal thickness agree with the independent oracle and with at least two anchor rows from the copy."
 
-## L08: no printed number changed
+**The override is no longer relied on.** It stays in the frontmatter, verbatim, as history of how the previous report passed this truth. The truth is now VERIFIED on evidence.
 
-I extracted `63172e7` and `HEAD` with `git archive src` into two scratchpad directories, ran the same script against each in its own process (`python -I`, import path asserted to be the scratch tree), and compared the JSON dumps. The oracle `tests/shaft_oracle.py` supplied d_B, so the grid sits on and around the real feasible region.
+What I read and ran:
 
-Grid: 13 modules (0.5 to 10) x 77 tooth counts (6 to 82) x 3 fits (8f, 7h, 9g) x 19 reference diameters per cell (the oracle d_B at 16 profile shifts from -0.06 to +0.46, spanning both range edges, plus 25.0 and two nudged values). That is **57,057 evaluations, 54,489 distinct shafts**: 45,519 accepted and 8,970 refused.
+1. `tests/test_din5480_anchors.py` pins five designations: W 120x3x38x8f (Part 1, cl. 9.1 Fig. 6, tip only) and four DIN 5480-2:2006-05 rows (Tables 12/13 at m 1.25, 18/19 at m 2). Each Part 2 row pins x*m, s1, da1, df1, D_M and M1 as hard-coded literals with half a unit of the printed digit as tolerance. The expected values are not computed from `spur`, so the assertions cannot move with the code.
+2. The four Part 2 rows each cover all four quantities of the truth (shift/d_B, tip da1, root df1, nominal thickness s1): that is four rows, not two. Two are odd tooth counts, and W 30x2x14 and W 30x2x13 sit on the two edges of the shift range (-0.05 and +0.45). The truth also asks for the oracle: `shaft_oracle.measure` is compared to the code at 1e-9 in the same test, and the oracle imports `math` only.
+3. `pytest tests/test_din5480_anchors.py`: `11 passed`. With the four shaft test files: `1018 passed in 2.61s`.
+4. Each value assertion bites. Eight kept logs under `investigation/31-part2-red-*.log` show the first failing assertion for: shift (`ADDENDUM_FACTOR` 0.45 to 0.46), printed shift, s1 (`tan` to `sin`), da1 alone, df1 (`H_FP` 0.55 to 0.60), the odd factor, the oracle cross-check and the odd null. I ran one more myself on a scratch copy (`/private/tmp/.../scratchpad/mut`, import path asserted to resolve there): the odd factor `cos(pi/(2*z))` replaced by `1.0` gives `2 failed, 9 passed`, both failures on the two odd rows at the M1 line (`Obtained: 36.211, Expected: 35.984`). The main tree was not touched.
+5. I cannot check the 24 pinned digits against the standard: I do not hold the copy. They are the values the human approved by name (L47 amendment, 31-VALIDATION). That approval is the evidence for the digits; the tests prove the code reproduces them.
+
+Verdict: VERIFIED. The shortfall that the override covered (one row) is gone: four independent rows from the second part, plus the Part 1 tip row.
+
+## L08 / L05: no printed number, default or bound moved
+
+I extracted `a7a7df3` and `HEAD` with `git archive src` into two scratchpad trees, ran one script per tree in its own process (`python -I`, `spur.__file__` asserted to be inside the tree), and compared the JSON dumps. The oracle supplied d_B so the grid lies on and around the feasible region.
+
+Grid: 13 modules (0.5 to 10) x 77 tooth counts (6 to 82) x 4 fits (8f, 7h, 9g, 6g) x 19 reference diameters per cell (the oracle d_B at 16 profile shifts from -0.06 to +0.46, which spans both range edges, plus 25.0 and two nudged values). That is **76,076 evaluations, all distinct**: 60,108 accepted (29,668 odd z, 30,440 even z) and 15,968 refused.
 
 | Check | Result |
 |-------|--------|
-| Every non-warning field of every accepted shaft (the whole `model_dump` less `warnings`) | 0 differences |
-| Refusal text for the 8,970 refused shafts | 0 differences |
-| `ShaftParams` and `ShaftDimensions` JSON schemas | equal |
-| Warning count per shaft | equal everywhere (the sentences moved, none added or dropped) |
-| Warning strings that differ | exactly four: the old and new `THEORETICAL_PIN`, and the old and new `MEASURE_AT_NOMINAL_THICKNESS` |
-| Default shaft (25 / 1.25 / 18 / 8f) | tip 24.75, root 22.25, pin 2.73, M_Re 27.999, as before |
-| `form_d` non-null | 0 of 45,519 |
-| Odd z, `measure_over_pins` non-null | 0 of 22,464 |
-| Even z, `measure_over_pins` null | 0 of 23,055 |
+| Every non-warning field of every accepted shaft (the whole `model_dump` less `warnings`) | 0 differences in 60,108 |
+| Refusal text of the 15,968 refused shafts | 0 differences |
+| Accepted/refused status of any cell | 0 changed |
+| `ShaftParams` JSON schema (field names, defaults, bounds, patterns) | equal |
+| `ShaftParams()` defaults (`model_dump`) | equal |
+| Default shaft (25 / 1.25 / 18 / 8f) | non-warning output equal: tip 24.75, root 22.25, pin 2.73, M_Re 27.999, shift 0.562, thickness 2.613, form_d null |
+| Warning count per shaft | equal everywhere |
+| `ShaftDimensions` JSON schema | differs in exactly one string: the `measure_over_pins` description, "(unconfirmed)" became "(not given yet)". Keys, types, bounds and every other property are equal |
+| Warning strings that differ | exactly two, each in the old and new form (four strings) |
 
-Only warning strings differ. L05 holds with them: no default, bound or schema field moved, and `git diff v0.6 --stat -- src/spur/calc.py src/spur/params.py requirements.txt` is empty. `make gear.unchanged` (run by me): "byte-equal to v0.6" (8723 bytes).
+The differing strings, in full:
+
+- `THEORETICAL_PIN` (60,108 shafts). Old: "...rounded to 0.01 mm. The tool computes this pin; it has not been compared with a tabulated D_Re." New: "...rounded to 0.01 mm. DIN 5480-2 tabulates its own measuring pin D_M for the sizes it lists, and for most of them it differs from this pin."
+- `ODD_Z_UNCONFIRMED` (29,668 odd-z shafts). Old: "The measurement over pins M_Re is not given for an odd tooth count until a DIN 5480 row confirms the odd-tooth formula; the pin diameter is still given." New: "The measurement over pins M_Re is not given for an odd tooth count yet; the pin diameter is still given."
+- The `measure_over_pins` field description: "Null for an odd tooth count (unconfirmed) and when..." became "Null for an odd tooth count (not given yet) and when...".
+
+L05 holds: no default, bound or field name moved. L08 holds: no number moved. Printed text changed in three places, all to say what is now true (the old pin sentence and the "until a row confirms" wording were false after the Part 2 comparison). `make gear.unchanged` is being run by the orchestrator; I did not re-run it. `calc.py`, `params.py` and `requirements.txt` are empty against `v0.6`.
+
+## form_d and odd-z M_Re stay null
+
+From the same grid, new tree:
+
+| Check | Result |
+|-------|--------|
+| `form_d` non-null | 0 of 60,108 |
+| Odd z, `measure_over_pins` non-null | 0 of 29,668 |
+| Even z, `measure_over_pins` null | 0 of 30,440 |
+| Odd z, `pin_d` still printed | yes (the odd sentence says so; unchanged against `a7a7df3`) |
+
+The form sentence is in the warnings of the default shaft. `test_anchor_w120x3x38x8f_form_diameter_is_a_limit_not_a_construction` and the odd-row null assertion (seen red, `31-part2-red-odd-gate.log`) hold the two nulls.
+
+## T-31-13: no DIN 5480 value beyond the approved ones
+
+- `git diff a7a7df3..HEAD --name-status`: no table file, no data file; the only new files are eight red logs, one idea and one debt item. `src/spur/din5480_tables.py` is the 11-line docstring-only seam from Phase 30.
+- Every DIN 5480 value in the diff is one of the approved ones: the 24 literals in `PART_2_ROWS` (4 rows x x*m, s1, da1, df1, D_M, M1), the three Part 1 values, and the D_M values 2.75 and 4.0 / 5.0 as quoted in comments and the review (the tool's own theoretical pins quoted beside them, 2.73, 2.62, 3.83, 4.72, are tool output). The red logs print the tool's wrong values on the left of `==` and the approved literal on the right.
+- Other numbers are counts and ratios from the scratch comparison (719, 720, 721, 483, 44, 211, 510, 16, 11), not rows. Three docs carry min/max of unnamed rows; see the advisory. No designation outside the five approved is named with a value.
+- `31-SECURITY.md` T-31-13 and T-31-15 are updated to match.
 
 ## Goal Achievement
 
-### Observable Truths (ROADMAP success criteria; PLAN must-haves add detail, none subtract)
+### Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | SC1: Frozen `ShaftParams` contract, shift from d_B, epsilon edge, range refusal naming the range, gear untouched | VERIFIED | 1010 passed across the four shaft test files (run by me), including the frozen-contract test. 8,970 grid cases refuse with the range named, and refusal text is identical to `63172e7`. `calc.py`, `params.py`, `requirements.txt` empty against `v0.6`; gear schema byte-equal. |
-| 2 | SC2: d_B, tip, root, thickness agree with the independent oracle and with at least two copy anchor rows | **PASSED (override)** | Override: "DIN 5480 Part 1 has no size tables; one designation (W 120x3x38x8f) is anchored for the tip; the rest is filed as must-severity debt", accepted by Andrew S on 2026-10-26. Oracle half VERIFIED: `tests/shaft_oracle.py` imports `math` only and its test passes. Copy half: one row (W120x3x38 tip 119.4, root 113.4), in `test_din5480_anchors.py`, passing. The shortfall is accepted, not filled. |
-| 3 | SC3: d_Ff `null` with a sentence; even-z M_Re and D_Re agree with the oracle; contact guard or `null` with a warning; odd z `null` | VERIFIED | Grid counts above: `form_d` null in all 45,519 accepted shafts, odd-z `measure_over_pins` null in all 22,464, even-z printed in all 23,055. The form sentence is in the warnings of every shaft. Guard branches covered by direct-call tests in `test_shaft_calc.py` (passing). |
-| 4 | SC4: Designation prints and parses back, `.` and `,`, refusal names the bad token, fit shape only | VERIFIED | Codec code untouched by the three fix commits; the codec tests pass (round trip, `,` form, refusals naming the token, pickle round trip of `DesignationError`). Every accepted grid shaft carries a designation in `designation`, identical to `63172e7`. |
-| 5 | SC5: Gate delta recorded; Phase 30 check green | VERIFIED | `bench/RESULTS.md` records the gate delta. Orchestrator gate on this tree (cited, not re-run): `make verify` exit 0, `2379 passed in 316.29s`. `lint-imports`: 10 kept, 0 broken (run by me). `make gear.unchanged` green (run by me). |
+| 1 | SC1: frozen `ShaftParams` contract; shift from d_B; epsilon edge; refusal naming the range; gear untouched | VERIFIED | Schema and defaults equal to `a7a7df3` over the grid; 15,968 refusals identical; `calc.py`/`params.py`/`requirements.txt` empty vs `v0.6`; W 30x2x14 and W 30x2x13 (the two edges) accepted and pinned to Part 2 |
+| 2 | SC2: d_B, tip, root and thickness agree with the oracle and with at least two copy anchor rows | VERIFIED | Four Part 2 rows plus the Part 1 tip row, literals not derived from the code, red logs for each assertion; oracle independent (`math` only). No longer relies on the override |
+| 3 | SC3: d_Ff `null` with a sentence; even-z M_Re and D_Re agree with the oracle; guard or `null`; odd z `null` | VERIFIED | form_d null 0/60,108 non-null; odd-z M_Re null in all 29,668; even z printed in all 30,440; guard branches covered by direct-call tests (passing); the odd factor itself is now confirmed by two odd rows, null is kept by the human's choice |
+| 4 | SC4: designation prints and parses back; `.` and `,`; refusal names the token; fit shape only | VERIFIED | Codec code untouched by this round; codec tests pass; designation field identical in every accepted grid shaft |
+| 5 | SC5: gate delta recorded; Phase 30 check green | VERIFIED | `bench/RESULTS.md` carries the delta and the Part 2 red rows. `lint-imports`: 10 kept, 0 broken (run by me). `make verify` and `make gear.unchanged`: run by the orchestrator on this tree, not by me |
 
-**Score:** 5/5 truths (4 VERIFIED, 1 PASSED (override); 0 present, behavior-unverified).
-
-### Override applied
-
-The override in the frontmatter is the human's (accepted_by "Andrew S", accepted_at 2026-10-26), carried forward verbatim and not re-asked. It matches truth 2 on the same wording as before and closes the verification gap only. **REQ-shaft-basic-dims stays Pending**: the requirement asks for at least two copy anchor rows and the phase has one. The must-severity debt item `docs/tech_debt/active/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md` exists and carries the missing rows.
-
-### Deferred Items
-
-None.
-
-### Advisory (New Scope, Unevidenced)
-
-| # | Finding | Category | Why Advisory |
-|---|---------|----------|--------------|
-| 1 | IN-10: stale docstring in `test_no_pin_sentence_is_printed_when_no_pin_is_given` | other | Comment only. Not a goal gap: the test body asserts `THEORETICAL_PIN not in d.warnings`, which is the right behavior, and `THEORETICAL_PIN` holds no "M_Re" (asserted by another test). The docstring gives a reason that was true before IN-07. |
-| 2 | IN-11: `H_FP_HOBBING` comment names one reader of two | other | Comment only. Not a goal gap: the constant, its value (0.60) and the drop (0.1) are pinned by tests, and `shaft_calc.py` lines 64-69 name both readers correctly. It is a maintenance trap for the next editor, with no effect on any number or null. |
-
-The previous report's IN-07 advisory is closed by 4ee29af (checked above). IN-10 and IN-11 stay `open` in `31-REVIEW-DISPOSITION.md`; the two one-line fixes can land with any later edit of these files.
+**Score:** 5/5 truths verified, 0 present-but-behavior-unverified, 0 relying on an override.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/spur/din5480.py` | Formulas, constants, codec | VERIFIED | Real maths, clause-cited; `H_FP_HOBBING` now in the constants block; no cadquery, logger or gear imports (contract kept) |
-| `src/spur/shaft_calc.py` | `derive_shaft`, `check_shaft`, pin guard | VERIFIED | Wired to `din5480`; `form_d=None` always; odd gate present; measure sentence gated on a printed M_Re |
-| `src/spur/shaft_params.py` | `ShaftParams` | VERIFIED | Frozen, validated once through `check_shaft`; unchanged in this round |
-| `tests/shaft_oracle.py` | Independent oracle | VERIFIED | Imports `math` only |
-| `tests/test_din5480_anchors.py` | Copy anchor rows | PARTIAL (covered by override) | One basic-dimension row; shortfall carried by the debt item |
-| `src/spur/parts.py` | `Part = GearParams` | VERIFIED | Unchanged |
+| `src/spur/din5480.py` | formulas, constants, codec | VERIFIED | Real maths, no table data; comments only changed in this round |
+| `src/spur/shaft_calc.py` | `derive_shaft`, `check_shaft`, pin guard | VERIFIED | `form_d=None` always; odd gate present; three strings changed |
+| `src/spur/shaft_params.py` | `ShaftParams` | VERIFIED | Unchanged |
+| `tests/shaft_oracle.py` | independent oracle | VERIFIED | Imports `math` only |
+| `tests/test_din5480_anchors.py` | copy anchors | VERIFIED | 11 tests, five approved designations, literal expectations |
+| `src/spur/din5480_tables.py` | Phase 34 loader seam | VERIFIED (empty by design) | Docstring only; no value |
 
 ### Key Link Verification
 
 | From | To | Status | Details |
 |------|----|--------|---------|
-| `ShaftParams._feasible` | `shaft_calc.check_shaft` | WIRED | 8,970 refused grid cases surface as validation errors |
-| `derive_shaft` | `din5480.*` | WIRED | All formulas called; `HOBBED_ROOT_DROP` reads `din5480.H_FP_HOBBING` and `din5480.H_FP` |
-| `shaft_oracle` | `spur` | INTENTIONALLY ABSENT | The oracle must not import spur |
+| `ShaftParams._feasible` | `shaft_calc.check_shaft` | WIRED | 15,968 grid refusals surface as validation errors, same text as before |
+| `derive_shaft` | `din5480.*` | WIRED | All formulas called; anchors exercise `derive_shaft` and `din5480.*` directly |
+| `shaft_oracle` | `spur` | INTENTIONALLY ABSENT | Oracle imports no `spur` |
 | shaft maths | gear maths | ABSENT (required) | `lint-imports`: 10 kept, 0 broken |
 
 ### Data-Flow Trace (Level 4)
@@ -151,13 +180,14 @@ Not applicable: pure functions, no rendering or data source.
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| No printed number or default changed vs `63172e7` | scratch compare of both trees over 57,057 evaluations (54,489 shafts) | 0 non-warning diffs, 0 refusal diffs, schemas equal | PASS |
-| form_d and odd-z M_Re null | same grid | 0 non-null form_d; 0 of 22,464 odd-z M_Re non-null; 0 of 23,055 even-z null | PASS |
-| Shaft tests | `pytest` on `test_din5480`, `test_din5480_anchors`, `test_shaft_calc`, `test_shaft_params` | `1010 passed in 2.15s` | PASS |
-| Lint, types | `ruff check src tests`; `mypy --strict` on the 3 modules | clean | PASS |
+| Anchors | `pytest tests/test_din5480_anchors.py` | 11 passed | PASS |
+| Shaft tests | `pytest` on the four shaft test files | 1018 passed in 2.61s | PASS |
+| No number/default/bound/refusal moved | scratch compare, `a7a7df3` vs `HEAD`, 76,076 evaluations | 0 non-warning diffs, 0 refusal diffs, params schema and defaults equal | PASS |
+| Nulls hold | same grid | form_d 0 non-null; odd-z M_Re 0 non-null; even-z 0 null | PASS |
+| Odd-factor mutation bites | scratch copy, `centre_circle *= 1.0` | 2 failed (both odd rows), 9 passed | PASS |
+| Lint, types | `ruff check src tests`; `mypy --strict` on din5480, shaft_calc, shaft_params | clean | PASS |
 | Import contracts | `lint-imports` | 10 kept, 0 broken | PASS |
-| Gear unchanged | `make gear.unchanged` | byte-equal to v0.6 (8723 bytes) | PASS |
-| Full gate | orchestrator: `make verify` | exit 0, `2379 passed in 316.29s` | PASS (cited, not re-run) |
+| Full gate and gear check | orchestrator: `make verify`, `make gear.unchanged` | cited, not re-run by me | CITED |
 
 ### Probe Execution
 
@@ -167,28 +197,30 @@ SKIPPED: no probes declared by this phase.
 
 | Requirement | Source Plan | Status | Evidence |
 |-------------|-------------|--------|----------|
-| REQ-shaft-params | 31-01, 31-04, 31-05, 31-06 | SATISFIED | Frozen-contract test; defaults unchanged; validation at the boundary |
-| REQ-profile-shift-from-dB | 31-01, 31-02, 31-05, 31-06 | SATISFIED | Shift derived from d_B, m, z; epsilon edges; refusal names the range. The range is narrower than the copy's exceptions (debt; errs toward refusing) |
-| REQ-shaft-basic-dims | 31-01, 31-02, 31-04, 31-05, 31-06 | **PENDING (partial; phase gap overridden)** | Oracle yes; "at least two anchor rows" no. Left Pending in REQUIREMENTS.md (line 60 unchecked, traceability line 164 Pending). Not marked complete. |
-| REQ-form-diameter-honest | 31-03, 31-05, 31-06 | SATISFIED | `form_d` None in every grid shaft, with a reason |
-| REQ-mre-nominal | 31-03, 31-05, 31-06 | SATISFIED | Even z at nominal with the guard and the no-fit-allowance sentence; odd z null |
-| REQ-designation-codec | 31-04, 31-06 | SATISFIED | Round trip and refusals verified |
+| REQ-shaft-params | 31-01, 31-04, 31-05, 31-06 | SATISFIED | Schema and defaults equal to `a7a7df3`; validated once at the boundary |
+| REQ-profile-shift-from-dB | 31-01, 31-02, 31-05, 31-06 | SATISFIED | Shift from d_B pinned on four Part 2 rows incl. both edges; range narrower than the copy's exceptions is filed (must debt, 11 rows refused) and errs toward refusing |
+| **REQ-shaft-basic-dims** | 31-01, 31-02, 31-04, 31-05, 31-06 | **SATISFIED: can be marked complete** | Oracle agreement, plus four Part 2 rows and one Part 1 row, all four quantities covered by the Part 2 rows. The only thing that held it Pending (one anchor row, not two) is gone |
+| REQ-form-diameter-honest | 31-03, 31-05, 31-06 | SATISFIED | form_d null for every shaft, with a sentence; Part 2 prints d_Ff1 only as a maximum, so the construction is never printed |
+| REQ-mre-nominal | 31-03, 31-05, 31-06 | SATISFIED | Even z agrees with the oracle and with M1 of Part 2 at the tabulated pin; odd z null by the human's choice (see advisory) |
+| REQ-designation-codec | 31-04, 31-06 | SATISFIED | Unchanged since the last report; tests pass |
 
-All six phase IDs appear in PLAN frontmatter and REQUIREMENTS.md (five Complete, REQ-shaft-basic-dims Pending). No orphans.
+No orphans. REQUIREMENTS.md still shows REQ-shaft-basic-dims unchecked (line 60) and Pending (line 164); I did not edit it.
 
 ### Anti-Patterns Found
 
-None. `grep TBD|FIXME|XXX|TODO|HACK` over the phase's source and test files is empty. The `ASSUMPTION` markers in `din5480.py` name what is unconfirmed; they are honest labels, not stubs.
+None. `grep TBD|FIXME|XXX|TODO|HACK` over the phase's source and test files is empty. The previous report's IN-10 and IN-11 advisories (stale docstring and stale comment) are fixed in this diff, so they are closed, not carried.
 
 ### Human Verification Required
 
-None. The one human decision this phase needed (accepting the anchor shortfall) is recorded as the override.
+None. The one human decision this round needed was making the four rows available and approving them by name; it is recorded in the L47 amendment.
 
 ### Gaps Summary
 
-No open gaps. The single shortfall (SC2's "at least two copy anchor rows") is covered by the carried-forward human override and stays in the must-severity debt item; REQ-shaft-basic-dims stays Pending until those rows arrive. The IN-07..IN-09 fixes moved warning text and one constant. A 57,057-evaluation comparison with `63172e7` shows no number, null, default, refusal or schema field changed. IN-10 and IN-11 are stale comments, recorded as advisory.
+No open gaps. The anchor shortfall that the override covered is closed on evidence: four DIN 5480-2 rows, pinned as literals, each seen red, plus the Part 1 tip row. No printed number, default, bound, refusal or schema field changed across 76,076 evaluations; only three printed strings did, each to a more accurate sentence. The nulls (form_d, odd-z M_Re) hold. The open items are two must-severity debt entries (form-diameter construction above Part 2's maximum, for Phase 34; shift range narrower than the exceptions) and an idea (print odd-z M_Re), all filed and none blocking this phase. Three advisories are above.
+
+**REQ-shaft-basic-dims verdict: SATISFIED. The orchestrator can mark it complete** (line 60 to `[x]`, line 164 to `Complete`).
 
 ---
 
-_Verified: 2026-10-26T20:00:00Z_
+_Verified: 2026-10-26T23:00:00Z_
 _Verifier: Claude (gsd-verifier)_

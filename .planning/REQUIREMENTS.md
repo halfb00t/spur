@@ -57,7 +57,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   copy's formula (research: `x·m = (d_B − z·m)/2 − 0.55·m`); a combination whose x falls
   outside the standard's shaft range is a `422` naming the range, with an epsilon so the
   range edge (e.g. W30x2x14, x = −0.05) is accepted.
-- [ ] **REQ-shaft-basic-dims**: the user sees d_B, tip diameter, root diameter and nominal tooth
+- [x] **REQ-shaft-basic-dims**: the user sees d_B, tip diameter, root diameter and nominal tooth
   thickness, each proved against the independent oracle and against at least two anchor rows
   from the copy.
 - [x] **REQ-form-diameter-honest**: d_Ff prints `null` with a sentence naming why, unless the
@@ -161,7 +161,7 @@ shaft routes under that rule and cites it, it does not re-map it.
 | REQ-shaft-routes-separate | Phase 30 | Complete |
 | REQ-shaft-params | Phase 31 | Complete |
 | REQ-profile-shift-from-dB | Phase 31 | Complete |
-| REQ-shaft-basic-dims | Phase 31 | Pending |
+| REQ-shaft-basic-dims | Phase 31 | Complete |
 | REQ-form-diameter-honest | Phase 31 | Complete |
 | REQ-mre-nominal | Phase 31 | Complete |
 | REQ-designation-codec | Phase 31 | Complete |

@@ -720,11 +720,11 @@ pytest — L13). Full list with sources and acceptance evidence:
 - ✓ The pure DIN 5480 shaft maths: `ShaftParams` with frozen field names, profile shift from
   d_B, tip, root (theoretical/broaching, hobbed value warned) and nominal thickness, the pin
   and M_Re at nominal for even z, d_Ff and odd-z M_Re `null`, and a designation that
-  round-trips — Phase 31 (L47; REQ-shaft-params, REQ-profile-shift-from-dB,
-  REQ-form-diameter-honest, REQ-mre-nominal, REQ-designation-codec; verified 5/5 with one
-  override: only one copy anchor row (W 120x3x38x8f), so REQ-shaft-basic-dims stays Pending
-  under `must` debt `2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing`; `make verify`
-  2355 passed; review 0 critical / 5 warning open, WR-02 to fix before Phase 33)
+  round-trips — Phase 31 (L47 and its 2026-10-26 amendments; REQ-shaft-params,
+  REQ-profile-shift-from-dB, REQ-shaft-basic-dims, REQ-form-diameter-honest, REQ-mre-nominal,
+  REQ-designation-codec; verified 5/5 with no override relied on: one DIN 5480-1 row and four
+  human-approved DIN 5480-2 rows anchored, and M1 agrees on every Part 2 row; `make verify`
+  2387 passed; review 33 of 33 findings fixed)
 
 ### Active
 
@@ -891,7 +891,7 @@ quick reference.
 | L44 | A link value its control cannot hold is sent and refused by the API's 422, never rebuilt as the default part (amends L39's pin; keeps L02, L03, L05, L08); a selector pick that writes a field ends its rejected token (2026-10-21 amendment, WR-01) | ✓ Good — Phase 28 verified 5/5; WR-02 (a token the box blanks but the API accepts) deferred `must` with an event trigger |
 | L45 | A tip chamfer asked for and not cut prints no number: `tip_chamfer_effective` is gated on the applied `tch` (amends L29; applies L08); 2026-10-22 correction names the capped-to-zero case | ✓ Good — red-first test, 44 fixture records unmoved, `tests/regression/` byte-identical to `v0.5` |
 | L46 | spur is a gear and spline generator: one parameter model per part type, a second frozen link contract for the shaft (amends L02 and L05) | ✓ Good — logged before the first shaft module (`5d61f8e` ancestor of `bdf224d`); `gear.unchanged` green |
-| L47 | The DIN 5480 shaft's maths: what Phase 31 froze, proved on one designation, and left null (follows L46; applies L03 and L08) | ⚠️ Partial — formulas confirmed by clause against DIN 5480-1:2006-03 (unofficial translation); one copy designation anchored; anchor rows beyond Part 1 filed `must`; verified 5/5 with one override |
+| L47 | The DIN 5480 shaft's maths: what Phase 31 froze, proved on one designation, and left null (follows L46; applies L03 and L08) | ✓ Good — formulas confirmed by clause against DIN 5480-1:2006-03 (unofficial translation); one Part 1 designation and four DIN 5480-2 rows anchored (2026-10-26 amendment); odd-z M_Re and d_Ff still `null`; verified 5/5 with no override relied on |
 
 ## Success Metric (Milestone v0.1)
 

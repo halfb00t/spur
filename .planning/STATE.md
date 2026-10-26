@@ -548,7 +548,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 31]: 31-04: D-14 debt item re-targeted to Phase 32 and kept active (option 2); parts.py docstring and pyproject C4 comment name Phase 32
 - [Phase 31]: 31-05 checkpoint: PARTIAL PASS. DIN 5480-1:2006-03 (unofficial translation) holds no size tables; three W 120x3x38x8f rows approved (cl. 9.1 Fig. 6); anchor debt filed; odd-z M_Re stays unprinted; d_Ff checked as a limit
 - [Phase 31]: 31-06: no constant edited; the copy's checkpoint changed no printed number, so no D-09 entry; L47 closes Phase 31
-- [Phase 31]: 31-06: REQ-shaft-basic-dims left open (one basic-dimension anchor row, plan minimum two; partial pass accepted, debt filed)
+- [Phase 31]: 31-06: REQ-shaft-basic-dims left open (one basic-dimension anchor row, plan minimum two; partial pass accepted, debt filed); closed 2026-10-26 by four approved DIN 5480-2 rows
 
 ### Pending Todos
 
@@ -556,12 +556,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- ⚠️ [Phase 31] Closed 5/5 with one override (accepted_by "Andrew S", entered by the agent on the human's instruction): one copy
-  anchor row only (W 120x3x38x8f); REQ-shaft-basic-dims Pending; `must` debt `2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing`
-  waits for DIN 5480 Part 2/15 pages. Odd-z M_Re and d_Ff stay `null`. Also `must`: shift cap 0.45 narrower than the copy's exceptions.
-- ℹ️ [Phase 31] Code review `31-REVIEW-DISPOSITION.md`: 15 of 17 fixed (WR-01..WR-06, IN-01..IN-09); IN-10, IN-11 open
-  (info, stale comments only). Re-verified 5/5 after the IN-07..IN-09 fixes (54,489 shafts, numbers identical);
-  31-VALIDATION partial (anchor gap manual-only); 31-SECURITY threats_open 0.
+- ✓ [Phase 31] Re-verified 5/5 with no override relied on, after the human approved four DIN 5480-2 rows (W 25x1.25x18,
+  W 26x1.25x19, W 30x2x14, W 30x2x13); REQ-shaft-basic-dims Complete; anchor debt resolved. Odd-z M_Re and d_Ff stay `null`
+  (idea `2026-10-26-print-odd-tooth-count-measure-over-pins`). `must` debt: shift cap 0.45 (11 Part 2 rows beyond it),
+  form-diameter construction above Part 2's d_Ff1 max (Phase 34 guard).
+- ℹ️ [Phase 31] Code review `31-REVIEW-DISPOSITION.md`: 33 of 33 fixed. Re-verified 5/5 after the Part 2 anchors
+  (76,076 shafts, numbers identical); 31-VALIDATION nyquist_compliant true; 31-SECURITY threats_open 0.
 - ⚠️ [Phase 30] Code review `30-REVIEW-DISPOSITION.md`: 3 deferred to `must` debt (WR-01 no timeout on git/probe in
   `gear.unchanged`; WR-03 `parts.py` "one-line widening" is false — Phase 31 must type `_build_checked`, `_write_export`,
   `_gear_fields` when it widens `Part`; IN-02 a lightweight/moved local `v0.6` tag self-compares), 4 open (WR-02, IN-01,
