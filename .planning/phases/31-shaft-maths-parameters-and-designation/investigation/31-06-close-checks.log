@@ -1,0 +1,21 @@
+close checks, HEAD 5b7c473, 2026-10-26T07:16:55Z
+gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+PASS  1 make gear.unchanged
+PASS  2 git diff v0.6 -- requirements.txt tests/regression/ ci.yml calc.py params.py is empty
+Contracts: 10 kept, 0 broken.
+PASS  3 lint-imports: Contracts: 10 kept, 0 broken.
+PASS  4 git grep /api/shaft -- src finds nothing
+docstring-only: 2 of 2 []
+PASS  5 din5480_tables.py and shaft_model.py are one docstring each
+Part = GearParams lines: 1
+PASS  6 Part = GearParams
+PASS  7 model, records, pool, app, cli unchanged since 9b25ccf
+19:ALPHA = math.radians(30.0)  # rad, pressure angle fixed at 30 deg; ASSUMPTION (clause slot)
+34:# rho_fP/m, both vendors; used only by the internal form diameter. ASSUMPTION (clause slot)
+114:    ASSUMPTION (clause slot)
+141:    5.2.4.3 for D_Re and M_Re; that clause has not been read. ASSUMPTION (clause: DIN 5480-15,
+172:    and no DIN 5480 row proves this construction yet (D-12, L08). ASSUMPTION (clause slot)
+ASSUMPTION markers left in din5480.py: 5
+PASS  8 ASSUMPTION markers listed and counted (5: ALPHA, RHO_FP, theoretical_pin_diameter, measure_over_pins, form_diameter)
+anchor tests: 3, cited with part, clause and figure: 3; basic-dimension rows (tip): 1, the plan's minimum is 2
+FAIL  9 at least two basic-dimension anchor rows, each cited (ACCEPTED by the human at 31-05 as a partial pass; debt 2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md)

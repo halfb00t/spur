@@ -6916,6 +6916,62 @@ Each deliberate break was run red once and reverted, or was the old recipe the f
 
 What this section holds: v0.7's second phase fills the three shaft placeholders with the pure maths for a DIN 5480 external shaft (the parameter model, the profile shift from the reference diameter, tip and root diameter, nominal tooth thickness) and, in later plans, the pin measurement and the designation codec. Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/31-shaft-maths-parameters-and-designation/investigation/`; later plans append rows to the table below.
 
+### The gate delta (31-06)
+
+Source logs: `31-06-verify.log` (the whole `/usr/bin/time -p make verify` output) and `31-06-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/31-shaft-maths-parameters-and-designation/investigation/`. Every figure below is copied from them, not re-rounded. One reading.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `5b7c473` (the final Phase 31 code and tests; only `.planning/` files, this section and the logs were uncommitted) |
+| UTC start -> end | `2026-10-26T07:12:17Z` -> `2026-10-26T07:16:29Z` |
+| 1-minute load before -> after | `7.03` -> `4.58` (`sysctl -n vm.loadavg` printed `{ 7.03 6.57 5.65 }` and `{ 4.58 8.56 7.15 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2355 passed in 243.23s (0:04:03) =======================` |
+| `/usr/bin/time -p` | `real 244.14`, `user 652.27`, `sys 580.90` |
+| Coverage TOTAL line | `TOTAL                         1548     22    424     13  98.23%` (`Required test coverage of 96.0% reached. Total coverage: 98.23%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+The shaft modules' coverage rows, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`):
+
+```
+src/spur/din5480.py             99      0     28      0 100.00%
+src/spur/din5480_tables.py       0      0      0      0 100.00%
+src/spur/parts.py                2      0      0      0 100.00%
+src/spur/shaft_calc.py          63      0      8      0 100.00%
+src/spur/shaft_model.py          0      0      0      0 100.00%
+src/spur/shaft_params.py        23      0      2      0 100.00%
+```
+
+#### Against Phase 30's close
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 30 close, `HEAD fc00d77` | `1369 passed` | `233.18 s` | `234.48 s` | 16.75 -> 16.06 | `### The gate delta (30-05)` |
+| This reading: Phase 31 close, `HEAD 5b7c473` | `2355 passed` | `243.23 s` | `244.14 s` | 7.03 -> 4.58 | `31-06-verify.log` |
+
+| This reading minus Phase 30 | pytest `passed in` | `real` |
+|---|---|---|
+| difference | `+10.05 s` (`+4.31 %`) | `+9.66 s` (`+4.12 %`) |
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 18.7 s of 233.18 s: both differences are about half of it, so they sit inside the spread and no speed claim is made in either direction. The two readings were taken at different loads (16.75 to 16.06 for Phase 30, 7.03 to 4.58 here), which this plan did not control; it is one reading each.
+
+What the phase added to the gate: 986 tests (`2355 passed` against `1369 passed`): 62 in 31-01 (its gate read `1431 passed`), 581 in 31-02 (`2012 passed`), 296 in 31-03 (`2308 passed`), 41 in 31-04 (`2349 passed`), none in 31-05, 3 in the root-diameter labelling fix `ac34e6a` and 3 in this plan (`tests/test_din5480_anchors.py`). The reading is under L43's 300 s bar by 56.77 s. REQ-gate-cost-recorded stays open and closes at Phase 34's milestone reading, as for Phase 30.
+
+### Phase close checks (31-06)
+
+Source: `31-06-close-checks.log`, run on `HEAD 5b7c473` with the final Phase 31 tree. Checks 1 to 8 read `PASS`; check 9 reads `FAIL` and is the one the human accepted at the 31-05 checkpoint.
+
+1. `make gear.unchanged`: exit 0, `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+2. `git diff --exit-code v0.6 -- requirements.txt tests/regression/ .github/workflows/ci.yml src/spur/calc.py src/spur/params.py`: exit 0, empty.
+3. `make lint-imports`: `Contracts: 10 kept, 0 broken.`
+4. `git grep -n '/api/shaft' -- src`: exit 1, no match.
+5. `src/spur/din5480_tables.py` and `src/spur/shaft_model.py` are one docstring each: `docstring-only: 2 of 2 []`.
+6. `grep -c '^Part = GearParams$' src/spur/parts.py` prints `1`.
+7. `git diff --exit-code 9b25ccf -- src/spur/model.py src/spur/records.py src/spur/pool.py src/spur/app.py src/spur/cli.py`: exit 0, empty.
+8. Five `ASSUMPTION` markers are left in `src/spur/din5480.py`, listed in the log: `ALPHA`, `RHO_FP`, `theoretical_pin_diameter`, `measure_over_pins` (its clause, DIN 5480-15 5.2.4.3, is unread) and `form_diameter`. One more is in `src/spur/shaft_calc.py` (`PIN_DECIMALS`, no series in the copy).
+9. FAIL, accepted: `tests/test_din5480_anchors.py` holds three cited rows (`d_a1`, the `d_Ff1` limit and `M1`), one of them a basic-dimension row; the plan's minimum is two. DIN 5480 Part 1 has no size tables, and the human chose a partial pass at 31-05. The missing rows are filed as `docs/tech_debt/active/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md`.
+
 ### Seen red once (Phase 31)
 
 Each deliberate break was run red once and reverted. The first failure line is copied from the kept log named in the row (every log is under `.planning/phases/31-shaft-maths-parameters-and-designation/investigation/`); later plans append rows. Every red ran with `PYTHONDONTWRITEBYTECODE=1` and the `__pycache__` folders deleted before the run and after the revert: a first pass over R2 to R5 read `teeth` 19 in tests that had nothing to do with it, because R2's edit (`18` to `19`) keeps the file size and the revert landed in the same second as the edit, so Python reused the stale compiled file. Those first logs were discarded and every row below is from the second pass. R1 was run a third time after two test commits (`62941d4`, `1080c65`) gave the default's edge test and the three edge cases a literal tolerance of `1e-9` instead of `X_EPS`: with the epsilon zeroed, the first pass failed the default's test and failed the edge cases on their own closeness line, so neither red showed what D-19 asks (the default does not exercise the epsilon; the edge cases fail on the production refusal).
