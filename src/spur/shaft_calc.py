@@ -36,8 +36,9 @@ PIN_DECIMALS = 2
 GUARD_MARGIN_FACTOR = 0.1
 
 FORM_DIAMETER_UNPROVEN = (
-    "The form diameter d_Ff is not given: its construction is not yet proven against a "
-    "DIN 5480 row, and the vendors print it as a limit that depends on the mating hub."
+    "The form diameter d_Ff is not given: DIN 5480-1 prints it as a limit tied to the mating "
+    "part's tip diameter and a minimum clearance, not as a construction, and no DIN 5480 row "
+    "proves one."
 )
 THEORETICAL_PIN = (
     "The pin diameter D_Re is the theoretical pin that touches the flanks on the circle "
@@ -97,8 +98,8 @@ class ShaftDimensions(BaseModel):
         description="Nominal tooth thickness, as an arc on the reference circle.",
         json_schema_extra={"unit": "mm"})
     form_d: float | None = Field(
-        description="Form diameter d_Ff. Null for every shaft: its construction is not yet "
-                    "proven against a DIN 5480 row (the warnings say so).",
+        description="Form diameter d_Ff. Null for every shaft: DIN 5480-1 prints it as a "
+                    "limit tied to the mating part, not a construction (the warnings say so).",
         json_schema_extra={"unit": "mm"})
     pin_d: float | None = Field(
         description="Pin diameter D_Re: the theoretical pin rounded to 0.01 mm. Null when "
