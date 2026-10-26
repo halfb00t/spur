@@ -185,8 +185,12 @@ def form_diameter(m: float, z: int, xm: float, h_fp: float, rho_fp: float) -> fl
 # caps the input of every regex below.
 DESIGNATION_MAX_LENGTH = 64
 
-_NUMBER = r"[0-9]+(?:[.,][0-9]+)?"
-_TEETH = r"[0-9]+"
+# No leading zero, as the fit's FIT_PATTERN has none: one spelling per shaft, so a link or a
+# cache key built from the designation text cannot see 25 and 0025 as two shafts. A lone 0
+# integer part stays, because the module may be 0.5 (ShaftParams' lower bound). Trailing
+# zeros after the point are read as the same number.
+_NUMBER = r"(?:0|[1-9][0-9]*)(?:[.,][0-9]+)?"
+_TEETH = r"[1-9][0-9]*"
 
 
 class Designation(NamedTuple):
@@ -226,10 +230,11 @@ def format_designation(reference_d: float, module: float, teeth: int, fit: str) 
 def parse_designation(text: str) -> Designation:
     """The four fields of a designation, or a DesignationError naming the bad token.
 
-    Accepts exactly the canonical form plus no space after W, an upper-case X and `,` for
-    the decimal mark. Nothing else is repaired: spaces around x, a multiplication sign, an
-    upper-case fit letter or a fractional tooth count are refused, never read as a nearby
-    shaft (D-05, D-21).
+    Accepts the canonical form plus no space after W, an upper-case X, `,` for the decimal
+    mark and trailing zeros after the point (25.0, 1.250). Nothing else is repaired: spaces
+    around x, a multiplication sign, an upper-case fit letter, a leading zero in any number
+    or the fit, or a fractional tooth count are refused, never read as a nearby shaft (D-05,
+    D-21).
     """
     if len(text) > DESIGNATION_MAX_LENGTH:
         raise DesignationError(
@@ -255,11 +260,13 @@ def parse_designation(text: str) -> Designation:
     d_b, m, z, fit = tokens
     if not re.fullmatch(_NUMBER, d_b):
         raise DesignationError(d_b, f"The reference diameter {d_b!r} is not a number such "
-                                    f"as 25 or 25.5.")
+                                    f"as 25 or 25.5, written without leading zeros.")
     if not re.fullmatch(_NUMBER, m):
-        raise DesignationError(m, f"The module {m!r} is not a number such as 1.25.")
+        raise DesignationError(m, f"The module {m!r} is not a number such as 1.25, written "
+                                    f"without leading zeros.")
     if not re.fullmatch(_TEETH, z):
-        raise DesignationError(z, f"The tooth count {z!r} is not a whole number.")
+        raise DesignationError(z, f"The tooth count {z!r} is not a whole number such as "
+                                    f"18, written without leading zeros.")
     if not re.fullmatch(FIT_PATTERN, fit):
         raise DesignationError(fit, f"The fit {fit!r} is not a fit such as 8f.")
     return Designation(float(d_b.replace(",", ".")), float(m.replace(",", ".")), int(z), fit)

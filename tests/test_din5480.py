@@ -317,6 +317,14 @@ REFUSED_DESIGNATIONS: list[tuple[str, str, str]] = [
     ("leading-decimal-mark", "W 25x.5x18x8f", ".5"),
     ("extra-token", "W 25x1.25x18x8fx9", "8fx9"),
     ("three-tokens", "W 25x1.25x18", "25x1.25x18"),
+    # One spelling per shaft: a leading zero is refused in every token, as `08f` is in the fit
+    # (31-REVIEW WR-05). The integer part 0 of 0.5 is not a leading zero.
+    ("leading-zeros-reference-d", "W 0025x1.25x18x8f", "0025"),
+    ("leading-zero-module", "W 25x01.25x18x8f", "01.25"),
+    ("leading-zeros-before-the-point", "W 25x00.5x18x8f", "00.5"),
+    ("leading-zeros-teeth", "W 25x1.25x018x8f", "018"),
+    ("zero-teeth", "W 25x1.25x0x8f", "0"),
+    ("leading-zero-fit", "W 25x1.25x18x08f", "08f"),
 ]
 ROUND_TRIPS: list[tuple[float, float, int, str]] = [
     (25.0, 1.25, 18, "8f"),
@@ -338,11 +346,18 @@ def test_the_designation_prints_in_one_canonical_form() -> None:
 
 @pytest.mark.parametrize(
     "text",
-    ["W25x1.25x18x8f", "W 25X1.25X18X8f", "W 25x1,25x18x8f", "W25X1,25X18X8f"],
+    ["W25x1.25x18x8f", "W 25X1.25X18X8f", "W 25x1,25x18x8f", "W25X1,25X18X8f",
+     "W 25.0x1.250x18x8f"],  # trailing zeros after the point are the same number
 )
 def test_the_designation_parser_accepts_the_listed_variants(text: str) -> None:
-    """D-05's variants: no space after W, an upper-case X, a comma for the decimal mark."""
+    """D-05's variants: no space after W, an upper-case X, a comma for the decimal mark; and
+    trailing zeros after the point."""
     assert din5480.parse_designation(text) == din5480.Designation(25.0, 1.25, 18, "8f")
+
+
+def test_the_designation_parser_accepts_a_module_below_one_with_its_zero_integer_part() -> None:
+    """ShaftParams allows module 0.5, so `0.5` is the canonical spelling, not a leading zero."""
+    assert din5480.parse_designation("W 3.75x0.5x6x8f") == din5480.Designation(3.75, 0.5, 6, "8f")
 
 
 @pytest.mark.parametrize("values", ROUND_TRIPS, ids=lambda v: din5480.format_designation(*v))
