@@ -94,8 +94,9 @@ def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
     assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
                           MEASURE_AT_NOMINAL_THICKNESS)
     assert MEASURE_AT_NOMINAL_THICKNESS == (
-        "M_Re is the measure at the nominal tooth thickness; it carries no allowance or "
-        "tolerance for the fit.")
+        "M_Re is for this pin and is the measure at the nominal tooth thickness; it carries "
+        "no allowance or tolerance for the fit.")
+    assert any("M_Re is for this pin" in w for w in d.warnings)
 
 
 def test_a_shaft_dimensions_result_cannot_be_changed() -> None:
@@ -131,16 +132,18 @@ def test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins() -> None:
     assert d.measure_over_pins is None
     assert ODD_Z_UNCONFIRMED in d.warnings
     assert THEORETICAL_PIN in d.warnings
-    # No M_Re is printed, so there is no measure to qualify.
+    # No M_Re is printed, so there is no measure to qualify and no M_Re "for this pin": that
+    # sentence would sit beside ODD_Z_UNCONFIRMED's "M_Re is not given" (31-REVIEW IN-07).
     assert MEASURE_AT_NOMINAL_THICKNESS not in d.warnings
+    assert not any("M_Re is for this pin" in w for w in d.warnings)
 
 
 def test_the_pin_sentence_says_the_pin_is_computed_and_not_compared_with_a_table() -> None:
     """The 31-05 checkpoint saw no tabulated D_Re in Part 1, so the sentence must not claim
     to know what the standard tabulates (31-REVIEW IN-03)."""
     assert THEORETICAL_PIN.endswith(
-        "The tool computes this pin; it has not been compared with a tabulated D_Re, and M_Re "
-        "is for this pin.")
+        "The tool computes this pin; it has not been compared with a tabulated D_Re.")
+    assert "M_Re" not in THEORETICAL_PIN
     assert "It is not the D_Re that DIN 5480 tabulates" not in THEORETICAL_PIN
 
 
