@@ -11,8 +11,18 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
 
-from .din5480 import FIT_PATTERN
+from .din5480 import FIT_PATTERN, X_MAX, X_MIN
+
+# Intentional coupling (31-REVIEW IN-05): a shaft field is built with the gear's `_f` and
+# `_extra`, underscore-private in params.py, so it carries the same schema metadata (group,
+# unit, step, help) as a gear field. A rename there fails this import loudly (mypy, every
+# test), but no import-linter contract names the pair; change the helpers with both
+# modules in view.
 from .params import _extra, _f
+
+# The default shaft sits exactly on X_MAX, so a step off it in any of the three fields
+# below can cross the range (31-REVIEW IN-05).
+_SHIFT_RANGE_HELP = f" Shifts outside {X_MIN:+.2f}..{X_MAX:+.2f} are refused."
 
 
 class ShaftParams(BaseModel):
@@ -25,11 +35,13 @@ class ShaftParams(BaseModel):
     reference_d: float = _f(25.0, 3, 850, title="Reference Ø d_B", group="Spline", unit="mm",
                             step=0.05,
                             help="Reference diameter of the spline. The profile shift is "
-                                 "derived from it, the module and the tooth count.")
+                                 "derived from it, the module and the tooth count."
+                                 + _SHIFT_RANGE_HELP)
     module: float = _f(1.25, 0.5, 10, title="Module", group="Spline", unit="mm", step=0.05,
-                       help="Reference circle diameter / teeth. Must match the hub.")
+                       help="Reference circle diameter / teeth. Must match the hub."
+                            + _SHIFT_RANGE_HELP)
     teeth: int = _f(18, 6, 82, title="Teeth", group="Spline", step=1,
-                    help="Number of teeth.")
+                    help="Number of teeth." + _SHIFT_RANGE_HELP)
     # One string holding the designation's token (D-02). Only its shape is checked here;
     # whether the fit exists in the tables is Phase 34's.
     fit: str = Field("8f", pattern=FIT_PATTERN, max_length=3, title="Fit",

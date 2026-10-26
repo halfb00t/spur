@@ -194,3 +194,11 @@ def test_a_refused_shift_is_printed_apart_from_the_edge_it_crossed_and_names_the
     assert shown_d is not None, message
     assert float(shown_d.group(1)) == reference_d
     assert f"{side} the allowed range {X_MIN:+.2f} to {X_MAX:+.2f}" in message
+
+
+@pytest.mark.parametrize("field", ["reference_d", "module", "teeth"])
+def test_the_three_fields_that_set_the_shift_say_which_shifts_are_refused(field: str) -> None:
+    """The default sits exactly on the upper edge, so the first step off it refuses; the form
+    must say so before the user finds out from a 422 (31-REVIEW IN-05)."""
+    help_text = ShaftParams.model_fields[field].description or ""
+    assert f"Shifts outside {X_MIN:+.2f}..{X_MAX:+.2f} are refused." in help_text
