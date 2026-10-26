@@ -196,6 +196,20 @@ def test_a_refused_shift_is_printed_apart_from_the_edge_it_crossed_and_names_the
     assert f"{side} the allowed range {X_MIN:+.2f} to {X_MAX:+.2f}" in message
 
 
+def test_a_refused_module_is_printed_in_full_and_not_as_the_default_1_25() -> None:
+    """The module takes the same path as the reference diameter: %g would print 1.2499999 as
+    the default 1.25 (31-REVIEW IN-08)."""
+    errors = _errors(reference_d=25, module=1.2499999, teeth=18)
+    assert errors[0]["type"] == "infeasible"
+    ctx = errors[0]["ctx"]
+    assert isinstance(ctx, dict)
+    message = str(ctx["message"])
+    assert "module 1.2499999 " in message
+    printed = re.search(r"profile shift of ([+-][0-9.]+),", message)
+    assert printed is not None, message
+    assert float(printed.group(1)) != X_MAX
+
+
 @pytest.mark.parametrize("field", ["reference_d", "module", "teeth"])
 def test_the_three_fields_that_set_the_shift_say_which_shifts_are_refused(field: str) -> None:
     """The default sits exactly on the upper edge, so the first step off it refuses; the form

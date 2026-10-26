@@ -37,6 +37,11 @@ DEFAULT_HOBBED_ROOT_WARNING = (
 )
 
 
+def _hobbed_warning(p: ShaftParams) -> str:
+    """The root_d sentence, picked by its content so a reordering of the list cannot move it."""
+    return next(w for w in derive_shaft(p).warnings if "hobbed" in w)
+
+
 def _grid_shaft(case: tuple[float, int, float]) -> ShaftParams:
     m, z, x = case
     return ShaftParams(reference_d=shaft_oracle.reference_diameter(m, z, x), module=m, teeth=z)
@@ -255,9 +260,10 @@ def test_every_shaft_warns_that_a_hobbed_root_is_smaller_than_root_d() -> None:
 
 def test_the_hobbed_root_of_w_120x3x38x8f_is_113_100_below_root_d_113_400() -> None:
     """The human's reading of cl. 7.1 for this designation: 113.400 - 0.3 = 113.100."""
-    d = derive_shaft(ShaftParams(**parse_designation("W 120x3x38x8f")._asdict()))
+    p = ShaftParams(**parse_designation("W 120x3x38x8f")._asdict())
+    d = derive_shaft(p)
     assert d.root_d == 113.4
-    assert ("hobbed: root_d - 0.1*m = 113.100 mm.") in d.warnings[2]
+    assert ("hobbed: root_d - 0.1*m = 113.100 mm.") in _hobbed_warning(p)
     assert sum("hobbed" in w for w in d.warnings) == 1
 
 
@@ -266,7 +272,7 @@ def test_the_root_warning_prints_the_factor_the_value_is_computed_from(
     """One factor feeds both the number and the words beside it, so they cannot disagree
     (31-REVIEW IN-04). A drop of 0.2*m takes the default 22.250 to 22.000."""
     monkeypatch.setattr(shaft_calc, "HOBBED_ROOT_DROP", 0.2)
-    warning = derive_shaft(ShaftParams()).warnings[2]
+    warning = _hobbed_warning(ShaftParams())
     assert warning.count("0.2*m") == 2
     assert "0.1" not in warning
     assert "= 22.000 mm" in warning
@@ -290,7 +296,7 @@ def test_the_root_warning_says_its_process_list_is_incomplete_and_names_no_other
     """Only the hobbed 0.1*m is given. Every other number in the sentence is the printed root
     (22.125 here); a dedendum factor or depth for another process would be a copy value the
     project has not been shown (T-31-13), so the sentence points at the clause instead."""
-    warning = derive_shaft(ShaftParams()).warnings[2]
+    warning = _hobbed_warning(ShaftParams())
     assert "not the whole list" in warning
     assert warning.count("DIN 5480-1 cl. 7.1") == 2
     numbers = re.findall(r"[0-9]+\.[0-9]+", warning.replace("cl. 7.1", "cl."))
