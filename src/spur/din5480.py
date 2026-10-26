@@ -1,12 +1,12 @@
 """The DIN 5480 formulas for the external shaft, as pure arithmetic over floats.
 
 Like shaft_calc.py this file stays free of the CAD kernel, the solid, the logger and the
-gear maths. Every formula and constant below is an ASSUMPTION: it is reproduced from two
-vendor reports (KISSsoft W70x3x22, Hexagon W120x3x38x8f) and checked against a geometric
-oracle, not read from the standard. The 31-05 checkpoint records each clause from the
-human's 2006 copy, and a marker still present at the phase close is a deliberate, logged
-state, not an accident (L08, D-06). A number printed from here is a number someone will cut
-metal to.
+gear maths. A formula or constant carries a `DIN 5480-<part>:2006, <clause>` citation where
+the human's copy of Part 1 (an unofficial translation, read at the 31-05 checkpoint)
+confirmed it. One still marked as an assumption is one the copy did not confirm: it is reproduced
+from two vendor reports (KISSsoft W70x3x22, Hexagon W120x3x38x8f) and checked against a
+geometric oracle, and each is named in L47. A number printed from here is a number someone
+will cut metal to (L08, D-06).
 """
 
 from __future__ import annotations
@@ -22,20 +22,22 @@ ADDENDUM_FACTOR = 0.45
 # d_B - d_a = 0.2*m, DIN 5480-1:2006, cl. 6, Table 3; the anchor is d_a1 119.40 of W 120x3x38x8f
 # (cl. 9.1, Fig. 6, tests/test_din5480_anchors.py), and both vendor reports print the same.
 TIP_DIAMETER_OFFSET = 0.2
-# The 0.55 of the shift formula, exactly 0.55 in binary64 (checked). It is a different
-# quantity from H_FP below: the two read alike only at their provisional values
-# (31-RESEARCH Pitfall 1). ASSUMPTION (clause slot)
+# The 0.55 of the shift formula, exactly 0.55 in binary64 (checked): DIN 5480-1:2006, cl. 6,
+# Table 3. It is a different quantity from H_FP below: the two read alike at 0.55 only
+# (31-RESEARCH Pitfall 1).
 SHIFT_TERM = ADDENDUM_FACTOR + TIP_DIAMETER_OFFSET / 2
-# h_fP/m, provisional per D-07: 0.55 reproduces Hexagon W120x3x38 d_f 113.40 while KISSsoft
-# hobbing uses 0.60 and gets 63.10 for W70x3x22; the copy decides. Not a user field.
-# DIN 5480-1 cl. 6 Table 3 and cl. 7.1 (human's reading, 31-05): 0.55 is the broaching and
-# theoretical root, 0.60 is hobbing; a hobbed root is the theoretical root less 0.1*m.
-# ASSUMPTION (clause slot)
+# h_fP/m, DIN 5480-1:2006, cl. 6, Table 3 and cl. 7.1: 0.55 is the broaching and theoretical
+# root, 0.60 is hobbing, and a hobbed root is the theoretical root less 0.1*m (the warning
+# in shaft_calc says so). 0.55 reproduces Hexagon W120x3x38 d_f 113.40; KISSsoft hobbing uses
+# 0.60 and gets 63.10 for W70x3x22. Not a user field.
 H_FP = 0.55
 # rho_fP/m, both vendors; used only by the internal form diameter. ASSUMPTION (clause slot)
 RHO_FP = 0.16
-X_MIN = -0.05  # lowest profile shift of the shaft range; ASSUMPTION (clause slot)
-X_MAX = 0.45  # highest profile shift of the shaft range; ASSUMPTION (clause slot)
+# The shaft's profile-shift range, DIN 5480-1:2006, cl. 4 and Table 3. The copy allows
+# exceptions above X_MAX at larger tooth counts; refusing them is the honest side, filed as
+# docs/tech_debt/active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md.
+X_MIN = -0.05
+X_MAX = 0.45
 X_EPS = 1e-9  # comparison epsilon on both range edges (D-19)
 # Shape only and ASCII only (D-02); the field and the designation codec share it.
 FIT_PATTERN = r"^[1-9][0-9]?[a-z]$"
@@ -45,7 +47,7 @@ def inv(a: float) -> float:
     """The involute function, tan(a) - a.
 
     A copy of calc.py's `inv`, never an import, so gear and shaft numbers stay uncoupled
-    (contract C5, the `_involute_angle` precedent). ASSUMPTION (clause slot)
+    (contract C5, the `_involute_angle` precedent). A mathematical definition, no clause.
     """
     return math.tan(a) - a
 
@@ -55,7 +57,7 @@ def _involute_angle(target: float) -> float:
 
     A copy of calc.py's `_involute_angle` (C5: never imported). Bisection rather than Newton:
     inv is monotonic here, 60 halvings reach full double precision, and no starting guess
-    can send it outside the bracket. ASSUMPTION (clause slot)
+    can send it outside the bracket. Numerical, no clause.
     """
     lo, hi = 1e-12, math.radians(89.0)
     for _ in range(60):
@@ -76,8 +78,8 @@ def profile_shift(reference_d: float, m: float, z: int) -> float:
     # all three D-19 cases land outside the bare range: (17.6, 0.8, 20) gives
     # 0.45000000000000084, (30, 2, 14) and (25, 1.25, 19) give -0.050000000000000044. The
     # order x*m/m reads (25, 1.25, 19) as exactly -0.05, which a bare comparison accepts, so
-    # the epsilon test for that case could not go red. ASSUMPTION (clause slot)
-    return (reference_d - z * m) / (2 * m) - SHIFT_TERM
+    # the epsilon test for that case could not go red.
+    return (reference_d - z * m) / (2 * m) - SHIFT_TERM  # DIN 5480-1:2006, cl. 6, Table 3
 
 
 def tip_diameter(reference_d: float, m: float) -> float:
@@ -88,14 +90,18 @@ def tip_diameter(reference_d: float, m: float) -> float:
 def root_diameter(m: float, z: int, xm: float, h_fp: float) -> float:
     """The root diameter d_f = m*z + 2*xm - 2*h_fp*m.
 
-    The dedendum factor is an argument so each vendor row runs at its own h_fP.
+    DIN 5480-1:2006, cl. 6, Table 3. The dedendum factor is an argument so each vendor row
+    runs at its own h_fP.
     """
-    return m * z + 2 * xm - 2 * h_fp * m  # ASSUMPTION (clause slot)
+    return m * z + 2 * xm - 2 * h_fp * m
 
 
 def tooth_thickness(m: float, xm: float) -> float:
-    """The nominal tooth thickness s on the circle m*z: pi*m/2 + 2*xm*tan(ALPHA)."""
-    return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)  # ASSUMPTION (clause slot)
+    """The nominal tooth thickness s on the circle m*z: pi*m/2 + 2*xm*tan(ALPHA).
+
+    DIN 5480-1:2006, cl. 6, Table 3.
+    """
+    return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)
 
 
 def theoretical_pin_diameter(m: float, z: int, xm: float) -> float:
@@ -126,7 +132,14 @@ def measure_over_pins(m: float, z: int, s: float, pin_d: float) -> tuple[float, 
 
     None when there is no honest root: the target outside (0, inv(89 deg)), or a pin that
     would touch at or below the base circle, where it is not on the involute and not a
-    flank measurement (L08, 31-RESEARCH Pitfall 5). ASSUMPTION (clause slot)
+    flank measurement (L08, 31-RESEARCH Pitfall 5).
+
+    The even count reproduces M1 minimum of DIN 5480-1:2006-03, cl. 9.1, Fig. 6, at the
+    gauge pin 6.000 and the row's own thickness (tests/test_din5480_anchors.py). The odd
+    factor is DIN 5480-1:2006, cl. 4, eq. (1), but no odd-count row was supplied, so shaft_calc
+    never prints it (D-13). Part 1 names these D_M, M1 and M2 and points to DIN 5480-15,
+    5.2.4.3 for D_Re and M_Re; that clause has not been read. ASSUMPTION (clause: DIN 5480-15,
+    5.2.4.3 unread)
     """
     d = m * z
     d_b = d * math.cos(ALPHA)
@@ -151,7 +164,8 @@ def form_diameter(m: float, z: int, xm: float, h_fp: float, rho_fp: float) -> fl
     (xm in millimetres) and is generated at
     sqrt(d_b**2 + (d*sin(ALPHA) - 2*h/sin(ALPHA))**2), with d = m*z and d_b = d*cos(ALPHA).
     Valid where that point generates above the base circle, which holds over z 6 to 82 and
-    x -0.05 to +0.45 for h_fP up to 0.65 (plan-time check).
+    x -0.05 to +0.45 for h_fP up to 0.65 (plan-time check; Part 1 names a larger cold-rolling
+    factor, so repeat the check before any process above 0.65 is used).
 
     This is the pin-contact guard's internal lower bound and is never printed as d_Ff: the
     vendors print the standard's form diameter as a limit that depends on the mating hub,

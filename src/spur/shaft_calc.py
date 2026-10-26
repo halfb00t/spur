@@ -24,7 +24,8 @@ if TYPE_CHECKING:
 
 # D-11 gauge step 0.01 mm. 31-RESEARCH A4 found no documented series for a theoretical
 # pin (the vendors' effective pins are round values, 6.000 and 5.500), so 0.01 mm is D-11's
-# default; the 31-05 checkpoint asks whether the copy names one. ASSUMPTION (clause slot)
+# default. The 31-05 checkpoint found no series in DIN 5480-1:2006 (Fig. 6's gauge pin 6.000
+# is an example, not a series). ASSUMPTION (no series in the copy)
 PIN_DECIMALS = 2
 # D-12 margin, times m, on both ends of the pin-contact window. The two observed gaps
 # between a constructed and a published form diameter are 0.030 mm (Hexagon, 0.01*m at m 3)
