@@ -67,7 +67,9 @@ def hobbed_root_warning(root_d: float, module: float) -> str:
     """The root_d sentence, with the hobbed value from the same rounded root_d it sits beside."""
     hobbed = round(root_d - HOBBED_ROOT_DROP * module, 3)
     return (f"The root diameter is the theoretical (broaching) root. A hobbed shaft's root is "
-            f"0.1*m smaller (DIN 5480-1 cl. 7.1): hobbed: root_d - 0.1*m = {hobbed:.3f} mm.")
+            f"0.1*m smaller (DIN 5480-1 cl. 7.1): hobbed: root_d - 0.1*m = {hobbed:.3f} mm. "
+            f"That is not the whole list: the standard names root depths for other processes "
+            f"too (DIN 5480-1 cl. 7.1), and this tool gives none of them.")
 
 
 class PinReading(NamedTuple):
@@ -101,7 +103,9 @@ class ShaftDimensions(BaseModel):
                          json_schema_extra={"unit": "mm"})
     root_d: float = Field(description="Theoretical (broaching) root diameter, h_fP = 0.55*m, "
                                       "per DIN 5480-1 cl. 7.1. A hobbed shaft's root is 0.1*m "
-                                      "smaller (the warnings give it).",
+                                      "smaller (the warnings give it); the standard names "
+                                      "other processes too, so that list is incomplete "
+                                      "(DIN 5480-1 cl. 7.1).",
                           json_schema_extra={"unit": "mm"})
     nominal_thickness: float = Field(
         description="Nominal tooth thickness, as an arc on the reference circle.",

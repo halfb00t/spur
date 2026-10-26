@@ -4,6 +4,8 @@ Mirrors tests/test_calc.py. The formulas are ASSUMPTIONS until the 31-05 checkpo
 records their clauses, so these numbers pin what the code does, not what the standard says.
 """
 
+import re
+
 import pytest
 import shaft_oracle
 from pydantic import ValidationError
@@ -25,7 +27,9 @@ from spur.shaft_params import ShaftParams
 
 DEFAULT_HOBBED_ROOT_WARNING = (
     "The root diameter is the theoretical (broaching) root. A hobbed shaft's root is 0.1*m "
-    "smaller (DIN 5480-1 cl. 7.1): hobbed: root_d - 0.1*m = 22.125 mm."
+    "smaller (DIN 5480-1 cl. 7.1): hobbed: root_d - 0.1*m = 22.125 mm. That is not the whole "
+    "list: the standard names root depths for other processes too (DIN 5480-1 cl. 7.1), and "
+    "this tool gives none of them."
 )
 
 
@@ -231,3 +235,15 @@ def test_the_root_diameter_field_says_it_is_the_theoretical_broaching_root() -> 
     description = ShaftDimensions.model_fields["root_d"].description or ""
     assert "broaching" in description
     assert "cl. 7.1" in description
+    assert "incomplete" in description
+
+
+def test_the_root_warning_says_its_process_list_is_incomplete_and_names_no_other_depth() -> None:
+    """Only the hobbed 0.1*m is given. Every other number in the sentence is the printed root
+    (22.125 here); a dedendum factor or depth for another process would be a copy value the
+    project has not been shown (T-31-13), so the sentence points at the clause instead."""
+    warning = derive_shaft(ShaftParams()).warnings[2]
+    assert "not the whole list" in warning
+    assert warning.count("DIN 5480-1 cl. 7.1") == 2
+    numbers = re.findall(r"[0-9]+\.[0-9]+", warning.replace("cl. 7.1", "cl."))
+    assert numbers == ["0.1", "0.1", "22.125"]
