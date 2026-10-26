@@ -34,7 +34,7 @@ each value by name (nothing else of the copy enters the repo):
 - then remove the odd-z gate and the unproven-form warning only if the rows agree to the last printed digit.
 
 ## Resolution
-On 2026-10-26 the human supplied DIN 5480-2:2006-05 and approved four rows by name. They are W 25x1.25x18, W 26x1.25x19 (odd), W 30x2x14 (shift -0.05) and W 30x2x13 (shift +0.45), from Tables 12/13 and 18/19. Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each assertion was seen red once (`investigation/31-part2-red-*.log`). A scratch comparison over every Part 2 size table agrees to the printed digit:
+On 2026-10-26 the human supplied DIN 5480-2:2006-05 and approved four rows by name. They are W 25x1.25x18, W 26x1.25x19 (odd), W 30x2x14 (shift -0.05) and W 30x2x13 (shift +0.45, also odd), from Tables 12/13 and 18/19. Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each value assertion was seen red once against a break that reaches it alone (`investigation/31-part2-red-*.log`, eight runs). A scratch comparison read 706 nominal and 700 inspection rows from the Part 2 size tables. Its text parser misses a few rows at page breaks, so those rows are unchecked. On the rows it read, the tool agrees to the printed digit:
 - x*m, s1, da1 and df1 on 705 of 706 rows. The one other row is internally inconsistent in the copy: its M1 fits its d_B, while its nominal columns fit another d_B.
 - M1 at the tabulated pin on 492 of 492 even-count rows and 208 of 208 odd-count rows.
 
@@ -43,6 +43,8 @@ Where each bullet of the next step went:
 - Odd-z gate: kept by the human's choice; the change is `docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md`.
 - d_Ff: Part 2 prints only a maximum, so `form_d` stays null. The internal construction sits above that maximum on 470 rows: `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
 - D_Re / M_Re clause source (Part 15, 5.2.4.3): still unread. It stays as the `measure_over_pins` ASSUMPTION marker. Part 2 tabulates the pin D_M per row, which is Phase 34's tabulated pin.
+- Gauge series: Part 2 tabulates D_M per row; `PIN_DECIMALS` keeps its marker until Phase 34 takes the tabulated pin.
+- REQ-shaft-basic-dims closes with Phase 31's re-verification after this commit.
 
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->

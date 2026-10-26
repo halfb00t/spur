@@ -3178,19 +3178,24 @@ copy's last printed digit.
 Reason: a number the tool prints is a number someone will cut metal to. One designation of the copy agrees to the digit and the
 rest is marked, nulled or filed, so Phase 32 can build the solid on maths whose limits are written down.
 
-**Amendment (2026-10-26, DIN 5480-2 anchors).** **Proved on one designation** no longer holds. The human supplied DIN 5480-2:2006-05 (an English translation) and approved four rows by name, from Tables 12/13 and 18/19:
+**Amendment (2026-10-26, DIN 5480-2 anchors).** "Proved on one designation" no longer holds. The human supplied DIN 5480-2:2006-05 (an English translation) and approved four rows by name, from Tables 12/13 and 18/19:
 - W 25x1.25x18, the default shaft;
 - W 26x1.25x19, an odd tooth count;
-- W 30x2x14 and W 30x2x13, the shift range's two edges at -0.05 and +0.45.
+- W 30x2x14 and W 30x2x13, the shift range's two edges at -0.05 and +0.45. W 30x2x13 is also an odd tooth count.
 
-Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py` and was seen red once (`31-part2-red-*.log`). A scratch comparison over every Part 2 size table agrees to the printed digit:
-- x*m, s1, da1 and df1 on 705 of 706 rows. The one other row is internally inconsistent in the copy.
-- M1 at the tabulated pin and nominal thickness on all 492 even-count and 208 odd-count rows.
+Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each value assertion was seen red once against a break that reaches it alone (eight `31-part2-red-*.log` runs, `bench/RESULTS.md` `### Seen red once (Phase 31)`).
 
-The anchor debt item is resolved (`docs/tech_debt/resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md`), and REQ-shaft-basic-dims can close.
+A scratch comparison read 706 nominal and 700 inspection rows from the Part 2 size tables. Its text parser misses a few rows at page breaks, so those rows are unchecked. On the rows it read, the tool agrees to the printed digit:
+- x*m, s1, da1 and df1 on 705 of 706 nominal rows. The one other row is internally inconsistent in the copy.
+- M1 at the tabulated pin and nominal thickness on 492 of 492 even-count and 208 of 208 odd-count rows.
 
-The odd-count M_Re stays null by the human's choice (`docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md`). `ODD_Z_UNCONFIRMED` now says "not given ... yet" instead of waiting for a row.
+The anchor debt item is resolved (`docs/tech_debt/resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md`). REQ-shaft-basic-dims closes with Phase 31's re-verification. The odd-count M_Re stays null by the human's choice (`docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md`), and `ODD_Z_UNCONFIRMED` now says "not given ... yet" instead of waiting for a row. No existing sentence of this entry is edited.
 
-**The guard**'s premise is weaker than written. Part 2 prints d_Ff1 only as a maximum. The internal construction exceeds it on 470 rows at h_fP 0.55, by up to 0.174*m, against the margin's 0.067*m. This is filed for Phase 34 as `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
+**Amendment (2026-10-26, DIN 5480-2 anchors: the guard and the shift range).** The guard section's premise is weaker than written.
+- Part 2 prints d_Ff1 only as a maximum.
+- The internal construction exceeds that maximum on 470 of 705 rows at h_fP 0.55, by up to 0.174*m.
+- The guard margin is 0.1*m. It was sized from observed gaps of at most 0.067*m (0.202 mm at m 3).
+
+This is filed for Phase 34 as `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
 
 The shift range is the standard's at both edges at m 2. Eleven Part 2 rows lie outside it, as the shift-range debt item predicts. No printed number, default or bound changed. No existing sentence of this entry is edited.
