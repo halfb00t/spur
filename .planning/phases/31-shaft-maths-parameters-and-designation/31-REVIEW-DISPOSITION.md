@@ -5,15 +5,15 @@ titles: json
 findings:
   - id: IN-07
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`THEORETICAL_PIN` still says \"M_Re is for this pin\" for an odd tooth count, where no M_Re is printed"
   - id: IN-08
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The `module` branch of `_exact` has no test, and the hobbed-root test indexes `warnings[2]`"
   - id: IN-09
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`H_FP_HOBBING` is a second hand-copied 0.60, outside the constants block"
   - id: WR-06
     severity: warning
@@ -63,18 +63,18 @@ findings:
     severity: warning
     disposition: fixed
     title: "`parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise"
-open: 3
+open: 0
 total: 15
-recorded: 2026-10-26T12:23:28.195Z
+recorded: 2026-10-26T13:57:53.668Z
 ---
 
 # Phase 31: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-07 | info | open | - |
-| IN-08 | info | open | - |
-| IN-09 | info | open | - |
+| IN-07 | info | fixed | 31-REVIEW-FIX.md |
+| IN-08 | info | fixed | 31-REVIEW-FIX.md |
+| IN-09 | info | fixed | 31-REVIEW-FIX.md |
 | WR-06 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-01 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-02 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
