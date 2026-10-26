@@ -129,6 +129,12 @@ class ShaftDimensions(BaseModel):
                                                   "or cannot be computed honestly.")
 
 
+def _exact(v: float) -> str:
+    """`v` as %g prints it, unless that is a different number: then its full repr."""
+    short = f"{v:g}"
+    return short if float(short) == v else repr(v)
+
+
 def check_shaft(p: ShaftParams) -> list[tuple[str, tuple[str, ...]]]:
     """One (sentence, field names) per problem; empty when the shaft is feasible.
 
@@ -141,12 +147,19 @@ def check_shaft(p: ShaftParams) -> list[tuple[str, tuple[str, ...]]]:
     if x < din5480.X_MIN - din5480.X_EPS or x > din5480.X_MAX + din5480.X_EPS:
         # Four decimals, and the side: the default sits on X_MAX, so a 0.001 mm nudge of
         # reference_d refuses at +0.4504, and three decimals printed it as "+0.450, outside
-        # +0.45" (31-REVIEW WR-01).
+        # +0.45" (31-REVIEW WR-01). A nudge under 0.0001 mm still rounds onto the edge at
+        # four decimals, so the shift then gets nine, enough to show any overshoot past the
+        # 1e-9 epsilon. The inputs print in full when six significant digits would hide the
+        # nudge, or 25.00001 reads as the default 25 (31-REVIEW WR-06).
         side = "above" if x > din5480.X_MAX else "below"
-        return [(f"A reference diameter of {p.reference_d:g} mm with module {p.module:g} and "
-                 f"{p.teeth} teeth needs a profile shift of {x:+.4f}, {side} the allowed range "
-                 f"{din5480.X_MIN:+.2f} to {din5480.X_MAX:+.2f}. Pick another reference "
-                 f"diameter, module or tooth count.",
+        edge = din5480.X_MAX if side == "above" else din5480.X_MIN
+        shown = f"{x:+.4f}"
+        if float(shown) == edge:
+            shown = f"{x:+.9f}"
+        return [(f"A reference diameter of {_exact(p.reference_d)} mm with module "
+                 f"{_exact(p.module)} and {p.teeth} teeth needs a profile shift of {shown}, "
+                 f"{side} the allowed range {din5480.X_MIN:+.2f} to {din5480.X_MAX:+.2f}. "
+                 f"Pick another reference diameter, module or tooth count.",
                  ("module", "reference_d", "teeth"))]
     return []
 
