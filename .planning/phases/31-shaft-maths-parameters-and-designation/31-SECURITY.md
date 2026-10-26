@@ -42,7 +42,7 @@ created: "2026-10-26"
 | T-31-11 | Tampering | `float()` accepting inf/nan/exponent/underscore; fractional teeth truncated | high | mitigate | Grammar checked before conversion; refusal rows `inf`, `1e3`, `2_5`, `18.5` (`tests/test_din5480.py:307-315`); leading zeros refused (WR-05) | closed |
 | T-31-12 | Information disclosure | Echoed token in an error a page renders | low | transfer | Token bounded to 64 characters (`DesignationError.token`; the length refusal's message echoes no text). Rendering as text is Phase 33's 422 handling | closed |
 | T-31-13 | Information disclosure | Licensed table values or clause text committed beyond approved anchors | high | mitigate | Only the three human-approved W 120x3x38x8f values are committed, each cited (`tests/test_din5480_anchors.py`); no table file; review fixes checked to add no DIN 5480 value (WR-03, IN-04) | closed |
-| T-31-14 | Tampering | Constant edited silently to match the copy, or tolerance loosened | high | mitigate | No constant edited at 31-06 (L47); anchor tolerance half a unit of the printed digit; `H_FP_HOBBING` (IN-04) restates an already-committed 0.60 and moves no printed number (113.100 / 22.125 unchanged) | closed |
+| T-31-14 | Tampering | Constant edited silently to match the copy, or tolerance loosened | high | mitigate | No constant edited at 31-06 (L47); anchor tolerance half a unit of the printed digit; `din5480.H_FP_HOBBING` (IN-04, moved into the constants block by IN-09) restates an already-committed 0.60 and moves no printed number (113.100 / 22.125 unchanged); `test_shaft_calc.py` pins it at 0.60 and the drop above 0 | closed |
 | T-31-15 | Repudiation | Anchor with no citation, or licensed value with no approval | medium | mitigate | Each `test_anchor_*` carries part, clause and figure; values from approved rows in 31-05-SUMMARY.md | closed |
 | T-31-16 | Tampering | A gear link moved during the shaft phase | high | mitigate | Same evidence as T-31-04; `gear.unchanged` green at 31-06 close and after the review fixes | closed |
 | T-31-SC | Tampering | npm/pip/cargo installs | low | accept | No package installed; `git diff v0.6 -- requirements.txt` empty | closed |
@@ -68,6 +68,7 @@ created: "2026-10-26"
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
 | 2026-10-26 | 17 | 17 | 0 | execute-phase orchestrator (L1 grep-depth, auditor skipped per short-circuit rule) |
+| 2026-10-26 | 17 | 17 | 0 | execute-phase orchestrator, re-audit after IN-07..IN-09 (T-31-14 evidence updated; no new threat surface) |
 
 ---
 
