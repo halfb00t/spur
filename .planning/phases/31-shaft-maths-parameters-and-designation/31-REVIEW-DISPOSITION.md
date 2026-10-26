@@ -3,6 +3,34 @@ phase: 31
 review: 31-REVIEW.md
 titles: json
 findings:
+  - id: WR-06
+    severity: warning
+    disposition: fixed
+    title: "The shift refusal still contradicts itself for an overshoot under 0.00005, and `{reference_d:g}` hides the nudge"
+  - id: IN-01
+    severity: info
+    disposition: fixed
+    title: "Debt items point at stale line numbers"
+  - id: IN-02
+    severity: info
+    disposition: fixed
+    title: "Stale module docstring in `tests/test_shaft_calc.py`"
+  - id: IN-03
+    severity: info
+    disposition: fixed
+    title: "`THEORETICAL_PIN` makes a claim no seen page supports, and stays when the pin is null"
+  - id: IN-04
+    severity: info
+    disposition: fixed
+    title: "The 0.1*m drop is written twice and `HOBBED_ROOT_DROP` is not tied to `H_FP`"
+  - id: IN-05
+    severity: info
+    disposition: fixed
+    title: "The default shaft sits on the range edge, and `shaft_params` imports the gear's private helpers"
+  - id: IN-06
+    severity: info
+    disposition: fixed
+    title: "The leading-zero comment promises \"one spelling per shaft\", but five other spellings parse"
   - id: WR-01
     severity: warning
     disposition: fixed
@@ -23,45 +51,27 @@ findings:
     severity: warning
     disposition: fixed
     title: "`parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise"
-  - id: IN-01
-    severity: info
-    disposition: open
-    title: "Debt items point at stale line numbers"
-  - id: IN-02
-    severity: info
-    disposition: open
-    title: "Stale module docstring in `tests/test_shaft_calc.py`"
-  - id: IN-03
-    severity: info
-    disposition: open
-    title: "`THEORETICAL_PIN` makes a claim no seen page supports, and stays when the pin is null"
-  - id: IN-04
-    severity: info
-    disposition: open
-    title: "The 0.1*m drop is written twice and `HOBBED_ROOT_DROP` is not tied to `H_FP`"
-  - id: IN-05
-    severity: info
-    disposition: open
-    title: "The default shaft sits on the range edge, and `shaft_params` imports the gear's private helpers"
-open: 5
-total: 10
-recorded: 2026-10-26T09:56:27.316Z
+open: 0
+total: 12
+recorded: 2026-10-26T11:12:40.479Z
 ---
 
 # Phase 31: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-02 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-03 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-04 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-05 | warning | fixed | 31-REVIEW-FIX.md |
-| IN-01 | info | open | - |
-| IN-02 | info | open | - |
-| IN-03 | info | open | - |
-| IN-04 | info | open | - |
-| IN-05 | info | open | - |
+| WR-06 | warning | fixed | 31-REVIEW-FIX.md |
+| IN-01 | info | fixed | 31-REVIEW-FIX.md |
+| IN-02 | info | fixed | 31-REVIEW-FIX.md |
+| IN-03 | info | fixed | 31-REVIEW-FIX.md |
+| IN-04 | info | fixed | 31-REVIEW-FIX.md |
+| IN-05 | info | fixed | 31-REVIEW-FIX.md |
+| IN-06 | info | fixed | 31-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-02 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-03 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-04 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-05 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
 
 Dispositions: `open` (recorded, not yet triaged), `fixed`, `skipped`, `deferred`.
 Set `deferred` by hand and put the reason in the Source cell; both are preserved. A `|` in the reason is kept as prose and escaped on the next run.
