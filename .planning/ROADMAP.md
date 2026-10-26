@@ -164,7 +164,7 @@ baseline, the gear `/api/schema` response byte-equal.
 - [x] **Phase 30: Scope, Seam and Gear-Safety Guard** - The widening to a gear and spline (completed 2026-10-23)
       generator is a logged decision, the shaft is walled off from the gear by import contracts
       and its own route prefix, and one check proves at every phase close that no gear link moved
-- [ ] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams`
+- [x] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams` (completed 2026-10-26)
       with frozen field names: profile shift from d_B, tip, root and thickness, M_Re at nominal,
       d_Ff `null` until proven, and a designation that round-trips; needs anchor rows from the copy
 - [ ] **Phase 32: The Shaft Solid** - Splined section, plain shank and end chamfer as a valid solid
@@ -296,7 +296,7 @@ red once, the red recorded. **Phase close**: `make verify` result line recorded 
 `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: Yes — needs the human's copy (research Phase 2): formula confirmation by
 clause, `h_fP`, anchor rows incl. one odd z, the d_Ff construction.
-**Plans**: 6/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
+**Plans**: 6/6 plans complete, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
 DIN 5480 checkpoint and 31-06 cannot start until the human answers
 
 Plans:
@@ -496,7 +496,7 @@ comes from.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
-| 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | In Progress (needs anchor rows from the DIN 5480 copy) | - |
+| 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
 | 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |
