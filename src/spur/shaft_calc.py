@@ -129,7 +129,7 @@ class ShaftDimensions(BaseModel):
         json_schema_extra={"unit": "mm"})
     measure_over_pins: float | None = Field(
         description="Measurement over pins M_Re at nominal thickness, for the printed pin. "
-                    "Null for an odd tooth count (unconfirmed) and when the pin does not "
+                    "Null for an odd tooth count (not given yet) and when the pin does not "
                     "touch the flanks within the contact window.",
         json_schema_extra={"unit": "mm"})
     designation: str = Field(description="The DIN 5480 designation of these parameters, as "
