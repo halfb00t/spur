@@ -3,6 +3,26 @@ phase: 31
 review: 31-REVIEW.md
 titles: json
 findings:
+  - id: IN-18
+    severity: info
+    disposition: fixed
+    title: "\"A break that reaches it alone\" is false for the shift and thickness runs"
+  - id: IN-19
+    severity: info
+    disposition: fixed
+    title: "8c77302's logs and RESULTS rows cite line numbers of a later commit, and no log carries revert proof"
+  - id: IN-20
+    severity: info
+    disposition: fixed
+    title: "`test_shaft_calc.py`'s module docstring still describes the anchor file before Part 2"
+  - id: IN-21
+    severity: info
+    disposition: fixed
+    title: "The idea's Related files still points to one odd anchor row (WR-07 residue)"
+  - id: IN-22
+    severity: info
+    disposition: fixed
+    title: "The cause given for the 706/700 gap (\"misses a few rows at page breaks\") has no evidence in the repo"
   - id: WR-07
     severity: warning
     disposition: fixed
@@ -116,27 +136,32 @@ findings:
     disposition: fixed
     title: "`parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise"
 open: 0
-total: 28
-recorded: 2026-10-26T16:12:48.921Z
+total: 33
+recorded: 2026-10-26T16:24:43.015Z
 ---
 
 # Phase 31: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-07 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-08 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-09 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-10 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-11 | warning | fixed | 31-REVIEW-FIX.md |
-| IN-10 | info | fixed | 31-REVIEW-FIX.md |
-| IN-11 | info | fixed | 31-REVIEW-FIX.md |
-| IN-12 | info | fixed | 31-REVIEW-FIX.md |
-| IN-13 | info | fixed | 31-REVIEW-FIX.md |
-| IN-14 | info | fixed | 31-REVIEW-FIX.md |
-| IN-15 | info | fixed | 31-REVIEW-FIX.md |
-| IN-16 | info | fixed | 31-REVIEW-FIX.md |
-| IN-17 | info | fixed | 31-REVIEW-FIX.md |
+| IN-18 | info | fixed | 31-REVIEW-FIX.md |
+| IN-19 | info | fixed | 31-REVIEW-FIX.md |
+| IN-20 | info | fixed | 31-REVIEW-FIX.md |
+| IN-21 | info | fixed | 31-REVIEW-FIX.md |
+| IN-22 | info | fixed | 31-REVIEW-FIX.md |
+| WR-07 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-08 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-09 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-10 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| WR-11 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-10 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-11 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-12 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-13 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-14 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-15 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-16 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-17 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-07 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-08 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-09 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
