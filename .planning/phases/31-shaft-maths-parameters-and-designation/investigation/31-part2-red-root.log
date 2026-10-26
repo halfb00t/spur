@@ -1,10 +1,10 @@
-mutation: 'H_FP = 0.55' -> 'H_FP = 0.60'
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 25x1.25x18x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 26x1.25x19x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 30x2x14x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 30x2x13x8f]
-4 failed, 4 passed, 3 deselected in 0.08s
+mutation in src/spur/din5480.py: 'H_FP = 0.55' -> 'H_FP = 0.60'
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:114: assert 22.125 == 22.25 ± 0.005
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:114: assert 23.125 == 23.25 ± 0.005
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:114: assert 25.4 == 25.6 ± 0.005
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:114: assert 25.4 == 25.6 ± 0.005
+4 failed, 4 passed, 3 deselected in 0.11s

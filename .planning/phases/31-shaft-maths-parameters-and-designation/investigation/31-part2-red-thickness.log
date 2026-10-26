@@ -1,18 +1,18 @@
-mutation: 'return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)' -> 'return math.pi * m / 2 + 2 * xm * math.sin(ALPHA)'
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 25x1.25x18x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 26x1.25x19x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 30x2x14x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 30x2x13x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 25x1.25x18x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 26x1.25x19x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 30x2x14x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 30x2x13x8f]
+mutation in src/spur/din5480.py: 'return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)' -> 'return math.pi * m / 2 + 2 * xm * math.sin(ALPHA)'
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 2.526 == 2.613 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 2.401 == 2.469 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 3.042 == 3.026 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 4.042 == 4.181 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 27.93155455798262 == 28.05 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 28.932400025686004 == 29.026 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 34.166341698174875 == 34.144 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 35.8101655101007 == 35.984 ± 5.0e-04
 8 failed, 3 deselected in 0.05s

@@ -1,16 +1,16 @@
-mutation: 'ADDENDUM_FACTOR = 0.45' -> 'ADDENDUM_FACTOR = 0.46'
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-E         comparison failed
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 25x1.25x18x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 26x1.25x19x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 30x2x14x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_basic_dimensions[W 30x2x13x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 25x1.25x18x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 26x1.25x19x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 30x2x14x8f]
-FAILED tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin[W 30x2x13x8f]
-8 failed, 3 deselected in 0.06s
+mutation in src/spur/din5480.py: 'ADDENDUM_FACTOR = 0.45' -> 'ADDENDUM_FACTOR = 0.46'
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:108: assert 0.5499999999999999 == 0.5625 ± 5.0e-05
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:108: assert 0.42499999999999993 == 0.4375 ± 5.0e-05
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:91: pydantic_core._pydantic_core.ValidationError: 1 validation error for ShaftParams
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:111: assert 0.88 == 0.9 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 28.03050537156231 == 28.05 ± 5.0e-04
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 29.006101829007694 == 29.026 ± 5.0e-04
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:91: pydantic_core._pydantic_core.ValidationError: 1 validation error for ShaftParams
+      comparison failed
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 35.95486326892734 == 35.984 ± 5.0e-04
+8 failed, 3 deselected in 0.05s

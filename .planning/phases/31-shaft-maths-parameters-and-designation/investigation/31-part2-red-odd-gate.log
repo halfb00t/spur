@@ -1,0 +1,6 @@
+mutation in src/spur/shaft_calc.py: '    if p.teeth % 2:' -> '    if False:'
+E   AssertionError: assert 28.688 is None
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:137: AssertionError: assert 28.688 is None
+E   AssertionError: assert 35.299 is None
+/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:137: AssertionError: assert 35.299 is None
+2 failed, 6 passed, 3 deselected in 0.09s
