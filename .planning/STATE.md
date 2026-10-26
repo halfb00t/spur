@@ -6,10 +6,10 @@ current_phase: 32
 current_phase_name: The Shaft Solid
 status: planning
 stopped_at: Phase 31 complete, ready to plan Phase 32
-last_updated: "2026-10-26T09:25:06.068Z"
+last_updated: "2026-10-26T12:25:52.076Z"
 last_activity: 2026-10-26
 last_activity_desc: Phase 31 complete, transitioned to Phase 32
-state_head: 68b95c0e01b47ed1e9c7ac33247b9b22b5190865
+state_head: 4cc469c8723b618622ae2a82e10a96e79cd2648d
 progress:
   total_phases: 5
   completed_phases: 8
@@ -560,8 +560,9 @@ None yet.
 - ⚠️ [Phase 31] Closed 5/5 with one override (accepted_by "Andrew S", entered by the agent on the human's instruction): one copy
   anchor row only (W 120x3x38x8f); REQ-shaft-basic-dims Pending; `must` debt `2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing`
   waits for DIN 5480 Part 2/15 pages. Odd-z M_Re and d_Ff stay `null`. Also `must`: shift cap 0.45 narrower than the copy's exceptions.
-- ℹ️ [Phase 31] Code review `31-REVIEW-DISPOSITION.md`: all 12 findings fixed (WR-01..WR-06, IN-01..IN-06; last fix `36ec101`,
-  `make verify` 2378 passed, `gear.unchanged` byte-equal to v0.6).
+- ℹ️ [Phase 31] Code review `31-REVIEW-DISPOSITION.md`: 12 of 15 fixed (WR-01..WR-06, IN-01..IN-06); IN-07..IN-09 open (info).
+  IN-07: on odd z the pin warning still says "M_Re is for this pin" beside "M_Re not given". Re-verified 5/5 after the fixes;
+  31-VALIDATION partial (anchor gap manual-only); 31-SECURITY threats_open 0.
 - ⚠️ [Phase 30] Code review `30-REVIEW-DISPOSITION.md`: 3 deferred to `must` debt (WR-01 no timeout on git/probe in
   `gear.unchanged`; WR-03 `parts.py` "one-line widening" is false — Phase 31 must type `_build_checked`, `_write_export`,
   `_gear_fields` when it widens `Part`; IN-02 a lightweight/moved local `v0.6` tag self-compares), 4 open (WR-02, IN-01,
