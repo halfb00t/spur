@@ -17,8 +17,10 @@ from typing import NamedTuple
 
 # One constants block. Each line carries unit, source and the slot the copy's clause fills.
 ALPHA = math.radians(30.0)  # rad, pressure angle fixed at 30 deg; ASSUMPTION (clause slot)
-ADDENDUM_FACTOR = 0.45  # h_aP/m, KISSsoft prints haP* 0.450; ASSUMPTION (clause slot)
-# d_B - d_a = 0.2*m: 69.400 and 119.40 in both vendor reports. ASSUMPTION (clause slot)
+# h_aP/m, DIN 5480-1:2006, cl. 6, Table 3; KISSsoft prints haP* 0.450.
+ADDENDUM_FACTOR = 0.45
+# d_B - d_a = 0.2*m, DIN 5480-1:2006, cl. 6, Table 3; the anchor is d_a1 119.40 of W 120x3x38x8f
+# (cl. 9.1, Fig. 6, tests/test_din5480_anchors.py), and both vendor reports print the same.
 TIP_DIAMETER_OFFSET = 0.2
 # The 0.55 of the shift formula, exactly 0.55 in binary64 (checked). It is a different
 # quantity from H_FP below: the two read alike only at their provisional values
@@ -79,8 +81,8 @@ def profile_shift(reference_d: float, m: float, z: int) -> float:
 
 
 def tip_diameter(reference_d: float, m: float) -> float:
-    """The tip diameter d_a = d_B - TIP_DIAMETER_OFFSET*m."""
-    return reference_d - TIP_DIAMETER_OFFSET * m  # ASSUMPTION (clause slot)
+    """The tip diameter d_a = d_B - TIP_DIAMETER_OFFSET*m (DIN 5480-1:2006, cl. 6, Table 3)."""
+    return reference_d - TIP_DIAMETER_OFFSET * m
 
 
 def root_diameter(m: float, z: int, xm: float, h_fp: float) -> float:
