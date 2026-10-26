@@ -45,6 +45,15 @@ THEORETICAL_PIN = (
     "m*z + 2*x*m, rounded to 0.01 mm. It is not the D_Re that DIN 5480 tabulates, and M_Re "
     "is for this pin."
 )
+# The designation prints a fit, but M_Re is computed at the nominal thickness. The copy's own
+# M1 minimum for W 120x3x38x8f is taken 0.091 mm below it (tests/test_din5480_anchors.py), so
+# a user who cut to the printed M_Re would miss the standard's band (31-REVIEW WR-02).
+# Emitted whenever measure_over_pins is non-null; Phase 34 removes it when it passes limit
+# thicknesses.
+MEASURE_AT_NOMINAL_THICKNESS = (
+    "M_Re is the measure at the nominal tooth thickness; it carries no allowance or "
+    "tolerance for the fit."
+)
 ODD_Z_UNCONFIRMED = (
     "The measurement over pins M_Re is not given for an odd tooth count until a DIN 5480 "
     "row confirms the odd-tooth formula; the pin diameter is still given."
@@ -186,6 +195,7 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
     pin = round(din5480.theoretical_pin_diameter(p.module, p.teeth, xm), PIN_DECIMALS)
     reading = pin_measurement(p, pin)
     root_d = r3(din5480.root_diameter(p.module, p.teeth, xm, din5480.H_FP))
+    measure_warnings = () if reading.measure is None else (MEASURE_AT_NOMINAL_THICKNESS,)
     return ShaftDimensions(
         reference_d=p.reference_d,
         profile_shift=r3(x),
@@ -199,5 +209,5 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
         measure_over_pins=None if reading.measure is None else r3(reading.measure),
         designation=din5480.format_designation(p.reference_d, p.module, p.teeth, p.fit),
         warnings=(FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, hobbed_root_warning(root_d, p.module),
-                  *reading.warnings),
+                  *measure_warnings, *reading.warnings),
     )

@@ -13,6 +13,7 @@ from spur import din5480
 from spur.din5480 import Designation, parse_designation
 from spur.shaft_calc import (
     FORM_DIAMETER_UNPROVEN,
+    MEASURE_AT_NOMINAL_THICKNESS,
     ODD_Z_UNCONFIRMED,
     THEORETICAL_PIN,
     ShaftDimensions,
@@ -49,7 +50,8 @@ def test_the_default_shaft_derives_its_basic_dimensions() -> None:
     assert d.tip_d == 24.75
     assert d.root_d == 22.25
     assert d.nominal_thickness == 2.613
-    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING)
+    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
+                          MEASURE_AT_NOMINAL_THICKNESS)
 
 
 def test_the_default_shaft_is_designated_w_25x1_25x18x8f() -> None:
@@ -74,12 +76,18 @@ def test_the_shaft_dimensions_keys_are_fixed() -> None:
 
 def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
     """D_Re 2.73 is the theoretical pin rounded to 0.01 mm; M_Re is for that pin. The form
-    diameter stays null, with its reason, because no DIN 5480 row proves the construction."""
+    diameter stays null, with its reason, because no DIN 5480 row proves the construction.
+    The designation names a fit, so a printed M_Re says in a warning that it is the measure
+    at the nominal thickness and carries no allowance or tolerance for that fit."""
     d = derive_shaft(ShaftParams())
     assert d.pin_d == 2.73
     assert d.measure_over_pins == 27.999
     assert d.form_d is None
-    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING)
+    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
+                          MEASURE_AT_NOMINAL_THICKNESS)
+    assert MEASURE_AT_NOMINAL_THICKNESS == (
+        "M_Re is the measure at the nominal tooth thickness; it carries no allowance or "
+        "tolerance for the fit.")
 
 
 def test_a_shaft_dimensions_result_cannot_be_changed() -> None:
@@ -115,6 +123,8 @@ def test_an_odd_tooth_count_prints_the_pin_and_no_measure_over_pins() -> None:
     assert d.measure_over_pins is None
     assert ODD_Z_UNCONFIRMED in d.warnings
     assert THEORETICAL_PIN in d.warnings
+    # No M_Re is printed, so there is no measure to qualify.
+    assert MEASURE_AT_NOMINAL_THICKNESS not in d.warnings
 
 
 @pytest.mark.parametrize("case", M_GRID, ids=_case_id)
