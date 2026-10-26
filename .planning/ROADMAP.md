@@ -296,7 +296,7 @@ red once, the red recorded. **Phase close**: `make verify` result line recorded 
 `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: Yes — needs the human's copy (research Phase 2): formula confirmation by
 clause, `h_fP`, anchor rows incl. one odd z, the d_Ff construction.
-**Plans**: 5/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
+**Plans**: 6/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
 DIN 5480 checkpoint and 31-06 cannot start until the human answers
 
 Plans:
@@ -316,7 +316,7 @@ Plans:
 - [x] 31-05-PLAN.md — the gate green and the prediction table, then `checkpoint:human-action`: the human confirms each formula by clause and approves the anchor rows
 
 **Wave 6** *(blocked on Wave 5 completion)*
-- [ ] 31-06-PLAN.md — anchor rows as cited tests, D-09 for any contradiction, the conditional d_Ff / odd-z outcomes, the gate delta, the close checks and the closing `Lxx`
+- [x] 31-06-PLAN.md — anchor rows as cited tests, D-09 for any contradiction, the conditional d_Ff / odd-z outcomes, the gate delta, the close checks and the closing `Lxx`
 
 ### Phase 32: The Shaft Solid
 
@@ -496,7 +496,7 @@ comes from.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
-| 31. Shaft Maths, Parameters and Designation | v0.7 | 5/6 | In Progress (needs anchor rows from the DIN 5480 copy) | - |
+| 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | In Progress (needs anchor rows from the DIN 5480 copy) | - |
 | 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |

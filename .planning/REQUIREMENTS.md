@@ -50,24 +50,24 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Shaft maths — pure, oracle-proved
 
-- [ ] **REQ-shaft-params**: `ShaftParams` (d_B, module, tooth count, tolerance field, splined
+- [x] **REQ-shaft-params**: `ShaftParams` (d_B, module, tooth count, tolerance field, splined
   length, end chamfer, shank diameter and length) is validated once at its boundary; its field
   names and defaults are frozen in this phase, tolerance fields included.
-- [ ] **REQ-profile-shift-from-dB**: the profile shift is derived from d_B, m and z by the
+- [x] **REQ-profile-shift-from-dB**: the profile shift is derived from d_B, m and z by the
   copy's formula (research: `x·m = (d_B − z·m)/2 − 0.55·m`); a combination whose x falls
   outside the standard's shaft range is a `422` naming the range, with an epsilon so the
   range edge (e.g. W30x2x14, x = −0.05) is accepted.
 - [ ] **REQ-shaft-basic-dims**: the user sees d_B, tip diameter, root diameter and nominal tooth
   thickness, each proved against the independent oracle and against at least two anchor rows
   from the copy.
-- [ ] **REQ-form-diameter-honest**: d_Ff prints `null` with a sentence naming why, unless the
+- [x] **REQ-form-diameter-honest**: d_Ff prints `null` with a sentence naming why, unless the
   copy's construction is reproduced by the oracle on an anchor row, in which case it prints the
   number.
-- [ ] **REQ-mre-nominal**: the user sees measurement over pins M_Re and the pin diameter D_Re at
+- [x] **REQ-mre-nominal**: the user sees measurement over pins M_Re and the pin diameter D_Re at
   the nominal thickness, for even and odd z; pin contact is checked to lie between form and tip
   diameter or the value is `null` with a warning; odd z stays `null` until an odd-z anchor row
   confirms it.
-- [ ] **REQ-designation-codec**: `W <d_B>x<m>x<z>x<fit>` is printed for every shaft and parsed
+- [x] **REQ-designation-codec**: `W <d_B>x<m>x<z>x<fit>` is printed for every shaft and parsed
   back to the same parameters (`.` and `,` decimals); an unparseable string is a `422` naming
   the bad token.
 
@@ -159,12 +159,12 @@ shaft routes under that rule and cites it, it does not re-map it.
 | REQ-scope-decision-logged | Phase 30 | Complete |
 | REQ-gear-unchanged-proof | Phase 30 | Complete |
 | REQ-shaft-routes-separate | Phase 30 | Complete |
-| REQ-shaft-params | Phase 31 | Pending |
-| REQ-profile-shift-from-dB | Phase 31 | Pending |
+| REQ-shaft-params | Phase 31 | Complete |
+| REQ-profile-shift-from-dB | Phase 31 | Complete |
 | REQ-shaft-basic-dims | Phase 31 | Pending |
-| REQ-form-diameter-honest | Phase 31 | Pending |
-| REQ-mre-nominal | Phase 31 | Pending |
-| REQ-designation-codec | Phase 31 | Pending |
+| REQ-form-diameter-honest | Phase 31 | Complete |
+| REQ-mre-nominal | Phase 31 | Complete |
+| REQ-designation-codec | Phase 31 | Complete |
 | REQ-shaft-solid | Phase 32 | Pending |
 | REQ-shaft-build-measured | Phase 32 | Pending |
 | REQ-shaft-api | Phase 33 | Pending |

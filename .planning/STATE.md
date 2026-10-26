@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 31
 current_phase_name: Shaft Maths, Parameters and Designation
-status: executing
-stopped_at: Completed 31-05-PLAN.md
-last_updated: "2026-10-26T06:55:08.969Z"
+status: verifying
+stopped_at: Completed 31-06-PLAN.md
+last_updated: "2026-10-26T07:20:03.247Z"
 last_activity: 2026-10-24
 last_activity_desc: Phase 31 execution started
-state_head: 0c03aa012c78f7b2adc69ff057103db7453f75be
+state_head: d9f29c5ddc14024eb9099f87f8aab7609e936cc4
 progress:
   total_phases: 5
   completed_phases: 7
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 31 (Shaft Maths, Parameters and Designation) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-24 — Phase 31 execution started
 
 ## Performance Metrics
@@ -278,6 +278,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 31 P03 | 9 min | 3 tasks | 12 files |
 | Phase 31 P04 | 12 min | 3 tasks | 14 files |
 | Phase 31 P05 | 10min | 2 tasks | 5 files |
+| Phase 31 P06 | 12 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -546,6 +547,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 31]: 31-04: designation codec lives in din5480.py; Designation fields equal ShaftParams', DesignationError carries token, length bound 64
 - [Phase 31]: 31-04: D-14 debt item re-targeted to Phase 32 and kept active (option 2); parts.py docstring and pyproject C4 comment name Phase 32
 - [Phase 31]: 31-05 checkpoint: PARTIAL PASS. DIN 5480-1:2006-03 (unofficial translation) holds no size tables; three W 120x3x38x8f rows approved (cl. 9.1 Fig. 6); anchor debt filed; odd-z M_Re stays unprinted; d_Ff checked as a limit
+- [Phase 31]: 31-06: no constant edited; the copy's checkpoint changed no printed number, so no D-09 entry; L47 closes Phase 31
+- [Phase 31]: 31-06: REQ-shaft-basic-dims left open (one basic-dimension anchor row, plan minimum two; partial pass accepted, debt filed)
 
 ### Pending Todos
 
@@ -857,8 +860,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-26T06:55:08.922Z
-Stopped at: Completed 31-05-PLAN.md
+Last session: 2026-10-26T07:19:53.243Z
+Stopped at: Completed 31-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
