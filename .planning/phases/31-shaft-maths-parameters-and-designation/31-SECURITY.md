@@ -41,9 +41,9 @@ created: "2026-10-26"
 | T-31-10 | Tampering | Unicode digits, ×, no-break space or newline slipping through | medium | mitigate | ASCII classes and `fullmatch` only; refusal rows for each in `REFUSED_DESIGNATIONS` | closed |
 | T-31-11 | Tampering | `float()` accepting inf/nan/exponent/underscore; fractional teeth truncated | high | mitigate | Grammar checked before conversion; refusal rows `inf`, `1e3`, `2_5`, `18.5` (`tests/test_din5480.py:307-315`); leading zeros refused (WR-05) | closed |
 | T-31-12 | Information disclosure | Echoed token in an error a page renders | low | transfer | Token bounded to 64 characters (`DesignationError.token`; the length refusal's message echoes no text). Rendering as text is Phase 33's 422 handling | closed |
-| T-31-13 | Information disclosure | Licensed table values or clause text committed beyond approved anchors | high | mitigate | Only the three human-approved W 120x3x38x8f values are committed, each cited (`tests/test_din5480_anchors.py`); no table file; review fixes checked to add no DIN 5480 value (WR-03, IN-04) | closed |
+| T-31-13 | Information disclosure | Licensed table values or clause text committed beyond approved anchors | high | mitigate | Only human-approved values are committed, each cited (`tests/test_din5480_anchors.py`): three W 120x3x38x8f values (Part 1) and four DIN 5480-2 rows approved by name on 2026-10-26 (x*m, s1, da1, df1, D_M, M1 each). The full-table comparison stayed in the scratchpad; docs carry only counts and ratios. No table file; review fixes checked to add no DIN 5480 value (WR-03, IN-04) | closed |
 | T-31-14 | Tampering | Constant edited silently to match the copy, or tolerance loosened | high | mitigate | No constant edited at 31-06 (L47); anchor tolerance half a unit of the printed digit; `din5480.H_FP_HOBBING` (IN-04, moved into the constants block by IN-09) restates an already-committed 0.60 and moves no printed number (113.100 / 22.125 unchanged); `test_shaft_calc.py` pins it at 0.60 and the drop above 0 | closed |
-| T-31-15 | Repudiation | Anchor with no citation, or licensed value with no approval | medium | mitigate | Each `test_anchor_*` carries part, clause and figure; values from approved rows in 31-05-SUMMARY.md | closed |
+| T-31-15 | Repudiation | Anchor with no citation, or licensed value with no approval | medium | mitigate | Each `test_anchor_*` carries part, clause and figure or table; values from approved rows in 31-05-SUMMARY.md and the human's by-name approval of the four Part 2 rows (L47 amendment) | closed |
 | T-31-16 | Tampering | A gear link moved during the shaft phase | high | mitigate | Same evidence as T-31-04; `gear.unchanged` green at 31-06 close and after the review fixes | closed |
 | T-31-SC | Tampering | npm/pip/cargo installs | low | accept | No package installed; `git diff v0.6 -- requirements.txt` empty | closed |
 
@@ -69,6 +69,7 @@ created: "2026-10-26"
 |------------|---------------|--------|------|--------|
 | 2026-10-26 | 17 | 17 | 0 | execute-phase orchestrator (L1 grep-depth, auditor skipped per short-circuit rule) |
 | 2026-10-26 | 17 | 17 | 0 | execute-phase orchestrator, re-audit after IN-07..IN-09 (T-31-14 evidence updated; no new threat surface) |
+| 2026-10-26 | 17 | 17 | 0 | orchestrator, re-audit after the DIN 5480-2 anchors (T-31-13, T-31-15 evidence updated) |
 
 ---
 
