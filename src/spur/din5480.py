@@ -26,6 +26,8 @@ TIP_DIAMETER_OFFSET = 0.2
 SHIFT_TERM = ADDENDUM_FACTOR + TIP_DIAMETER_OFFSET / 2
 # h_fP/m, provisional per D-07: 0.55 reproduces Hexagon W120x3x38 d_f 113.40 while KISSsoft
 # hobbing uses 0.60 and gets 63.10 for W70x3x22; the copy decides. Not a user field.
+# DIN 5480-1 cl. 6 Table 3 and cl. 7.1 (human's reading, 31-05): 0.55 is the broaching and
+# theoretical root, 0.60 is hobbing; a hobbed root is the theoretical root less 0.1*m.
 # ASSUMPTION (clause slot)
 H_FP = 0.55
 # rho_fP/m, both vendors; used only by the internal form diameter. ASSUMPTION (clause slot)

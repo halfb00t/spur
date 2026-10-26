@@ -22,6 +22,11 @@ from spur.shaft_calc import (
 )
 from spur.shaft_params import ShaftParams
 
+DEFAULT_HOBBED_ROOT_WARNING = (
+    "The root diameter is the theoretical (broaching) root. A hobbed shaft's root is 0.1*m "
+    "smaller (DIN 5480-1 cl. 7.1): hobbed: root_d - 0.1*m = 22.125 mm."
+)
+
 
 def _grid_shaft(case: tuple[float, int, float]) -> ShaftParams:
     m, z, x = case
@@ -44,7 +49,7 @@ def test_the_default_shaft_derives_its_basic_dimensions() -> None:
     assert d.tip_d == 24.75
     assert d.root_d == 22.25
     assert d.nominal_thickness == 2.613
-    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN)
+    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING)
 
 
 def test_the_default_shaft_is_designated_w_25x1_25x18x8f() -> None:
@@ -74,7 +79,7 @@ def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
     assert d.pin_d == 2.73
     assert d.measure_over_pins == 27.999
     assert d.form_d is None
-    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN)
+    assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING)
 
 
 def test_a_shaft_dimensions_result_cannot_be_changed() -> None:
@@ -194,3 +199,25 @@ def test_the_printed_pin_is_on_the_gauge_step_and_the_measure_is_for_that_pin(
             m, z, din5480.tooth_thickness(m, x * m), d.pin_d)
         assert result is not None
         assert d.measure_over_pins == round(result[0], 3)
+
+
+def test_every_shaft_warns_that_a_hobbed_root_is_smaller_than_root_d() -> None:
+    """DIN 5480-1 cl. 7.1: root_d is the theoretical (broaching) root; hobbing takes 0.1*m
+    off it. The default shaft says 22.125 = 22.250 - 0.125."""
+    d = derive_shaft(ShaftParams())
+    assert DEFAULT_HOBBED_ROOT_WARNING in d.warnings
+    assert d.root_d == 22.25
+
+
+def test_the_hobbed_root_of_w_120x3x38x8f_is_113_100_below_root_d_113_400() -> None:
+    """The human's reading of cl. 7.1 for this designation: 113.400 - 0.3 = 113.100."""
+    d = derive_shaft(ShaftParams(**parse_designation("W 120x3x38x8f")._asdict()))
+    assert d.root_d == 113.4
+    assert ("hobbed: root_d - 0.1*m = 113.100 mm.") in d.warnings[2]
+    assert sum("hobbed" in w for w in d.warnings) == 1
+
+
+def test_the_root_diameter_field_says_it_is_the_theoretical_broaching_root() -> None:
+    description = ShaftDimensions.model_fields["root_d"].description or ""
+    assert "broaching" in description
+    assert "cl. 7.1" in description

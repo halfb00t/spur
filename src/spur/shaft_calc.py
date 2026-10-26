@@ -49,6 +49,16 @@ ODD_Z_UNCONFIRMED = (
 )
 
 
+HOBBED_ROOT_DROP = 0.1  # x m: DIN 5480-1 cl. 7.1, a hobbed root is the theoretical root less this
+
+
+def hobbed_root_warning(root_d: float, module: float) -> str:
+    """The root_d sentence, with the hobbed value from the same rounded root_d it sits beside."""
+    hobbed = round(root_d - HOBBED_ROOT_DROP * module, 3)
+    return (f"The root diameter is the theoretical (broaching) root. A hobbed shaft's root is "
+            f"0.1*m smaller (DIN 5480-1 cl. 7.1): hobbed: root_d - 0.1*m = {hobbed:.3f} mm.")
+
+
 class PinReading(NamedTuple):
     """A pin and its measurement over pins, or None for what cannot be said honestly."""
 
@@ -78,7 +88,9 @@ class ShaftDimensions(BaseModel):
                            json_schema_extra={"unit": "mm"})
     tip_d: float = Field(description="Tip (outside) diameter.",
                          json_schema_extra={"unit": "mm"})
-    root_d: float = Field(description="Root diameter.",
+    root_d: float = Field(description="Theoretical (broaching) root diameter, h_fP = 0.55*m, "
+                                      "per DIN 5480-1 cl. 7.1. A hobbed shaft's root is 0.1*m "
+                                      "smaller (the warnings give it).",
                           json_schema_extra={"unit": "mm"})
     nominal_thickness: float = Field(
         description="Nominal tooth thickness, as an arc on the reference circle.",
@@ -167,17 +179,19 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
     xm = x * p.module
     pin = round(din5480.theoretical_pin_diameter(p.module, p.teeth, xm), PIN_DECIMALS)
     reading = pin_measurement(p, pin)
+    root_d = r3(din5480.root_diameter(p.module, p.teeth, xm, din5480.H_FP))
     return ShaftDimensions(
         reference_d=p.reference_d,
         profile_shift=r3(x),
         profile_shift_mm=r3(xm),
         pitch_d=r3(p.module * p.teeth),
         tip_d=r3(din5480.tip_diameter(p.reference_d, p.module)),
-        root_d=r3(din5480.root_diameter(p.module, p.teeth, xm, din5480.H_FP)),
+        root_d=root_d,
         nominal_thickness=r3(din5480.tooth_thickness(p.module, xm)),
         form_d=None,
         pin_d=reading.pin_d,
         measure_over_pins=None if reading.measure is None else r3(reading.measure),
         designation=din5480.format_designation(p.reference_d, p.module, p.teeth, p.fit),
-        warnings=(FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, *reading.warnings),
+        warnings=(FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, hobbed_root_warning(root_d, p.module),
+                  *reading.warnings),
     )
