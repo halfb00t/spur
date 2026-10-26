@@ -16,6 +16,7 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
+| must | [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](active/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | pages of DIN 5480 Part 2 or Part 15 become available (before Phase 34 pins fit-dependent numbers) |
 | must | [`gear.unchanged` runs git and the schema probe with no timeout, inside the pre-commit hook](active/2026-10-23-gear-unchanged-has-no-timeout-on-git-or-probe.md) | the hook next stalls, or `scripts/gear_unchanged.py` is next touched |
 | must | [Widening `Part` to the shaft must type `model._build_checked`, `model._write_export` and `records._gear_fields` in the same change](active/2026-10-23-parts-one-line-widening-claim-is-false.md) | Phase 32 widens `Part` |
 | must | [`gear.unchanged` accepts any local `v0.6` tag, including a lightweight or moved one](active/2026-10-23-gear-unchanged-accepts-a-lightweight-or-moved-v0-6-tag.md) | `scripts/gear_unchanged.py` is next touched, or any CI path is found that can see a local tag |
