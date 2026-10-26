@@ -31,14 +31,14 @@ Every fix ships with its test in the same commit. Each new or changed test was r
 **Applied fix:** `check_shaft` prints the shift with `{x:+.4f}` and says "above" or "below" the allowed range. `X_MIN`, `X_MAX` and `X_EPS` are unchanged. The new test has four rows: 25.05 and 24.95 (the ordinary cases) plus 25.001 (upper) and 24.999 with 19 teeth (lower). Each asserts the printed shift is a different number from the edge and that the side is named. Red: 4 failed. Green: 4 passed.
 **Residual:** an overshoot smaller than 0.00005 (for example reference_d 25.00001) still prints as `+0.4500` with the word "above". The side word keeps the message honest. I did not add adaptive precision, to stay inside the brief.
 
-### WR-02: `measure_over_pins` is printed next to a fit designation without saying it ignores the fit
+### WR-02: `measure_over_pins` is printed next to a fit designation but is the nominal-thickness measure, and no warning says so
 
 **Files modified:** `src/spur/shaft_calc.py`, `tests/test_shaft_calc.py`
 **Commit:** f41dada
 **Applied fix:** New `MEASURE_AT_NOMINAL_THICKNESS` warning ("M_Re is the measure at the nominal tooth thickness; it carries no allowance or tolerance for the fit."), emitted whenever `measure_over_pins` is non-null and absent when it is null (the odd-count test pins the absence). It is pinned in `test_the_default_shaft_prints_its_pin_and_measure_over_pins`, and in the default-dimensions test whose warnings tuple had to change. The comment cites the 0.091 mm gap, checked against `tests/test_din5480_anchors.py` (nominal 6.271 against the row's 6.180). Red: 2 failed. Green: all pass. No number changes.
 **Status note:** this is a wording and warning change with no logic branch beyond "measure is not None", so it is not flagged for human verification.
 
-### WR-03: The `root_d` warning names only hobbing
+### WR-03: The `root_d` warning names only hobbing; the copy names more processes
 
 **Files modified:** `src/spur/shaft_calc.py`, `tests/test_shaft_calc.py`
 **Commit:** 43e87f2
@@ -50,7 +50,7 @@ Every fix ships with its test in the same commit. Each new or changed test was r
 **Commit:** f8595ec
 **Applied fix:** `super().__init__(token, message)`, plus `self.message` and `__str__` returning the message, as the review suggested. The existing refusal test now round-trips every refused designation (25 rows) through `pickle`, `copy.copy` and `copy.deepcopy`, asserting the type, the token and the text. Red: 25 failed. Green: all pass. The text a caller sees is unchanged.
 
-### WR-05: `parse_designation` accepts leading zeros in the number tokens but refuses them in the fit
+### WR-05: `parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise
 
 **Files modified:** `src/spur/din5480.py`, `tests/test_din5480.py`
 **Commit:** 8e4abe4
