@@ -21,5 +21,12 @@ A valid standard shaft is turned away. No wrong number is printed: the refusal e
 Revisit when Part 2, or the copy's exception table, gives the z-dependent limits. Then replace the
 constant with a function of the tooth count, citing the clause, and update the `form_diameter` validity comment.
 
+## Evidence from DIN 5480-2 (2026-10-26)
+A scratch comparison with every DIN 5480-2:2006-05 size table found 11 rows that the tool refuses today:
+- All have x above +0.45, from 0.617 to 0.879. None is below -0.05.
+- All have z >= 60, at modules 0.6 to 1.75.
+
+So the standard does print shafts past the cap, all at large tooth counts, as this item predicted. Part 2 lists the rows but not the z-dependent rule behind them, so the trigger has fired only partly. Widening the cap to the listed rows alone would accept those designations and still refuse the rule's other combinations. The rule itself still needs the copy's exception table (Part 1).
+
 <!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
      git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
