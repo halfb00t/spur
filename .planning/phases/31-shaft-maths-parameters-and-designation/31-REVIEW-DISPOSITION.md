@@ -3,6 +3,14 @@ phase: 31
 review: 31-REVIEW.md
 titles: json
 findings:
+  - id: IN-10
+    severity: info
+    disposition: open
+    title: "The null-pin test's docstring still gives the pre-IN-07 reason for withholding `THEORETICAL_PIN`"
+  - id: IN-11
+    severity: info
+    disposition: open
+    title: "`H_FP_HOBBING`'s comment says only the hobbed-root sentence reads it; the `root_d` field description reads it too"
   - id: IN-07
     severity: info
     disposition: fixed
@@ -63,18 +71,20 @@ findings:
     severity: warning
     disposition: fixed
     title: "`parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise"
-open: 0
-total: 15
-recorded: 2026-10-26T13:57:53.668Z
+open: 2
+total: 17
+recorded: 2026-10-26T15:20:24.091Z
 ---
 
 # Phase 31: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-07 | info | fixed | 31-REVIEW-FIX.md |
-| IN-08 | info | fixed | 31-REVIEW-FIX.md |
-| IN-09 | info | fixed | 31-REVIEW-FIX.md |
+| IN-10 | info | open | - |
+| IN-11 | info | open | - |
+| IN-07 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-08 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-09 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | WR-06 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-01 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-02 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
