@@ -6,6 +6,7 @@ instance accessor is deprecated in pydantic 2.11 and `filterwarnings = ["error"]
 """
 
 import math
+import re
 
 import pytest
 from pydantic import ValidationError
@@ -162,3 +163,25 @@ def test_the_shift_range_edges_are_accepted_through_the_epsilon(
     outside = x - edge if edge == X_MAX else edge - x
     assert 0 < outside <= 1e-9
     ShaftParams(reference_d=reference_d, module=module, teeth=teeth)
+
+
+@pytest.mark.parametrize(("reference_d", "teeth", "side", "edge"), [
+    pytest.param(25.05, 18, "above", X_MAX, id="upper-25.05"),
+    pytest.param(25.001, 18, "above", X_MAX, id="upper-25.001-inside-the-rounding-of-the-edge"),
+    pytest.param(24.95, 19, "below", X_MIN, id="lower-24.95"),
+    pytest.param(24.999, 19, "below", X_MIN, id="lower-24.999-inside-the-rounding-of-the-edge"),
+])
+def test_a_refused_shift_is_printed_apart_from_the_edge_it_crossed_and_names_the_side(
+        reference_d: float, teeth: int, side: str, edge: float) -> None:
+    """The default sits on the upper edge, so the form's first 0.05 step off it, or a nudge of
+    0.001, lands just outside it. A shift printed to the same digits as the edge ("+0.450,
+    outside +0.45") tells the user nothing about which way to move."""
+    errors = _errors(reference_d=reference_d, module=1.25, teeth=teeth)
+    assert errors[0]["type"] == "infeasible"
+    ctx = errors[0]["ctx"]
+    assert isinstance(ctx, dict)
+    message = str(ctx["message"])
+    printed = re.search(r"profile shift of ([+-][0-9.]+),", message)
+    assert printed is not None, message
+    assert float(printed.group(1)) != edge
+    assert f"{side} the allowed range {X_MIN:+.2f} to {X_MAX:+.2f}" in message

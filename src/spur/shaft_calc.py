@@ -126,8 +126,12 @@ def check_shaft(p: ShaftParams) -> list[tuple[str, tuple[str, ...]]]:
     """
     x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
     if x < din5480.X_MIN - din5480.X_EPS or x > din5480.X_MAX + din5480.X_EPS:
+        # Four decimals, and the side: the default sits on X_MAX, so a 0.001 mm nudge of
+        # reference_d refuses at +0.4504, and three decimals printed it as "+0.450, outside
+        # +0.45" (31-REVIEW WR-01).
+        side = "above" if x > din5480.X_MAX else "below"
         return [(f"A reference diameter of {p.reference_d:g} mm with module {p.module:g} and "
-                 f"{p.teeth} teeth needs a profile shift of {x:+.3f}, outside the range "
+                 f"{p.teeth} teeth needs a profile shift of {x:+.4f}, {side} the allowed range "
                  f"{din5480.X_MIN:+.2f} to {din5480.X_MAX:+.2f}. Pick another reference "
                  f"diameter, module or tooth count.",
                  ("module", "reference_d", "teeth"))]
