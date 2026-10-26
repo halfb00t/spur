@@ -185,10 +185,13 @@ def form_diameter(m: float, z: int, xm: float, h_fp: float, rho_fp: float) -> fl
 # caps the input of every regex below.
 DESIGNATION_MAX_LENGTH = 64
 
-# No leading zero, as the fit's FIT_PATTERN has none: one spelling per shaft, so a link or a
-# cache key built from the designation text cannot see 25 and 0025 as two shafts. A lone 0
-# integer part stays, because the module may be 0.5 (ShaftParams' lower bound). Trailing
-# zeros after the point are read as the same number.
+# No leading zero, as the fit's FIT_PATTERN has none, so no numeric token has two integer-part
+# spellings (25 and 0025). That is not one spelling per shaft: trailing zeros after the point,
+# `,` for the decimal mark, an upper-case X and a missing space after W are accepted too (see
+# parse_designation). The canonical form is format_designation's output; a link or a cache
+# key must be built from format_designation(*parse_designation(text)), never from the input
+# text. A lone 0 integer part stays, because the module may be 0.5 (ShaftParams' lower
+# bound).
 _NUMBER = r"(?:0|[1-9][0-9]*)(?:[.,][0-9]+)?"
 _TEETH = r"[1-9][0-9]*"
 
