@@ -9,11 +9,11 @@ findings:
     title: "The refusal message contradicts itself near the range edges"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`measure_over_pins` is printed next to a fit designation but is the nominal-thickness measure, and no warning says so"
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The `root_d` warning names only hobbing; the copy names more processes"
   - id: WR-04
     severity: warning
@@ -21,7 +21,7 @@ findings:
     title: "`DesignationError` cannot be pickled, copied or re-raised across a process boundary"
   - id: WR-05
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise"
   - id: IN-01
     severity: info
@@ -43,9 +43,9 @@ findings:
     severity: info
     disposition: open
     title: "The default shaft sits on the range edge, and `shaft_params` imports the gear's private helpers"
-open: 8
+open: 5
 total: 10
-recorded: 2026-10-26T09:55:31.583Z
+recorded: 2026-10-26T09:56:27.316Z
 ---
 
 # Phase 31: Code Review Disposition
@@ -53,10 +53,10 @@ recorded: 2026-10-26T09:55:31.583Z
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
 | WR-01 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-02 | warning | open | - |
-| WR-03 | warning | open | - |
+| WR-02 | warning | fixed | 31-REVIEW-FIX.md |
+| WR-03 | warning | fixed | 31-REVIEW-FIX.md |
 | WR-04 | warning | fixed | 31-REVIEW-FIX.md |
-| WR-05 | warning | open | - |
+| WR-05 | warning | fixed | 31-REVIEW-FIX.md |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
 | IN-03 | info | open | - |
