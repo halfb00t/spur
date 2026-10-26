@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap
+Resolved in: 45b6565 test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap (gsd/phase-31-shaft-maths-parameters-and-designation)
 Date: 2026-10-26
 Source: Phase 31 plan 31-05, the D-06 checkpoint. The human read an unofficial English translation of DIN 5480-1:2006-03 and found that Part 1 holds no basic-dimension size tables, so the plan's anchor minimum (two basic-dimension rows, W30x2x14 ideally) could not be met. The human decided: partial pass, plus this item.
 Related files:

@@ -43,7 +43,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
-| [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap |
+| [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | 45b6565 test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap |
 | [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | `6497c28` — see the file's own `Resolved in:` field |
 | [Phase 19 code review: the root_fillet label finding is still deferred](resolved/2026-10-09-phase-19-review-info-findings-deferred.md) | `61154d1` — see the file's own `Resolved in:` field |
 | [A link with an invalid enum value loads a blank select and builds the default part](resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | `cb93d4e` — see the file's own `Resolved in:` field |
