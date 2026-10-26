@@ -5,7 +5,7 @@ titles: json
 findings:
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The refusal message contradicts itself near the range edges"
   - id: WR-02
     severity: warning
@@ -17,7 +17,7 @@ findings:
     title: "The `root_d` warning names only hobbing; the copy names more processes"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "`DesignationError` cannot be pickled, copied or re-raised across a process boundary"
   - id: WR-05
     severity: warning
@@ -43,19 +43,19 @@ findings:
     severity: info
     disposition: open
     title: "The default shaft sits on the range edge, and `shaft_params` imports the gear's private helpers"
-open: 10
+open: 8
 total: 10
-recorded: 2026-10-26T07:29:17.122Z
+recorded: 2026-10-26T09:55:31.583Z
 ---
 
 # Phase 31: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-01 | warning | open | - |
+| WR-01 | warning | fixed | 31-REVIEW-FIX.md |
 | WR-02 | warning | open | - |
 | WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
+| WR-04 | warning | fixed | 31-REVIEW-FIX.md |
 | WR-05 | warning | open | - |
 | IN-01 | info | open | - |
 | IN-02 | info | open | - |
