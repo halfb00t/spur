@@ -3,6 +3,18 @@ phase: 31
 review: 31-REVIEW.md
 titles: json
 findings:
+  - id: IN-07
+    severity: info
+    disposition: open
+    title: "`THEORETICAL_PIN` still says \"M_Re is for this pin\" for an odd tooth count, where no M_Re is printed"
+  - id: IN-08
+    severity: info
+    disposition: open
+    title: "The `module` branch of `_exact` has no test, and the hobbed-root test indexes `warnings[2]`"
+  - id: IN-09
+    severity: info
+    disposition: open
+    title: "`H_FP_HOBBING` is a second hand-copied 0.60, outside the constants block"
   - id: WR-06
     severity: warning
     disposition: fixed
@@ -51,22 +63,25 @@ findings:
     severity: warning
     disposition: fixed
     title: "`parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise"
-open: 0
-total: 12
-recorded: 2026-10-26T11:12:40.479Z
+open: 3
+total: 15
+recorded: 2026-10-26T12:23:28.195Z
 ---
 
 # Phase 31: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-06 | warning | fixed | 31-REVIEW-FIX.md |
-| IN-01 | info | fixed | 31-REVIEW-FIX.md |
-| IN-02 | info | fixed | 31-REVIEW-FIX.md |
-| IN-03 | info | fixed | 31-REVIEW-FIX.md |
-| IN-04 | info | fixed | 31-REVIEW-FIX.md |
-| IN-05 | info | fixed | 31-REVIEW-FIX.md |
-| IN-06 | info | fixed | 31-REVIEW-FIX.md |
+| IN-07 | info | open | - |
+| IN-08 | info | open | - |
+| IN-09 | info | open | - |
+| WR-06 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-01 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-02 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-03 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-04 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-05 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
+| IN-06 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | WR-01 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | WR-02 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | WR-03 | warning | fixed | 31-REVIEW-FIX.md (not in the current review) |
