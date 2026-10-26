@@ -3183,17 +3183,17 @@ rest is marked, nulled or filed, so Phase 32 can build the solid on maths whose 
 - W 26x1.25x19, an odd tooth count;
 - W 30x2x14 and W 30x2x13, the shift range's two edges at -0.05 and +0.45. W 30x2x13 is also an odd tooth count.
 
-Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each value assertion was seen red once against a break that reaches it alone (eight `31-part2-red-*.log` runs, `bench/RESULTS.md` `### Seen red once (Phase 31)`).
+Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each value assertion was seen red once as the first failure of its test (eight `31-part2-red-*.log` runs, `bench/RESULTS.md` `### Seen red once (Phase 31)`).
 
-A scratch comparison read 706 nominal and 700 inspection rows from the Part 2 size tables. Its text parser misses a few rows at page breaks, so those rows are unchecked. On the rows it read, the tool agrees to the printed digit:
-- x*m, s1, da1 and df1 on 705 of 706 nominal rows. The one other row is internally inconsistent in the copy.
-- M1 at the tabulated pin and nominal thickness on 492 of 492 even-count and 208 of 208 odd-count rows.
+A scratch comparison read 720 nominal and 721 inspection rows from the Part 2 size tables. That is every printed row: the two tables' rows pair up, except one row that Table 12 prints twice (as d_B 20, where Table 13 has d_B 19), a duplicate in the copy itself. On those rows the tool agrees to the printed digit:
+- x*m, s1, da1 and df1 on 719 of 720 nominal rows. The one other row is internally inconsistent in the copy.
+- M1 at the tabulated pin and nominal thickness on 510 of 510 even-count and 211 of 211 odd-count rows.
 
 The anchor debt item is resolved (`docs/tech_debt/resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md`). REQ-shaft-basic-dims closes with Phase 31's re-verification. The odd-count M_Re stays null by the human's choice (`docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md`), and `ODD_Z_UNCONFIRMED` now says "not given ... yet" instead of waiting for a row. No existing sentence of this entry is edited.
 
 **Amendment (2026-10-26, DIN 5480-2 anchors: the guard and the shift range).** The guard section's premise is weaker than written.
 - Part 2 prints d_Ff1 only as a maximum.
-- The internal construction exceeds that maximum on 470 of 705 rows at h_fP 0.55, by up to 0.174*m.
+- The internal construction exceeds that maximum on 483 of 719 rows at h_fP 0.55, by up to 0.174*m.
 - The guard margin is 0.1*m. It was sized from observed gaps of at most 0.067*m (0.202 mm at m 3).
 
 This is filed for Phase 34 as `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.

@@ -34,14 +34,14 @@ each value by name (nothing else of the copy enters the repo):
 - then remove the odd-z gate and the unproven-form warning only if the rows agree to the last printed digit.
 
 ## Resolution
-On 2026-10-26 the human supplied DIN 5480-2:2006-05 and approved four rows by name. They are W 25x1.25x18, W 26x1.25x19 (odd), W 30x2x14 (shift -0.05) and W 30x2x13 (shift +0.45, also odd), from Tables 12/13 and 18/19. Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each value assertion was seen red once against a break that reaches it alone (`investigation/31-part2-red-*.log`, eight runs). A scratch comparison read 706 nominal and 700 inspection rows from the Part 2 size tables. Its text parser misses a few rows at page breaks, so those rows are unchecked. On the rows it read, the tool agrees to the printed digit:
-- x*m, s1, da1 and df1 on 705 of 706 rows. The one other row is internally inconsistent in the copy: its M1 fits its d_B, while its nominal columns fit another d_B.
-- M1 at the tabulated pin on 492 of 492 even-count rows and 208 of 208 odd-count rows.
+On 2026-10-26 the human supplied DIN 5480-2:2006-05 and approved four rows by name. They are W 25x1.25x18, W 26x1.25x19 (odd), W 30x2x14 (shift -0.05) and W 30x2x13 (shift +0.45, also odd), from Tables 12/13 and 18/19. Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each value assertion was seen red once as the first failure of its test (`investigation/31-part2-red-*.log`, eight runs). A scratch comparison read 720 nominal and 721 inspection rows from the Part 2 size tables. That is every printed row: the two tables' rows pair up, except one row that Table 12 prints twice (as d_B 20, where Table 13 has d_B 19), a duplicate in the copy itself. On those rows the tool agrees to the printed digit:
+- x*m, s1, da1 and df1 on 719 of 720 rows. The one other row is internally inconsistent in the copy: its M1 fits its d_B, while its nominal columns fit another d_B.
+- M1 at the tabulated pin on 510 of 510 even-count rows and 211 of 211 odd-count rows.
 
 Where each bullet of the next step went:
 - Anchor rows: done (above).
 - Odd-z gate: kept by the human's choice; the change is `docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md`.
-- d_Ff: Part 2 prints only a maximum, so `form_d` stays null. The internal construction sits above that maximum on 470 rows: `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
+- d_Ff: Part 2 prints only a maximum, so `form_d` stays null. The internal construction sits above that maximum on 483 rows: `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
 - D_Re / M_Re clause source (Part 15, 5.2.4.3): still unread. It stays as the `measure_over_pins` ASSUMPTION marker. Part 2 tabulates the pin D_M per row, which is Phase 34's tabulated pin.
 - Gauge series: Part 2 tabulates D_M per row; `PIN_DECIMALS` keeps its marker until Phase 34 takes the tabulated pin.
 - REQ-shaft-basic-dims closes with Phase 31's re-verification after this commit.

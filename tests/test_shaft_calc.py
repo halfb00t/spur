@@ -1,10 +1,11 @@
 """The shaft's derived numbers: the default shaft end to end through `derive_shaft`.
 
 Mirrors tests/test_calc.py. The tip, root, shift and thickness formulas cite their DIN 5480-1
-clauses in din5480.py, and the three values the 31-05 checkpoint approved are pinned in
-tests/test_din5480_anchors.py. Still unconfirmed against the standard are the pin diameter
-D_Re, the measurement over pins M_Re (its own clause is not in Part 1) and the form
-diameter d_Ff, so those numbers here pin what the code does, not what the standard says.
+clauses in din5480.py. The approved anchors (one DIN 5480-1 row, four DIN 5480-2 rows) are
+pinned in tests/test_din5480_anchors.py, where M1 agrees at the standard's tabulated pin.
+The printed pin D_Re is the tool's theoretical pin, not that tabulated one, and the form
+diameter d_Ff has no construction in the standard, so the pin and M_Re numbers here pin what
+the code does, not a table value.
 """
 
 import re

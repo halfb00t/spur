@@ -11,10 +11,10 @@ Related files:
 - docs/architecture/decision_log.md (L47, **The guard**)
 
 ## Context
-`din5480.form_diameter` is the pin-contact guard's internal lower bound. It is never printed: `form_d` is null for every shaft. L47 states that it stays at or below the standard's form-diameter maximum, but that was checked on one Part 1 row only. Against the 705 Part 2 nominal rows whose own columns agree with each other:
-- At h_fP 0.55 and rho_fP 0.16, the construction exceeds the printed d_Ff1 maximum by more than the printed half unit on 470 rows.
-- At h_fP 0.60 (hobbing), it does so on 33 rows.
-- (construction - maximum)/m runs from -0.031 to +0.174, median +0.018. The largest gaps are at small tooth counts.
+`din5480.form_diameter` is the pin-contact guard's internal lower bound. It is never printed: `form_d` is null for every shaft. L47 states that it stays at or below the standard's form-diameter maximum, but that was checked on one Part 1 row only. Against the 719 Part 2 nominal rows whose own columns agree with each other:
+- At h_fP 0.55 and rho_fP 0.16, the construction exceeds the printed d_Ff1 maximum by more than the printed half unit on 483 rows.
+- At h_fP 0.60 (hobbing), it does so on 44 rows.
+- (construction - maximum)/m runs from -0.031 to +0.174, median +0.019. The largest gaps are at small tooth counts.
 
 L47's guard margin was sized from two gaps of at most 0.202 mm at m 3 (0.067*m). The new largest gap is 0.174*m.
 

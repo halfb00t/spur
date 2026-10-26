@@ -101,4 +101,4 @@ Filled by the planner per task; requirement-to-test mapping from `31-RESEARCH.md
 | Resolved | 1 |
 | Escalated | 0 |
 
-The escalated copy-anchor gap is resolved: `pytest tests/test_din5480_anchors.py -x` gives 11 passed, and each new value assertion was seen red once against a break that reaches it alone (`investigation/31-part2-red-*.log`, eight runs; 31-REVIEW WR-08).
+The escalated copy-anchor gap is resolved: `pytest tests/test_din5480_anchors.py -x` gives 11 passed, and each new value assertion was seen red once as the first failure of its test (`investigation/31-part2-red-*.log`, eight runs; 31-REVIEW WR-08).
