@@ -1,18 +1,20 @@
+head: 2782b24 (clean src and tests before the break); PYTHONDONTWRITEBYTECODE=1, __pycache__ purged, -p no:cacheprovider
 mutation in src/spur/din5480.py: 'return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)' -> 'return math.pi * m / 2 + 2 * xm * math.sin(ALPHA)'
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 2.526 == 2.613 ± 5.0e-04
+tests/test_din5480_anchors.py:112: assert 2.526 == 2.613 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 2.401 == 2.469 ± 5.0e-04
+tests/test_din5480_anchors.py:112: assert 2.401 == 2.469 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 3.042 == 3.026 ± 5.0e-04
+tests/test_din5480_anchors.py:112: assert 3.042 == 3.026 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:112: assert 4.042 == 4.181 ± 5.0e-04
+tests/test_din5480_anchors.py:112: assert 4.042 == 4.181 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 27.93155455798262 == 28.05 ± 5.0e-04
+tests/test_din5480_anchors.py:134: assert 27.93155455798262 == 28.05 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 28.932400025686004 == 29.026 ± 5.0e-04
+tests/test_din5480_anchors.py:134: assert 28.932400025686004 == 29.026 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 34.166341698174875 == 34.144 ± 5.0e-04
+tests/test_din5480_anchors.py:134: assert 34.166341698174875 == 34.144 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:134: assert 35.8101655101007 == 35.984 ± 5.0e-04
+tests/test_din5480_anchors.py:134: assert 35.8101655101007 == 35.984 ± 5.0e-04
 8 failed, 3 deselected in 0.05s
+reverted: git checkout -- src/spur/din5480.py; git status --porcelain -- src tests: []

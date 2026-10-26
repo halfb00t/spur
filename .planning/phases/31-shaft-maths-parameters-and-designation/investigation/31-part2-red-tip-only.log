@@ -1,10 +1,12 @@
+head: 2782b24 (clean src and tests before the break); PYTHONDONTWRITEBYTECODE=1, __pycache__ purged, -p no:cacheprovider
 mutation in src/spur/din5480.py: '    return reference_d - TIP_DIAMETER_OFFSET * m' -> '    return reference_d - 0.21 * m'
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:113: assert 24.738 == 24.75 ± 0.005
+tests/test_din5480_anchors.py:113: assert 24.738 == 24.75 ± 0.005
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:113: assert 25.738 == 25.75 ± 0.005
+tests/test_din5480_anchors.py:113: assert 25.738 == 25.75 ± 0.005
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:113: assert 29.58 == 29.6 ± 0.005
+tests/test_din5480_anchors.py:113: assert 29.58 == 29.6 ± 0.005
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:113: assert 29.58 == 29.6 ± 0.005
-4 failed, 4 passed, 3 deselected in 0.09s
+tests/test_din5480_anchors.py:113: assert 29.58 == 29.6 ± 0.005
+4 failed, 4 passed, 3 deselected in 0.08s
+reverted: git checkout -- src/spur/din5480.py; git status --porcelain -- src tests: []

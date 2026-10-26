@@ -1,10 +1,12 @@
+head: 2782b24 (clean src and tests before the break); PYTHONDONTWRITEBYTECODE=1, __pycache__ purged, -p no:cacheprovider
 mutation in src/spur/shaft_calc.py: '        profile_shift_mm=r3(xm),' -> '        profile_shift_mm=r3(xm + 0.001),'
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:111: assert 0.564 == 0.5625 ± 5.0e-04
+tests/test_din5480_anchors.py:111: assert 0.564 == 0.5625 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:111: assert 0.439 == 0.4375 ± 5.0e-04
+tests/test_din5480_anchors.py:111: assert 0.439 == 0.4375 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:111: assert -0.099 == -0.1 ± 5.0e-04
+tests/test_din5480_anchors.py:111: assert -0.099 == -0.1 ± 5.0e-04
       comparison failed
-/Users/half/git/halfb00t/spur/tests/test_din5480_anchors.py:111: assert 0.901 == 0.9 ± 5.0e-04
-4 failed, 4 passed, 3 deselected in 0.09s
+tests/test_din5480_anchors.py:111: assert 0.901 == 0.9 ± 5.0e-04
+4 failed, 4 passed, 3 deselected in 0.08s
+reverted: git checkout -- src/spur/shaft_calc.py; git status --porcelain -- src tests: []
