@@ -255,6 +255,24 @@ def test_the_hobbed_root_of_w_120x3x38x8f_is_113_100_below_root_d_113_400() -> N
     assert sum("hobbed" in w for w in d.warnings) == 1
 
 
+def test_the_root_warning_prints_the_factor_the_value_is_computed_from(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """One factor feeds both the number and the words beside it, so they cannot disagree
+    (31-REVIEW IN-04). A drop of 0.2*m takes the default 22.250 to 22.000."""
+    monkeypatch.setattr(shaft_calc, "HOBBED_ROOT_DROP", 0.2)
+    warning = derive_shaft(ShaftParams()).warnings[2]
+    assert warning.count("0.2*m") == 2
+    assert "0.1" not in warning
+    assert "= 22.000 mm" in warning
+
+
+def test_the_hobbed_root_drop_is_twice_the_gap_between_the_hobbing_and_broaching_depths() -> None:
+    """h_fP is a radial depth and root_d a diameter: 2 * (0.60 - 0.55) = 0.1 times m."""
+    assert shaft_calc.HOBBED_ROOT_DROP == 0.1
+    assert f"{shaft_calc.HOBBED_ROOT_DROP}*m" in (
+        ShaftDimensions.model_fields["root_d"].description or "")
+
+
 def test_the_root_diameter_field_says_it_is_the_theoretical_broaching_root() -> None:
     description = ShaftDimensions.model_fields["root_d"].description or ""
     assert "broaching" in description
