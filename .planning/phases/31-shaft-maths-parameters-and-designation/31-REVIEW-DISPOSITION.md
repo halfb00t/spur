@@ -3,14 +3,58 @@ phase: 31
 review: 31-REVIEW.md
 titles: json
 findings:
+  - id: WR-07
+    severity: warning
+    disposition: fixed
+    title: "Two of the four approved rows have an odd tooth count, but every new text says one"
+  - id: WR-08
+    severity: warning
+    disposition: fixed
+    title: "\"Each assertion was seen red once\" is false for da1, for the odd-row null, and for the oracle cross-check"
+  - id: WR-09
+    severity: warning
+    disposition: fixed
+    title: "The amendment quotes the guard margin as 0.067*m; the margin is 0.1*m"
+  - id: WR-10
+    severity: warning
+    disposition: fixed
+    title: "The published `measure_over_pins` description still says an odd count is \"unconfirmed\""
+  - id: WR-11
+    severity: warning
+    disposition: fixed
+    title: "The printed pin sentence says the pin \"has not been compared with a tabulated D_Re\"; this diff compares it, and it differs for the default shaft"
   - id: IN-10
     severity: info
-    disposition: open
+    disposition: fixed
     title: "The null-pin test's docstring still gives the pre-IN-07 reason for withholding `THEORETICAL_PIN`"
   - id: IN-11
     severity: info
-    disposition: open
+    disposition: fixed
     title: "`H_FP_HOBBING`'s comment says only the hobbed-root sentence reads it; the `root_d` field description reads it too"
+  - id: IN-12
+    severity: info
+    disposition: fixed
+    title: "The basic-dimensions docstring claims more about the shift range than the test proves"
+  - id: IN-13
+    severity: info
+    disposition: fixed
+    title: "706 nominal rows but 700 M1 rows, and the amendment says \"all\""
+  - id: IN-14
+    severity: info
+    disposition: fixed
+    title: "The anchor module docstring's first paragraph is now stale, and `tables` is never read"
+  - id: IN-15
+    severity: info
+    disposition: fixed
+    title: "The L47 amendment spans five paragraphs, and one of them opens like an original section"
+  - id: IN-16
+    severity: info
+    disposition: fixed
+    title: "Resolving the anchor item drops the gauge-series bullet and leaves REQ-shaft-basic-dims \"can close\" untracked"
+  - id: IN-17
+    severity: info
+    disposition: fixed
+    title: "The code that the new form-diameter debt item is about does not point to it"
   - id: IN-07
     severity: info
     disposition: fixed
@@ -71,17 +115,28 @@ findings:
     severity: warning
     disposition: fixed
     title: "`parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise"
-open: 2
-total: 17
-recorded: 2026-10-26T15:20:24.091Z
+open: 0
+total: 28
+recorded: 2026-10-26T16:12:48.921Z
 ---
 
 # Phase 31: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| IN-10 | info | open | - |
-| IN-11 | info | open | - |
+| WR-07 | warning | fixed | 31-REVIEW-FIX.md |
+| WR-08 | warning | fixed | 31-REVIEW-FIX.md |
+| WR-09 | warning | fixed | 31-REVIEW-FIX.md |
+| WR-10 | warning | fixed | 31-REVIEW-FIX.md |
+| WR-11 | warning | fixed | 31-REVIEW-FIX.md |
+| IN-10 | info | fixed | 31-REVIEW-FIX.md |
+| IN-11 | info | fixed | 31-REVIEW-FIX.md |
+| IN-12 | info | fixed | 31-REVIEW-FIX.md |
+| IN-13 | info | fixed | 31-REVIEW-FIX.md |
+| IN-14 | info | fixed | 31-REVIEW-FIX.md |
+| IN-15 | info | fixed | 31-REVIEW-FIX.md |
+| IN-16 | info | fixed | 31-REVIEW-FIX.md |
+| IN-17 | info | fixed | 31-REVIEW-FIX.md |
 | IN-07 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-08 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
 | IN-09 | info | fixed | 31-REVIEW-FIX.md (not in the current review) |
