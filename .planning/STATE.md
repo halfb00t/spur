@@ -560,8 +560,8 @@ None yet.
 - ⚠️ [Phase 31] Closed 5/5 with one override (accepted_by "Andrew S", entered by the agent on the human's instruction): one copy
   anchor row only (W 120x3x38x8f); REQ-shaft-basic-dims Pending; `must` debt `2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing`
   waits for DIN 5480 Part 2/15 pages. Odd-z M_Re and d_Ff stay `null`. Also `must`: shift cap 0.45 narrower than the copy's exceptions.
-- ℹ️ [Phase 31] Code review `31-REVIEW-DISPOSITION.md`: WR-01..WR-05 fixed (`d523089`..`8e4abe4`, `make verify` 2368 passed);
-  IN-01..IN-05 open. Residual: an overshoot under 0.00005 still prints `+0.4500` (with "above").
+- ℹ️ [Phase 31] Code review `31-REVIEW-DISPOSITION.md`: all 12 findings fixed (WR-01..WR-06, IN-01..IN-06; last fix `36ec101`,
+  `make verify` 2378 passed, `gear.unchanged` byte-equal to v0.6).
 - ⚠️ [Phase 30] Code review `30-REVIEW-DISPOSITION.md`: 3 deferred to `must` debt (WR-01 no timeout on git/probe in
   `gear.unchanged`; WR-03 `parts.py` "one-line widening" is false — Phase 31 must type `_build_checked`, `_write_export`,
   `_gear_fields` when it widens `Part`; IN-02 a lightweight/moved local `v0.6` tag self-compares), 4 open (WR-02, IN-01,
