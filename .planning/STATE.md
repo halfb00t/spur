@@ -4,12 +4,11 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 32
 current_phase_name: The Shaft Solid
-status: planning
+status: "Phase 31 shipped — PR #51"
 stopped_at: Phase 31 complete, ready to plan Phase 32
-last_updated: "2026-10-26T15:26:19.128Z"
+last_updated: "2026-10-26T15:37:33.122Z"
 last_activity: 2026-10-26
-last_activity_desc: Phase 31 complete, transitioned to Phase 32
-state_head: c7b0add2ce6528a81f197c14de5e49be834bd1ec
+state_head: 1d24bb2f0eef9122b903a84112f4a1cbf3faa54a
 progress:
   total_phases: 5
   completed_phases: 8
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 32 — The Shaft Solid
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-26 — Phase 31 complete, transitioned to Phase 32
+Status: Phase 31 shipped — PR #51
+Last activity: 2026-10-26
 
 ## Performance Metrics
 
