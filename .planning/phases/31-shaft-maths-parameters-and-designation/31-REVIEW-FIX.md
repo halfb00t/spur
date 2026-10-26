@@ -1,72 +1,80 @@
 ---
 phase: 31-shaft-maths-parameters-and-designation
-fixed_at: 2026-10-26T00:00:00Z
+fixed_at: 2026-10-26T11:11:45Z
 review_path: .planning/phases/31-shaft-maths-parameters-and-designation/31-REVIEW.md
 iteration: 1
-findings_in_scope: 5
-fixed: 5
+findings_in_scope: 7
+fixed: 7
 skipped: 0
 status: all_fixed
 ---
 
 # Phase 31: Code Review Fix Report
 
-**Fixed at:** 2026-10-26
+**Fixed at:** 2026-10-26T11:11:45Z
 **Source review:** .planning/phases/31-shaft-maths-parameters-and-designation/31-REVIEW.md
 **Iteration:** 1
 
 **Summary:**
-- Findings in scope: 5 (WR-01..WR-05; no critical; IN-01..IN-05 out of scope)
-- Fixed: 5
+- Findings in scope: 7 (WR-06, IN-01..IN-06; no critical)
+- Fixed: 7
 - Skipped: 0
 
-Every fix ships with its test in the same commit. Each new or changed test was run against the unfixed code first and failed (red), and passed after the fix. `PYTHONDONTWRITEBYTECODE=1` was set and `__pycache__` purged before each red/green run.
+Behaviour changes (WR-06, IN-03, IN-04, IN-05) ship with their tests in the same commit, and each new or changed test was run against the unfixed code first and failed (red). IN-01, IN-02 and IN-06 are wording or comment only and carry no test. `PYTHONDONTWRITEBYTECODE=1` was set and `__pycache__` purged before the red/green runs.
+
+Verification ran in the main checkout (`workflow.use_worktrees` is false), so the numbers below are reproducible from the tree as it stands.
+
+- `make verify`: exit status 0, final pytest line `2378 passed in 228.23s (0:03:48)`.
+- `make gear.unchanged`: exit status 0, `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+
+T-31-13: no DIN 5480 table value or clause text was added. The only dedendum values in the diff are the committed 0.55 and 0.60. L05: no default changed. Printed numbers did not change (the W 120x3x38x8f hobbed root stays 113.100, the default 22.125), and the `root_d` schema description is byte-equal before and after.
 
 ## Fixed Issues
 
-### WR-01: The refusal message contradicts itself near the range edges
+### WR-06: The shift refusal still contradicts itself for an overshoot under 0.00005, and `{reference_d:g}` hides the nudge
 
 **Files modified:** `src/spur/shaft_calc.py`, `tests/test_shaft_params.py`
-**Commit:** d523089
-**Applied fix:** `check_shaft` prints the shift with `{x:+.4f}` and says "above" or "below" the allowed range. `X_MIN`, `X_MAX` and `X_EPS` are unchanged. The new test has four rows: 25.05 and 24.95 (the ordinary cases) plus 25.001 (upper) and 24.999 with 19 teeth (lower). Each asserts the printed shift is a different number from the edge and that the side is named. Red: 4 failed. Green: 4 passed.
-**Residual:** an overshoot smaller than 0.00005 (for example reference_d 25.00001) still prints as `+0.4500` with the word "above". The side word keeps the message honest. I did not add adaptive precision, to stay inside the brief.
+**Commit:** 8c6a11b
+**Applied fix:** The shift prints at four decimals, and at nine when four would round onto the edge, so any overshoot past the 1e-9 epsilon shows (25.00001 now refuses at +0.450004000). The reference diameter and module print as `:g` unless that is a different number, then as repr (new `_exact` helper), so 25.00001 no longer reads as the default 25. Existing messages are unchanged. `X_MIN`, `X_MAX` and the epsilon are untouched. The test gained rows for `reference_d` 25.0001, 25.00001 and 24.99999 (19 teeth), asserting the printed shift differs from the edge and the printed reference diameter equals the input. Three new rows failed before the fix. Logic fix: requires human verification of the wording.
 
-### WR-02: `measure_over_pins` is printed next to a fit designation but is the nominal-thickness measure, and no warning says so
+### IN-01: Debt items point at stale line numbers
+
+**Files modified:** `docs/tech_debt/active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md`
+**Commit:** 570a791
+**Applied fix:** The Related files cite `din5480.X_MAX` and `shaft_calc.check_shaft` by symbol, with no line numbers. The INDEX row text needed no change and was left alone.
+
+### IN-02: Stale module docstring in `tests/test_shaft_calc.py`
+
+**Files modified:** `tests/test_shaft_calc.py`
+**Commit:** a67b674
+**Applied fix:** The docstring now says the tip, root, shift and thickness formulas cite their clauses in `din5480.py`, points at `tests/test_din5480_anchors.py`, and names what is still unconfirmed: the pin diameter D_Re, M_Re and the form diameter d_Ff.
+
+### IN-03: `THEORETICAL_PIN` makes a claim no seen page supports, and stays when the pin is null
 
 **Files modified:** `src/spur/shaft_calc.py`, `tests/test_shaft_calc.py`
-**Commit:** f41dada
-**Applied fix:** New `MEASURE_AT_NOMINAL_THICKNESS` warning ("M_Re is the measure at the nominal tooth thickness; it carries no allowance or tolerance for the fit."), emitted whenever `measure_over_pins` is non-null and absent when it is null (the odd-count test pins the absence). It is pinned in `test_the_default_shaft_prints_its_pin_and_measure_over_pins`, and in the default-dimensions test whose warnings tuple had to change. The comment cites the 0.091 mm gap, checked against `tests/test_din5480_anchors.py` (nominal 6.271 against the row's 6.180). Red: 2 failed. Green: all pass. No number changes.
-**Status note:** this is a wording and warning change with no logic branch beyond "measure is not None", so it is not flagged for human verification.
+**Commit:** 895c4d6
+**Applied fix:** The sentence now reads "The tool computes this pin; it has not been compared with a tabulated D_Re, and M_Re is for this pin." `derive_shaft` appends it only when `reading.pin_d` is not None. One test pins the wording and one injects a null `PinReading` (the branch is unreachable until Phase 34) and asserts the sentence is absent. Both failed before the fix. Logic fix: requires human verification of the gating.
 
-### WR-03: The `root_d` warning names only hobbing; the copy names more processes
+### IN-04: The 0.1*m drop is written twice and `HOBBED_ROOT_DROP` is not tied to `H_FP`
 
 **Files modified:** `src/spur/shaft_calc.py`, `tests/test_shaft_calc.py`
-**Commit:** 43e87f2
-**Applied fix:** Wording only. The existing hobbed 0.1*m sentence and its computed value are kept. A sentence is appended that says the list is not complete, that the standard names root depths for other processes (DIN 5480-1 cl. 7.1), and that this tool gives none of them. The `root_d` field description says the same. No other dedendum factor or depth appears in code, comments, warnings or tests (T-31-13). A new test pins that the only numbers in the warning are the hobbed 0.1*m and the printed hobbed root. Red: 5 failed. Green: all pass.
+**Commit:** bb00e1a
+**Applied fix:** Added `H_FP_HOBBING = 0.60` (the value already recorded in `din5480.py`) and derived `HOBBED_ROOT_DROP = round(2 * (H_FP_HOBBING - din5480.H_FP), 3)`, which is 0.1. The warning sentence and the `root_d` field description now format the factor from the constant instead of hard-coding it. A test sets the constant to 0.2 and asserts the sentence prints "0.2*m" twice, no "0.1", and 22.000. It failed before the fix.
 
-### WR-04: `DesignationError` cannot be pickled, copied or re-raised across a process boundary
+### IN-05: The default shaft sits on the range edge, and `shaft_params` imports the gear's private helpers
 
-**Files modified:** `src/spur/din5480.py`, `tests/test_din5480.py`
-**Commit:** f8595ec
-**Applied fix:** `super().__init__(token, message)`, plus `self.message` and `__str__` returning the message, as the review suggested. The existing refusal test now round-trips every refused designation (25 rows) through `pickle`, `copy.copy` and `copy.deepcopy`, asserting the type, the token and the text. Red: 25 failed. Green: all pass. The text a caller sees is unchanged.
+**Files modified:** `src/spur/shaft_params.py`, `tests/test_shaft_params.py`
+**Commit:** a839ffb
+**Applied fix:** (a) The `reference_d`, `module` and `teeth` help strings end with "Shifts outside -0.05..+0.45 are refused.", formatted from `X_MIN` and `X_MAX`. A parametrized test over the three fields failed before the fix. (b) A comment marks the import of `_f` and `_extra` from `params.py` as intentional coupling. `src/spur/params.py` was not edited, and `make gear.unchanged` is green.
 
-### WR-05: `parse_designation` accepts leading zeros in the number tokens but refuses them in the fit; its docstring says otherwise
+### IN-06: The leading-zero comment promises "one spelling per shaft", but five other spellings parse
 
-**Files modified:** `src/spur/din5480.py`, `tests/test_din5480.py`
-**Commit:** 8e4abe4
-**Applied fix:** Chose "exactly the canonical form". `_TEETH = [1-9][0-9]*` and `_NUMBER = (?:0|[1-9][0-9]*)(?:[.,][0-9]+)?`. A lone `0` integer part stays valid because ShaftParams allows module 0.5 (`W 3.75x0.5x6x8f` is pinned as accepted). The tooth count `0` is now refused by the parser rather than by the bound check, and the three refusal messages say "without leading zeros". Trailing zeros after the point (`25.0`, `1.250`) remain accepted, and the docstring and a new accepted-variant row say so. Six refused rows were added (leading zeros in reference diameter, module, both before the point, and teeth; zero teeth; the fit's `08f`). Red: 5 failed (the fit row was already green). Green: all pass.
-**Status note:** the review classes this as a rule decision, not a logic bug, and the rule was chosen by the brief. It is reported as fixed.
-
-## Verification
-
-Gates ran in the **main checkout** (`use_worktrees` is false in `.planning/config.json`), not an isolated worktree, so the numbers are reproducible from this tree.
-
-- `make verify`: exit status 0. Ruff "All checks passed!", mypy "Success: no issues found in 65 source files", import contracts, the unfinished-work scan and `gear.unchanged` ran inside it. pytest result line: `======================= 2368 passed in 202.37s (0:03:22) =======================`
-- `make gear.unchanged` (run again alone): exit status 0. `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`
-- No default changed (L05). Each commit also passed the repo's `make verify.fast` pre-commit hook.
+**Files modified:** `src/spur/din5480.py`
+**Commit:** 36ec101
+**Applied fix:** The comment now says leading zeros are refused so no numeric token has two integer-part spellings, lists the other accepted spellings, says the canonical form is `format_designation`'s output, and says a key must be built from `format_designation(*parse_designation(text))`, never from the input text.
 
 ---
 
-_Fixed: 2026-10-26_
+_Fixed: 2026-10-26T11:11:45Z_
 _Fixer: Claude (gsd-code-fixer)_
 _Iteration: 1_
