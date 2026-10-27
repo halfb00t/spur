@@ -7414,6 +7414,17 @@ The uncut reproduction (the debt's finding): the solid of `end_chamfer=0` read a
 - An uncut face is off by the whole chamfer, at least the 0.001 mm resolution, which is 1000 x `TOL` (1e-6), while the honest rows sit 5.9e6 x under it, so one reading separates the cases.
 - The scan costs no measurable time: the heaviest build reads 2.86 s with it in place (T-33-04; 33-09's gate delta carries the whole-gate figure).
 
+### The as-written sweep in the browser (33-03)
+
+Source: `.planning/phases/33-interfaces-and-parity/investigation/33-03-browser.log` (`make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, 3 passed in 29.71s, 2026-10-27, this host). The two new steps sit right after `blank, unknown and accepted tokens`; the golden sweep step is unchanged and still reads `golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets`.
+
+```
+number box tokens: 30 inputs x 91 tokens agree
+as-written sweep: 30 links, 1.18 s
+```
+
+The steps' own timers: `number box tokens` 0.03 s, `as-written sweep` 1.18 s (30 links, B1 of 33-01: 29 gear number fields and the mate box, `#<field>=%2B<default>`), against 1.15 s for the step before them. The two steps add 1.21 s to `test_the_shipped_viewer_in_a_real_browser`, whose call time here is 29.14 s alone (`-n0`, no other test running). Phase 32's figure for the same test, 39.46 s in `### The gate delta (32-06)`'s run (`32-06-verify.log`; 39.22 s in 33-01's baseline), was taken inside the whole `make verify` under 18 xdist workers, so the two are not the same instrument and are not subtracted; 33-09's gate reading carries the whole-gate comparison.
+
 ### Seen red once (Phase 33)
 
 Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.

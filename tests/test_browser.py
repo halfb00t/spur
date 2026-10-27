@@ -68,6 +68,7 @@ from browser_session import (
     stl_triangles,
     sweep,
 )
+from number_box_tokens import TOKENS
 from playwright.sync_api import Page, Route, expect, sync_playwright
 
 # app.js's scheduleUpdate() sends its request 350 ms after the event (`setTimeout(update, 350)`),
@@ -138,6 +139,25 @@ FRAGMENT = "() => location.hash.slice(1)"
 CONTROL_VALUE = "(n) => document.querySelector(`form#params [name=${n}]`).value"
 CONTROL_INDEX = "(n) => document.querySelector(`form#params select[name=${n}]`).selectedIndex"
 CONTROL_OPTIONS = "(n) => document.querySelector(`form#params select[name=${n}]`).options.length"
+
+# Assign every [token, blank] pair to every number input of the page through `.value`, which fires
+# no event and so starts no update, and list the (input, token, read-back) triples whose
+# read-back is not blank exactly when the table says. The kept value is put back (L49).
+NUMBER_BOX_PROBE = """(tokens) => {
+    const inputs = [...document.querySelectorAll('form#params input[type=number], #mate-teeth')];
+    const off = [];
+    for (const input of inputs) {
+        const kept = input.value;
+        for (const [text, blank] of tokens) {
+            input.value = text;
+            if ((input.value === '') !== blank) {
+                off.push([input.name || input.id, text, input.value]);
+            }
+        }
+        input.value = kept;
+    }
+    return JSON.stringify({count: inputs.length, off});
+}"""
 
 
 @pytest.fixture(scope="module")
@@ -2105,6 +2125,84 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                 assert _stl_requests(seen) == stl_before, "the page asked for an STL after it"
                 print("blank, unknown and refused: face_width=8, face_width=9, face_width=5.")
+            with step("number box tokens", no_foreign_key):
+                # D-02: the server rule is Chromium's table (tests/number_box_tokens.py), so
+                # this Chromium re-reads every row on every number input of the page. A row
+                # that moved fails here, at the gate, and not in a user's browser.
+                fragment_before = eval_str(page, FRAGMENT)
+                pairs_before = eval_pairs(page)
+                probe: object = json.loads(
+                    eval_str(page, NUMBER_BOX_PROBE, [[t.text, t.blank] for t in TOKENS])
+                )
+                assert isinstance(probe, dict), f"the probe gave {probe!r}"
+                off, probed = probe["off"], probe["count"]
+                assert not off, (
+                    f"{len(off)} (input, token, read-back) rows differ from the committed table "
+                    f"(tests/number_box_tokens.py), first {off[:3]}: this Chromium no longer "
+                    "matches it. Re-run 33-01's probe and re-decide the rule under D-02."
+                )
+                numbers = [
+                    name for name, prop in properties.items()
+                    if prop.get("type") in ("integer", "number") and "enum" not in prop
+                ]
+                assert probed == len(numbers) + 1, (
+                    f"the probe read {probed} number inputs, the schema has {len(numbers)} "
+                    "number fields and the mate box"
+                )
+                assert eval_str(page, FRAGMENT) == fragment_before, "the probe moved the hash"
+                assert eval_pairs(page) == pairs_before, "the probe left a field changed"
+                print(f"number box tokens: {probed} inputs x {len(TOKENS)} tokens agree")
+
+            with step("as-written sweep", no_foreign_key):
+                # L49, 33-01 choice B1: one `#<field>=%2B<default>` link per number field and
+                # for the mate box. `+<default>` is a number the box blanks and the server could
+                # read, so each must be refused as written, marked on its field (the mate shows
+                # the message with no outline, L44 D-05), and never reach an STL request.
+                stl_before = _stl_requests(seen)
+                tokens_by_field = {
+                    name: str(properties[name]["default"])
+                    for name, prop in properties.items()
+                    if prop.get("type") in ("integer", "number") and "enum" not in prop
+                }
+                tokens_by_field["mate_teeth"] = "30"
+                started = time.perf_counter()
+                for name, default in tokens_by_field.items():
+                    link = f"{name}=%2B{default}"
+                    sent = _follow_link(page, link)
+                    assert _pairs(sent) == [(name, f"+{default}")], f"#{link}: sent {sent!r}"
+                    reading = MATE_VALUE if name == "mate_teeth" else CONTROL_VALUE
+                    held = eval_str(page, reading, name)
+                    assert held == "", f"#{link}: the {name} box reads {held!r}"
+                    status, body = _api_get(server, "/api/info", sent)
+                    assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                    assert isinstance(body, dict), f"/api/info?{sent} is not an object"
+                    detail = body["detail"]
+                    assert [(d["type"], d["loc"]) for d in detail] == [
+                        ("number_as_written", ["query", name])
+                    ], f"#{link}: the 422 is {detail}"
+                    marked, texts = _expected_422(properties, body)
+                    expect(page.locator("#messages .error")).to_have_text(
+                        texts, timeout=BUILD_WAIT_MS
+                    )
+                    if name == "mate_teeth":
+                        assert not marked, f"#{link}: the 422 names {sorted(marked)}"
+                        assert page.locator("label.field.invalid").count() == 0, (
+                            f"#{link}: a field is outlined for the mate box's refusal"
+                        )
+                    else:
+                        assert marked == {_title(properties, name)}, sorted(marked)
+                        expect(page.locator("label.field.invalid .name")).to_have_text(
+                            sorted(marked)
+                        )
+                    assert page.locator("#dl-stl").get_attribute("href") is None, (
+                        f"#{link}: the STL link has an href for a refused link"
+                    )
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _stl_requests(seen) == stl_before, "the sweep asked for an STL"
+                print(
+                    f"as-written sweep: {len(tokens_by_field)} links, "
+                    f"{time.perf_counter() - started:.2f} s"
+                )
             with step("root_fillet label", no_foreign_key):
                 # D-09, D-10: while a hob root is in force the row reads "Hob tip radius used",
                 # else "Root fillet used"; the key is the info document's `root_form_d`, so a
