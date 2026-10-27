@@ -65,6 +65,8 @@ from bench.latency import (
     _fetch,
     _identical_rows,
     _report_markdown,
+    _shaft_identical_rows,
+    _shaft_rows,
 )
 from bench.memory import _CAP_TOLERANCE_FRACTION, _SWEEP_MEM_LIMIT_BYTES, _is_capped
 from bench.trochoid import (
@@ -741,7 +743,8 @@ def test_the_no_argument_latency_run_is_still_concurrent_then_single() -> None:
     (REQ-same-slot-timeout-race-reproduced), which times out and replaces workers by
     design and so stays out of the tuple for the same reason."""
     assert DEFAULT_SCENARIOS == ("concurrent", "single")
-    assert set(_SCENARIOS) == {"concurrent", "single", "composed", "identical"}
+    assert set(_SCENARIOS) == {"concurrent", "single", "composed", "identical",
+                               "shaft", "shaft-identical"}
 
 
 def test_a_503_is_recorded_by_the_reason_the_server_gave() -> None:
@@ -816,6 +819,55 @@ def test_the_identical_scenario_fires_the_worst_composed_row_ten_times() -> None
         DEFAULT_SWEEP.parent / "composed.json")[3][1]
 
 
+def test_the_shaft_scenario_fires_the_heaviest_shaft_first_then_nine_distinct_neighbours() -> None:
+    """D-19: the shaft's contention run (33-09) fires `bench/sweeps/shaft.json` row 5, the
+    heaviest allowed shaft (2.23 s alone, `bench/RESULTS.md` `### The heaviest shaft
+    (32-05)`), first, then nine neighbours that differ from it only in `shank_length`
+    (499 down to 491): ten distinct cache keys, so admission control takes four of
+    them and D-07's hash affinity spreads those over both workers, as the gear's composed
+    run does. `_shaft_rows()` reads the sweep file directly; this is the one place the
+    reading is checked against the sweep and against `ShaftParams`."""
+    sweep = json.loads((DEFAULT_SWEEP.parent / "shaft.json").read_text())
+    heaviest = {k: v for k, v in sweep[5].items() if k != "part"}
+    rows = _shaft_rows()
+    assert len(rows) == 10
+    assert rows[0] == heaviest
+    assert heaviest["reference_d"] == 830
+    assert heaviest["shank_length"] == 500
+    assert [row["shank_length"] for row in rows[1:]] == list(range(499, 490, -1))
+    for row in rows[1:]:
+        assert {k: v for k, v in row.items() if k != "shank_length"} == {
+            k: v for k, v in heaviest.items() if k != "shank_length"}
+    shafts = [ShaftParams.model_validate(row) for row in rows]
+    assert len({p.model_dump_json() for p in shafts}) == 10
+
+
+def test_the_shaft_identical_scenario_fires_the_heaviest_shaft_ten_times() -> None:
+    """The shaft's counterpart of the gear's `identical` scenario: row 5 ten times, one
+    cache key, every admitted copy routed to one worker slot, a 500 recorded rather than
+    raised."""
+    rows = _shaft_identical_rows()
+    assert len(rows) == 10
+    assert all(row == _shaft_rows()[0] for row in rows)
+    assert ShaftParams.model_validate(rows[0]) == load_sweep(
+        DEFAULT_SWEEP.parent / "shaft.json")[5][1]
+
+
+def test_fetch_requests_the_path_it_is_given_and_defaults_to_the_gears() -> None:
+    """`_fetch` and `run_composed` gain a `path` keyword; its default reproduces every
+    gear run, and the shaft scenarios pass `/api/shaft/model.stl`. No network."""
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        return httpx.Response(200, content=b"stl-bytes")
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        _fetch("http://test", client, {"teeth": 20})
+        _fetch("http://test", client, {"teeth": 20}, path="/api/shaft/model.stl")
+    assert seen == ["/api/model.stl", "/api/shaft/model.stl"]
+
+
 def test_the_composed_report_omits_the_single_concurrent_baseline_line() -> None:
     """WR-01: `_report_markdown` is reused for all three scenarios via `_run_scenario`.
     `RECORDED_BASELINE` is the debt file's `single`/`concurrent` numbers (D-17) -- printed
@@ -825,7 +877,7 @@ def test_the_composed_report_omits_the_single_concurrent_baseline_line() -> None
     entirely. Omitted for `name="composed"` and, since Phase 17, `name="identical"`
     (the same composed worst row, ten times); still printed for the two scenarios it
     actually describes."""
-    for name in ("composed", "identical"):
+    for name in ("composed", "identical", "shaft", "shaft-identical"):
         omitted = _report_markdown(name, 0.001, 100, 0.002, 100, 1.0, 10, 0)
         assert RECORDED_BASELINE not in omitted
         assert "Recorded baseline" not in omitted

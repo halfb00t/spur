@@ -179,8 +179,10 @@ class ComposedRun:
 
 
 def _fetch(base_url: str, client: httpx.Client, row: dict[str, int | float | str],
-           record_500: bool = False) -> RequestOutcome:
-    """One `/api/model.stl` request for a composed row, at `quality=fine` like `_build`
+           record_500: bool = False, path: str = "/api/model.stl") -> RequestOutcome:
+    """One `path` request (default `/api/model.stl`, which reproduces every gear run; the
+    shaft scenarios pass `/api/shaft/model.stl`) for a composed row, at `quality=fine`
+    like `_build`
     (timeout 120.0, same as `_build`): `"200"` on success; `"503 " + detail[0]["type"]`
     (`"busy"` | `"timeout"` | `"pool_broken"` -- `src/spur/app.py`'s own three 503
     `type` values) on refusal, read from the documented body; any other status still
@@ -194,7 +196,7 @@ def _fetch(base_url: str, client: httpx.Client, row: dict[str, int | float | str
     (SC3's rule, pinned in `tests/test_bench.py`)."""
     label = " ".join(f"{k}={v}" for k, v in row.items())
     sent = time.monotonic()
-    response = client.get(f"{base_url}/api/model.stl",
+    response = client.get(f"{base_url}{path}",
                            params={**row, "quality": "fine"}, timeout=120.0)
     if response.status_code == 503:
         try:
@@ -225,7 +227,8 @@ def _pool_state(base_url: str, client: httpx.Client) -> tuple[int, int]:
 
 
 def run_composed(base_url: str, rows: list[dict[str, int | float | str]] | None = None,
-                 label: str = "composed", record_500: bool = False) -> ComposedRun:
+                 label: str = "composed", record_500: bool = False,
+                 path: str = "/api/model.stl") -> ComposedRun:
     """SC3 (D-13, D-16): the composed sweep's worst row fired alone first, confirmed
     (via `/api/health`) to be holding a build slot before the other nine heaviest rows
     fire beside it -- ten concurrent builds total, admission control (`MAX_QUEUED_BUILDS`
@@ -236,15 +239,16 @@ def run_composed(base_url: str, rows: list[dict[str, int | float | str]] | None 
     `idle` or `under_load`.
 
     `rows` (default: the ten composed rows) and `label` (the result's name) let the
-    `identical` scenario reuse this firing rule; `record_500` is passed to every
-    `_fetch` (see there). The defaults reproduce SC3's composed run exactly.
+    `identical` scenario reuse this firing rule; `record_500` and `path` are passed to
+    every `_fetch` (see there; the shaft scenarios pass the shaft's route). The defaults
+    reproduce SC3's composed run exactly.
     """
     rows = _composed_rows() if rows is None else rows
     with httpx.Client() as client:
         queue_available_before, workers_replaced_before = _pool_state(base_url, client)
         idle = _sample_for(base_url, client, SETTLE_SECONDS)
         with ThreadPoolExecutor(max_workers=len(rows)) as pool:
-            worst_future = pool.submit(_fetch, base_url, client, rows[0], record_500)
+            worst_future = pool.submit(_fetch, base_url, client, rows[0], record_500, path)
             deadline = time.monotonic() + 10.0
             held = False
             while True:
@@ -263,7 +267,7 @@ def run_composed(base_url: str, rows: list[dict[str, int | float | str]] | None 
                 raise RuntimeError(
                     "the worst composed row never held a build slot within 10s -- "
                     "SC3 needs a fresh server")
-            rest_futures = [pool.submit(_fetch, base_url, client, row, record_500)
+            rest_futures = [pool.submit(_fetch, base_url, client, row, record_500, path)
                             for row in rows[1:]]
             futures = [worst_future, *rest_futures]
             under_load = _sample_while_building(base_url, client, futures)
@@ -324,6 +328,48 @@ def scenario_identical(base_url: str) -> ScenarioResult:
     return run.result
 
 
+# bench/sweeps/shaft.json (Phase 32): row 5 is the heaviest allowed shaft, 2.23 s alone on
+# the macOS host (bench/RESULTS.md "### The heaviest shaft (32-05)"), 13.5x inside the
+# 30 s SPUR_BUILD_TIMEOUT. D-19 measures it under ten concurrent requests the way L37 did
+# for the gear.
+SHAFT_SWEEP = Path(__file__).parent / "sweeps" / "shaft.json"
+SHAFT_HEAVIEST_ROW = 5
+
+
+def _shaft_rows() -> list[dict[str, int | float | str]]:
+    """Ten distinct shafts: sweep row 5 first (`part` dropped -- the route is the part),
+    then the same row at `shank_length` 499 down to 491. Ten cache keys, so admission
+    control (`MAX_QUEUED_BUILDS`, 4) takes four and `hash(p) % workers` spreads them over
+    both workers, as `COMPOSED_ROWS` does for the gear. Read directly as JSON for the
+    reason `_composed_rows` gives; `tests/test_bench.py` checks it against `ShaftParams`."""
+    rows: list[dict[str, int | float | str]] = json.loads(SHAFT_SWEEP.read_text())
+    heaviest = {k: v for k, v in rows[SHAFT_HEAVIEST_ROW].items() if k != "part"}
+    return [heaviest, *({**heaviest, "shank_length": 500 - n} for n in range(1, 10))]
+
+
+def _shaft_identical_rows() -> list[dict[str, int | float | str]]:
+    """Ten copies of the heaviest shaft: one cache key, so every admitted copy goes to one
+    worker slot -- `_identical_rows` for the shaft."""
+    return [_shaft_rows()[0]] * 10
+
+
+def scenario_shaft(base_url: str) -> ScenarioResult:
+    """D-19: the heaviest shaft under ten concurrent requests. Never on a server a bar
+    session will use -- a timed-out request replaces a worker."""
+    run = run_composed(base_url, _shaft_rows(), "shaft", path="/api/shaft/model.stl")
+    print(_composed_markdown(run))
+    return run.result
+
+
+def scenario_shaft_identical(base_url: str) -> ScenarioResult:
+    """The heaviest shaft ten times, recording a 500 instead of raising on it. Never on a
+    server a bar session will use."""
+    run = run_composed(base_url, _shaft_identical_rows(), "shaft-identical",
+                       record_500=True, path="/api/shaft/model.stl")
+    print(_composed_markdown(run))
+    return run.result
+
+
 def scenario_single(base_url: str) -> ScenarioResult:
     """Idle p95, then one 200-tooth fine build in flight -- the scenario that produced
     the recorded 0.22s -> 0.76s -> 2.00s progression."""
@@ -355,6 +401,8 @@ _SCENARIOS: dict[str, Callable[[str], ScenarioResult]] = {
     "concurrent": scenario_concurrent,
     "composed": scenario_composed,
     "identical": scenario_identical,
+    "shaft": scenario_shaft,
+    "shaft-identical": scenario_shaft_identical,
 }
 
 # A fourth registered scenario changes nothing here: the no-argument run reads this
@@ -383,16 +431,17 @@ def _report_markdown(name: str, idle_p95: float, idle_n: int, load_p95: float,
                       refused: int) -> str:
     ratio = load_p95 / idle_p95 if idle_p95 > 0 else float("inf")
     # RECORDED_BASELINE is the debt file's single/concurrent numbers (D-17) -- printing
-    # it under a "composed" or "identical" heading would invite a reader to compare that
-    # ratio against numbers measured for a different scenario entirely. Omit it there.
-    has_bar = name not in ("composed", "identical")
+    # it under a "composed", "identical" or either shaft heading would invite a reader to
+    # compare that ratio against numbers measured for a different scenario entirely.
+    # Omit it there.
+    has_bar = name not in ("composed", "identical", "shaft", "shaft-identical")
     baseline_line = (
         f"- Recorded baseline (different machine, ratio-only comparison per D-17): "
         f"{RECORDED_BASELINE}\n" if has_bar else ""
     )
     # The 2.00x bar is the single/concurrent scenarios' criterion; RESULTS.md reads
-    # neither composed nor identical against it, so printing it beside their ratio
-    # would invite exactly that reading.
+    # none of the composed, identical or shaft scenarios against it, so printing it
+    # beside their ratio would invite exactly that reading.
     bar = " -- pass bar is <= 2.00x" if has_bar else ""
     return (
         f"## Latency: {name}\n\n"
