@@ -7163,6 +7163,64 @@ Rows named by their distinguishing fields; "gear" is the 199-tooth reference row
 
 **D-09 outcome: confirmed, no bound moved.** No shaft row is over 30 s on either host and no shaft row's peak RSS is above the gear's in the same run, so no solid field was re-run at half its `le` and none was lowered. The four solid-field bounds stand at `splined_length` 500, `end_chamfer` 10, `shank_d` 850 and `shank_length` 500, each reached by a row of `bench/sweeps/shaft.json` (`tests/test_bench.py` pins that). The spline bounds (`reference_d`, `module`, `teeth`) were not moved (D-10).
 
+### The gate delta (32-06)
+
+Source logs: `32-06-verify.log` (the whole `/usr/bin/time -p make verify` output) and `32-06-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/32-the-shaft-solid/investigation/`. Every figure below is copied from them, not re-rounded. One reading, taken after the last Phase 32 code, test and bench commit (`git status --porcelain -- src tests bench pyproject.toml Makefile requirements.txt` printed nothing before the run).
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `7a4e108` (the final Phase 32 code and tests; only `.planning/` files and the two logs were untracked or newer) |
+| UTC start -> end | `2026-10-27T11:01:04Z` -> `2026-10-27T11:05:04Z` |
+| 1-minute load before -> after | `5.24` -> `7.66` (`sysctl -n vm.loadavg` printed `{ 5.24 10.70 12.41 }` and `{ 7.66 11.66 12.71 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2644 passed in 233.83s (0:03:53) =======================` |
+| `/usr/bin/time -p` | `real 234.78`, `user 722.96`, `sys 720.61` |
+| Coverage TOTAL line | `TOTAL                         1682     24    450     14  98.22%` (`Required test coverage of 96.0% reached. Total coverage: 98.22%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+The shaft modules' coverage rows, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`):
+
+```
+src/spur/din5480.py            107      0     28      0 100.00%
+src/spur/parts.py                3      0      0      0 100.00%
+src/spur/shaft_calc.py         105      0     16      0 100.00%
+src/spur/shaft_model.py         77      2     16      1  96.77%
+src/spur/shaft_params.py        26      0      2      0 100.00%
+```
+
+`src/spur/din5480_tables.py` reads `0 0 0 0 100.00%` (a docstring). `src/spur/shaft_model.py` is the one shaft module under 100 %: `coverage report -m` over the run's data names lines 179 and 187, the `raise` of `except BuildError: raise` and the `The shaft solid is not one valid solid` raise in `build_shaft`. Both are guards that no passing test reaches; the second was seen red once against a deliberate break (`32-03-red-clean.log`, `### Seen red once (Phase 32)`). Filed as `docs/tech_debt/active/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md` (nice).
+
+#### Against the phase-start baseline (32-01)
+
+Compared with `### The gate baseline (32-01)`, same host, both readings from logs. CONTEXT's `221.86 s` is not used (it appears in no log, as that section records).
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 32 start, `HEAD 7c1bc2c` | `2387 passed` | `251.15 s` | `253.13 s` | 7.96 -> 15.03 | `### The gate baseline (32-01)`, `32-01-verify.log` |
+| This reading: Phase 32 close, `HEAD 7a4e108` | `2644 passed` | `233.83 s` | `234.78 s` | 5.24 -> 7.66 | `32-06-verify.log` |
+
+| This reading minus the baseline | pytest `passed in` | `real` |
+|---|---|---|
+| difference | `-17.32 s` (`-6.90 %`) | `-18.35 s` (`-7.25 %`) |
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 20.09 s of 251.15 s: both differences are inside it, so no speed claim is made in either direction. The two readings were taken at different loads (7.96 to 15.03 for the baseline, 5.24 to 7.66 here), which this plan did not control; the phase added 257 tests and the reading is lower, which says the host's load moved more than the phase's tests did. It is one reading each.
+
+What the phase added to the gate, from each plan's own `make verify` reading in its SUMMARY: 257 tests in all (`2644 passed` against `2387 passed`): 15 in 32-02 (`2402 passed`), 224 in 32-03 (`2626 passed`: 192 flank-angle cases and 32 kernel tests), 12 in 32-04 (`2638 passed`), 6 in 32-05 (`2644 passed`), none in 32-01 (the baseline) and none in this plan.
+
+The plans' own full-gate readings, for the spread they show (each under a load its SUMMARY does not record):
+
+| Plan | Tests | pytest `passed in` | Source |
+|---|---|---|---|
+| 32-01 | `2387 passed` | `251.15 s` | `32-01-SUMMARY.md` |
+| 32-02 | `2402 passed` | `218.58 s` | `32-02-SUMMARY.md` |
+| 32-03 | `2626 passed` | `286.96 s` | `32-03-SUMMARY.md` |
+| 32-04 | `2638 passed` | `358.81 s` | `32-04-SUMMARY.md` |
+| 32-05 | `2644 passed` | `312.50 s` | `32-05-SUMMARY.md` |
+| 32-06 | `2644 passed` | `233.83 s` | this section |
+
+The reading of record is under L43's 300 s bar by 66.17 s (`real 234.78 s`: 65.22 s). Two of the plans' readings, 32-04's `358.81 s` and 32-05's `312.50 s`, are above 300 s, on the same `src` and `tests` that read `233.83 s` here (the last commit touching either is `c8608ba`, before 32-05's reading): the same tests span 218.58 s to 358.81 s across the phase, far wider than Phase 25's 8 %, so the gate's wall time on this host is set by the host's load, not by the code. They are written down here and not trimmed. REQ-gate-cost-recorded stays open and closes at Phase 34's milestone reading, as for Phase 30 and Phase 31.
+
 ### Seen red once (Phase 32)
 
 Each deliberate break is run red once and reverted; the first failure line is copied from the kept log named in the row. Later plans append rows.
