@@ -1,0 +1,31 @@
+.venv/bin/lint-imports
+
+╔══╗─────────▶╔╗ ╔╗      ╔╗◀───┐
+╚╣╠╝◀─────┐  ╔╝╚╗║║────▶╔╝╚╗   │
+ ║║   ╔══╦══╦╩╗╔╝║║  ╔╦═╩╗╔╝╔═╦══╗
+ ║║╔══╣╔╗║╔╗║╔╣║ ║║ ╔╬╣╔╗║║ ║│║╔═╝
+╔╣╠╣║║║╚╝║╚╝║║║╚╗║╚═╝║║║║║╚╗║═╣║
+╚══╩╩╩╣╔═╩══╩╝╚═╝╚═══╩╩╝╚╩═╩╩═╩╝
+  └──▶║║                    ▲ 
+      ╚╝────────────────────┘
+
+
+---------
+Contracts
+---------
+
+Analyzed 47 files, 101 dependencies.
+------------------------------------
+
+The app never imports its own tests KEPT
+The gear maths stays free of the CAD kernel KEPT
+The CLI does not inherit web-serving policy KEPT
+The gear maths stays free of the logger KEPT
+The serving process never imports the CAD kernel KEPT
+The shaft maths stays free of the CAD kernel and the solid KEPT
+The shaft maths stays free of the logger KEPT
+The kernel doorways are model and shaft_model KEPT
+The gear maths does not know the shaft KEPT
+The shaft maths copies the gear maths, never imports it KEPT
+
+Contracts: 10 kept, 0 broken.

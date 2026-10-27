@@ -1,0 +1,18 @@
+head: 2782b24 (clean src and tests before the break); PYTHONDONTWRITEBYTECODE=1, __pycache__ purged, -p no:cacheprovider
+mutation in src/spur/din5480.py: 'ADDENDUM_FACTOR = 0.45' -> 'ADDENDUM_FACTOR = 0.46'
+      comparison failed
+tests/test_din5480_anchors.py:108: assert 0.5499999999999999 == 0.5625 ± 5.0e-05
+      comparison failed
+tests/test_din5480_anchors.py:108: assert 0.42499999999999993 == 0.4375 ± 5.0e-05
+tests/test_din5480_anchors.py:91: pydantic_core._pydantic_core.ValidationError: 1 validation error for ShaftParams
+      comparison failed
+tests/test_din5480_anchors.py:111: assert 0.88 == 0.9 ± 5.0e-04
+      comparison failed
+tests/test_din5480_anchors.py:134: assert 28.03050537156231 == 28.05 ± 5.0e-04
+      comparison failed
+tests/test_din5480_anchors.py:134: assert 29.006101829007694 == 29.026 ± 5.0e-04
+tests/test_din5480_anchors.py:91: pydantic_core._pydantic_core.ValidationError: 1 validation error for ShaftParams
+      comparison failed
+tests/test_din5480_anchors.py:134: assert 35.95486326892734 == 35.984 ± 5.0e-04
+8 failed, 3 deselected in 0.05s
+reverted: git checkout -- src/spur/din5480.py; git status --porcelain -- src tests: []

@@ -1,0 +1,8 @@
+head: 2782b24 (clean src and tests before the break); PYTHONDONTWRITEBYTECODE=1, __pycache__ purged, -p no:cacheprovider
+mutation in src/spur/din5480.py: 'centre_circle *= math.cos(math.pi / (2 * z))' -> 'centre_circle *= 1.0'
+      comparison failed
+tests/test_din5480_anchors.py:134: assert 29.11607782393547 == 29.026 ± 5.0e-04
+      comparison failed
+tests/test_din5480_anchors.py:134: assert 36.21111270470895 == 35.984 ± 5.0e-04
+2 failed, 6 passed, 3 deselected in 0.06s
+reverted: git checkout -- src/spur/din5480.py; git status --porcelain -- src tests: []

@@ -3099,3 +3099,103 @@ published shaft links, which L05 forbids.
 
 Reason: the shaft is a second part type beside the gear, and naming it in the scope before any shaft code exists lets the walls
 and the gear-safety check be built first. No gear link changes, which is L05's standing rule.
+
+## L47 — The DIN 5480 shaft's maths: what Phase 31 froze, proved on one designation, and left null (follows L46; applies L03 and L08)
+
+Date: 2026-10-26
+
+**The frozen field set** (D-01 to D-04, D-18). `ShaftParams` holds eight fields, in this order, with these defaults: `reference_d`
+25.0 mm, `module` 1.25 mm, `teeth` 18, `fit` `"8f"`, `splined_length` 30.0 mm, `end_chamfer` 1.0 mm, `shank_d` 25.0 mm,
+`shank_length` 20.0 mm. The default shaft is W 25x1.25x18x8f. The bounds are provisional: `reference_d` 3 to 850, `module` 0.5 to
+10, `teeth` 6 to 82, and the four solid fields as written in `src/spur/shaft_params.py`. Phase 32 may revise the four solid
+fields' bounds and adds their cross-field rules until Phase 33 publishes a link (D-18). `fit` is one string checked for shape
+only (`FIT_PATTERN`); its name and default never change. `ShaftDimensions` has twelve keys, always present, `None` where a value
+cannot be said honestly.
+
+**The shift** (D-19). One expression order is pinned: `x = (d_B - z*m)/(2*m) - SHIFT_TERM`, with `SHIFT_TERM = 0.45 + 0.2/2`. The
+range is -0.05 to +0.45 with `X_EPS = 1e-9` on both edges, because three standard combinations land a few ulp outside it: (17.6,
+0.8, 20) reads 0.45000000000000084, and (30, 2, 14) and (25, 1.25, 19) read -0.050000000000000044. There are two 0.55 constants
+and they are different quantities: `SHIFT_TERM` (addendum plus half the tip offset) and `H_FP` (the theoretical dedendum); a test
+moves one and not the other (31-RESEARCH Pitfall 1; seen red in 31-01, `bench/RESULTS.md` `### Seen red once (Phase 31)`).
+
+**The checkpoint's result** (D-06, D-07; `31-05-SUMMARY.md` `## Checkpoint result`). The human read DIN 5480-1:2006-03 in an
+unofficial English translation. The shift, tip and addendum, root, and nominal thickness formulas match cl. 6, Table 3; the
+shift range matches cl. 4 and Table 3 for the shaft; the odd-count factor is equivalent to cl. 4, eq. (1); the fit spelling `8f`
+is cl. 8 Example 1 and Table 7. Each is cited in `src/spur/din5480.py` in place of its marker. `h_fP` depends on the production
+process (cl. 6 Table 3, cl. 7.1): 0.55 is the broaching and theoretical root, 0.60 hobbing, and a hobbed root is the theoretical
+root less 0.1*m. `root_d` is the theoretical root and every shaft's warnings give the hobbed root (commit `ac34e6a`); no printed
+number changed, so no constant was edited and no D-09 entry was needed. Three values of W 120x3x38x8f, cl. 9.1, Fig. 6 (an
+example in the standard, not normative), are pinned in `tests/test_din5480_anchors.py`: `d_a1` 119.40, `d_Ff1` maximum 113.91
+(checked as a limit) and `M1` minimum 125.956 at the gauge pin 6.000 and the row's own thickness 6.180 (agreement 0.00004). Each
+was seen red once (`### Seen red once (Phase 31)`, three `31-06` rows).
+
+**Proved on one designation.** Part 1 has no size tables, so the plan's minimum of two basic-dimension anchor rows is not met:
+one basic-dimension row exists. The human accepted a partial pass. The rows for W25x1.25x18, W30x2x14 and an odd tooth count,
+the clause source of D_Re and M_Re (DIN 5480-15, 5.2.4.3, which Part 1 points to and nobody has read) and any gauge series are
+filed in `docs/tech_debt/active/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md` (must). REQ-shaft-basic-dims is not
+marked complete for that reason.
+
+**The pin policy** (D-10, D-11). D_Re is computed: the theoretical pin that touches the flanks on the circle `m*z + 2*x*m`,
+rounded to a 0.01 mm gauge step, and M_Re is recomputed for the printed pin at the nominal thickness. The warning says this is
+not the D_Re DIN 5480 tabulates. The even-count M_Re formula reproduces the copy's `M1`; its own clause is not Part 1.
+
+**The guard** (D-12, D-20). The pin-contact window is the internal form diameter plus `0.1*m` up to the tip diameter minus
+`0.1*m`. The margin is 1.5 times the larger of two observed gaps between a constructed and a published form diameter (0.030 mm
+and 0.202 mm, both at m 3; scaling with m is an assumption). Over 7,392 cases the theoretical pin's contact sits at least
+0.62*m above the internal form diameter and 0.886*m below the tip diameter (`31-03-SUMMARY.md`), so the guard cannot fire from
+`derive_shaft` until Phase 34 replaces the computed pin with the copy's.
+
+**What ships null and why** (L08). `form_d` is null for every shaft: DIN 5480-1 (Tables 3 and 4) gives the form diameter as a
+limit tied to the mating part's tip diameter and a minimum clearance, not a construction, and the `d_Ff1` row checks as a limit
+only. M_Re for an odd tooth count is null with `ODD_Z_UNCONFIRMED` (D-13, D-22): no odd-count row was supplied; D_Re still
+prints. Five markers stay in `din5480.py` because the copy did not confirm them: `ALPHA`, `RHO_FP`, `theoretical_pin_diameter`,
+`measure_over_pins` (clause unread) and `form_diameter`; one more in `shaft_calc.py`, `PIN_DECIMALS` (the copy names no gauge
+series). Two known narrowings are debt, not decisions: the shift range refuses the exceptions the copy allows at larger tooth
+counts (`docs/tech_debt/active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md`, must) and `FIT_PATTERN` is
+wider than the standard's set of deviations and classes (`docs/tech_debt/active/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md`, nice).
+A manufacturing-process field is an idea only (`docs/ideas/2026-10-26-shaft-manufacturing-process-field.md`).
+
+**The designation grammar** (D-05, D-21). `W <d_B>x<m>x<z>x<fit>`, printed as `W 25x1.25x18x8f`. The parser accepts the canonical
+form, no space after `W`, an upper-case `X` and `,` for the decimal mark, within 64 characters. Everything else is refused with
+the bad token named: spaces around `x`, a multiplication sign, an upper-case fit letter, a fractional tooth count, a non-ASCII
+digit, and `N` (an internal spline) with its own sentence.
+
+**The gate delta.** `make verify` read `2355 passed in 243.23s`, `real 244.14 s`, against Phase 30's `1369 passed`, `233.18 s`,
+`real 234.48 s` (`bench/RESULTS.md` `### The gate delta (31-06)`): +10.05 s (+4.31 %) and +9.66 s (+4.12 %), inside Phase 25's
+about 8 % spread and 56.77 s under L43's 300 s bar. Eight of nine phase-close checks pass (`### Phase close checks (31-06)`);
+`make gear.unchanged` is green, the ten import contracts are kept and no `/api/shaft` route exists.
+
+**Handoffs.** Phase 32: widen `Part` to `GearParams | ShaftParams`, the three internals (`model.py`, `records.py`, `pool.py`),
+the solid fields' bounds and cross-field rules. Phase 33: `DesignationError.token` and the infeasible error in its 422s, the
+twelve `ShaftDimensions` keys on the wire, the part switch (a gear link with a stray `part=` token moves from ignored to
+refused, L46). Phase 34: the copy's tabulated D_Re replaces the computed pin with a warning (an output number, so L05 does not
+apply) and the guard goes live; the fit tables; the anchor rows of the debt item.
+
+**Reversibility.** The field names and defaults change only by a logged decision until Phase 33 publishes the first shaft link;
+L05 applies to them in full after. The nulls reverse the way the debt item says: a number is printed only when a row agrees to the
+copy's last printed digit.
+
+Reason: a number the tool prints is a number someone will cut metal to. One designation of the copy agrees to the digit and the
+rest is marked, nulled or filed, so Phase 32 can build the solid on maths whose limits are written down.
+
+**Amendment (2026-10-26, DIN 5480-2 anchors).** "Proved on one designation" no longer holds. The human supplied DIN 5480-2:2006-05 (an English translation) and approved four rows by name, from Tables 12/13 and 18/19:
+- W 25x1.25x18, the default shaft;
+- W 26x1.25x19, an odd tooth count;
+- W 30x2x14 and W 30x2x13, the shift range's two edges at -0.05 and +0.45. W 30x2x13 is also an odd tooth count.
+
+Each row's x*m, s1, da1, df1, D_M and M1 is pinned in `tests/test_din5480_anchors.py`, and each value assertion was seen red once as the first failure of its test (eight `31-part2-red-*.log` runs, `bench/RESULTS.md` `### Seen red once (Phase 31)`).
+
+A scratch comparison read 720 nominal and 721 inspection rows from the Part 2 size tables. That is every printed row: the two tables' rows pair up, except one row that Table 12 prints twice (as d_B 20, where Table 13 has d_B 19), a duplicate in the copy itself. On those rows the tool agrees to the printed digit:
+- x*m, s1, da1 and df1 on 719 of 720 nominal rows. The one other row is internally inconsistent in the copy.
+- M1 at the tabulated pin and nominal thickness on 510 of 510 even-count and 211 of 211 odd-count rows.
+
+The anchor debt item is resolved (`docs/tech_debt/resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md`). REQ-shaft-basic-dims closes with Phase 31's re-verification. The odd-count M_Re stays null by the human's choice (`docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md`), and `ODD_Z_UNCONFIRMED` now says "not given ... yet" instead of waiting for a row. No existing sentence of this entry is edited.
+
+**Amendment (2026-10-26, DIN 5480-2 anchors: the guard and the shift range).** The guard section's premise is weaker than written.
+- Part 2 prints d_Ff1 only as a maximum.
+- The internal construction exceeds that maximum on 483 of 719 rows at h_fP 0.55, by up to 0.174*m.
+- The guard margin is 0.1*m. It was sized from observed gaps of at most 0.067*m (0.202 mm at m 3).
+
+This is filed for Phase 34 as `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
+
+The shift range is the standard's at both edges at m 2. Eleven Part 2 rows lie outside it, as the shift-range debt item predicts. No printed number, default or bound changed. No existing sentence of this entry is edited.

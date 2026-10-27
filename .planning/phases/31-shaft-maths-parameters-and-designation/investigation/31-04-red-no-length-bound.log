@@ -1,0 +1,17 @@
+......................................F                                  [100%]
+=================================== FAILURES ===================================
+______ test_a_designation_longer_than_the_bound_is_refused_before_parsing ______
+
+    def test_a_designation_longer_than_the_bound_is_refused_before_parsing() -> None:
+        """The bound is checked first, so no regex sees more than 64 characters. 65 characters
+        that would otherwise parse are refused with a message that does not echo them."""
+        too_long = "W 25." + "0" * 48 + "1x1.25x18x8f"
+        assert len(too_long) == din5480.DESIGNATION_MAX_LENGTH + 1
+>       with pytest.raises(din5480.DesignationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DesignationError
+
+tests/test_din5480.py:371: Failed
+=========================== short test summary info ============================
+FAILED tests/test_din5480.py::test_a_designation_longer_than_the_bound_is_refused_before_parsing
+1 failed, 38 passed, 729 deselected in 0.06s

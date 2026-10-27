@@ -164,7 +164,7 @@ baseline, the gear `/api/schema` response byte-equal.
 - [x] **Phase 30: Scope, Seam and Gear-Safety Guard** - The widening to a gear and spline (completed 2026-10-23)
       generator is a logged decision, the shaft is walled off from the gear by import contracts
       and its own route prefix, and one check proves at every phase close that no gear link moved
-- [ ] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams`
+- [x] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams` (completed 2026-10-26)
       with frozen field names: profile shift from d_B, tip, root and thickness, M_Re at nominal,
       d_Ff `null` until proven, and a designation that round-trips; needs anchor rows from the copy
 - [ ] **Phase 32: The Shaft Solid** - Splined section, plain shank and end chamfer as a valid solid
@@ -296,7 +296,27 @@ red once, the red recorded. **Phase close**: `make verify` result line recorded 
 `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: Yes — needs the human's copy (research Phase 2): formula confirmation by
 clause, `h_fP`, anchor rows incl. one odd z, the d_Ff construction.
-**Plans**: TBD
+**Plans**: 6/6 plans complete, run one at a time (one shared working tree; deliberate red edits); 31-05 stops at the
+DIN 5480 checkpoint and 31-06 cannot start until the human answers
+
+Plans:
+**Wave 1**
+- [x] 31-01-PLAN.md — tracer: the default shaft through `ShaftParams` -> `derive_shaft` -> `din5480` to its basic dimensions; the frozen contract, the range refusal and the epsilon cases pinned and seen red
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 31-02-PLAN.md — the independent stdlib oracle; shift, tip, root and thickness on a 192-case grid and the two vendor sets; each comparison seen red against a mutated formula
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 31-03-PLAN.md — the theoretical pin, M_Re at nominal for even and odd z, d_Ff null with its reason, the pin-contact guard over an explicit pin; oracle-proved and seen red
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 31-04-PLAN.md — the designation codec (print, parse, round trip, refusals naming the token); `parts.py` docstring and the WR-03 debt item re-targeted to Phase 32
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 31-05-PLAN.md — the gate green and the prediction table, then `checkpoint:human-action`: the human confirms each formula by clause and approves the anchor rows
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 31-06-PLAN.md — anchor rows as cited tests, D-09 for any contradiction, the conditional d_Ff / odd-z outcomes, the gate delta, the close checks and the closing `Lxx`
 
 ### Phase 32: The Shaft Solid
 
@@ -476,7 +496,7 @@ comes from.
 | 21–25 | v0.5 | 23/23 | Complete | 2026-10-15 |
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
-| 31. Shaft Maths, Parameters and Designation | v0.7 | 0/? | Not started (needs anchor rows from the DIN 5480 copy) | - |
+| 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
 | 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |

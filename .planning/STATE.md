@@ -2,38 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Splined Shaft
-current_phase: 31
-current_phase_name: Shaft Maths, Parameters and Designation
-status: "Phase 30 shipped — PR #50"
-stopped_at: Phase 30 complete, ready to plan Phase 31
-last_updated: "2026-10-24T02:19:00.155Z"
-last_activity: 2026-10-24
-last_activity_desc: Phase 30 shipped as PR #50
-state_head: afe2e4b511b7a8b043817a43b50f9112e45aaa38
+current_phase: 32
+current_phase_name: The Shaft Solid
+status: "Phase 31 shipped — PR #51"
+stopped_at: Phase 31 complete, ready to plan Phase 32
+last_updated: "2026-10-26T15:37:33.122Z"
+last_activity: 2026-10-26
+state_head: 1d24bb2f0eef9122b903a84112f4a1cbf3faa54a
 progress:
   total_phases: 5
-  completed_phases: 7
-  total_plans: 5
-  completed_plans: 5
-  percent: 64
+  completed_phases: 8
+  total_plans: 11
+  completed_plans: 11
+  percent: 73
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-23)
+See: .planning/PROJECT.md (updated 2026-10-26)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 31 — Shaft Maths, Parameters and Designation
+**Current focus:** Phase 32 — The Shaft Solid
 
 ## Current Position
 
-Phase: 31 — Shaft Maths, Parameters and Designation
+Phase: 32 — The Shaft Solid
 Plan: Not started
-Status: Phase 30 shipped — PR #50
-Last activity: 2026-10-24 — Phase 30 shipped as PR #50
+Status: Phase 31 shipped — PR #51
+Last activity: 2026-10-26
 
 ## Performance Metrics
 
@@ -79,6 +78,7 @@ Last activity: 2026-10-24 — Phase 30 shipped as PR #50
 | 28 | 8 | - | - |
 | 29 | 1 | - | - |
 | 30 | 5 | - | - |
+| 31 | 6 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -273,6 +273,12 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 30 P03 | 10 min | 3 tasks | 9 files |
 | Phase 30 P04 | 12 min | 3 tasks | 6 files |
 | Phase 30 P05 | 8 min | 2 tasks | 4 files |
+| Phase 31 P01 | 14 min | 3 tasks | 12 files |
+| Phase 31 P02 | 7 min | 3 tasks | 8 files |
+| Phase 31 P03 | 9 min | 3 tasks | 12 files |
+| Phase 31 P04 | 12 min | 3 tasks | 14 files |
+| Phase 31 P05 | 10min | 2 tasks | 5 files |
+| Phase 31 P06 | 12 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -531,6 +537,18 @@ pending; the next milestone starts this list fresh.
 - [Phase 30]: 30-03: Phase 32 adds ignore_imports = [spur.model -> spur.shaft_model] to C3 in the same commit that first imports shaft_model in model.py; wall commit is bdf224d
 - [Phase 30]: 30-04: Part is the name at the shared entry points; _serve_model is the one serving path (move ca60285, 115 lines proved identical); the 503 text counts parts (D-07, D-08, D-09)
 - [Phase 30]: 30-05: Phase 30's make verify read 1369 passed in 233.18s (real 234.48 s, load 16.75 -> 16.06) against the recorded 236.23 s with 239.51 s as cross-check; inside Phase 25's ~8 % spread, no precise delta claimed; all seven close checks PASS
+- [Phase 31]: 31-01: profile shift pinned as x = (d_B - z*m)/(2*m) - SHIFT_TERM; the only measured order under which all three D-19 epsilon cases fall outside the bare range (default computes to 0.44999999999999996 and does not exercise the epsilon)
+- [Phase 31]: 31-01: SHIFT_TERM and H_FP are two named constants (both 0.55 today); the range refusal lives in shaft_calc.check_shaft, reached from ShaftParams._feasible by local import (the gear's infeasible 422 shape)
+- [Phase 31]: 31-01: solid-only fields splined_length 30 (1-500), end_chamfer 1.0 (0-10), shank_d 25 (1-850), shank_length 20 (0-500) are provisional for the human's review; cross-field rules among them are Phase 32's
+- [Phase 31]: 31-02: the shaft oracle places its involute by the base-thickness identity and reads thickness with atan2; vendor rows compared at print precision, never loosening 1e-9
+- [Phase 31]: 31-03: gauge step 0.01 mm (PIN_DECIMALS=2, D-11 default; no documented series found, A4)
+- [Phase 31]: 31-03: pin-contact guard margin 0.1*m on both ends, 1.5x the larger observed vendor gap (0.067*m at m 3); scaling with m is an assumption
+- [Phase 31]: 31-03: form_d is None for every shaft; odd z prints its pin and no M_Re until a DIN 5480 row confirms the formula; the guard goes live in Phase 34
+- [Phase 31]: 31-04: designation codec lives in din5480.py; Designation fields equal ShaftParams', DesignationError carries token, length bound 64
+- [Phase 31]: 31-04: D-14 debt item re-targeted to Phase 32 and kept active (option 2); parts.py docstring and pyproject C4 comment name Phase 32
+- [Phase 31]: 31-05 checkpoint: PARTIAL PASS. DIN 5480-1:2006-03 (unofficial translation) holds no size tables; three W 120x3x38x8f rows approved (cl. 9.1 Fig. 6); anchor debt filed; odd-z M_Re stays unprinted; d_Ff checked as a limit
+- [Phase 31]: 31-06: no constant edited; the copy's checkpoint changed no printed number, so no D-09 entry; L47 closes Phase 31
+- [Phase 31]: 31-06: REQ-shaft-basic-dims left open (one basic-dimension anchor row, plan minimum two; partial pass accepted, debt filed); closed 2026-10-26 by four approved DIN 5480-2 rows
 
 ### Pending Todos
 
@@ -538,14 +556,18 @@ None yet.
 
 ### Blockers/Concerns
 
+- ✓ [Phase 31] Re-verified 5/5 with no override relied on, after the human approved four DIN 5480-2 rows (W 25x1.25x18,
+  W 26x1.25x19, W 30x2x14, W 30x2x13); REQ-shaft-basic-dims Complete; anchor debt resolved. Odd-z M_Re and d_Ff stay `null`
+  (idea `2026-10-26-print-odd-tooth-count-measure-over-pins`). `must` debt: shift cap 0.45 (11 Part 2 rows beyond it),
+  form-diameter construction above Part 2's d_Ff1 max (Phase 34 guard).
+- ℹ️ [Phase 31] Code review `31-REVIEW-DISPOSITION.md`: 33 of 33 fixed. Re-verified 5/5 after the Part 2 anchors
+  (76,076 shafts, numbers identical); 31-VALIDATION nyquist_compliant true; 31-SECURITY threats_open 0.
 - ⚠️ [Phase 30] Code review `30-REVIEW-DISPOSITION.md`: 3 deferred to `must` debt (WR-01 no timeout on git/probe in
   `gear.unchanged`; WR-03 `parts.py` "one-line widening" is false — Phase 31 must type `_build_checked`, `_write_export`,
   `_gear_fields` when it widens `Part`; IN-02 a lightweight/moved local `v0.6` tag self-compares), 4 open (WR-02, IN-01,
   IN-03, IN-04). A1 (GitHub's own shallow checkout fetching `v0.6`) reproduced locally, unseen in CI until the phase PR.
 - ⚠️ [v0.7] **Phase 34 is blocked until the human supplies the DIN 5480 copy's local path** (2006 series; the tolerance system
-  is in Part 1, the size tables in Part 2). **Phase 31 needs anchor rows from the same copy** before it can close: formula
-  confirmation by clause, the `h_fP` convention, at least two basic-dimension rows, a d_Ff row, an odd-z row if odd-z M_Re is
-  to print a number. Nothing from the copy is committed except anchors the human approves by name.
+  is in Part 1, the size tables in Part 2). Nothing from the copy is committed except anchors the human approves by name.
 - ℹ️ [v0.7] The milestone releases as one unit: Phases 30–33 ship the shaft with fit-dependent numbers absent, and Phase 34
   adds them. All DIN 5480 formulas in the plan are ASSUMPTIONs until checked by clause against the copy.
 - ⚠️ [Phase 27] Code review `27-REVIEW-DISPOSITION.md`: 9 open (3 warning, 6 info). WR-03: a `ValueError` from parsing `ps` rows escapes
@@ -842,8 +864,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-23T16:46:40.343Z
-Stopped at: Phase 30 complete, ready to plan Phase 31
+Last session: 2026-10-26
+Stopped at: Phase 31 complete, ready to plan Phase 32
 Resume file: None
 
 ## Operator Next Steps

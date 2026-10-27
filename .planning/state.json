@@ -41,7 +41,7 @@
     {
       "number": "31",
       "name": "Shaft Maths, Parameters and Designation",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "32",
@@ -61,8 +61,8 @@
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step (plan phase 31)",
-    "reason": "Phase 2 of 5 — needs a plan"
+    "label": "Advance to the next step (plan phase 32)",
+    "reason": "Phase 3 of 5 — needs a plan"
   },
-  "updated_at": "2026-10-23T17:04:04.961Z"
+  "updated_at": "2026-10-26T15:26:19.139Z"
 }

@@ -1,0 +1,24 @@
+.............................................................F           [100%]
+=================================== FAILURES ===================================
+_________ test_the_dedendum_constant_moves_the_root_and_not_the_shift __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109a3c830>
+
+    def test_the_dedendum_constant_moves_the_root_and_not_the_shift(
+            monkeypatch: pytest.MonkeyPatch) -> None:
+        """The shift term and the dedendum factor are two quantities that read 0.55 today
+        (31-RESEARCH Pitfall 1). If the copy's h_fP is 0.60, only the root may move."""
+        p = ShaftParams(reference_d=70, module=3, teeth=22)
+        before = derive_shaft(p)
+        assert before.root_d == 63.4
+        monkeypatch.setattr(din5480, "H_FP", 0.60)
+        after = derive_shaft(p)
+        # 63.1 is KISSsoft's hobbing value for W70x3x22: a vendor cross-check, not the standard.
+>       assert after.root_d == 63.1
+E       assert 62.8 == 63.1
+E        +  where 62.8 = ShaftDimensions(reference_d=70.0, profile_shift=0.067, profile_shift_mm=0.2, pitch_d=66.0, tip_d=69.4, root_d=62.8, nominal_thickness=4.943, warnings=()).root_d
+
+tests/test_shaft_calc.py:49: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_calc.py::test_the_dedendum_constant_moves_the_root_and_not_the_shift
+1 failed, 61 passed in 0.07s

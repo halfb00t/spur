@@ -1,0 +1,25 @@
+-RHO_FP = 0.16
++RHO_FP = 0.30
+--- pytest tests/test_din5480_anchors.py
+.F.                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_anchor_w120x3x38x8f_form_diameter_is_a_limit_not_a_construction _____
+
+    def test_anchor_w120x3x38x8f_form_diameter_is_a_limit_not_a_construction() -> None:
+        """DIN 5480-1:2006-03, cl. 9.1, Fig. 6 (unofficial translation): the form diameter
+        d_Ff1 of the shaft is printed as a maximum, 113.91. The copy's Tables 3 and 4 tie it to
+        the mating part's tip diameter and a minimum clearance, so it is not a construction the
+        tool can reproduce: the internal construction must stay at or below the maximum, at
+        either dedendum, and `form_d` stays null (D-12, L08).
+        """
+        p = _row_params()
+        x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
+        for h_fp in (0.55, 0.60):
+            internal = din5480.form_diameter(p.module, p.teeth, x * p.module, h_fp, din5480.RHO_FP)
+>           assert internal <= 113.91
+E           assert 114.3011810962599 <= 113.91
+
+tests/test_din5480_anchors.py:52: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_anchors.py::test_anchor_w120x3x38x8f_form_diameter_is_a_limit_not_a_construction
+1 failed, 2 passed in 0.05s

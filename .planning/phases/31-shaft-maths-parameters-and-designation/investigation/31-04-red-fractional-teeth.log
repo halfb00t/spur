@@ -1,0 +1,21 @@
+.........................F.............                                  [100%]
+=================================== FAILURES ===================================
+_ test_an_unparseable_designation_is_refused_naming_its_token[fractional-teeth] _
+
+text = 'W 25x1.25x18.5x8f', token = '18.5'
+
+    @pytest.mark.parametrize(
+        ("text", "token"),
+        [pytest.param(text, token, id=name) for name, text, token in REFUSED_DESIGNATIONS],
+    )
+    def test_an_unparseable_designation_is_refused_naming_its_token(text: str, token: str) -> None:
+        """Nothing is repaired (D-21): each refusal names the token it stopped at, and a Phase 33
+        422 reads that token from the exception, not from its message."""
+>       with pytest.raises(din5480.DesignationError) as raised:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE DesignationError
+
+tests/test_din5480.py:358: Failed
+=========================== short test summary info ============================
+FAILED tests/test_din5480.py::test_an_unparseable_designation_is_refused_naming_its_token[fractional-teeth]
+1 failed, 38 passed, 729 deselected in 0.06s

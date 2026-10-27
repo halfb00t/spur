@@ -16,8 +16,11 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
+| must | [The shaft profile-shift cap refuses shifts DIN 5480-1 allows as exceptions at larger tooth counts](active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md) | Part 2, or the copy's exception table, gives the z-dependent limits |
+| must | [The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows](active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md) | Phase 34 makes the pin-contact guard live |
+| nice | [FIT_PATTERN accepts deviation letters and tolerance classes outside DIN 5480-1 Table 7/9](active/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md) | Phase 34 takes the fit tables |
 | must | [`gear.unchanged` runs git and the schema probe with no timeout, inside the pre-commit hook](active/2026-10-23-gear-unchanged-has-no-timeout-on-git-or-probe.md) | the hook next stalls, or `scripts/gear_unchanged.py` is next touched |
-| must | [`parts.py` says widening `Part` is a one-line edit; the gear-typed internals behind it make that false](active/2026-10-23-parts-one-line-widening-claim-is-false.md) | Phase 31 widens `Part` |
+| must | [Widening `Part` to the shaft must type `model._build_checked`, `model._write_export` and `records._gear_fields` in the same change](active/2026-10-23-parts-one-line-widening-claim-is-false.md) | Phase 32 widens `Part` |
 | must | [`gear.unchanged` accepts any local `v0.6` tag, including a lightweight or moved one](active/2026-10-23-gear-unchanged-accepts-a-lightweight-or-moved-v0-6-tag.md) | `scripts/gear_unchanged.py` is next touched, or any CI path is found that can see a local tag |
 | must | [CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the browser test's install has only run on 24.04](active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md) | the first `ubuntu-latest` run of `ci` whose job log holds `Image: ubuntu-26.04` (Phase 29's own PR and the v0.6 milestone-close PR count; read all three jobs whole against `bench/RESULTS.md` `### Ubuntu 26.04, pre-classified (26-02)` before any fix; Phase 29 closed 2026-10-22, trigger not fired) |
 | must | [A whole-suite `make verify` hung near the end with no failure, no crash report and no survivor](active/2026-10-10-make-verify-hung-at-98-percent-with-no-failure.md) | the next `make verify` that neither passes nor fails: keep its whole log (`-v` and the faulthandler dump now name the test; the item's runbook covers a stall after the last test), or `BuildPool.shutdown` is next touched |
@@ -40,6 +43,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | 45b6565 test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap |
 | [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | `6497c28` — see the file's own `Resolved in:` field |
 | [Phase 19 code review: the root_fillet label finding is still deferred](resolved/2026-10-09-phase-19-review-info-findings-deferred.md) | `61154d1` — see the file's own `Resolved in:` field |
 | [A link with an invalid enum value loads a blank select and builds the default part](resolved/2026-10-10-root-shape-bogus-loads-a-blank-select.md) | `cb93d4e` — see the file's own `Resolved in:` field |

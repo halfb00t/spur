@@ -1,0 +1,12 @@
+head: 2782b24 (clean src and tests before the break); PYTHONDONTWRITEBYTECODE=1, __pycache__ purged, -p no:cacheprovider
+mutation in src/spur/din5480.py: 'H_FP = 0.55' -> 'H_FP = 0.60'
+      comparison failed
+tests/test_din5480_anchors.py:114: assert 22.125 == 22.25 ± 0.005
+      comparison failed
+tests/test_din5480_anchors.py:114: assert 23.125 == 23.25 ± 0.005
+      comparison failed
+tests/test_din5480_anchors.py:114: assert 25.4 == 25.6 ± 0.005
+      comparison failed
+tests/test_din5480_anchors.py:114: assert 25.4 == 25.6 ± 0.005
+4 failed, 4 passed, 3 deselected in 0.08s
+reverted: git checkout -- src/spur/din5480.py; git status --porcelain -- src tests: []

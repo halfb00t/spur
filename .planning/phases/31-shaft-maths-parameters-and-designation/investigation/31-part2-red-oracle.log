@@ -1,0 +1,8 @@
+head: 2782b24 (clean src and tests before the break); PYTHONDONTWRITEBYTECODE=1, __pycache__ purged, -p no:cacheprovider
+mutation in tests/shaft_oracle.py: '        return 2 * rho + pin_d' -> '        return 2 * rho + pin_d + 1e-6'
+      comparison failed
+tests/test_din5480_anchors.py:135: assert 28.050115163714313 == 28.050114163714305 ± 1.0e-09
+      comparison failed
+tests/test_din5480_anchors.py:135: assert 34.14380506224829 == 34.14380406224829 ± 1.0e-09
+2 failed, 6 passed, 3 deselected in 0.08s
+reverted: git checkout -- tests/shaft_oracle.py; git status --porcelain -- src tests: []

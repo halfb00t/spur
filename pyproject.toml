@@ -266,7 +266,7 @@ allow_indirect_imports = false
 name = "The gear maths does not know the shaft"
 # The structural half of "every gear link builds the same part": gear numbers must not
 # move because shaft code did, and a gear module that cannot name a shaft module cannot
-# depend on one. parts is listed because it will name ShaftParams from Phase 31. Belt:
+# depend on one. parts is listed because it will name ShaftParams from Phase 32. Belt:
 # tests/test_seam.py's test_the_gear_maths_imports_no_shaft_module.
 type = "forbidden"
 source_modules = ["spur.calc", "spur.params"]
