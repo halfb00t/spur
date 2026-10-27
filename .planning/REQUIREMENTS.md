@@ -73,10 +73,10 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Solid
 
-- [ ] **REQ-shaft-solid**: the user downloads a valid STL and STEP of the splined section, the
+- [x] **REQ-shaft-solid**: the user downloads a valid STL and STEP of the splined section, the
   plain shank and the end chamfer; volume matches a closed form and the applied chamfer is read
   back from the solid.
-- [ ] **REQ-shaft-build-measured**: build time, worker memory and STL size of the heaviest
+- [x] **REQ-shaft-build-measured**: build time, worker memory and STL size of the heaviest
   allowed shaft are measured and recorded in `bench/RESULTS.md` within L17's memory ceiling and
   L37's timeout; field bounds are set from that sweep.
 
@@ -165,8 +165,8 @@ shaft routes under that rule and cites it, it does not re-map it.
 | REQ-form-diameter-honest | Phase 31 | Complete |
 | REQ-mre-nominal | Phase 31 | Complete |
 | REQ-designation-codec | Phase 31 | Complete |
-| REQ-shaft-solid | Phase 32 | Pending |
-| REQ-shaft-build-measured | Phase 32 | Pending |
+| REQ-shaft-solid | Phase 32 | Complete |
+| REQ-shaft-build-measured | Phase 32 | Complete |
 | REQ-shaft-api | Phase 33 | Pending |
 | REQ-shaft-cli | Phase 33 | Pending |
 | REQ-shaft-web | Phase 33 | Pending |

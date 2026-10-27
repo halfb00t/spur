@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 32
 current_phase_name: The Shaft Solid
-status: executing
-stopped_at: Completed 32-05-PLAN.md
-last_updated: "2026-10-27T10:59:11.202Z"
+status: verifying
+stopped_at: Completed 32-06-PLAN.md
+last_updated: "2026-10-27T11:11:19.583Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 32 execution started
-state_head: 74eafbbc96c97e7624d5f900a4c0d9d4d38f3a33
+state_head: e358addce4a43c271be1ad2652a453479027d63e
 progress:
   total_phases: 5
   completed_phases: 8
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 32 (The Shaft Solid) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-27 — Phase 32 execution started
 
 ## Performance Metrics
@@ -285,6 +285,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 32 P03 | 30 min | 3 tasks | 18 files |
 | Phase 32 P04 | 45 min | 3 tasks | 17 files |
 | Phase 32 P05 | 55 min | 3 tasks | 14 files |
+| Phase 32 P06 | 12 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -570,6 +571,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 32]: 32-04: Part widened in 4018de8 with the one ignored import edge spur.model -> spur.shaft_model; no further file named heavy (slice re-priced at 14.94 s)
 - [Phase 32]: 32-05: D-09 confirmed, no bound moved: splined_length 500, end_chamfer 10, shank_d 850, shank_length 500 stand as swept (heaviest shaft 2.23 s macOS, 5.44 s Linux amd64 emulated, against 30 s; peak RSS under the gear's in the same run)
 - [Phase 32]: 32-05: the Linux row is the linux/amd64 container emulated on the arm64 host; shaft-to-gear ratios within a run are the comparison, never Linux against macOS walls
+- [Phase 32]: 32-06: gate reading of record 2644 passed in 233.83 s (real 234.78 s, load 5.24 to 7.66), -17.32 s (-6.90 %) vs 32-01's 251.15 s, inside the ~8 % spread so no speed claim; 66.17 s under L43's 300 s bar — Same host, both readings from logs; REQ-gate-cost-recorded stays open until Phase 34's milestone reading. Two in-phase readings (32-04 358.81 s, 32-05 312.50 s) exceeded 300 s under load and are written down, not trimmed.
+- [Phase 32]: 32-06: L48 closes Phase 32 in the decision log (construction, forbidden routes, guards, doorway, bars, gate delta, handoffs to 33 and 34) — Cites the two L47 amendments instead of restating; heading reworded so the plan's case-sensitive verify matches.
 
 ### Pending Todos
 
@@ -885,8 +888,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T10:59:11.117Z
-Stopped at: Completed 32-05-PLAN.md
+Last session: 2026-10-27T11:11:19.494Z
+Stopped at: Completed 32-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
