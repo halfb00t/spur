@@ -107,6 +107,7 @@ from spur.calc import (
     trochoid_root,
 )
 from spur.params import GearParams
+from spur.shaft_calc import derive_shaft
 from spur.shaft_params import ShaftParams
 
 
@@ -673,6 +674,30 @@ def test_the_report_adds_the_memory_columns_only_for_rows_measured_in_their_own_
 def test_vmrss_is_read_from_proc_status_or_reported_as_not_measured() -> None:
     assert _vmrss_bytes("Name:\tx\nVmRSS:\t   1234 kB\n") == 1234 * 1024
     assert _vmrss_bytes("Name:\tx\n") is None
+
+
+def test_the_shaft_sweep_reaches_every_solid_field_bound_and_carries_the_gear_reference(
+        ) -> None:
+    """A solid field's bound is only as good as the sweep that reached it: each of the
+    four `le` is read from the model and some shaft row sits exactly on it, so raising a
+    bound without a re-sweep (and a new row) fails here. The two rows that put shank_d
+    on the derived tip_d and root_d are where two quantities are exactly equal, and the
+    one gear row, the top of L17's 160-199 corpus, is what the memory comparison is read
+    against in the same run (bench/RESULTS.md `### The heaviest shaft (32-05)`)."""
+    sets = load_sweep(DEFAULT_SWEEP.parent / "shaft.json")
+    shafts = [p for _, p in sets if isinstance(p, ShaftParams)]
+    gears = [p for _, p in sets if isinstance(p, GearParams)]
+    assert (len(sets), len(shafts)) == (10, 9)
+    for name in ("splined_length", "end_chamfer", "shank_d", "shank_length"):
+        le = next(m.le for m in ShaftParams.model_fields[name].metadata if hasattr(m, "le"))
+        assert any(getattr(p, name) == le for p in shafts), name
+    dims = [derive_shaft(p) for p in shafts]
+    assert any(p.shank_d == d.tip_d for p, d in zip(shafts, dims, strict=True))
+    assert any(p.shank_d == d.root_d for p, d in zip(shafts, dims, strict=True))
+    assert [g.teeth for g in gears] == [199]
+    assert not isinstance(sets[-1][1], ShaftParams)  # the reference sits last, in file order
+    # the prism-only row: no fuse (shank_length 0) and no cone (end_chamfer 0)
+    assert any(p.shank_length == 0 and p.end_chamfer == 0 for p in shafts)
 
 
 def test_peak_rss_reads_bytes_on_macos_and_kibibytes_on_linux() -> None:

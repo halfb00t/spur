@@ -1,0 +1,12 @@
+[
+  {"part": "shaft"},
+  {"part": "shaft", "reference_d": 70, "module": 10, "teeth": 6, "splined_length": 500, "end_chamfer": 10, "shank_d": 850, "shank_length": 500},
+  {"part": "shaft", "reference_d": 84, "module": 1, "teeth": 82, "splined_length": 500, "shank_d": 84, "shank_length": 500},
+  {"part": "shaft", "reference_d": 42, "module": 0.5, "teeth": 82, "splined_length": 500, "shank_length": 500},
+  {"part": "shaft", "reference_d": 840, "module": 10, "teeth": 82, "splined_length": 500, "end_chamfer": 10, "shank_d": 850, "shank_length": 500},
+  {"part": "shaft", "reference_d": 830, "module": 10, "teeth": 82, "splined_length": 500, "end_chamfer": 10, "shank_d": 828, "shank_length": 500},
+  {"part": "shaft", "reference_d": 830, "module": 10, "teeth": 82, "splined_length": 500, "end_chamfer": 10, "shank_d": 808, "shank_length": 500},
+  {"part": "shaft", "reference_d": 840, "module": 10, "teeth": 82, "splined_length": 1, "end_chamfer": 1, "shank_length": 0},
+  {"part": "shaft", "reference_d": 840, "module": 10, "teeth": 82, "splined_length": 500, "end_chamfer": 0, "shank_length": 0},
+  {"teeth": 199}
+]
