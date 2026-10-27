@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 33
 current_phase_name: Interfaces and Parity
-status: executing
-stopped_at: Completed 33-08-PLAN.md
-last_updated: "2026-10-27T18:08:06.091Z"
+status: verifying
+stopped_at: Completed 33-09-PLAN.md
+last_updated: "2026-10-27T18:21:57.639Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 33 execution started
-state_head: 24dc9b9dbc8213ee5a09ab8fed686b5e36a11aa5
+state_head: 2a73def5991bd0a0587d61126abadeeb9f36beca
 progress:
   total_phases: 5
   completed_phases: 9
   total_plans: 26
-  completed_plans: 25
-  percent: 96
+  completed_plans: 26
+  percent: 100
 ---
 
 # Project State
@@ -32,7 +32,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 33 (Interfaces and Parity) — EXECUTING
 Plan: 9 of 9
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-27 — Phase 33 execution started
 
 ## Performance Metrics
@@ -295,6 +295,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 33 P06 | 17 min | 2 tasks | 6 files |
 | Phase 33 P07 | 15 min | 2 tasks | 7 files |
 | Phase 33 P08 | 22 min | 3 tasks | 15 files |
+| Phase 33 P09 | 14 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -597,6 +598,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 33]: gridAlong in the PARTS descriptor sizes the shaft's floor grid from its height and leaves every gear's grid unchanged
 - [Phase 33]: Framing pictures go to pytest tmp_path (kept with --basetemp), not into the tree and not through an environment read (D-02 pin)
 - [Phase 33]: B2 in the browser is the 91-token re-read on the seven shaft inputs plus one all-fields API request per blanked token
+- [Phase 33]: 33-09: the shaft scenarios stay out of DEFAULT_SCENARIOS and out of the report's baseline/2.00x lines; heaviest shaft under ten concurrent requests: 4 of 10 admitted, 6 busy, no timeout/pool_broken/500, slowest 200 10.16 s of 30 s; gate 2778 passed in 241.55 s (real 242.47) vs 33-01's 2644 in 229.17 s, no speed claim
 
 ### Pending Todos
 
@@ -918,8 +920,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T18:08:05.974Z
-Stopped at: Completed 33-08-PLAN.md
+Last session: 2026-10-27T18:21:57.521Z
+Stopped at: Completed 33-09-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
