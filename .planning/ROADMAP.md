@@ -413,6 +413,11 @@ REQ-shaft-parity, REQ-wr02-fixed
      (the debt item says the token list is wider than its table); the debt item
      `2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md` is retired in the fixing
      commit (status, sha, `git mv` into `resolved/`, INDEX row).
+     Reading (C1, 33-01 Decision result; L49): the fix landed in app.py's query layer in 69c1aa3,
+     33-03's fixing commit, before the part switch (D-01 puts the refusal there, and 33-RESEARCH
+     Pitfall 2 found the switch needs no edit to either function); refuse() and gearQuery() are
+     byte-identical to 6800769 at phase close (33-09 close check 8), so the switch edits neither
+     and no build window opened under it.
   5. The gate delta is recorded: this phase's `make verify` time against Phase 32's on the same
      host, in `bench/RESULTS.md`, browser test included; the Phase 30 check is green and the 44
      fixture links still send the requests `tests/regression/golden_requests.json` pins.

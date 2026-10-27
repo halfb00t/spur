@@ -98,6 +98,10 @@ REQ-IDs continue the project's `REQ-slug` convention.
 - [ ] **REQ-wr02-fixed**: WR-02 (a link token the number box blanks but the API accepts) is
   fixed where the part switch edits `refuse()`/`gearQuery()`; its debt item is retired in the
   fixing commit.
+  Reading (C1, 33-01 Decision result; L49): the fix landed in app.py's query layer in 69c1aa3,
+  33-03's fixing commit, before the part switch (see ROADMAP Phase 33 criterion 4); refuse() and
+  gearQuery() are byte-identical to 6800769 at phase close (33-09 close check 8), so the switch
+  edits neither and no build window opened under it.
 
 ### Fit tables and tolerance window
 
