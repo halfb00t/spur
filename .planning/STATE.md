@@ -22,11 +22,11 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-26)
+See: .planning/PROJECT.md (updated 2026-10-27)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 32 — The Shaft Solid
+**Current focus:** Phase 33 — Interfaces and Parity
 
 ## Current Position
 
@@ -581,6 +581,12 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 32] Verified 4/4; Nyquist 16/16; security 14/14 closed. Code review `32-REVIEW-DISPOSITION.md`: 4 open
+  (0 critical). WR-01 `_guard_volume` accepts an uncut chamfer (a no-op cone intersect would print an
+  `end_chamfer_effective` not on the part, L08) — filed `must`, fix before Phase 33 ships shaft downloads
+  (`docs/tech_debt/active/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md`). WR-02 bench `--fresh` swallows child
+  stderr; IN-01 stale comments; IN-02 `load_sweep` rejects explicit `"part": "gear"`. Cross-CLI (Codex) review of the phase
+  diff not yet run.
 - ✓ [Phase 31] Re-verified 5/5 with no override relied on, after the human approved four DIN 5480-2 rows (W 25x1.25x18,
   W 26x1.25x19, W 30x2x14, W 30x2x13); REQ-shaft-basic-dims Complete; anchor debt resolved. Odd-z M_Re and d_Ff stay `null`
   (idea `2026-10-26-print-odd-tooth-count-measure-over-pins`). `must` debt: shift cap 0.45 (11 Part 2 rows beyond it),

@@ -725,6 +725,16 @@ pytest — L13). Full list with sources and acceptance evidence:
   REQ-designation-codec; verified 5/5 with no override relied on: one DIN 5480-1 row and four
   human-approved DIN 5480-2 rows anchored, and M1 agrees on every Part 2 row; `make verify`
   2387 passed; review 33 of 33 findings fixed)
+- ✓ The DIN 5480 shaft's solid: `shaft_model.build_shaft` (extrude, fuse the shank, intersect the
+  end-chamfer cone) builds one valid solid whose volume matches a stdlib closed form, exports STL
+  and STEP through `model.build`/`model.export` behind the one kernel doorway, and refuses the
+  kernel's silent failures (root-band cone start, volume bracket) as `BuildError`;
+  `end_chamfer_effective` is the 13th dims key, floored to 0.001 mm and capped with a warning; the
+  heaviest allowed shaft was measured on macOS and Linux (2.23 s / 5.44 s against 30 s, peak RSS
+  0.786 / 0.903 of the 199-tooth gear) and no bound moved — Phase 32 (L48 and two L47 amendments;
+  REQ-shaft-solid, REQ-shaft-build-measured; verified 4/4; `make verify` 2644 passed in 233.72 s;
+  review 0 critical / 2 warning / 2 info open, WR-01 filed `must` before Phase 33 ships;
+  human picks A1 B1 C1 D1 and MESH_PREVIEW_REL 6e-3)
 
 ### Active
 
@@ -892,6 +902,7 @@ quick reference.
 | L45 | A tip chamfer asked for and not cut prints no number: `tip_chamfer_effective` is gated on the applied `tch` (amends L29; applies L08); 2026-10-22 correction names the capped-to-zero case | ✓ Good — red-first test, 44 fixture records unmoved, `tests/regression/` byte-identical to `v0.5` |
 | L46 | spur is a gear and spline generator: one parameter model per part type, a second frozen link contract for the shaft (amends L02 and L05) | ✓ Good — logged before the first shaft module (`5d61f8e` ancestor of `bdf224d`); `gear.unchanged` green |
 | L47 | The DIN 5480 shaft's maths: what Phase 31 froze, proved on one designation, and left null (follows L46; applies L03 and L08) | ✓ Good — formulas confirmed by clause against DIN 5480-1:2006-03 (unofficial translation); one Part 1 designation and four DIN 5480-2 rows anchored (2026-10-26 amendment); odd-z M_Re and d_Ff still `null`; verified 5/5 with no override relied on |
+| L48 | How Phase 32 builds the DIN 5480 shaft's solid, what it refuses, and what it hands on (follows L46 and L47; applies L08, L24, L26) | ✓ Good — verified 4/4; Nyquist 16/16 automated; security 14/14 closed; volume within 1e-4 of the closed form; WR-01 (uncut chamfer passes the volume guard) open as `must` debt with a Phase 33 trigger |
 
 ## Success Metric (Milestone v0.1)
 
@@ -999,4 +1010,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-26 after Phase 31*
+*Last updated: 2026-10-27 after Phase 32*
