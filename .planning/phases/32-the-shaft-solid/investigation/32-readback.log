@@ -1,0 +1,10 @@
+rows 80 {'c_end': '1.42e-13', 'c_cone': '1.00e-07', 'root': '5.68e-14', 'vol': '6.27e-06'}
+--- tiny chamfers on the default
+c=0.01: valid=True n=1 vol rel=4.04e-09 read c(end)=1.000e-02 cone z=1.000e-02 ncone=19
+c=0.001: valid=True n=1 vol rel=3.92e-09 read c(end)=1.000e-03 cone z=1.000e-03 ncone=19
+c=0.0005: valid=True n=1 vol rel=3.91e-09 read c(end)=5.000e-04 cone z=5.001e-04 ncone=19
+c=0.0001: valid=True n=1 vol rel=3.91e-09 read c(end)=1.000e-04 cone z=1.001e-04 ncone=19
+c=1e-05: valid=True n=1 vol rel=3.91e-09 read c(end)=1.000e-05 cone z=1.010e-05 ncone=19
+c=1e-06: EXC AssertionError 19
+c=1e-07: valid=True n=1 vol rel=3.91e-09 read c(end)=-3.553e-15 cone z=0.000e+00 ncone=0
+c=1e-08: valid=True n=1 vol rel=3.91e-09 read c(end)=-3.553e-15 cone z=0.000e+00 ncone=0

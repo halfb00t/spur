@@ -1,0 +1,5 @@
+shank=tip 24.75    Shape.fuse valid=True | fuse().clean() valid=False | WP.union.clean valid=False | WP.union(clean=False) valid=True  (vol rel 4.1e-09)
+shank=root 22.25   Shape.fuse valid=True | fuse().clean() valid=False | WP.union.clean valid=False | WP.union(clean=False) valid=True  (vol rel 4.5e-09)
+between 23.5       Shape.fuse valid=True | fuse().clean() valid=True | WP.union.clean valid=True | WP.union(clean=False) valid=True  (vol rel 4.3e-09)
+tip+1e-6           Shape.fuse valid=True | fuse().clean() valid=True | WP.union.clean valid=True | WP.union(clean=False) valid=True  (vol rel 3.9e-09)
+shank 25           Shape.fuse valid=True | fuse().clean() valid=True | WP.union.clean valid=True | WP.union(clean=False) valid=True  (vol rel 3.9e-09)
