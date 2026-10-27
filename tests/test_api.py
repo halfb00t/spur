@@ -469,6 +469,20 @@ def test_the_page_formats_numbers_with_the_expression_the_parity_test_ports() ->
     assert source.count(expression) == 1, "app.js `fmt` is not the expression the parity step ports"
 
 
+def test_only_the_shaft_sizes_the_floor_grid_from_its_height() -> None:
+    """33-08: a 1000 mm shaft on a grid sized from its 25 mm width has no visible grid, so the
+    shaft's descriptor asks for its height to count (`gridAlong`). The gear's does not, which
+    keeps every gear's grid as it was; the browser step `viewer framing` shows the shaft's.
+    """
+    source = re.sub(r"\s+", " ", (STATIC / "app.js").read_text())
+    assert source.count("gridAlong: false,") == 1, "the gear's grid must not follow its height"
+    assert source.count("gridAlong: true,") == 1, "the shaft must size its grid from its height"
+    assert (
+        "const extent = (P.gridAlong ? Math.max(across, box.max.z - box.min.z) : across) * 1.6;"
+        in source
+    ), "placeGrid() no longer reads the part's descriptor"
+
+
 def test_info_reports_the_mate() -> None:
     r = client.get("/api/info", params={"teeth": 21, "mate_teeth": 40})
     assert r.status_code == 200

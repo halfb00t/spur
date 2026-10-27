@@ -53,17 +53,19 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 // their defaults and their rows come from the part's own schema. Indexed only by a radio's
 // literal value or by 'gear' in the bootstrap, never by text from a link: a lookup by hash
 // text would resolve `constructor` (33-RESEARCH Pattern 6). `tag` opens a link's hash, `mate`
-// says whether the page sends the mate box with it. The gear's texts are the ones index.html
-// ships, so the gear page reads as it did before the switch.
+// says whether the page sends the mate box with it, `gridAlong` whether the floor grid is also
+// sized from the part's height (a shaft is long where a gear is flat: 33-08). The gear's texts
+// are the ones index.html ships, so the gear page reads as it did before the switch.
 const PARTS = {
   gear: {
     schema: 'api/schema', info: 'api/info', model: 'api/model', tag: '', noun: 'gear', mate: true,
+    gridAlong: false,
     title: 'spur · parametric spur gear', sub: 'parametric involute spur gear',
     aria: '3D preview of the gear', fitTitle: 'Fit gear to view',
   },
   shaft: {
     schema: 'api/shaft/schema', info: 'api/shaft/info', model: 'api/shaft/model',
-    tag: 'part=shaft', noun: 'shaft', mate: false,
+    tag: 'part=shaft', noun: 'shaft', mate: false, gridAlong: true,
     title: 'spur · DIN 5480 splined shaft', sub: 'DIN 5480 splined shaft',
     aria: '3D preview of the shaft', fitTitle: 'Fit shaft to view',
   },
@@ -716,7 +718,10 @@ function placeGrid() {
     grid = null;
   }
   if (!box) return;
-  const extent = Math.max(box.max.x - box.min.x, box.max.y - box.min.y) * 1.6;
+  // A grid sized from the width alone is 40 mm under a 1000 mm shaft and cannot be seen; a part
+  // that says so (`gridAlong`) also counts its height. The gear's grid is as it was.
+  const across = Math.max(box.max.x - box.min.x, box.max.y - box.min.y);
+  const extent = (P.gridAlong ? Math.max(across, box.max.z - box.min.z) : across) * 1.6;
   const step = [0.5, 1, 2, 5, 10, 20, 50, 100].find((s) => extent / s <= 24) ?? 200;
   const size = Math.ceil(extent / step) * step;
   const colour = css('--grid');
