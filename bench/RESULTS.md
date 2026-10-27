@@ -7421,3 +7421,4 @@ Each row is a deliberate break of a guard that this phase adds, run once to see 
 | Plan | Test or step | Deliberate break | First failure line | Reverted |
 |---|---|---|---|---|
 | 33-02 | test_a_chamfer_the_kernel_never_cut_is_refused | `_guard_volume` without the end-face read-back | `E       Failed: DID NOT RAISE BuildError` | restored |
+| 33-02 | test_a_kernel_result_that_is_not_one_solid_is_refused | the `len(solids) != 1 or not solids[0].isValid()` check deleted | `E       AssertionError: Regex pattern did not match.` (the end-face read-back refused the two solids instead, so the test fails on the message it pins) | restored |

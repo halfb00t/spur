@@ -189,8 +189,6 @@ def build_shaft(p: ShaftParams) -> cq.Solid:
             body = body.fuse(shank)
         if c > 0:
             body = body.intersect(_cone(ra, c, p.splined_length, p.shank_length, p.shank_d))
-    except BuildError:
-        raise
     except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
         # Never the gear's "try smaller fillets or chamfers": a shaft has no fillets, and
         # the same parameters fail the same way, so retrying or trimming changes nothing.

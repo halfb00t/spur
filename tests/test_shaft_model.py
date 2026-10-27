@@ -211,6 +211,22 @@ def test_a_chamfer_the_kernel_never_cut_is_refused(monkeypatch: pytest.MonkeyPat
         build_shaft(ShaftParams())
 
 
+def test_a_kernel_result_that_is_not_one_solid_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A kernel result of two disjoint solids, each valid, never reaches an export. Until
+    this test the one-solid line was proven only by 32-03's `.clean()` break, which was
+    reverted (investigation/32-03-red-clean.log), so nothing durable held it (the resolved
+    debt item 2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md)."""
+    def two_solids(self: cq.Shape, *args: object, **kwargs: object) -> cq.Shape:
+        return cq.Compound.makeCompound([self, self.translate(cq.Vector(1000, 0, 0))])
+
+    monkeypatch.setattr(cq.Shape, "intersect", two_solids)
+    monkeypatch.setattr(cq.Compound, "intersect", two_solids)
+    with pytest.raises(BuildError, match="not one valid solid"):
+        build_shaft(ShaftParams())
+
+
 # The default spline (tip_d 24.75, root_d 22.25) with each shank diameter the plan names:
 # equal to the tip, equal to the root, between them, a hair either side of the tip, one ulp
 # above it, below the root, the bound, above the tip (the default), and no shank at all.
