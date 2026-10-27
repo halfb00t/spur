@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 32
 current_phase_name: The Shaft Solid
 status: executing
-stopped_at: Completed 32-02-PLAN.md
-last_updated: "2026-10-27T09:53:03.545Z"
+stopped_at: Completed 32-03-PLAN.md
+last_updated: "2026-10-27T10:18:37.338Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 32 execution started
-state_head: 95b1b9a7b74cc4a1c87493e128bfb402fd974114
+state_head: cbabc66a88434d18078e6431a3ee7a5a6e10bcc0
 progress:
   total_phases: 5
   completed_phases: 8
   total_plans: 17
-  completed_plans: 13
-  percent: 76
+  completed_plans: 14
+  percent: 82
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 32 (The Shaft Solid) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 32 execution started
 
@@ -282,6 +282,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 31 P06 | 12 min | 3 tasks | 11 files |
 | Phase 32 P01 | 17 min | 2 tasks | 7 files |
 | Phase 32 P02 | 12 min | 3 tasks | 15 files |
+| Phase 32 P03 | 30 min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -559,6 +560,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 32]: A1/B1/C1 applied: end_chamfer_effective = min(floor_mm(request), floor_mm(tooth height from printed diameters), floor_mm(splined_length)), floor_mm(v) = floor(v*1000+1e-9)/1000, 13th key after measure_over_pins, slug spur_shaft_w{d}x{m}x{z}
 - [Phase 32]: floor_mm can exceed its input by at most 1.03e-12 mm up to 500 mm (measured, 32-02-overshoot.log), not under 1e-12 as 32-01 stated
 - [Phase 32]: The chamfer cap warning fires only where a limit binds at the 0.001 mm resolution (gear 10-REVIEW CR-01 rule)
+- [Phase 32]: Bars for the shaft solid are set from its own worst rows: FLANK_ANGLE_ABS 1e-14 rad, VOLUME_REL 1e-4, READBACK_TOL 1e-6 mm, FLANK_BAR_PER_MODULE 5e-4, VOLUME_BRACKET_SLACK 1e-4
+- [Phase 32]: The flank deviation is sampled at 201 positions per spline edge, not 21: the sparse sample read 5x low (W 14x2x6: 7.4e-6 vs 3.985e-5 per module)
+- [Phase 32]: tests/test_shaft_model.py is a heavy test file: make verify.fast read 20.97 s with it against 12.8 s without, at load 23-30, above the 20.0 s rule
+- [Phase 32]: A cone start within 1e-9..1e-4 mm of the root circle is refused before the kernel runs, and a solid outside the volume bracket is a BuildError naming a modelling defect
 
 ### Pending Todos
 
@@ -874,8 +879,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T09:53:03.448Z
-Stopped at: Completed 32-02-PLAN.md
+Last session: 2026-10-27T10:18:37.149Z
+Stopped at: Completed 32-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

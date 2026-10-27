@@ -356,7 +356,7 @@ DIN proportions); the existing gear caches and pool are reused, not forked. **Ph
 .github/workflows/ci.yml` empty.
 **Research flag**: Yes — a kernel spike at real DIN proportions first (research Phase 3);
 build times so far were measured on placeholder proportions only.
-**Plans**: 2/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 32-01 stops at the
+**Plans**: 3/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 32-01 stops at the
 `checkpoint:decision` on the four open research choices and 32-02 cannot start until the human answers
 
 Plans:
@@ -367,7 +367,7 @@ Plans:
 - [x] 32-02-PLAN.md — the applied end chamfer (`end_chamfer_effective`, floored, capped at tooth height and splined length, warned), the root-form and shank-step sentences, the help texts and `slug()`; L47 amendment; each seen red
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 32-03-PLAN.md — `shaft_model.build_shaft`: outline, extrude, fuse, cone intersect, proved against a stdlib closed form on every shank regime and chamfer cap; the root-band and volume-bracket guards; the kernel file priced; each seen red
+- [x] 32-03-PLAN.md — `shaft_model.build_shaft`: outline, extrude, fuse, cone intersect, proved against a stdlib closed form on every shank regime and chamfer cap; the root-band and volume-bracket guards; the kernel file priced; each seen red
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 32-04-PLAN.md — the doorway: `model` dispatches a shaft, `Part` widens, the contract's one ignored edge and the widening debt item in one change; STL and STEP through `model` and a real worker; each seen red
@@ -517,6 +517,6 @@ comes from.
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
-| 32. The Shaft Solid | v0.7 | 2/6 | In Progress | - |
+| 32. The Shaft Solid | v0.7 | 3/6 | In Progress | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |
