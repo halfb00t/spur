@@ -54,6 +54,9 @@ makes the bundle small.
 the stronger (L41).
 A link value its control cannot hold is kept aside and sent in the control's place, so the same
 path marks it; the mate box is not a form field, so it shows the message with no outline (L44).
+A token the number box blanks but a number could be read from (`5.`, `+22`, ` 22`, `1_0`) is kept
+aside the same way and the API refuses it as written, so the box never sits blank over a
+non-default part (L49).
 
 ## Known gap
 

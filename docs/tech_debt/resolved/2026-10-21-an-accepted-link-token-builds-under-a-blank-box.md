@@ -1,7 +1,8 @@
 # A link token the number box blanks but the API accepts builds a non-default part under a blank box
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: fix(api): refuse a link number the box would blank (WR-02, L49) (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-21
 Source: 28-REVIEW WR-02, deferred at the 28-05 checkpoint (D-20)
 Related files:
@@ -43,5 +44,10 @@ Revisit when the next edit of `refuse()` or `gearQuery()` in `src/spur/static/ap
 not match a blank box. The wording and placement of any notice are a UI design choice with more than one honest shape;
 take them at a discuss-phase, not in a gap closure.
 
-<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
-     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
+## Resolution
+The API refuses the tokens as written (`number_as_written`, L49), on `/api/info` and `/api/model.{fmt}`, so the page's unchanged
+`refuse()` and `gearQuery()` mark the box and no part is built. The probe this item asked for was run in Chromium over every
+number input (33-01, `bench/RESULTS.md` `### Tokens the number box blanks, every field (33-01)`): every token above, and the
+`+22`, `mate_teeth=%2022`, `20.`, `+2` and `2.` additions, is blank on all 37 inputs. The server rule and the table are pinned
+by `tests/test_number_as_written.py`, and the browser steps `blank, unknown and accepted tokens`, `number box tokens` and
+`as-written sweep` hold it on the page.

@@ -1,0 +1,439 @@
+FFFFFFFFFFFFFFF....                                                      [100%]
+=================================== FAILURES ===================================
+______ test_a_trailing_dot_is_refused_as_written_with_the_canonical_form _______
+
+stub = <test_number_as_written._Stub object at 0x10ca0eb70>
+
+    def test_a_trailing_dot_is_refused_as_written_with_the_canonical_form(stub: _Stub) -> None:
+        """D-01, D-04: `face_width=5.` is the token the browser pin used to build; /api/info and
+        the model route both answer the same one-entry 422 and the model route builds nothing."""
+        want = [{
+            "loc": ["query", "face_width"],
+            "type": AS_WRITTEN,
+            "msg": '"5." is not a number as written; write it as 5 or 5.0',
+        }]
+>       assert _refused_detail("/api/info", [("face_width", "5.")]) == want
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_number_as_written.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('face_width', '5.')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('face_width', '5.')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+_ test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[plus-int] _
+
+field = 'teeth', token = '+22'
+msg = '"+22" is not a number as written; write it as 22'
+
+    @pytest.mark.parametrize(("field", "token", "msg"), [
+        pytest.param("teeth", "+22", '"+22" is not a number as written; write it as 22',
+                     id="plus-int"),
+        pytest.param("teeth", " 22", '" 22" is not a number as written; write it as 22',
+                     id="space-int"),
+        pytest.param("teeth", "22.", '"22." is not a number as written; write it as 22',
+                     id="dot-int-has-no-point-zero"),
+        pytest.param("face_width", "1_0",
+                     '"1_0" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="underscore-has-no-canonical-form"),
+        pytest.param("module", "+.5",
+                     '"+.5" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="plus-point-five"),
+        pytest.param("mate_teeth", "+30", '"+30" is not a number as written; write it as 30',
+                     id="mate-box"),
+    ])
+    def test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one(
+            field: str, token: str, msg: str) -> None:
+        """D-04: the token is quoted as JSON; the suggestion is the token with its surrounding
+        whitespace, one leading `+` and one trailing `.` removed, when that is a plain number."""
+>       assert _refused_detail("/api/info", [(field, token)]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            {"loc": ["query", field], "type": AS_WRITTEN, "msg": msg}]
+
+tests/test_number_as_written.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('teeth', '+22')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('teeth', '+22')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+_ test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[space-int] _
+
+field = 'teeth', token = ' 22'
+msg = '" 22" is not a number as written; write it as 22'
+
+    @pytest.mark.parametrize(("field", "token", "msg"), [
+        pytest.param("teeth", "+22", '"+22" is not a number as written; write it as 22',
+                     id="plus-int"),
+        pytest.param("teeth", " 22", '" 22" is not a number as written; write it as 22',
+                     id="space-int"),
+        pytest.param("teeth", "22.", '"22." is not a number as written; write it as 22',
+                     id="dot-int-has-no-point-zero"),
+        pytest.param("face_width", "1_0",
+                     '"1_0" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="underscore-has-no-canonical-form"),
+        pytest.param("module", "+.5",
+                     '"+.5" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="plus-point-five"),
+        pytest.param("mate_teeth", "+30", '"+30" is not a number as written; write it as 30',
+                     id="mate-box"),
+    ])
+    def test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one(
+            field: str, token: str, msg: str) -> None:
+        """D-04: the token is quoted as JSON; the suggestion is the token with its surrounding
+        whitespace, one leading `+` and one trailing `.` removed, when that is a plain number."""
+>       assert _refused_detail("/api/info", [(field, token)]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            {"loc": ["query", field], "type": AS_WRITTEN, "msg": msg}]
+
+tests/test_number_as_written.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('teeth', ' 22')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('teeth', ' 22')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+_ test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[dot-int-has-no-point-zero] _
+
+field = 'teeth', token = '22.'
+msg = '"22." is not a number as written; write it as 22'
+
+    @pytest.mark.parametrize(("field", "token", "msg"), [
+        pytest.param("teeth", "+22", '"+22" is not a number as written; write it as 22',
+                     id="plus-int"),
+        pytest.param("teeth", " 22", '" 22" is not a number as written; write it as 22',
+                     id="space-int"),
+        pytest.param("teeth", "22.", '"22." is not a number as written; write it as 22',
+                     id="dot-int-has-no-point-zero"),
+        pytest.param("face_width", "1_0",
+                     '"1_0" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="underscore-has-no-canonical-form"),
+        pytest.param("module", "+.5",
+                     '"+.5" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="plus-point-five"),
+        pytest.param("mate_teeth", "+30", '"+30" is not a number as written; write it as 30',
+                     id="mate-box"),
+    ])
+    def test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one(
+            field: str, token: str, msg: str) -> None:
+        """D-04: the token is quoted as JSON; the suggestion is the token with its surrounding
+        whitespace, one leading `+` and one trailing `.` removed, when that is a plain number."""
+>       assert _refused_detail("/api/info", [(field, token)]) == [
+            {"loc": ["query", field], "type": AS_WRITTEN, "msg": msg}]
+E       assert [{'type': 'in...nput': '22.'}] == [{'loc': ['qu...te it as 22'}]
+E         
+E         At index 0 diff: {'type': 'int_parsing', 'loc': ['query', 'teeth'], 'msg': 'Input should be a valid integer, unable to parse string as an integer', 'input': '22.'} != {'loc': ['query', 'teeth'], 'type': 'number_as_written', 'msg': '"22." is not a number as written; write it as 22'}
+E         Use -v to get more diff
+
+tests/test_number_as_written.py:120: AssertionError
+_ test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[underscore-has-no-canonical-form] _
+
+field = 'face_width', token = '1_0'
+msg = '"1_0" is not a number as written; write it as a plain number, e.g. 22 or 2.5'
+
+    @pytest.mark.parametrize(("field", "token", "msg"), [
+        pytest.param("teeth", "+22", '"+22" is not a number as written; write it as 22',
+                     id="plus-int"),
+        pytest.param("teeth", " 22", '" 22" is not a number as written; write it as 22',
+                     id="space-int"),
+        pytest.param("teeth", "22.", '"22." is not a number as written; write it as 22',
+                     id="dot-int-has-no-point-zero"),
+        pytest.param("face_width", "1_0",
+                     '"1_0" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="underscore-has-no-canonical-form"),
+        pytest.param("module", "+.5",
+                     '"+.5" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="plus-point-five"),
+        pytest.param("mate_teeth", "+30", '"+30" is not a number as written; write it as 30',
+                     id="mate-box"),
+    ])
+    def test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one(
+            field: str, token: str, msg: str) -> None:
+        """D-04: the token is quoted as JSON; the suggestion is the token with its surrounding
+        whitespace, one leading `+` and one trailing `.` removed, when that is a plain number."""
+>       assert _refused_detail("/api/info", [(field, token)]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            {"loc": ["query", field], "type": AS_WRITTEN, "msg": msg}]
+
+tests/test_number_as_written.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('face_width', '1_0')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('face_width', '1_0')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+_ test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[plus-point-five] _
+
+field = 'module', token = '+.5'
+msg = '"+.5" is not a number as written; write it as a plain number, e.g. 22 or 2.5'
+
+    @pytest.mark.parametrize(("field", "token", "msg"), [
+        pytest.param("teeth", "+22", '"+22" is not a number as written; write it as 22',
+                     id="plus-int"),
+        pytest.param("teeth", " 22", '" 22" is not a number as written; write it as 22',
+                     id="space-int"),
+        pytest.param("teeth", "22.", '"22." is not a number as written; write it as 22',
+                     id="dot-int-has-no-point-zero"),
+        pytest.param("face_width", "1_0",
+                     '"1_0" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="underscore-has-no-canonical-form"),
+        pytest.param("module", "+.5",
+                     '"+.5" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="plus-point-five"),
+        pytest.param("mate_teeth", "+30", '"+30" is not a number as written; write it as 30',
+                     id="mate-box"),
+    ])
+    def test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one(
+            field: str, token: str, msg: str) -> None:
+        """D-04: the token is quoted as JSON; the suggestion is the token with its surrounding
+        whitespace, one leading `+` and one trailing `.` removed, when that is a plain number."""
+>       assert _refused_detail("/api/info", [(field, token)]) == [
+            {"loc": ["query", field], "type": AS_WRITTEN, "msg": msg}]
+E       AssertionError: assert [{'type': 'in...0, ...}, ...}] == [{'loc': ['qu.... 22 or 2.5'}]
+E         
+E         At index 0 diff: {'type': 'infeasible', 'loc': ['query'], 'msg': 'Bore is too large for the root diameter.', 'input': {'teeth': 19, 'module': '+.5', 'pressure_angle': 25.0, 'profile_shift': 0.0, 'backlash': 0.1, 'root_fillet': 0.5, 'tip_chamfer': 0.0, 'root_shape': 'radial', 'face_width': 7.5, 'bore_d': 9.0, 'bore_flat': 8.0, 'keyway_width': 0.0, 'keyway_depth': 0.0, 'bore_hex': 0.0, 'bore_clearance': 0.15, 'bore_chamfer': 0.4, 'recess_sides': 'both', 'recess_depth': 2.0, 'recess_width': 6.0, 'recess_inner_d': 0.0, 'recess_fillet': 0.5, 'spoke_count': 0, 'spoke_width': ...
+E         
+E         ...Full output truncated (2 lines hidden), use '-vv' to show
+
+tests/test_number_as_written.py:120: AssertionError
+_ test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[mate-box] _
+
+field = 'mate_teeth', token = '+30'
+msg = '"+30" is not a number as written; write it as 30'
+
+    @pytest.mark.parametrize(("field", "token", "msg"), [
+        pytest.param("teeth", "+22", '"+22" is not a number as written; write it as 22',
+                     id="plus-int"),
+        pytest.param("teeth", " 22", '" 22" is not a number as written; write it as 22',
+                     id="space-int"),
+        pytest.param("teeth", "22.", '"22." is not a number as written; write it as 22',
+                     id="dot-int-has-no-point-zero"),
+        pytest.param("face_width", "1_0",
+                     '"1_0" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="underscore-has-no-canonical-form"),
+        pytest.param("module", "+.5",
+                     '"+.5" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                     id="plus-point-five"),
+        pytest.param("mate_teeth", "+30", '"+30" is not a number as written; write it as 30',
+                     id="mate-box"),
+    ])
+    def test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one(
+            field: str, token: str, msg: str) -> None:
+        """D-04: the token is quoted as JSON; the suggestion is the token with its surrounding
+        whitespace, one leading `+` and one trailing `.` removed, when that is a plain number."""
+>       assert _refused_detail("/api/info", [(field, token)]) == [
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            {"loc": ["query", field], "type": AS_WRITTEN, "msg": msg}]
+
+tests/test_number_as_written.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('mate_teeth', '+30')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('mate_teeth', '+30')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+________ test_a_control_character_in_a_token_is_escaped_in_the_message _________
+
+    def test_a_control_character_in_a_token_is_escaped_in_the_message() -> None:
+        """T-33-06: the message reflects the token, so it is quoted with json.dumps and no raw
+        control or non-ASCII character reaches the page."""
+>       detail = _refused_detail("/api/info", [("teeth", "\x0b22" + chr(0x2028))])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_number_as_written.py:127: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('teeth', '\x0b22\u2028')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('teeth', '\x0b22\u2028')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+_ test_every_blanked_token_is_refused_and_no_held_token_is_by_the_rule[/api/info] _
+
+route = '/api/info', stub = <test_number_as_written._Stub object at 0x10caf3f50>
+
+    @pytest.mark.parametrize("route", ["/api/info", "/api/model.stl"])
+    def test_every_blanked_token_is_refused_and_no_held_token_is_by_the_rule(
+            route: str, stub: _Stub) -> None:
+        """D-02: walk the committed Chromium table over every gear number field of the route.
+    
+        A token the box blanks never gets a 200, whether the rule or pydantic refuses it; the
+        rule itself fires on none of the held tokens. An empty token is blank in the box but is
+        not the rule's: pydantic answers it and the page never sends it (L44 D-06).
+        """
+        fields = INFO_FIELDS if route == "/api/info" else MODEL_FIELDS
+        sent_ok: list[str] = []
+        wrongly_refused: list[str] = []
+        for token in TOKENS:
+>           rule = app_module.blank_in_a_number_box(token.text)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'spur.app' has no attribute 'blank_in_a_number_box'
+
+tests/test_number_as_written.py:147: AttributeError
+_ test_every_blanked_token_is_refused_and_no_held_token_is_by_the_rule[/api/model.stl] _
+
+route = '/api/model.stl'
+stub = <test_number_as_written._Stub object at 0x10caf09e0>
+
+    @pytest.mark.parametrize("route", ["/api/info", "/api/model.stl"])
+    def test_every_blanked_token_is_refused_and_no_held_token_is_by_the_rule(
+            route: str, stub: _Stub) -> None:
+        """D-02: walk the committed Chromium table over every gear number field of the route.
+    
+        A token the box blanks never gets a 200, whether the rule or pydantic refuses it; the
+        rule itself fires on none of the held tokens. An empty token is blank in the box but is
+        not the rule's: pydantic answers it and the page never sends it (L44 D-06).
+        """
+        fields = INFO_FIELDS if route == "/api/info" else MODEL_FIELDS
+        sent_ok: list[str] = []
+        wrongly_refused: list[str] = []
+        for token in TOKENS:
+>           rule = app_module.blank_in_a_number_box(token.text)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'spur.app' has no attribute 'blank_in_a_number_box'
+
+tests/test_number_as_written.py:147: AttributeError
+__________________ test_a_held_token_keeps_the_answer_it_had ___________________
+
+stub = <test_number_as_written._Stub object at 0x10caf04d0>
+
+    def test_a_held_token_keeps_the_answer_it_had(stub: _Stub) -> None:
+        """Precision: tokens the box holds that look odd are the rule's non-business. `00022` is
+        22, `1e-400` is 0.0 and fails the bound, `-0` is a bound failure; none is
+        `number_as_written`."""
+        for text in ("1e-400", "00022", "1.e1", "-0", "0.1e1", "5.0", "1e1"):
+>           assert not app_module.blank_in_a_number_box(text), text
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'spur.app' has no attribute 'blank_in_a_number_box'
+
+tests/test_number_as_written.py:168: AttributeError
+_________ test_the_bound_is_the_bounds_and_the_rule_stops_at_the_digit _________
+
+    def test_the_bound_is_the_bounds_and_the_rule_stops_at_the_digit() -> None:
+        """D-03 boundary: 200 teeth build, `+200` is refused as written, 201 keeps pydantic's own
+        bound sentence, and an empty value keeps pydantic's own 422 (the rule never reads it)."""
+        assert client.get("/api/info", params={"teeth": "200"}).status_code == 200
+>       assert _refused_detail("/api/info", [("teeth", "+200")])[0]["type"] == AS_WRITTEN
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_number_as_written.py:179: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('teeth', '+200')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('teeth', '+200')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+________ test_every_value_of_a_repeated_key_is_checked_in_either_order _________
+
+    def test_every_value_of_a_repeated_key_is_checked_in_either_order() -> None:
+        """D-05: pydantic would read one value of a repeated key; the rule reads all of them, so
+        a blanked token cannot hide behind a good one."""
+        for pairs in ([("teeth", "22"), ("teeth", "+22")], [("teeth", "+22"), ("teeth", "22")]):
+>           detail = _refused_detail("/api/info", pairs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_number_as_written.py:190: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('teeth', '22'), ('teeth', '+22')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('teeth', '22'), ('teeth', '+22')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+__________ test_two_offending_keys_answer_two_entries_in_query_order ___________
+
+    def test_two_offending_keys_answer_two_entries_in_query_order() -> None:
+        """D-05: one detail entry per offending key, in the order the keys were sent."""
+>       detail = _refused_detail("/api/info", [("face_width", "5."), ("teeth", "+22")])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_number_as_written.py:197: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/api/info', params = [('face_width', '5.'), ('teeth', '+22')]
+
+    def _refused_detail(path: str, params: list[tuple[str, str]]) -> list[dict[str, object]]:
+        response = client.get(path, params=params)
+>       assert response.status_code == 422, f"{path} {params} answered {response.status_code}"
+E       AssertionError: /api/info [('face_width', '5.'), ('teeth', '+22')] answered 200
+E       assert 200 == 422
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_number_as_written.py:81: AssertionError
+____________ test_the_rule_answers_before_pydantic_reads_the_query _____________
+
+    def test_the_rule_answers_before_pydantic_reads_the_query() -> None:
+        """D-01: a query with a blanked token and a token pydantic would refuse answers only the
+        as-written entry; the second refusal appears once the first is fixed."""
+        detail = _refused_detail("/api/info", [("face_width", "5."), ("teeth", "abc")])
+>       assert [str(item["type"]) for item in detail] == [AS_WRITTEN]
+E       AssertionError: assert ['int_parsing'] == ['number_as_written']
+E         
+E         At index 0 diff: 'int_parsing' != 'number_as_written'
+E         Use -v to get more diff
+
+tests/test_number_as_written.py:207: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_number_as_written.py::test_a_trailing_dot_is_refused_as_written_with_the_canonical_form
+FAILED tests/test_number_as_written.py::test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[plus-int]
+FAILED tests/test_number_as_written.py::test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[space-int]
+FAILED tests/test_number_as_written.py::test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[dot-int-has-no-point-zero]
+FAILED tests/test_number_as_written.py::test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[underscore-has-no-canonical-form]
+FAILED tests/test_number_as_written.py::test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[plus-point-five]
+FAILED tests/test_number_as_written.py::test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one[mate-box]
+FAILED tests/test_number_as_written.py::test_a_control_character_in_a_token_is_escaped_in_the_message
+FAILED tests/test_number_as_written.py::test_every_blanked_token_is_refused_and_no_held_token_is_by_the_rule[/api/info]
+FAILED tests/test_number_as_written.py::test_every_blanked_token_is_refused_and_no_held_token_is_by_the_rule[/api/model.stl]
+FAILED tests/test_number_as_written.py::test_a_held_token_keeps_the_answer_it_had
+FAILED tests/test_number_as_written.py::test_the_bound_is_the_bounds_and_the_rule_stops_at_the_digit
+FAILED tests/test_number_as_written.py::test_every_value_of_a_repeated_key_is_checked_in_either_order
+FAILED tests/test_number_as_written.py::test_two_offending_keys_answer_two_entries_in_query_order
+FAILED tests/test_number_as_written.py::test_the_rule_answers_before_pydantic_reads_the_query
+15 failed, 4 passed in 0.21s

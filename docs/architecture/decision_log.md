@@ -3304,3 +3304,59 @@ publishes a shaft link (L05, L44), as their amendments say.
 Reason: a number the tool prints is a number someone will cut metal to, and a solid the kernel calls valid can still be empty or
 wrong. The shaft is built by the one route that held on every row, each forbidden route is written down with the log that
 forbids it, and every silent failure became a refusal that was seen red once.
+
+## L49 — Phase 33 puts the shaft on the API, the CLI and the page, and a link token the number box blanks is refused as written (amends L44's **The server decides**; follows L46, L47 and L48; keeps L02, L03, L05 and L08)
+
+Date: 2026-10-27.
+
+Phase 33 gives the shaft its routes, its CLI and its page. L49 is the one entry its plans append to: each plan adds a paragraph
+under its own bold lead, and no earlier line of this entry or of any other is edited. The first paragraph is the WR-02 fix, which
+lands before the part switch (33-03).
+
+**Refused as written** (D-01..D-06; `src/spur/app.py`, `tests/number_box_tokens.py`). L44's paragraph **The server decides**
+recorded that some tokens a number box blanks are accepted by the API, and that they are sent and built as the server reads them
+while the box shows blank. That is a form that says "default" over a part that is not (L05), and a number from that part is one
+someone will cut metal to (L08). L49 reverses it on the gear routes. `/api/info` and `/api/model.{fmt}` answer `422` for such a
+token before pydantic reads the query, with one `detail` entry per offending key, `{"loc": ["query", <field>], "type":
+"number_as_written", "msg": ...}`. The unchanged `problems()` marks the box, the unchanged `fail()` returns before the STL
+request, and no part is drawn. The rule is one function in the query layer, `blank_in_a_number_box`, applied by a route
+dependency to every `int`, `float` and `int | None` field of the route's query model, and to every value of a repeated key
+(pydantic would read one). `params.py`, `cli.py`, `app.js` and the gear `/api/schema` bytes do not change; `make gear.unchanged`
+is green and the OpenAPI query parameters of both routes are pinned.
+
+**The rule, and why Chromium's table and not the HTML spec** (D-02, 33-01 choice A1). A token is refused as written when any of
+four things holds: `token != token.strip()`, `"_" in token`, `token.startswith("+")`, `token.endswith(".")`. It is what the
+gate's own Chromium (Playwright's headless shell, 153.0.8010.12) does, measured over 91 tokens on 37 number inputs and recorded in
+`bench/RESULTS.md`, `### Tokens the number box blanks, every field (33-01)`: 66 tokens read back blank on all 37 inputs, 25 are
+held, and no token differs between inputs. The two lines the human was asked to read were both empty: no token the box holds is
+refused by the rule, and no token the box blanks is accepted by the API for some field. The rule refuses 34 of the 66; the other
+32 (`Infinity`, `inf`, `NaN`, `1e400`, `1e309`, `abc`, `0x10`, `1,5`, `''`, ...) are already a `422` from pydantic or a bound,
+so none builds under a blank box, and the rule leaves them their own sentence. An empty value is never the rule's: the page does
+not send it (a blank control is the default, L44 D-06) and pydantic answers it. `tests/number_box_tokens.py` transcribes the table
+and `tests/test_number_as_written.py` walks it over both routes; the browser step `number box tokens` re-reads every row on the
+page's own inputs at every gate run, so a Chromium upgrade that moves a row fails there and not for a user.
+
+**The human's picks** (33-01 `## Decision result`, 2026-10-27, typed "recommended"). A1: the four conditions above, the 10
+non-finite and overflowing tokens not added. B1: one `#<field>=%2B<default>` link per number field and `mate_teeth` in the browser
+(30 gear links), the full table walked in the light test. C1: this fix lands in `app.py` in 33-03, before the switch.
+
+**The move from 200 to 422** is an invalid-link change of the L44/L46 class: a link that built a part before is refused now. The
+golden fixtures carry no such token (`tests/regression/` is byte-equal to `v0.6`, `gear.unchanged`, and the browser's golden
+sweep still sends every pinned query unchanged). `face_width=5.`, which `tests/test_browser.py`
+pinned as built, is now pinned as refused. The CLI stays as it is (D-03): it has no number box, argparse reads `5.` as 5.0, and
+nothing there can show blank over a hidden value.
+
+**The wording** (D-04). The token is quoted with `json.dumps`, so no control or non-ASCII character reaches the page. The
+suggestion is the token with surrounding whitespace, one leading `+` and one trailing `.` removed when that is a plain number,
+plus `or <n>.0` for a float field that lost a trailing `.`: `"5." is not a number as written; write it as 5 or 5.0`, `"+22" is
+not a number as written; write it as 22`. Otherwise `a plain number, e.g. 22 or 2.5`. The mate box shows the message with no
+outline (L44 D-05, unchanged). Bounds keep their own sentence: `teeth=200` builds, `teeth=+200` is refused as written,
+`teeth=201` is pydantic's.
+
+**SC4's wording.** ROADMAP criterion 4 reads "where the part switch edits `refuse()`/`gearQuery()`". With C1 that is met with
+both functions byte-identical through the phase: the part switch needs no edit to either (33-RESEARCH Pitfall 2), because
+`gearQuery()` is generic over `fields`. 33-09 proves the byte-identity against `6800769` at close and writes this reading beside
+criterion 4 and REQ-wr02-fixed.
+
+**Reversibility:** costly. Accepting these tokens again turns refused links back into builds under a blank box; it needs another
+`Lxx` and moves the browser steps, the pins, `web-ui.md` and `http-api.md` together.

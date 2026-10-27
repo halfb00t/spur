@@ -8,12 +8,16 @@
     GET /api/model.step?...  STEP AP214 solid
 
 Every gear parameter is a query string field, so a model URL is shareable and
-curl-able. Unset fields take their defaults.
+curl-able. Unset fields take their defaults. A number written the way the page's number box
+would blank it (`5.`, `+22`, ` 22`, `1_0`) is a 422, so no link builds a part under a blank
+box (L49).
 """
 
 from __future__ import annotations
 
 import gzip
+import json
+import re
 import threading
 import time
 import uuid
@@ -22,7 +26,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable, Hashable, Iterat
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, get_args
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
@@ -240,6 +244,79 @@ class ModelQuery(GearParams):
         "fine", description="STL tessellation: preview (coarse, small) or fine.")
 
 
+def blank_in_a_number_box(token: str) -> bool:
+    """True when Chromium's number box reads `token` back as blank although it is a number
+    the server would parse (WR-02, L49).
+
+    The four conditions are the whole of what the API could read and the box could not: a
+    leading or trailing space of any kind, an underscore, a leading `+` and a trailing `.`.
+    Measured in the gate's own Chromium over 91 tokens on 37 inputs
+    (`bench/RESULTS.md`, `### Tokens the number box blanks, every field (33-01)`): 66 are
+    blank, the four conditions refuse 34 of them and none that the box holds; the other 32
+    (`abc`, `Infinity`, `1e400`, `''`, ...) are already a 422 from pydantic or a bound.
+    tests/test_number_as_written.py walks that table. An empty token is not the rule's: the
+    page never sends it (a blank control is the default, L44 D-06) and pydantic answers it.
+    """
+    return token != token.strip() or "_" in token or token.startswith("+") or token.endswith(".")
+
+
+def _number_keys(model: type[BaseModel]) -> dict[str, bool]:
+    """Each `int`, `float` or `int | None` field of `model`, mapped to whether it is an int.
+
+    These are the fields a number box edits. A `bool`, a `Literal` or a `str` field is read
+    by a select or not at all, so its token keeps pydantic's own answer.
+    """
+    keys: dict[str, bool] = {}
+    for name, field in model.model_fields.items():
+        parts = get_args(field.annotation) or (field.annotation,)
+        kinds = [k for k in parts if k is not type(None)]
+        if len(kinds) == 1 and kinds[0] in (int, float):
+            keys[name] = kinds[0] is int
+    return keys
+
+
+_PLAIN_NUMBER = re.compile(r"-?[0-9]+(\.[0-9]+)?")
+
+
+def _as_written_message(token: str, integer: bool) -> str:
+    """The sentence for a refused token: quoted as JSON, plus the canonical form if clear.
+
+    json.dumps escapes every control and non-ASCII character, so nothing invisible is
+    reflected to the page (T-33-06).
+    """
+    core = token.strip().removeprefix("+").removesuffix(".")
+    if not _PLAIN_NUMBER.fullmatch(core):
+        suggestion = "a plain number, e.g. 22 or 2.5"
+    elif token.strip().endswith(".") and not integer:
+        suggestion = f"{core} or {core}.0"
+    else:
+        suggestion = core
+    return f"{json.dumps(token)} is not a number as written; write it as {suggestion}"
+
+
+def _numbers_as_written(model: type[BaseModel]) -> Callable[[Request], None]:
+    """A route dependency refusing every number `model`'s box would blank, as written.
+
+    It reads the raw query string, so it runs before pydantic and adds no OpenAPI parameter.
+    Every value of a repeated key is checked (pydantic would read one), the first offending
+    value of a key names it, and the entries come in query order. It holds no state: it is a
+    pure function of one request's query string.
+    """
+    keys = _number_keys(model)
+
+    def check(request: Request) -> None:
+        refused: dict[str, str] = {}
+        for key, value in request.query_params.multi_items():
+            if key in keys and key not in refused and blank_in_a_number_box(value):
+                refused[key] = _as_written_message(value, keys[key])
+        if refused:
+            raise HTTPException(422, detail=[
+                {"loc": ["query", key], "msg": msg, "type": "number_as_written"}
+                for key, msg in refused.items()])
+
+    return check
+
+
 def _gear(q: GearParams) -> GearParams:
     """Strip the per-endpoint extras back to a plain GearParams.
 
@@ -376,7 +453,7 @@ def schema() -> JsonSchemaValue:
     return GearParams.model_json_schema()
 
 
-@app.get("/api/info")
+@app.get("/api/info", dependencies=[Depends(_numbers_as_written(InfoQuery))])
 def info(q: Annotated[InfoQuery, Query()]) -> DerivedDimensions:
     """Derived dimensions. With `mate_teeth`, also the centre distance to that gear."""
     return derive(_gear(q), mate_teeth=q.mate_teeth)
@@ -510,6 +587,7 @@ async def _serve_model(params: Part, fmt: Literal["stl", "step"],
 
 
 @app.get("/api/model.{fmt}", response_class=Response,
+         dependencies=[Depends(_numbers_as_written(ModelQuery))],
          responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
 async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 request: Request,

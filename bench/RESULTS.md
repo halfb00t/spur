@@ -7422,3 +7422,5 @@ Each row is a deliberate break of a guard that this phase adds, run once to see 
 |---|---|---|---|---|
 | 33-02 | test_a_chamfer_the_kernel_never_cut_is_refused | `_guard_volume` without the end-face read-back | `E       Failed: DID NOT RAISE BuildError` | restored |
 | 33-02 | test_a_kernel_result_that_is_not_one_solid_is_refused | the `len(solids) != 1 or not solids[0].isValid()` check deleted | `E       AssertionError: Regex pattern did not match.` (the end-face read-back refused the two solids instead, so the test fails on the message it pins) | restored |
+| 33-03 | tests/test_number_as_written.py (15 of its 19 cases) | `app.py` without `_numbers_as_written` (the unfixed tree) | `E       AssertionError: /api/info [('face_width', '5.')] answered 200` | restored |
+| 33-03 | browser step `blank, unknown and accepted tokens` | `app.py` without `_numbers_as_written` (the unfixed tree) | `E                   AssertionError: /api/info?face_width=5. answered 200, not 422` | restored |

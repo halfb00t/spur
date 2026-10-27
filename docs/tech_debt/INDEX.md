@@ -38,12 +38,12 @@ Severity (grep-able `Severity:` field):
 | nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched |
 | nice | [Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`](active/2026-10-20-nothing-pins-that-build-passes-its-own-rm-to-chamfer-tips.md) | `_build` or `_chamfer_tips` is next touched, or a public per-build cost counter exists |
 | nice | [Phase 18's review leftovers and Phase 10's hard-coded chamfer bound](active/2026-10-21-phase-18-review-info-findings-deferred.md) | the next phase that changes the trochoid / hob-root maths in calc.py or its tests; for 10 IN-01, the next edit of bench/tip_chamfer_spike.py or the tip_chamfer bound |
-| must | [A link token the number box blanks but the API accepts builds a non-default part under a blank box](active/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | the next edit of `refuse()` or `gearQuery()` in `src/spur/static/app.js`, or a report of a part that does not match a blank box |
 
 ## Resolved
 
 | Item | Resolved in |
 |---|---|
+| [A link token the number box blanks but the API accepts builds a non-default part under a blank box](resolved/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | fix(api): refuse a link number the box would blank (WR-02, L49) |
 | [Two guard lines in `shaft_model.build_shaft` are reached by no passing test](resolved/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md) | 49021f5 test(shaft): pin the one-valid-solid guard and drop a dead re-raise |
 | [The shaft's volume guard accepts a chamfer that was never cut](resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md) | 3e1eded fix(shaft): refuse a chamfer the kernel never cut (end-face read-back) |
 | [Widening `Part` to the shaft must type `model._build_checked`, `model._write_export` and `records._gear_fields` in the same change](resolved/2026-10-23-parts-one-line-widening-claim-is-false.md) | 4018de8 feat(model): build and export a shaft through the one kernel doorway (Part widens) |

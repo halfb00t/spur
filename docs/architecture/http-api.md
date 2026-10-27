@@ -67,6 +67,10 @@ and has to measure the event loop, not the pool.
 
 - Parameters that cannot make a part → `422`, from `GearParams`'s own validator, with the
   offending fields in `detail[].ctx.fields` (L03).
+- A number the page's number box would blank (`5.`, `+22`, ` 22`, `1_0`) → `422` before the
+  query is read, one `detail` entry per offending key (`type == "number_as_written"`, `loc ==
+  ["query", <field>]`), on `/api/info` and `/api/model.{fmt}`. Every value of a repeated key
+  is checked; an empty value and every other malformed token keep pydantic's own `422` (L49).
 - `BuildError` from the kernel → `422` with the kernel's message (`detail[0].type ==
   "build_error"`).
 - A build that exceeds `SPUR_BUILD_TIMEOUT` → `503` + `Retry-After`, **not** `422`

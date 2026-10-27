@@ -105,8 +105,9 @@ LINK_C_OTHER = "face_width=8"
 
 # Links the page must refuse (L44). Each token is one its control cannot hold AND the API
 # refuses, so the page sends it as given. A number box also blanks ` 22`, `1_0`, `22.`, `5.`
-# and `+5`, which the API accepts for some fields, so none of those may stand for a bad link
-# (28-RESEARCH); select options compare case-sensitively, so `Trochoid` is as bad as `bogus`.
+# and `+5`, which the API refuses as written since L49, so none of those stands for a bad link
+# here (the step `as-written sweep` owns them); select options compare case-sensitively, so
+# `Trochoid` is as bad as `bogus`.
 # The second member is the field the 422 names, or the mate box, which is not a schema field.
 BAD_LINKS = (
     ("root_shape=bogus&teeth=22", "root_shape"),
@@ -118,7 +119,8 @@ BAD_LINKS = (
 # Blank is the default on the page (D-06), though the API answers 422 for an empty value.
 BLANK_LINK = "teeth=&root_shape=&mate_teeth=&face_width=8"
 UNKNOWN_KEY_LINK = "not_a_field=1&face_width=9"
-# The box blanks `5.`, the API reads it as 5: it is sent and built as the server reads it.
+# The box blanks `5.` and the API refuses it as written (L49): it is sent as given, answered
+# 422 `number_as_written`, and the face_width field is marked. Before L49 this link built.
 ACCEPTED_LINK = "face_width=5."
 
 # Links for `root_fillet label`. 26 is the last tooth count where a trochoid request builds the
@@ -2060,8 +2062,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
 
             with step("blank, unknown and accepted tokens", no_foreign_key):
                 # D-06: blank is the default and unknown keys are ignored, as before; the API
-                # alone is stricter about an empty value. A token the box blanks but the API
-                # accepts (`5.`) is sent and built as the server reads it (L44).
+                # alone is stricter about an empty value. A token the box blanks (`5.`) is sent
+                # as given and refused as written, not built under a blank box (L44, L49).
                 sent = _follow_link(page, BLANK_LINK)
                 assert _pairs(sent) == [("face_width", "8")], f"the blank link sent {sent!r}"
                 status, _ = _api_get(server, "/api/info", sent)
@@ -2084,15 +2086,25 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 assert eval_str(page, FRAGMENT) == sent
 
+                # L49 (WR-02): the box blanks `5.`, so the API refuses it as written and no
+                # part is built under a blank box.
+                stl_before = _stl_requests(seen)
                 sent = _follow_link(page, ACCEPTED_LINK)
-                assert _pairs(sent) == [("face_width", "5.")], f"the accepted link sent {sent!r}"
-                status, _ = _api_get(server, "/api/info", sent)
-                assert status == 200, f"/api/info?{sent} answered {status}, not 200"
-                expect(page.locator("#dl-stl")).to_have_attribute(
-                    "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                assert _pairs(sent) == [("face_width", "5.")], f"the refused link sent {sent!r}"
+                status, body = _api_get(server, "/api/info", sent)
+                assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                assert isinstance(body, dict), f"/api/info?{sent} is not an object"
+                assert body["detail"][0]["type"] == "number_as_written", body
+                marked, texts = _expected_422(properties, body)
+                assert marked == {_title(properties, "face_width")}, sorted(marked)
+                expect(page.locator("#messages .error")).to_have_text(texts, timeout=BUILD_WAIT_MS)
+                expect(page.locator("label.field.invalid .name")).to_have_text(sorted(marked))
+                assert page.locator("#dl-stl").get_attribute("href") is None, (
+                    "the STL link has an href for a link the API refuses as written"
                 )
-                assert page.locator("#messages .error").count() == 0
-                print("blank, unknown and accepted: face_width=8, face_width=9, face_width=5.")
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _stl_requests(seen) == stl_before, "the page asked for an STL after it"
+                print("blank, unknown and refused: face_width=8, face_width=9, face_width=5.")
             with step("root_fillet label", no_foreign_key):
                 # D-09, D-10: while a hob root is in force the row reads "Hob tip radius used",
                 # else "Root fillet used"; the key is the info document's `root_form_d`, so a
