@@ -7221,6 +7221,22 @@ The plans' own full-gate readings, for the spread they show (each under a load i
 
 The reading of record is under L43's 300 s bar by 66.17 s (`real 234.78 s`: 65.22 s). Two of the plans' readings, 32-04's `358.81 s` and 32-05's `312.50 s`, are above 300 s, on the same `src` and `tests` that read `233.83 s` here (the last commit touching either is `c8608ba`, before 32-05's reading): the same tests span 218.58 s to 358.81 s across the phase, far wider than Phase 25's 8 %, so the gate's wall time on this host is set by the host's load, not by the code. They are written down here and not trimmed. REQ-gate-cost-recorded stays open and closes at Phase 34's milestone reading, as for Phase 30 and Phase 31.
 
+### Phase close checks (32-06)
+
+Source: `32-06-close-checks.log`, run once on `HEAD ed5cfa1` with the final Phase 32 tree. All eleven read `PASS` and the log holds no `FAIL`.
+
+1. PASS `make gear.unchanged`: exit 0, `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+2. PASS `git diff --exit-code v0.6 -- requirements.txt tests/regression/ .github/workflows/ci.yml src/spur/calc.py src/spur/params.py`: exit 0, empty.
+3. PASS `make lint-imports`: `Contracts: 10 kept, 0 broken.`
+4. PASS `git grep -nE '@app\.(get|post|put|delete)\("/api/shaft' -- src`: exit 1, no match (Phase 33 owns the routes).
+5. PASS `grep -c '^Part = GearParams | ShaftParams$' src/spur/parts.py` prints `1`.
+6. PASS the widening debt item (`2026-10-23-parts-one-line-widening-claim-is-false.md`) is absent from `docs/tech_debt/active/`, present in `resolved/` with `Status: resolved`, its `Resolved in:` sha `4018de8` passes `git cat-file -e 4018de8^{commit}`, and its INDEX row sits in the Resolved table.
+7. PASS `git diff --exit-code b4cfd71 -- src/spur/pool.py src/spur/app.py src/spur/cli.py src/spur/din5480_tables.py`: exit 0, empty.
+8. PASS `list(ShaftDimensions.model_fields)` holds 13 names, `end_chamfer_effective` at index 10, between `measure_over_pins` and `designation` (32-01 choice B1).
+9. PASS `The heaviest shaft (32-05)` appears once in `tests/test_shaft_params.py`, and `pytest --no-cov -n0 -q tests/test_bench.py -k sweep_reaches` reads `1 passed, 50 deselected`.
+10. PASS an AST walk of `src/spur/shaft_model.py` (70 `ast.Call` nodes): none calls an attribute named `clean`, `chamfer` or `union`, and none passes a `glue` keyword.
+11. PASS `src/spur/din5480.py` holds 5 `ASSUMPTION` markers, the same as `git show b4cfd71:src/spur/din5480.py` (32-03 added none).
+
 ### Seen red once (Phase 32)
 
 Each deliberate break is run red once and reverted; the first failure line is copied from the kept log named in the row. Later plans append rows.
