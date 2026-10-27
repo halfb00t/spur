@@ -1,0 +1,109 @@
+Chromium: 153.0.8010.12
+playwright: 1.63.0
+probed inputs: 37 (29 gear + mate_teeth + 7 shaft)
+names: gear.teeth, gear.module, gear.pressure_angle, gear.profile_shift, gear.backlash, gear.root_fillet, gear.tip_chamfer, gear.face_width, gear.bore_d, gear.bore_flat, gear.keyway_width, gear.keyway_depth, gear.bore_hex, gear.bore_clearance, gear.bore_chamfer, gear.recess_depth, gear.recess_width, gear.recess_inner_d, gear.recess_fillet, gear.spoke_count, gear.spoke_width, gear.hub_d, gear.rim_wall, gear.spoke_fillet, gear.hole_count, gear.hole_d, gear.hole_circle_d, gear.hex_cell, gear.hex_wall, mate_teeth, shaft.reference_d, shaft.module, shaft.teeth, shaft.splined_length, shaft.end_chamfer, shaft.shank_d, shaft.shank_length
+tokens: 91
+
+| Token | Box | int | float | /api/info 200 (gear) | ShaftParams validates | Rule | Non-finite |
+|---|---|---|---|---|---|---|---|
+| `' 22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22 '` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'%2022'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1_0'` | 37/37 | yes | yes | 14/30 | 4/7 | refuses | no |
+| `'22.'` | 37/37 | no | yes | 11/30 | 3/7 | refuses | no |
+| `'5.'` | 37/37 | no | yes | 14/30 | 4/7 | refuses | no |
+| `'+5'` | 37/37 | yes | yes | 14/30 | 4/7 | refuses | no |
+| `'+22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'2.'` | 37/37 | no | yes | 16/30 | 4/7 | refuses | no |
+| `'22'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'2.5'` | 0/37 | no | yes | 16/30 | 4/7 | lets through | no |
+| `'-1'` | 0/37 | yes | yes | 0/30 | 0/7 | lets through | no |
+| `'1e1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'.5'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'\t22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\n'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\x0b'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\x0c22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\u2028'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\xa0 22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\xa0'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\u200322'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\u2003'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'2_2'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'1_000'` | 37/37 | yes | yes | 1/30 | 0/7 | refuses | no |
+| `'+0'` | 37/37 | yes | yes | 25/30 | 2/7 | refuses | no |
+| `'0.'` | 37/37 | no | yes | 23/30 | 2/7 | refuses | no |
+| `'-5.'` | 37/37 | no | yes | 0/30 | 0/7 | refuses | no |
+| `'+.5'` | 37/37 | no | yes | 18/30 | 2/7 | refuses | no |
+| `'+5e1'` | 37/37 | no | yes | 9/30 | 3/7 | refuses | no |
+| `'+1e1'` | 37/37 | no | yes | 12/30 | 4/7 | refuses | no |
+| `'1e1_0'` | 37/37 | no | yes | 0/30 | 0/7 | refuses | no |
+| `'Infinity'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'inf'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'-inf'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'infinity'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'NaN'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'nan'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'1e400'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'1e309'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'-1e309'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'9' * 400` | 37/37 | yes | yes | 0/30 | 0/7 | lets through | yes |
+| `'abc'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'0x10'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1e'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1e+'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'--5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1,5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'0.5.'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'- 5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1__0'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'_1'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'1_'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'-+5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'+-5'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'0b1'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'5.e'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'.e1'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'-.'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'1e0.5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1.5.2'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1 0'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1\xa00'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'%'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\u0663'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\uff12\uff12'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\ufeff22\ufeff'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'-.5'` | 0/37 | no | yes | 1/30 | 0/7 | lets through | no |
+| `'1E+1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'1e+1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'1e-1'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'00022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'0022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'-0'` | 0/37 | yes | yes | 25/30 | 2/7 | lets through | no |
+| `'5.0'` | 0/37 | yes | yes | 14/30 | 4/7 | lets through | no |
+| `'1.e1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'5.e1'` | 0/37 | no | yes | 9/30 | 3/7 | lets through | no |
+| `'5e0'` | 0/37 | no | yes | 14/30 | 4/7 | lets through | no |
+| `'5E0'` | 0/37 | no | yes | 14/30 | 4/7 | lets through | no |
+| `'1E5'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'00.5'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'-.5e1'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'0e0'` | 0/37 | no | yes | 23/30 | 2/7 | lets through | no |
+| `'1e-400'` | 0/37 | no | yes | 23/30 | 2/7 | lets through | no |
+| `'1e308'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'0.1e1'` | 0/37 | no | yes | 17/30 | 4/7 | lets through | no |
+| `' '` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'22,5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'NaN '` | 37/37 | no | yes | 0/30 | 0/7 | refuses | yes |
+| `''` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+
+held but the rule refuses: none
+blank, accepted somewhere, the rule lets it through: none
+blank, refused everywhere already, the rule lets it through: '%2022', 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400, 'abc', '0x10', '1e', '1e+', '--5', '1,5', '- 5', '-+5', '0b1', '5.e', '.e1', '1e0.5', '1.5.2', '1 0', '1\xa00', '%', '\u0663', '\uff12\uff12', '\ufeff22\ufeff', '22,5', ''
+  of which pydantic parses it (a bound or the finite check refuses): 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400
+  of which pydantic refuses to parse it: '%2022', 'abc', '0x10', '1e', '1e+', '--5', '1,5', '- 5', '-+5', '0b1', '5.e', '.e1', '1e0.5', '1.5.2', '1 0', '1\xa00', '%', '\u0663', '\uff12\uff12', '\ufeff22\ufeff', '22,5', ''
+  of which float() reads non-finite: 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400
+not uniform: none
+
+blank on every input: 66 of 91; wrote 33-01-token-table.json

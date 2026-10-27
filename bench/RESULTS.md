@@ -7260,3 +7260,142 @@ Each deliberate break is run red once and reverted; the first failure line is co
 | 32-04 | `make lint-imports`, contract `The kernel doorways are model and shaft_model` (T-32-09) | the `ignore_imports` line removed from `pyproject.toml` | `Contracts: 9 kept, 1 broken.`, naming `spur.cli -> spur.model (l.102)` then `spur.model -> spur.shaft_model (l.33)`, log `32-04-red-no-ignore.log` | `git checkout -- pyproject.toml`; `git status --porcelain -- src tests pyproject.toml` empty |
 | 32-04 | `tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway` (both rows; 2 failed) (T-32-07) | the `isinstance(p, ShaftParams)` dispatch removed from `model._build` | `E           spur.build_errors.BuildError: Geometry kernel failed (AttributeError); try smaller fillets or chamfers.` (the shaft reached the gear's pipeline and read `p.pressure_angle`), log `32-04-red-no-dispatch.log` | `git checkout -- src/spur/model.py`; `git status --porcelain -- src tests pyproject.toml` empty |
 | 32-04 | `tests/test_seam.py::test_the_shaft_solid_never_imports_the_gear_doorway` (1 failed, 6 passed) | a function-local `from . import model` added inside `shaft_model._polar` | `E       AssertionError: assert ['from . impo...# noqa: F401'] == []`, log `32-04-red-cycle.log` | `git checkout -- src/spur/shaft_model.py`; `git status --porcelain -- src tests pyproject.toml` empty |
+
+## Interfaces and parity (Phase 33)
+
+What this section holds: v0.7's fourth phase puts the DIN 5480 shaft on the API (`/api/shaft/...`), the CLI (`spur shaft ...`) and the page (a part switch), takes the designation as an input on the API and the CLI, proves the three agree on every number and on the download name, and fixes WR-02 (a token the number box blanks no longer builds a part). Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/33-interfaces-and-parity/investigation/`; later plans append rows to the table at the end.
+
+### The gate baseline (33-01)
+
+Source logs: `33-01-verify.log` (the whole `/usr/bin/time -p make verify` output) and `33-01-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/33-interfaces-and-parity/investigation/`. Every figure below is copied from them, not re-rounded. One reading, on Phase 32's merged code: `git diff --exit-code 6800769 -- src tests bench pyproject.toml Makefile requirements.txt` exited 0 before the run, so only `.planning/` differed from the tree Phase 32 shipped.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `ead2a4c` (`src`, `tests`, `bench`, `pyproject.toml`, `Makefile` and `requirements.txt` byte-equal to `6800769`; only `.planning/` files were uncommitted or newer) |
+| UTC start -> end | `2026-10-27T15:54:00Z` -> `2026-10-27T15:57:57Z` |
+| 1-minute load before -> after | `4.62` -> `7.15` (`sysctl -n vm.loadavg` printed `{ 4.62 3.41 3.11 }` and `{ 7.15 7.87 5.40 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2644 passed in 229.17s (0:03:49) =======================` |
+| `/usr/bin/time -p` | `real 230.70`, `user 719.77`, `sys 723.33` |
+| Coverage TOTAL line | `TOTAL                         1682     24    450     14  98.22%` (`Required test coverage of 96.0% reached. Total coverage: 98.22%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+Phase 32's close read `2644 passed in 233.83s` (`### The gate delta (32-06)`, `HEAD 7a4e108`); that is history, not the comparison. This reading holds the same `2644` tests, because no `src` or `tests` file changed between Phase 32's merge and this run. 33-09 subtracts from this reading, taken on the same host, and no speed claim is made from a single pair of readings: the run began at a 1-minute load of `4.62` and the load after it includes the run's own work, so the figure carries the host's spread (Phase 25's is about 8 %, the Makefile comment at the `test:` target).
+
+### Tokens the number box blanks, every field (33-01)
+
+Source: `33-01-token-probe.log` (script `33-01-token-probe.py`, table `33-01-token-table.json`). Chromium 153.0.8010.12 (the Playwright 1.63.0 headless shell under `.venv/ms-playwright`, the gate's own browser) on a blank page holding 37 `<input type=number>` boxes: the 29 non-enum `GearParams` fields, `mate_teeth` (`min=6 max=1000 step=1`) and the 7 non-enum `ShaftParams` fields, each with the `min`, `max` and `step` that `buildForm()` gives it (`step = prop.step ?? (integer ? 1 : 'any')`). Each of 91 tokens was assigned through `.value` on every box and read back. `Box` is the number of boxes on which the token read back `''`; `int` and `float` are pydantic's lax parse; `/api/info 200 (gear)` counts the 30 fields (29 gear and `mate_teeth`) for which `TestClient(spur.app.app).get("/api/info", params={field: token})` answered 200; `ShaftParams validates` counts the 7 shaft fields for which `ShaftParams.model_validate({field: token})` validated; `Rule` is 33-RESEARCH's four conditions (`token != token.strip()`, `_` anywhere, a leading `+`, a trailing `.`); `Non-finite` is whether `float(token)` reads inf or nan.
+
+| Token | Box | int | float | /api/info 200 (gear) | ShaftParams validates | Rule | Non-finite |
+|---|---|---|---|---|---|---|---|
+| `' 22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22 '` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'%2022'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1_0'` | 37/37 | yes | yes | 14/30 | 4/7 | refuses | no |
+| `'22.'` | 37/37 | no | yes | 11/30 | 3/7 | refuses | no |
+| `'5.'` | 37/37 | no | yes | 14/30 | 4/7 | refuses | no |
+| `'+5'` | 37/37 | yes | yes | 14/30 | 4/7 | refuses | no |
+| `'+22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'2.'` | 37/37 | no | yes | 16/30 | 4/7 | refuses | no |
+| `'22'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'2.5'` | 0/37 | no | yes | 16/30 | 4/7 | lets through | no |
+| `'-1'` | 0/37 | yes | yes | 0/30 | 0/7 | lets through | no |
+| `'1e1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'.5'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'\t22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\n'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\x0b'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\x0c22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\u2028'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\xa0 22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\xa0'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\u200322'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\u2003'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'2_2'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'1_000'` | 37/37 | yes | yes | 1/30 | 0/7 | refuses | no |
+| `'+0'` | 37/37 | yes | yes | 25/30 | 2/7 | refuses | no |
+| `'0.'` | 37/37 | no | yes | 23/30 | 2/7 | refuses | no |
+| `'-5.'` | 37/37 | no | yes | 0/30 | 0/7 | refuses | no |
+| `'+.5'` | 37/37 | no | yes | 18/30 | 2/7 | refuses | no |
+| `'+5e1'` | 37/37 | no | yes | 9/30 | 3/7 | refuses | no |
+| `'+1e1'` | 37/37 | no | yes | 12/30 | 4/7 | refuses | no |
+| `'1e1_0'` | 37/37 | no | yes | 0/30 | 0/7 | refuses | no |
+| `'Infinity'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'inf'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'-inf'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'infinity'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'NaN'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'nan'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'1e400'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'1e309'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'-1e309'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'9' * 400` | 37/37 | yes | yes | 0/30 | 0/7 | lets through | yes |
+| `'abc'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'0x10'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1e'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1e+'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'--5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1,5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'0.5.'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'- 5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1__0'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'_1'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'1_'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'-+5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'+-5'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'0b1'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'5.e'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'.e1'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'-.'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'1e0.5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1.5.2'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1 0'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1\xa00'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'%'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\u0663'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\uff12\uff12'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\ufeff22\ufeff'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'-.5'` | 0/37 | no | yes | 1/30 | 0/7 | lets through | no |
+| `'1E+1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'1e+1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'1e-1'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'00022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'0022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'-0'` | 0/37 | yes | yes | 25/30 | 2/7 | lets through | no |
+| `'5.0'` | 0/37 | yes | yes | 14/30 | 4/7 | lets through | no |
+| `'1.e1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'5.e1'` | 0/37 | no | yes | 9/30 | 3/7 | lets through | no |
+| `'5e0'` | 0/37 | no | yes | 14/30 | 4/7 | lets through | no |
+| `'5E0'` | 0/37 | no | yes | 14/30 | 4/7 | lets through | no |
+| `'1E5'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'00.5'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'-.5e1'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'0e0'` | 0/37 | no | yes | 23/30 | 2/7 | lets through | no |
+| `'1e-400'` | 0/37 | no | yes | 23/30 | 2/7 | lets through | no |
+| `'1e308'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'0.1e1'` | 0/37 | no | yes | 17/30 | 4/7 | lets through | no |
+| `' '` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'22,5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'NaN '` | 37/37 | no | yes | 0/30 | 0/7 | refuses | yes |
+| `''` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+
+```
+held but the rule refuses: none
+blank, accepted somewhere, the rule lets it through: none
+blank, refused everywhere already, the rule lets it through: '%2022', 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400, 'abc', '0x10', '1e', '1e+', '--5', '1,5', '- 5', '-+5', '0b1', '5.e', '.e1', '1e0.5', '1.5.2', '1 0', '1\xa00', '%', '\u0663', '\uff12\uff12', '\ufeff22\ufeff', '22,5', ''
+  of which pydantic parses it (a bound or the finite check refuses): 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400
+  of which pydantic refuses to parse it: '%2022', 'abc', '0x10', '1e', '1e+', '--5', '1,5', '- 5', '-+5', '0b1', '5.e', '.e1', '1e0.5', '1.5.2', '1 0', '1\xa00', '%', '\u0663', '\uff12\uff12', '\ufeff22\ufeff', '22,5', ''
+  of which float() reads non-finite: 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400
+not uniform: none
+```
+
+Of the 91 tokens, 66 read back `''` on every box and 25 read back as given on every box; no token is blank on some boxes and held on others (`not uniform: none`). The rule refuses no token a box holds and lets through no token that a box blanks and the API accepts; the 32 tokens it lets through that a box blanks are all already refused by the API, 10 by a bound or the finite check after pydantic parses them (`Infinity`, `inf`, `-inf`, `infinity`, `NaN`, `nan`, `1e400`, `1e309`, `-1e309` and a 400-digit integer) and 22 because pydantic does not parse them. Of the 17 rows this table shares with `### Tokens a control cannot hold (28-01)` (`abc`, a single space, `0x10`, `NaN`, `Infinity`, `1e`, `--5`, `22,5`, `1e400`, ` 22`, `22 `, `1_0`, `22.`, `5.`, `+5`, `.5`, `1e1`), every one reads as it did there: the same Chromium build, blank on the first 15 and held on `.5` and `1e1`. The empty string reads `''` like the rest and pydantic refuses it; the page never sends it (L44 D-06).
+
+### Seen red once (Phase 33)
+
+Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
