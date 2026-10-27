@@ -50,7 +50,9 @@ when the row has one, a string (the designation) as itself, a null value as no r
 its own `DIMS` table because the gear schema's bytes are frozen. Which hint and mate box show is
 CSS on `body[data-part]`. A link opens with `part=shaft` for the shaft and has no `part` for the
 gear; `followHash` picks the part, builds its form when it changed and then reads the hash, so a
-shaft link opens on any page.
+shaft link opens on any page. The floor grid is sized from the part's width, and from its height
+too when the part's descriptor says `gridAlong` (the shaft's does, the gear's does not): a 1000 mm
+shaft on a grid of 1.6 times its 25 mm width had no visible grid (33-08).
 
 `entry.js` names the twelve three.js exports the viewer actually uses — that list is what
 makes the bundle small.
@@ -115,5 +117,20 @@ the download named `spur_shaft_w26x1.25x19.stl`), the shank diameter dimmed exac
 length is 0, a 422 marking the shank length and the fit with no shaft STL asked for, and the
 gear's keys ignored. The third sets six bad `part` links and checks the message, the unchecked
 radios, the defaults, and that no build is requested across the links, an edit and Reset.
+
+Three more steps close the page's half of the shaft's parity (L49, D-21). `parity: web and API`
+follows a `part=shaft` link for each of the four shafts of `tests/shaft_parity.py` and compares the
+`#dims` rows, as `(dt, dd)` pairs, with the rows `web_rows()` derives from `/api/shaft/info` and the
+schema's `dims`: the same labels in the same order, `fmt(v)` and the unit as the text, no row for a
+null. Equal, not near. It then clicks each download and compares the saved name with the API's
+`Content-Disposition` and with a literal (`spur_shaft_w25x1.25x18.stl`, and so on; the default's STEP
+too), and maps every number through the browser's own `toFixed(3)` rule to check the Python port
+`displayed()`; `tests/test_api.py` pins that `fmt` in `app.js` is exactly that expression.
+`shaft as-written sweep` re-reads the 91-token table on the shaft's seven number inputs (the `fit`
+box is text and holds `+8f`), follows one `#part=shaft&<field>=%2B<default>` link per number field,
+each refused as written with its box blank and no shaft STL asked for, and checks that the API
+refuses every blanked token on all seven fields. `viewer framing` draws the default, the longest and
+the widest shaft, clicks Fit and saves the canvas (to pytest's `tmp_path`; `--basetemp=<dir>` keeps
+the pictures) for a person to read.
 
 Rebuild the bundle: `make vendor`. Check it still matches: `make vendor-check`.

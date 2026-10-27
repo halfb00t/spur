@@ -7437,6 +7437,23 @@ step bad part refused: 3.33 s
 
 The steps' own timers: `part switch` (33-06) 0.73 s, `shaft link round trip` 5.63 s (six shaft builds at preview quality, one of them on a fresh page, and one at the fine quality of the download click), `bad part refused` 3.33 s (six bad links, an edit and Reset, each waiting past the debounce, and a switch). The three steps total 9.69 s. The test's call time is 40.41 s here against 29.14 s in `### The as-written sweep in the browser (33-03)`: 11.27 s more, of which the three steps account for 9.69 s and the other 1.58 s is the host (33-03's load was not recorded and this run's was 10.5 to 14.6, on an 18-CPU host, so the two runs are not the same instrument). No speed claim is made from this pair; 33-09's gate reading carries the whole-gate comparison.
 
+### The page's half of parity (33-08)
+
+Source: `.planning/phases/33-interfaces-and-parity/investigation/33-08-browser.log` (`make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, `3 passed in 47.64s`, 2026-10-28, this host; the file holds three tests, so the last line reads `3 passed`). The 1-minute load average was `5.79` before the run and `4.91` after (`sysctl -n vm.loadavg`). The three new steps sit after `bad part refused`; the golden sweep step is unchanged and still reads `golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets`.
+
+```
+parity: 4 shafts, 42 rows equal the API's, 47 numbers rounded as the browser does, 1.19 s
+shaft sweep: 7 inputs probed x 91 tokens, 7 links, 65 blanked tokens refused on 7 fields, 1.11 s
+viewer framing: 3 shafts drawn, fitted and saved
+step viewer framing: 4.39 s
+```
+
+The steps' own timers: `parity: web and API` 1.19 s (four shaft builds at preview quality, four fine-quality STL downloads and one STEP), `shaft as-written sweep` 1.12 s (seven links and 65 API requests), `viewer framing` 4.39 s (three builds, the 1000 mm and the 830 mm shaft among them, three screenshots). The three steps total 6.71 s. The test's call time in this run is 47.12 s, against 40.41 s in 33-07's (`### The page with a part switch (33-07)`): 6.71 s more, and the three new steps total 6.71 s. The runs are not the same instrument (load 5 here, 10 to 15 there, and 33-07 recorded 3.2 s between two runs of the same code), so no speed claim is made from the pair; 33-09's gate reading carries the whole-gate comparison.
+
+Framing, read on screenshots after a click on Fit (`33-08-shaft-default.png`, `-longest.png`, `-widest.png`; `-after` copies after the fix): the whole part is in view in all three. The longest shaft's grid, from the 25 mm width alone, was 40 mm (step 2) under a 1000 mm part and not visible. `placeGrid()` now counts the part's height when the part's descriptor says `gridAlong` (the shaft's, not the gear's): default shaft 40 to 80 mm (step 2 to 5), longest 40 to 1600 mm (step 100), widest 1400 mm (step 100) unchanged. The default gear's grid is size 60, step 5 before and after (STL box 36.56 x 36.68 x 7.5 mm).
+
+The gate after this plan: `make verify` read `2775 passed in 257.67s (0:04:17)`, `real 258.58`, rc 0, at a 1-minute load of 4.55 before and 5.29 after; `make verify.fast` read `2308 passed in 11.31s`, `real 12.18`. A gate run leaves the tree clean (the framing pictures go to `tmp_path`).
+
 ### Seen red once (Phase 33)
 
 Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.

@@ -3454,3 +3454,25 @@ it, and the page words it. `partOf` compares the values as literals and returns 
 `JSON.stringify` (control characters become escapes) and set as text, never as markup (T-33-23); the browser step `bad part
 refused` counts requests across all six links, an edit and Reset (T-33-24). The same step sets a bad part again from the shaft,
 and ends on a valid link. **Reversibility: reversible.** The wording is the page's own and no front end other than the page reads it.
+
+**The page agrees** (D-21 part one, D-17, SC3, SC4; `tests/test_browser.py`, `tests/test_api.py`; 33-08). The browser step `parity: web and API`
+follows `part=shaft` for each of the four shafts of `tests/shaft_parity.py` and asserts that the page's `#dims` rows, read as `(dt, dd)`
+pairs, **equal** `web_rows()` over the API's `/api/shaft/info` and the schema's `dims` (labels, order, `fmt(v)` and the unit, the
+designation as printed, no row for a null): 4 shafts, 42 rows, no tolerance. The saved download name equals the API's `Content-Disposition`
+filename and a written literal, byte for byte, for each member (the default's STEP too). `displayed()` is the Python port of `fmt`, so the
+step also maps the tie and sign cases and every number of every document through the browser's own `Number(v).toFixed(3).replace(...)`
+and asserts the text equal (47 numbers); `test_the_page_formats_numbers_with_the_expression_the_parity_test_ports` holds `app.js`'s `fmt`
+to exactly that expression, so the browser check is of the page's own rule. Seen red twice on a perturbed `fmt`: a sign-dropping `fmt`
+failed the parity step on `w30x2x14`'s `Profile shift x` (`0.05` for `-0.05`), and the plan's `toFixed(2)` failed the pin and the earlier
+step `part switch`, which runs first and stops the walk (`33-08-red-fmt.log`, `bench/RESULTS.md`). `shaft as-written sweep` is SC4 on the
+shaft's own inputs (33-01 choice B1): the 91-token table is re-read in Chromium on the seven number inputs and agrees, `fit` is a text box
+and holds `+8f` (the server decides what it means), one `#part=shaft&<field>=%2B<default>` link per number field (seven) is refused as
+written with its box blank and no shaft STL asked for, and every blanked token is refused by the shaft route on all seven fields at
+once; the per-link check is one helper the gear's sweep shares. **The framing** of the shaft was read on screenshots of the default, the
+longest (`splined_length=500 shank_length=500`) and the widest (`reference_d=830 module=10 teeth=82`) after a click on Fit: the whole part
+is in view in all three, but the longest shaft's grid, sized from the 25 mm width alone, was 40 mm under a 1000 mm part and could not be
+seen. `placeGrid()` now also counts the part's height when the part's descriptor says `gridAlong`; the shaft's does and the gear's does
+not, so every gear's grid is as it was (the default gear: size 60, step 5, before and after; `refuse()` and `gearQuery()` are untouched).
+The shaft's default grid goes from 40 to 80 mm (step 2 to 5), the longest from 40 to 1600 mm (step 100), the widest is unchanged. The
+pictures are saved under pytest's `tmp_path`, so a gate run writes nothing into the tree. **Reversibility: reversible.** Tests and one
+descriptor field; no route, link or number changes.

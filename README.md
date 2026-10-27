@@ -1,9 +1,10 @@
 # spur
 
-Parametric involute spur gear generator. Set the parameters in a web page, get a live
-3D preview and the numbers you'd measure on a real gear, and download the result as
-**STL** (for slicing) or **STEP** (a proper solid for CAD). The same thing is available
-as an HTTP API and a CLI.
+Parametric generator for an involute spur gear and a DIN 5480 splined shaft (external,
+W), each from one parameter model. Set the parameters in a web page, get a live 3D preview
+and the numbers you'd measure on the real part, and download the result as **STL** (for
+slicing) or **STEP** (a proper solid for CAD). The same thing is available as an HTTP API
+and a CLI.
 
 Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI and three.js.
 
@@ -18,6 +19,9 @@ Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI
 - Measurement aids: calipers across tips (corrected for odd tooth counts), span over
   *k* teeth (Wildhaber), centre distance to a mating gear
 - Shareable links: every parameter lives in the URL
+- A DIN 5480 splined shaft (external, W): reference diameter, module and tooth count (or
+  a designation such as `W 30x2x14x8f`), the splined length, a shank and an end chamfer,
+  with the measurement over pins and the other numbers you would measure
 
 ## Run it
 
@@ -110,6 +114,15 @@ python -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
 spur serve                                    # http://127.0.0.1:8000
 ```
+
+## Web
+
+The page opens on the gear. The **Gear | Shaft** switch above the form shows the shaft's
+parameters instead; each part starts at its own defaults and nothing carries across the
+switch. A shaft link opens with `part=shaft` (`/#part=shaft&reference_d=26&teeth=19`) and
+a gear link has no `part`; a `part` the page does not know is refused and builds nothing.
+The shaft's designation (`W 25x1.25x18x8f`) is printed as a result row; to set a shaft
+from a designation, give it to the API or the CLI.
 
 ## CLI
 
