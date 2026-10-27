@@ -427,7 +427,7 @@ second row table and quoted field names (`tests/test_api.py:176-180`, `:314-340`
 `app`/`fastapi`/`starlette` (L04); no new dependency. **Phase close**: `make verify` result line
 recorded and `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: No — standard patterns (research Phase 4).
-**Plans**: 7/9 plans executed, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
+**Plans**: 8/9 plans executed, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
 `checkpoint:decision` on the server rule, the browser token set and the fixing commit's place, and 33-02 cannot start
 until the human answers
 
@@ -454,7 +454,7 @@ Plans:
 - [x] 33-07-PLAN.md — the page's links: shaft links round-tripped with `part=shaft`, gear links `part`-free, an unknown `part` refused and nothing built, null rows skipped; L49's page paragraphs, web-ui.md and the rows idea (D-11, D-15, D-20, D-22)
 
 **Wave 8** *(blocked on Wave 7 completion)*
-- [ ] 33-08-PLAN.md — web = API over the fixed set in the browser (D-21 part one), the as-written proof on the shaft's inputs, the viewer framing and the README
+- [x] 33-08-PLAN.md — web = API over the fixed set in the browser (D-21 part one), the as-written proof on the shaft's inputs, the viewer framing and the README
 
 **Wave 9** *(blocked on Wave 8 completion)*
 - [ ] 33-09-PLAN.md — ten concurrent heaviest shafts through the real server (D-19), the gate delta against 33-01, the phase-close checks, L49 closed, and the C1 reading written beside SC4 and REQ-wr02-fixed
@@ -549,5 +549,5 @@ comes from.
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
-| 33. Interfaces and Parity | v0.7 | 7/9 | In Progress | - |
+| 33. Interfaces and Parity | v0.7 | 8/9 | In Progress | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |

@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 33
 current_phase_name: Interfaces and Parity
 status: executing
-stopped_at: Completed 33-07-PLAN.md
-last_updated: "2026-10-27T17:40:32.082Z"
+stopped_at: Completed 33-08-PLAN.md
+last_updated: "2026-10-27T18:08:06.091Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 33 execution started
-state_head: d1f60e73b5ab0d77ffa8ccce1c1c35fa8f7a65ff
+state_head: 24dc9b9dbc8213ee5a09ab8fed686b5e36a11aa5
 progress:
   total_phases: 5
   completed_phases: 9
   total_plans: 26
-  completed_plans: 24
-  percent: 92
+  completed_plans: 25
+  percent: 96
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 33 (Interfaces and Parity) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 33 execution started
 
@@ -294,6 +294,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 33 P05 | 11 min | 3 tasks | 10 files |
 | Phase 33 P06 | 17 min | 2 tasks | 6 files |
 | Phase 33 P07 | 15 min | 2 tasks | 7 files |
+| Phase 33 P08 | 22 min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -593,6 +594,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 33]: 33-05: API = CLI is raw-equal as parsed JSON over the fixed four-shaft set (no tolerance); web = API is compared at the displayed text; seen red once on a one-ulp tip_d
 - [Phase 33]: 33-06: switchTo loads the new part's defaults into its fields itself (readHash would read the other part's hash); update() keeps the pinned mate line and gates the send with P.mate
 - [Phase 33]: 33-07: part starts empty and refuseLink rebuilds the gear form through buildForm, so one place clears the page; followHash bumps formSeq so a slower earlier build cannot land under the newest link
+- [Phase 33]: gridAlong in the PARTS descriptor sizes the shaft's floor grid from its height and leaves every gear's grid unchanged
+- [Phase 33]: Framing pictures go to pytest tmp_path (kept with --basetemp), not into the tree and not through an environment read (D-02 pin)
+- [Phase 33]: B2 in the browser is the 91-token re-read on the seven shaft inputs plus one all-fields API request per blanked token
 
 ### Pending Todos
 
@@ -914,8 +918,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T17:40:31.970Z
-Stopped at: Completed 33-07-PLAN.md
+Last session: 2026-10-27T18:08:05.974Z
+Stopped at: Completed 33-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
