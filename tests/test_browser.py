@@ -35,6 +35,7 @@ import urllib.parse
 import urllib.request
 from collections import Counter
 from collections.abc import Callable, Iterator
+from pathlib import Path
 
 import pytest
 from browser_session import (
@@ -874,7 +875,7 @@ def test_a_fixture_link_refuses_a_value_no_person_would_type() -> None:
     assert link == "teeth=19&module=1.75&root_shape=trochoid"
 
 
-def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
+def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> None:
     """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
     properties = _schema_properties(server)
     selectors = _schema_selectors(server)
@@ -2816,6 +2817,37 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     f"tokens refused on {len(shaft_numbers)} fields, "
                     f"{time.perf_counter() - started:.2f} s"
                 )
+
+            with step("viewer framing", no_foreign_key):
+                # 33-08, Claude's Discretion: the shaft's three extremes drawn and fitted, the
+                # canvas saved as a picture for a person to read ("is the whole part in view and
+                # does the grid reach it?"). The pictures go to pytest's `tmp_path`, so a gate run
+                # leaves no file in the tree; `--basetemp=<dir>` on the command line keeps them.
+                # The default shaft is the part switch's; `longest` is the longest solid the
+                # bounds allow and `widest` the widest (bench/RESULTS.md, L37).
+                framing_links = (
+                    ("default", "part=shaft"),
+                    ("longest", "part=shaft&splined_length=500&shank_length=500"),
+                    ("widest", "part=shaft&reference_d=830&module=10&teeth=82&shank_d=828"),
+                )
+                for label, framing_link in framing_links:
+                    with page.expect_response(
+                        lambda response: urllib.parse.urlsplit(response.url).path
+                        == "/api/shaft/model.stl",
+                        timeout=BUILD_WAIT_MS,
+                    ) as framing_served:
+                        page.evaluate("(f) => { location.hash = f; }", framing_link)
+                    expect(page.locator("#canvas")).to_have_attribute(
+                        "data-triangles",
+                        str(stl_triangles(framing_served.value.body())),
+                        timeout=BUILD_WAIT_MS,
+                    )
+                    page.click("#fit")
+                    page.wait_for_timeout(300)  # one animation frame to draw the fit view
+                    picture = tmp_path / f"33-08-shaft-{label}.png"
+                    page.locator("#canvas").screenshot(path=picture)
+                    assert picture.stat().st_size > 0, f"{label}: an empty picture"
+                print(f"viewer framing: {len(framing_links)} shafts drawn, fitted and saved")
 
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH
