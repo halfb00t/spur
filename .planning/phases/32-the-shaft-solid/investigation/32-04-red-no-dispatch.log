@@ -1,0 +1,195 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [2 items]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway[default] 
+tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway[W14x2x6] 
+[gw0] [ 50%] FAILED tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway[default] 
+[gw1] [100%] FAILED tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway[W14x2x6] 
+
+=================================== FAILURES ===================================
+____ test_model_builds_and_exports_a_shaft_through_the_one_doorway[default] ____
+[gw0] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+
+    def _build_checked(p: Part) -> cq.Solid:
+        try:
+>           return _build(p)
+                   ^^^^^^^^^
+
+src/spur/model.py:800: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/model.py:780: in _build
+    pr = profile(p)
+         ^^^^^^^^^^
+src/spur/calc.py:159: in profile
+    a = math.radians(p.pressure_angle)
+                     ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+item = 'pressure_angle'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+    
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+    
+            if pydantic_extra and item in pydantic_extra:
+                return pydantic_extra[item]
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'ShaftParams' object has no attribute 'pressure_angle'
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:1042: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+
+    @pytest.mark.parametrize("p", MESH_ROWS.values(), ids=MESH_ROWS.keys())
+    def test_model_builds_and_exports_a_shaft_through_the_one_doorway(p: ShaftParams) -> None:
+        """model.build and model.export take a ShaftParams through the one lock, solid cache and
+        export path the gear uses: one valid solid with the closed-form volume, a closed STL
+        shell at each quality within its bar of the closed form, and a STEP solid."""
+>       solid = model.build(p)
+                ^^^^^^^^^^^^^^
+
+tests/test_shaft_model.py:346: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/model.py:813: in build
+    return _build_cached(p)
+           ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+
+    def _build_checked(p: Part) -> cq.Solid:
+        try:
+            return _build(p)
+        except BuildError:
+            raise
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+>           raise BuildError(f"Geometry kernel failed ({type(exc).__name__}); "
+                             "try smaller fillets or chamfers.") from exc
+E           spur.build_errors.BuildError: Geometry kernel failed (AttributeError); try smaller fillets or chamfers.
+
+src/spur/model.py:804: BuildError
+____ test_model_builds_and_exports_a_shaft_through_the_one_doorway[W14x2x6] ____
+[gw1] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+p = ShaftParams(reference_d=14.0, module=2.0, teeth=6, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+
+    def _build_checked(p: Part) -> cq.Solid:
+        try:
+>           return _build(p)
+                   ^^^^^^^^^
+
+src/spur/model.py:800: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/model.py:780: in _build
+    pr = profile(p)
+         ^^^^^^^^^^
+src/spur/calc.py:159: in profile
+    a = math.radians(p.pressure_angle)
+                     ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ShaftParams(reference_d=14.0, module=2.0, teeth=6, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+item = 'pressure_angle'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+    
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+    
+            if pydantic_extra and item in pydantic_extra:
+                return pydantic_extra[item]
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'ShaftParams' object has no attribute 'pressure_angle'
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:1042: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+p = ShaftParams(reference_d=14.0, module=2.0, teeth=6, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+
+    @pytest.mark.parametrize("p", MESH_ROWS.values(), ids=MESH_ROWS.keys())
+    def test_model_builds_and_exports_a_shaft_through_the_one_doorway(p: ShaftParams) -> None:
+        """model.build and model.export take a ShaftParams through the one lock, solid cache and
+        export path the gear uses: one valid solid with the closed-form volume, a closed STL
+        shell at each quality within its bar of the closed form, and a STEP solid."""
+>       solid = model.build(p)
+                ^^^^^^^^^^^^^^
+
+tests/test_shaft_model.py:346: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/model.py:813: in build
+    return _build_cached(p)
+           ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=14.0, module=2.0, teeth=6, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+
+    def _build_checked(p: Part) -> cq.Solid:
+        try:
+            return _build(p)
+        except BuildError:
+            raise
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+>           raise BuildError(f"Geometry kernel failed ({type(exc).__name__}); "
+                             "try smaller fillets or chamfers.") from exc
+E           spur.build_errors.BuildError: Geometry kernel failed (AttributeError); try smaller fillets or chamfers.
+
+src/spur/model.py:804: BuildError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway[default]
+FAILED tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway[W14x2x6]
+============================== 2 failed in 2.81s ===============================
