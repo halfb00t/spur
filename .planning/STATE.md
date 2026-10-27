@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 32
 current_phase_name: The Shaft Solid
 status: executing
-stopped_at: Completed 32-01-PLAN.md
-last_updated: "2026-10-27T09:41:35.670Z"
+stopped_at: Completed 32-02-PLAN.md
+last_updated: "2026-10-27T09:53:03.545Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 32 execution started
-state_head: a1a46e1e04570013348375d31fd3627b4edf1f1f
+state_head: 95b1b9a7b74cc4a1c87493e128bfb402fd974114
 progress:
   total_phases: 5
   completed_phases: 8
   total_plans: 17
-  completed_plans: 12
-  percent: 71
+  completed_plans: 13
+  percent: 76
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 32 (The Shaft Solid) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 32 execution started
 
@@ -281,6 +281,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 31 P05 | 10min | 2 tasks | 5 files |
 | Phase 31 P06 | 12 min | 3 tasks | 11 files |
 | Phase 32 P01 | 17 min | 2 tasks | 7 files |
+| Phase 32 P02 | 12 min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -555,6 +556,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 32]: B1 end_chamfer_effective is the 13th ShaftDimensions key, after measure_over_pins before designation
 - [Phase 32]: C1 ShaftParams.slug stem spur_shaft_w{reference_d:g}x{module:g}x{teeth}, default spur_shaft_w25x1.25x18
 - [Phase 32]: D1 single-build shaft bench rows only in Phase 32; contention row filed as nice debt, trigger Phase 33 /api/shaft/model.{fmt}
+- [Phase 32]: A1/B1/C1 applied: end_chamfer_effective = min(floor_mm(request), floor_mm(tooth height from printed diameters), floor_mm(splined_length)), floor_mm(v) = floor(v*1000+1e-9)/1000, 13th key after measure_over_pins, slug spur_shaft_w{d}x{m}x{z}
+- [Phase 32]: floor_mm can exceed its input by at most 1.03e-12 mm up to 500 mm (measured, 32-02-overshoot.log), not under 1e-12 as 32-01 stated
+- [Phase 32]: The chamfer cap warning fires only where a limit binds at the 0.001 mm resolution (gear 10-REVIEW CR-01 rule)
 
 ### Pending Todos
 
@@ -870,8 +874,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T09:41:35.596Z
-Stopped at: Completed 32-01-PLAN.md
+Last session: 2026-10-27T09:53:03.448Z
+Stopped at: Completed 32-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
