@@ -123,6 +123,32 @@ def test_the_basic_dims_order_root_below_pitch_below_tip(
         assert din5480.root_diameter(m, z, x * m, h_fp) < m * z < tip
 
 
+# Worst disagreement over GRID, nine radii from max(r_f, r_b) to r_a plus one below r_b where
+# r_b > r_f, din5480 against the oracle: 3.9e-16 rad (two roads to the same involute, so only
+# float noise separates them). 1e-14 is the smallest power of ten at least 10x it, and 2.6x
+# the 1e-9 above which the two roads would disagree for a real reason (investigation/
+# 32-03-tolerances.log).
+FLANK_ANGLE_ABS = 1e-14
+
+
+@pytest.mark.parametrize("case", GRID, ids=_case_id)
+def test_the_flank_half_angle_agrees_with_the_oracle(case: tuple[float, int, float]) -> None:
+    """The solid's flank is din5480.flank_half_angle; the oracle reaches the same angle from
+    a parametric involute, so a wrong sign or term in the solid's angle disagrees here."""
+    m, z, x = case
+    r_b = m * z * math.cos(math.radians(30.0)) / 2
+    r_f = shaft_oracle.root_diameter(m, z, x, din5480.H_FP) / 2
+    r_a = shaft_oracle.tip_diameter(m, z, x) / 2
+    start = max(r_f, r_b)
+    radii = [start + (r_a - start) * i / 8 for i in range(9)]
+    if r_b > r_f:
+        radii.append((r_f + r_b) / 2)
+    for r in radii:
+        assert din5480.flank_half_angle(m, z, x * m, r) == pytest.approx(
+            shaft_oracle.tooth_half_angle(m, z, x, r), abs=FLANK_ANGLE_ABS
+        )
+
+
 def test_the_shift_term_is_the_addendum_plus_half_the_tip_offset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
