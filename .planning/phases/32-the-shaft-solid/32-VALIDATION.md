@@ -2,10 +2,10 @@
 phase: "32"
 slug: "the-shaft-solid"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
-# audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+# audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: true) (#2117)
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-10-27"
 ---
 
@@ -39,38 +39,40 @@ created: "2026-10-27"
 
 ## Per-Task Verification Map
 
-Task IDs are filled by the planner; rows are keyed by requirement / success criterion until then.
+Rows keyed by requirement / success criterion, mapped to the tests the plans shipped (the planned `-k` names
+`clean`, `chamfer_readback`, `round_down`, `guard`, `small_z or z82` select nothing; the real names are below).
+All green in `make verify` (`2644 passed in 233.72s`, 2026-10-27, HEAD after 32-06).
 
-| Requirement | Behavior | Test Type | Automated Command | File Exists | Status |
-|-------------|----------|-----------|-------------------|-------------|--------|
-| REQ-shaft-solid / SC1 | Default shaft: one valid solid, volume = closed form (tolerance recorded beside test) | kernel | `pytest tests/test_shaft_model.py -k default -q -n0 --no-cov` | ❌ W0 | ⬜ pending |
-| SC1 | STL preview + fine closed shell, mesh volume within measured bias; STEP has `ISO-10303-21;` + `MANIFOLD_SOLID_BREP` | kernel | `-k export` | ❌ W0 | ⬜ pending |
-| SC1 | Splined section + shank + chamfer present: bbox z `Ls + Lk`, radial `max(ra, shank_d/2)`, root/tip read back | kernel | `-k section` | ❌ W0 | ⬜ pending |
-| SC2 | Shank rows (= tip_d, = root_d, between, ±tiny offsets, below root, length 0): valid + closed form | kernel | `-k shank` | ❌ W0 | ⬜ pending |
-| SC2 | `.clean()` guard seen red once (`fuse().clean()` at shank = tip → invalid) | kernel | `-k clean` | ❌ W0 | ⬜ pending |
-| SC2 | Chamfer read back from solid = `end_chamfer_effective` | kernel | `-k chamfer_readback` | ❌ W0 | ⬜ pending |
-| SC2 | Chamfer past tooth height / splined length: capped, warned naming `end_chamfer`, closed form at effective value | calc + kernel | `-k cap` | ❌ W0 | ⬜ pending |
-| SC2 | Cap rounds down (`Ls = 2.0006` case builds one solid) | kernel | `-k round_down` | ❌ W0 | ⬜ pending |
-| SC2 | Sub-resolution chamfer: `end_chamfer_effective` is `None` + warning | calc | `pytest tests/test_shaft_calc.py -k chamfer -q -n0 --no-cov` | ❌ W0 | ⬜ pending |
-| SC2 | Defect guards (pre-build near-root offset, post-build bracket) raise `BuildError`; each seen red once | kernel | `-k guard` | ❌ W0 | ⬜ pending |
-| SC2 | Small-z and z 82 rows build and match | kernel | `-k small_z or z82` | ❌ W0 | ⬜ pending |
-| REQ-shaft-solid | `Part` widening: mypy strict clean; `model.build(ShaftParams())` and `pool.build_export` return bytes; shared cache | typecheck + pool | `make typecheck`; `pytest tests/test_pool.py -k shaft -q -n0 --no-cov` | partial | ⬜ pending |
-| Seam | `ignore_imports` in same commit as static import; contracts kept; `shaft_model` imports no `spur.model` | lint | `make lint-imports`; `pytest tests/test_seam.py -q -n0 --no-cov` | ✅ | ⬜ pending |
-| Keys | `ShaftDimensions` new key pinned; warnings tuple pins updated | unit | `pytest tests/test_shaft_calc.py -q -n0 --no-cov` | ✅ (edit) | ⬜ pending |
-| REQ-shaft-build-measured / SC3 | Sweep rows in `bench/RESULTS.md` (host, command, load, margin vs 30 s and L17); bounds pinned | bench + pin | `make bench.build SWEEP=bench/sweeps/shaft.json`; `pytest tests/test_shaft_params.py -k bound -q -n0 --no-cov` | partial | ⬜ pending |
-| SC4 | Gate delta recorded in `bench/RESULTS.md`; `make gear.unchanged` green; v0.6 diff empty | gate | `/usr/bin/time -p make verify`; `make gear.unchanged` | ✅ | ⬜ pending |
+| Requirement | Behavior | Plan | Test Type | Automated Command | Status |
+|-------------|----------|------|-----------|-------------------|--------|
+| REQ-shaft-solid / SC1 | Default shaft: one valid solid, volume = closed form | 32-03 | kernel | `pytest tests/test_shaft_model.py -q -n0 --no-cov -k default` (7) | ✅ green |
+| SC1 | STL preview + fine closed shell within measured bias; STEP solid | 32-04 | kernel | `pytest tests/test_shaft_model.py -q -n0 --no-cov -k export` (3); `test_the_shaft_stl_carries_its_chamfer_at_the_end_face` | ✅ green |
+| SC1 | Splined section + shank + chamfer; root/tip read back | 32-03 | kernel | `pytest tests/test_shaft_model.py -q -n0 --no-cov -k section` (`test_the_default_shaft_reads_back_its_root_and_tip_from_a_section`) | ✅ green |
+| SC2 | Shank rows (= tip, = root, between, ±tiny, below root, length 0) | 32-03 | kernel | `pytest tests/test_shaft_model.py -q -n0 --no-cov -k shank` (13) | ✅ green |
+| SC2 | No-`.clean()` guard seen red once | 32-03 | kernel + log | `test_every_shank_regime_builds_with_the_closed_form_volume`; red: `investigation/32-03-red-clean.log` | ✅ green |
+| SC2 | Chamfer read back = `end_chamfer_effective` | 32-03 | kernel | `test_the_default_shaft_reads_back_its_applied_chamfer` | ✅ green |
+| SC2 | Chamfer caps: capped, warned, closed form at effective value | 32-02, 32-03 | calc + kernel | `pytest tests/test_shaft_model.py -q -n0 --no-cov -k cap` (6); `pytest tests/test_shaft_calc.py -k chamfer` (6) | ✅ green |
+| SC2 | Cap rounds down (`Ls = 2.0006` builds one solid) | 32-03 | kernel | `test_every_chamfer_cap_builds_at_the_applied_size` (rows with `splined_length=2.0006`) | ✅ green |
+| SC2 | Sub-resolution chamfer → `None` + warning | 32-02 | calc | `pytest tests/test_shaft_calc.py -k chamfer -q -n0 --no-cov` | ✅ green |
+| SC2 | Defect guards raise `BuildError`, each seen red once | 32-03 | kernel | `test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs`, `test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket`, `test_no_lattice_chamfer_reaches_the_root_band` | ✅ green |
+| SC2 | Small-z and z 82 rows build and match | 32-03 | kernel | `test_a_shaft_whose_base_circle_lies_above_the_root_builds` (W14x2x6, W9x1x8), `test_an_82_tooth_shaft_builds_with_the_closed_form_volume` | ✅ green |
+| REQ-shaft-solid | `Part` widening; model/pool build a shaft; shared cache | 32-04 | typecheck + pool | `make typecheck`; `pytest tests/test_pool.py -k shaft` (1); `pytest tests/test_shaft_model.py -q -n0 --no-cov -k doorway or cache` | ✅ green |
+| Seam | `ignore_imports` with the static import; contracts kept; no cycle | 32-04 | lint | `make lint-imports` (10 kept); `pytest tests/test_seam.py` (7) | ✅ green |
+| Keys | `ShaftDimensions` 13th key pinned; warnings tuple pins | 32-02 | unit | `pytest tests/test_shaft_calc.py -q -n0 --no-cov` | ✅ green |
+| REQ-shaft-build-measured / SC3 | Sweep rows recorded; bounds pinned | 32-05 | bench + pin | `make bench.build SWEEP=bench/sweeps/shaft.json`; `pytest tests/test_shaft_params.py -k bound` (7) | ✅ green |
+| SC4 | Gate delta recorded; `make gear.unchanged` green; v0.6 diff empty | 32-06 | gate | `/usr/bin/time -p make verify`; `make gear.unchanged` | ✅ green |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: ✅ green · ❌ red · ⚠️ flaky*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `tests/test_shaft_model.py` — all kernel rows above; each guard seen red once with a log under `investigation/` and a row in `bench/RESULTS.md`
-- [ ] `tests/shaft_oracle.py` — closed-form section/chamfer volume helpers (imports nothing from `spur`)
-- [ ] `bench/sweeps/shaft.json` + part switch and RSS column in `bench/build_time.py`; `tests/test_bench.py` row for the loader
-- [ ] Decide whether `tests/test_shaft_model.py` joins `HEAVY_TEST_FILES` (`tests/test_hooks.py`)
-- [ ] Framework install: none
+- [x] `tests/test_shaft_model.py` — all kernel rows above; each guard seen red once with a log under `investigation/` and a row in `bench/RESULTS.md`
+- [x] `tests/shaft_oracle.py` — closed-form section/chamfer volume helpers (imports nothing from `spur`)
+- [x] `bench/sweeps/shaft.json` + part switch and RSS column in `bench/build_time.py`; `tests/test_bench.py` row for the loader
+- [x] Decided (32-03, measured 20.97 s at load 23-30): `tests/test_shaft_model.py` joins `HEAVY_TEST_FILES`. Decide whether `tests/test_shaft_model.py` joins `HEAVY_TEST_FILES` (`tests/test_hooks.py`)
+- [x] Framework install: none
 
 ---
 
@@ -82,11 +84,20 @@ All phase behaviors have automated verification. Timing rows in `bench/RESULTS.m
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** validated 2026-10-27 (validate-phase, state A; no gaps)
+
+## Validation Audit 2026-10-27
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+| Selector drift fixed | 5 |
