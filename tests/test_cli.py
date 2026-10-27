@@ -19,6 +19,7 @@ from spur.app import InfoQuery, build_backend
 from spur.calc import DerivedDimensions, check
 from spur.model import Format, Quality
 from spur.params import GearParams
+from spur.shaft_calc import ShaftDimensions
 
 # The README's composed link (D-14): every v0.2 family on one 19-tooth gear -- a keyed
 # round bore, spoke arms, both recesses (the default) and a tooth-tip chamfer. Order
@@ -698,3 +699,44 @@ def test_a_kernel_refusal_in_the_hob_root_outline_is_a_422_that_names_the_outlin
     assert "hob-root outline could not be built (RuntimeError)" in detail["msg"]
     assert "root_shape" in detail["msg"]
     assert "try smaller" not in detail["msg"]
+
+
+# --- spur shaft (Phase 33, REQ-shaft-cli) ---------------------------------------------
+
+
+def test_cli_and_api_print_the_same_shaft_document(capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-shaft-cli, REQ-designation-input: `spur shaft info` prints the model's own JSON,
+    so the CLI and `/api/shaft/info` share one serialiser. Defaults (empty), flags and a
+    designation all read the same document, in `ShaftDimensions` key order."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["shaft", "info"])
+    cli_out = json.loads(capsys.readouterr().out)
+    assert cli_out == client.get("/api/shaft/info").json()
+    assert list(cli_out) == list(ShaftDimensions.model_fields)
+
+    cli.main(["shaft", "info", "--designation", "W 30x2x14x8f"])
+    by_designation = json.loads(capsys.readouterr().out)
+    assert by_designation == client.get(
+        "/api/shaft/info", params={"designation": "W 30x2x14x8f"}).json()
+    assert by_designation["designation"] == "W 30x2x14x8f"
+
+    cli.main(["shaft", "info", "--reference-d", "30", "--module", "2", "--teeth", "14"])
+    assert json.loads(capsys.readouterr().out) == by_designation
+
+
+def test_a_shaft_designation_with_a_spline_flag_exits_2_like_the_api_422(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-07: a designation beside a spline field is a refusal with one sentence, the API's
+    `conflict` 422 `msg`, on stderr and exit 2."""
+    api = TestClient(spur.app.app).get(
+        "/api/shaft/info", params={"designation": "W 30x2x14x8f", "teeth": 14})
+    assert api.status_code == 422
+    sentence = api.json()["detail"][0]["msg"]
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["shaft", "info", "--designation", "W 30x2x14x8f", "--teeth", "14"])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == f"error: designation: {sentence}\n"
