@@ -142,6 +142,22 @@ DIMS_ROWS = (
     ".map(r => [r.querySelector('dt').textContent, r.querySelector('dd').textContent])"
 )
 PART_RADIO = "input[name=part][value={}]"
+# What the page says about the part it shows (D-12): the gear's are the page's static texts, so
+# the gear page reads as it did before the switch. The fit button's tooltip is `#fit`'s title.
+PART_TEXTS = {
+    "gear": {
+        "title": "spur · parametric spur gear",
+        "sub": "parametric involute spur gear",
+        "aria": "3D preview of the gear",
+        "fit": "Fit gear to view",
+    },
+    "shaft": {
+        "title": "spur · DIN 5480 splined shaft",
+        "sub": "DIN 5480 splined shaft",
+        "aria": "3D preview of the shaft",
+        "fit": "Fit shaft to view",
+    },
+}
 CONTROL_VALUE = "(n) => document.querySelector(`form#params [name=${n}]`).value"
 CONTROL_TYPE = "(n) => document.querySelector(`form#params [name=${n}]`).type"
 CONTROL_INDEX = "(n) => document.querySelector(`form#params select[name=${n}]`).selectedIndex"
@@ -319,6 +335,23 @@ def _shaft_stl_requests(seen: list[str]) -> int:
     return sum(
         1 for url in seen if urllib.parse.urlsplit(url).path == "/api/shaft/model.stl"
     )
+
+
+def _expect_part_texts(page: Page, which: str) -> None:
+    """The title, sub line, canvas label, fit tooltip, mate box and hint of the part shown."""
+    texts = PART_TEXTS[which]
+    other = "gear" if which == "shaft" else "shaft"
+    expect(page.locator("body")).to_have_attribute("data-part", which)
+    assert page.title() == texts["title"], page.title()
+    expect(page.locator("header .sub")).to_have_text(texts["sub"])
+    expect(page.locator("#canvas")).to_have_attribute("aria-label", texts["aria"])
+    expect(page.locator("#fit")).to_have_attribute("title", texts["fit"])
+    expect(page.locator(f'.hint[data-for="{which}"]')).to_be_visible()
+    expect(page.locator(f'.hint[data-for="{other}"]')).to_be_hidden()
+    if which == "gear":
+        expect(page.locator(".mate")).to_be_visible()
+    else:
+        expect(page.locator(".mate")).to_be_hidden()
 
 
 def _differing(
@@ -2338,8 +2371,12 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert declared_shaft is not None, "the shaft drew nothing"
                 assert int(declared_shaft) == stl_triangles(shaft_served.value.body())
                 assert page.locator(PART_RADIO.format("shaft")).is_checked()
+                _expect_part_texts(page, "shaft")
 
-                page.locator(PART_RADIO.format("gear")).click()
+                # The keyboard walks the group natively (D-12): ArrowLeft on the checked
+                # Shaft radio checks Gear and fires `change`, with no click.
+                page.locator(PART_RADIO.format("shaft")).focus()
+                page.keyboard.press("ArrowLeft")
                 expect(page.locator("#dl-stl")).to_have_attribute(
                     "href", "api/model.stl", timeout=BUILD_WAIT_MS
                 )
@@ -2349,6 +2386,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert eval_pairs(page, DIMS_ROWS) == default_rows
                 assert page.locator("#dl-step").get_attribute("href") == "api/model.step"
                 assert page.locator(PART_RADIO.format("gear")).is_checked()
+                _expect_part_texts(page, "gear")
 
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH

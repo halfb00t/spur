@@ -53,14 +53,19 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 // their defaults and their rows come from the part's own schema. Indexed only by a radio's
 // literal value or by 'gear' in the bootstrap, never by text from a link: a lookup by hash
 // text would resolve `constructor` (33-RESEARCH Pattern 6). `tag` opens a link's hash, `mate`
-// says whether the page sends the mate box with it.
+// says whether the page sends the mate box with it. The gear's texts are the ones index.html
+// ships, so the gear page reads as it did before the switch.
 const PARTS = {
   gear: {
     schema: 'api/schema', info: 'api/info', model: 'api/model', tag: '', noun: 'gear', mate: true,
+    title: 'spur · parametric spur gear', sub: 'parametric involute spur gear',
+    aria: '3D preview of the gear', fitTitle: 'Fit gear to view',
   },
   shaft: {
     schema: 'api/shaft/schema', info: 'api/shaft/info', model: 'api/shaft/model',
     tag: 'part=shaft', noun: 'shaft', mate: false,
+    title: 'spur · DIN 5480 splined shaft', sub: 'DIN 5480 splined shaft',
+    aria: '3D preview of the shaft', fitTitle: 'Fit shaft to view',
   },
 };
 let part = 'gear';
@@ -162,6 +167,14 @@ async function buildForm(which) {
   part = which;
   P = PARTS[which];
   markPart();
+  // The mate box and the other part's hint are hidden by CSS on this attribute and not by a
+  // write here: the guard in test_api.py refuses any script that shuts a control (L41). The
+  // texts go in as text and attributes, never markup.
+  document.body.dataset.part = which;
+  document.title = P.title;
+  $('header .sub').textContent = P.sub;
+  canvas.setAttribute('aria-label', P.aria);
+  $('#fit').setAttribute('title', P.fitTitle);
   return true;
 }
 

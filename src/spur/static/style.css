@@ -88,6 +88,11 @@ legend {
   text-transform: uppercase;
 }
 
+/* The part switch sits above the form and is not in it: two radios in a row, native keyboard
+   behaviour (arrows move within the group). */
+.part-switch { display: flex; gap: 1rem; align-items: center; }
+.part-switch label { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
+
 .field, .selector {
   display: grid;
   grid-template-columns: 1fr 8.5rem;
@@ -190,6 +195,12 @@ button, .btn {
 #dims dt { color: var(--muted); }
 #dims dd { margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hint { margin: .6rem 0 0; color: var(--muted); font-size: .78rem; }
+/* Which part's text shows is CSS on body[data-part] on purpose: app.js may not write a hide
+   (the writes_a_field_shut guard in tests/test_api.py). The gear is the unset default, so a
+   page whose script never ran still reads as the gear. */
+[data-part="shaft"] .mate,
+[data-part="shaft"] .hint[data-for="gear"],
+body:not([data-part="shaft"]) .hint[data-for="shaft"] { display: none; }
 
 @media (max-width: 820px) {
   html, body { height: auto; }
