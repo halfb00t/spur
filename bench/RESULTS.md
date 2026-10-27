@@ -7010,3 +7010,40 @@ Each deliberate break was run red once and reverted. The first failure line is c
 | 31 Part 2 | `tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin`, M1 line on the two odd rows (DIN 5480-2 Tables 13, 19) | `centre_circle *= math.cos(math.pi / (2 * z))` changed to `*= 1.0` in `din5480.measure_over_pins` | `tests/test_din5480_anchors.py:134: assert 29.11607782393547 == 29.026 ± 5.0e-04`; `2 failed, 6 passed` (`31-part2-red-odd-factor.log`) | `git checkout -- src/spur/din5480.py`; `git status --porcelain -- src tests` empty (run on head `a863df1`, `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` purged) |
 | 31 Part 2 | `tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin`, oracle cross-check line | `return 2 * rho + pin_d` changed to `... + 1e-6` in `tests/shaft_oracle.measure` | `tests/test_din5480_anchors.py:135: assert 28.050115163714313 == 28.050114163714305 ± 1.0e-09`; `2 failed, 6 passed` (`31-part2-red-oracle.log`) | `git checkout -- tests/shaft_oracle.py`; `git status --porcelain -- src tests` empty (run on head `a863df1`, `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` purged) |
 | 31 Part 2 | `tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin`, odd-row null line (D-13) | `if p.teeth % 2:` changed to `if False:` in `pin_measurement` | `tests/test_din5480_anchors.py:137: AssertionError: assert 28.688 is None`; `2 failed, 6 passed` (`31-part2-red-odd-gate.log`) | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty (run on head `a863df1`, `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` purged) |
+
+## The shaft solid (Phase 32)
+
+What this section holds: v0.7's third phase builds the DIN 5480 external shaft as a solid (splined section, plain shank, end chamfer) from Phase 31's maths, carries it through `model` to an STL and a STEP file, proves its volume against a closed form, measures the heaviest allowed build against L17 and L37 and sets the solid fields' bounds from that sweep. Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/32-the-shaft-solid/investigation/`; later plans append rows to the table below.
+
+### The gate baseline (32-01)
+
+Source logs: `32-01-verify.log` (the whole `/usr/bin/time -p make verify` output) and `32-01-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/32-the-shaft-solid/investigation/`. Every figure below is copied from them, not re-rounded. One reading, on Phase 31's merged code: `git diff --exit-code b4cfd71 -- src tests bench pyproject.toml Makefile requirements.txt` exited 0 before the run, so only `.planning/` differed from the tree Phase 31 shipped.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `7c1bc2c` (`src`, `tests`, `bench`, `pyproject.toml`, `Makefile` and `requirements.txt` byte-equal to `b4cfd71`; only `.planning/` files were uncommitted or newer) |
+| UTC start -> end | `2026-10-27T09:23:31Z` -> `2026-10-27T09:27:49Z` |
+| 1-minute load before -> after | `7.96` -> `15.03` (`sysctl -n vm.loadavg` printed `{ 7.96 4.66 4.25 }` and `{ 15.03 13.23 8.60 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2387 passed in 251.15s (0:04:11) =======================` |
+| `/usr/bin/time -p` | `real 253.13`, `user 663.56`, `sys 495.87` |
+| Coverage TOTAL line | `TOTAL                         1564     22    426     13  98.24%` (`Required test coverage of 96.0% reached. Total coverage: 98.24%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+The number CONTEXT quotes, `2387 passed / 221.86 s`, appears in no log: `grep -rnF 221.86` over the repository (without `.venv` and `.git`) finds it only in this phase's own CONTEXT, RESEARCH and plan files, so it is not used here, and Phase 32's gate delta is taken against the reading above instead. The test count matches (`2387 passed`); the time does not (`251.15 s` here, `221.86 s` there), and no log says which load the quoted figure was taken at. Phase 31's recorded `2355 passed in 243.23s` (`### The gate delta (31-06)`, `HEAD 5b7c473`) is history, not the comparison: this reading holds 32 more tests, from seven `src` and `tests` files that changed between `5b7c473` and `b4cfd71` (`git diff --stat 5b7c473 b4cfd71 -- tests src`), not itemised here. 32-06 compares against this reading. The run was taken at a 1-minute load of `7.96` and the load after it includes the run's own work, so the figure carries the host's spread (Phase 25's is about 8 %, the Makefile comment at the `test:` target) and no speed claim is made from a single pair of readings.
+
+The floor rule's evidence (A2 of 32-RESEARCH, not run by the research), copied from `32-01-floor-grid.log`; the script is `32-01-floor-grid.py`:
+
+1. Three-place decimals 0.000..500.000 (500001), mismatches with `+1e-9`: `0`.
+2. The same without `+1e-9`, mismatches: `2957`, first three `['1.001', '1.003', '1.005']`; the plan expected `0.29` among them, and it is not (`0.29 * 1000 = 290.0` in binary64, floors to `0.29`).
+3. Four-place decimals 0.0000..500.0000 (5000001) flooring above their input: `0`, largest excess `0`.
+4. Shaft grid, feasible rows `13552`, floored tooth height not equal to the module: `0`, lattice chamfers (cap, cap-0.001, cap-0.002) inside the 1e-9..1e-4 band: `0`.
+5. Splined lengths: `2.0006` gives `round(v, 3) = 2.001` and floored `2.0`; `5.0007` gives `5.001` and floored `5.0` (the round-up case of `32-round-up.log`).
+
+### Seen red once (Phase 32)
+
+Each deliberate break is run red once and reverted; the first failure line is copied from the kept log named in the row. Later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
