@@ -28,7 +28,25 @@ _SHIFT_RANGE_HELP = f" Shifts outside {X_MIN:+.2f}..{X_MAX:+.2f} are refused."
 class ShaftParams(BaseModel):
     """A DIN 5480 external splined shaft: its spline and, for the solid, a shank."""
 
-    model_config = ConfigDict(frozen=True)
+    # `dims` is the shaft's result rows, in ShaftDimensions order: the page prints them from
+    # the schema because a second row table in app.js is forbidden by two pins, and the gear
+    # schema's bytes are frozen (ROADMAP Phase 33 boundaries). Inline, as GearParams does for
+    # `selectors`, so mypy sees a JSON value. A key or unit that drifts from ShaftDimensions
+    # fails tests/test_shaft_interfaces.py, which keeps the rows complete.
+    model_config = ConfigDict(frozen=True, json_schema_extra={"dims": [
+        {"key": "reference_d", "label": "Reference Ø d_B", "unit": "mm"},
+        {"key": "profile_shift", "label": "Profile shift x", "unit": ""},
+        {"key": "profile_shift_mm", "label": "Profile shift x·m", "unit": "mm"},
+        {"key": "pitch_d", "label": "Pitch Ø", "unit": "mm"},
+        {"key": "tip_d", "label": "Tip Ø", "unit": "mm"},
+        {"key": "root_d", "label": "Root Ø", "unit": "mm"},
+        {"key": "nominal_thickness", "label": "Nominal tooth thickness", "unit": "mm"},
+        {"key": "form_d", "label": "Form Ø d_Ff", "unit": "mm"},
+        {"key": "pin_d", "label": "Pin Ø D_Re", "unit": "mm"},
+        {"key": "measure_over_pins", "label": "Measurement over pins M_Re", "unit": "mm"},
+        {"key": "end_chamfer_effective", "label": "End chamfer used", "unit": "mm"},
+        {"key": "designation", "label": "Designation", "unit": ""},
+    ]})
 
     # --- Spline ----------------------------------------------------------------
     # The field is reference_d; the form's title says d_B (D-01).

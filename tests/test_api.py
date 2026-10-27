@@ -999,6 +999,44 @@ def test_a_saturated_service_refuses_instead_of_queueing() -> None:
             app_module.BUILD_QUEUE.release()
 
 
+@pytest.mark.parametrize(("fmt", "ctype", "magic"), [
+    ("stl", "model/stl", None),
+    ("step", "model/step", b"ISO-10303-21;"),
+])
+def test_a_shaft_downloads_as_stl_and_step(fmt: str, ctype: str, magic: bytes | None) -> None:
+    """The shaft's routes serve the real solid with the gear's contract and a frozen name
+    (D-17, L49): `slug()` is the download name and the fit is not in it."""
+    r = client.get(f"/api/shaft/model.{fmt}", params={"quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == ctype
+    name = f"spur_shaft_w25x1.25x18.{fmt}"
+    assert r.headers["content-disposition"] == f'attachment; filename="{name}"'
+    assert len(r.content) > 1000
+    if magic:
+        assert r.content.startswith(magic)
+
+
+def test_a_saturated_service_refuses_a_shaft() -> None:
+    """A shaft competes with the gear for the one build queue (T-33-10).
+
+    A shaft no other test downloads, or the byte cache would answer before the queue is asked.
+    """
+    from spur import app as app_module
+
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/shaft/model.stl",
+                       params={"quality": "preview", "splined_length": 31})
+        assert r.status_code == 503
+        assert r.headers["retry-after"] == "5"
+        assert r.json()["detail"][0]["type"] == "busy"
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()
+
+
 def test_a_saturated_service_names_its_queue_in_parts() -> None:
     """D-09: the busy message must stay true once a second part type is built, so it
     counts parts, not gears. Status, Retry-After and type are the same as above."""

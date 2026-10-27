@@ -26,6 +26,7 @@ from starlette.routing import Mount, Route
 
 from spur.app import app
 from spur.params import GearParams
+from spur.shaft_params import ShaftParams
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "spur"
 
@@ -158,3 +159,12 @@ def test_the_gear_routes_take_the_v0_6_query_keys() -> None:
     assert _query_keys("/api/model.{fmt}") == fields | {"quality"}
     assert _query_keys("/api/schema") == set()
     assert _query_keys("/api/health") == set()
+
+
+def test_the_shaft_routes_take_the_shaft_fields() -> None:
+    """The shaft's keys are the shaft's fields plus `designation` (and `quality` on the
+    model route), so a key added to a shaft route is a decision and not a drift (D-15)."""
+    fields = set(ShaftParams.model_fields)
+    assert _query_keys("/api/shaft/info") == fields
+    assert _query_keys("/api/shaft/model.{fmt}") == fields | {"quality"}
+    assert _query_keys("/api/shaft/schema") == set()

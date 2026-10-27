@@ -6,6 +6,9 @@
     GET /api/info?...        derived dimensions, measurement aids, warnings
     GET /api/model.stl?...   binary STL   (quality=preview|fine)
     GET /api/model.step?...  STEP AP214 solid
+    GET /api/shaft/schema          JSON schema of the shaft, with the result rows in `dims`
+    GET /api/shaft/info?...        the shaft's derived dimensions and warnings
+    GET /api/shaft/model.{stl,step}?...  the shaft's solid (quality=preview|fine for the STL)
 
 Every gear parameter is a query string field, so a model URL is shareable and
 curl-able. Unset fields take their defaults. A number written the way the page's number box
@@ -43,6 +46,8 @@ from .params import GearParams
 from .parts import Part
 from .pool import BuildPool
 from .records import build_failed, build_started, configure, export_served, queue_refused
+from .shaft_calc import ShaftDimensions, derive_shaft
+from .shaft_params import ShaftParams
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -244,6 +249,15 @@ class ModelQuery(GearParams):
         "fine", description="STL tessellation: preview (coarse, small) or fine.")
 
 
+class ShaftInfoQuery(ShaftParams):
+    """The shaft's query model: its fields, validated once, as `/api/info` does for the gear."""
+
+
+class ShaftModelQuery(ShaftInfoQuery):
+    quality: Literal["preview", "fine"] = Field(
+        "fine", description="STL tessellation: preview (coarse, small) or fine.")
+
+
 def blank_in_a_number_box(token: str) -> bool:
     """True when Chromium's number box reads `token` back as blank although it is a number
     the server would parse (WR-02, L49).
@@ -325,6 +339,15 @@ def _gear(q: GearParams) -> GearParams:
     never hit each other's cache entries.
     """
     return GearParams(**q.model_dump(include=set(GearParams.model_fields)))
+
+
+def _shaft(q: ShaftInfoQuery) -> ShaftParams:
+    """Strip the per-endpoint extras back to a plain ShaftParams.
+
+    The build caches compare the class as well as the fields, as `_gear` says, so a
+    ShaftModelQuery and a ShaftInfoQuery describing one shaft must not be two keys.
+    """
+    return ShaftParams(**q.model_dump(include=set(ShaftParams.model_fields)))
 
 
 def _gzip(data: bytes) -> bytes:
@@ -594,3 +617,23 @@ async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
     # The route builds the gear's params; everything after that is _serve_model's.
     return await _serve_model(_gear(q), fmt, q.quality, request, backend)
+
+
+@app.get("/api/shaft/schema")
+def shaft_schema() -> JsonSchemaValue:
+    return ShaftParams.model_json_schema()
+
+
+@app.get("/api/shaft/info", dependencies=[Depends(_numbers_as_written(ShaftInfoQuery))])
+def shaft_info(q: Annotated[ShaftInfoQuery, Query()]) -> ShaftDimensions:
+    """The shaft's derived dimensions and the warnings that go with them."""
+    return derive_shaft(_shaft(q))
+
+
+@app.get("/api/shaft/model.{fmt}", response_class=Response,
+         dependencies=[Depends(_numbers_as_written(ShaftModelQuery))],
+         responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
+async def shaft_model(fmt: Literal["stl", "step"], q: Annotated[ShaftModelQuery, Query()],
+                      request: Request,
+                      backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
+    return await _serve_model(_shaft(q), fmt, q.quality, request, backend)
