@@ -2,7 +2,7 @@
 
 Severity: nice
 Status: resolved
-Resolved in: docs(bench): the heaviest shaft under ten concurrent requests (D-19) (gsd/phase-33-interfaces-and-parity)
+Resolved in: 3ee9a0a docs(bench): the heaviest shaft under ten concurrent requests (D-19) (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-27
 Source: Phase 32 plan 32-01, checkpoint decision D (picked by the human: D1, single-build rows only)
 Related files:

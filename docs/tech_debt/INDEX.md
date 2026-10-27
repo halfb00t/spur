@@ -42,7 +42,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
-| [The shaft has no contention row: its heaviest build is measured alone, never under concurrent requests](resolved/2026-10-27-shaft-contention-row.md) | docs(bench): the heaviest shaft under ten concurrent requests (D-19) |
+| [The shaft has no contention row: its heaviest build is measured alone, never under concurrent requests](resolved/2026-10-27-shaft-contention-row.md) | 3ee9a0a docs(bench): the heaviest shaft under ten concurrent requests (D-19) |
 | [A link token the number box blanks but the API accepts builds a non-default part under a blank box](resolved/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | 69c1aa3 fix(api): refuse a link number the box would blank (WR-02, L49) |
 | [Two guard lines in `shaft_model.build_shaft` are reached by no passing test](resolved/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md) | 49021f5 test(shaft): pin the one-valid-solid guard and drop a dead re-raise |
 | [The shaft's volume guard accepts a chamfer that was never cut](resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md) | 3e1eded fix(shaft): refuse a chamfer the kernel never cut (end-face read-back) |
