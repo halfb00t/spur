@@ -427,7 +427,7 @@ second row table and quoted field names (`tests/test_api.py:176-180`, `:314-340`
 `app`/`fastapi`/`starlette` (L04); no new dependency. **Phase close**: `make verify` result line
 recorded and `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: No — standard patterns (research Phase 4).
-**Plans**: 3/9 plans executed, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
+**Plans**: 4/9 plans executed, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
 `checkpoint:decision` on the server rule, the browser token set and the fixing commit's place, and 33-02 cannot start
 until the human answers
 
@@ -442,7 +442,7 @@ Plans:
 - [x] 33-03-PLAN.md — WR-02 fixed on the gear routes: a token the box blanks is refused as written (D-01..D-06), the table walked, the browser proof over every gear number field and `mate_teeth`; L49 opened; the debt item retired in the fixing commit
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 33-04-PLAN.md — `/api/shaft/schema`, `/info`, `/model.{fmt}` through `_serve_model`, rows in the schema's `dims`, the designation in place of the spline fields and every clash a 422 (D-07..D-09, D-17)
+- [x] 33-04-PLAN.md — `/api/shaft/schema`, `/info`, `/model.{fmt}` through `_serve_model`, rows in the schema's `dims`, the designation in place of the spline fields and every clash a 422 (D-07..D-09, D-17)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 33-05-PLAN.md — `spur shaft info|export` with `--designation`; the fixed parity set and API = CLI on every number and the download name, seen red once (D-21 part two)
@@ -549,5 +549,5 @@ comes from.
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
-| 33. Interfaces and Parity | v0.7 | 3/9 | In Progress | - |
+| 33. Interfaces and Parity | v0.7 | 4/9 | In Progress | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |
