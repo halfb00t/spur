@@ -1,0 +1,35 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [1 item]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket 
+[gw0] [100%] FAILED tests/test_shaft_model.py::test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket 
+
+=================================== FAILURES ===================================
+______ test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket ______
+[gw0] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x140c87f80>
+
+    def test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The cone is a valid solid at any size, so a size that eats the root core reads valid
+        with a wrong volume (32-RESEARCH Pitfall 5): 10 mm on a 1.25 mm tooth, offset -8.75 from
+        the root circle and so outside the band."""
+        _with_applied_chamfer(monkeypatch, 10.0)
+>       with pytest.raises(BuildError, match="not the shape that was asked for"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE BuildError
+
+tests/test_shaft_model.py:301: Failed
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket
+============================== 1 failed in 3.06s ===============================

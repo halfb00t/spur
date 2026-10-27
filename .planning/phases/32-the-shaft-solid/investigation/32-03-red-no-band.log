@@ -1,0 +1,45 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [2 items]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_no_lattice_chamfer_reaches_the_root_band 
+tests/test_shaft_model.py::test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs 
+[gw1] [ 50%] PASSED tests/test_shaft_model.py::test_no_lattice_chamfer_reaches_the_root_band 
+[gw0] [100%] FAILED tests/test_shaft_model.py::test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs 
+
+=================================== FAILURES ===================================
+___ test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs ___
+[gw0] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x142817e90>
+
+    def test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A cone start 3e-7 mm off the root circle hung the kernel for over 40 s, and the CLI has
+        no timeout (32-RESEARCH Pitfall 2). The offset here is 1e-5, which built in 0.65 s
+        (32-nearcap.log): a missing guard fails this test instead of hanging it."""
+        _with_applied_chamfer(monkeypatch, 1.25 - 1e-5)
+        outlines: list[tuple[float, int]] = []
+        real_outline = shaft_model._outline
+    
+        def spy(m: float, z: int, xm: float, ra: float, rf: float) -> cq.Wire:
+            outlines.append((m, z))
+            return real_outline(m, z, xm, ra, rf)
+    
+        monkeypatch.setattr(shaft_model, "_outline", spy)
+>       with pytest.raises(BuildError, match="root circle"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE BuildError
+
+tests/test_shaft_model.py:289: Failed
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs
+========================= 1 failed, 1 passed in 3.10s ==========================

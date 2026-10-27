@@ -1,0 +1,70 @@
+=== shank
+order fuse_cut
+shank=tip                                      valid=True  n=1 faces= 112 rel=4.22e-09 t=0.559s
+shank=root                                     valid=True  n=1 faces= 112 rel=4.58e-09 t=0.490s
+between                                        valid=True  n=1 faces= 130 rel=4.40e-09 t=0.544s
+tip+1e-9                                       valid=True  n=1 faces= 112 rel=4.22e-09 t=0.554s
+tip-1e-9                                       valid=True  n=1 faces= 112 rel=4.23e-09 t=0.566s
+tip+1ulp                                       valid=True  n=1 faces= 112 rel=4.22e-09 t=0.572s
+tip-1ulp                                       valid=True  n=1 faces= 112 rel=4.22e-09 t=0.558s
+tip+1e-6                                       valid=True  n=1 faces=  95 rel=4.00e-09 t=0.539s
+tip+1e-3                                       valid=True  n=1 faces=  95 rel=3.99e-09 t=0.511s
+root+1e-9                                      valid=True  n=1 faces= 112 rel=4.58e-09 t=0.488s
+root-1e-9                                      valid=True  n=1 faces= 112 rel=4.59e-09 t=0.500s
+root-1e-3                                      valid=True  n=1 faces=  95 rel=4.35e-09 t=0.466s
+below root 10                                  valid=True  n=1 faces=  95 rel=6.20e-09 t=0.341s
+shank 1.0                                      valid=True  n=1 faces=  95 rel=6.94e-09 t=0.341s
+shank 25                                       valid=True  n=1 faces=  95 rel=3.96e-09 t=0.511s
+shank 850                                      valid=True  n=1 faces=  95 rel=7.97e-12 t=0.515s
+no shank (Lk=0)                                valid=True  n=1 faces=  93 rel=6.94e-09 t=0.507s
+no chamfer, shank=tip                          valid=True  n=1 faces=  93 rel=4.12e-09 t=0.225s
+order cut_fuse
+shank=tip                                      valid=True  n=1 faces= 112 rel=4.22e-09 t=0.712s
+shank=root                                     valid=True  n=1 faces= 112 rel=4.58e-09 t=0.664s
+between                                        valid=True  n=1 faces= 130 rel=4.40e-09 t=0.724s
+tip+1e-9                                       valid=True  n=1 faces= 112 rel=4.22e-09 t=0.706s
+tip-1e-9                                       valid=True  n=1 faces= 112 rel=4.23e-09 t=0.717s
+tip+1ulp                                       valid=True  n=1 faces= 112 rel=4.22e-09 t=0.703s
+tip-1ulp                                       valid=True  n=1 faces= 112 rel=4.22e-09 t=0.699s
+tip+1e-6                                       valid=True  n=1 faces=  95 rel=4.00e-09 t=0.716s
+tip+1e-3                                       valid=True  n=1 faces=  95 rel=3.99e-09 t=0.687s
+root+1e-9                                      valid=True  n=1 faces= 112 rel=4.58e-09 t=0.672s
+root-1e-9                                      valid=True  n=1 faces= 112 rel=4.59e-09 t=0.672s
+root-1e-3                                      valid=True  n=1 faces=  95 rel=4.35e-09 t=0.658s
+below root 10                                  valid=True  n=1 faces=  95 rel=6.20e-09 t=0.532s
+shank 1.0                                      valid=True  n=1 faces=  95 rel=6.94e-09 t=0.501s
+shank 25                                       valid=True  n=1 faces=  95 rel=3.96e-09 t=0.671s
+shank 850                                      valid=True  n=1 faces=  95 rel=7.97e-12 t=0.669s
+no shank (Lk=0)                                valid=True  n=1 faces=  93 rel=6.94e-09 t=0.494s
+no chamfer, shank=tip                          valid=True  n=1 faces=  93 rel=4.12e-09 t=0.223s
+glue=True fuse_cut
+shank=tip                                      valid=True  n=1 faces= 112 rel=4.22e-09 t=0.360s
+tip+1e-6                                       valid=True  n=1 faces=  95 rel=4.00e-09 t=0.352s
+between                                        valid=True  n=1 faces= 130 rel=4.40e-09 t=0.371s
+=== chamfer
+c=0                                            valid=True  n=1 faces=  76 rel=3.91e-09 t=0.193s
+c=0.05                                         valid=True  n=1 faces=  95 rel=4.15e-09 t=0.529s
+c=0.5                                          valid=True  n=1 faces=  95 rel=4.01e-09 t=0.534s
+c=1.0 (default)                                valid=True  n=1 faces=  95 rel=3.96e-09 t=0.521s
+c=m-1e-9                                       valid=True  n=1 faces=  95 rel=3.97e-09 t=0.513s
+c=m                                            valid=True  n=1 faces=  95 rel=3.97e-09 t=0.503s
+c=m-1ulp                                       valid=True  n=1 faces=  95 rel=3.97e-09 t=0.506s
+c=m+1e-9 (above cap)                           valid=True  n=1 faces=  95 rel=3.97e-09 t=0.505s
+splined_length 1.0 with c=1.0 (c == Ls), shank on
+Ls=1 c=1                                       valid=True  n=1 faces=  95 rel=9.52e-11 t=0.625s
+Ls=1 c=1 no shank                              valid=True  n=1 faces=  75 rel=1.98e-09 t=0.428s
+Ls=1.25 c=1.25 (c=m=Ls)                        valid=True  n=1 faces=  95 rel=1.76e-10 t=0.641s
+Ls=2 c=1.25 order cut_fuse                     valid=True  n=1 faces=  95 rel=3.48e-10 t=0.670s
+=== smallz
+m2 z6 x0.0 d_B14.2 rb>rf=True                  valid=True  n=1 faces=  52 rel=3.71e-06 t=0.336s
+m2 z6 x-0.05 d_B14.0 rb>rf=True                valid=True  n=1 faces=  52 rel=3.55e-06 t=0.326s
+m3 z6 x-0.05 d_B21.0 rb>rf=True                valid=True  n=1 faces=  52 rel=3.54e-06 t=0.334s
+m10 z6 x-0.05 d_B70.0 rb>rf=True               valid=True  n=1 faces=  52 rel=3.61e-06 t=0.365s
+m0.5 z6 x0.45 d_B4.0 rb>rf=False               valid=True  n=1 faces=  40 rel=2.73e-07 t=0.238s
+m1 z8 x-0.05 d_B9.0 rb>rf=True                 valid=True  n=1 faces=  68 rel=4.00e-06 t=0.482s
+m10 z9 x-0.05 d_B100.0 rb>rf=False             valid=True  n=1 faces=  58 rel=3.38e-06 t=0.515s
+=== flank
+flank=spline default                           valid=True  n=1 faces=  95 rel=3.96e-09 t=0.519s
+flank=spline z=82 m=1                          valid=True  n=1 faces= 578 rel=4.16e-10 t=2.301s
+flank=poly default                             valid=True  n=1 faces= 599 rel=1.21e-05 t=0.463s
+flank=poly z=82 m=1                            valid=True  n=1 faces=2874 rel=6.84e-07 t=3.642s

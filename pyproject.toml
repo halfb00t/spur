@@ -253,14 +253,16 @@ name = "The kernel doorways are model and shaft_model"
 # model by an importlib string the linter does not see (pool.py), so that path stays as
 # it is. Belt: tests/test_seam.py's test_only_model_may_import_the_shaft_solid.
 #
-# Handoff to Phase 32: when model.py first imports shaft_model statically, this contract
-# breaks through cli -> model -> shaft_model (measured in 30-RESEARCH Pitfall 4). That
-# same commit adds ignore_imports = ["spur.model -> spur.shaft_model"] to this contract;
-# added any earlier, import-linter errors with "No matches for ignored import".
+# Phase 32: model.py imports shaft_model statically, so cli reaches it through model
+# (measured in 30-RESEARCH Pitfall 4). That one edge is ignored below, added in the
+# commit that added the import (earlier, import-linter errors with "No matches for ignored
+# import"). Every other path from app, cli, pool, records or parts to shaft_model still
+# breaks the contract.
 type = "forbidden"
 source_modules = ["spur.app", "spur.cli", "spur.pool", "spur.records", "spur.parts"]
 forbidden_modules = ["spur.shaft_model"]
 allow_indirect_imports = false
+ignore_imports = ["spur.model -> spur.shaft_model"]
 
 [[tool.importlinter.contracts]]
 name = "The gear maths does not know the shaft"

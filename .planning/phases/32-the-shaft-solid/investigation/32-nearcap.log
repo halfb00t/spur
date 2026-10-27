@@ -1,0 +1,13 @@
+c=m-5e-4: valid=True n=1 end_faces=1 faces=95 vol_rel_vs_capped=3.95e-09 t=0.63s
+c=m-1e-4: valid=True n=1 end_faces=1 faces=95 vol_rel_vs_capped=3.95e-09 t=0.63s
+c=m-1e-5: valid=True n=1 end_faces=1 faces=95 vol_rel_vs_capped=3.95e-09 t=0.65s
+c=m-1e-6: valid=True n=1 end_faces=1 faces=95 vol_rel_vs_capped=2.70e-08 t=0.64s
+c=m-3e-7: HANG (> 40 s, killed)
+c=m-1e-7: valid=True n=1 end_faces=1 faces=95 vol_rel_vs_capped=3.97e-09 t=0.63s
+c=m0: valid=True n=1 end_faces=1 faces=95 vol_rel_vs_capped=3.97e-09 t=0.62s
+c=m1e-7: valid=True n=1 end_faces=1 faces=95 vol_rel_vs_capped=5.68e-09 t=0.63s
+c=m3e-7: HANG (> 40 s, killed)
+c=m1e-6: valid=True n=1 end_faces=0 faces=95 vol_rel_vs_capped=2.73e-08 t=0.66s
+c=m1e-5: valid=True n=1 end_faces=1 faces=77 vol_rel_vs_capped=2.43e-08 t=0.62s
+c=m1e-4: valid=True n=1 end_faces=1 faces=77 vol_rel_vs_capped=2.07e-07 t=0.61s
+c=m5e-4: valid=True n=1 end_faces=1 faces=77 vol_rel_vs_capped=1.02e-06 t=0.61s

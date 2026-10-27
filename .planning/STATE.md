@@ -2,37 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Splined Shaft
-current_phase: 32
-current_phase_name: The Shaft Solid
-status: "Phase 31 shipped — PR #51"
-stopped_at: Phase 31 complete, ready to plan Phase 32
-last_updated: "2026-10-26T15:37:33.122Z"
-last_activity: 2026-10-26
-state_head: 1d24bb2f0eef9122b903a84112f4a1cbf3faa54a
+current_phase: 33
+current_phase_name: Interfaces and Parity
+status: "Phase 32 shipped — PR #52"
+stopped_at: Phase 32 complete, ready to plan Phase 33
+last_updated: "2026-10-27T12:37:22.777Z"
+last_activity: 2026-10-27
+state_head: 2d3368818668d03b1763beb12269bf7e06b1a9af
 progress:
   total_phases: 5
-  completed_phases: 8
-  total_plans: 11
-  completed_plans: 11
-  percent: 73
+  completed_phases: 9
+  total_plans: 17
+  completed_plans: 17
+  percent: 82
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-26)
+See: .planning/PROJECT.md (updated 2026-10-27)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 32 — The Shaft Solid
+**Current focus:** Phase 33 — Interfaces and Parity
 
 ## Current Position
 
-Phase: 32 — The Shaft Solid
+Phase: 33 — Interfaces and Parity
 Plan: Not started
-Status: Phase 31 shipped — PR #51
-Last activity: 2026-10-26
+Status: Phase 32 shipped — PR #52
+Last activity: 2026-10-27
 
 ## Performance Metrics
 
@@ -79,6 +79,7 @@ Last activity: 2026-10-26
 | 29 | 1 | - | - |
 | 30 | 5 | - | - |
 | 31 | 6 | - | - |
+| 32 | 6 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -279,6 +280,12 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 31 P04 | 12 min | 3 tasks | 14 files |
 | Phase 31 P05 | 10min | 2 tasks | 5 files |
 | Phase 31 P06 | 12 min | 3 tasks | 11 files |
+| Phase 32 P01 | 17 min | 2 tasks | 7 files |
+| Phase 32 P02 | 12 min | 3 tasks | 15 files |
+| Phase 32 P03 | 30 min | 3 tasks | 18 files |
+| Phase 32 P04 | 45 min | 3 tasks | 17 files |
+| Phase 32 P05 | 55 min | 3 tasks | 14 files |
+| Phase 32 P06 | 12 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -549,6 +556,23 @@ pending; the next milestone starts this list fresh.
 - [Phase 31]: 31-05 checkpoint: PARTIAL PASS. DIN 5480-1:2006-03 (unofficial translation) holds no size tables; three W 120x3x38x8f rows approved (cl. 9.1 Fig. 6); anchor debt filed; odd-z M_Re stays unprinted; d_Ff checked as a limit
 - [Phase 31]: 31-06: no constant edited; the copy's checkpoint changed no printed number, so no D-09 entry; L47 closes Phase 31
 - [Phase 31]: 31-06: REQ-shaft-basic-dims left open (one basic-dimension anchor row, plan minimum two; partial pass accepted, debt filed); closed 2026-10-26 by four approved DIN 5480-2 rows
+- [Phase 32]: A1 floor to 0.001 mm with 1e-9 guard for end_chamfer_effective (request, tooth-height cap, splined-length cap, then minimum)
+- [Phase 32]: B1 end_chamfer_effective is the 13th ShaftDimensions key, after measure_over_pins before designation
+- [Phase 32]: C1 ShaftParams.slug stem spur_shaft_w{reference_d:g}x{module:g}x{teeth}, default spur_shaft_w25x1.25x18
+- [Phase 32]: D1 single-build shaft bench rows only in Phase 32; contention row filed as nice debt, trigger Phase 33 /api/shaft/model.{fmt}
+- [Phase 32]: A1/B1/C1 applied: end_chamfer_effective = min(floor_mm(request), floor_mm(tooth height from printed diameters), floor_mm(splined_length)), floor_mm(v) = floor(v*1000+1e-9)/1000, 13th key after measure_over_pins, slug spur_shaft_w{d}x{m}x{z}
+- [Phase 32]: floor_mm can exceed its input by at most 1.03e-12 mm up to 500 mm (measured, 32-02-overshoot.log), not under 1e-12 as 32-01 stated
+- [Phase 32]: The chamfer cap warning fires only where a limit binds at the 0.001 mm resolution (gear 10-REVIEW CR-01 rule)
+- [Phase 32]: Bars for the shaft solid are set from its own worst rows: FLANK_ANGLE_ABS 1e-14 rad, VOLUME_REL 1e-4, READBACK_TOL 1e-6 mm, FLANK_BAR_PER_MODULE 5e-4, VOLUME_BRACKET_SLACK 1e-4
+- [Phase 32]: The flank deviation is sampled at 201 positions per spline edge, not 21: the sparse sample read 5x low (W 14x2x6: 7.4e-6 vs 3.985e-5 per module)
+- [Phase 32]: tests/test_shaft_model.py is a heavy test file: make verify.fast read 20.97 s with it against 12.8 s without, at load 23-30, above the 20.0 s rule
+- [Phase 32]: A cone start within 1e-9..1e-4 mm of the root circle is refused before the kernel runs, and a solid outside the volume bracket is a BuildError naming a modelling defect
+- [Phase 32]: 32-04: MESH_PREVIEW_REL = 6e-3 (human decision, Option A); measured preview worst -3.691e-3 on W 14x2x6 is 0.615 of the bar; fine 1e-3 and vertex 1e-4 kept
+- [Phase 32]: 32-04: Part widened in 4018de8 with the one ignored import edge spur.model -> spur.shaft_model; no further file named heavy (slice re-priced at 14.94 s)
+- [Phase 32]: 32-05: D-09 confirmed, no bound moved: splined_length 500, end_chamfer 10, shank_d 850, shank_length 500 stand as swept (heaviest shaft 2.23 s macOS, 5.44 s Linux amd64 emulated, against 30 s; peak RSS under the gear's in the same run)
+- [Phase 32]: 32-05: the Linux row is the linux/amd64 container emulated on the arm64 host; shaft-to-gear ratios within a run are the comparison, never Linux against macOS walls
+- [Phase 32]: 32-06: gate reading of record 2644 passed in 233.83 s (real 234.78 s, load 5.24 to 7.66), -17.32 s (-6.90 %) vs 32-01's 251.15 s, inside the ~8 % spread so no speed claim; 66.17 s under L43's 300 s bar — Same host, both readings from logs; REQ-gate-cost-recorded stays open until Phase 34's milestone reading. Two in-phase readings (32-04 358.81 s, 32-05 312.50 s) exceeded 300 s under load and are written down, not trimmed.
+- [Phase 32]: 32-06: L48 closes Phase 32 in the decision log (construction, forbidden routes, guards, doorway, bars, gate delta, handoffs to 33 and 34) — Cites the two L47 amendments instead of restating; heading reworded so the plan's case-sensitive verify matches.
 
 ### Pending Todos
 
@@ -556,6 +580,12 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 32] Verified 4/4; Nyquist 16/16; security 14/14 closed. Code review `32-REVIEW-DISPOSITION.md`: 4 open
+  (0 critical). WR-01 `_guard_volume` accepts an uncut chamfer (a no-op cone intersect would print an
+  `end_chamfer_effective` not on the part, L08) — filed `must`, fix before Phase 33 ships shaft downloads
+  (`docs/tech_debt/active/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md`). WR-02 bench `--fresh` swallows child
+  stderr; IN-01 stale comments; IN-02 `load_sweep` rejects explicit `"part": "gear"`. Cross-CLI (Codex) review of the phase
+  diff not yet run.
 - ✓ [Phase 31] Re-verified 5/5 with no override relied on, after the human approved four DIN 5480-2 rows (W 25x1.25x18,
   W 26x1.25x19, W 30x2x14, W 30x2x13); REQ-shaft-basic-dims Complete; anchor debt resolved. Odd-z M_Re and d_Ff stay `null`
   (idea `2026-10-26-print-odd-tooth-count-measure-over-pins`). `must` debt: shift cap 0.45 (11 Part 2 rows beyond it),
@@ -864,8 +894,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-26
-Stopped at: Phase 31 complete, ready to plan Phase 32
+Last session: 2026-10-27T11:11:19.494Z
+Stopped at: Phase 32 complete, ready to plan Phase 33
 Resume file: None
 
 ## Operator Next Steps

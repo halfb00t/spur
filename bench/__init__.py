@@ -43,3 +43,11 @@ def _total_ram_gib() -> float | None:
         return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / (1024**3)
     except (ValueError, OSError, AttributeError):
         return None
+
+
+def maxrss_bytes(raw: int, system: str) -> int:
+    """`ru_maxrss` is bytes on Darwin (macOS) and kibibytes everywhere else (Linux,
+    where the image actually runs) -- the platform split L24's own reading needs to be
+    believed at all (the interfaces note; no existing bench script reads `ru_maxrss`
+    before this one, per 12-RESEARCH.md Pitfall 4)."""
+    return raw if system == "Darwin" else raw * 1024

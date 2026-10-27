@@ -108,6 +108,20 @@ def tooth_thickness(m: float, xm: float) -> float:
     return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)
 
 
+def flank_half_angle(m: float, z: int, xm: float, r: float) -> float:
+    """The tooth's half-angle in radians at radius r, from the tooth centre line.
+
+    Involute geometry, no clause. s/d is the half-angle on the circle m*z (tooth_thickness,
+    DIN 5480-1:2006, cl. 6, Table 3); the involute then closes it by inv(ALPHA) at the base
+    circle and opens it again by inv(acos(d_b/2r)) out to r. Below the base circle the
+    half-angle is held at its base value, which is the solid's radial line (D-01): a
+    construction of the solid, not the standard's.
+    """
+    d = m * z
+    d_b = d * math.cos(ALPHA)
+    return tooth_thickness(m, xm) / d + inv(ALPHA) - inv(math.acos(d_b / (2 * max(r, d_b / 2))))
+
+
 def theoretical_pin_diameter(m: float, z: int, xm: float) -> float:
     """The pin that touches both flanks on the circle m*z + 2*xm, in closed form.
 

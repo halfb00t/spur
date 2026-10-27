@@ -1,0 +1,11 @@
+PASS 1 make gear.unchanged: exit 0, gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+PASS 2 git diff --exit-code v0.6 over requirements.txt, tests/regression/, ci.yml, calc.py, params.py: exit 0, empty
+PASS 3 make lint-imports: Contracts: 10 kept, 0 broken.
+PASS 4 git grep -nE '@app.(get|post|put|delete)("/api/shaft' -- src: exit 1, no match
+PASS 5 grep -c '^Part = GearParams | ShaftParams$' src/spur/parts.py prints 1
+PASS 6 the widening debt item: absent from active/, in resolved/ with Status: resolved, Resolved in 4018de8 resolves (git cat-file -e), INDEX row in the Resolved table
+PASS 7 git diff --exit-code b4cfd71 over pool.py, app.py, cli.py, din5480_tables.py: exit 0, empty
+PASS 8 list(ShaftDimensions.model_fields): 13 names, end_chamfer_effective at index 10, after measure_over_pins and before designation
+PASS 9 'The heaviest shaft (32-05)' appears 1 time(s) in tests/test_shaft_params.py; pytest -k sweep_reaches: 1 passed, 50 deselected in 1.52s
+PASS 10 AST walk of src/spur/shaft_model.py, 70 calls: none named clean, chamfer or union, none with a glue keyword
+PASS 11 ASSUMPTION markers in src/spur/din5480.py: 5 now, 5 at b4cfd71

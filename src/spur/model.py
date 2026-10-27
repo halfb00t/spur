@@ -10,6 +10,8 @@ that only a worker has, and D-07's affinity routing keeps the UI's repeat reques
 one gear (preview, then STL, then STEP) on this same worker. The exported-bytes cache
 lives one level up, in the serving process (`app.py`'s `_BlobCache`, D-06): a repeat
 download never wakes a worker at all.
+
+A shaft is built by `shaft_model` through the same lock, solid cache and export path.
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ import cadquery as cq
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-from . import int_env
+from . import int_env, shaft_model
 from .build_errors import BuildError
 from .calc import (
     Profile,
@@ -50,6 +52,7 @@ from .calc import (
 )
 from .params import GearParams
 from .parts import Part
+from .shaft_params import ShaftParams
 
 Format = Literal["stl", "step"]
 Quality = Literal["preview", "fine"]
@@ -770,7 +773,12 @@ def _tip_edges(solid: cq.Shape, ra: float, face_width: float) -> list[cq.Edge]:
 
 # --- build and export ----------------------------------------------------------------
 
-def _build(p: GearParams) -> cq.Solid:
+def _build(p: Part) -> cq.Solid:
+    # Dispatching here keeps one lock, one solid cache and one export path for both parts
+    # (L06, L18, L24). shaft_model checks its own solid and words its own kernel failures
+    # (32-RESEARCH Pitfall 7), so every line below runs for a gear only, unchanged.
+    if isinstance(p, ShaftParams):
+        return shaft_model.build_shaft(p)
     pr = profile(p)
     # The one answer to "which root", the same call derive() makes, so the part and the
     # numbers cannot name different roots (PITFALLS 1). Only the curve crosses into this
@@ -789,7 +797,7 @@ def _build(p: GearParams) -> cq.Solid:
     return solids[0]
 
 
-def _build_checked(p: GearParams) -> cq.Solid:
+def _build_checked(p: Part) -> cq.Solid:
     try:
         return _build(p)
     except BuildError:
@@ -807,7 +815,7 @@ def build(p: Part) -> cq.Solid:
         return _build_cached(p)
 
 
-def _write_export(shape: cq.Solid, p: GearParams, fmt: Format, quality: Quality) -> bytes:
+def _write_export(shape: cq.Solid, p: Part, fmt: Format, quality: Quality) -> bytes:
     with tempfile.TemporaryDirectory(prefix="spur-") as d:
         path = Path(d) / f"{p.slug()}.{fmt}"
         if fmt == "stl":

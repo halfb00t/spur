@@ -1,0 +1,38 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+collecting ... collected 7 items
+
+tests/test_seam.py::test_every_module_a_contract_names_exists_and_the_layout_is_frozen PASSED [ 14%]
+tests/test_seam.py::test_the_shaft_maths_imports_no_kernel_no_solid_no_logger_and_no_gear_maths PASSED [ 28%]
+tests/test_seam.py::test_only_model_may_import_the_shaft_solid PASSED    [ 42%]
+tests/test_seam.py::test_the_shaft_solid_never_imports_the_gear_doorway FAILED [ 57%]
+tests/test_seam.py::test_the_gear_maths_imports_no_shaft_module PASSED   [ 71%]
+tests/test_seam.py::test_every_route_beyond_v0_6_lives_under_the_shaft_prefix PASSED [ 85%]
+tests/test_seam.py::test_the_gear_routes_take_the_v0_6_query_keys PASSED [100%]
+
+=================================== FAILURES ===================================
+_____________ test_the_shaft_solid_never_imports_the_gear_doorway ______________
+
+    def test_the_shaft_solid_never_imports_the_gear_doorway() -> None:
+        """model imports shaft_model statically, so the reverse edge is a cycle (32-RESEARCH
+        Anti-Patterns). A module-level cycle would also fail at import, a function-local one
+        would not; `_import_lines` reads both."""
+>       assert _import_lines(_read("shaft_model"), ("model",)) == []
+E       AssertionError: assert ['from . impo...# noqa: F401'] == []
+E         
+E         Left contains one more item: 'from . import model  # noqa: F401'
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     'from . import model  # noqa: F401',
+E         + ]
+
+tests/test_seam.py:115: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_seam.py::test_the_shaft_solid_never_imports_the_gear_doorway
+========================= 1 failed, 6 passed in 0.15s ==========================

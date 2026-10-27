@@ -21,10 +21,17 @@ from spur.shaft_calc import (
     FORM_DIAMETER_UNPROVEN,
     MEASURE_AT_NOMINAL_THICKNESS,
     ODD_Z_UNCONFIRMED,
+    ROOT_FORM_CONSTRUCTION,
+    SHANK_STEP_NO_RELIEF,
+    SPLINED_LENGTH_LIMIT,
     THEORETICAL_PIN,
+    TOOTH_HEIGHT_LIMIT,
     PinReading,
     ShaftDimensions,
+    chamfer_below_resolution_warning,
+    chamfer_capped_warning,
     derive_shaft,
+    floor_mm,
     pin_contact_window,
     pin_measurement,
 )
@@ -65,7 +72,8 @@ def test_the_default_shaft_derives_its_basic_dimensions() -> None:
     assert d.root_d == 22.25
     assert d.nominal_thickness == 2.613
     assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
-                          MEASURE_AT_NOMINAL_THICKNESS)
+                          MEASURE_AT_NOMINAL_THICKNESS, ROOT_FORM_CONSTRUCTION,
+                          SHANK_STEP_NO_RELIEF)
 
 
 def test_the_default_shaft_is_designated_w_25x1_25x18x8f() -> None:
@@ -79,11 +87,12 @@ def test_the_default_shaft_is_designated_w_25x1_25x18x8f() -> None:
 
 def test_the_shaft_dimensions_keys_are_fixed() -> None:
     """These keys become Phase 33's dims rows, in this order; renaming or moving one after
-    Phase 33 changes the API document. The warnings are the same on every call."""
+    Phase 33 changes the API document. The warnings are the same on every call.
+    `end_chamfer_effective` is the 13th key, after `measure_over_pins` (32-01 choice B1, L47)."""
     assert list(ShaftDimensions.model_fields) == [
         "reference_d", "profile_shift", "profile_shift_mm", "pitch_d", "tip_d", "root_d",
-        "nominal_thickness", "form_d", "pin_d", "measure_over_pins", "designation",
-        "warnings",
+        "nominal_thickness", "form_d", "pin_d", "measure_over_pins", "end_chamfer_effective",
+        "designation", "warnings",
     ]
     assert derive_shaft(ShaftParams()).warnings == derive_shaft(ShaftParams()).warnings
 
@@ -98,7 +107,8 @@ def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
     assert d.measure_over_pins == 27.999
     assert d.form_d is None
     assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
-                          MEASURE_AT_NOMINAL_THICKNESS)
+                          MEASURE_AT_NOMINAL_THICKNESS, ROOT_FORM_CONSTRUCTION,
+                          SHANK_STEP_NO_RELIEF)
     assert MEASURE_AT_NOMINAL_THICKNESS == (
         "M_Re is for this pin and is the measure at the nominal tooth thickness; it carries "
         "no allowance or tolerance for the fit.")
@@ -308,3 +318,120 @@ def test_the_root_warning_says_its_process_list_is_incomplete_and_names_no_other
     assert warning.count("DIN 5480-1 cl. 7.1") == 2
     numbers = re.findall(r"[0-9]+\.[0-9]+", warning.replace("cl. 7.1", "cl."))
     assert numbers == ["0.1", "0.1", "22.125"]
+
+
+def _chamfer_warnings(d: ShaftDimensions) -> list[str]:
+    return [w for w in d.warnings if w.startswith("end_chamfer")]
+
+
+def test_the_default_shaft_cuts_its_requested_end_chamfer() -> None:
+    """D-06: the default W 25x1.25x18x8f asks for 1.0 mm, the tooth height is 1.25 and the
+    splined length 30, so nothing binds: the 13th key prints 1.0 and no sentence names it."""
+    d = derive_shaft(ShaftParams())
+    assert d.end_chamfer_effective == 1.0
+    assert _chamfer_warnings(d) == []
+
+
+def test_a_chamfer_past_the_tooth_height_is_capped_and_warned_naming_the_field_and_the_limit(
+) -> None:
+    """D-05 (the L29/L45 precedent): W 10x0.5x18 has tooth height 0.5, so the default 1.0 mm
+    is cut at 0.5 and the sentence names end_chamfer, the size and the limit; never a 422.
+    (D-05's `module=0.5` alone cannot validate: it needs a shift of +15.45.)"""
+    d = derive_shaft(ShaftParams(reference_d=10, module=0.5, teeth=18))
+    assert d.end_chamfer_effective == 0.5
+    assert _chamfer_warnings(d) == [chamfer_capped_warning(1.0, 0.5, (TOOTH_HEIGHT_LIMIT,))]
+    sentence = _chamfer_warnings(d)[0]
+    assert "end_chamfer" in sentence
+    assert "0.5 mm" in sentence
+    assert "tooth height" in sentence
+
+
+@pytest.mark.parametrize(("length", "applied"), [(2.0006, 2.0), (1.0009, 1.0)])
+def test_a_chamfer_past_the_splined_length_is_capped_down_never_up(
+        length: float, applied: float) -> None:
+    """32-RESEARCH Pitfall 3: round(v, 3) would read 2.001 for 2.0006 and 1.001 for 1.0009,
+    above the length, and the kernel returned an empty shape that still says isValid() for
+    that legal link (32-round-up.log). The floor reads 2.0 and 1.0."""
+    p = ShaftParams(reference_d=70, module=3, teeth=22, splined_length=length, end_chamfer=5,
+                    shank_length=0)
+    d = derive_shaft(p)
+    assert d.end_chamfer_effective == applied
+    assert d.end_chamfer_effective <= p.splined_length
+    assert _chamfer_warnings(d) == [
+        chamfer_capped_warning(5.0, applied, (SPLINED_LENGTH_LIMIT,))]
+    assert "splined_length" in _chamfer_warnings(d)[0]
+
+
+def test_a_tie_between_the_two_caps_names_both() -> None:
+    """W 70x3x22 has tooth height 3.0; with splined_length 3.0 both caps give 3.0. The
+    sentence names tooth height first and is the same on every call."""
+    p = ShaftParams(reference_d=70, module=3, teeth=22, splined_length=3.0, end_chamfer=5,
+                    shank_length=0)
+    d = derive_shaft(p)
+    assert d.end_chamfer_effective == 3.0
+    assert _chamfer_warnings(d) == [
+        chamfer_capped_warning(5.0, 3.0, (TOOTH_HEIGHT_LIMIT, SPLINED_LENGTH_LIMIT))]
+    assert _chamfer_warnings(d)[0].index("tooth height") < _chamfer_warnings(d)[0].index(
+        "splined_length")
+    assert derive_shaft(p).warnings == d.warnings
+
+
+def test_a_chamfer_below_the_resolution_is_not_cut_and_prints_no_number() -> None:
+    """L45, L08: 0.0004 mm floors to 0.000, so nothing is cut and no number is printed in
+    place of the cut; the sentence says why."""
+    d = derive_shaft(ShaftParams(end_chamfer=0.0004))
+    assert d.end_chamfer_effective is None
+    assert _chamfer_warnings(d) == [chamfer_below_resolution_warning(0.0004)]
+    assert "below the 0.001 mm resolution" in _chamfer_warnings(d)[0]
+
+
+def test_no_chamfer_asked_prints_no_number_and_no_warning() -> None:
+    """end_chamfer 0 means none: null, and no sentence about a chamfer that was not asked."""
+    d = derive_shaft(ShaftParams(end_chamfer=0))
+    assert d.end_chamfer_effective is None
+    assert _chamfer_warnings(d) == []
+
+
+def test_the_millimetre_floor_keeps_every_typed_decimal() -> None:
+    """A1 (32-01): a typed three-place decimal 0..500 keeps itself, and no four-place decimal
+    0..50 floors above itself; 32-01-floor-grid.log ran the four-place grid to 500.0000 (0
+    above). Without the 1e-9, 2957 three-place decimals lose a step, first 1.001, 1.003,
+    1.005. A result above its input is possible only for an input within 1e-9 below a
+    lattice point and then by at most 1.03e-12 mm (32-02-overshoot.log, up to 500 mm)."""
+    # The first few offenders by name, so a failure says which decimal moved.
+    moved = [f"{k / 1000:.3f}" for k in range(500001)
+             if floor_mm(float(f"{k / 1000:.3f}")) != float(f"{k / 1000:.3f}")]
+    assert moved[:3] == []
+    above = [f"{k / 10000:.4f}" for k in range(500001)
+             if floor_mm(float(f"{k / 10000:.4f}")) > float(f"{k / 10000:.4f}")]
+    assert above[:3] == []
+
+
+@pytest.mark.parametrize("p", [
+    ShaftParams(),
+    ShaftParams(shank_length=0),
+    ShaftParams(**parse_designation("W 120x3x38x8f")._asdict()),
+], ids=["default", "no-shank", "w120x3x38"])
+def test_every_shaft_says_its_root_is_a_construction_and_gives_no_number(
+        p: ShaftParams) -> None:
+    """D-03: the solid's root is a construction, not the cut of a hob or broach. The sentence
+    holds no digit, so it cannot imply a fillet radius, and never the word `hobbed`, which
+    the root_d sentence's tests use to pick that sentence out."""
+    assert ROOT_FORM_CONSTRUCTION in derive_shaft(p).warnings
+    assert re.search(r"[0-9]", ROOT_FORM_CONSTRUCTION) is None
+    assert "construction" in ROOT_FORM_CONSTRUCTION
+    assert "root_d" in ROOT_FORM_CONSTRUCTION
+    assert "hobbed" not in ROOT_FORM_CONSTRUCTION
+    assert sum("hobbed" in w for w in derive_shaft(p).warnings) == 1
+
+
+def test_a_shank_brings_the_no_relief_groove_sentence_and_no_shank_drops_it() -> None:
+    """D-08: with a shank the spline steps straight into it, with no relief groove (DIN 509),
+    no hob run-out and a full-form prism. The sentence gives no notch factor: its only source
+    is a low-confidence workshop article. shank_length 0 has no step, so no sentence."""
+    with_shank = derive_shaft(ShaftParams())
+    assert with_shank.warnings[-1] == SHANK_STEP_NO_RELIEF
+    assert "DIN 509" in SHANK_STEP_NO_RELIEF
+    assert "full-form prism" in SHANK_STEP_NO_RELIEF
+    assert "notch" not in SHANK_STEP_NO_RELIEF
+    assert SHANK_STEP_NO_RELIEF not in derive_shaft(ShaftParams(shank_length=0)).warnings

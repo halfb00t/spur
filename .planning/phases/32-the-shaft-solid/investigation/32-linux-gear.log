@@ -1,0 +1,5 @@
+[notice] To update, run: pip install --upgrade pip
+gear z=82 base 1 MiB peak 1 MiB wall 2.57s stl 5659684
+gear z=199 base 1 MiB peak 1 MiB wall 6.81s stl 9062784
+{"label": "z82 m1 Ls500 Lk500", "base_mib": 654, "build_s": 4.014, "extrude": 0.138, "cut_first": 0.009, "fuse": 1.198, "cut_last": 2.669, "valid": true, "nsolids": 1, "faces": 415, "vol_rel": "3.00e-10", "stl_preview_s": 0.31, "stl_preview_bytes": 818484, "stl_preview_tris": 16368, "stl_fine_s": 0.054, "stl_fine_bytes": 1008884, "stl_fine_tris": 20176, "step_s": 0.16, "step_bytes": 2375741, "worst_request_s": 4.174, "peak_rss_mib": 1266}
+{"label": "z82 m10 x0.45 Ls500 Lk500 shank850 c10", "base_mib": 688, "build_s": 4.177, "extrude": 0.14, "cut_first": 0.009, "fuse": 1.227, "cut_last": 2.802, "valid": true, "nsolids": 1, "faces": 415, "vol_rel": "3.03e-10", "stl_preview_s": 0.29, "stl_preview_bytes": 1013884, "stl_preview_tris": 20276, "stl_fine_s": 0.073, "stl_fine_bytes": 1687484, "stl_fine_tris": 33748, "step_s": 0.175, "step_bytes": 2573552, "worst_request_s": 4.352, "peak_rss_mib": 1217}

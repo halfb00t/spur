@@ -1,0 +1,6 @@
+Ls=2.0006 c=round(Ls,3)=2.001 (d=-4.0e-04) Lk=0.0: valid=True nsolids=0 faces=0 vol rel (vs c capped at Ls)=1.00e+00
+Ls=2.0006 c=round(Ls,3)=2.001 (d=-4.0e-04) Lk=20.0: valid=True nsolids=1 faces=112 vol rel (vs c capped at Ls)=2.95e-07
+Ls=5.0007 c=round(Ls,3)=5.001 (d=-3.0e-04) Lk=0.0: valid=True nsolids=0 faces=0 vol rel (vs c capped at Ls)=1.00e+00
+Ls=5.0007 c=round(Ls,3)=5.001 (d=-3.0e-04) Lk=20.0: valid=True nsolids=1 faces=112 vol rel (vs c capped at Ls)=5.67e-07
+Ls=2.0004 c=round(Ls,3)=2.0 (d=+4.0e-04) Lk=0.0: valid=True nsolids=1 faces=93 vol rel (vs c capped at Ls)=1.29e-09
+Ls=2.0004 c=round(Ls,3)=2.0 (d=+4.0e-04) Lk=20.0: valid=True nsolids=1 faces=130 vol rel (vs c capped at Ls)=1.54e-10

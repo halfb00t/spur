@@ -1,0 +1,28 @@
+shank=tip              Workplane.union.clean: valid=False nsolids=1 rel=4.12e-09
+shank=tip              Workplane.union(clean=False): valid=True rel=4.12e-09
+shank=tip              Shape.fuse: valid=True rel=4.12e-09  .clean() after: valid=False rel=4.12e-09
+shank=tip+1e-6         Workplane.union.clean: valid=True nsolids=1 rel=3.94e-09
+shank=tip+1e-6         Workplane.union(clean=False): valid=True rel=3.94e-09
+shank=tip+1e-6         Shape.fuse: valid=True rel=3.94e-09  .clean() after: valid=True rel=3.94e-09
+shank=between 23.5     Workplane.union.clean: valid=True nsolids=1 rel=4.26e-09
+shank=between 23.5     Workplane.union(clean=False): valid=True rel=4.26e-09
+shank=between 23.5     Shape.fuse: valid=True rel=4.26e-09  .clean() after: valid=True rel=4.26e-09
+shank=25               Workplane.union.clean: valid=True nsolids=1 rel=3.91e-09
+shank=25               Workplane.union(clean=False): valid=True rel=3.91e-09
+shank=25               Shape.fuse: valid=True rel=3.91e-09  .clean() after: valid=True rel=3.91e-09
+shank=root             Workplane.union.clean: valid=False nsolids=1 rel=4.47e-09
+shank=root             Workplane.union(clean=False): valid=False rel=4.47e-09
+shank=root             Shape.fuse: valid=False rel=4.47e-09  .clean() after: valid=False rel=4.47e-09
+--- edge chamfer on the z=0 end face outline (no shank)
+c=0.5: valid=True nsolids=1 vol=13041.4321 full=13053.5779 removed=12.1458
+c=1.0: valid=True nsolids=1 vol=13005.3319 full=13053.5779 removed=48.2460
+c=1.2: EXC Standard_Failure BRep_API: command not done
+c=1.25: EXC Standard_Failure BRep_API: command not done
+c=1.3: EXC Standard_Failure BRep_API: command not done
+c=1.5: EXC Standard_Failure BRep_API: command not done
+c=3.0: EXC Standard_Failure BRep_API: command not done
+--- cone intersect past the cap (c > m): kernel result vs the capped closed form
+c=1.25: valid=True vol=22845.5422 closed-form-at-min(c,m)=22845.5423 rel=3.97e-09
+c=1.5: valid=True vol=22831.7997 closed-form-at-min(c,m)=22845.5423 rel=6.02e-04
+c=3.0: valid=True vol=22663.0979 closed-form-at-min(c,m)=22845.5423 rel=7.99e-03
+c=12.0: valid=True vol=19609.8335 closed-form-at-min(c,m)=22845.5423 rel=1.42e-01

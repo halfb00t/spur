@@ -1,0 +1,22 @@
+fuse                               sd=22.25                  valid=True  n=1 rel=4.47e-09
+fuse(shank, body)                  sd=22.25                  valid=True  n=1 rel=4.47e-09
+fuse glue                          sd=22.25                  valid=True  n=1 rel=4.47e-09
+fuse tol=1e-7                      sd=22.25                  valid=True  n=1 rel=4.47e-09
+fuse tol=1e-6                      sd=22.25                  valid=True  n=1 rel=4.47e-09
+fuse tol=1e-5                      sd=22.25                  valid=True  n=1 rel=4.47e-09
+fuse + fix()                       sd=22.25                  valid=True  n=1 rel=4.47e-09
+
+fuse                               sd=22.249999999999996     valid=True  n=1 rel=4.47e-09
+
+fuse                               sd=22.250000000000004     valid=True  n=1 rel=4.47e-09
+
+fuse                               sd=22.249999999           valid=True  n=1 rel=4.48e-09
+
+fuse                               sd=22.250000001           valid=True  n=1 rel=4.47e-09
+
+fuse                               sd=22.249999              valid=True  n=1 rel=4.29e-09
+
+fuse                               sd=22.250001              valid=True  n=1 rel=4.44e-09
+
+fuse                               sd=24.75                  valid=True  n=1 rel=4.12e-09
+

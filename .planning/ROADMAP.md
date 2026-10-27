@@ -167,7 +167,7 @@ baseline, the gear `/api/schema` response byte-equal.
 - [x] **Phase 31: Shaft Maths, Parameters and Designation** - A pure, oracle-proved `ShaftParams` (completed 2026-10-26)
       with frozen field names: profile shift from d_B, tip, root and thickness, M_Re at nominal,
       d_Ff `null` until proven, and a designation that round-trips; needs anchor rows from the copy
-- [ ] **Phase 32: The Shaft Solid** - Splined section, plain shank and end chamfer as a valid solid
+- [x] **Phase 32: The Shaft Solid** - Splined section, plain shank and end chamfer as a valid solid (completed 2026-10-27)
       that exports to STL and STEP, its volume matched to a closed form, its heaviest build
       measured against the memory ceiling and the timeout
 - [ ] **Phase 33: Interfaces and Parity** - The shaft served under `/api/shaft/...`, by
@@ -356,7 +356,27 @@ DIN proportions); the existing gear caches and pool are reused, not forked. **Ph
 .github/workflows/ci.yml` empty.
 **Research flag**: Yes — a kernel spike at real DIN proportions first (research Phase 3);
 build times so far were measured on placeholder proportions only.
-**Plans**: TBD
+**Plans**: 6/6 plans complete, run one at a time (one shared working tree; deliberate red edits); 32-01 stops at the
+`checkpoint:decision` on the four open research choices and 32-02 cannot start until the human answers
+
+Plans:
+**Wave 1**
+- [x] 32-01-PLAN.md — tracer: the phase-start `make verify` baseline and the floor-rule evidence, then `checkpoint:decision`: the rounding rule, the 13th key's position, the slug and the contention scope
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 32-02-PLAN.md — the applied end chamfer (`end_chamfer_effective`, floored, capped at tooth height and splined length, warned), the root-form and shank-step sentences, the help texts and `slug()`; L47 amendment; each seen red
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 32-03-PLAN.md — `shaft_model.build_shaft`: outline, extrude, fuse, cone intersect, proved against a stdlib closed form on every shank regime and chamfer cap; the root-band and volume-bracket guards; the kernel file priced; each seen red
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 32-04-PLAN.md — the doorway: `model` dispatches a shaft, `Part` widens, the contract's one ignored edge and the widening debt item in one change; STL and STEP through `model` and a real worker; each seen red
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 32-05-PLAN.md — the bench's shaft rows and `--fresh` per-row peak memory; the heaviest shaft swept on macOS and Linux beside the 199-tooth gear; D-09; the solid-field bounds pinned and logged
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 32-06-PLAN.md — the gate delta against 32-01's baseline, the phase-close checks and the closing `Lxx`
 
 ### Phase 33: Interfaces and Parity
 
@@ -497,6 +517,6 @@ comes from.
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
-| 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
+| 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |

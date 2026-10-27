@@ -12,6 +12,7 @@ the front ends print and into the one refusal the parameter model raises.
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, NamedTuple
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -61,6 +62,37 @@ ODD_Z_UNCONFIRMED = (
     "The measurement over pins M_Re is not given for an odd tooth count yet; the pin "
     "diameter is still given."
 )
+# D-03: the solid's root is built, not cut. No digit, so it cannot imply a fillet radius, and
+# never the word `hobbed`: tests/test_shaft_calc.py picks the root_d sentence by that word and
+# asserts it occurs once.
+ROOT_FORM_CONSTRUCTION = (
+    "The solid's tooth root is a construction, not the cut of a hob or broach: each flank "
+    "follows the involute down to the root circle, radially below the base circle where that "
+    "lies above the root, and the teeth are joined by an arc on root_d. Do not take a root "
+    "fillet's shape or size from the solid."
+)
+# D-08: geometry only. The notch-factor source the research found is a low-confidence
+# workshop article, so no factor is stated.
+SHANK_STEP_NO_RELIEF = (
+    "The spline steps straight into the shank: the solid has no relief groove (DIN 509) and "
+    "no hob run-out, and splined_length is a full-form prism."
+)
+TOOTH_HEIGHT_LIMIT = "tooth height (tip_d - root_d)/2"
+SPLINED_LENGTH_LIMIT = "splined_length"
+
+
+def floor_mm(v: float) -> float:
+    """`v` floored to the 0.001 mm the solid is cut at (32-01 choice A1).
+
+    Floored, never rounded: half-even rounding of a splined_length of 2.0006 mm reads 2.001,
+    above the length, and the kernel returned an empty shape that still says isValid() for
+    that legal link (32-round-up.log). The 1e-9 keeps a typed decimal on itself: every
+    three-place decimal 0..500 floors to itself, and without it 2957 of 500,001 lose a step
+    (first 1.001, 1.003, 1.005; 32-01-floor-grid.log). No four-place decimal 0..500 floors
+    above itself. An input within 1e-9 below a lattice point floors up onto it, by at most
+    1.03e-12 mm up to 500 mm (32-02-overshoot.log).
+    """
+    return math.floor(v * 1000 + 1e-9) / 1000
 
 
 # h_fP is a radial depth and root_d a diameter, so the hobbed root is the theoretical root
@@ -80,6 +112,25 @@ def hobbed_root_warning(root_d: float, module: float) -> str:
             f"{HOBBED_ROOT_DROP:g}*m = {hobbed:.3f} mm. "
             f"That is not the whole list: the standard names root depths for other processes "
             f"too (DIN 5480-1 cl. 7.1), and this tool gives none of them.")
+
+
+class ChamferReading(NamedTuple):
+    """The end chamfer the solid cuts, or None when nothing is cut, and what to say about it."""
+
+    applied: float | None
+    warnings: tuple[str, ...]
+
+
+def chamfer_capped_warning(requested: float, applied: float, limits: tuple[str, ...]) -> str:
+    return (f"end_chamfer {_exact(requested)} mm is capped at {applied:g} mm, the "
+            f"{' and the '.join(limits)}: the 45 degree cone cannot cut below the root circle "
+            "or past the splined section.")
+
+
+def chamfer_below_resolution_warning(requested: float) -> str:
+    """The gear's sentence for its tip chamfer (calc.py), for the same print resolution."""
+    return (f"end_chamfer {_exact(requested)} mm is below the 0.001 mm resolution it is cut "
+            "at and was not cut.")
 
 
 class PinReading(NamedTuple):
@@ -133,6 +184,12 @@ class ShaftDimensions(BaseModel):
         description="Measurement over pins M_Re at nominal thickness, for the printed pin. "
                     "Null for an odd tooth count (not given yet) and when the pin does not "
                     "touch the flanks within the contact window.",
+        json_schema_extra={"unit": "mm"})
+    end_chamfer_effective: float | None = Field(
+        description="End chamfer actually cut: a 45 degree cone at the free end, sized at the "
+                    "tip diameter, floored to 0.001 mm and capped at the tooth height "
+                    "(tip_d - root_d)/2 and at splined_length (the warnings say when). Null "
+                    "when no chamfer is cut.",
         json_schema_extra={"unit": "mm"})
     designation: str = Field(description="The DIN 5480 designation of these parameters, as "
                                          "the codec prints it.")
@@ -213,6 +270,29 @@ def pin_measurement(p: ShaftParams, pin_d: float) -> PinReading:
     return PinReading(pin_d, measure, ())
 
 
+def end_chamfer_reading(p: ShaftParams, tip_d: float, root_d: float) -> ChamferReading:
+    """The end chamfer the solid cuts (L08), from the printed diameters (the radii the solid
+    uses), capped and warned, never refused (D-05, L03).
+
+    The smallest of the request, the tooth height and splined_length, each floored to 0.001
+    mm. A limit is named only when it binds at that resolution: 1.0004 cut at 1.0 is the
+    print resolution, not a cap (the gear's 10-REVIEW CR-01 rule).
+    """
+    if p.end_chamfer <= 0:
+        return ChamferReading(None, ())
+    requested = floor_mm(p.end_chamfer)
+    tooth = floor_mm((tip_d - root_d) / 2)
+    length = floor_mm(p.splined_length)
+    applied = min(requested, tooth, length)
+    if applied <= 0:
+        return ChamferReading(None, (chamfer_below_resolution_warning(p.end_chamfer),))
+    if requested <= applied:
+        return ChamferReading(applied, ())
+    limits = tuple(name for name, cap in ((TOOTH_HEIGHT_LIMIT, tooth),
+                                          (SPLINED_LENGTH_LIMIT, length)) if cap == applied)
+    return ChamferReading(applied, (chamfer_capped_warning(p.end_chamfer, applied, limits),))
+
+
 def derive_shaft(p: ShaftParams) -> ShaftDimensions:
     """The basic dimensions of a validated shaft."""
 
@@ -224,21 +304,26 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
     pin = round(din5480.theoretical_pin_diameter(p.module, p.teeth, xm), PIN_DECIMALS)
     reading = pin_measurement(p, pin)
     root_d = r3(din5480.root_diameter(p.module, p.teeth, xm, din5480.H_FP))
+    tip_d = r3(din5480.tip_diameter(p.reference_d, p.module))
+    chamfer = end_chamfer_reading(p, tip_d, root_d)
     measure_warnings = () if reading.measure is None else (MEASURE_AT_NOMINAL_THICKNESS,)
     # THEORETICAL_PIN would contradict pin_measurement's "M_Re and D_Re not given".
     pin_warnings = () if reading.pin_d is None else (THEORETICAL_PIN,)
+    shank_warnings = (SHANK_STEP_NO_RELIEF,) if p.shank_length > 0 else ()
     return ShaftDimensions(
         reference_d=p.reference_d,
         profile_shift=r3(x),
         profile_shift_mm=r3(xm),
         pitch_d=r3(p.module * p.teeth),
-        tip_d=r3(din5480.tip_diameter(p.reference_d, p.module)),
+        tip_d=tip_d,
         root_d=root_d,
         nominal_thickness=r3(din5480.tooth_thickness(p.module, xm)),
         form_d=None,
         pin_d=reading.pin_d,
         measure_over_pins=None if reading.measure is None else r3(reading.measure),
+        end_chamfer_effective=chamfer.applied,
         designation=din5480.format_designation(p.reference_d, p.module, p.teeth, p.fit),
         warnings=(FORM_DIAMETER_UNPROVEN, *pin_warnings, hobbed_root_warning(root_d, p.module),
-                  *measure_warnings, *reading.warnings),
+                  *measure_warnings, *reading.warnings, ROOT_FORM_CONSTRUCTION,
+                  *chamfer.warnings, *shank_warnings),
     )

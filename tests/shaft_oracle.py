@@ -24,6 +24,15 @@ the least distance from the centre to the flank is half the pin. No involute-fun
 inverse, no closed-form pin. The form diameter is read off the line of action through the
 pitch point instead of the closed-form hypotenuse. The hobbing tip radius and dedendum
 arrive as arguments, so the oracle holds no provisional constant of din5480.
+
+The shaft solid's closed form (Phase 32) is written here too, with no kernel in it. The
+profile area inside a disc of radius rho is pi*min(rho, rf)**2 up to the root circle, and
+pi*rf**2 + z * the integral from rf of 2*h(r)*r dr above it, where h is the tooth's half
+angle at radius r, held at its base value below the base circle (the solid's radial line).
+The volume is the full area times the splined length, plus the shank, minus what the
+chamfer cone removes: the area outside the cone's disc, integrated over the chamfer's
+height. Every sum is Simpson's rule, written out in the function that needs it, because
+this file may import nothing but `math`.
 """
 
 from __future__ import annotations
@@ -182,3 +191,68 @@ def form_diameter(m: float, z: int, x: float, h_fp: float, rho_fp: float) -> flo
     h = h_fp * m - rho_fp * m * (1 - math.sin(_ALPHA))
     y = r + x * m - h
     return 2 * math.hypot((r - y) / math.tan(_ALPHA), y)
+
+
+def tooth_half_angle(m: float, z: int, x: float, r: float) -> float:
+    """The tooth's half angle at radius r, from the tooth centre line, held at its base value
+    below the base circle.
+
+    The base half angle is s_b/(2*r_b), with s_b from the rack exactly as `tooth_thickness`
+    writes it. The parametric involute point at radius r is `_involute_point(r_b,
+    sqrt((r/r_b)**2 - 1))`; its polar angle, read with atan2, is how far the flank has
+    turned back by there, and the half angle is what is left.
+    """
+    r_b = m * z * math.cos(_ALPHA) / 2
+    s_b = m * math.cos(_ALPHA) * (math.pi / 2 + z * (math.tan(_ALPHA) - _ALPHA)) + (
+        2 * x * m * math.sin(_ALPHA)
+    )
+    px, py = _involute_point(r_b, math.sqrt((max(r, r_b) / r_b) ** 2 - 1))
+    return s_b / (2 * r_b) - math.atan2(py, px)
+
+
+def profile_area_within(m: float, z: int, x: float, rf: float, ra: float, rho: float) -> float:
+    """The area of the spline's cross-section inside the disc of radius rho.
+
+    Simpson with 2000 panels on each side of the base circle when that lies above the root:
+    the half angle has a corner there and each side is smooth.
+    """
+    if rho <= rf:
+        return math.pi * rho * rho
+    r_b = m * z * math.cos(_ALPHA) / 2
+    top = min(rho, ra)
+    spans = [(rf, top)]
+    if rf < r_b < top:
+        spans = [(rf, r_b), (r_b, top)]
+    teeth = 0.0
+    for lo, hi in spans:
+        panels = 2000
+        step = (hi - lo) / panels
+        total = 0.0
+        for i in range(panels + 1):
+            r = lo + i * step
+            weight = 1 if i in (0, panels) else (4 if i % 2 else 2)
+            total += weight * 2 * tooth_half_angle(m, z, x, r) * r
+        teeth += total * step / 3
+    return math.pi * rf * rf + z * teeth
+
+
+def shaft_volume(m: float, z: int, x: float, rf: float, ra: float, splined_length: float,
+                 chamfer: float, shank_d: float, shank_length: float) -> float:
+    """The solid's volume: the splined prism, plus the shank, minus the chamfer cone's cut.
+
+    The cone removes, at height t above the end face, the area outside the disc of radius
+    ra - chamfer + t; Simpson with 200 panels over t in [0, chamfer]. No overlap term: the
+    shank starts at z = splined_length.
+    """
+    full = profile_area_within(m, z, x, rf, ra, ra)
+    volume = full * splined_length + math.pi * (shank_d / 2) ** 2 * shank_length
+    if chamfer > 0:
+        panels = 200
+        step = chamfer / panels
+        total = 0.0
+        for i in range(panels + 1):
+            t = i * step
+            weight = 1 if i in (0, panels) else (4 if i % 2 else 2)
+            total += weight * (full - profile_area_within(m, z, x, rf, ra, ra - chamfer + t))
+        volume -= total * step / 3
+    return volume

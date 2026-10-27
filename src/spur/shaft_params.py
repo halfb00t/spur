@@ -50,15 +50,22 @@ class ShaftParams(BaseModel):
                                  "letter. Whether the fit exists in the tables is not "
                                  "checked yet.",
                      json_schema_extra=_extra("Spline"))
-    # The four fields below belong to the solid. Their bounds are provisional until Phase
-    # 32's sweep, and cross-field rules among them (chamfer against tooth height, shank
-    # against tip) arrive with the solid: this model enforces ranges only.
+    # The four fields below belong to the solid. No cross-field rule among them: every shank_d
+    # is allowed against the spline (D-07), and end_chamfer is capped and warned in
+    # derive_shaft, never refused (D-05). Their bounds were set by Phase 32's sweep (bench/
+    # RESULTS.md `### The heaviest shaft (32-05)`): the heaviest allowed shaft builds and
+    # exports in 2.23 s on macOS and 5.44 s in the Linux container, against 30 s (L37).
     splined_length: float = _f(30.0, 1, 500, title="Splined length", group="Spline",
                                unit="mm", step=0.5,
-                               help="Length of the toothed part of the shaft.")
+                               help="Length of the toothed part of the shaft, "
+                                    "a full-form prism: the teeth keep their full form up "
+                                    "to the shank, with no relief groove or hob run-out.")
     end_chamfer: float = _f(1.0, 0, 10, title="End chamfer", group="Spline", unit="mm",
                             step=0.05,
-                            help="Chamfer on the tooth ends at the free end of the shaft. "
+                            help="A 45 degree cone at the free end, sized at the tip diameter: "
+                                 "it starts on the end face at tip_d - 2*end_chamfer and "
+                                 "reaches tip_d at end_chamfer from the end. Capped at the "
+                                 "tooth height and at the splined length, with a warning. "
                                  "0 = none.")
 
     # --- Shank -----------------------------------------------------------------
@@ -80,3 +87,13 @@ class ShaftParams(BaseModel):
                 "infeasible", "{message}",
                 {"message": " ".join(m for m, _ in problems), "fields": fields})
         return self
+
+    def slug(self) -> str:
+        """The short, filename-safe name of the shaft, built from numbers only.
+
+        Called for the worker's temporary export file and the `slug` field of every
+        per-request record. Provisional until Phase 33 owns the download name (L40); no
+        cache is keyed by it (L40). The fit is left out: it is a user-typed string and the
+        solid does not depend on it.
+        """
+        return f"spur_shaft_w{self.reference_d:g}x{self.module:g}x{self.teeth}"

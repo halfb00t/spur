@@ -1,0 +1,14 @@
+fuse_cut radial Lk=20 d=3e-7: HANG (>25 s)
+fuse_cut radial Lk=20 d=-3e-7: HANG (>25 s)
+fuse_cut radial Lk=20 d=2.5e-7: valid=True n=1 faces=95 vol_rel=8.25e-09 t=0.62s
+fuse_cut radial Lk=20 d=3.5e-7: valid=True n=1 faces=95 vol_rel=9.96e-09 t=0.62s
+fuse_cut radial Lk=20 d=-2.5e-7: valid=True n=1 faces=95 vol_rel=3.97e-09 t=0.62s
+fuse_cut radial Lk=20 d=-3.5e-7: valid=True n=1 faces=95 vol_rel=1.20e-08 t=0.61s
+fuse_cut radial Lk=20 d=3.1e-7: valid=True n=1 faces=95 vol_rel=9.28e-09 t=0.62s
+cut_fuse radial Lk=20 d=3e-7: HANG (>25 s)
+cut_fuse radial Lk=20 d=-3e-7: HANG (>25 s)
+cut_fuse radial Lk=20 d=2.5e-7: valid=True n=1 faces=95 vol_rel=8.21e-09 t=0.54s
+cut_fuse radial Lk=20 d=3.5e-7: valid=True n=1 faces=95 vol_rel=9.92e-09 t=0.54s
+cut_fuse radial Lk=20 d=-2.5e-7: valid=True n=1 faces=95 vol_rel=3.93e-09 t=0.54s
+cut_fuse radial Lk=20 d=-3.5e-7: valid=True n=1 faces=95 vol_rel=1.20e-08 t=0.54s
+cut_fuse radial Lk=20 d=3.1e-7: valid=True n=1 faces=95 vol_rel=9.24e-09 t=0.54s

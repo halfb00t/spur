@@ -7010,3 +7010,253 @@ Each deliberate break was run red once and reverted. The first failure line is c
 | 31 Part 2 | `tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin`, M1 line on the two odd rows (DIN 5480-2 Tables 13, 19) | `centre_circle *= math.cos(math.pi / (2 * z))` changed to `*= 1.0` in `din5480.measure_over_pins` | `tests/test_din5480_anchors.py:134: assert 29.11607782393547 == 29.026 ± 5.0e-04`; `2 failed, 6 passed` (`31-part2-red-odd-factor.log`) | `git checkout -- src/spur/din5480.py`; `git status --porcelain -- src tests` empty (run on head `a863df1`, `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` purged) |
 | 31 Part 2 | `tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin`, oracle cross-check line | `return 2 * rho + pin_d` changed to `... + 1e-6` in `tests/shaft_oracle.measure` | `tests/test_din5480_anchors.py:135: assert 28.050115163714313 == 28.050114163714305 ± 1.0e-09`; `2 failed, 6 passed` (`31-part2-red-oracle.log`) | `git checkout -- tests/shaft_oracle.py`; `git status --porcelain -- src tests` empty (run on head `a863df1`, `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` purged) |
 | 31 Part 2 | `tests/test_din5480_anchors.py::test_anchor_part_2_measure_over_pins_at_the_tabulated_pin`, odd-row null line (D-13) | `if p.teeth % 2:` changed to `if False:` in `pin_measurement` | `tests/test_din5480_anchors.py:137: AssertionError: assert 28.688 is None`; `2 failed, 6 passed` (`31-part2-red-odd-gate.log`) | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty (run on head `a863df1`, `PYTHONDONTWRITEBYTECODE=1`, `__pycache__` purged) |
+
+## The shaft solid (Phase 32)
+
+What this section holds: v0.7's third phase builds the DIN 5480 external shaft as a solid (splined section, plain shank, end chamfer) from Phase 31's maths, carries it through `model` to an STL and a STEP file, proves its volume against a closed form, measures the heaviest allowed build against L17 and L37 and sets the solid fields' bounds from that sweep. Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/32-the-shaft-solid/investigation/`; later plans append rows to the table below.
+
+### The gate baseline (32-01)
+
+Source logs: `32-01-verify.log` (the whole `/usr/bin/time -p make verify` output) and `32-01-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/32-the-shaft-solid/investigation/`. Every figure below is copied from them, not re-rounded. One reading, on Phase 31's merged code: `git diff --exit-code b4cfd71 -- src tests bench pyproject.toml Makefile requirements.txt` exited 0 before the run, so only `.planning/` differed from the tree Phase 31 shipped.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `7c1bc2c` (`src`, `tests`, `bench`, `pyproject.toml`, `Makefile` and `requirements.txt` byte-equal to `b4cfd71`; only `.planning/` files were uncommitted or newer) |
+| UTC start -> end | `2026-10-27T09:23:31Z` -> `2026-10-27T09:27:49Z` |
+| 1-minute load before -> after | `7.96` -> `15.03` (`sysctl -n vm.loadavg` printed `{ 7.96 4.66 4.25 }` and `{ 15.03 13.23 8.60 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2387 passed in 251.15s (0:04:11) =======================` |
+| `/usr/bin/time -p` | `real 253.13`, `user 663.56`, `sys 495.87` |
+| Coverage TOTAL line | `TOTAL                         1564     22    426     13  98.24%` (`Required test coverage of 96.0% reached. Total coverage: 98.24%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+The number CONTEXT quotes, `2387 passed / 221.86 s`, appears in no log: `grep -rnF 221.86` over the repository (without `.venv` and `.git`) finds it only in this phase's own CONTEXT, RESEARCH and plan files, so it is not used here, and Phase 32's gate delta is taken against the reading above instead. The test count matches (`2387 passed`); the time does not (`251.15 s` here, `221.86 s` there), and no log says which load the quoted figure was taken at. Phase 31's recorded `2355 passed in 243.23s` (`### The gate delta (31-06)`, `HEAD 5b7c473`) is history, not the comparison: this reading holds 32 more tests, from seven `src` and `tests` files that changed between `5b7c473` and `b4cfd71` (`git diff --stat 5b7c473 b4cfd71 -- tests src`), not itemised here. 32-06 compares against this reading. The run was taken at a 1-minute load of `7.96` and the load after it includes the run's own work, so the figure carries the host's spread (Phase 25's is about 8 %, the Makefile comment at the `test:` target) and no speed claim is made from a single pair of readings.
+
+The floor rule's evidence (A2 of 32-RESEARCH, not run by the research), copied from `32-01-floor-grid.log`; the script is `32-01-floor-grid.py`:
+
+1. Three-place decimals 0.000..500.000 (500001), mismatches with `+1e-9`: `0`.
+2. The same without `+1e-9`, mismatches: `2957`, first three `['1.001', '1.003', '1.005']`; the plan expected `0.29` among them, and it is not (`0.29 * 1000 = 290.0` in binary64, floors to `0.29`).
+3. Four-place decimals 0.0000..500.0000 (5000001) flooring above their input: `0`, largest excess `0`.
+4. Shaft grid, feasible rows `13552`, floored tooth height not equal to the module: `0`, lattice chamfers (cap, cap-0.001, cap-0.002) inside the 1e-9..1e-4 band: `0`.
+5. Splined lengths: `2.0006` gives `round(v, 3) = 2.001` and floored `2.0`; `5.0007` gives `5.001` and floored `5.0` (the round-up case of `32-round-up.log`).
+
+### Kernel tolerances, measured (32-03)
+
+Each bar below is the smallest of its candidate steps at least 10x the worst reading on this file's own building rows (`tests/test_shaft_model.py`, 22 rows: the default, 11 shank regimes, 6 chamfer caps, W 14x2x6, W 9x1x8, W 105x10x9, W 84x1x82), measured by `investigation/32-03-tolerances.py` on the 2026-10-27 dev host. Log: `investigation/32-03-tolerances.log`.
+
+| Constant | Value | Worst measured | Its row | Ratio | Log |
+|---|---|---|---|---|---|
+| `FLANK_ANGLE_ABS` (`tests/test_din5480.py`) | `1e-14` rad | `3.886e-16` rad | `m0.8-z6-x0.45`, r 3.0200 (192 cases) | 25.7x | `32-03-tolerances.log` |
+| `VOLUME_REL` | `1e-4` | `1.471e-06` | W 14x2x6 | 68x | `32-03-tolerances.log` |
+| `READBACK_TOL` | `1e-6` mm | `1.0e-07` mm (the cone's bounding box carries ~1e-7; the radii read `2.8e-14`) | every chamfer row | 10x | `32-03-tolerances.log` |
+| `FLANK_BAR_PER_MODULE` | `5e-4` | `4.353e-05` per module | W 9x1x8 | 11.5x | `32-03-tolerances.log` |
+| `VOLUME_BRACKET_SLACK` (`src/spur/shaft_model.py`) | `1e-4` | `4.539e-09` relative excursion outside the bracket (every cut row lands inside; only the two uncut rows reach it) | `below-resolution` and `none-asked` | 22000x | `32-03-tolerances.log` |
+
+The flank is sampled at 201 positions per BSPLINE edge, not the plan's 21: at 21 the same W 14x2x6 reads `7.4e-06` per module and W 9x1x8 `7.7e-06`, 5x under the 201-position `3.985e-05` and `4.353e-05`, because the spline's error peaks between its 16 interpolation points and a sparse sample steps over the peak. The 201-position W 9x1x8 reading matches the research's own `4.35e-05` (`32-flank-dev.log`, m 1, z 8). W 9x1x8 joined the flank rows for that reason: it is the row the bar is set from.
+
+### The kernel file, priced (32-03)
+
+`tests/test_shaft_model.py` (29 tests, 29 kernel builds) was priced in the commit slice after `a87e225`: three warm `make verify.fast` runs with `/usr/bin/time -p`, the 1-minute load read before each, then two controls with `PYTEST_ARGS="--ignore=tests/test_shaft_model.py"` on the same host. Log: `investigation/32-03-verify-fast.log`.
+
+| Run | 1-minute load | Passed | `real` |
+|---|---|---|---|
+| with the file, 1 | 29.80 | 2221 | 20.12 s |
+| with the file, 2 | 28.97 | 2221 | 20.50 s |
+| with the file, 3 | 29.33 | 2221 | 20.97 s |
+| without it, control 1 | 26.25 | 2192 | 12.76 s |
+| without it, control 2 | 23.37 | 2192 | 12.98 s |
+
+Outcome: the slowest reading is 20.97 s, above the 20.0 s that keeps 10 s under the 30 s kill, so the rule fires and the file is named heavy: `--ignore=tests/test_shaft_model.py` joins `test.fast`'s recipe, `"test_shaft_model"` joins `HEAVY_TEST_FILES` in `tests/test_hooks.py`, and the Makefile comment records the readings, in one commit. The file costs about 8 s of the slice here (12.8 s to 20.1-21.0 s). The host was loaded far above the 3.0-5.5 the Makefile's earlier pricing was read at (the `-n 8` workers were starved), so these readings overstate an idle host's; the rule is mechanical and the cost of being wrong is a commit killed at 30 s, so it is applied as measured. The whole gate and the pre-push hook still run the file; only the commit slice stops running it.
+
+Re-check after 32-04: `tests/test_shaft_model.py` stayed in the ignore list and grew by nine collected cases (the doorway, chamfer-at-end-face, cache, export and kernel-failure rows), and `tests/test_records.py` and `tests/test_seam.py` gained one test each, so the commit slice was priced again: three warm `make verify.fast` runs with `/usr/bin/time -p`, the 1-minute load read before each. Log: `investigation/32-04-verify-fast.log`.
+
+| Run | 1-minute load | Passed | `real` |
+|---|---|---|---|
+| 1 | 16.36 | 2194 | 14.94 s |
+| 2 | 23.17 | 2194 | 14.86 s |
+| 3 | 23.92 | 2194 | 14.62 s |
+
+Outcome: the slowest reading is 14.94 s, at or under the 20.0 s rule, so no further file is named heavy and no Makefile or `tests/test_hooks.py` change is made. The slice is 2194 tests against 2192 before this plan (the two new fast tests; `tests/test_pool.py` was already ignored). `tests/test_shaft_model.py` stays heavy as 32-03 decided: those readings were taken with the file in the slice, and this plan only added to it.
+
+### The heaviest shaft (32-05)
+
+Source logs: `32-05-sweep-macos.log` and `32-05-sweep-linux.log` (whole outputs, with the host load read by `sysctl -n vm.loadavg` before and after), under `.planning/phases/32-the-shaft-solid/investigation/`; sweep `bench/sweeps/shaft.json` (nine shaft rows and the 199-tooth gear `{"teeth": 199}`, the top of L17's 160-199 corpus, as the last row). Command, both hosts: `python -m bench.build_time bench/sweeps/shaft.json --fresh`, each row in its own child process in file order, so every peak RSS is that row's own (`ru_maxrss`, bytes on macOS and KiB on Linux, through `bench.maxrss_bytes`). The tables are copied from the logs, not re-rounded. Every figure is through the shipped `spur.model` code of HEAD `c8608ba`; none is carried over from the research spike. Single-build rows only (32-01 choice D1): the pool-level contention row is not measured here and stays filed as `docs/tech_debt/active/2026-10-27-shaft-contention-row.md`.
+
+The **Resident after build** column is read from `/proc/self/status` `VmRSS` at the end of the child, after the build and both exports (an export releases the kernel's arenas, `model._release_arenas`), with the solid still held by the 4-entry cache. It is `-` on macOS, which has no current-RSS reading in the standard library. Triangle and byte counts differ between the hosts for the same row (the default shaft is 5662 triangles on macOS and 5728 on Linux): the two kernels' tessellations are not byte-identical, so each host's STL size is read on its own table and never mixed.
+
+#### macOS (the dev host)
+
+Command run from the repo root with `.venv/bin/python`. One run: the 1-minute load at start was `6.46`, under the 10 that would have called for a second run, and `7.63` after (`{ 7.63 11.76 14.76 }`).
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `c8608ba`
+- Sweep: `bench/sweeps/shaft.json`
+- Load averages at start: 6.46, 12.06, 14.99
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles | Peak RSS (MiB) | Resident after build (MiB) |
+|---|---|---|---|---|---|---|---|---|---|
+| part=shaft | 0.56 | 0.01 | 0.01 | 0.57 | yes | 283184 | 5662 | 590 | - |
+| part=shaft reference_d=70 module=10 teeth=6 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 0.70 | 0.05 | 0.01 | 0.75 | yes | 3326584 | 66530 | 558 | - |
+| part=shaft reference_d=84 module=1 teeth=82 splined_length=500 shank_d=84 shank_length=500 | 1.86 | 0.04 | 0.05 | 1.91 | yes | 1008884 | 20176 | 1062 | - |
+| part=shaft reference_d=42 module=0.5 teeth=82 splined_length=500 shank_length=500 | 1.58 | 0.04 | 0.05 | 1.63 | yes | 975284 | 19504 | 1066 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 1.98 | 0.05 | 0.05 | 2.03 | yes | 1683684 | 33672 | 1052 | - |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 2.18 | 0.04 | 0.05 | 2.23 | yes | 1667484 | 33348 | 1048 | - |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=808 shank_length=500 | 2.13 | 0.04 | 0.05 | 2.18 | yes | 1666384 | 33326 | 1052 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=1 end_chamfer=1 shank_length=0 | 2.18 | 0.04 | 0.05 | 2.23 | yes | 1058284 | 21164 | 972 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=0 shank_length=0 | 0.11 | 0.04 | 0.05 | 0.16 | yes | 1043684 | 20872 | 537 | - |
+| teeth=199 | 1.33 | 0.81 | 0.28 | 2.13 | yes | 9062784 | 181254 | 1356 | - |
+
+#### Linux (`python:3.12-slim-bookworm`, requirements.txt closure)
+
+The container is **linux/amd64** (the shell exports `DOCKER_DEFAULT_PLATFORM=linux/amd64`, as `### make test-image (26-06)` records), so it runs emulated on this arm64 host: `uname -srm` reads `Linux 7.0.14-orbstack-00380-ga7e0a2dc9535 x86_64`, `/proc/cpuinfo` names `VirtualApple @ 2.50GHz`, and every wall below carries that cost. Docker server `29.4.0` (OrbStack), `ncpu=18`, `mem_total=16817168384` (15.66 GiB, no `--memory` cap on the container). Run `docker run --rm -v "$PWD":/src:ro -w /src -e PYTHONPATH=/src/src:/src -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim-bookworm sh -c '...'` with `apt-get install libgl1 libx11-6 libexpat1 git` and `pip install --no-deps -r requirements.txt` first. The `Load averages at start` line below is the container's own (the VM's, `0.28`, measured after the install); the host's 1-minute load was `6.67` before and `5.26` after.
+
+- Machine: 18 CPUs, x86_64, 15.7 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `c8608ba`
+- Sweep: `bench/sweeps/shaft.json`
+- Load averages at start: 0.28, 0.12, 0.04
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles | Peak RSS (MiB) | Resident after build (MiB) |
+|---|---|---|---|---|---|---|---|---|---|
+| part=shaft | 1.68 | 0.16 | 0.07 | 1.84 | yes | 286484 | 5728 | 878 | 797 |
+| part=shaft reference_d=70 module=10 teeth=6 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 1.37 | 0.33 | 0.06 | 1.71 | yes | 3342384 | 66846 | 813 | 760 |
+| part=shaft reference_d=84 module=1 teeth=82 splined_length=500 shank_d=84 shank_length=500 | 4.32 | 0.32 | 0.17 | 4.64 | yes | 1008884 | 20176 | 1309 | 853 |
+| part=shaft reference_d=42 module=0.5 teeth=82 splined_length=500 shank_length=500 | 3.68 | 0.34 | 0.16 | 4.02 | yes | 975284 | 19504 | 1248 | 797 |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 4.36 | 0.37 | 0.18 | 4.72 | yes | 1687484 | 33748 | 1240 | 847 |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 4.75 | 0.32 | 0.18 | 5.06 | yes | 1671384 | 33426 | 1115 | 820 |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=808 shank_length=500 | 4.74 | 0.35 | 0.19 | 5.09 | yes | 1670284 | 33404 | 1141 | 848 |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=1 end_chamfer=1 shank_length=0 | 5.11 | 0.33 | 0.19 | 5.44 | yes | 1058284 | 21164 | 1233 | 869 |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=0 shank_length=0 | 0.32 | 0.19 | 0.19 | 0.51 | yes | 1049184 | 20982 | 781 | 764 |
+| teeth=199 | 3.70 | 2.74 | 0.79 | 6.44 | yes | 9062784 | 181254 | 1449 | 844 |
+
+#### Verdicts
+
+Rows named by their distinguishing fields; "gear" is the 199-tooth reference row of the same run.
+
+| Reading | macOS | Linux (amd64, emulated) |
+|---|---|---|
+| Heaviest shaft row, build + slower export | `shank_d=828` row (z 82 m 10, shank_d equal to tip_d), **2.23 s**; the `splined_length=1 end_chamfer=1 shank_length=0` row also prints 2.23 s | `splined_length=1 end_chamfer=1 shank_length=0` row, **5.44 s** |
+| Margin to `SPUR_BUILD_TIMEOUT` 30 s (L37) | 27.77 s, 13.5x | 24.56 s, 5.5x |
+| Rows over 30 s | none (`**NO**` appears in neither log) | none |
+| Gear row, build + slower export | 2.13 s | 6.44 s |
+| Highest shaft peak RSS | 1066 MiB (`reference_d=42 module=0.5 teeth=82` row) | 1309 MiB (`reference_d=84 module=1 teeth=82` row) |
+| Gear peak RSS, same run | 1356 MiB | 1449 MiB |
+| Ratio, highest shaft peak to gear peak | 0.786 | 0.903 |
+| Gear peak plus L17's recorded run-to-run variance (5 %) | 1423.8 MiB | 1521.45 MiB |
+| Resident after build, highest shaft (`splined_length=1 end_chamfer=1 shank_length=0`) against gear | not read | 869 MiB against 844 MiB, ratio 1.030 |
+| Largest shaft fine STL | 3326584 bytes, 66530 triangles (the z 6 m 10 maxima row) | 3342384 bytes, 66846 triangles (the same row) |
+| Gear fine STL, same run | 9062784 bytes, 181254 triangles | 9062784 bytes, 181254 triangles |
+| Ratio, largest shaft STL to gear STL | 0.367 | 0.369 |
+
+- The heaviest allowed shaft is inside L37's 30 s on both hosts, at 13.5x margin on macOS and 5.5x on the emulated Linux; the Linux gear row (6.44 s) is heavier than any shaft row.
+- Every shaft row's peak RSS is under the gear's in the same run, on both hosts, and the highest shaft is under the gear plus 5 % by a wide margin (1066 against 1423.8 MiB; 1309 against 1521.45 MiB).
+- The one reading above the gear's is the Linux resident memory after build: the heaviest shaft row holds 869 MiB against the gear's 844 MiB (ratio 1.030, inside the 5 % variance, so not read as a difference). Across the nine shaft rows the Linux resident spans 760 to 869 MiB, so one shaft entry in the 4-entry solid cache (shared with the gear, 32-04) holds about what a 199-tooth gear's does; no run here filled the cache, so the sum over four entries is not measured.
+- The largest shaft fine STL is 0.37 of the 9062784-byte STL L19's gzip level was measured on, so no allowed shaft body is larger than the one L19 priced.
+- Order of the load: a shaft's cost sits in the z 82 builds (about 1.6 to 2.2 s macOS, 3.7 to 5.1 s Linux), not in the z 6 m 10 row with every solid field at its maximum (0.70 s, 1.37 s); the prism-only row (no fuse, no cone) builds in 0.11 s and 0.32 s.
+- The `Heaviest` line of each log names the 199-tooth gear on Linux (6.44 s) because the gear row is in the table; the shaft verdicts above are read from the shaft rows.
+
+**D-09 outcome: confirmed, no bound moved.** No shaft row is over 30 s on either host and no shaft row's peak RSS is above the gear's in the same run, so no solid field was re-run at half its `le` and none was lowered. The four solid-field bounds stand at `splined_length` 500, `end_chamfer` 10, `shank_d` 850 and `shank_length` 500, each reached by a row of `bench/sweeps/shaft.json` (`tests/test_bench.py` pins that). The spline bounds (`reference_d`, `module`, `teeth`) were not moved (D-10).
+
+### The gate delta (32-06)
+
+Source logs: `32-06-verify.log` (the whole `/usr/bin/time -p make verify` output) and `32-06-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/32-the-shaft-solid/investigation/`. Every figure below is copied from them, not re-rounded. One reading, taken after the last Phase 32 code, test and bench commit (`git status --porcelain -- src tests bench pyproject.toml Makefile requirements.txt` printed nothing before the run).
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `7a4e108` (the final Phase 32 code and tests; only `.planning/` files and the two logs were untracked or newer) |
+| UTC start -> end | `2026-10-27T11:01:04Z` -> `2026-10-27T11:05:04Z` |
+| 1-minute load before -> after | `5.24` -> `7.66` (`sysctl -n vm.loadavg` printed `{ 5.24 10.70 12.41 }` and `{ 7.66 11.66 12.71 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2644 passed in 233.83s (0:03:53) =======================` |
+| `/usr/bin/time -p` | `real 234.78`, `user 722.96`, `sys 720.61` |
+| Coverage TOTAL line | `TOTAL                         1682     24    450     14  98.22%` (`Required test coverage of 96.0% reached. Total coverage: 98.22%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+The shaft modules' coverage rows, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`):
+
+```
+src/spur/din5480.py            107      0     28      0 100.00%
+src/spur/parts.py                3      0      0      0 100.00%
+src/spur/shaft_calc.py         105      0     16      0 100.00%
+src/spur/shaft_model.py         77      2     16      1  96.77%
+src/spur/shaft_params.py        26      0      2      0 100.00%
+```
+
+`src/spur/din5480_tables.py` reads `0 0 0 0 100.00%` (a docstring). `src/spur/shaft_model.py` is the one shaft module under 100 %: `coverage report -m` over the run's data names lines 179 and 187, the `raise` of `except BuildError: raise` and the `The shaft solid is not one valid solid` raise in `build_shaft`. Both are guards that no passing test reaches; the second was seen red once against a deliberate break (`32-03-red-clean.log`, `### Seen red once (Phase 32)`). Filed as `docs/tech_debt/active/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md` (nice).
+
+#### Against the phase-start baseline (32-01)
+
+Compared with `### The gate baseline (32-01)`, same host, both readings from logs. CONTEXT's `221.86 s` is not used (it appears in no log, as that section records).
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 32 start, `HEAD 7c1bc2c` | `2387 passed` | `251.15 s` | `253.13 s` | 7.96 -> 15.03 | `### The gate baseline (32-01)`, `32-01-verify.log` |
+| This reading: Phase 32 close, `HEAD 7a4e108` | `2644 passed` | `233.83 s` | `234.78 s` | 5.24 -> 7.66 | `32-06-verify.log` |
+
+| This reading minus the baseline | pytest `passed in` | `real` |
+|---|---|---|
+| difference | `-17.32 s` (`-6.90 %`) | `-18.35 s` (`-7.25 %`) |
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 20.09 s of 251.15 s: both differences are inside it, so no speed claim is made in either direction. The two readings were taken at different loads (7.96 to 15.03 for the baseline, 5.24 to 7.66 here), which this plan did not control; the phase added 257 tests and the reading is lower, which says the host's load moved more than the phase's tests did. It is one reading each.
+
+What the phase added to the gate, from each plan's own `make verify` reading in its SUMMARY: 257 tests in all (`2644 passed` against `2387 passed`): 15 in 32-02 (`2402 passed`), 224 in 32-03 (`2626 passed`: 192 flank-angle cases and 32 kernel tests), 12 in 32-04 (`2638 passed`), 6 in 32-05 (`2644 passed`), none in 32-01 (the baseline) and none in this plan.
+
+The plans' own full-gate readings, for the spread they show (each under a load its SUMMARY does not record):
+
+| Plan | Tests | pytest `passed in` | Source |
+|---|---|---|---|
+| 32-01 | `2387 passed` | `251.15 s` | `32-01-SUMMARY.md` |
+| 32-02 | `2402 passed` | `218.58 s` | `32-02-SUMMARY.md` |
+| 32-03 | `2626 passed` | `286.96 s` | `32-03-SUMMARY.md` |
+| 32-04 | `2638 passed` | `358.81 s` | `32-04-SUMMARY.md` |
+| 32-05 | `2644 passed` | `312.50 s` | `32-05-SUMMARY.md` |
+| 32-06 | `2644 passed` | `233.83 s` | this section |
+
+The reading of record is under L43's 300 s bar by 66.17 s (`real 234.78 s`: 65.22 s). Two of the plans' readings, 32-04's `358.81 s` and 32-05's `312.50 s`, are above 300 s, on the same `src` and `tests` that read `233.83 s` here (the last commit touching either is `c8608ba`, before 32-05's reading): the same tests span 218.58 s to 358.81 s across the phase, far wider than Phase 25's 8 %, so the gate's wall time on this host is set by the host's load, not by the code. They are written down here and not trimmed. REQ-gate-cost-recorded stays open and closes at Phase 34's milestone reading, as for Phase 30 and Phase 31.
+
+### Phase close checks (32-06)
+
+Source: `32-06-close-checks.log`, run once on `HEAD ed5cfa1` with the final Phase 32 tree. All eleven read `PASS` and the log holds no `FAIL`.
+
+1. PASS `make gear.unchanged`: exit 0, `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+2. PASS `git diff --exit-code v0.6 -- requirements.txt tests/regression/ .github/workflows/ci.yml src/spur/calc.py src/spur/params.py`: exit 0, empty.
+3. PASS `make lint-imports`: `Contracts: 10 kept, 0 broken.`
+4. PASS `git grep -nE '@app\.(get|post|put|delete)\("/api/shaft' -- src`: exit 1, no match (Phase 33 owns the routes).
+5. PASS `grep -c '^Part = GearParams | ShaftParams$' src/spur/parts.py` prints `1`.
+6. PASS the widening debt item (`2026-10-23-parts-one-line-widening-claim-is-false.md`) is absent from `docs/tech_debt/active/`, present in `resolved/` with `Status: resolved`, its `Resolved in:` sha `4018de8` passes `git cat-file -e 4018de8^{commit}`, and its INDEX row sits in the Resolved table.
+7. PASS `git diff --exit-code b4cfd71 -- src/spur/pool.py src/spur/app.py src/spur/cli.py src/spur/din5480_tables.py`: exit 0, empty.
+8. PASS `list(ShaftDimensions.model_fields)` holds 13 names, `end_chamfer_effective` at index 10, between `measure_over_pins` and `designation` (32-01 choice B1).
+9. PASS `The heaviest shaft (32-05)` appears once in `tests/test_shaft_params.py`, and `pytest --no-cov -n0 -q tests/test_bench.py -k sweep_reaches` reads `1 passed, 50 deselected`.
+10. PASS an AST walk of `src/spur/shaft_model.py` (70 `ast.Call` nodes): none calls an attribute named `clean`, `chamfer` or `union`, and none passes a `glue` keyword.
+11. PASS `src/spur/din5480.py` holds 5 `ASSUMPTION` markers, the same as `git show b4cfd71:src/spur/din5480.py` (32-03 added none).
+
+### Seen red once (Phase 32)
+
+Each deliberate break is run red once and reverted; the first failure line is copied from the kept log named in the row. Later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 32-02 | `tests/test_shaft_calc.py::test_a_chamfer_past_the_splined_length_is_capped_down_never_up` (T-32-02; 3 failed with the floor test) | `floor_mm` returns `round(v, 3)` in `src/spur/shaft_calc.py` | `E       assert 2.001 == 2.0` (the length 2.0006, 2.001 is above it), log `32-02-red-round.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-02 | `tests/test_shaft_calc.py::test_the_millimetre_floor_keeps_every_typed_decimal` (T-32-02) | the `+ 1e-9` dropped from `floor_mm` | `E       AssertionError: assert ['1.001', '1.003', '1.005'] == []`, the first three decimals that floored below themselves, log `32-02-red-no-epsilon.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-02 | `tests/test_shaft_calc.py::test_a_chamfer_past_the_tooth_height_is_capped_and_warned_naming_the_field_and_the_limit` (T-32-03) | `tooth` dropped from the `min` in `end_chamfer_reading` | `E       assert 1.0 == 0.5` (W 10x0.5x18 cut at the request, past the tooth height), log `32-02-red-no-tooth-cap.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-02 | `tests/test_shaft_calc.py::test_a_chamfer_past_the_tooth_height_is_capped_and_warned_naming_the_field_and_the_limit` and three more cap tests (T-32-03; 4 failed) | the capped branch returns no warning | `E       AssertionError: assert [] == ['end_chamfer...ned section.']`, log `32-02-red-no-cap-warning.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-02 | `tests/test_shaft_calc.py::test_a_chamfer_below_the_resolution_is_not_cut_and_prints_no_number` (L08, T-32-03) | the sub-resolution branch returns `ChamferReading(0.0, ...)` | `E       assert 0.0 is None`, log `32-02-red-zero-printed.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-02 | `tests/test_shaft_calc.py::test_the_shaft_dimensions_keys_are_fixed` (D-06, choice B1) | `end_chamfer_effective` moved after `designation` in `ShaftDimensions` | `E       At index 10 diff: 'designation' != 'end_chamfer_effective'`, log `32-02-red-key-order.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-02 | `tests/test_shaft_calc.py::test_a_shank_brings_the_no_relief_groove_sentence_and_no_shank_drops_it` (D-08) | `shank_warnings` emitted whatever `shank_length` is | `E       assert 'The spline steps straight into the shank: the solid has no relief groove (DIN 509) and no hob run-out, and splined_length is a full-form prism.' not in (...)`, log `32-02-red-shank-sentence.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-03 | `tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume` | `.clean()` called on the fuse result in `src/spur/shaft_model.py` (T-32-06; 4 failed: `shank-eq-tip`, `shank-eq-root` and the two rows within 1e-9 and one ulp of the tip) | `E           spur.build_errors.BuildError: The shaft solid is not one valid solid: a modelling defect in spur, not a conflict in these parameters.`, log `32-03-red-clean.log` | `git checkout -- src/spur/shaft_model.py`; `git status --porcelain -- src tests` empty |
+| 32-03 | `tests/test_shaft_model.py::test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs` | the `_guard_cone_start` call removed from `build_shaft` (T-32-04; the offset 1e-5 builds in 0.65 s, so the missing guard fails and does not hang) | `E       Failed: DID NOT RAISE BuildError`, log `32-03-red-no-band.log` | `git checkout -- src/spur/shaft_model.py`; `git status --porcelain -- src tests` empty |
+| 32-03 | `tests/test_shaft_model.py::test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket` | the `_guard_volume` call removed from `build_shaft` (T-32-05) | `E       Failed: DID NOT RAISE BuildError`, log `32-03-red-no-bracket.log` | `git checkout -- src/spur/shaft_model.py`; `git status --porcelain -- src tests` empty |
+| 32-03 | `tests/test_shaft_model.py::test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice` | the `except Exception` branch of `build_shaft` narrowed to `ZeroDivisionError`, so a kernel error is not wrapped (Pitfall 7) | `E       RuntimeError: kernel exploded`, log `32-03-red-no-wrap.log` | `git checkout -- src/spur/shaft_model.py`; `git status --porcelain -- src tests` empty |
+| 32-03 | `tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[tooth-height-cap]` | `tooth` dropped from the `min` in `end_chamfer_reading` in `src/spur/shaft_calc.py` (T-32-05, the kernel side of 32-02's no-tooth-cap break) | `E           spur.build_errors.BuildError: The shaft solid is not the shape that was asked for (volume 11897.3 mm^3 outside 11898.6 to 11906): a modelling defect in spur, not a conflict in these parameters.`, log `32-03-red-no-tooth-cap.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-03 | `tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-no-shank]` | `floor_mm` returns `round(v, 3)` in `src/spur/shaft_calc.py` (T-32-05; 2 failed: the no-shank row on its one-solid check, the empty shape of `32-round-up.log`, and the shank row on its bounding box xmax, 34.6996 against 34.7) | `E           spur.build_errors.BuildError: The shaft solid is not one valid solid: a modelling defect in spur, not a conflict in these parameters.`, log `32-03-red-round.log` | `git checkout -- src/spur/shaft_calc.py`; `git status --porcelain -- src tests` empty |
+| 32-03 | `tests/test_shaft_model.py::test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume` | the sign of the base-thickness shift term flipped in `tooth_half_angle` in `tests/shaft_oracle.py` (the comparison is not vacuous) | `E       AssertionError: assert 0.04114862456829815 <= 0.0001`, log `32-03-red-oracle.log` | `git checkout -- tests/shaft_oracle.py`; `git status --porcelain -- src tests` empty |
+| 32-04 | `make lint-imports`, contract `The kernel doorways are model and shaft_model` (T-32-09) | the `ignore_imports` line removed from `pyproject.toml` | `Contracts: 9 kept, 1 broken.`, naming `spur.cli -> spur.model (l.102)` then `spur.model -> spur.shaft_model (l.33)`, log `32-04-red-no-ignore.log` | `git checkout -- pyproject.toml`; `git status --porcelain -- src tests pyproject.toml` empty |
+| 32-04 | `tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway` (both rows; 2 failed) (T-32-07) | the `isinstance(p, ShaftParams)` dispatch removed from `model._build` | `E           spur.build_errors.BuildError: Geometry kernel failed (AttributeError); try smaller fillets or chamfers.` (the shaft reached the gear's pipeline and read `p.pressure_angle`), log `32-04-red-no-dispatch.log` | `git checkout -- src/spur/model.py`; `git status --porcelain -- src tests pyproject.toml` empty |
+| 32-04 | `tests/test_seam.py::test_the_shaft_solid_never_imports_the_gear_doorway` (1 failed, 6 passed) | a function-local `from . import model` added inside `shaft_model._polar` | `E       AssertionError: assert ['from . impo...# noqa: F401'] == []`, log `32-04-red-cycle.log` | `git checkout -- src/spur/shaft_model.py`; `git status --porcelain -- src tests pyproject.toml` empty |

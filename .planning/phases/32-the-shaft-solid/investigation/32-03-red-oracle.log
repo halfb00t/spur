@@ -1,0 +1,40 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [1 item]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume 
+[gw0] [100%] FAILED tests/test_shaft_model.py::test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume 
+
+=================================== FAILURES ===================================
+____ test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume _____
+[gw0] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+    def test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume() -> None:
+>       _check(ShaftParams())
+
+tests/test_shaft_model.py:148: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+
+    def _check(p: ShaftParams) -> cq.Solid:
+        """Build, assert one valid solid whose volume is the closed form's within VOLUME_REL,
+        and whose bounding box runs from the free end to the far end of the shank."""
+        solid = build_shaft(p)
+        assert len(solid.Solids()) == 1
+        assert solid.isValid()
+>       assert _volume_error(solid, p) <= VOLUME_REL
+E       AssertionError: assert 0.04114862456829815 <= 0.0001
+E        +  where 0.04114862456829815 = _volume_error(<cadquery.occ_impl.shapes.Solid object at 0x14250ffe0>, ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0))
+
+tests/test_shaft_model.py:61: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume
+============================== 1 failed in 3.38s ===============================

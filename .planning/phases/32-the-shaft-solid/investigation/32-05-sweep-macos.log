@@ -1,0 +1,27 @@
+# vm.loadavg before: { 6.46 12.06 14.99 }
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `c8608ba`
+- Sweep: `bench/sweeps/shaft.json`
+- Load averages at start: 6.46, 12.06, 14.99
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles | Peak RSS (MiB) | Resident after build (MiB) |
+|---|---|---|---|---|---|---|---|---|---|
+| part=shaft | 0.56 | 0.01 | 0.01 | 0.57 | yes | 283184 | 5662 | 590 | - |
+| part=shaft reference_d=70 module=10 teeth=6 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 0.70 | 0.05 | 0.01 | 0.75 | yes | 3326584 | 66530 | 558 | - |
+| part=shaft reference_d=84 module=1 teeth=82 splined_length=500 shank_d=84 shank_length=500 | 1.86 | 0.04 | 0.05 | 1.91 | yes | 1008884 | 20176 | 1062 | - |
+| part=shaft reference_d=42 module=0.5 teeth=82 splined_length=500 shank_length=500 | 1.58 | 0.04 | 0.05 | 1.63 | yes | 975284 | 19504 | 1066 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 1.98 | 0.05 | 0.05 | 2.03 | yes | 1683684 | 33672 | 1052 | - |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 2.18 | 0.04 | 0.05 | 2.23 | yes | 1667484 | 33348 | 1048 | - |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=808 shank_length=500 | 2.13 | 0.04 | 0.05 | 2.18 | yes | 1666384 | 33326 | 1052 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=1 end_chamfer=1 shank_length=0 | 2.18 | 0.04 | 0.05 | 2.23 | yes | 1058284 | 21164 | 972 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=0 shank_length=0 | 0.11 | 0.04 | 0.05 | 0.16 | yes | 1043684 | 20872 | 537 | - |
+| teeth=199 | 1.33 | 0.81 | 0.28 | 2.13 | yes | 9062784 | 181254 | 1356 | - |
+
+**Heaviest:** part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 -- 2.23 s of 30 s.
+**Largest fine STL:** teeth=199 -- 9062784 bytes, 181254 triangles.
+**Highest peak RSS:** teeth=199 -- 1356 MiB.
+exit=0
+# vm.loadavg after: { 7.63 11.76 14.76 }

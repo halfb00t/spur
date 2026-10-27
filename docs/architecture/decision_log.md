@@ -3199,3 +3199,108 @@ The anchor debt item is resolved (`docs/tech_debt/resolved/2026-10-26-din5480-an
 This is filed for Phase 34 as `docs/tech_debt/active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md`.
 
 The shift range is the standard's at both edges at m 2. Eleven Part 2 rows lie outside it, as the shift-range debt item predicts. No printed number, default or bound changed. No existing sentence of this entry is edited.
+
+**Amendment (2026-10-27, Phase 32: the applied end chamfer).** `ShaftDimensions` gains a 13th key, `end_chamfer_effective`, after `measure_over_pins` and before `designation` (the human's pick B1 at 32-01), so "twelve keys" above now reads thirteen.
+- Its value is the rule the human picked as A1: `floor(v*1000 + 1e-9)/1000`, applied to the request, to the tooth height `(tip_d - root_d)/2` taken from the printed three-decimal diameters (the radii the solid uses), and to `splined_length`; the smallest of the three. It is the size the solid cuts, so it is an output and L05 does not apply.
+- It is floored, not rounded, because half-even rounding of a `splined_length` of 2.0006 mm reads 2.001, above the length, and the kernel returned an empty shape that still says `isValid()` for that legal link (`32-round-up.log`). Every three-place decimal 0..500 floors to itself, 2957 of 500,001 would lose a step without the 1e-9 (first 1.001, 1.003, 1.005), and no four-place decimal 0..500 floors above itself (`32-01-floor-grid.log`). An input within 1e-9 below a lattice point floors up onto it, by at most 1.03e-12 mm up to 500 mm (`32-02-overshoot.log`).
+- A request above either cap is capped and warned: the sentence names `end_chamfer`, the applied size and the limit (both, tooth height first, on a tie). It is never a 422 (D-05, the L29 and L45 precedent). The warning fires only where a limit binds at the 0.001 mm resolution, as the gear's tip chamfer does.
+- It is null when nothing is cut: `end_chamfer` 0 prints null and no sentence, and a request that floors to 0.000 (under 0.001 mm) prints null with the resolution sentence (L45, L08).
+- Two corrections to the phase's wording. D-05's "a link that sets only `module` still builds" cannot validate: `ShaftParams(module=0.5)` with the default reference diameter 25 and 18 teeth needs a shift of +15.45 and is refused, so the 0.5 mm cap is exercised on W 10x0.5x18 (shift +0.45). And the printed tooth height equals the module only on typed decimal inputs (13,552 rows, `32-01-floor-grid.log`); each diameter is rounded to 0.001 on its own, so for an arbitrary float it is within 0.0005 of the module and a multiple of 0.0005.
+
+Reversibility: costly once Phase 33 publishes the shaft's info response, because the key's name and place become its dims rows. No existing sentence of this entry is edited.
+
+**Amendment (2026-10-27, Phase 32: the solid fields' bounds).** The four solid fields' bounds are no longer provisional: they are swept (`bench/RESULTS.md` `### The heaviest shaft (32-05)`, sweep `bench/sweeps/shaft.json`, every row in its own process through `spur.model`), and `tests/test_shaft_params.py` pins them while `tests/test_bench.py` fails if one is raised without a sweep row on it.
+- The bounds: `splined_length` 1 to 500 mm, `end_chamfer` 0 to 10 mm, `shank_d` 1 to 850 mm, `shank_length` 0 to 500 mm. The spline bounds (`reference_d`, `module`, `teeth`) are unchanged (D-10).
+- The heaviest shaft row, build plus the slower export, against `SPUR_BUILD_TIMEOUT` 30 s (L37): on macOS 2.23 s (z 82 m 10, `shank_d` equal to `tip_d`; the `splined_length` 1 row also reads 2.23 s), margin 27.77 s, 13.5x; in the Linux `python:3.12-slim-bookworm` container 5.44 s (z 82 m 10, `splined_length` 1, `end_chamfer` 1, `shank_length` 0), margin 24.56 s, 5.5x. That container is linux/amd64 emulated on an arm64 host, so its walls carry the emulation cost; the 199-tooth gear row beside it reads 6.44 s there.
+- Memory against L17's 4g (earned on the gear corpus): the highest shaft peak RSS is 1066 MiB on macOS and 1309 MiB on Linux, against the 199-tooth gear's 1356 and 1449 MiB in the same runs (ratios 0.786 and 0.903), so no shaft row exceeds the gear plus L17's recorded 5 % run-to-run variance. Resident memory after the build on Linux, which is what one entry of the 4-entry solid cache shared by gear and shaft holds (32-04): 760 to 869 MiB across the nine shaft rows against the gear's 844 MiB (the heaviest 1.030x, inside the 5 %). A run that fills the cache with four shafts was not made.
+- The largest fine STL of an allowed shaft is 3,342,384 bytes (66,846 triangles, the z 6 m 10 maxima row, Linux), 0.369 of the 9,062,784-byte gear STL L19's gzip level was measured on, so no shaft body is larger than the one L19 priced.
+- D-09's outcome: confirmed, no bound moved. No shaft row is over 30 s on either host and none has a peak RSS above the gear's, so no solid field was re-run at half its `le`.
+- The bounds become one-way once Phase 33 publishes a shaft link (D-10, L05, L44): a published link's ranges are then part of its contract.
+- `enabled_when` for `shank_d` when `shank_length` is 0 (the field then changes nothing) is left to Phase 33's form work, its only consumer (L41).
+- Contention: 32-01's choice D1 holds. Phase 32 measured single builds only; no pool-level shaft row exists, and it stays filed as `docs/tech_debt/active/2026-10-27-shaft-contention-row.md` (nice), to be run through the server when Phase 33 adds `/api/shaft/model.{fmt}`.
+- Handoffs to Phase 33: the 13 `ShaftDimensions` keys on the wire, `ShaftParams.slug()` as the provisional download stem (L40), and the contention row.
+
+Reversibility: costly once Phase 33 publishes the first shaft link, as D-10 says; free before. No existing sentence of this entry is edited.
+
+## L48 — How Phase 32 builds the DIN 5480 shaft's solid, what it refuses, and what it hands on (follows L46 and L47; applies L08, L24, L26)
+
+Date: 2026-10-27
+
+**Construction** (D-01, D-02, D-04; `src/spur/shaft_model.py`). One outline per tooth: a radial line from the root circle only where
+the base circle lies above the root (tooth counts up to 9 at real proportions), a spline through 16 points up each flank
+(`FLANK_POINTS`, spaced as the gear's), a three-point arc across a sharp tip on the tip circle, the mirror flank, and one root arc
+on the printed `root_d`. The solid's root circle is `root_d` and its tip circle is `tip_d`, read back from a z-section within a
+measured bar. The outline is extruded to `splined_length`, the shank is joined by `fuse`, and the end chamfer is cut by
+intersecting a revolved 45 degree cone whose flat top leaves a fused shank alone (`32-03-SUMMARY.md`). Each other route is out,
+with its log (every log is under `.planning/phases/32-the-shaft-solid/investigation/`):
+- No cleaning step after the fuse: `fuse().clean()` made `shank_d` equal to `tip_d` and equal to `root_d` invalid while the volume
+  still read 4e-9 off (`32-negatives2.log`); seen red once, 4 rows failing (`32-03-red-clean.log`).
+- Fuse before intersect: the reverse order returned a 3-face solid 4.10e-02 off at `splined_length` = c + 5e-7 with a shank, and
+  the kernel called it valid (`32-windows-axial.log`, `cut_fuse` rows).
+- No `Solid.chamfer`: it raised `Standard_Failure BRep_API: command not done` for c = 1.2 to 3.0 on the default
+  (`32-negatives.log`); the cone is one boolean with no edge selector to come back empty (L26).
+- No `glue`: it halved the fuse time on the default, but its behaviour for a shank wider than the tip was never proved, and
+  32-RESEARCH A1 records the safety claim as unmeasured.
+The proof is never `isValid()` alone: the kernel returns an empty shape and the 3-face remnant, and both say valid. Every
+building test compares `Volume()` with a stdlib closed form that imports nothing from spur (`tests/shaft_oracle.py`), which
+agrees to 4e-9 on the default (`32-03-SUMMARY.md`).
+
+**The applied chamfer.** The solid cuts `end_chamfer_effective`, the 13th `ShaftDimensions` key, and never re-derives it. The
+floor rule, the two caps and the key's place are in the L47 amendment "Phase 32: the applied end chamfer" (32-02), not restated.
+
+**What the solid refuses** (L08, D-03, D-08). Each guard is a `BuildError` that names a modelling defect in spur and never the
+gear's fillet advice, and each was seen red once (`### Seen red once (Phase 32)`):
+- The root-circle band: a cone start between 1e-9 and 1e-4 mm of the root circle is refused before the kernel runs, because
+  3e-7 mm off it hung the kernel past 40 s in both operation orders while the neighbouring offsets built in about 0.6 s
+  (`32-nearcap.log`). It is a guard and not the pool's 30 s timeout because the CLI calls `model.export` in process with no
+  timeout, so nothing else ends a hang there. No shaft on the 0.001 mm lattice reaches the band (`32-01-floor-grid.log`,
+  `tests/test_shaft_model.py`). Red: `32-03-red-no-band.log`.
+- The volume bracket, from numbers the kernel did not produce (the uncut prism and shank above, the cone's removal of at most c
+  times the tooth area below) with a relative slack of 1e-4 and a z-extent check; a cone past the tooth height leaves it. Red:
+  `32-03-red-no-bracket.log`, and `32-03-red-no-tooth-cap.log` from the kernel side of 32-02's cap.
+- One valid solid, and any kernel exception wrapped in "The shaft solid could not be built": `32-03-red-clean.log`,
+  `32-03-red-no-wrap.log`.
+- Two sentences on every relevant shaft: the root fillet is a construction and not the hob's cut (D-03), and a shank steps
+  straight in with no relief groove (DIN 509) and no hob run-out (D-08, only when `shank_length` is above 0).
+Two lines of `build_shaft` (the `BuildError` re-raise and the one-valid-solid raise) are reached by no passing test; filed as
+`docs/tech_debt/active/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md` (nice).
+
+**Tolerances** (L26 method: each bar the smallest step at least 10x the worst reading on the file's own rows). From
+`### Kernel tolerances, measured (32-03)`: `FLANK_ANGLE_ABS` 1e-14 rad (worst 3.886e-16, 25.7x), `VOLUME_REL` 1e-4 (worst 1.471e-06,
+68x), `READBACK_TOL` 1e-6 mm (worst 1.0e-07, 10x), `FLANK_BAR_PER_MODULE` 5e-4 (worst 4.353e-05, 11.5x, sampled at 201 positions
+because 21 read 5x low) and `VOLUME_BRACKET_SLACK` 1e-4 (worst 4.539e-09, 22000x). The mesh bars of 32-04 (`32-04-SUMMARY.md`):
+`MESH_PREVIEW_REL` 6e-3 (worst -3.691e-3 on W 14x2x6, 0.615 of the bar; the human's pick, the plan's 5e-3 would have put it at
+0.74), `MESH_FINE_REL` 1e-3 (worst -4.920e-4) and `MESH_VERTEX_TOL` 1e-4 mm (worst 4.726e-7).
+
+**The doorway** (32-04). `model._build` dispatches a `ShaftParams` to `shaft_model.build_shaft` as its first statement, so the
+shaft shares the gear's one `_LOCK`, one `_build_cached` (4 entries) and one `_write_export`. `Part` is
+`GearParams | ShaftParams`, the commit `4018de8` that widened it also closed the Phase 30 debt item, and the doorway contract keeps
+one ignored edge, `spur.model -> spur.shaft_model`: remove it and the contract reads `9 kept, 1 broken` (`32-04-red-no-ignore.log`).
+`pool.py`, `app.py`, `cli.py` and `din5480_tables.py` are byte-equal to `b4cfd71` and a real `BuildPool` worker builds and
+exports a shaft. Heavy-file outcome: `tests/test_shaft_model.py` was named heavy at 20.97 s in the commit slice (32-03), and after
+32-04 the slice re-priced at 14.94 s, so no further file was named heavy; the whole gate and the pre-push hook still run it.
+
+**Bounds** (D-09, D-10). The four solid fields' bounds are swept and pinned, the heaviest shaft is inside L37 on both hosts and
+inside L17's memory: see the L47 amendment "Phase 32: the solid fields' bounds" (32-05) and `### The heaviest shaft (32-05)`.
+No bound moved.
+
+**The gate delta** (`### The gate delta (32-06)`). `make verify` read `2644 passed in 233.83s`, `real 234.78 s`, against the phase-start
+`2387 passed in 251.15s`, `real 253.13 s` on the same host: -17.32 s (-6.90 %) and -18.35 s (-7.25 %), inside Phase 25's about
+8 % spread, so no speed claim; 66.17 s under L43's 300 s bar. The loads differed (7.96 to 15.03 against 5.24 to 7.66). The plans'
+own readings in the phase ran 218.58 s to 358.81 s on the same code, two of them above 300 s, so the wall time is the host's load
+and not a property of the phase. REQ-gate-cost-recorded stays open until Phase 34's milestone reading. The phase added 257 tests.
+The eleven close checks pass (`### Phase close checks (32-06)`).
+
+**Handoffs.** Phase 33: the `/api/shaft/` routes (none exists, check 4 of the close checks), the CLI and the page; the 13
+`ShaftDimensions` keys on the wire; `ShaftParams.slug()` as the provisional download stem (L40); `enabled_when` for `shank_d`
+when `shank_length` is 0 (L41); and the pool-level contention row, filed by 32-01's choice D1 as
+`docs/tech_debt/active/2026-10-27-shaft-contention-row.md`. Phase 34: the solid is built at the nominal tooth thickness and
+switches when the tolerance tables land, and the root-form sentence (D-03) stays until then; the guard of L47 goes live then.
+
+**Reversibility.** The construction and the guards are reversible by a logged decision: a better route replaces a forbidden one
+only with a log that shows it holds on the same rows. The solid fields' bounds and the 13 keys are one-way once Phase 33
+publishes a shaft link (L05, L44), as their amendments say.
+
+Reason: a number the tool prints is a number someone will cut metal to, and a solid the kernel calls valid can still be empty or
+wrong. The shaft is built by the one route that held on every row, each forbidden route is written down with the log that
+forbids it, and every silent failure became a refusal that was seen red once.

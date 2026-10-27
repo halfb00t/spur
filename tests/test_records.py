@@ -20,6 +20,7 @@ from spur import records
 from spur.app import app, build_backend
 from spur.model import Format, Quality, export
 from spur.params import GearParams
+from spur.shaft_params import ShaftParams
 
 client = TestClient(app)
 
@@ -250,3 +251,10 @@ def test_calc_module_stays_log_free() -> None:
     source = Path(calc_module.__file__).read_text()
     assert not re.search(
         r"^\s*(import|from)\s+(logging|\.records|spur\.records)\b", source, re.MULTILINE)
+
+
+def test_a_shaft_record_carries_its_slug_and_only_its_non_default_fields() -> None:
+    """records serves a shaft through `slug()` and `model_dump`, which both models have."""
+    p = ShaftParams(splined_length=40.0)
+    assert records._gear_fields(p) == {"slug": p.slug(), "params": {"splined_length": 40.0}}
+    assert records._gear_fields(ShaftParams())["params"] == {}

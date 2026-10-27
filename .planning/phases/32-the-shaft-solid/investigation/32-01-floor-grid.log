@@ -1,0 +1,5 @@
+(1) three-place decimals 0.000..500.000 (500001), mismatches with +1e-9: 0
+(2) the same without +1e-9, mismatches: 2957, first three: ['1.001', '1.003', '1.005']; probe 0.29: 0.29 * 1000 = 290.0, floors to 0.29
+(3) four-place decimals 0.0000..500.0000 (5000001) flooring above input: 0, largest excess: 0
+(4) shaft grid, feasible rows: 13552, floored tooth height != module: 0, lattice chamfers (cap, cap-0.001, cap-0.002) in the 1e-9..1e-4 band: 0
+(5) splined lengths, half-even round against floor: length 2.0006: round(v, 3) = 2.001, floored = 2.0; length 5.0007: round(v, 3) = 5.001, floored = 5.0

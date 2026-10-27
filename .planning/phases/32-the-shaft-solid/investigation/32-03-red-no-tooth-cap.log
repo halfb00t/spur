@@ -1,0 +1,77 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [6 items]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-no-shank] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-shank] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[none-asked] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[below-resolution] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[both-caps-tie] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[tooth-height-cap] 
+[gw4] [ 16%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[below-resolution] 
+[gw5] [ 33%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[none-asked] 
+[gw0] [ 50%] FAILED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[tooth-height-cap] 
+[gw2] [ 66%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-shank] 
+[gw3] [ 83%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[both-caps-tie] 
+[gw1] [100%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-no-shank] 
+
+=================================== FAILURES ===================================
+_____ test_every_chamfer_cap_builds_at_the_applied_size[tooth-height-cap] ______
+[gw0] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+name = 'tooth-height-cap'
+
+    @pytest.mark.parametrize("name", CHAMFER_ROWS, ids=CHAMFER_ROWS.keys())
+    def test_every_chamfer_cap_builds_at_the_applied_size(name: str) -> None:
+        """D-05, D-06: at each cap the solid carries the size derive_shaft prints, with the
+        closed-form volume at that size; below the resolution it carries none."""
+        p = CHAMFER_ROWS[name]
+>       solid = _check(p)
+                ^^^^^^^^^
+
+tests/test_shaft_model.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_shaft_model.py:58: in _check
+    solid = build_shaft(p)
+            ^^^^^^^^^^^^^^
+src/spur/shaft_model.py:188: in build_shaft
+    _guard_volume(solids[0], area, rf, c, p.splined_length, p.shank_length, p.shank_d)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+solid = <cadquery.occ_impl.shapes.Solid object at 0x141597b30>
+area = 69.6190820509287, rf = 4.45, c = 1.0, length = 30.0, shank_length = 20.0
+shank_d = 25.0
+
+    def _guard_volume(solid: cq.Solid, area: float, rf: float, c: float, length: float,
+                      shank_length: float, shank_d: float) -> None:
+        """Refuse a solid whose volume or length is not the shape that was asked for.
+    
+        isValid() is True for a 3-face remnant 4 percent off and for a cone that ate the root
+        core, so the volume is bracketed from numbers the kernel did not produce here. The upper
+        bound is the uncut prism and shank, from the face's own area. The cone removes at most c
+        times the tooth area, because the disc of radius rf lies inside every cone section while
+        c is at most the tooth height; past it the cone eats the core and the volume leaves the
+        bracket (32-RESEARCH Pitfalls 3 and 5, L26).
+        """
+        upper = area * length + math.pi * (shank_d / 2) ** 2 * shank_length
+        lower = upper - c * (area - math.pi * rf ** 2)
+        volume = solid.Volume()
+        box = solid.BoundingBox()
+        if (not lower * (1 - VOLUME_BRACKET_SLACK) <= volume <= upper * (1 + VOLUME_BRACKET_SLACK)
+                or abs(box.zmax - box.zmin - (length + shank_length)) > TOL):
+>           raise BuildError(f"The shaft solid is not the shape that was asked for (volume "
+                             f"{volume:.6g} mm^3 outside {lower:.6g} to {upper:.6g}): "
+                             f"{_SHAFT_DEFECT}")
+E           spur.build_errors.BuildError: The shaft solid is not the shape that was asked for (volume 11897.3 mm^3 outside 11898.6 to 11906): a modelling defect in spur, not a conflict in these parameters.
+
+src/spur/shaft_model.py:142: BuildError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[tooth-height-cap]
+========================= 1 failed, 5 passed in 3.86s ==========================

@@ -169,13 +169,15 @@ def configure() -> None:
 
 
 def _gear_fields(p: Part) -> dict[str, object]:
-    """The gear identity every per-request record carries (D-10): `slug` for the human
-    eye and grep, plus `params` -- only the fields that differ from default -- so a
-    failed build is reproducible by pasting `params` back into `/api/model.stl?...`,
-    exactly the shareable-link form L05 keeps stable. Built here, once, rather than at
-    each call site, so the two fields can never drift out of sync with each other. An
-    all-default gear yields an empty `params` object, emitted as such, not omitted --
-    "no non-default params" is itself a fact worth a reader seeing.
+    """The part's identity -- a gear's or a shaft's -- that every per-request record
+    carries (D-10): `slug` for the human eye and grep, plus `params` -- only the fields
+    that differ from default -- so a failed build is reproducible by pasting `params`
+    back into `/api/model.stl?...`, exactly the shareable-link form L05 keeps stable; a
+    shaft's `params` paste back into Phase 33's `/api/shaft/` routes. Built here, once,
+    rather than at each call site, so the two fields can never drift out of sync with
+    each other. An all-default part yields an empty `params` object, emitted as such,
+    not omitted -- "no non-default params" is itself a fact worth a reader seeing. The
+    name stays `_gear_fields`: a rename is out of scope.
     """
     return {"slug": p.slug(), "params": p.model_dump(exclude_defaults=True)}
 

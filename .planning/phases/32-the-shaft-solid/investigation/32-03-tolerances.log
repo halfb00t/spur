@@ -1,0 +1,49 @@
+flank half-angle, din5480 vs oracle, 192 cases: worst 3.886e-16 rad at m0.8-z6-x0.45 r=3.0200
+default                    volume 3.961e-09  chamfer 1.000e-07  tip/root 5.329e-15  flank/m 2.048e-07
+shank-eq-tip               volume 4.222e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-eq-root              volume 4.585e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-between              volume 4.400e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-tip-plus-1e-6        volume 3.995e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-tip-plus-1e-3        volume 3.995e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-tip-minus-1e-9       volume 4.228e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-one-ulp-above-tip    volume 4.222e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-below-root           volume 4.685e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-at-the-bound         volume 7.968e-12  chamfer 1.000e-07  tip/root 5.329e-15
+shank-above-tip            volume 3.961e-09  chamfer 1.000e-07  tip/root 5.329e-15
+no-shank                   volume 6.937e-09  chamfer 1.000e-07  tip/root 5.329e-15
+tooth-height-cap           volume 1.254e-09  chamfer 1.000e-07  tip/root 1.776e-15
+length-cap-no-shank        volume 1.330e-09  chamfer 1.000e-07  tip/root 1.421e-14
+length-cap-shank           volume 5.348e-10  chamfer 1.000e-07  tip/root 1.421e-14
+both-caps-tie              volume 1.089e-09  chamfer 1.000e-07  tip/root 0.000e+00
+below-resolution           volume 3.908e-09  chamfer 5.329e-15  tip/root 5.329e-15
+none-asked                 volume 3.908e-09  chamfer 5.329e-15  tip/root 5.329e-15
+W14x2x6                    volume 1.471e-06  chamfer 1.000e-07  tip/root 1.776e-15  flank/m 3.985e-05
+W9x1x8                     volume 8.428e-07  chamfer 1.000e-07  tip/root 1.776e-15  flank/m 4.353e-05
+W105x10x9                  volume 3.115e-07  chamfer 1.000e-07  tip/root 1.421e-14  flank/m 1.396e-06
+W84x1x82                   volume 5.075e-10  chamfer 1.000e-07  tip/root 2.842e-14  flank/m 7.181e-08
+WORST volume 1.471e-06  readback 1.000e-07
+
+bracket (32-03 Task 3):
+default                    excursion 0.000e+00  (inside by 1.352e-03 of lower, 6.746e-04 of upper)
+shank-eq-tip               excursion 0.000e+00  (inside by 1.364e-03 of lower, 6.804e-04 of upper)
+shank-eq-root              excursion 0.000e+00  (inside by 1.485e-03 of lower, 7.407e-04 of upper)
+shank-between              excursion 0.000e+00  (inside by 1.424e-03 of lower, 7.101e-04 of upper)
+shank-tip-plus-1e-6        excursion 0.000e+00  (inside by 1.364e-03 of lower, 6.804e-04 of upper)
+shank-tip-plus-1e-3        excursion 0.000e+00  (inside by 1.364e-03 of lower, 6.804e-04 of upper)
+shank-tip-minus-1e-9       excursion 0.000e+00  (inside by 1.364e-03 of lower, 6.804e-04 of upper)
+shank-one-ulp-above-tip    excursion 0.000e+00  (inside by 1.364e-03 of lower, 6.804e-04 of upper)
+shank-below-root           excursion 0.000e+00  (inside by 1.600e-03 of lower, 7.979e-04 of upper)
+shank-at-the-bound         excursion 0.000e+00  (inside by 2.717e-06 of lower, 1.358e-06 of upper)
+shank-above-tip            excursion 0.000e+00  (inside by 1.352e-03 of lower, 6.746e-04 of upper)
+no-shank                   excursion 0.000e+00  (inside by 2.373e-03 of lower, 1.182e-03 of upper)
+tooth-height-cap           excursion 0.000e+00  (inside by 1.740e-04 of lower, 1.371e-04 of upper)
+length-cap-no-shank        excursion 0.000e+00  (inside by 7.364e-02 of lower, 2.513e-02 of upper)
+length-cap-shank           excursion 0.000e+00  (inside by 2.883e-02 of lower, 1.042e-02 of upper)
+both-caps-tie              excursion 0.000e+00  (inside by 2.753e-02 of lower, 2.118e-02 of upper)
+below-resolution           excursion 4.539e-09  (inside by -4.539e-09 of lower, 4.539e-09 of upper)
+none-asked                 excursion 4.539e-09  (inside by -4.539e-09 of lower, 4.539e-09 of upper)
+W14x2x6                    excursion 0.000e+00  (inside by 2.118e-03 of lower, 5.986e-04 of upper)
+W9x1x8                     excursion 0.000e+00  (inside by 5.730e-04 of lower, 5.039e-04 of upper)
+W105x10x9                  excursion 0.000e+00  (inside by 6.578e-03 of lower, 2.308e-04 of upper)
+W84x1x82                   excursion 0.000e+00  (inside by 4.367e-04 of lower, 3.440e-04 of upper)
+WORST bracket excursion 4.539e-09 at below-resolution
