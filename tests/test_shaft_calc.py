@@ -21,6 +21,8 @@ from spur.shaft_calc import (
     FORM_DIAMETER_UNPROVEN,
     MEASURE_AT_NOMINAL_THICKNESS,
     ODD_Z_UNCONFIRMED,
+    ROOT_FORM_CONSTRUCTION,
+    SHANK_STEP_NO_RELIEF,
     SPLINED_LENGTH_LIMIT,
     THEORETICAL_PIN,
     TOOTH_HEIGHT_LIMIT,
@@ -70,7 +72,8 @@ def test_the_default_shaft_derives_its_basic_dimensions() -> None:
     assert d.root_d == 22.25
     assert d.nominal_thickness == 2.613
     assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
-                          MEASURE_AT_NOMINAL_THICKNESS)
+                          MEASURE_AT_NOMINAL_THICKNESS, ROOT_FORM_CONSTRUCTION,
+                          SHANK_STEP_NO_RELIEF)
 
 
 def test_the_default_shaft_is_designated_w_25x1_25x18x8f() -> None:
@@ -104,7 +107,8 @@ def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
     assert d.measure_over_pins == 27.999
     assert d.form_d is None
     assert d.warnings == (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
-                          MEASURE_AT_NOMINAL_THICKNESS)
+                          MEASURE_AT_NOMINAL_THICKNESS, ROOT_FORM_CONSTRUCTION,
+                          SHANK_STEP_NO_RELIEF)
     assert MEASURE_AT_NOMINAL_THICKNESS == (
         "M_Re is for this pin and is the measure at the nominal tooth thickness; it carries "
         "no allowance or tolerance for the fit.")
@@ -398,3 +402,33 @@ def test_the_millimetre_floor_keeps_every_typed_decimal() -> None:
                for k in range(500001))
     assert not any(floor_mm(float(f"{k / 10000:.4f}")) > float(f"{k / 10000:.4f}")
                    for k in range(500001))
+
+
+@pytest.mark.parametrize("p", [
+    ShaftParams(),
+    ShaftParams(shank_length=0),
+    ShaftParams(**parse_designation("W 120x3x38x8f")._asdict()),
+], ids=["default", "no-shank", "w120x3x38"])
+def test_every_shaft_says_its_root_is_a_construction_and_gives_no_number(
+        p: ShaftParams) -> None:
+    """D-03: the solid's root is a construction, not the cut of a hob or broach. The sentence
+    holds no digit, so it cannot imply a fillet radius, and never the word `hobbed`, which
+    the root_d sentence's tests use to pick that sentence out."""
+    assert ROOT_FORM_CONSTRUCTION in derive_shaft(p).warnings
+    assert re.search(r"[0-9]", ROOT_FORM_CONSTRUCTION) is None
+    assert "construction" in ROOT_FORM_CONSTRUCTION
+    assert "root_d" in ROOT_FORM_CONSTRUCTION
+    assert "hobbed" not in ROOT_FORM_CONSTRUCTION
+    assert sum("hobbed" in w for w in derive_shaft(p).warnings) == 1
+
+
+def test_a_shank_brings_the_no_relief_groove_sentence_and_no_shank_drops_it() -> None:
+    """D-08: with a shank the spline steps straight into it, with no relief groove (DIN 509),
+    no hob run-out and a full-form prism. The sentence gives no notch factor: its only source
+    is a low-confidence workshop article. shank_length 0 has no step, so no sentence."""
+    with_shank = derive_shaft(ShaftParams())
+    assert with_shank.warnings[-1] == SHANK_STEP_NO_RELIEF
+    assert "DIN 509" in SHANK_STEP_NO_RELIEF
+    assert "full-form prism" in SHANK_STEP_NO_RELIEF
+    assert "notch" not in SHANK_STEP_NO_RELIEF
+    assert SHANK_STEP_NO_RELIEF not in derive_shaft(ShaftParams(shank_length=0)).warnings

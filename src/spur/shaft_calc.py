@@ -62,6 +62,21 @@ ODD_Z_UNCONFIRMED = (
     "The measurement over pins M_Re is not given for an odd tooth count yet; the pin "
     "diameter is still given."
 )
+# D-03: the solid's root is built, not cut. No digit, so it cannot imply a fillet radius, and
+# never the word `hobbed`: tests/test_shaft_calc.py picks the root_d sentence by that word and
+# asserts it occurs once.
+ROOT_FORM_CONSTRUCTION = (
+    "The solid's tooth root is a construction, not the cut of a hob or broach: each flank "
+    "follows the involute down to the root circle, radially below the base circle where that "
+    "lies above the root, and the teeth are joined by an arc on root_d. Do not take a root "
+    "fillet's shape or size from the solid."
+)
+# D-08: geometry only. The notch-factor source the research found is a low-confidence
+# workshop article, so no factor is stated.
+SHANK_STEP_NO_RELIEF = (
+    "The spline steps straight into the shank: the solid has no relief groove (DIN 509) and "
+    "no hob run-out, and splined_length is a full-form prism."
+)
 TOOTH_HEIGHT_LIMIT = "tooth height (tip_d - root_d)/2"
 SPLINED_LENGTH_LIMIT = "splined_length"
 
@@ -294,6 +309,7 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
     measure_warnings = () if reading.measure is None else (MEASURE_AT_NOMINAL_THICKNESS,)
     # THEORETICAL_PIN would contradict pin_measurement's "M_Re and D_Re not given".
     pin_warnings = () if reading.pin_d is None else (THEORETICAL_PIN,)
+    shank_warnings = (SHANK_STEP_NO_RELIEF,) if p.shank_length > 0 else ()
     return ShaftDimensions(
         reference_d=p.reference_d,
         profile_shift=r3(x),
@@ -308,5 +324,6 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
         end_chamfer_effective=chamfer.applied,
         designation=din5480.format_designation(p.reference_d, p.module, p.teeth, p.fit),
         warnings=(FORM_DIAMETER_UNPROVEN, *pin_warnings, hobbed_root_warning(root_d, p.module),
-                  *measure_warnings, *reading.warnings, *chamfer.warnings),
+                  *measure_warnings, *reading.warnings, ROOT_FORM_CONSTRUCTION,
+                  *chamfer.warnings, *shank_warnings),
     )

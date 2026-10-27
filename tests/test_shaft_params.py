@@ -12,7 +12,7 @@ import pytest
 from pydantic import ValidationError
 
 from spur import din5480
-from spur.din5480 import X_MAX, X_MIN
+from spur.din5480 import X_MAX, X_MIN, parse_designation
 from spur.shaft_params import ShaftParams
 
 FLOAT_FIELDS = ("reference_d", "module", "splined_length", "end_chamfer", "shank_d",
@@ -216,3 +216,26 @@ def test_the_three_fields_that_set_the_shift_say_which_shifts_are_refused(field:
     must say so before the user finds out from a 422 (31-REVIEW IN-05)."""
     help_text = ShaftParams.model_fields[field].description or ""
     assert f"Shifts outside {X_MIN:+.2f}..{X_MAX:+.2f} are refused." in help_text
+
+
+def test_the_end_chamfer_help_says_45_degrees_at_the_tip_diameter() -> None:
+    """D-04: the cone, its size and where it starts on the end face; capped and warned."""
+    help_text = ShaftParams.model_fields["end_chamfer"].description or ""
+    assert "45" in help_text
+    assert "tip diameter" in help_text
+    assert "tip_d - 2" in help_text
+    assert help_text.endswith("0 = none.")
+
+
+def test_the_splined_length_help_says_full_form_prism() -> None:
+    """D-08: the teeth keep their full form up to the shank."""
+    assert "full-form prism" in (ShaftParams.model_fields["splined_length"].description or "")
+
+
+def test_the_slug_is_a_filename_safe_stem_built_from_numbers() -> None:
+    """C1 (32-01): the stem names the three numbers of the designation and no fit, so no
+    user-typed string reaches a filename (L40)."""
+    assert ShaftParams().slug() == "spur_shaft_w25x1.25x18"
+    for designation in ("W 25x1.25x18x8f", "W 10x0.5x18x8f", "W 120x3x38x8f", "W 835x10x82x8f"):
+        p = ShaftParams(**parse_designation(designation)._asdict())
+        assert re.fullmatch(r"spur_shaft_[a-z0-9_.]+", p.slug()), designation
