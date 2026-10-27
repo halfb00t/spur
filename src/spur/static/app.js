@@ -68,8 +68,13 @@ const PARTS = {
     aria: '3D preview of the shaft', fitTitle: 'Fit shaft to view',
   },
 };
-let part = 'gear';
+// The part whose form is built; empty until the first build, so the first link always builds.
+let part = '';
 let P = PARTS.gear;
+// The page's message for a link whose `part` it has no form for, or null (D-15). While it is
+// set, update() builds nothing: a field edit or Reset must not build a part the link did not
+// name (D-20). A switch, or the next hashchange, clears it.
+let refused = null;
 // The shaft's result rows come in its schema; null means the gear's table above.
 let dims = null;
 // Bumped by every buildForm: a build that finds a later one started returns false, so a slow
@@ -187,6 +192,7 @@ function markPart() {
 // A radio's change: build that part's form at its defaults, then show it. No value crosses
 // a switch (D-13) and the hash is the new part's, written by update() (D-14).
 async function switchTo(which) {
+  refused = null;
   try {
     if (!(await buildForm(which))) return;
   } catch (err) {
@@ -227,6 +233,52 @@ function gearQuery() {
     if (input.value !== '' && String(input.value) !== String(defaults[name])) q.set(name, input.value);
   }
   return q;
+}
+
+// The `part` values of a link, read as text. partOf compares them as literals and nothing
+// indexes PARTS by them: a lookup by hash text would resolve `constructor` and `__proto__`
+// (T-33-15).
+const partValues = (hash) => new URLSearchParams(hash.slice(1)).getAll('part');
+
+/** 'gear' for no part or one empty value, 'shaft' for exactly one `shaft`, else null. The gear
+ *  link carries no `part` key, and `gear` is not a second spelling of it (D-15). */
+function partOf(hash) {
+  const values = partValues(hash);
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return 'gear';
+  return values.length === 1 && values[0] === 'shaft' ? 'shaft' : null;
+}
+
+// A link with a part the page has no form for: the gear form at its defaults, nothing drawn,
+// neither radio checked, and the hash as the link wrote it. This message is the narrow exception
+// to "the server words refusals" (L02): no route takes `part`, so no server can word it (D-15).
+// The value is echoed quoted by JSON.stringify and shown as text, never as markup (T-33-23).
+async function refuseLink(values) {
+  const text = `Unknown part ${JSON.stringify(values.join(', '))} in the link; use the Gear or Shaft switch`;
+  refused = text;
+  if (!(await buildForm('gear'))) return;
+  for (const [name, { input }] of fields) input.value = defaults[name];
+  applyRelations();
+  deriveSelectors();
+  for (const radio of radios) radio.checked = false;
+  showMessages([text]);
+}
+
+// The hashchange listener and the bootstrap: a link names the part, and the form of that part
+// is built before the link is read into it (D-14). A link that keeps the part is handled before
+// any await, in the event itself, as the listener did before there were two parts (the golden
+// sweep sends one request per link and relies on it). formSeq is bumped so a slower build
+// started by an earlier link cannot land under this one.
+async function followHash() {
+  refused = null;
+  formSeq++;
+  const which = partOf(location.hash);
+  if (which === part) { markPart(); readHash(); update(); return; }
+  try {
+    if (which === null) await refuseLink(partValues(location.hash));
+    else if (await buildForm(which)) { readHash(); update(); }
+  } catch (err) {
+    showMessages([`Could not build the form: ${err.message}`]);
+  }
 }
 
 // ---------------------------------------------------------------- relations (L41)
@@ -364,6 +416,7 @@ let seq = 0;
 let inflight = null;
 
 async function update() {
+  if (refused) { showMessages([refused]); return; }
   const q = gearQuery();
   const mate = mateInput.value || rejected.get('mate_teeth') || '';
   const infoQ = new URLSearchParams(q);
@@ -754,7 +807,7 @@ form.addEventListener('input', (e) => rejected.delete(e.target.name));
 form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });
 mateInput.addEventListener('input', scheduleUpdate);
 mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));
-window.addEventListener('hashchange', () => { readHash(); update(); });
+window.addEventListener('hashchange', followHash);
 for (const radio of radios) {
   radio.addEventListener('change', () => switchTo(radio.value));
 }
@@ -782,15 +835,6 @@ $('#copy-link').addEventListener('click', async (e) => {
   }
 });
 
-(async () => {
-  applyTheme();
-  resize();
-  try {
-    await buildForm('gear');
-  } catch (err) {
-    showMessages([`Could not build the form: ${err.message}`]);
-    return;
-  }
-  readHash();
-  update();
-})();
+applyTheme();
+resize();
+followHash();

@@ -312,6 +312,22 @@ def _follow_link(page: Page, fragment: str) -> str:
     return urllib.parse.urlsplit(sent.value.url).query
 
 
+def _follow_shaft_link(page: Page, fragment: str) -> str:
+    """Open `#fragment` and return the query string of the /api/shaft/info request it caused.
+
+    `_follow_link` waits for a URL holding `/api/info`, which `/api/shaft/info` does not, so a
+    shaft link needs its own wait. The fragment must differ from the current one, as there.
+    """
+    current = eval_str(page, "() => location.hash.slice(1)")
+    assert current != fragment, f"the page is already on #{fragment}: no hashchange would fire"
+    with page.expect_request(
+        lambda request: urllib.parse.urlsplit(request.url).path == "/api/shaft/info",
+        timeout=BUILD_WAIT_MS,
+    ) as sent:
+        page.evaluate("(f) => { location.hash = f; }", fragment)
+    return urllib.parse.urlsplit(sent.value.url).query
+
+
 def _pairs(query: str) -> list[tuple[str, str]]:
     """A query string as its (name, value) pairs, sorted: order is not what a link means."""
     return sorted(urllib.parse.parse_qsl(query, keep_blank_values=True))
@@ -335,6 +351,17 @@ def _shaft_stl_requests(seen: list[str]) -> int:
     return sum(
         1 for url in seen if urllib.parse.urlsplit(url).path == "/api/shaft/model.stl"
     )
+
+
+def _bad_part_text(shown: str) -> str:
+    """The page's refusal of a `part` it has no form for (D-15); `shown` is the link's value."""
+    return f'Unknown part "{shown}" in the link; use the Gear or Shaft switch'
+
+
+def _build_requests(seen: list[str]) -> int:
+    """How many info or STL requests, of either part, the recorded pages sent."""
+    builds = {"/api/info", "/api/model.stl", "/api/shaft/info", "/api/shaft/model.stl"}
+    return sum(1 for url in seen if urllib.parse.urlsplit(url).path in builds)
 
 
 def _expect_part_texts(page: Page, which: str) -> None:
@@ -2387,6 +2414,214 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert page.locator("#dl-step").get_attribute("href") == "api/model.step"
                 assert page.locator(PART_RADIO.format("gear")).is_checked()
                 _expect_part_texts(page, "gear")
+
+            with step("shaft link round trip", no_foreign_key):
+                # D-11, D-22, SC2: a link that names the shaft builds the shaft form first and
+                # then fills it, on any page; the hash opens with `part=shaft`, a gear link has
+                # no `part`, and the page asks the server for the numbers and the file name.
+                odd_z_fields = "reference_d=26&teeth=19"
+                odd_z_link = f"part=shaft&{odd_z_fields}"
+                status, odd_info = _api_get(server, "/api/shaft/info", odd_z_fields)
+                assert status == 200, f"/api/shaft/info?{odd_z_fields} answered {status}"
+                assert isinstance(odd_info, dict), "/api/shaft/info is not an object"
+                pins_label = next(
+                    str(dim["label"]) for dim in shaft_dims if dim["key"] == "measure_over_pins"
+                )
+                assert pins_label == "Measurement over pins M_Re", pins_label
+                assert odd_info["measure_over_pins"] is None, "an odd tooth count has no M_Re"
+                assert odd_info["designation"] == "W 26x1.25x19x8f", odd_info["designation"]
+
+                shaft_sent = _follow_shaft_link(page, odd_z_link)
+                assert _pairs(shaft_sent) == _pairs(odd_z_fields), f"the link sent {shaft_sent!r}"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/shaft/model.stl?{shaft_sent}", timeout=BUILD_WAIT_MS
+                )
+                assert eval_str(page, FRAGMENT) == odd_z_link
+                odd_form = dict(eval_pairs(page))
+                assert list(odd_form) == list(shaft_properties), list(odd_form)
+                assert float(odd_form["reference_d"]) == 26, odd_form
+                assert int(odd_form["teeth"]) == 19, odd_form
+                assert page.locator(PART_RADIO.format("shaft")).is_checked()
+                odd_rows = eval_pairs(page, DIMS_ROWS)
+                assert pins_label not in [label for label, _ in odd_rows], odd_rows
+                assert ("Designation", "W 26x1.25x19x8f") in odd_rows, odd_rows
+                with page.expect_download(timeout=BUILD_WAIT_MS) as shaft_download:
+                    page.click("#dl-stl")
+                shaft_file = shaft_download.value.suggested_filename
+                assert shaft_file == "spur_shaft_w26x1.25x19.stl", (
+                    f"the download is named {shaft_file!r}, not the name the server gives it"
+                )
+
+                shank_title = _title(shaft_properties, "shank_length")
+                shaft_sent = _follow_shaft_link(page, "part=shaft&shank_length=0")
+                assert _pairs(shaft_sent) == [("shank_length", "0")], shaft_sent
+                assert eval_inactive(page) == {
+                    "shank_d": f"Needs {shank_title} above 0"
+                }, eval_inactive(page)
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/shaft/model.stl?{shaft_sent}", timeout=BUILD_WAIT_MS
+                )
+                shaft_sent = _follow_shaft_link(page, "part=shaft&shank_length=20")
+                assert _pairs(shaft_sent) == [], f"the default shank length was sent: {shaft_sent}"
+                assert eval_inactive(page) == {}, eval_inactive(page)
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl", timeout=BUILD_WAIT_MS
+                )
+
+                shaft_sent = _follow_shaft_link(page, "part=shaft&shank_length=500")
+                assert _pairs(shaft_sent) == [("shank_length", "500")], shaft_sent
+                status, _ = _api_get(server, "/api/shaft/info", shaft_sent)
+                assert status == 200, f"/api/shaft/info?{shaft_sent} answered {status}"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/shaft/model.stl?{shaft_sent}", timeout=BUILD_WAIT_MS
+                )
+                assert page.locator("#canvas").get_attribute("data-triangles") is not None
+
+                for bad_field, bad_value in (("shank_length", "500.5"), ("fit", "8F")):
+                    stl_before = _shaft_stl_requests(seen)
+                    shaft_sent = _follow_shaft_link(page, f"part=shaft&{bad_field}={bad_value}")
+                    assert _pairs(shaft_sent) == [(bad_field, bad_value)], shaft_sent
+                    status, body = _api_get(server, "/api/shaft/info", shaft_sent)
+                    assert status == 422, f"/api/shaft/info?{shaft_sent} answered {status}"
+                    shaft_marked, shaft_texts = _expected_422(shaft_properties, body)
+                    assert shaft_marked == {_title(shaft_properties, bad_field)}, shaft_marked
+                    expect(page.locator("#messages .error")).to_have_text(
+                        shaft_texts, timeout=BUILD_WAIT_MS
+                    )
+                    expect(page.locator("label.field.invalid .name")).to_have_text(
+                        sorted(shaft_marked)
+                    )
+                    assert page.locator("#dl-stl").get_attribute("href") is None
+                    page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    assert _shaft_stl_requests(seen) == stl_before, (
+                        f"a shaft STL was asked for after #{bad_field}={bad_value}"
+                    )
+
+                # D-11: gear keys and a designation in a shaft link are ignored, as any unknown key.
+                foreign_link = (
+                    "part=shaft&teeth=19&mate_teeth=30&face_width=9&designation=W%2030x2x14x8f"
+                )
+                shaft_sent = _follow_shaft_link(page, foreign_link)
+                assert _pairs(shaft_sent) == [("teeth", "19")], f"the link sent {shaft_sent!r}"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl?teeth=19", timeout=BUILD_WAIT_MS
+                )
+                assert eval_str(page, FRAGMENT) == "part=shaft&teeth=19"
+
+                # A fresh page opened on the link builds the shaft form and not the gear's.
+                fresh = record_api(browser.new_page(), seen)
+                try:
+                    with fresh.expect_request(
+                        lambda request: urllib.parse.urlsplit(request.url).path
+                        == "/api/shaft/info",
+                        timeout=BUILD_WAIT_MS,
+                    ) as shaft_request:
+                        fresh.goto(f"{server}/#{odd_z_link}")
+                    fresh_sent = urllib.parse.urlsplit(shaft_request.value.url).query
+                    assert _pairs(fresh_sent) == _pairs(odd_z_fields), fresh_sent
+                    expect(fresh.locator("form#params [name]")).to_have_count(len(shaft_properties))
+                    expect(fresh.locator("#dl-stl")).to_have_attribute(
+                        "href", f"api/shaft/model.stl?{fresh_sent}", timeout=BUILD_WAIT_MS
+                    )
+                    assert eval_str(fresh, FRAGMENT) == odd_z_link
+                    assert fresh.locator(PART_RADIO.format("shaft")).is_checked()
+                finally:
+                    fresh.close()
+
+                # Back to the gear by a link with no `part`, and by an empty one.
+                shaft_sent = _follow_link(page, "teeth=24")
+                assert _pairs(shaft_sent) == [("teeth", "24")], shaft_sent
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl?teeth=24", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(field_count)
+                assert page.locator(PART_RADIO.format("gear")).is_checked()
+                assert eval_str(page, FRAGMENT) == "teeth=24"
+                shaft_sent = _follow_link(page, "part=&teeth=23")
+                assert _pairs(shaft_sent) == [("teeth", "23")], shaft_sent
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl?teeth=23", timeout=BUILD_WAIT_MS
+                )
+                assert eval_str(page, FRAGMENT) == "teeth=23"
+                print(f"shaft link round trip: {odd_z_link} -> {shaft_file}")
+
+            with step("bad part refused", no_foreign_key):
+                # D-15, D-20: a `part` other than `shaft` or empty is refused in the page's own
+                # words, the gear form shows at its defaults with neither radio checked, nothing
+                # is drawn and no build is asked for; only a switch or a new link ends it.
+                bad_parts = (
+                    ("part=bogus", "bogus"),
+                    ("part=gear", "gear"),
+                    ("part=Shaft", "Shaft"),
+                    ("part=constructor", "constructor"),
+                    ("part=__proto__", "__proto__"),
+                    ("part=shaft&part=gear", "shaft, gear"),
+                )
+                requests_before = _build_requests(seen)
+                for bad_link, bad_shown in bad_parts:
+                    refusal = _bad_part_text(bad_shown)
+                    page.evaluate("(f) => { location.hash = f; }", bad_link)
+                    expect(page.locator("#messages .error")).to_have_text(
+                        [refusal], timeout=BUILD_WAIT_MS
+                    )
+                    for which in ("gear", "shaft"):
+                        assert not page.locator(PART_RADIO.format(which)).is_checked(), (
+                            f"#{bad_link}: the {which} radio is checked"
+                        )
+                    expect(page.locator("form#params [name]")).to_have_count(field_count)
+                    assert eval_pairs(page) == default_pairs, f"#{bad_link}: not at the defaults"
+                    assert eval_pairs(page, DIMS_ROWS) == [], f"#{bad_link}: rows shown"
+                    assert page.locator("#dl-stl").get_attribute("href") is None
+                    assert page.locator("#canvas").get_attribute("data-triangles") is None
+                    assert eval_str(page, FRAGMENT) == bad_link, "the refused link was rewritten"
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _build_requests(seen) == requests_before, (
+                    "a refused part asked for a build"
+                )
+
+                # D-20: an edit and Reset in the refused state build nothing and change nothing.
+                page.fill("input[name=teeth]", "30")
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _build_requests(seen) == requests_before, "an edit built under a bad part"
+                page.click("#reset")
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _build_requests(seen) == requests_before, "Reset built under a bad part"
+                assert eval_pairs(page) == default_pairs
+                expect(page.locator("#messages .error")).to_have_text(
+                    [_bad_part_text("shaft, gear")]
+                )
+                assert eval_str(page, FRAGMENT) == "part=shaft&part=gear"
+
+                # A click on a radio ends it.
+                with page.expect_response(
+                    lambda response: urllib.parse.urlsplit(response.url).path
+                    == "/api/shaft/model.stl",
+                    timeout=BUILD_WAIT_MS,
+                ):
+                    page.locator(PART_RADIO.format("shaft")).click()
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("#messages .error")).to_have_count(0)
+                assert eval_str(page, FRAGMENT) == "part=shaft"
+
+                # A new link ends it too, from the shaft as well as from the gear.
+                page.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                expect(page.locator("#messages .error")).to_have_text(
+                    [_bad_part_text("bogus")], timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(field_count)
+                assert eval_pairs(page) == default_pairs
+                assert page.locator("#dl-stl").get_attribute("href") is None
+                after_bad = _follow_link(page, "teeth=20")
+                assert _pairs(after_bad) == [("teeth", "20")], after_bad
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl?teeth=20", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("#messages .error")).to_have_count(0)
+                assert page.locator(PART_RADIO.format("gear")).is_checked()
+                assert eval_str(page, FRAGMENT) == "teeth=20"
+                print(f"bad part refused: {len(bad_parts)} links, no build under a bad part")
 
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH

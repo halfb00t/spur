@@ -1,0 +1,30 @@
+            # Phase 33: the part descriptor (PARTS) and the generic paths that read it.
+            "const hash = [P.tag, infoQ.toString()].filter(Boolean).join('&');",
+            "${P.info}?",
+            "${P.model}.stl?",
+            "${P.model}.${kind}",
+            "fields.clear();",
+            "stash.clear(); rejected.clear();",
+            "selectors.length = 0;",
+            "dims = schema.dims ?? null;",
+            "input.type = 'text';",
+            "radio.addEventListener('change', () => switchTo(radio.value));",
+            # Phase 33 (33-07): the link names the part. partOf() compares the `part` values as
+            # literals, followHash() handles a same-part link synchronously (the golden sweep
+            # sends one request per link and relies on it), and update() builds nothing under a
+            # refused part (D-15, D-20).
+            "new URLSearchParams(hash.slice(1)).getAll('part')",
+            "if (which === part) { markPart(); readHash(); update(); return; }",
+            "else if (await buildForm(which)) { readHash(); update(); }",
+            "if (refused) { showMessages([refused]); return; }",
+        ):
+>           assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
+E           AssertionError: window.addEventListener('hashchange', followHash);
+E           assert "window.addEventListener('hashchange', followHash);" in "import { Color, DirectionalLight, EdgesGeometry, GridHelper, HemisphereLight, LineBasicMaterial, LineSegments, Mesh, ...'); } catch (err) { showMessages([`Could not build the form: ${err.message}`]); return; } readHash(); update(); })(); "
+E            +  where "window.addEventListener('hashchange', followHash);" = <function sub at 0x105bc9c60>('\\s+', ' ', "window.addEventListener('hashchange', followHash);")
+E            +    where <function sub at 0x105bc9c60> = re.sub
+
+tests/test_api.py:340: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_api.py::test_the_shareable_link_round_trips_every_field_through_generic_code
+1 failed, 1 passed, 65 deselected in 1.59s

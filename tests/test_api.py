@@ -267,7 +267,10 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # could not fail on its own and the longer one supersedes it as the pin of the box write.
     # L49 (Phase 33) added these tokens and removed none: the tagged hash builder, the part
     # descriptor's URLs in update() and setDownloads(), buildForm's clears, the schema's `dims`,
-    # the text box and the part switch's listener.
+    # the text box and the part switch's listener. L49 (33-07) replaced the `hashchange` token
+    # and removed no other: the listener is now `followHash`, which picks the part before it
+    # reads the hash, so the old arrow function is gone by design; four tokens were added for
+    # the part of a link and the refused state.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
@@ -278,7 +281,7 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "const infoQ = new URLSearchParams(q);",
         "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
         "navigator.clipboard.writeText(location.href)",
-        "window.addEventListener('hashchange', () => { readHash(); update(); });",
+        "window.addEventListener('hashchange', followHash);",
         # One exact token on one line, so a grep for it finds this pin: 108 columns.
         "form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });",  # noqa: E501
         "mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",
@@ -325,6 +328,14 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "dims = schema.dims ?? null;",
         "input.type = 'text';",
         "radio.addEventListener('change', () => switchTo(radio.value));",
+        # Phase 33 (33-07): the link names the part. partOf() compares the `part` values as
+        # literals, followHash() handles a same-part link synchronously (the golden sweep
+        # sends one request per link and relies on it), and update() builds nothing under a
+        # refused part (D-15, D-20).
+        "new URLSearchParams(hash.slice(1)).getAll('part')",
+        "if (which === part) { markPart(); readHash(); update(); return; }",
+        "else if (await buildForm(which)) { readHash(); update(); }",
+        "if (refused) { showMessages([refused]); return; }",
     ):
         assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 
@@ -355,6 +366,11 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # it in the hash (REQ-selector-derives-and-writes-through). One `fields.set(` is the
     # buildForm() loop's; a second would be the select joining the form's values.
     assert collapsed_source.count("fields.set(") == 1, "the select must not join `fields`"
+
+    # 33-07: the same-part branch of followHash() runs before any `await`, so a hashchange that
+    # keeps the part is handled inside the event, as the old listener was.
+    follow = collapsed_source[collapsed_source.index("async function followHash()"):]
+    assert "await" not in follow[: follow.index("if (which === part)")], "followHash awaits first"
 
     # L41: an inert field stays a field. A relation dims the field and says why; it never
     # disables, hides, clears or rewrites it, because a shared link such as
