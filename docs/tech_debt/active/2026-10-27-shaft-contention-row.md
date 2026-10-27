@@ -15,8 +15,11 @@ heaviest allowed shaft only as single builds, each in a fresh process on macOS a
 Linux container, beside the 199-tooth gear (REQ-shaft-build-measured). No shaft route
 exists before Phase 33, so a server-driven run cannot happen in Phase 32, and a pool-level
 row (ten distinct heaviest shaft rows at once to `BuildPool(workers=2, timeout=30)`) was
-declined at the checkpoint. The research measured about 5.5x margin to the 30 s timeout at
-load 30+, which is the only evidence about the shaft under load.
+declined at the checkpoint. Plan 32-05's single builds are in `bench/RESULTS.md`
+`### The heaviest shaft (32-05)`: the heaviest allowed shaft takes 2.23 s on macOS (13.5x
+margin to the 30 s timeout) and 5.44 s in the Linux container (5.5x, amd64 emulated). The
+research's earlier figure of about 5.5x at load 30+ is the only evidence about the shaft
+under load.
 
 ## Why it matters
 A shaft build that fits 30 s alone could still time out when a queue of them shares two

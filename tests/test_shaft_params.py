@@ -90,6 +90,9 @@ def test_the_fit_token_is_checked_for_shape_only(fit: str, accepted: bool) -> No
     assert errors[0]["type"] in {"string_pattern_mismatch", "string_too_long"}
 
 
+# The four solid fields' bounds (splined_length to shank_length) were set by Phase 32's sweep
+# (bench/RESULTS.md `### The heaviest shaft (32-05)`, bench/sweeps/shaft.json), and
+# tests/test_bench.py fails if one is raised without a sweep row reaching it.
 @pytest.mark.parametrize(("field", "ge", "le"), [
     ("reference_d", 3, 850),
     ("module", 0.5, 10),

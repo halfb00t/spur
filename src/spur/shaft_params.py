@@ -52,7 +52,9 @@ class ShaftParams(BaseModel):
                      json_schema_extra=_extra("Spline"))
     # The four fields below belong to the solid. No cross-field rule among them: every shank_d
     # is allowed against the spline (D-07), and end_chamfer is capped and warned in
-    # derive_shaft, never refused (D-05). Their bounds stay provisional until 32-05's sweep.
+    # derive_shaft, never refused (D-05). Their bounds were set by Phase 32's sweep (bench/
+    # RESULTS.md `### The heaviest shaft (32-05)`): the heaviest allowed shaft builds and
+    # exports in 2.23 s on macOS and 5.44 s in the Linux container, against 30 s (L37).
     splined_length: float = _f(30.0, 1, 500, title="Splined length", group="Spline",
                                unit="mm", step=0.5,
                                help="Length of the toothed part of the shaft, "
