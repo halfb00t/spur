@@ -458,6 +458,17 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "the selectors section must hold exactly one value write, in pick()")
 
 
+def test_the_page_formats_numbers_with_the_expression_the_parity_test_ports() -> None:
+    """33-08: the browser step maps numbers through this very expression and compares them with
+    tests/shaft_parity.py `displayed()`, so the page's own rule is what is checked only while
+    app.js still holds exactly it. A changed `fmt` fails here and in the step, not in a user's
+    table (D-21).
+    """
+    source = re.sub(r"\s+", " ", (STATIC / "app.js").read_text())
+    expression = "const fmt = (v) => Number(v).toFixed(3).replace(/\\.?0+$/, '');"
+    assert source.count(expression) == 1, "app.js `fmt` is not the expression the parity step ports"
+
+
 def test_info_reports_the_mate() -> None:
     r = client.get("/api/info", params={"teeth": 21, "mate_teeth": 40})
     assert r.status_code == 200

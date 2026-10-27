@@ -70,6 +70,7 @@ from browser_session import (
 )
 from number_box_tokens import TOKENS
 from playwright.sync_api import Page, Route, expect, sync_playwright
+from shaft_parity import SHAFTS, displayed, web_rows
 
 # app.js's scheduleUpdate() sends its request 350 ms after the event (`setTimeout(update, 350)`),
 # so a request count taken sooner can pass before a stray request is sent (24 CX-05). The settle
@@ -182,6 +183,22 @@ NUMBER_BOX_PROBE = """(tokens) => {
     return JSON.stringify({count: inputs.length, off});
 }"""
 
+# D-17: the name each member of tests/shaft_parity.py SHAFTS downloads under, written out, so the
+# page and the API are held to a literal and not only to one another. The fourth member's solid
+# differs from the default's and its name does not (the slug carries the designation's fields).
+SHAFT_FILES = {
+    "default": "spur_shaft_w25x1.25x18",
+    "w30x2x14": "spur_shaft_w30x2x14",
+    "odd-z": "spur_shaft_w26x1.25x19",
+    "no-shank-no-chamfer": "spur_shaft_w25x1.25x18",
+}
+# app.js `fmt`, mapped over numbers in the page (tests/test_api.py pins that the source is exactly
+# this expression), so `displayed()` is checked against the browser's own rounding.
+JS_FMT_ALL = r"(vs) => vs.map((v) => Number(v).toFixed(3).replace(/\.?0+$/, ''))"
+# Ties and signs, where a port of `toFixed` goes wrong: binary ties either side of the half, a
+# negative that rounds to zero, a negative zero, a number past six digits and a tiny one.
+FMT_CASES = (0.0625, 0.0005, 1.0005, 2.675, -0.0001, -0.0, 27.9994, 123456.7895, 1e-7)
+
 
 @pytest.fixture(scope="module")
 def server(request: pytest.FixtureRequest) -> Iterator[str]:
@@ -208,6 +225,20 @@ def _api_get(base: str, path: str, query: str) -> tuple[int, object]:
         with error:
             failure: object = json.load(error)
             return error.code, failure
+
+
+def _download_name(base: str, path: str, query: str) -> str:
+    """The filename the API's `Content-Disposition` gives `path?query`, without reading a body.
+
+    The header is read and the connection closed, so a part the page's download already put in
+    the export cache costs nothing here.
+    """
+    url = f"{base}{path}?{query}" if query else f"{base}{path}"
+    with urllib.request.urlopen(url, timeout=60) as response:
+        header = response.headers["Content-Disposition"]
+    found = re.fullmatch(r'attachment; filename="([^"]+)"', header or "")
+    assert found, f"{path}?{query} sent Content-Disposition {header!r}"
+    return found.group(1)
 
 
 def _schema_properties(
@@ -2622,6 +2653,81 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 assert page.locator(PART_RADIO.format("gear")).is_checked()
                 assert eval_str(page, FRAGMENT) == "teeth=20"
                 print(f"bad part refused: {len(bad_parts)} links, no build under a bad part")
+
+            with step("parity: web and API", no_foreign_key):
+                # D-21 part one, SC3: over the fixed set the page's shaft table is the API's
+                # numbers at the displayed text, and the download is named as the API names it.
+                # The rows are compared as `(dt, dd)` pairs, equal and not near: the label, the
+                # order of `dims`, `fmt(v)` and the unit, no row for a null.
+                assert set(SHAFTS) == set(SHAFT_FILES), "a shaft joined the set with no file name"
+                parity_dims = [
+                    {"key": str(d["key"]), "label": str(d["label"]), "unit": str(d["unit"])}
+                    for d in shaft_dims
+                ]
+                started = time.perf_counter()
+                parity_rows = 0
+                parity_numbers: list[float] = list(FMT_CASES)
+                for member, values in SHAFTS.items():
+                    api_query = urllib.parse.urlencode(values)
+                    link = f"part=shaft&{api_query}" if api_query else "part=shaft"
+                    shaft_sent = _follow_shaft_link(page, link)
+                    # The page drops a value that is the field's default (gearQuery), so what it
+                    # sends is the set's values less those; the API is asked for them all.
+                    want_sent = sorted(
+                        (name, str(value)) for name, value in values.items()
+                        if float(value) != float(str(shaft_properties[name]["default"]))
+                    )
+                    assert _pairs(shaft_sent) == want_sent, f"{member}: sent {shaft_sent!r}"
+                    href = "api/shaft/model.stl" + (f"?{shaft_sent}" if shaft_sent else "")
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", href, timeout=BUILD_WAIT_MS
+                    )
+                    status, parity_doc = _api_get(server, "/api/shaft/info", api_query)
+                    assert status == 200, f"{member}: /api/shaft/info answered {status}"
+                    assert isinstance(parity_doc, dict), f"{member}: no info object"
+                    page_rows = eval_pairs(page, DIMS_ROWS)
+                    api_rows = web_rows(parity_doc, parity_dims)
+                    assert page_rows == api_rows, (
+                        f"{member}: the page's rows differ from the API's.\n"
+                        f"  page: {page_rows}\n  API:  {api_rows}"
+                    )
+                    parity_rows += len(page_rows)
+                    parity_numbers.extend(
+                        v for v in parity_doc.values()
+                        if isinstance(v, int | float) and not isinstance(v, bool)
+                    )
+
+                    with page.expect_download(timeout=BUILD_WAIT_MS) as parity_download:
+                        page.click("#dl-stl")
+                    page_name = parity_download.value.suggested_filename
+                    api_name = _download_name(server, "/api/shaft/model.stl", api_query)
+                    want_name = f"{SHAFT_FILES[member]}.stl"
+                    assert page_name == api_name == want_name, (
+                        f"{member}: the page saves {page_name!r}, the API names {api_name!r}, "
+                        f"the literal is {want_name!r}"
+                    )
+                    if member == "default":
+                        with page.expect_download(timeout=BUILD_WAIT_MS) as step_download:
+                            page.click("#dl-step")
+                        assert step_download.value.suggested_filename == (
+                            f"{SHAFT_FILES[member]}.step"
+                        ), step_download.value.suggested_filename
+
+                # The port against the browser's own rounding: the cases and every number of
+                # every document above, as text, equal.
+                browser_text = eval_str_list(page, JS_FMT_ALL, parity_numbers)
+                port_text = [displayed(v) for v in parity_numbers]
+                wrong = [
+                    (v, got, want)
+                    for v, got, want in zip(parity_numbers, browser_text, port_text, strict=True)
+                    if got != want
+                ]
+                assert not wrong, f"displayed() differs from the browser's fmt: {wrong}"
+                print(
+                    f"parity: {len(SHAFTS)} shafts, {parity_rows} rows equal the API's, "
+                    f"{len(parity_numbers)} numbers rounded as the browser does, "
+                    f"{time.perf_counter() - started:.2f} s"
+                )
 
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH
