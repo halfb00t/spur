@@ -1,1 +1,24 @@
 flank half-angle, din5480 vs oracle, 192 cases: worst 3.886e-16 rad at m0.8-z6-x0.45 r=3.0200
+default                    volume 3.961e-09  chamfer 1.000e-07  tip/root 5.329e-15  flank/m 2.048e-07
+shank-eq-tip               volume 4.222e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-eq-root              volume 4.585e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-between              volume 4.400e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-tip-plus-1e-6        volume 3.995e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-tip-plus-1e-3        volume 3.995e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-tip-minus-1e-9       volume 4.228e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-one-ulp-above-tip    volume 4.222e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-below-root           volume 4.685e-09  chamfer 1.000e-07  tip/root 5.329e-15
+shank-at-the-bound         volume 7.968e-12  chamfer 1.000e-07  tip/root 5.329e-15
+shank-above-tip            volume 3.961e-09  chamfer 1.000e-07  tip/root 5.329e-15
+no-shank                   volume 6.937e-09  chamfer 1.000e-07  tip/root 5.329e-15
+tooth-height-cap           volume 1.254e-09  chamfer 1.000e-07  tip/root 1.776e-15
+length-cap-no-shank        volume 1.330e-09  chamfer 1.000e-07  tip/root 1.421e-14
+length-cap-shank           volume 5.348e-10  chamfer 1.000e-07  tip/root 1.421e-14
+both-caps-tie              volume 1.089e-09  chamfer 1.000e-07  tip/root 0.000e+00
+below-resolution           volume 3.908e-09  chamfer 5.329e-15  tip/root 5.329e-15
+none-asked                 volume 3.908e-09  chamfer 5.329e-15  tip/root 5.329e-15
+W14x2x6                    volume 1.471e-06  chamfer 1.000e-07  tip/root 1.776e-15  flank/m 3.985e-05
+W9x1x8                     volume 8.428e-07  chamfer 1.000e-07  tip/root 1.776e-15  flank/m 4.353e-05
+W105x10x9                  volume 3.115e-07  chamfer 1.000e-07  tip/root 1.421e-14  flank/m 1.396e-06
+W84x1x82                   volume 5.075e-10  chamfer 1.000e-07  tip/root 2.842e-14  flank/m 7.181e-08
+WORST volume 1.471e-06  readback 1.000e-07

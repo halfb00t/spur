@@ -7041,6 +7041,19 @@ The floor rule's evidence (A2 of 32-RESEARCH, not run by the research), copied f
 4. Shaft grid, feasible rows `13552`, floored tooth height not equal to the module: `0`, lattice chamfers (cap, cap-0.001, cap-0.002) inside the 1e-9..1e-4 band: `0`.
 5. Splined lengths: `2.0006` gives `round(v, 3) = 2.001` and floored `2.0`; `5.0007` gives `5.001` and floored `5.0` (the round-up case of `32-round-up.log`).
 
+### Kernel tolerances, measured (32-03)
+
+Each bar below is the smallest of its candidate steps at least 10x the worst reading on this file's own building rows (`tests/test_shaft_model.py`, 22 rows: the default, 11 shank regimes, 6 chamfer caps, W 14x2x6, W 9x1x8, W 105x10x9, W 84x1x82), measured by `investigation/32-03-tolerances.py` on the 2026-10-27 dev host. Log: `investigation/32-03-tolerances.log`.
+
+| Constant | Value | Worst measured | Its row | Ratio | Log |
+|---|---|---|---|---|---|
+| `FLANK_ANGLE_ABS` (`tests/test_din5480.py`) | `1e-14` rad | `3.886e-16` rad | `m0.8-z6-x0.45`, r 3.0200 (192 cases) | 25.7x | `32-03-tolerances.log` |
+| `VOLUME_REL` | `1e-4` | `1.471e-06` | W 14x2x6 | 68x | `32-03-tolerances.log` |
+| `READBACK_TOL` | `1e-6` mm | `1.0e-07` mm (the cone's bounding box carries ~1e-7; the radii read `2.8e-14`) | every chamfer row | 10x | `32-03-tolerances.log` |
+| `FLANK_BAR_PER_MODULE` | `5e-4` | `4.353e-05` per module | W 9x1x8 | 11.5x | `32-03-tolerances.log` |
+
+The flank is sampled at 201 positions per BSPLINE edge, not the plan's 21: at 21 the same W 14x2x6 reads `7.4e-06` per module and W 9x1x8 `7.7e-06`, 5x under the 201-position `3.985e-05` and `4.353e-05`, because the spline's error peaks between its 16 interpolation points and a sparse sample steps over the peak. The 201-position W 9x1x8 reading matches the research's own `4.35e-05` (`32-flank-dev.log`, m 1, z 8). W 9x1x8 joined the flank rows for that reason: it is the row the bar is set from.
+
 ### Seen red once (Phase 32)
 
 Each deliberate break is run red once and reverted; the first failure line is copied from the kept log named in the row. Later plans append rows.

@@ -12,9 +12,13 @@ ROOT = Path(__file__).resolve().parents[4]
 sys.path[:0] = [str(ROOT / "src"), str(ROOT / "tests")]
 
 import shaft_oracle  # noqa: E402
+import test_shaft_model as kernel_tests  # noqa: E402
 from test_din5480 import GRID  # noqa: E402
 
 from spur import din5480  # noqa: E402
+from spur.shaft_calc import derive_shaft  # noqa: E402
+from spur.shaft_model import build_shaft  # noqa: E402
+from spur.shaft_params import ShaftParams  # noqa: E402
 
 
 def angle() -> None:
@@ -37,5 +41,33 @@ def angle() -> None:
           f"worst {worst:.3e} rad at {where}")
 
 
+def rows() -> None:
+    """Per building row of tests/test_shaft_model.py: volume error against the closed form,
+    the chamfer, tip and root read-backs, and for the flank rows the deviation per module."""
+    named: dict[str, ShaftParams] = {
+        "default": ShaftParams(),
+        **kernel_tests.SHANK_ROWS,
+        **kernel_tests.CHAMFER_ROWS,
+        **{k: v for k, v in kernel_tests.FLANK_ROWS.items() if k != "default"},
+    }
+    worst_volume = 0.0
+    worst_readback = 0.0
+    for name, p in named.items():
+        solid = build_shaft(p)
+        volume = kernel_tests._volume_error(solid, p)
+        chamfer = kernel_tests._chamfer_error(solid, p)
+        # Section height (c + Ls)/2 is the junction itself when c == Ls: no tip or root there.
+        applied = derive_shaft(p).end_chamfer_effective or 0.0
+        tip_root = kernel_tests._tip_and_root_error(solid, p) if applied < p.splined_length else 0.0
+        worst_volume = max(worst_volume, volume)
+        worst_readback = max(worst_readback, chamfer, tip_root)
+        flank = ""
+        if name in kernel_tests.FLANK_ROWS:
+            flank = f"  flank/m {kernel_tests._flank_error(solid, p) / p.module:.3e}"
+        print(f"{name:26s} volume {volume:.3e}  chamfer {chamfer:.3e}  tip/root {tip_root:.3e}"
+              f"{flank}")
+    print(f"WORST volume {worst_volume:.3e}  readback {worst_readback:.3e}")
+
+
 if __name__ == "__main__":
-    {"angle": angle}[sys.argv[1]]()
+    {"angle": angle, "rows": rows}[sys.argv[1]]()

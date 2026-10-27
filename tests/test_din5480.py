@@ -125,9 +125,9 @@ def test_the_basic_dims_order_root_below_pitch_below_tip(
 
 # Worst disagreement over GRID, nine radii from max(r_f, r_b) to r_a plus one below r_b where
 # r_b > r_f, din5480 against the oracle: 3.9e-16 rad (two roads to the same involute, so only
-# float noise separates them). 1e-14 is the smallest power of ten at least 10x it, and 2.6x
-# the 1e-9 above which the two roads would disagree for a real reason (investigation/
-# 32-03-tolerances.log).
+# float noise separates them). 1e-14 is the smallest power of ten at least 10x it, 26x the
+# worst; a disagreement above 1e-9 would be two roads that differ for a real reason
+# (investigation/32-03-tolerances.log).
 FLANK_ANGLE_ABS = 1e-14
 
 

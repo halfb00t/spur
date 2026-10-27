@@ -21,14 +21,22 @@ from spur.shaft_calc import derive_shaft
 from spur.shaft_model import build_shaft
 from spur.shaft_params import ShaftParams
 
-# Relative volume bar against the closed form: 15x over the 864-row worst of 6.5e-6
-# (32-RESEARCH) and 6x under the 6.0e-4 that a cone past the tooth height reads (32-negatives.log),
-# so a silent modelling error lands outside it.
+# Relative volume bar against the closed form. This file's worst row reads 1.47e-6 (W 14x2x6,
+# the spline's own approximation of the involute; 22 building rows, 32-03-tolerances.log), so
+# the bar is 68x over it; the 864-row sweep read 6.5e-6 (32-RESEARCH), 15x under the bar, and
+# a cone past the tooth height reads 6.0e-4 (32-negatives.log), 6x over it, so a silent
+# modelling error lands outside.
 VOLUME_REL = 1e-4
-# mm, applied chamfer and root and tip radii read back from the solid: measured 1.42e-13
-# chamfer, 5.7e-14 root and 1.0e-7 on the cone's bounding box, which carries a ~1e-7
-# tolerance (32-readback.log).
+# mm, applied chamfer and root and tip radii read back from the solid. This file's worst:
+# 1.0e-7 on the cone's bounding box, which carries a ~1e-7 tolerance, 2.8e-14 on the radii
+# (32-03-tolerances.log); the radial chamfer alone read 1.42e-13 (32-readback.log). 10x the
+# worst.
 READBACK_TOL = 1e-6
+# mm of flank deviation per mm of module. This file's worst row is W 9x1x8 at 4.35e-5 per
+# module, so 5e-4 is 11.5x it (the smallest of 1e-4, 2e-4, 5e-4, 1e-3 that is at least 10x).
+# 32-flank-dev.log read the same 4.35e-5 for m 1, z 8 and 2.58e-5 for m 10, z 9 on its own
+# rows (32-03-tolerances.log).
+FLANK_BAR_PER_MODULE = 5e-4
 
 
 def _closed_form(p: ShaftParams) -> float:
@@ -39,12 +47,24 @@ def _closed_form(p: ShaftParams) -> float:
         p.shank_d, p.shank_length)
 
 
+def _volume_error(solid: cq.Solid, p: ShaftParams) -> float:
+    return abs(solid.Volume() / _closed_form(p) - 1)
+
+
 def _check(p: ShaftParams) -> cq.Solid:
-    """Build, assert one valid solid whose volume is the closed form's within VOLUME_REL."""
+    """Build, assert one valid solid whose volume is the closed form's within VOLUME_REL,
+    and whose bounding box runs from the free end to the far end of the shank."""
     solid = build_shaft(p)
     assert len(solid.Solids()) == 1
     assert solid.isValid()
-    assert abs(solid.Volume() / _closed_form(p) - 1) <= VOLUME_REL
+    assert _volume_error(solid, p) <= VOLUME_REL
+    box = solid.BoundingBox()
+    widest = derive_shaft(p).tip_d / 2
+    if p.shank_length > 0:
+        widest = max(widest, p.shank_d / 2)
+    assert box.zmin == pytest.approx(0.0, abs=READBACK_TOL)
+    assert box.zmax == pytest.approx(p.splined_length + p.shank_length, abs=READBACK_TOL)
+    assert box.xmax == pytest.approx(widest, abs=READBACK_TOL)
     return solid
 
 
@@ -74,37 +94,70 @@ def _cone_tops(solid: cq.Solid) -> list[float]:
     return [f.BoundingBox().zmax for f in solid.Faces() if f.geomType() == "CONE"]
 
 
+def _chamfer_error(solid: cq.Solid, p: ShaftParams) -> float:
+    """How far the chamfer read off the solid is from the one derive_shaft prints, radially
+    and axially (D-06, L28). With none printed there is no CONE face and the end face
+    reaches the tip circle."""
+    dims = derive_shaft(p)
+    applied = dims.end_chamfer_effective or 0.0
+    error = abs(dims.tip_d / 2 - _end_face_radius(solid) - applied)
+    tops = _cone_tops(solid)
+    if applied > 0:
+        return max(error, abs(max(tops) - applied))
+    assert tops == []
+    return error
+
+
+def _tip_and_root_error(solid: cq.Solid, p: ShaftParams) -> float:
+    """The section between the cone and the shank against the printed tip and root radii."""
+    dims = derive_shaft(p)
+    smallest, largest = _section_radii(
+        solid, ((dims.end_chamfer_effective or 0.0) + p.splined_length) / 2)
+    return max(abs(smallest - dims.root_d / 2), abs(largest - dims.tip_d / 2))
+
+
+def _flank_error(solid: cq.Solid, p: ShaftParams) -> float:
+    """The worst distance in mm of the solid's flank from the oracle's involute.
+
+    Every BSPLINE edge of the section between the cone and the shank, at 201 positions: a
+    point's polar angle from the nearest tooth centre line against the oracle's half angle
+    at its radius, times the radius. 21 positions per edge read 5x less on W 14x2x6 (7.4e-6
+    per module against 3.9e-5): the spline's error peaks between its 16 interpolation points
+    and a sparse sample steps over the peak (investigation/32-03-tolerances.log).
+    """
+    dims = derive_shaft(p)
+    x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
+    pitch = 2 * math.pi / p.teeth
+    section = cq.Workplane("XY").add(solid).section(
+        ((dims.end_chamfer_effective or 0.0) + p.splined_length) / 2)
+    worst = 0.0
+    for edge in cast(cq.Shape, section.val()).Edges():
+        if edge.geomType() != "BSPLINE":
+            continue
+        for i in range(201):
+            v = edge.positionAt(i / 200)
+            r, theta = math.hypot(v.x, v.y), math.atan2(v.y, v.x)
+            off_centre = abs(theta - round(theta / pitch) * pitch)
+            worst = max(worst, r * abs(off_centre - shaft_oracle.tooth_half_angle(
+                p.module, p.teeth, x, r)))
+    return worst
+
+
 def test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume() -> None:
-    p = ShaftParams()
-    solid = _check(p)
-    box = solid.BoundingBox()
-    assert box.zmin == pytest.approx(0.0, abs=READBACK_TOL)
-    assert box.zmax == pytest.approx(p.splined_length + p.shank_length, abs=READBACK_TOL)
-    assert box.xmax == pytest.approx(max(derive_shaft(p).tip_d / 2, p.shank_d / 2),
-                                     abs=READBACK_TOL)
+    _check(ShaftParams())
 
 
 def test_the_default_shaft_reads_back_its_root_and_tip_from_a_section() -> None:
     """D-02: a z-section between the cone and the shank holds the printed tip and root."""
     p = ShaftParams()
-    dims = derive_shaft(p)
-    assert dims.end_chamfer_effective is not None
-    smallest, largest = _section_radii(
-        _check(p), (dims.end_chamfer_effective + p.splined_length) / 2)
-    assert smallest == pytest.approx(dims.root_d / 2, abs=READBACK_TOL)
-    assert largest == pytest.approx(dims.tip_d / 2, abs=READBACK_TOL)
+    assert _tip_and_root_error(_check(p), p) <= READBACK_TOL
 
 
 def test_the_default_shaft_reads_back_its_applied_chamfer() -> None:
     """D-06, L28: the chamfer printed is the one on the solid, radially and axially."""
     p = ShaftParams()
-    dims = derive_shaft(p)
-    assert dims.end_chamfer_effective is not None
-    solid = _check(p)
-    assert dims.tip_d / 2 - _end_face_radius(solid) == pytest.approx(
-        dims.end_chamfer_effective, abs=READBACK_TOL)
-    assert max(_cone_tops(solid)) == pytest.approx(dims.end_chamfer_effective,
-                                                   abs=READBACK_TOL)
+    assert derive_shaft(p).end_chamfer_effective == 1.0
+    assert _chamfer_error(_check(p), p) <= READBACK_TOL
 
 
 def test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice(
@@ -120,3 +173,87 @@ def test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice(
         build_shaft(ShaftParams())
     assert "modelling defect" in str(raised.value)
     assert "fillet" not in str(raised.value)
+
+
+# The default spline (tip_d 24.75, root_d 22.25) with each shank diameter the plan names:
+# equal to the tip, equal to the root, between them, a hair either side of the tip, one ulp
+# above it, below the root, the bound, above the tip (the default), and no shank at all.
+SHANK_ROWS: dict[str, ShaftParams] = {
+    "shank-eq-tip": ShaftParams(shank_d=24.75),
+    "shank-eq-root": ShaftParams(shank_d=22.25),
+    "shank-between": ShaftParams(shank_d=23.5),
+    "shank-tip-plus-1e-6": ShaftParams(shank_d=24.750001),
+    "shank-tip-plus-1e-3": ShaftParams(shank_d=24.751),
+    "shank-tip-minus-1e-9": ShaftParams(shank_d=24.749999999),
+    "shank-one-ulp-above-tip": ShaftParams(shank_d=math.nextafter(24.75, math.inf)),
+    "shank-below-root": ShaftParams(shank_d=20.0),
+    "shank-at-the-bound": ShaftParams(shank_d=850.0),
+    "shank-above-tip": ShaftParams(shank_d=25.0),
+    "no-shank": ShaftParams(shank_length=0.0),
+}
+
+# Each cap of the applied chamfer (D-05, D-06), and the two ways of asking for none.
+CHAMFER_ROWS: dict[str, ShaftParams] = {
+    "tooth-height-cap": ShaftParams(reference_d=10.0, module=0.5, teeth=18),
+    "length-cap-no-shank": ShaftParams(reference_d=70.0, module=3.0, teeth=22,
+                                       splined_length=2.0006, end_chamfer=5.0,
+                                       shank_length=0.0),
+    "length-cap-shank": ShaftParams(reference_d=70.0, module=3.0, teeth=22,
+                                    splined_length=2.0006, end_chamfer=5.0,
+                                    shank_length=20.0),
+    "both-caps-tie": ShaftParams(reference_d=70.0, module=3.0, teeth=22,
+                                 splined_length=3.0, end_chamfer=5.0),
+    "below-resolution": ShaftParams(end_chamfer=0.0004),
+    "none-asked": ShaftParams(end_chamfer=0.0),
+}
+ENDS_ON_ROOT = {"tooth-height-cap"}
+
+
+@pytest.mark.parametrize("p", SHANK_ROWS.values(), ids=SHANK_ROWS.keys())
+def test_every_shank_regime_builds_with_the_closed_form_volume(p: ShaftParams) -> None:
+    """D-07: a shank against the spline never changes whether the solid builds, including
+    the tangent cases the cleaning step broke (32-negatives2.log)."""
+    _check(p)
+
+
+@pytest.mark.parametrize("name", CHAMFER_ROWS, ids=CHAMFER_ROWS.keys())
+def test_every_chamfer_cap_builds_at_the_applied_size(name: str) -> None:
+    """D-05, D-06: at each cap the solid carries the size derive_shaft prints, with the
+    closed-form volume at that size; below the resolution it carries none."""
+    p = CHAMFER_ROWS[name]
+    solid = _check(p)
+    assert _chamfer_error(solid, p) <= READBACK_TOL
+    if name in ENDS_ON_ROOT:
+        assert _end_face_radius(solid) == pytest.approx(derive_shaft(p).root_d / 2,
+                                                        abs=READBACK_TOL)
+
+
+@pytest.mark.parametrize("p", [ShaftParams(reference_d=14.0, module=2.0, teeth=6),
+                               ShaftParams(reference_d=9.0, module=1.0, teeth=8)],
+                         ids=["W14x2x6", "W9x1x8"])
+def test_a_shaft_whose_base_circle_lies_above_the_root_builds(p: ShaftParams) -> None:
+    """The radial line below the base circle is built only here (D-01); the row proves the
+    base circle really is above the root, so it cannot silently lose the line."""
+    base_radius = p.module * p.teeth * math.cos(din5480.ALPHA) / 2
+    assert base_radius > derive_shaft(p).root_d / 2
+    _check(p)
+
+
+def test_an_82_tooth_shaft_builds_with_the_closed_form_volume() -> None:
+    _check(ShaftParams(reference_d=84.0, module=1.0, teeth=82))
+
+
+FLANK_ROWS: dict[str, ShaftParams] = {
+    "default": ShaftParams(),
+    "W14x2x6": ShaftParams(reference_d=14.0, module=2.0, teeth=6),
+    "W9x1x8": ShaftParams(reference_d=9.0, module=1.0, teeth=8),
+    "W105x10x9": ShaftParams(reference_d=105.0, module=10.0, teeth=9),
+    "W84x1x82": ShaftParams(reference_d=84.0, module=1.0, teeth=82),
+}
+
+
+@pytest.mark.parametrize("p", FLANK_ROWS.values(), ids=FLANK_ROWS.keys())
+def test_the_flanks_follow_the_involute_within_the_measured_bar(p: ShaftParams) -> None:
+    """A spline through 16 points is not the involute; this is how far off it lands, per
+    module, against the oracle's own involute."""
+    assert _flank_error(_check(p), p) <= FLANK_BAR_PER_MODULE * p.module
