@@ -398,10 +398,13 @@ def test_the_millimetre_floor_keeps_every_typed_decimal() -> None:
     above). Without the 1e-9, 2957 three-place decimals lose a step, first 1.001, 1.003,
     1.005. A result above its input is possible only for an input within 1e-9 below a
     lattice point and then by at most 1.03e-12 mm (32-02-overshoot.log, up to 500 mm)."""
-    assert all(floor_mm(float(f"{k / 1000:.3f}")) == float(f"{k / 1000:.3f}")
-               for k in range(500001))
-    assert not any(floor_mm(float(f"{k / 10000:.4f}")) > float(f"{k / 10000:.4f}")
-                   for k in range(500001))
+    # The first few offenders by name, so a failure says which decimal moved.
+    moved = [f"{k / 1000:.3f}" for k in range(500001)
+             if floor_mm(float(f"{k / 1000:.3f}")) != float(f"{k / 1000:.3f}")]
+    assert moved[:3] == []
+    above = [f"{k / 10000:.4f}" for k in range(500001)
+             if floor_mm(float(f"{k / 10000:.4f}")) > float(f"{k / 10000:.4f}")]
+    assert above[:3] == []
 
 
 @pytest.mark.parametrize("p", [
