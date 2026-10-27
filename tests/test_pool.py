@@ -35,6 +35,7 @@ from spur.app import ModelQuery, _gear, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
 from spur.params import GearParams
 from spur.pool import BuildPool
+from spur.shaft_params import ShaftParams
 
 
 @pytest.fixture(autouse=True)
@@ -690,6 +691,25 @@ def test_a_closed_pool_never_builds_a_replacement_worker() -> None:
 
         assert pool.executor_for(params) is executor
         assert pool.replaced == 0
+    finally:
+        # filterwarnings = error: an executor this test left running would be a failure
+        for each in pool._executors:
+            each.shutdown(wait=True)
+
+
+def test_a_real_worker_builds_and_exports_a_shaft() -> None:
+    """pool._warm imports spur.model, which imports shaft_model at module level, so a worker
+    is warm with the shaft code and pool.py needs no edit (32-RESEARCH Pitfall 11). Routing
+    is `hash(p) % workers` on a frozen model (A5), so one ShaftParams keeps one executor."""
+    pool = BuildPool(workers=2, timeout=30)
+    try:
+        data = asyncio.run(pool.export(ShaftParams(), "stl", "preview"))
+        n = int.from_bytes(data[80:84], "little")
+        assert n > 0
+        assert len(data) == 84 + 50 * n
+        executor = pool.executor_for(ShaftParams())
+        assert executor is pool.executor_for(ShaftParams())
+        assert executor.submit(os.getpid).result() != os.getpid()
     finally:
         # filterwarnings = error: an executor this test left running would be a failure
         for each in pool._executors:

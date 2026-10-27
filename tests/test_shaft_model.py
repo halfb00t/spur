@@ -20,6 +20,7 @@ from test_model import _closed_shell_volume, _stl_triangles
 from spur import din5480, model, shaft_model
 from spur.build_errors import BuildError
 from spur.model import Quality
+from spur.params import GearParams
 from spur.shaft_calc import ShaftDimensions, derive_shaft, floor_mm
 from spur.shaft_model import build_shaft
 from spur.shaft_params import ShaftParams
@@ -366,3 +367,44 @@ def test_the_shaft_stl_carries_its_chamfer_at_the_end_face(
     widest = max(math.hypot(v[0], v[1]) for tri in _stl_triangles(stl) for v in tri
                  if abs(v[2]) < 1e-6)
     assert widest == pytest.approx(expected, abs=MESH_VERTEX_TOL)
+
+
+def test_exporting_leaves_the_cached_shaft_solid_exact() -> None:
+    """L24, tests/test_model.py's shape: an export must not leave a mesh on the one cached
+    object, or a later bounding box reads wrong."""
+    p = ShaftParams()
+    solid = model.build(p)
+    model.export(p, "stl", "preview")
+    model.export(p, "stl", "fine")
+    model.export(p, "step")
+    assert model.build(p) is solid, "the test measures the cached object, not a rebuild"
+    assert solid.BoundingBox().zlen == pytest.approx(p.splined_length + p.shank_length)
+
+
+def test_a_gear_and_a_shaft_share_the_solid_cache_as_two_entries() -> None:
+    """The 4-entry bound (SPUR_SOLID_CACHE, L17) is shared by both parts; 32-05 measures
+    whether a shaft entry retains more than a 199-tooth gear's."""
+    model._build_cached.cache_clear()
+    gear, shaft = GearParams(), ShaftParams()
+    as_objects: tuple[object, object] = (gear, shaft)
+    assert as_objects[0] != as_objects[1]
+    built_gear, built_shaft = model.build(gear), model.build(shaft)
+    assert model._build_cached.cache_info().currsize == 2
+    assert model.build(gear) is built_gear
+    assert model.build(shaft) is built_shaft
+
+
+def test_a_shaft_kernel_failure_through_model_keeps_its_own_words(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The gear's wrapper blames the user's fillets and chamfers; a shaft reached through
+    model.build must keep shaft_model's own wording."""
+    def fail(*args: object, **kwargs: object) -> cq.Solid:
+        raise RuntimeError("kernel exploded")
+
+    monkeypatch.setattr(cq.Solid, "extrudeLinear", fail)
+    model._build_cached.cache_clear()
+    with pytest.raises(BuildError) as raised:
+        model.build(ShaftParams(splined_length=31.0))
+    assert "modelling defect" in str(raised.value)
+    assert "fillet" not in str(raised.value)

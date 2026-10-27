@@ -108,6 +108,13 @@ def test_only_model_may_import_the_shaft_solid() -> None:
     assert not any(found.values()), found
 
 
+def test_the_shaft_solid_never_imports_the_gear_doorway() -> None:
+    """model imports shaft_model statically, so the reverse edge is a cycle (32-RESEARCH
+    Anti-Patterns). A module-level cycle would also fail at import, a function-local one
+    would not; `_import_lines` reads both."""
+    assert _import_lines(_read("shaft_model"), ("model",)) == []
+
+
 def test_the_gear_maths_imports_no_shaft_module() -> None:
     """Belt for 'The gear maths does not know the shaft': gear numbers must not move
     because shaft code did (L46)."""
