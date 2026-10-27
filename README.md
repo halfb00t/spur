@@ -140,9 +140,14 @@ Interactive docs are at `/docs`.
 | `GET /api/info?…[&mate_teeth=N]` | Derived dimensions, measurement aids, warnings |
 | `GET /api/schema` | JSON schema of the parameters (the UI form is built from it); a field's `enabled_when` lists the `{field, op, value}` conditions under which it does anything, and a top-level `selectors` list describes the form's bore-shape select in the same vocabulary |
 | `GET /api/health` | Liveness |
+| `GET /api/shaft/model.stl?…&quality=preview\|fine` | Binary STL of a DIN 5480 splined shaft |
+| `GET /api/shaft/model.step?…` | STEP solid of the shaft |
+| `GET /api/shaft/info?…` | The shaft's derived dimensions and warnings |
+| `GET /api/shaft/schema` | JSON schema of the shaft's parameters, with its result rows in `dims` |
 
 ```sh
 curl -OJ 'http://localhost:8000/api/model.step?teeth=19&module=1.75&pressure_angle=25'
+curl -OJ 'http://localhost:8000/api/shaft/model.step?designation=W%2030x2x14x8f'  # a DIN 5480 designation in place of reference_d, module, teeth and fit
 ```
 
 Parameters that can't make a sound part — a bore wider than the root, teeth that come

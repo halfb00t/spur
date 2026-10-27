@@ -114,10 +114,11 @@ class ShaftParams(BaseModel):
     def slug(self) -> str:
         """The short, filename-safe name of the shaft, built from numbers only.
 
-        Called for the worker's temporary export file and the `slug` field of every
-        per-request record. Provisional until Phase 33 owns the download name (L40); no
-        cache is keyed by it (L40). The fit is left out: it is a user-typed string and the
-        solid does not depend on it.
+        Called for the worker's temporary export file, the `slug` field of every per-request
+        record and the `Content-Disposition` of every shaft download. This is the frozen name
+        of that download (L49, D-17): `spur_shaft_w25x1.25x18` for the default, changed only
+        by a logged decision. No cache is keyed by it (L40). The fit is left out: it is a
+        user-typed string and the solid does not depend on it.
         """
         return f"spur_shaft_w{self.reference_d:g}x{self.module:g}x{self.teeth}"
 

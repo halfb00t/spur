@@ -3360,3 +3360,31 @@ criterion 4 and REQ-wr02-fixed.
 
 **Reversibility:** costly. Accepting these tokens again turns refused links back into builds under a blank box; it needs another
 `Lxx` and moves the browser steps, the pins, `web-ui.md` and `http-api.md` together.
+
+**The shaft's API** (D-07..D-09, D-17; `src/spur/app.py`, `src/spur/shaft_params.py`; 33-04). Three routes, all under `/api/shaft/`:
+`GET /api/shaft/schema`, `GET /api/shaft/info` and `GET /api/shaft/model.{stl,step}`. The query keys are the eight `ShaftParams`
+fields plus `designation`, and `quality` on the model route; `/api/shaft/schema` takes none. The model route is the gear's through
+the same `_serve_model` (admission, `503 busy`, the byte cache, gzip, `build_error` as a `422`), unchanged. A shaft and a gear
+share one `BUILD_QUEUE`. The gear routes, their keys and the gear `/api/schema` bytes are unchanged (`make gear.unchanged`).
+The result rows ride the shaft's schema, in a top-level `dims` list of `{key, label, unit}`, one per `ShaftDimensions` key but
+`warnings`, in its order, because a second row table in `app.js` is forbidden by two pins and the gear schema's bytes are frozen;
+`tests/test_shaft_interfaces.py` keeps the rows complete against `ShaftDimensions`. The as-written rule above
+applies to all seven shaft number fields on `/api/shaft/info` and `/api/shaft/model.{fmt}`, by the same dependency
+(`number_as_written`).
+
+`designation` is a public query key and takes the place of `reference_d`, `module`, `teeth` and `fit`: `designation=W 30x2x14x8f`
+answers what `reference_d=30&module=2&teeth=14&fit=8f` answers, and both build one cache entry because each reduces to an equal
+`ShaftParams`. **Reversibility: one-way** (D-09, L05): a link carrying `designation` is a link someone keeps, so the key cannot be
+renamed or dropped once the page and the CLI publish it. A designation given beside any of the four spline fields is refused
+and never resolved in favour of either (D-07, L03): the check reads **key presence** before any value is parsed, so
+`designation=W 30x2x14x8f&teeth=abc` is the conflict and not a number error, and no equality question arises across `25`, `25.0`
+and `25,0`. The solid's fields, `splined_length`, `end_chamfer`, `shank_d` and `shank_length`, combine with a designation freely
+(D-08). The refusal is `422` with `loc` `["query", "designation"]`, type `conflict` and `ctx.fields` `["designation", <each
+present key in spline order>]`; one function, `designation_clash`, decides it for the API and the CLI. A designation the codec
+cannot read is a `422` of type `designation` at the same `loc` with the codec's own sentence naming the bad token; an infeasible
+one (`W 6x0.5x6x8f`) is a `422` there too, with the model's own type and sentence, and no designation a user can send is a `500`.
+The codec counts the length in code points and refuses beyond 64 before any pattern runs; its character classes are ASCII; a raw
+`+` in a query decodes to a space and is read as one, `%2B` is a refused `+`.
+
+The download is named by `ShaftParams.slug()` and the name is frozen (D-17): `spur_shaft_w25x1.25x18.stl` for the default shaft, the
+fit left out as before. L40's note that the shaft's name was provisional ends here.

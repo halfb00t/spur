@@ -16,6 +16,7 @@ from spur.build_errors import BuildError, BuildTimeout
 from spur.calc import HEX_CELL_CAP, DerivedDimensions
 from spur.model import Format, Quality, export
 from spur.params import GearParams
+from spur.shaft_params import ShaftParams
 
 client = TestClient(app)
 
@@ -1149,6 +1150,32 @@ def test_a_second_identical_download_is_served_from_the_byte_cache() -> None:
 
     assert first.status_code == second.status_code == 200
     assert first.content == second.content
+    assert calls == 1
+
+
+def test_a_designation_and_its_fields_share_one_cached_shaft() -> None:
+    """Both links reduce to an equal ShaftParams, so the second never reaches a worker (D-06)."""
+    from spur import app as app_module
+
+    calls = 0
+
+    async def counting_backend(p: ShaftParams, fmt: str, quality: str) -> bytes:
+        nonlocal calls
+        calls += 1
+        return export(p, cast(Format, fmt), cast(Quality, quality))
+
+    app_module.app.dependency_overrides[build_backend] = lambda: counting_backend
+    try:
+        by_designation = client.get("/api/shaft/model.stl",
+                                    params={"designation": "W 30x2x14x8f", "quality": "preview"})
+        by_fields = client.get("/api/shaft/model.stl",
+                               params={"reference_d": 30, "module": 2, "teeth": 14,
+                                       "quality": "preview"})
+    finally:
+        app_module.app.dependency_overrides[build_backend] = lambda: _inline_backend
+
+    assert by_designation.status_code == by_fields.status_code == 200
+    assert by_designation.content == by_fields.content
     assert calls == 1
 
 
