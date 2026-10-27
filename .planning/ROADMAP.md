@@ -427,13 +427,13 @@ second row table and quoted field names (`tests/test_api.py:176-180`, `:314-340`
 `app`/`fastapi`/`starlette` (L04); no new dependency. **Phase close**: `make verify` result line
 recorded and `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: No — standard patterns (research Phase 4).
-**Plans**: 9 plans, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
+**Plans**: 1/9 plans executed, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
 `checkpoint:decision` on the server rule, the browser token set and the fixing commit's place, and 33-02 cannot start
 until the human answers
 
 Plans:
 **Wave 1**
-- [ ] 33-01-PLAN.md — tracer: the phase-start `make verify` baseline and the number box probed in Chromium over every number field and `mate_teeth`, then `checkpoint:decision` (D-02's stop-and-ask)
+- [x] 33-01-PLAN.md — tracer: the phase-start `make verify` baseline and the number box probed in Chromium over every number field and `mate_teeth`, then `checkpoint:decision` (D-02's stop-and-ask)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 33-02-PLAN.md — the shaft kernel's open guards first (D-16): the applied chamfer read back off the end face, the one-solid guard pinned, `shank_d` dimmed without a shank (D-18); two debt items retired
@@ -549,5 +549,5 @@ comes from.
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
-| 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
+| 33. Interfaces and Parity | v0.7 | 1/9 | In Progress | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |

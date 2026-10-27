@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 33
 current_phase_name: Interfaces and Parity
-status: "Phase 32 shipped — PR #52"
-stopped_at: Phase 33 context gathered
-last_updated: "2026-10-27T15:17:33.181Z"
+status: executing
+stopped_at: Completed 33-01-PLAN.md
+last_updated: "2026-10-27T16:04:23.728Z"
 last_activity: 2026-10-27
-last_activity_desc: Phase 33 planning complete
-state_head: d30e625251d7f3aed04bd841df4841e236d00dc4
+last_activity_desc: Phase 33 execution started
+state_head: 78f8ec63519f9e8743e31dbc2be65b751d36c873
 progress:
   total_phases: 5
   completed_phases: 9
   total_plans: 26
-  completed_plans: 17
-  percent: 65
+  completed_plans: 18
+  percent: 69
 ---
 
 # Project State
@@ -30,10 +30,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 33 (Interfaces and Parity) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 32 shipped — PR #52
-Last activity: 2026-10-27 — Phase 33 planning complete
+Phase: 33 (Interfaces and Parity) — EXECUTING
+Plan: 2 of 9
+Status: Ready to execute
+Last activity: 2026-10-27 — Phase 33 execution started
 
 ## Performance Metrics
 
@@ -287,6 +287,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 32 P04 | 45 min | 3 tasks | 17 files |
 | Phase 32 P05 | 55 min | 3 tasks | 14 files |
 | Phase 32 P06 | 12 min | 3 tasks | 7 files |
+| Phase 33 P01 | 11 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -574,6 +575,9 @@ pending; the next milestone starts this list fresh.
 - [Phase 32]: 32-05: the Linux row is the linux/amd64 container emulated on the arm64 host; shaft-to-gear ratios within a run are the comparison, never Linux against macOS walls
 - [Phase 32]: 32-06: gate reading of record 2644 passed in 233.83 s (real 234.78 s, load 5.24 to 7.66), -17.32 s (-6.90 %) vs 32-01's 251.15 s, inside the ~8 % spread so no speed claim; 66.17 s under L43's 300 s bar — Same host, both readings from logs; REQ-gate-cost-recorded stays open until Phase 34's milestone reading. Two in-phase readings (32-04 358.81 s, 32-05 312.50 s) exceeded 300 s under load and are written down, not trimmed.
 - [Phase 32]: 32-06: L48 closes Phase 32 in the decision log (construction, forbidden routes, guards, doorway, bars, gate delta, handoffs to 33 and 34) — Cites the two L47 amendments instead of restating; heading reworded so the plan's case-sensitive verify matches.
+- [Phase 33]: 33-01 A1: server as-written rule = token != token.strip(), '_' anywhere, leading '+', trailing '.'; pinned as invariant over the committed Chromium table; non-finite/overflow tokens keep their bound's or pydantic's sentence; '' not covered by the rule — Probe over 37 inputs and 91 tokens: held-but-refused and blank-accepted-somewhere lists are both empty (picked by the human 2026-10-27)
+- [Phase 33]: 33-01 B1: browser proof = one #<field>=%2B<default> link per number field and mate_teeth (30 gear in 33-03, 7 shaft in 33-08); full 91-token table in the light test — Seconds of gate time against L43's 300s bar versus 85-140s for 925 links (picked by the human 2026-10-27)
+- [Phase 33]: 33-01 C1: WR-02 fixing commit is 33-03's in app.py before the part switch; refuse()/gearQuery() byte-identical through the phase, diffed against 6800769 in 33-09; L49 records the SC4 reading — 33-RESEARCH Pitfall 2: the switch needs no edit to either function (picked by the human 2026-10-27)
 
 ### Pending Todos
 
@@ -895,9 +899,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T13:25:18.312Z
-Stopped at: Phase 33 context gathered
-Resume file: .planning/phases/33-interfaces-and-parity/33-CONTEXT.md
+Last session: 2026-10-27T16:04:23.637Z
+Stopped at: Completed 33-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
