@@ -46,7 +46,7 @@
     {
       "number": "32",
       "name": "The Shaft Solid",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "33",
@@ -61,8 +61,8 @@
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 3 of 5 · 100% · ready to verify"
+    "label": "Advance to the next step (plan phase 33)",
+    "reason": "Phase 4 of 5 — needs a plan"
   },
-  "updated_at": "2026-10-27T11:11:11.413Z"
+  "updated_at": "2026-10-27T11:33:17.292Z"
 }
