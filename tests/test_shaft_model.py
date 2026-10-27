@@ -14,10 +14,11 @@ from typing import cast
 import cadquery as cq
 import pytest
 import shaft_oracle
+from test_din5480 import GRID
 
 from spur import din5480, shaft_model
 from spur.build_errors import BuildError
-from spur.shaft_calc import derive_shaft
+from spur.shaft_calc import ShaftDimensions, derive_shaft, floor_mm
 from spur.shaft_model import build_shaft
 from spur.shaft_params import ShaftParams
 
@@ -257,3 +258,61 @@ def test_the_flanks_follow_the_involute_within_the_measured_bar(p: ShaftParams) 
     """A spline through 16 points is not the involute; this is how far off it lands, per
     module, against the oracle's own involute."""
     assert _flank_error(_check(p), p) <= FLANK_BAR_PER_MODULE * p.module
+
+
+def _with_applied_chamfer(monkeypatch: pytest.MonkeyPatch, chamfer: float) -> None:
+    """Make shaft_model read `chamfer` as the applied end chamfer, whatever derive_shaft
+    would print: the only way to reach a size the 0.001 lattice never produces."""
+    real = derive_shaft
+
+    def forced(p: ShaftParams) -> ShaftDimensions:
+        return real(p).model_copy(update={"end_chamfer_effective": chamfer})
+
+    monkeypatch.setattr(shaft_model, "derive_shaft", forced)
+
+
+def test_a_cone_start_inside_the_root_band_is_refused_before_the_kernel_runs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cone start 3e-7 mm off the root circle hung the kernel for over 40 s, and the CLI has
+    no timeout (32-RESEARCH Pitfall 2). The offset here is 1e-5, which built in 0.65 s
+    (32-nearcap.log): a missing guard fails this test instead of hanging it."""
+    _with_applied_chamfer(monkeypatch, 1.25 - 1e-5)
+    outlines: list[tuple[float, int]] = []
+    real_outline = shaft_model._outline
+
+    def spy(m: float, z: int, xm: float, ra: float, rf: float) -> cq.Wire:
+        outlines.append((m, z))
+        return real_outline(m, z, xm, ra, rf)
+
+    monkeypatch.setattr(shaft_model, "_outline", spy)
+    with pytest.raises(BuildError, match="root circle"):
+        build_shaft(ShaftParams())
+    assert outlines == []
+
+
+def test_a_cone_past_the_tooth_height_is_refused_by_the_volume_bracket(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The cone is a valid solid at any size, so a size that eats the root core reads valid
+    with a wrong volume (32-RESEARCH Pitfall 5): 10 mm on a 1.25 mm tooth, offset -8.75 from
+    the root circle and so outside the band."""
+    _with_applied_chamfer(monkeypatch, 10.0)
+    with pytest.raises(BuildError, match="not the shape that was asked for"):
+        build_shaft(ShaftParams())
+
+
+def test_no_lattice_chamfer_reaches_the_root_band() -> None:
+    """The guard never fires on a size derive_shaft can print: every chamfer on the 0.001 mm
+    lattice, up to the tooth height, starts its cone on or a multiple of 0.0005 from the root
+    circle. No kernel runs here."""
+    for m, z, x in GRID:
+        p = ShaftParams(reference_d=shaft_oracle.reference_diameter(m, z, x), module=m, teeth=z)
+        dims = derive_shaft(p)
+        ra, rf = dims.tip_d / 2, dims.root_d / 2
+        steps = round(floor_mm((dims.tip_d - dims.root_d) / 2) * 1000)
+        assert steps >= 1
+        for k in range(1, steps + 1):
+            offset = abs(ra - k / 1000 - rf)
+            in_band = shaft_model.CONE_ROOT_BAND_LOW < offset < shaft_model.CONE_ROOT_BAND_HIGH
+            assert not in_band, (m, z, x, k)

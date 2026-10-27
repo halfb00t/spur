@@ -37,6 +37,24 @@ FLANK_POINTS = 16
 # mm, the repo's match tolerance: a copy, never model's, so shaft and gear stay uncoupled.
 TOL = 1e-6
 _SHAFT_DEFECT = "a modelling defect in spur, not a conflict in these parameters."
+# mm. A cone start 3e-7 mm from the root circle hung the kernel for over 40 s in both
+# operation orders (8.5 CPU-minutes and 2.1 GiB before it was killed), while about 70 other
+# offsets from 1e-8 to 1e-3 built in 0.6 s (32-nearcap.log, 32-windows-radial*.log). It is a
+# point, not a band, and 32-RESEARCH A3 says others may exist off the lattice, so the guard
+# refuses the whole band around it. On the 0.001 lattice, with tip_d/2 and root_d/2 on
+# 0.0005, the offset is 0 to float noise or a multiple of 0.0005 (32-01-floor-grid.log), so
+# derive_shaft never reaches the band; tests/test_shaft_model.py proves it over the grid.
+# The guard is a defect guard and not the pool's timeout because the CLI calls model.export
+# in-process with no timeout (cli.py), so nothing else ends a hang there.
+CONE_ROOT_BAND_LOW = 1e-9
+CONE_ROOT_BAND_HIGH = 1e-4
+# Relative slack on the volume bracket. The worst honest excursion outside it over the 22
+# building rows of tests/test_shaft_model.py is 4.5e-9, at the two uncut rows, where the
+# bracket has no width and it is the face area's own error (32-03-tolerances.log); every cut
+# row lands inside. 1e-4 is 22000x over it. The 3-face remnant that said isValid() read 4.1e-2
+# off (32-windows-axial.log), 410x over the slack; a cone past the tooth height reads 6.0e-4
+# or more off the capped form (32-negatives.log).
+VOLUME_BRACKET_SLACK = 1e-4
 
 
 def _polar(r: float, t: float) -> cq.Vector:
@@ -95,6 +113,37 @@ def _cone(ra: float, c: float, length: float, shank_length: float, shank_d: floa
     return cq.Solid.revolve(wire, [], 360, cq.Vector(0, 0, 0), cq.Vector(0, 0, 1))
 
 
+def _guard_cone_start(ra: float, rf: float, c: float) -> None:
+    """Refuse a chamfer whose cone starts within the band around the root circle, before any
+    kernel call: the kernel can hang there (see CONE_ROOT_BAND_LOW)."""
+    offset = abs(ra - c - rf)
+    if c > 0 and CONE_ROOT_BAND_LOW < offset < CONE_ROOT_BAND_HIGH:
+        raise BuildError(f"The end chamfer's cone would start {offset:.1e} mm from the root "
+                         f"circle, where the kernel can hang: {_SHAFT_DEFECT}")
+
+
+def _guard_volume(solid: cq.Solid, area: float, rf: float, c: float, length: float,
+                  shank_length: float, shank_d: float) -> None:
+    """Refuse a solid whose volume or length is not the shape that was asked for.
+
+    isValid() is True for a 3-face remnant 4 percent off and for a cone that ate the root
+    core, so the volume is bracketed from numbers the kernel did not produce here. The upper
+    bound is the uncut prism and shank, from the face's own area. The cone removes at most c
+    times the tooth area, because the disc of radius rf lies inside every cone section while
+    c is at most the tooth height; past it the cone eats the core and the volume leaves the
+    bracket (32-RESEARCH Pitfalls 3 and 5, L26).
+    """
+    upper = area * length + math.pi * (shank_d / 2) ** 2 * shank_length
+    lower = upper - c * (area - math.pi * rf ** 2)
+    volume = solid.Volume()
+    box = solid.BoundingBox()
+    if (not lower * (1 - VOLUME_BRACKET_SLACK) <= volume <= upper * (1 + VOLUME_BRACKET_SLACK)
+            or abs(box.zmax - box.zmin - (length + shank_length)) > TOL):
+        raise BuildError(f"The shaft solid is not the shape that was asked for (volume "
+                         f"{volume:.6g} mm^3 outside {lower:.6g} to {upper:.6g}): "
+                         f"{_SHAFT_DEFECT}")
+
+
 def build_shaft(p: ShaftParams) -> cq.Solid:
     """One valid solid for a validated shaft: the splined prism, the shank, the end chamfer.
 
@@ -115,8 +164,10 @@ def build_shaft(p: ShaftParams) -> cq.Solid:
     ra, rf = dims.tip_d / 2, dims.root_d / 2
     c = dims.end_chamfer_effective or 0.0
     xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+    _guard_cone_start(ra, rf, c)
     try:
         face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf))
+        area = face.Area()
         body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
         if p.shank_length > 0:
             shank = cq.Solid.makeCylinder(p.shank_d / 2, p.shank_length,
@@ -134,4 +185,5 @@ def build_shaft(p: ShaftParams) -> cq.Solid:
     solids = body.Solids()
     if len(solids) != 1 or not solids[0].isValid():
         raise BuildError(f"The shaft solid is not one valid solid: {_SHAFT_DEFECT}")
+    _guard_volume(solids[0], area, rf, c, p.splined_length, p.shank_length, p.shank_d)
     return solids[0]

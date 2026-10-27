@@ -11,13 +11,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 sys.path[:0] = [str(ROOT / "src"), str(ROOT / "tests")]
 
+import cadquery as cq  # noqa: E402
 import shaft_oracle  # noqa: E402
 import test_shaft_model as kernel_tests  # noqa: E402
 from test_din5480 import GRID  # noqa: E402
 
 from spur import din5480  # noqa: E402
 from spur.shaft_calc import derive_shaft  # noqa: E402
-from spur.shaft_model import build_shaft  # noqa: E402
+from spur.shaft_model import _outline, build_shaft  # noqa: E402
 from spur.shaft_params import ShaftParams  # noqa: E402
 
 
@@ -41,15 +42,40 @@ def angle() -> None:
           f"worst {worst:.3e} rad at {where}")
 
 
-def rows() -> None:
-    """Per building row of tests/test_shaft_model.py: volume error against the closed form,
-    the chamfer, tip and root read-backs, and for the flank rows the deviation per module."""
-    named: dict[str, ShaftParams] = {
+def named_rows() -> dict[str, ShaftParams]:
+    return {
         "default": ShaftParams(),
         **kernel_tests.SHANK_ROWS,
         **kernel_tests.CHAMFER_ROWS,
         **{k: v for k, v in kernel_tests.FLANK_ROWS.items() if k != "default"},
     }
+
+
+def bracket() -> None:
+    """The worst honest excursion of each building row's volume outside the guard's bracket
+    [lower, upper], relative to the bound it crossed; 0 when the volume lies inside."""
+    worst, where = 0.0, ""
+    for name, p in named_rows().items():
+        dims = derive_shaft(p)
+        ra, rf = dims.tip_d / 2, dims.root_d / 2
+        xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+        area = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf)).Area()
+        c = dims.end_chamfer_effective or 0.0
+        upper = area * p.splined_length + math.pi * (p.shank_d / 2) ** 2 * p.shank_length
+        lower = upper - c * (area - math.pi * rf**2)
+        volume = build_shaft(p).Volume()
+        excursion = max((lower - volume) / lower, (volume - upper) / upper, 0.0)
+        print(f"{name:26s} excursion {excursion:.3e}  (inside by {(volume - lower) / lower:.3e}"
+              f" of lower, {(upper - volume) / upper:.3e} of upper)")
+        if excursion > worst:
+            worst, where = excursion, name
+    print(f"WORST bracket excursion {worst:.3e} at {where or 'none (every row inside)'}")
+
+
+def rows() -> None:
+    """Per building row of tests/test_shaft_model.py: volume error against the closed form,
+    the chamfer, tip and root read-backs, and for the flank rows the deviation per module."""
+    named = named_rows()
     worst_volume = 0.0
     worst_readback = 0.0
     for name, p in named.items():
@@ -70,4 +96,4 @@ def rows() -> None:
 
 
 if __name__ == "__main__":
-    {"angle": angle, "rows": rows}[sys.argv[1]]()
+    {"angle": angle, "rows": rows, "bracket": bracket}[sys.argv[1]]()
