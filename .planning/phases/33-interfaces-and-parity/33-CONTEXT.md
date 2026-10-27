@@ -134,6 +134,33 @@ Not in this phase:
   Record it in the same new `Lxx` as D-01. `part=gear` is not a second spelling of the gear
   link (research §5).
 
+### Settled at plan-phase (2026-10-27, after 33-RESEARCH.md open questions)
+- **D-16:** **The volume-guard debt item is fixed first, inside this phase.**
+  `docs/tech_debt/active/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md` (must) is
+  the first code task: fix `_guard_volume` in `src/spur/shaft_model.py`, add a test in
+  `tests/test_shaft_model.py` seen red once, and retire the item in its own commit. This lands
+  before any `/api/shaft/model.*` route ships.
+- **D-17:** **`slug()` stays the download name, unchanged, and is frozen in the new `Lxx`.** The
+  fit stays out of the name. Parity compares the web `suggested_filename` and the API
+  `Content-Disposition` byte for byte, and the CLI through `ShaftParams(**cli_values).slug()`.
+  The CLI gets no default output filename.
+- **D-18:** **`shank_d` gets `enabled_when` (`when("shank_length", "gt", 0)`) only if the L41
+  proof is small.** The proof is one kernel test that builds two shafts differing only in
+  `shank_d` at `shank_length=0` and shows the solids are equal. If the proof is not small, defer
+  it and file an idea under `docs/ideas/`.
+- **D-19:** **The contention row runs as the last plan of the phase.**
+  `docs/tech_debt/active/2026-10-27-shaft-contention-row.md` is measured through the real
+  server: ten concurrent heaviest-shaft requests, as in L37. The result is recorded in
+  `bench/RESULTS.md`, and the item is retired.
+- **D-20:** **The bad-`part` state (D-15) ends only on the Gear/Shaft switch or on a new
+  `hashchange`.** A field edit or Reset in that state builds nothing.
+- **D-21:** **The parity test has two parts.** A step inside
+  `test_the_shipped_viewer_in_a_real_browser` covers the web against the API, so the gate pays
+  for no extra server. A fast non-browser parametrised test covers the API against the CLI, over
+  the same fixed set of shafts. The gate delta is measured either way (criterion 5).
+- **D-22:** **A `null` shaft number skips its row**, the same rule as the gear. The warnings list
+  explains why. This settles the null-row item under Claude's Discretion below.
+
 ### Claude's Discretion
 - How precisely the parity test compares numbers. Raw JSON from the API, the CLI's printed JSON
   and the web table's displayed digits will differ by formatting. The planner picks one rule
