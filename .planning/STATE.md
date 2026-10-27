@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 32
 current_phase_name: The Shaft Solid
 status: executing
-stopped_at: Completed 32-03-PLAN.md
-last_updated: "2026-10-27T10:18:37.338Z"
+stopped_at: Completed 32-04-PLAN.md
+last_updated: "2026-10-27T10:38:55.569Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 32 execution started
-state_head: cbabc66a88434d18078e6431a3ee7a5a6e10bcc0
+state_head: c7253455a9caabbdb5ea8327ed87069b8c63ffeb
 progress:
   total_phases: 5
   completed_phases: 8
   total_plans: 17
-  completed_plans: 14
-  percent: 82
+  completed_plans: 15
+  percent: 88
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 32 (The Shaft Solid) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 32 execution started
 
@@ -283,6 +283,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 32 P01 | 17 min | 2 tasks | 7 files |
 | Phase 32 P02 | 12 min | 3 tasks | 15 files |
 | Phase 32 P03 | 30 min | 3 tasks | 18 files |
+| Phase 32 P04 | 45 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -564,6 +565,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 32]: The flank deviation is sampled at 201 positions per spline edge, not 21: the sparse sample read 5x low (W 14x2x6: 7.4e-6 vs 3.985e-5 per module)
 - [Phase 32]: tests/test_shaft_model.py is a heavy test file: make verify.fast read 20.97 s with it against 12.8 s without, at load 23-30, above the 20.0 s rule
 - [Phase 32]: A cone start within 1e-9..1e-4 mm of the root circle is refused before the kernel runs, and a solid outside the volume bracket is a BuildError naming a modelling defect
+- [Phase 32]: 32-04: MESH_PREVIEW_REL = 6e-3 (human decision, Option A); measured preview worst -3.691e-3 on W 14x2x6 is 0.615 of the bar; fine 1e-3 and vertex 1e-4 kept
+- [Phase 32]: 32-04: Part widened in 4018de8 with the one ignored import edge spur.model -> spur.shaft_model; no further file named heavy (slice re-priced at 14.94 s)
 
 ### Pending Todos
 
@@ -879,8 +882,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T10:18:37.149Z
-Stopped at: Completed 32-03-PLAN.md
+Last session: 2026-10-27T10:38:55.469Z
+Stopped at: Completed 32-04-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
