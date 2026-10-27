@@ -1,0 +1,134 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [6 items]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-no-shank] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[below-resolution] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-shank] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[tooth-height-cap] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[both-caps-tie] 
+tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[none-asked] 
+[gw4] [ 16%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[below-resolution] 
+[gw5] [ 33%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[none-asked] 
+[gw1] [ 50%] FAILED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-no-shank] 
+[gw2] [ 66%] FAILED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-shank] 
+[gw0] [ 83%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[tooth-height-cap] 
+[gw3] [100%] PASSED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[both-caps-tie] 
+
+=================================== FAILURES ===================================
+____ test_every_chamfer_cap_builds_at_the_applied_size[length-cap-no-shank] ____
+[gw1] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+name = 'length-cap-no-shank'
+
+    @pytest.mark.parametrize("name", CHAMFER_ROWS, ids=CHAMFER_ROWS.keys())
+    def test_every_chamfer_cap_builds_at_the_applied_size(name: str) -> None:
+        """D-05, D-06: at each cap the solid carries the size derive_shaft prints, with the
+        closed-form volume at that size; below the resolution it carries none."""
+        p = CHAMFER_ROWS[name]
+>       solid = _check(p)
+                ^^^^^^^^^
+
+tests/test_shaft_model.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_shaft_model.py:58: in _check
+    solid = build_shaft(p)
+            ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=70.0, module=3.0, teeth=22, fit='8f', splined_length=2.0006, end_chamfer=5.0, shank_d=25.0, shank_length=0.0)
+
+    def build_shaft(p: ShaftParams) -> cq.Solid:
+        """One valid solid for a validated shaft: the splined prism, the shank, the end chamfer.
+    
+        The free end sits at z = 0, the shank behind the splined length. The order is fixed:
+        extrude, fuse the shank, intersect with the chamfer cone, and nothing cleans up after
+        the fuse.
+        - Fuse before intersect, because the reverse order returned a 3-face solid 4.1 percent
+          off at splined_length = c + 5e-7 with a shank (32-windows-axial.log).
+        - No cleaning step after the fuse, because it made shank_d == tip_d and shank_d ==
+          root_d invalid while the volume still agreed to 4e-9 (32-negatives2.log).
+        - No glue: it is 2x faster on the default but its semantics for a shank wider than the
+          tip are unproven (32-RESEARCH A1).
+        - No Solid.chamfer: it raised Standard_Failure for c >= 1.2 on the default
+          (32-negatives.log); the cone is one boolean with no edge selector to come back empty
+          (L26).
+        """
+        dims = derive_shaft(p)
+        ra, rf = dims.tip_d / 2, dims.root_d / 2
+        c = dims.end_chamfer_effective or 0.0
+        xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+        _guard_cone_start(ra, rf, c)
+        try:
+            face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf))
+            area = face.Area()
+            body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
+            if p.shank_length > 0:
+                shank = cq.Solid.makeCylinder(p.shank_d / 2, p.shank_length,
+                                              cq.Vector(0, 0, p.splined_length))
+                body = body.fuse(shank)
+            if c > 0:
+                body = body.intersect(_cone(ra, c, p.splined_length, p.shank_length, p.shank_d))
+        except BuildError:
+            raise
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+            # Never the gear's "try smaller fillets or chamfers": a shaft has no fillets, and
+            # the same parameters fail the same way, so retrying or trimming changes nothing.
+            raise BuildError(f"The shaft solid could not be built ({type(exc).__name__}): "
+                             f"{_SHAFT_DEFECT}") from exc
+        solids = body.Solids()
+        if len(solids) != 1 or not solids[0].isValid():
+>           raise BuildError(f"The shaft solid is not one valid solid: {_SHAFT_DEFECT}")
+E           spur.build_errors.BuildError: The shaft solid is not one valid solid: a modelling defect in spur, not a conflict in these parameters.
+
+src/spur/shaft_model.py:187: BuildError
+_____ test_every_chamfer_cap_builds_at_the_applied_size[length-cap-shank] ______
+[gw2] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+name = 'length-cap-shank'
+
+    @pytest.mark.parametrize("name", CHAMFER_ROWS, ids=CHAMFER_ROWS.keys())
+    def test_every_chamfer_cap_builds_at_the_applied_size(name: str) -> None:
+        """D-05, D-06: at each cap the solid carries the size derive_shaft prints, with the
+        closed-form volume at that size; below the resolution it carries none."""
+        p = CHAMFER_ROWS[name]
+>       solid = _check(p)
+                ^^^^^^^^^
+
+tests/test_shaft_model.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=70.0, module=3.0, teeth=22, fit='8f', splined_length=2.0006, end_chamfer=5.0, shank_d=25.0, shank_length=20.0)
+
+    def _check(p: ShaftParams) -> cq.Solid:
+        """Build, assert one valid solid whose volume is the closed form's within VOLUME_REL,
+        and whose bounding box runs from the free end to the far end of the shank."""
+        solid = build_shaft(p)
+        assert len(solid.Solids()) == 1
+        assert solid.isValid()
+        assert _volume_error(solid, p) <= VOLUME_REL
+        box = solid.BoundingBox()
+        widest = derive_shaft(p).tip_d / 2
+        if p.shank_length > 0:
+            widest = max(widest, p.shank_d / 2)
+        assert box.zmin == pytest.approx(0.0, abs=READBACK_TOL)
+        assert box.zmax == pytest.approx(p.splined_length + p.shank_length, abs=READBACK_TOL)
+>       assert box.xmax == pytest.approx(widest, abs=READBACK_TOL)
+E       assert 34.699600100000005 == 34.7 ± 1.0e-06
+E         
+E         comparison failed
+E         Obtained: 34.699600100000005
+E         Expected: 34.7 ± 1.0e-06
+
+tests/test_shaft_model.py:68: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-no-shank]
+FAILED tests/test_shaft_model.py::test_every_chamfer_cap_builds_at_the_applied_size[length-cap-shank]
+========================= 2 failed, 4 passed in 3.93s ==========================

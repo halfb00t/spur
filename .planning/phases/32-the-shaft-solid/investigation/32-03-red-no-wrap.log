@@ -1,0 +1,50 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [1 item]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice 
+[gw0] [100%] FAILED tests/test_shaft_model.py::test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice 
+
+=================================== FAILURES ===================================
+__ test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice ___
+[gw0] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x14302bb90>
+
+    def test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The gear's wrapper blames the user's fillets; a shaft has none (32-RESEARCH
+        Pitfall 7)."""
+        def fail(*args: object, **kwargs: object) -> cq.Solid:
+            raise RuntimeError("kernel exploded")
+    
+        monkeypatch.setattr(cq.Solid, "extrudeLinear", fail)
+        with pytest.raises(BuildError) as raised:
+>           build_shaft(ShaftParams())
+
+tests/test_shaft_model.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/shaft_model.py:171: in build_shaft
+    body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (<cadquery.occ_impl.shapes.Face object at 0x142f7b7a0>, Vector: (0.0, 0.0, 30.0))
+kwargs = {}
+
+    def fail(*args: object, **kwargs: object) -> cq.Solid:
+>       raise RuntimeError("kernel exploded")
+E       RuntimeError: kernel exploded
+
+tests/test_shaft_model.py:170: RuntimeError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice
+============================== 1 failed in 2.60s ===============================

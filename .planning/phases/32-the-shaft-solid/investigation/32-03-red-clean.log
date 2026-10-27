@@ -1,0 +1,297 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/half/git/halfb00t/spur/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+created: 8/8 workers
+8 workers [11 items]
+
+scheduling tests via LoadScheduling
+
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-root] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-plus-1e-3] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-plus-1e-6] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-below-root] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-tip] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-between] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-one-ulp-above-tip] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-minus-1e-9] 
+[gw1] [  9%] FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-root] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-above-tip] 
+[gw0] [ 18%] FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-tip] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-at-the-bound] 
+[gw5] [ 27%] FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-minus-1e-9] 
+[gw6] [ 36%] FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-one-ulp-above-tip] 
+[gw7] [ 45%] PASSED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-below-root] 
+[gw4] [ 54%] PASSED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-plus-1e-3] 
+[gw2] [ 63%] PASSED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-between] 
+tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[no-shank] 
+[gw3] [ 72%] PASSED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-plus-1e-6] 
+[gw1] [ 81%] PASSED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-above-tip] 
+[gw0] [ 90%] PASSED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-at-the-bound] 
+[gw2] [100%] PASSED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[no-shank] 
+
+=================================== FAILURES ===================================
+__ test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-root] ___
+[gw1] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=22.25, shank_length=20.0)
+
+    @pytest.mark.parametrize("p", SHANK_ROWS.values(), ids=SHANK_ROWS.keys())
+    def test_every_shank_regime_builds_with_the_closed_form_volume(p: ShaftParams) -> None:
+        """D-07: a shank against the spline never changes whether the solid builds, including
+        the tangent cases the cleaning step broke (32-negatives2.log)."""
+>       _check(p)
+
+tests/test_shaft_model.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_shaft_model.py:58: in _check
+    solid = build_shaft(p)
+            ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=22.25, shank_length=20.0)
+
+    def build_shaft(p: ShaftParams) -> cq.Solid:
+        """One valid solid for a validated shaft: the splined prism, the shank, the end chamfer.
+    
+        The free end sits at z = 0, the shank behind the splined length. The order is fixed:
+        extrude, fuse the shank, intersect with the chamfer cone, and nothing cleans up after
+        the fuse.
+        - Fuse before intersect, because the reverse order returned a 3-face solid 4.1 percent
+          off at splined_length = c + 5e-7 with a shank (32-windows-axial.log).
+        - No cleaning step after the fuse, because it made shank_d == tip_d and shank_d ==
+          root_d invalid while the volume still agreed to 4e-9 (32-negatives2.log).
+        - No glue: it is 2x faster on the default but its semantics for a shank wider than the
+          tip are unproven (32-RESEARCH A1).
+        - No Solid.chamfer: it raised Standard_Failure for c >= 1.2 on the default
+          (32-negatives.log); the cone is one boolean with no edge selector to come back empty
+          (L26).
+        """
+        dims = derive_shaft(p)
+        ra, rf = dims.tip_d / 2, dims.root_d / 2
+        c = dims.end_chamfer_effective or 0.0
+        xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+        _guard_cone_start(ra, rf, c)
+        try:
+            face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf))
+            area = face.Area()
+            body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
+            if p.shank_length > 0:
+                shank = cq.Solid.makeCylinder(p.shank_d / 2, p.shank_length,
+                                              cq.Vector(0, 0, p.splined_length))
+                body = body.fuse(shank).clean()
+            if c > 0:
+                body = body.intersect(_cone(ra, c, p.splined_length, p.shank_length, p.shank_d))
+        except BuildError:
+            raise
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+            # Never the gear's "try smaller fillets or chamfers": a shaft has no fillets, and
+            # the same parameters fail the same way, so retrying or trimming changes nothing.
+            raise BuildError(f"The shaft solid could not be built ({type(exc).__name__}): "
+                             f"{_SHAFT_DEFECT}") from exc
+        solids = body.Solids()
+        if len(solids) != 1 or not solids[0].isValid():
+>           raise BuildError(f"The shaft solid is not one valid solid: {_SHAFT_DEFECT}")
+E           spur.build_errors.BuildError: The shaft solid is not one valid solid: a modelling defect in spur, not a conflict in these parameters.
+
+src/spur/shaft_model.py:187: BuildError
+___ test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-tip] ___
+[gw0] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=24.75, shank_length=20.0)
+
+    @pytest.mark.parametrize("p", SHANK_ROWS.values(), ids=SHANK_ROWS.keys())
+    def test_every_shank_regime_builds_with_the_closed_form_volume(p: ShaftParams) -> None:
+        """D-07: a shank against the spline never changes whether the solid builds, including
+        the tangent cases the cleaning step broke (32-negatives2.log)."""
+>       _check(p)
+
+tests/test_shaft_model.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_shaft_model.py:58: in _check
+    solid = build_shaft(p)
+            ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=24.75, shank_length=20.0)
+
+    def build_shaft(p: ShaftParams) -> cq.Solid:
+        """One valid solid for a validated shaft: the splined prism, the shank, the end chamfer.
+    
+        The free end sits at z = 0, the shank behind the splined length. The order is fixed:
+        extrude, fuse the shank, intersect with the chamfer cone, and nothing cleans up after
+        the fuse.
+        - Fuse before intersect, because the reverse order returned a 3-face solid 4.1 percent
+          off at splined_length = c + 5e-7 with a shank (32-windows-axial.log).
+        - No cleaning step after the fuse, because it made shank_d == tip_d and shank_d ==
+          root_d invalid while the volume still agreed to 4e-9 (32-negatives2.log).
+        - No glue: it is 2x faster on the default but its semantics for a shank wider than the
+          tip are unproven (32-RESEARCH A1).
+        - No Solid.chamfer: it raised Standard_Failure for c >= 1.2 on the default
+          (32-negatives.log); the cone is one boolean with no edge selector to come back empty
+          (L26).
+        """
+        dims = derive_shaft(p)
+        ra, rf = dims.tip_d / 2, dims.root_d / 2
+        c = dims.end_chamfer_effective or 0.0
+        xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+        _guard_cone_start(ra, rf, c)
+        try:
+            face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf))
+            area = face.Area()
+            body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
+            if p.shank_length > 0:
+                shank = cq.Solid.makeCylinder(p.shank_d / 2, p.shank_length,
+                                              cq.Vector(0, 0, p.splined_length))
+                body = body.fuse(shank).clean()
+            if c > 0:
+                body = body.intersect(_cone(ra, c, p.splined_length, p.shank_length, p.shank_d))
+        except BuildError:
+            raise
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+            # Never the gear's "try smaller fillets or chamfers": a shaft has no fillets, and
+            # the same parameters fail the same way, so retrying or trimming changes nothing.
+            raise BuildError(f"The shaft solid could not be built ({type(exc).__name__}): "
+                             f"{_SHAFT_DEFECT}") from exc
+        solids = body.Solids()
+        if len(solids) != 1 or not solids[0].isValid():
+>           raise BuildError(f"The shaft solid is not one valid solid: {_SHAFT_DEFECT}")
+E           spur.build_errors.BuildError: The shaft solid is not one valid solid: a modelling defect in spur, not a conflict in these parameters.
+
+src/spur/shaft_model.py:187: BuildError
+_ test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-minus-1e-9] _
+[gw5] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=24.749999999, shank_length=20.0)
+
+    @pytest.mark.parametrize("p", SHANK_ROWS.values(), ids=SHANK_ROWS.keys())
+    def test_every_shank_regime_builds_with_the_closed_form_volume(p: ShaftParams) -> None:
+        """D-07: a shank against the spline never changes whether the solid builds, including
+        the tangent cases the cleaning step broke (32-negatives2.log)."""
+>       _check(p)
+
+tests/test_shaft_model.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_shaft_model.py:58: in _check
+    solid = build_shaft(p)
+            ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=24.749999999, shank_length=20.0)
+
+    def build_shaft(p: ShaftParams) -> cq.Solid:
+        """One valid solid for a validated shaft: the splined prism, the shank, the end chamfer.
+    
+        The free end sits at z = 0, the shank behind the splined length. The order is fixed:
+        extrude, fuse the shank, intersect with the chamfer cone, and nothing cleans up after
+        the fuse.
+        - Fuse before intersect, because the reverse order returned a 3-face solid 4.1 percent
+          off at splined_length = c + 5e-7 with a shank (32-windows-axial.log).
+        - No cleaning step after the fuse, because it made shank_d == tip_d and shank_d ==
+          root_d invalid while the volume still agreed to 4e-9 (32-negatives2.log).
+        - No glue: it is 2x faster on the default but its semantics for a shank wider than the
+          tip are unproven (32-RESEARCH A1).
+        - No Solid.chamfer: it raised Standard_Failure for c >= 1.2 on the default
+          (32-negatives.log); the cone is one boolean with no edge selector to come back empty
+          (L26).
+        """
+        dims = derive_shaft(p)
+        ra, rf = dims.tip_d / 2, dims.root_d / 2
+        c = dims.end_chamfer_effective or 0.0
+        xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+        _guard_cone_start(ra, rf, c)
+        try:
+            face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf))
+            area = face.Area()
+            body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
+            if p.shank_length > 0:
+                shank = cq.Solid.makeCylinder(p.shank_d / 2, p.shank_length,
+                                              cq.Vector(0, 0, p.splined_length))
+                body = body.fuse(shank).clean()
+            if c > 0:
+                body = body.intersect(_cone(ra, c, p.splined_length, p.shank_length, p.shank_d))
+        except BuildError:
+            raise
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+            # Never the gear's "try smaller fillets or chamfers": a shaft has no fillets, and
+            # the same parameters fail the same way, so retrying or trimming changes nothing.
+            raise BuildError(f"The shaft solid could not be built ({type(exc).__name__}): "
+                             f"{_SHAFT_DEFECT}") from exc
+        solids = body.Solids()
+        if len(solids) != 1 or not solids[0].isValid():
+>           raise BuildError(f"The shaft solid is not one valid solid: {_SHAFT_DEFECT}")
+E           spur.build_errors.BuildError: The shaft solid is not one valid solid: a modelling defect in spur, not a conflict in these parameters.
+
+src/spur/shaft_model.py:187: BuildError
+_ test_every_shank_regime_builds_with_the_closed_form_volume[shank-one-ulp-above-tip] _
+[gw6] darwin -- Python 3.12.15 /Users/half/git/halfb00t/spur/.venv/bin/python
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=24.750000000000004, shank_length=20.0)
+
+    @pytest.mark.parametrize("p", SHANK_ROWS.values(), ids=SHANK_ROWS.keys())
+    def test_every_shank_regime_builds_with_the_closed_form_volume(p: ShaftParams) -> None:
+        """D-07: a shank against the spline never changes whether the solid builds, including
+        the tangent cases the cleaning step broke (32-negatives2.log)."""
+>       _check(p)
+
+tests/test_shaft_model.py:217: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_shaft_model.py:58: in _check
+    solid = build_shaft(p)
+            ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=24.750000000000004, shank_length=20.0)
+
+    def build_shaft(p: ShaftParams) -> cq.Solid:
+        """One valid solid for a validated shaft: the splined prism, the shank, the end chamfer.
+    
+        The free end sits at z = 0, the shank behind the splined length. The order is fixed:
+        extrude, fuse the shank, intersect with the chamfer cone, and nothing cleans up after
+        the fuse.
+        - Fuse before intersect, because the reverse order returned a 3-face solid 4.1 percent
+          off at splined_length = c + 5e-7 with a shank (32-windows-axial.log).
+        - No cleaning step after the fuse, because it made shank_d == tip_d and shank_d ==
+          root_d invalid while the volume still agreed to 4e-9 (32-negatives2.log).
+        - No glue: it is 2x faster on the default but its semantics for a shank wider than the
+          tip are unproven (32-RESEARCH A1).
+        - No Solid.chamfer: it raised Standard_Failure for c >= 1.2 on the default
+          (32-negatives.log); the cone is one boolean with no edge selector to come back empty
+          (L26).
+        """
+        dims = derive_shaft(p)
+        ra, rf = dims.tip_d / 2, dims.root_d / 2
+        c = dims.end_chamfer_effective or 0.0
+        xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+        _guard_cone_start(ra, rf, c)
+        try:
+            face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf))
+            area = face.Area()
+            body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
+            if p.shank_length > 0:
+                shank = cq.Solid.makeCylinder(p.shank_d / 2, p.shank_length,
+                                              cq.Vector(0, 0, p.splined_length))
+                body = body.fuse(shank).clean()
+            if c > 0:
+                body = body.intersect(_cone(ra, c, p.splined_length, p.shank_length, p.shank_d))
+        except BuildError:
+            raise
+        except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
+            # Never the gear's "try smaller fillets or chamfers": a shaft has no fillets, and
+            # the same parameters fail the same way, so retrying or trimming changes nothing.
+            raise BuildError(f"The shaft solid could not be built ({type(exc).__name__}): "
+                             f"{_SHAFT_DEFECT}") from exc
+        solids = body.Solids()
+        if len(solids) != 1 or not solids[0].isValid():
+>           raise BuildError(f"The shaft solid is not one valid solid: {_SHAFT_DEFECT}")
+E           spur.build_errors.BuildError: The shaft solid is not one valid solid: a modelling defect in spur, not a conflict in these parameters.
+
+src/spur/shaft_model.py:187: BuildError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-root]
+FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-eq-tip]
+FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-tip-minus-1e-9]
+FAILED tests/test_shaft_model.py::test_every_shank_regime_builds_with_the_closed_form_volume[shank-one-ulp-above-tip]
+========================= 4 failed, 7 passed in 5.15s ==========================
