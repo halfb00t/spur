@@ -4,12 +4,11 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 33
 current_phase_name: Interfaces and Parity
-status: planning
+status: "Phase 32 shipped — PR #52"
 stopped_at: Phase 32 complete, ready to plan Phase 33
-last_updated: "2026-10-27T11:33:17.280Z"
+last_updated: "2026-10-27T12:37:22.777Z"
 last_activity: 2026-10-27
-last_activity_desc: Phase 32 complete, transitioned to Phase 33
-state_head: 7f8f812989f97a3f55535545619e23a122756d53
+state_head: 2d3368818668d03b1763beb12269bf7e06b1a9af
 progress:
   total_phases: 5
   completed_phases: 9
@@ -32,8 +31,8 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 Phase: 33 — Interfaces and Parity
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-27 — Phase 32 complete, transitioned to Phase 33
+Status: Phase 32 shipped — PR #52
+Last activity: 2026-10-27
 
 ## Performance Metrics
 
