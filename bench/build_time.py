@@ -172,7 +172,8 @@ def _vmrss_bytes(status: str) -> int | None:
 def _run_child(sweep: Path, index: int) -> int:
     """`--child-row i`: time row `i` of `sweep` in this fresh process, then print one JSON
     line holding the times, the STL size, this process's own peak RSS and, where Linux
-    offers it, the resident memory after the build. Nothing else goes to stdout."""
+    offers it, the resident memory at the end (after the build and both exports, the solid
+    still cached). Nothing else goes to stdout."""
     _, p = load_sweep(sweep)[index]
     build_s, stl_s, step_s, stl_bytes, stl_triangles = time_set(p)
     peak = maxrss_bytes(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,

@@ -7079,6 +7079,90 @@ Re-check after 32-04: `tests/test_shaft_model.py` stayed in the ignore list and 
 
 Outcome: the slowest reading is 14.94 s, at or under the 20.0 s rule, so no further file is named heavy and no Makefile or `tests/test_hooks.py` change is made. The slice is 2194 tests against 2192 before this plan (the two new fast tests; `tests/test_pool.py` was already ignored). `tests/test_shaft_model.py` stays heavy as 32-03 decided: those readings were taken with the file in the slice, and this plan only added to it.
 
+### The heaviest shaft (32-05)
+
+Source logs: `32-05-sweep-macos.log` and `32-05-sweep-linux.log` (whole outputs, with the host load read by `sysctl -n vm.loadavg` before and after), under `.planning/phases/32-the-shaft-solid/investigation/`; sweep `bench/sweeps/shaft.json` (nine shaft rows and the 199-tooth gear `{"teeth": 199}`, the top of L17's 160-199 corpus, as the last row). Command, both hosts: `python -m bench.build_time bench/sweeps/shaft.json --fresh`, each row in its own child process in file order, so every peak RSS is that row's own (`ru_maxrss`, bytes on macOS and KiB on Linux, through `bench.maxrss_bytes`). The tables are copied from the logs, not re-rounded. Every figure is through the shipped `spur.model` code of HEAD `c8608ba`; none is carried over from the research spike. Single-build rows only (32-01 choice D1): the pool-level contention row is not measured here and stays filed as `docs/tech_debt/active/2026-10-27-shaft-contention-row.md`.
+
+The **Resident after build** column is read from `/proc/self/status` `VmRSS` at the end of the child, after the build and both exports (an export releases the kernel's arenas, `model._release_arenas`), with the solid still held by the 4-entry cache. It is `-` on macOS, which has no current-RSS reading in the standard library. Triangle and byte counts differ between the hosts for the same row (the default shaft is 5662 triangles on macOS and 5728 on Linux): the two kernels' tessellations are not byte-identical, so each host's STL size is read on its own table and never mixed.
+
+#### macOS (the dev host)
+
+Command run from the repo root with `.venv/bin/python`. One run: the 1-minute load at start was `6.46`, under the 10 that would have called for a second run, and `7.63` after (`{ 7.63 11.76 14.76 }`).
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `c8608ba`
+- Sweep: `bench/sweeps/shaft.json`
+- Load averages at start: 6.46, 12.06, 14.99
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles | Peak RSS (MiB) | Resident after build (MiB) |
+|---|---|---|---|---|---|---|---|---|---|
+| part=shaft | 0.56 | 0.01 | 0.01 | 0.57 | yes | 283184 | 5662 | 590 | - |
+| part=shaft reference_d=70 module=10 teeth=6 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 0.70 | 0.05 | 0.01 | 0.75 | yes | 3326584 | 66530 | 558 | - |
+| part=shaft reference_d=84 module=1 teeth=82 splined_length=500 shank_d=84 shank_length=500 | 1.86 | 0.04 | 0.05 | 1.91 | yes | 1008884 | 20176 | 1062 | - |
+| part=shaft reference_d=42 module=0.5 teeth=82 splined_length=500 shank_length=500 | 1.58 | 0.04 | 0.05 | 1.63 | yes | 975284 | 19504 | 1066 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 1.98 | 0.05 | 0.05 | 2.03 | yes | 1683684 | 33672 | 1052 | - |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 2.18 | 0.04 | 0.05 | 2.23 | yes | 1667484 | 33348 | 1048 | - |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=808 shank_length=500 | 2.13 | 0.04 | 0.05 | 2.18 | yes | 1666384 | 33326 | 1052 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=1 end_chamfer=1 shank_length=0 | 2.18 | 0.04 | 0.05 | 2.23 | yes | 1058284 | 21164 | 972 | - |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=0 shank_length=0 | 0.11 | 0.04 | 0.05 | 0.16 | yes | 1043684 | 20872 | 537 | - |
+| teeth=199 | 1.33 | 0.81 | 0.28 | 2.13 | yes | 9062784 | 181254 | 1356 | - |
+
+#### Linux (`python:3.12-slim-bookworm`, requirements.txt closure)
+
+The container is **linux/amd64** (the shell exports `DOCKER_DEFAULT_PLATFORM=linux/amd64`, as `### make test-image (26-06)` records), so it runs emulated on this arm64 host: `uname -srm` reads `Linux 7.0.14-orbstack-00380-ga7e0a2dc9535 x86_64`, `/proc/cpuinfo` names `VirtualApple @ 2.50GHz`, and every wall below carries that cost. Docker server `29.4.0` (OrbStack), `ncpu=18`, `mem_total=16817168384` (15.66 GiB, no `--memory` cap on the container). Run `docker run --rm -v "$PWD":/src:ro -w /src -e PYTHONPATH=/src/src:/src -e PYTHONDONTWRITEBYTECODE=1 python:3.12-slim-bookworm sh -c '...'` with `apt-get install libgl1 libx11-6 libexpat1 git` and `pip install --no-deps -r requirements.txt` first. The `Load averages at start` line below is the container's own (the VM's, `0.28`, measured after the install); the host's 1-minute load was `6.67` before and `5.26` after.
+
+- Machine: 18 CPUs, x86_64, 15.7 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `c8608ba`
+- Sweep: `bench/sweeps/shaft.json`
+- Load averages at start: 0.28, 0.12, 0.04
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles | Peak RSS (MiB) | Resident after build (MiB) |
+|---|---|---|---|---|---|---|---|---|---|
+| part=shaft | 1.68 | 0.16 | 0.07 | 1.84 | yes | 286484 | 5728 | 878 | 797 |
+| part=shaft reference_d=70 module=10 teeth=6 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 1.37 | 0.33 | 0.06 | 1.71 | yes | 3342384 | 66846 | 813 | 760 |
+| part=shaft reference_d=84 module=1 teeth=82 splined_length=500 shank_d=84 shank_length=500 | 4.32 | 0.32 | 0.17 | 4.64 | yes | 1008884 | 20176 | 1309 | 853 |
+| part=shaft reference_d=42 module=0.5 teeth=82 splined_length=500 shank_length=500 | 3.68 | 0.34 | 0.16 | 4.02 | yes | 975284 | 19504 | 1248 | 797 |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=850 shank_length=500 | 4.36 | 0.37 | 0.18 | 4.72 | yes | 1687484 | 33748 | 1240 | 847 |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 4.75 | 0.32 | 0.18 | 5.06 | yes | 1671384 | 33426 | 1115 | 820 |
+| part=shaft reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=808 shank_length=500 | 4.74 | 0.35 | 0.19 | 5.09 | yes | 1670284 | 33404 | 1141 | 848 |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=1 end_chamfer=1 shank_length=0 | 5.11 | 0.33 | 0.19 | 5.44 | yes | 1058284 | 21164 | 1233 | 869 |
+| part=shaft reference_d=840 module=10 teeth=82 splined_length=500 end_chamfer=0 shank_length=0 | 0.32 | 0.19 | 0.19 | 0.51 | yes | 1049184 | 20982 | 781 | 764 |
+| teeth=199 | 3.70 | 2.74 | 0.79 | 6.44 | yes | 9062784 | 181254 | 1449 | 844 |
+
+#### Verdicts
+
+Rows named by their distinguishing fields; "gear" is the 199-tooth reference row of the same run.
+
+| Reading | macOS | Linux (amd64, emulated) |
+|---|---|---|
+| Heaviest shaft row, build + slower export | `shank_d=828` row (z 82 m 10, shank_d equal to tip_d), **2.23 s**; the `splined_length=1 end_chamfer=1 shank_length=0` row also prints 2.23 s | `splined_length=1 end_chamfer=1 shank_length=0` row, **5.44 s** |
+| Margin to `SPUR_BUILD_TIMEOUT` 30 s (L37) | 27.77 s, 13.5x | 24.56 s, 5.5x |
+| Rows over 30 s | none (`**NO**` appears in neither log) | none |
+| Gear row, build + slower export | 2.13 s | 6.44 s |
+| Highest shaft peak RSS | 1066 MiB (`reference_d=42 module=0.5 teeth=82` row) | 1309 MiB (`reference_d=84 module=1 teeth=82` row) |
+| Gear peak RSS, same run | 1356 MiB | 1449 MiB |
+| Ratio, highest shaft peak to gear peak | 0.786 | 0.903 |
+| Gear peak plus L17's recorded run-to-run variance (5 %) | 1423.8 MiB | 1521.45 MiB |
+| Resident after build, highest shaft (`splined_length=1 end_chamfer=1 shank_length=0`) against gear | not read | 869 MiB against 844 MiB, ratio 1.030 |
+| Largest shaft fine STL | 3326584 bytes, 66530 triangles (the z 6 m 10 maxima row) | 3342384 bytes, 66846 triangles (the same row) |
+| Gear fine STL, same run | 9062784 bytes, 181254 triangles | 9062784 bytes, 181254 triangles |
+| Ratio, largest shaft STL to gear STL | 0.367 | 0.369 |
+
+- The heaviest allowed shaft is inside L37's 30 s on both hosts, at 13.5x margin on macOS and 5.5x on the emulated Linux; the Linux gear row (6.44 s) is heavier than any shaft row.
+- Every shaft row's peak RSS is under the gear's in the same run, on both hosts, and the highest shaft is under the gear plus 5 % by a wide margin (1066 against 1423.8 MiB; 1309 against 1521.45 MiB).
+- The one reading above the gear's is the Linux resident memory after build: the heaviest shaft row holds 869 MiB against the gear's 844 MiB (ratio 1.030, inside the 5 % variance, so not read as a difference). Across the nine shaft rows the Linux resident spans 760 to 869 MiB, so one shaft entry in the 4-entry solid cache (shared with the gear, 32-04) holds about what a 199-tooth gear's does; no run here filled the cache, so the sum over four entries is not measured.
+- The largest shaft fine STL is 0.37 of the 9062784-byte STL L19's gzip level was measured on, so no allowed shaft body is larger than the one L19 priced.
+- Order of the load: a shaft's cost sits in the z 82 builds (about 1.6 to 2.2 s macOS, 3.7 to 5.1 s Linux), not in the z 6 m 10 row with every solid field at its maximum (0.70 s, 1.37 s); the prism-only row (no fuse, no cone) builds in 0.11 s and 0.32 s.
+- The `Heaviest` line of each log names the 199-tooth gear on Linux (6.44 s) because the gear row is in the table; the shaft verdicts above are read from the shaft rows.
+
+**D-09 outcome: confirmed, no bound moved.** No shaft row is over 30 s on either host and no shaft row's peak RSS is above the gear's in the same run, so no solid field was re-run at half its `le` and none was lowered. The four solid-field bounds stand at `splined_length` 500, `end_chamfer` 10, `shank_d` 850 and `shank_length` 500, each reached by a row of `bench/sweeps/shaft.json` (`tests/test_bench.py` pins that). The spline bounds (`reference_d`, `module`, `teeth`) were not moved (D-10).
+
 ### Seen red once (Phase 32)
 
 Each deliberate break is run red once and reverted; the first failure line is copied from the kept log named in the row. Later plans append rows.
