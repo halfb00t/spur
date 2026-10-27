@@ -3388,3 +3388,30 @@ The codec counts the length in code points and refuses beyond 64 before any patt
 
 The download is named by `ShaftParams.slug()` and the name is frozen (D-17): `spur_shaft_w25x1.25x18.stl` for the default shaft, the
 fit left out as before. L40's note that the shaft's name was provisional ends here.
+
+**The shaft's CLI** (D-17, REQ-shaft-cli, REQ-designation-input; `src/spur/cli.py`; 33-05). `spur shaft info` prints the JSON
+`/api/shaft/info` answers and `spur shaft export -o FILE` writes the STL or STEP, the format from the suffix or `--format`,
+`--quality` for the STL. The flags are generated from `ShaftParams.model_fields` under the help group `shaft parameters
+(defaults in brackets)`, spelled as the gear's are (`--reference-d`), plus `--designation`, which replaces `--reference-d`,
+`--module`, `--teeth` and `--fit`. The gear's group, its help and its commands are unchanged (`make gear.unchanged`). `-o` is
+required: the shaft has no default output name. `_shaft_params` calls `resolve_shaft`, the function the API's `_shaft` calls,
+and `designation_clash` / `clash_message` for the clash, so the two refuse the same requests with the same sentence. A refusal
+(a spline flag beside a designation, a designation the codec cannot read, an empty one, one the model refuses, a field out of
+bounds) is exit 2 with `error: designation: <sentence>` or `error: <field>: <message>` on stderr and no file; a `BuildError` is
+exit 1 as for the gear. The bytes are written after the build returns, so a refused or interrupted run leaves no partial file.
+`cli.py` still imports no `app`, `fastapi`, `starlette` or `shaft_model`: ten contracts kept. **Reversibility: one-way** for
+`--designation` (D-09: a command line someone keeps), reversible for the rest.
+
+**One shaft, three readers** (D-21, REQ-shaft-parity; `tests/shaft_parity.py`, `tests/test_shaft_parity.py`; 33-05). One fixed
+set of four shafts is read by the web (33-08), the API and the CLI: `default` (the empty link, profile shift 0.45, the range's
+upper edge), `w30x2x14` (-0.05, the lower edge), `odd-z` (W 26x1.25x19, no measurement over pins, so `measure_over_pins` is null)
+and `no-shank-no-chamfer` (`shank_length` 0, the minimum, and `end_chamfer_effective` null; its name equals the default's, the
+adjacency the name test pins). Two comparison rules, chosen by the planner and written beside the test. The API and the CLI are
+**raw-equal** as parsed JSON, in `ShaftDimensions` key order, nulls included, and the download name equals `ShaftParams.slug()`
+plus the suffix as ASCII strings: no tolerance, because both print the one model through one serialiser, so a difference of one
+ulp is a real one. The web is compared with the API at the **displayed text** only, through a Python port of `fmt()`
+(`displayed`), because the page rounds to three decimals; 33-08 checks the port against the browser. The comparison was seen red
+once: `cmd_shaft_info` made to print `tip_d` one ulp up (`math.nextafter`) failed all four shafts naming `tip_d`
+(`33-05-red-perturbed.log`, `bench/RESULTS.md` `### Seen red once (Phase 33)`), and was reverted; a durable self-test keeps
+`differences()` honest on a one-ulp change, a changed name and a changed order. The test isolates the export cache and the
+backend per test and runs under `-n 8` in `make verify.fast`.

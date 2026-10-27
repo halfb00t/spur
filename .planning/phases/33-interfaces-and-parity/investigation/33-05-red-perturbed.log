@@ -1,0 +1,87 @@
+FFFF.............                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_the_api_and_the_cli_print_one_shaft_document[default] __________
+
+name = 'default'
+capsys = <_pytest.capture.CaptureFixture object at 0x109faccb0>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+>       assert differences(from_cli, from_api) == []
+E       AssertionError: assert ['tip_d: 24.7...004 != 24.75'] == []
+E         
+E         Left contains one more item: 'tip_d: 24.750000000000004 != 24.75'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:63: AssertionError
+_________ test_the_api_and_the_cli_print_one_shaft_document[w30x2x14] __________
+
+name = 'w30x2x14'
+capsys = <_pytest.capture.CaptureFixture object at 0x109f24170>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+>       assert differences(from_cli, from_api) == []
+E       AssertionError: assert ['tip_d: 29.6...0005 != 29.6'] == []
+E         
+E         Left contains one more item: 'tip_d: 29.600000000000005 != 29.6'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:63: AssertionError
+___________ test_the_api_and_the_cli_print_one_shaft_document[odd-z] ___________
+
+name = 'odd-z', capsys = <_pytest.capture.CaptureFixture object at 0x109faf980>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+>       assert differences(from_cli, from_api) == []
+E       AssertionError: assert ['tip_d: 25.7...004 != 25.75'] == []
+E         
+E         Left contains one more item: 'tip_d: 25.750000000000004 != 25.75'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:63: AssertionError
+____ test_the_api_and_the_cli_print_one_shaft_document[no-shank-no-chamfer] ____
+
+name = 'no-shank-no-chamfer'
+capsys = <_pytest.capture.CaptureFixture object at 0x109fae120>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+>       assert differences(from_cli, from_api) == []
+E       AssertionError: assert ['tip_d: 24.7...004 != 24.75'] == []
+E         
+E         Left contains one more item: 'tip_d: 24.750000000000004 != 24.75'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:63: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[default]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[w30x2x14]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[odd-z]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[no-shank-no-chamfer]
+4 failed, 13 passed in 0.26s
