@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 32
 current_phase_name: The Shaft Solid
 status: executing
-stopped_at: Completed 32-04-PLAN.md
-last_updated: "2026-10-27T10:38:55.569Z"
+stopped_at: Completed 32-05-PLAN.md
+last_updated: "2026-10-27T10:59:11.202Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 32 execution started
-state_head: c7253455a9caabbdb5ea8327ed87069b8c63ffeb
+state_head: 74eafbbc96c97e7624d5f900a4c0d9d4d38f3a33
 progress:
   total_phases: 5
   completed_phases: 8
   total_plans: 17
-  completed_plans: 15
-  percent: 88
+  completed_plans: 16
+  percent: 94
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 32 (The Shaft Solid) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 32 execution started
 
@@ -284,6 +284,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 32 P02 | 12 min | 3 tasks | 15 files |
 | Phase 32 P03 | 30 min | 3 tasks | 18 files |
 | Phase 32 P04 | 45 min | 3 tasks | 17 files |
+| Phase 32 P05 | 55 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -567,6 +568,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 32]: A cone start within 1e-9..1e-4 mm of the root circle is refused before the kernel runs, and a solid outside the volume bracket is a BuildError naming a modelling defect
 - [Phase 32]: 32-04: MESH_PREVIEW_REL = 6e-3 (human decision, Option A); measured preview worst -3.691e-3 on W 14x2x6 is 0.615 of the bar; fine 1e-3 and vertex 1e-4 kept
 - [Phase 32]: 32-04: Part widened in 4018de8 with the one ignored import edge spur.model -> spur.shaft_model; no further file named heavy (slice re-priced at 14.94 s)
+- [Phase 32]: 32-05: D-09 confirmed, no bound moved: splined_length 500, end_chamfer 10, shank_d 850, shank_length 500 stand as swept (heaviest shaft 2.23 s macOS, 5.44 s Linux amd64 emulated, against 30 s; peak RSS under the gear's in the same run)
+- [Phase 32]: 32-05: the Linux row is the linux/amd64 container emulated on the arm64 host; shaft-to-gear ratios within a run are the comparison, never Linux against macOS walls
 
 ### Pending Todos
 
@@ -882,8 +885,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T10:38:55.469Z
-Stopped at: Completed 32-04-PLAN.md
+Last session: 2026-10-27T10:59:11.117Z
+Stopped at: Completed 32-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
