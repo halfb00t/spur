@@ -2,7 +2,7 @@
 
 Severity: nice
 Status: resolved
-Resolved in: test(shaft): pin the one-valid-solid guard and drop a dead re-raise (gsd/phase-33-interfaces-and-parity)
+Resolved in: 49021f5 test(shaft): pin the one-valid-solid guard and drop a dead re-raise (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-27
 Source: 32-06 `make verify` coverage table, `src/spur/shaft_model.py 77 2 16 1 96.77%` (`coverage report -m` names lines 179 and 187)
 Related files:
