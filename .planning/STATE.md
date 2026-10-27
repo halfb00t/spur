@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 33
 current_phase_name: Interfaces and Parity
 status: executing
-stopped_at: Completed 33-06-PLAN.md
-last_updated: "2026-10-27T17:22:08.932Z"
+stopped_at: Completed 33-07-PLAN.md
+last_updated: "2026-10-27T17:40:32.082Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 33 execution started
-state_head: 13884db0f3e9d49c854a914663f4610f22acd3ec
+state_head: d1f60e73b5ab0d77ffa8ccce1c1c35fa8f7a65ff
 progress:
   total_phases: 5
   completed_phases: 9
   total_plans: 26
-  completed_plans: 23
-  percent: 88
+  completed_plans: 24
+  percent: 92
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 33 (Interfaces and Parity) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 33 execution started
 
@@ -293,6 +293,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 33 P04 | 11 min | 3 tasks | 8 files |
 | Phase 33 P05 | 11 min | 3 tasks | 10 files |
 | Phase 33 P06 | 17 min | 2 tasks | 6 files |
+| Phase 33 P07 | 15 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -591,6 +592,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 33]: 33-05: a ValidationError under --designation prints at designation for the model's own refusal and a spline field, and at the solid field's own name for a bound on it, as the API's 422 does
 - [Phase 33]: 33-05: API = CLI is raw-equal as parsed JSON over the fixed four-shaft set (no tolerance); web = API is compared at the displayed text; seen red once on a one-ulp tip_d
 - [Phase 33]: 33-06: switchTo loads the new part's defaults into its fields itself (readHash would read the other part's hash); update() keeps the pinned mate line and gates the send with P.mate
+- [Phase 33]: 33-07: part starts empty and refuseLink rebuilds the gear form through buildForm, so one place clears the page; followHash bumps formSeq so a slower earlier build cannot land under the newest link
 
 ### Pending Todos
 
@@ -912,8 +914,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T17:22:08.788Z
-Stopped at: Completed 33-06-PLAN.md
+Last session: 2026-10-27T17:40:31.970Z
+Stopped at: Completed 33-07-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
