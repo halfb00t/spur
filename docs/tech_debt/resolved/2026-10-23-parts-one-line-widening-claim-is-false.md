@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: feat(model): build and export a shaft through the one kernel doorway (Part widens) (gsd/phase-32-the-shaft-solid)
+Resolved in: 4018de8 feat(model): build and export a shaft through the one kernel doorway (Part widens) (gsd/phase-32-the-shaft-solid)
 Date: 2026-10-23
 Source: Phase 30 code review, WR-03; confirmed by the Phase 30 verifier; docstring half corrected in Phase 31 (D-14)
 Related files:
