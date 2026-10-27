@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 33
 current_phase_name: Interfaces and Parity
 status: executing
-stopped_at: Completed 33-05-PLAN.md
-last_updated: "2026-10-27T17:04:22.562Z"
+stopped_at: Completed 33-06-PLAN.md
+last_updated: "2026-10-27T17:22:08.932Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 33 execution started
-state_head: 6e6ec80a686da65a126a78ccfeaaf1a18744ad19
+state_head: 13884db0f3e9d49c854a914663f4610f22acd3ec
 progress:
   total_phases: 5
   completed_phases: 9
   total_plans: 26
-  completed_plans: 22
-  percent: 85
+  completed_plans: 23
+  percent: 88
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 33 (Interfaces and Parity) — EXECUTING
-Plan: 6 of 9
+Plan: 7 of 9
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 33 execution started
 
@@ -292,6 +292,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 33 P03 | 14 min | 2 tasks | 13 files |
 | Phase 33 P04 | 11 min | 3 tasks | 8 files |
 | Phase 33 P05 | 11 min | 3 tasks | 10 files |
+| Phase 33 P06 | 17 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -589,6 +590,7 @@ pending; the next milestone starts this list fresh.
 - [Phase 33]: The shaft's result rows ride ShaftParams.model_json_schema() as dims, not a second row table in app.js — Two pins forbid a second table and the gear schema bytes are frozen; a light test keeps the rows complete against ShaftDimensions
 - [Phase 33]: 33-05: a ValidationError under --designation prints at designation for the model's own refusal and a spline field, and at the solid field's own name for a bound on it, as the API's 422 does
 - [Phase 33]: 33-05: API = CLI is raw-equal as parsed JSON over the fixed four-shaft set (no tolerance); web = API is compared at the displayed text; seen red once on a one-ulp tip_d
+- [Phase 33]: 33-06: switchTo loads the new part's defaults into its fields itself (readHash would read the other part's hash); update() keeps the pinned mate line and gates the send with P.mate
 
 ### Pending Todos
 
@@ -910,8 +912,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T17:04:22.419Z
-Stopped at: Completed 33-05-PLAN.md
+Last session: 2026-10-27T17:22:08.788Z
+Stopped at: Completed 33-06-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
