@@ -4,18 +4,18 @@ milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 32
 current_phase_name: The Shaft Solid
-status: "Phase 31 shipped — PR #51"
-stopped_at: Phase 32 context gathered
-last_updated: "2026-10-27T08:39:09.459Z"
+status: executing
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-10-27T09:41:35.670Z"
 last_activity: 2026-10-27
-last_activity_desc: Phase 32 planning complete
-state_head: d63fbc62b6030817209617a91323b5187ce272e4
+last_activity_desc: Phase 32 execution started
+state_head: a1a46e1e04570013348375d31fd3627b4edf1f1f
 progress:
   total_phases: 5
   completed_phases: 8
   total_plans: 17
-  completed_plans: 11
-  percent: 65
+  completed_plans: 12
+  percent: 71
 ---
 
 # Project State
@@ -30,10 +30,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 32 (The Shaft Solid) — READY TO EXECUTE
-Plan: Not started
-Status: Phase 31 shipped — PR #51
-Last activity: 2026-10-27 — Phase 32 planning complete
+Phase: 32 (The Shaft Solid) — EXECUTING
+Plan: 2 of 6
+Status: Ready to execute
+Last activity: 2026-10-27 — Phase 32 execution started
 
 ## Performance Metrics
 
@@ -280,6 +280,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 31 P04 | 12 min | 3 tasks | 14 files |
 | Phase 31 P05 | 10min | 2 tasks | 5 files |
 | Phase 31 P06 | 12 min | 3 tasks | 11 files |
+| Phase 32 P01 | 17 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -550,6 +551,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 31]: 31-05 checkpoint: PARTIAL PASS. DIN 5480-1:2006-03 (unofficial translation) holds no size tables; three W 120x3x38x8f rows approved (cl. 9.1 Fig. 6); anchor debt filed; odd-z M_Re stays unprinted; d_Ff checked as a limit
 - [Phase 31]: 31-06: no constant edited; the copy's checkpoint changed no printed number, so no D-09 entry; L47 closes Phase 31
 - [Phase 31]: 31-06: REQ-shaft-basic-dims left open (one basic-dimension anchor row, plan minimum two; partial pass accepted, debt filed); closed 2026-10-26 by four approved DIN 5480-2 rows
+- [Phase 32]: A1 floor to 0.001 mm with 1e-9 guard for end_chamfer_effective (request, tooth-height cap, splined-length cap, then minimum)
+- [Phase 32]: B1 end_chamfer_effective is the 13th ShaftDimensions key, after measure_over_pins before designation
+- [Phase 32]: C1 ShaftParams.slug stem spur_shaft_w{reference_d:g}x{module:g}x{teeth}, default spur_shaft_w25x1.25x18
+- [Phase 32]: D1 single-build shaft bench rows only in Phase 32; contention row filed as nice debt, trigger Phase 33 /api/shaft/model.{fmt}
 
 ### Pending Todos
 
@@ -865,9 +870,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T03:06:56.227Z
-Stopped at: Phase 32 context gathered
-Resume file: .planning/phases/32-the-shaft-solid/32-CONTEXT.md
+Last session: 2026-10-27T09:41:35.596Z
+Stopped at: Completed 32-01-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 

@@ -356,12 +356,12 @@ DIN proportions); the existing gear caches and pool are reused, not forked. **Ph
 .github/workflows/ci.yml` empty.
 **Research flag**: Yes — a kernel spike at real DIN proportions first (research Phase 3);
 build times so far were measured on placeholder proportions only.
-**Plans**: 6 plans, run one at a time (one shared working tree; deliberate red edits); 32-01 stops at the
+**Plans**: 1/6 plans executed, run one at a time (one shared working tree; deliberate red edits); 32-01 stops at the
 `checkpoint:decision` on the four open research choices and 32-02 cannot start until the human answers
 
 Plans:
 **Wave 1**
-- [ ] 32-01-PLAN.md — tracer: the phase-start `make verify` baseline and the floor-rule evidence, then `checkpoint:decision`: the rounding rule, the 13th key's position, the slug and the contention scope
+- [x] 32-01-PLAN.md — tracer: the phase-start `make verify` baseline and the floor-rule evidence, then `checkpoint:decision`: the rounding rule, the 13th key's position, the slug and the contention scope
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 32-02-PLAN.md — the applied end chamfer (`end_chamfer_effective`, floored, capped at tooth height and splined length, warned), the root-form and shank-step sentences, the help texts and `slug()`; L47 amendment; each seen red
@@ -517,6 +517,6 @@ comes from.
 | 26–29 | v0.6 | 22/22 (Phase 29 closed, trigger not fired) | Complete | 2026-10-23 |
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
-| 32. The Shaft Solid | v0.7 | 0/? | Not started | - |
+| 32. The Shaft Solid | v0.7 | 1/6 | In Progress | - |
 | 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |
