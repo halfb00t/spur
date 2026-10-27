@@ -162,6 +162,25 @@ def cmd_shaft_info(ns: argparse.Namespace) -> None:
     print(derive_shaft(_shaft_params(ns)).model_dump_json(indent=2))
 
 
+def cmd_shaft_export(ns: argparse.Namespace) -> None:
+    from .build_errors import BuildError
+    from .model import Format, export
+
+    out: Path = ns.output
+    fmt = ns.format or out.suffix.lower().lstrip(".").replace("stp", "step")
+    if fmt not in ("stl", "step"):
+        raise SystemExit("error: output must end in .stl or .step (or pass --format)")
+    p = _shaft_params(ns)
+    try:
+        data = export(p, cast("Format", fmt), ns.quality)   # the check above is the proof
+    except BuildError as exc:
+        raise SystemExit(f"error: {exc}") from None
+    out.write_bytes(data)   # only after the build returned: a refused run leaves no file
+    print(f"wrote {out} ({len(data) / 1024:.0f} KiB)", file=sys.stderr)
+    for warning in derive_shaft(p).warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> None:
     env = os.environ.get
     ap = argparse.ArgumentParser(prog="spur", description="Parametric involute spur gears.")
@@ -197,6 +216,14 @@ def main(argv: list[str] | None = None) -> None:
     si = shaft_sub.add_parser("info", help="print the shaft's derived dimensions as JSON")
     _add_shaft_args(si)
     si.set_defaults(func=cmd_shaft_info)
+
+    se = shaft_sub.add_parser("export", help="write the shaft as an STL or STEP file")
+    se.add_argument("-o", "--output", type=Path, required=True, help="file.stl or file.step")
+    se.add_argument("--format", choices=["stl", "step"], help="override the file extension")
+    se.add_argument("--quality", choices=["preview", "fine"], default="fine",
+                    help="STL tessellation [fine]")
+    _add_shaft_args(se)
+    se.set_defaults(func=cmd_shaft_export)
 
     ns = ap.parse_args(argv)
     ns.func(ns)

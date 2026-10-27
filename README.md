@@ -125,6 +125,9 @@ spur export -o spokes.stl --spoke-count 4 --spoke-width 2 --hub-d 12 --rim-wall 
 spur export -o honeycomb.stl --hex-cell 3 --hex-wall 1     # honeycomb web
 spur export -o everything.stl --bore-flat 0 --keyway-width 3 --keyway-depth 1.4 --spoke-count 4 --spoke-width 2 --hub-d 13.2 --rim-wall 1 --spoke-fillet 1 --tip-chamfer 0.4  # every v0.2 family on one gear
 spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
+spur shaft export -o shaft.step                           # the default DIN 5480 splined shaft, W 25x1.25x18x8f
+spur shaft export -o w30.stl --designation "W 30x2x14x8f" --splined-length 50  # a designation in place of --reference-d --module --teeth --fit
+spur shaft info --designation "W 26x1.25x19x8f"           # the shaft's derived dims as JSON
 spur export --help                                        # every parameter
 ```
 
