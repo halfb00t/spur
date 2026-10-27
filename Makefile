@@ -112,7 +112,7 @@ venv: $(STAMP) $(HOOKS)  ## create .venv with the dev extras, ~1.4 GB (override 
 # bench/RESULTS.md "The gate re-set (Phase 25)"); no check enforces it.
 verify.static: $(HOOKS) lint typecheck lint-imports no-fake-done gear.unchanged  ## the gate's static steps: ruff, mypy, import boundaries, unfinished-work scan, same gear as v0.6
 verify: verify.static test  ## the gate: lint, types, import boundaries, tests
-verify.fast: verify.static test.fast  ## the commit-time subset: the static steps + every test file but the five heavy ones, under 30 s (L36)
+verify.fast: verify.static test.fast  ## the commit-time subset: the static steps + every test file but the six heavy ones, under 30 s (L36)
 
 lint: $(STAMP)  ## ruff: correctness rules only, no reformatting (L16)
 	$(PY) -m ruff check .
@@ -199,7 +199,7 @@ test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache
 
 # The commit-time slice (D-02, D-04): gsd's SDK kills `git commit` at 30 000 ms, and the
 # whole gate's bar is 300 s on the 18-CPU Apple M5 Max (L43).
-# Every test file but the five heavy ones, named by exclusion -- never inclusion, never a
+# Every test file but the six heavy ones, named by exclusion -- never inclusion, never a
 # marker -- so a new test file runs at commit until someone names it heavy
 # (`--strict-markers` is on and no marker is registered). The first three, by share of
 # pytest's seconds (L34, bench/RESULTS.md "Per-file share"): tests/test_model.py 74.1 %,
@@ -216,14 +216,20 @@ test: $(STAMP) $(BROWSER)  ## run the test suite (a cold first run is page cache
 # That count is a snapshot: the slice collected 623 tests later the same day (`pytest
 # --collect-only` with the four `--ignore` flags below), and no check watches its 30 s
 # budget as it grows.
+# tests/test_shaft_model.py is the sixth, by measurement (32-03): `make verify.fast` read
+# 20.12, 20.50 and 20.97 s wall with it and 12.76 and 12.98 s without it (2221 and 2192
+# passed), all five at a 1-minute load of 23-30, over the 20.0 s that keeps 10 s of headroom
+# under the 30 s kill (bench/RESULTS.md, "The kernel file, priced (32-03)"; log
+# investigation/32-03-verify-fast.log). It is 29 kernel builds and 8 s of that slice; the
+# whole gate and the pre-push hook still run it.
 # The OS-cold page cache is not priced: the slice imports the kernel (tests/test_bench.py
 # through bench.build_time, the regression replay's solids), so D-07 is the recovery if a
 # commit ever runs over.
-test.fast: $(STAMP)  ## run every test file but the five heavy ones, no coverage (the commit-time slice)
+test.fast: $(STAMP)  ## run every test file but the six heavy ones, no coverage (the commit-time slice)
 	$(PY) -m pytest -n $(PYTEST_WORKERS) --no-cov \
 	  --ignore=tests/test_model.py --ignore=tests/test_pool.py \
 	  --ignore=tests/test_api.py --ignore=tests/test_cli.py \
-	  --ignore=tests/test_browser.py $(PYTEST_ARGS)
+	  --ignore=tests/test_browser.py --ignore=tests/test_shaft_model.py $(PYTEST_ARGS)
 
 serve: $(STAMP)  ## run the dev server on http://127.0.0.1:8000
 	$(VENV)/bin/spur serve

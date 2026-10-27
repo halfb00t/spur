@@ -36,7 +36,8 @@ IMAGE_IGNORED = {
     "tests/test_bench.py",
     "tests/test_gear_unchanged.py",
 }
-HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli", "test_browser")
+HEAVY_TEST_FILES = ("test_model", "test_pool", "test_api", "test_cli", "test_browser",
+                    "test_shaft_model")
 # The browser stamp, the Makefile's `BROWSER := $(VENV)/.browser`. The commit slice never
 # builds it, so on a checkout where it is missing or older than `$(STAMP)` a dry run of
 # `verify` prints the install lines that `verify.fast` does not, and the two static

@@ -7054,6 +7054,20 @@ Each bar below is the smallest of its candidate steps at least 10x the worst rea
 
 The flank is sampled at 201 positions per BSPLINE edge, not the plan's 21: at 21 the same W 14x2x6 reads `7.4e-06` per module and W 9x1x8 `7.7e-06`, 5x under the 201-position `3.985e-05` and `4.353e-05`, because the spline's error peaks between its 16 interpolation points and a sparse sample steps over the peak. The 201-position W 9x1x8 reading matches the research's own `4.35e-05` (`32-flank-dev.log`, m 1, z 8). W 9x1x8 joined the flank rows for that reason: it is the row the bar is set from.
 
+### The kernel file, priced (32-03)
+
+`tests/test_shaft_model.py` (29 tests, 29 kernel builds) was priced in the commit slice after `a87e225`: three warm `make verify.fast` runs with `/usr/bin/time -p`, the 1-minute load read before each, then two controls with `PYTEST_ARGS="--ignore=tests/test_shaft_model.py"` on the same host. Log: `investigation/32-03-verify-fast.log`.
+
+| Run | 1-minute load | Passed | `real` |
+|---|---|---|---|
+| with the file, 1 | 29.80 | 2221 | 20.12 s |
+| with the file, 2 | 28.97 | 2221 | 20.50 s |
+| with the file, 3 | 29.33 | 2221 | 20.97 s |
+| without it, control 1 | 26.25 | 2192 | 12.76 s |
+| without it, control 2 | 23.37 | 2192 | 12.98 s |
+
+Outcome: the slowest reading is 20.97 s, above the 20.0 s that keeps 10 s under the 30 s kill, so the rule fires and the file is named heavy: `--ignore=tests/test_shaft_model.py` joins `test.fast`'s recipe, `"test_shaft_model"` joins `HEAVY_TEST_FILES` in `tests/test_hooks.py`, and the Makefile comment records the readings, in one commit. The file costs about 8 s of the slice here (12.8 s to 20.1-21.0 s). The host was loaded far above the 3.0-5.5 the Makefile's earlier pricing was read at (the `-n 8` workers were starved), so these readings overstate an idle host's; the rule is mechanical and the cost of being wrong is a commit killed at 30 s, so it is applied as measured. The whole gate and the pre-push hook still run the file; only the commit slice stops running it.
+
 ### Seen red once (Phase 32)
 
 Each deliberate break is run red once and reverted; the first failure line is copied from the kept log named in the row. Later plans append rows.

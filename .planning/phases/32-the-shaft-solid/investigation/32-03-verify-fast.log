@@ -1,0 +1,25 @@
+run 1: load 29.80 21.28 16.42
+============================ 2221 passed in 19.18s =============================
+real 20.12
+user 97.19
+sys 123.12
+run 2: load 28.97 21.66 16.67
+============================ 2221 passed in 19.54s =============================
+real 20.50
+user 98.18
+sys 124.47
+run 3: load 29.33 22.23 16.99
+============================ 2221 passed in 20.01s =============================
+real 20.97
+user 99.48
+sys 128.60
+control 1 (PYTEST_ARGS=--ignore=tests/test_shaft_model.py, same slice without the new file): load 26.25 22.27 17.19
+============================ 2192 passed in 11.86s =============================
+real 12.76
+user 53.42
+sys 26.10
+control 2 (PYTEST_ARGS=--ignore=tests/test_shaft_model.py, same slice without the new file): load 23.37 21.79 17.08
+============================ 2192 passed in 12.04s =============================
+real 12.98
+user 53.81
+sys 25.61
