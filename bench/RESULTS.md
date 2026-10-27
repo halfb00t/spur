@@ -7512,6 +7512,70 @@ The 2.00x bar belongs to the `single` and `concurrent` gear scenarios; neither s
 
 **Reading.** No request in either run timed out, lost its pool or returned a 500: 4 of 10 were admitted and answered 200, 6 were refused 503 `busy` by admission control (`MAX_QUEUED_BUILDS` 4), and no worker was replaced. The slowest 200 was 10.16 s (request 4 of the `shaft` run, the third of its four admitted), which is 34% of the 30 s timeout and 4.6 times the 2.23 s that 32-05 measured for the same row alone; the `shaft-identical` run's four 200s took 3.67 to 3.75 s each. The shaft's margin to the timeout under contention is 19.84 s on this host at these loads, a measurement of one run per scenario and not a distribution. `docs/tech_debt/resolved/2026-10-27-shaft-contention-row.md` is retired with this section.
 
+### The gate delta (33-09)
+
+Source logs: `33-09-verify.log` (the whole `/usr/bin/time -p make verify` output) and `33-09-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/33-interfaces-and-parity/investigation/`. Every figure below is copied from them, not re-rounded. One reading, taken after the last Phase 33 code, test and bench commit (`git status --porcelain -- src tests bench pyproject.toml Makefile requirements.txt` printed nothing before the run; the last commit touching `src`, `tests` or `bench` is `2f1e230`, the two bench scenarios, and the commits after it hold only `bench/RESULTS.md`, the two debt files, the three measurement logs and the sha line). It is the plan's one gate run: no run was discarded, none hung, none was red.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `603031a` (`src`, `tests` and `bench` as of `2f1e230`; only `.planning/`, `docs/` and `bench/RESULTS.md` newer) |
+| UTC start -> end | `2026-10-27T18:13:28Z` -> `2026-10-27T18:17:31Z` |
+| 1-minute load before -> after | `5.30` -> `7.21` (`sysctl -n vm.loadavg` printed `{ 5.30 5.80 6.99 }` and `{ 7.21 10.29 9.13 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2778 passed in 241.55s (0:04:01) =======================` |
+| `/usr/bin/time -p` | `real 242.47`, `user 747.85`, `sys 771.75` |
+| Coverage TOTAL line | `TOTAL                         1821     22    484     13  98.48%` (`Required test coverage of 96.0% reached. Total coverage: 98.48%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| Browser test, call time | `61.24s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (`.planning/phases/33-interfaces-and-parity/investigation/33-09-verify.log`, the slowest-durations list); `39.22s` in `33-01-verify.log` |
+
+The shaft modules' and the app and CLI modules' coverage rows, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`):
+
+```
+src/spur/app.py                222      3     38      3  97.69%
+src/spur/cli.py                145      6     26      1  95.91%
+src/spur/din5480.py            107      0     28      0 100.00%
+src/spur/din5480_tables.py       0      0      0      0 100.00%
+src/spur/parts.py                3      0      0      0 100.00%
+src/spur/shaft_calc.py         105      0     16      0 100.00%
+src/spur/shaft_model.py         79      0     18      0 100.00%
+src/spur/shaft_params.py        43      0      4      0 100.00%
+```
+
+All four shaft modules read 100 %, `src/spur/shaft_model.py` among them (`79 0 18 0`): the two guard lines `### The gate delta (32-06)` named (179 and 187) are covered or gone, one pinned by a test and one dead re-raise dropped (`49021f5`). `src/spur/app.py` reads `97.69 %` with 3 lines and 3 branch parts missed and `src/spur/cli.py` `95.91 %` with 6 lines missed; the log does not name the lines and this plan does not read them.
+
+#### Against the phase-start baseline (33-01)
+
+Compared with `### The gate baseline (33-01)`, same host, both readings from logs.
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 33 start, `HEAD ead2a4c` | `2644 passed` | `229.17 s` | `230.70 s` | 4.62 -> 7.15 | `### The gate baseline (33-01)`, `33-01-verify.log` |
+| This reading: Phase 33 close, `HEAD 603031a` | `2778 passed` | `241.55 s` | `242.47 s` | 5.30 -> 7.21 | `33-09-verify.log` |
+
+| This reading minus the baseline | Tests | pytest `passed in` | `real` | Coverage TOTAL |
+|---|---|---|---|---|
+| difference | `+134` | `+12.38 s` (`+5.40 %`) | `+11.77 s` (`+5.10 %`) | `1682` -> `1821` statements, `98.22 %` -> `98.48 %` |
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 18.33 s of 229.17 s: both differences are inside it, so no speed claim is made in either direction. The loads differ little between the two readings (4.62 to 7.15 and 5.30 to 7.21), but each is one run, and the browser test alone moved from `39.22 s` to `61.24 s`, and the phase added browser steps to that test (the number box tokens, the part switch, the bad part and the shaft parity); this section does not say how much of the 22.02 s they account for. The reading of record is under L43's 300 s bar by 58.45 s (`pytest`) and 57.53 s (`real`). The plans' own full-gate readings during the phase, from their SUMMARYs (the load is recorded for some and not others, so they are shown for the spread only): 33-01 `229.17 s`, 33-03 `314.50 s`, 33-04 `215.57 s`, 33-05 `240.77 s`, 33-06 `280.47 s`, 33-07 `249.66 s`, 33-08 `257.67 s`; 33-03's `314.50 s` is above 300 s on a load its SUMMARY does not record, and no later reading, this one included, is above it.
+
+### Phase close checks (33-09)
+
+Source: `33-09-close-checks.log`, run once on `HEAD 603031a` with the final Phase 33 tree (check 12 after L49's closing paragraph was appended). All twelve read `PASS` and the log holds no `FAIL`.
+
+1. PASS `make gear.unchanged`: `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+2. PASS `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml`: exit 0, empty.
+3. PASS the gate log shows `PASSED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (`33-09-verify.log` line 5276), whose `golden sweep` step sends the pinned queries of `tests/regression/golden_requests.json`, which holds 44 records.
+4. PASS `/usr/bin/time -p make verify.fast`: `real 13.57`, under 30 s, rc 0, `2311 passed in 12.68s`, load `6.08` after.
+5. PASS `make lint-imports`: `Contracts: 10 kept, 0 broken.`
+6. PASS `.venv/bin/python -c "import sys, spur.cli; print(sorted(m for m in sys.modules if m.split('.')[0] in {'fastapi', 'starlette', 'cadquery', 'OCP'} or m in {'spur.app', 'spur.model', 'spur.shaft_model'}))"` prints `[]`.
+7. PASS `git diff --exit-code 6800769 -- src/spur/params.py src/spur/calc.py tests/regression/ .github/workflows/ci.yml requirements.txt`: exit 0, empty.
+8. PASS the `function refuse(` and `function gearQuery(` bodies of `git show 6800769:src/spur/static/app.js` and of the working file are equal (101 and 298 characters), the byte-identity 33-01's decision C1 requires.
+9. PASS `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py`: `8 passed in 0.12s`.
+10. PASS `make no-fake-done`: exit 0.
+11. PASS the four Phase 33 items (the shaft's volume guard, its two guard lines, WR-02 and the contention row) are in `docs/tech_debt/resolved/` with `Status: resolved`, absent from `active/`, and their `Resolved in:` shas `3e1eded`, `49021f5`, `69c1aa3` and `3ee9a0a` pass `git cat-file -e <sha>^{commit}`.
+12. PASS `git diff 6800769 -- docs/architecture/decision_log.md | grep -c '^-[^-]'` prints `0` and `## L49` is the last `## L` heading.
+
 ### Seen red once (Phase 33)
 
 Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.

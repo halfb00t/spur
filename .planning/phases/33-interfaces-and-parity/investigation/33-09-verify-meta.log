@@ -1,0 +1,7 @@
+UTC start: 2026-10-27T18:13:28Z
+HEAD: 603031a
+Host: 18 CPUs, arm64, 64.0 GiB RAM
+Load before: { 5.30 5.80 6.99 }
+UTC end: 2026-10-27T18:17:31Z
+Load after: { 7.21 10.29 9.13 }
+make exit status: 0

@@ -3476,3 +3476,19 @@ not, so every gear's grid is as it was (the default gear: size 60, step 5, befor
 The shaft's default grid goes from 40 to 80 mm (step 2 to 5), the longest from 40 to 1600 mm (step 100), the widest is unchanged. The
 pictures are saved under pytest's `tmp_path`, so a gate run writes nothing into the tree. **Reversibility: reversible.** Tests and one
 descriptor field; no route, link or number changes.
+
+**What Phase 33 closed on** (D-19, ROADMAP criterion 5; `bench/RESULTS.md` `### The heaviest shaft under ten concurrent requests (33-09)`,
+`### The gate delta (33-09)`, `### Phase close checks (33-09)`; 33-09). The gate: `make verify` read `2778 passed in 241.55s`, `real 242.47`, rc 0,
+at a 1-minute load of 5.30 before and 7.21 after, against 33-01's `2644 passed in 229.17s`, `real 230.70`, at 4.62 before and 7.15 after, the
+same host. The phase added 134 tests and the reading is 12.38 s (5.40 %) higher, inside Phase 25's run-to-run spread of about 8 % (18.33 s of
+229.17 s), so no speed claim is made in either direction; it is 58.45 s under L43's 300 s bar (57.53 s by `real`). The browser test's call time
+went from 39.22 s to 61.24 s over the phase, which added steps to it (the number box tokens, the part switch, the bad part, the shaft parity);
+this entry does not apportion the 22.02 s. The contention row L37 gave the gear, the shaft now has: the heaviest allowed shaft through
+`/api/shaft/model.stl` on a fresh `spur serve` at the shipping defaults, ten distinct keys and then one key ten times, answered 200 for the
+four the queue admitted in each run and `503 busy` for the six it refused, with no timeout, no `pool_broken`, no 500 and no worker replaced; the
+slowest 200 was 10.16 s of the 30 s timeout (34 %), one run per scenario. The twelve close checks all read `PASS` in `33-09-close-checks.log`,
+among them `make gear.unchanged`, `tests/regression/` and `ci.yml` byte-equal to `v0.6`, `Contracts: 10 kept, 0 broken.`, `import spur.cli`
+loading no web or kernel module, and `refuse()` and `gearQuery()` byte-identical to `6800769` (the reading **Refused as written** gave SC4).
+Four debt items the phase fired are retired: the shaft's volume guard (`3e1eded`), its two unreached guard lines (`49021f5`), the blank-box link
+token, WR-02 (`69c1aa3`), and the shaft's missing contention row (`3ee9a0a`). **Reversibility: reversible.** Records only; no route, link or
+number changes.
