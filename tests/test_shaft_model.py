@@ -15,9 +15,11 @@ import cadquery as cq
 import pytest
 import shaft_oracle
 from test_din5480 import GRID
+from test_model import _closed_shell_volume, _stl_triangles
 
-from spur import din5480, shaft_model
+from spur import din5480, model, shaft_model
 from spur.build_errors import BuildError
+from spur.model import Quality
 from spur.shaft_calc import ShaftDimensions, derive_shaft, floor_mm
 from spur.shaft_model import build_shaft
 from spur.shaft_params import ShaftParams
@@ -38,6 +40,23 @@ READBACK_TOL = 1e-6
 # 32-flank-dev.log read the same 4.35e-5 for m 1, z 8 and 2.58e-5 for m 10, z 9 on its own
 # rows (32-03-tolerances.log).
 FLANK_BAR_PER_MODULE = 5e-4
+# Relative volume bar of the STL mesh against the closed form. The mesh is inscribed, so it
+# reads low. Preview worsts, 32-04-mesh.log: -1.930e-3 (default), -3.691e-3 (W 14x2x6), the
+# latter 0.615 of the bar. 32-RESEARCH's -3.3e-3 row ("z6 m2") used reference_d 14.2, not
+# this file's 14.0, which is why the earlier 5e-3 bar was too tight for the row measured here
+# (human decision, 32-04: 6e-3).
+MESH_PREVIEW_REL = 6e-3
+# Fine worsts: -3.092e-4 (default), -4.920e-4 (W 14x2x6), 0.49 of the bar.
+MESH_FINE_REL = 1e-3
+# mm, the largest vertex radius on z = 0 against ra - end_chamfer_effective. Vertices are
+# float32 in the STL; the worst gap read 4.726e-7 (32-04-mesh.log), 212x under the bar, and a
+# mesh that dropped the cone reads ra, the applied chamfer (1.0 mm and 1.0 mm on these rows) away.
+MESH_VERTEX_TOL = 1e-4
+MESH_BARS: dict[Quality, float] = {"preview": MESH_PREVIEW_REL, "fine": MESH_FINE_REL}
+MESH_ROWS: dict[str, ShaftParams] = {
+    "default": ShaftParams(),
+    "W14x2x6": ShaftParams(reference_d=14.0, module=2.0, teeth=6),
+}
 
 
 def _closed_form(p: ShaftParams) -> float:
@@ -316,3 +335,34 @@ def test_no_lattice_chamfer_reaches_the_root_band() -> None:
             offset = abs(ra - k / 1000 - rf)
             in_band = shaft_model.CONE_ROOT_BAND_LOW < offset < shaft_model.CONE_ROOT_BAND_HIGH
             assert not in_band, (m, z, x, k)
+
+
+@pytest.mark.parametrize("p", MESH_ROWS.values(), ids=MESH_ROWS.keys())
+def test_model_builds_and_exports_a_shaft_through_the_one_doorway(p: ShaftParams) -> None:
+    """model.build and model.export take a ShaftParams through the one lock, solid cache and
+    export path the gear uses: one valid solid with the closed-form volume, a closed STL
+    shell at each quality within its bar of the closed form, and a STEP solid."""
+    solid = model.build(p)
+    assert len(solid.Solids()) == 1
+    assert _volume_error(solid, p) <= VOLUME_REL
+    for quality, bar in MESH_BARS.items():
+        stl = model.export(p, "stl", quality)
+        assert abs(_closed_shell_volume(stl) / _closed_form(p) - 1) <= bar, quality
+    step = model.export(p, "step")
+    assert step.startswith(b"ISO-10303-21;")
+    assert b"MANIFOLD_SOLID_BREP" in step
+
+
+@pytest.mark.parametrize("quality", MESH_BARS)
+@pytest.mark.parametrize("p", MESH_ROWS.values(), ids=MESH_ROWS.keys())
+def test_the_shaft_stl_carries_its_chamfer_at_the_end_face(
+    p: ShaftParams, quality: Quality,
+) -> None:
+    """The largest vertex radius on z = 0 is the cone's small end, ra - the applied chamfer;
+    a mesh that dropped the cone would read ra."""
+    dims = derive_shaft(p)
+    expected = dims.tip_d / 2 - (dims.end_chamfer_effective or 0.0)
+    stl = model.export(p, "stl", quality)
+    widest = max(math.hypot(v[0], v[1]) for tri in _stl_triangles(stl) for v in tri
+                 if abs(v[2]) < 1e-6)
+    assert widest == pytest.approx(expected, abs=MESH_VERTEX_TOL)

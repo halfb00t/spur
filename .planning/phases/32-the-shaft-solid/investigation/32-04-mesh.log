@@ -1,0 +1,4 @@
+default  preview  triangles    4188  volume rel -1.930e-03  end-face radius 11.3750005 expected 11.3750000  gap 4.726e-07
+default  fine     triangles    5662  volume rel -3.092e-04  end-face radius 11.3750005 expected 11.3750000  gap 4.715e-07
+W14x2x6  preview  triangles    1728  volume rel -3.691e-03  end-face radius 5.8000002 expected 5.8000000  gap 1.907e-07
+W14x2x6  fine     triangles    7598  volume rel -4.920e-04  end-face radius 5.8000002 expected 5.8000000  gap 1.907e-07

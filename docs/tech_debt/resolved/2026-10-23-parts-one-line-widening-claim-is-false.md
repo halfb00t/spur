@@ -1,7 +1,8 @@
 # Widening `Part` to the shaft must type `model._build_checked`, `model._write_export` and `records._gear_fields` in the same change
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: feat(model): build and export a shaft through the one kernel doorway (Part widens) (gsd/phase-32-the-shaft-solid)
 Date: 2026-10-23
 Source: Phase 30 code review, WR-03; confirmed by the Phase 30 verifier; docstring half corrected in Phase 31 (D-14)
 Related files:
