@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: 33
 current_phase_name: Interfaces and Parity
 status: executing
-stopped_at: Completed 33-01-PLAN.md
-last_updated: "2026-10-27T16:04:23.728Z"
+stopped_at: Completed 33-02-PLAN.md
+last_updated: "2026-10-27T16:13:52.940Z"
 last_activity: 2026-10-27
 last_activity_desc: Phase 33 execution started
-state_head: 78f8ec63519f9e8743e31dbc2be65b751d36c873
+state_head: e102a2754294d80d9d9c601a50f5f673827799d3
 progress:
   total_phases: 5
   completed_phases: 9
   total_plans: 26
-  completed_plans: 18
-  percent: 69
+  completed_plans: 19
+  percent: 73
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 33 (Interfaces and Parity) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-10-27 — Phase 33 execution started
 
@@ -288,6 +288,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 32 P05 | 55 min | 3 tasks | 14 files |
 | Phase 32 P06 | 12 min | 3 tasks | 7 files |
 | Phase 33 P01 | 11 min | 2 tasks | 7 files |
+| Phase 33 P02 | 8 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -578,6 +579,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 33]: 33-01 A1: server as-written rule = token != token.strip(), '_' anywhere, leading '+', trailing '.'; pinned as invariant over the committed Chromium table; non-finite/overflow tokens keep their bound's or pydantic's sentence; '' not covered by the rule — Probe over 37 inputs and 91 tokens: held-but-refused and blank-accepted-somewhere lists are both empty (picked by the human 2026-10-27)
 - [Phase 33]: 33-01 B1: browser proof = one #<field>=%2B<default> link per number field and mate_teeth (30 gear in 33-03, 7 shaft in 33-08); full 91-token table in the light test — Seconds of gate time against L43's 300s bar versus 85-140s for 925 links (picked by the human 2026-10-27)
 - [Phase 33]: 33-01 C1: WR-02 fixing commit is 33-03's in app.py before the part switch; refuse()/gearQuery() byte-identical through the phase, diffed against 6800769 in 33-09; L49 records the SC4 reading — 33-RESEARCH Pitfall 2: the switch needs no edit to either function (picked by the human 2026-10-27)
+- [Phase 33]: 33-02: the uncut-chamfer guard reads the solid's end face (largest vertex radius of the one planar face at z = 0 = tip_d/2 - c), not the volume, which reads -0.215 mm^3 on the heaviest honest shaft
+- [Phase 33]: 33-02: shank_d is dimmed when shank_length is 0 (enabled_when), backed by a kernel test: four shank_d values give a bit-equal solid (D-18)
 
 ### Pending Todos
 
@@ -899,8 +902,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T16:04:23.637Z
-Stopped at: Completed 33-01-PLAN.md
+Last session: 2026-10-27T16:13:52.843Z
+Stopped at: Completed 33-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
