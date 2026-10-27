@@ -427,7 +427,38 @@ second row table and quoted field names (`tests/test_api.py:176-180`, `:314-340`
 `app`/`fastapi`/`starlette` (L04); no new dependency. **Phase close**: `make verify` result line
 recorded and `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: No — standard patterns (research Phase 4).
-**Plans**: TBD
+**Plans**: 9 plans, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
+`checkpoint:decision` on the server rule, the browser token set and the fixing commit's place, and 33-02 cannot start
+until the human answers
+
+Plans:
+**Wave 1**
+- [ ] 33-01-PLAN.md — tracer: the phase-start `make verify` baseline and the number box probed in Chromium over every number field and `mate_teeth`, then `checkpoint:decision` (D-02's stop-and-ask)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 33-02-PLAN.md — the shaft kernel's open guards first (D-16): the applied chamfer read back off the end face, the one-solid guard pinned, `shank_d` dimmed without a shank (D-18); two debt items retired
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 33-03-PLAN.md — WR-02 fixed on the gear routes: a token the box blanks is refused as written (D-01..D-06), the table walked, the browser proof over every gear number field and `mate_teeth`; L49 opened; the debt item retired in the fixing commit
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 33-04-PLAN.md — `/api/shaft/schema`, `/info`, `/model.{fmt}` through `_serve_model`, rows in the schema's `dims`, the designation in place of the spline fields and every clash a 422 (D-07..D-09, D-17)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 33-05-PLAN.md — `spur shaft info|export` with `--designation`; the fixed parity set and API = CLI on every number and the download name, seen red once (D-21 part two)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 33-06-PLAN.md — the page's Gear | Shaft switch and part descriptor: the shaft's form, preview, rows and downloads from its own routes, the page's texts and mate box following the part, the switch by keyboard (D-10, D-12..D-14)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 33-07-PLAN.md — the page's links: shaft links round-tripped with `part=shaft`, gear links `part`-free, an unknown `part` refused and nothing built, null rows skipped; L49's page paragraphs, web-ui.md and the rows idea (D-11, D-15, D-20, D-22)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 33-08-PLAN.md — web = API over the fixed set in the browser (D-21 part one), the as-written proof on the shaft's inputs, the viewer framing and the README
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 33-09-PLAN.md — ten concurrent heaviest shafts through the real server (D-19), the gate delta against 33-01, the phase-close checks, L49 closed, and the C1 reading written beside SC4 and REQ-wr02-fixed
+
 **UI hint**: yes
 
 ### Phase 34: Fit Tables and Tolerance Window

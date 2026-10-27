@@ -1,0 +1,1 @@
+No external API integration: the phase serves spur's own HTTP routes (`/api/shaft/schema`, `/api/shaft/info`, `/api/shaft/model.{fmt}`), its own CLI and its own web page; no third-party API, SDK or service is integrated or consumed.
