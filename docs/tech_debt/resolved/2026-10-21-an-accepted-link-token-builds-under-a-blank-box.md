@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: fix(api): refuse a link number the box would blank (WR-02, L49) (gsd/phase-33-interfaces-and-parity)
+Resolved in: 69c1aa3 fix(api): refuse a link number the box would blank (WR-02, L49) (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-21
 Source: 28-REVIEW WR-02, deferred at the 28-05 checkpoint (D-20)
 Related files:
