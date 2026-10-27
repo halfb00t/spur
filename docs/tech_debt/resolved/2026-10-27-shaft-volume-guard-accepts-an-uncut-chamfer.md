@@ -2,7 +2,7 @@
 
 Severity: must
 Status: resolved
-Resolved in: fix(shaft): refuse a chamfer the kernel never cut (end-face read-back) (gsd/phase-33-interfaces-and-parity)
+Resolved in: 3e1eded fix(shaft): refuse a chamfer the kernel never cut (end-face read-back) (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-27
 Source: Phase 32 code review, 32-REVIEW.md WR-01 (confirmed by the phase verifier, 32-VERIFICATION.md)
 Related files:
