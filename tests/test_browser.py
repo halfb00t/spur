@@ -359,6 +359,50 @@ def _follow_shaft_link(page: Page, fragment: str) -> str:
     return urllib.parse.urlsplit(sent.value.url).query
 
 
+def _assert_refused_as_written(
+    page: Page,
+    base: str,
+    properties: dict[str, dict[str, object]],
+    name: str,
+    default: str,
+    *,
+    shaft: bool,
+) -> None:
+    """Follow `#<name>=%2B<default>` and check the page refuses it as written (L49, 33-01 B1).
+
+    `+<default>` is a number the box blanks and the server could read, so the page must send
+    it as given, show its box blank, mark the field with the server's text (the gear's mate box
+    shows the text with no outline, L44 D-05) and give the download no href. The caller counts
+    the STL requests over its whole loop. The shaft's links open with `part=shaft`.
+    """
+    link = f"{'part=shaft&' if shaft else ''}{name}=%2B{default}"
+    info_path = "/api/shaft/info" if shaft else "/api/info"
+    sent = (_follow_shaft_link if shaft else _follow_link)(page, link)
+    assert _pairs(sent) == [(name, f"+{default}")], f"#{link}: sent {sent!r}"
+    held = eval_str(page, MATE_VALUE if name == "mate_teeth" else CONTROL_VALUE, name)
+    assert held == "", f"#{link}: the {name} box reads {held!r}"
+    status, body = _api_get(base, info_path, sent)
+    assert status == 422, f"{info_path}?{sent} answered {status}, not 422"
+    assert isinstance(body, dict), f"{info_path}?{sent} is not an object"
+    detail = body["detail"]
+    assert [(d["type"], d["loc"]) for d in detail] == [
+        ("number_as_written", ["query", name])
+    ], f"#{link}: the 422 is {detail}"
+    marked, texts = _expected_422(properties, body)
+    expect(page.locator("#messages .error")).to_have_text(texts, timeout=BUILD_WAIT_MS)
+    if name == "mate_teeth":
+        assert not marked, f"#{link}: the 422 names {sorted(marked)}"
+        assert page.locator("label.field.invalid").count() == 0, (
+            f"#{link}: a field is outlined for the mate box's refusal"
+        )
+    else:
+        assert marked == {_title(properties, name)}, sorted(marked)
+        expect(page.locator("label.field.invalid .name")).to_have_text(sorted(marked))
+    assert page.locator("#dl-stl").get_attribute("href") is None, (
+        f"#{link}: the STL link has an href for a refused link"
+    )
+
+
 def _pairs(query: str) -> list[tuple[str, str]]:
     """A query string as its (name, value) pairs, sorted: order is not what a link means."""
     return sorted(urllib.parse.parse_qsl(query, keep_blank_values=True))
@@ -2311,35 +2355,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 tokens_by_field["mate_teeth"] = "30"
                 started = time.perf_counter()
                 for name, default in tokens_by_field.items():
-                    link = f"{name}=%2B{default}"
-                    sent = _follow_link(page, link)
-                    assert _pairs(sent) == [(name, f"+{default}")], f"#{link}: sent {sent!r}"
-                    reading = MATE_VALUE if name == "mate_teeth" else CONTROL_VALUE
-                    held = eval_str(page, reading, name)
-                    assert held == "", f"#{link}: the {name} box reads {held!r}"
-                    status, body = _api_get(server, "/api/info", sent)
-                    assert status == 422, f"/api/info?{sent} answered {status}, not 422"
-                    assert isinstance(body, dict), f"/api/info?{sent} is not an object"
-                    detail = body["detail"]
-                    assert [(d["type"], d["loc"]) for d in detail] == [
-                        ("number_as_written", ["query", name])
-                    ], f"#{link}: the 422 is {detail}"
-                    marked, texts = _expected_422(properties, body)
-                    expect(page.locator("#messages .error")).to_have_text(
-                        texts, timeout=BUILD_WAIT_MS
-                    )
-                    if name == "mate_teeth":
-                        assert not marked, f"#{link}: the 422 names {sorted(marked)}"
-                        assert page.locator("label.field.invalid").count() == 0, (
-                            f"#{link}: a field is outlined for the mate box's refusal"
-                        )
-                    else:
-                        assert marked == {_title(properties, name)}, sorted(marked)
-                        expect(page.locator("label.field.invalid .name")).to_have_text(
-                            sorted(marked)
-                        )
-                    assert page.locator("#dl-stl").get_attribute("href") is None, (
-                        f"#{link}: the STL link has an href for a refused link"
+                    _assert_refused_as_written(
+                        page, server, properties, name, default, shaft=False
                     )
                 page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                 assert _stl_requests(seen) == stl_before, "the sweep asked for an STL"
@@ -2726,6 +2743,77 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 print(
                     f"parity: {len(SHAFTS)} shafts, {parity_rows} rows equal the API's, "
                     f"{len(parity_numbers)} numbers rounded as the browser does, "
+                    f"{time.perf_counter() - started:.2f} s"
+                )
+
+            with step("shaft as-written sweep", no_foreign_key):
+                # SC4, D-03, 33-01 choice B: the refusal of a token the number box blanks holds
+                # on the shaft page's own inputs. The shaft's number fields are read from its
+                # schema; `fit` is a text box, holds any text and leaves the verdict to the
+                # server (L02).
+                assert eval_str(page, FRAGMENT).startswith("part=shaft"), "not on the shaft page"
+                shaft_numbers = {
+                    name: str(prop["default"])
+                    for name, prop in shaft_properties.items()
+                    if prop.get("type") in ("integer", "number") and "enum" not in prop
+                }
+                fragment_before = eval_str(page, FRAGMENT)
+                pairs_before = eval_pairs(page)
+                # The gear page's probe also reads the (hidden) mate box; the shaft form has none.
+                shaft_probe_js = NUMBER_BOX_PROBE.replace(", #mate-teeth", "")
+                assert shaft_probe_js != NUMBER_BOX_PROBE, "the probe no longer names the mate box"
+                probe_result: object = json.loads(
+                    eval_str(page, shaft_probe_js, [[t.text, t.blank] for t in TOKENS])
+                )
+                assert isinstance(probe_result, dict), f"the probe gave {probe_result!r}"
+                assert not probe_result["off"], (
+                    f"{len(probe_result['off'])} (input, token, read-back) rows differ from the "
+                    f"committed table on the shaft's inputs, first {probe_result['off'][:3]}"
+                )
+                assert probe_result["count"] == len(shaft_numbers), (
+                    f"the probe read {probe_result['count']} number inputs, the shaft schema "
+                    f"has {len(shaft_numbers)} number fields"
+                )
+                assert eval_str(page, CONTROL_TYPE, "fit") == "text"
+                held_fit = eval_str(
+                    page,
+                    "(v) => { const i = document.querySelector('form#params [name=fit]');"
+                    " const kept = i.value; i.value = v; const read = i.value; i.value = kept;"
+                    " return read; }",
+                    "+8f",
+                )
+                assert held_fit == "+8f", f"the fit box blanked '+8f' into {held_fit!r}"
+                assert eval_str(page, FRAGMENT) == fragment_before, "the probe moved the hash"
+                assert eval_pairs(page) == pairs_before, "the probe left a field changed"
+
+                # B1: one link per number field. A link a field's box blanks is sent as given
+                # and refused; no shaft STL is asked for across the sweep.
+                shaft_stl_before = _shaft_stl_requests(seen)
+                started = time.perf_counter()
+                for name, default in shaft_numbers.items():
+                    _assert_refused_as_written(
+                        page, server, shaft_properties, name, default, shaft=True
+                    )
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _shaft_stl_requests(seen) == shaft_stl_before, "the sweep asked for an STL"
+
+                # B2: every token the box blanks is refused by the shaft route on every number
+                # field, the rule's or pydantic's: one request names all seven fields at once, and
+                # the 422 must name each of them. The empty token is the page's default (D-06).
+                blanked = [t.text for t in TOKENS if t.blank and t.text != ""]
+                for text in blanked:
+                    query = urllib.parse.urlencode(dict.fromkeys(shaft_numbers, text))
+                    status, body = _api_get(server, "/api/shaft/info", query)
+                    assert status == 422, f"{text!r} on every shaft number field answered {status}"
+                    assert isinstance(body, dict), f"{text!r}: the 422 is not an object"
+                    refused_fields = {d["loc"][1] for d in body["detail"] if len(d["loc"]) > 1}
+                    assert refused_fields == set(shaft_numbers), (
+                        f"{text!r}: refused on {sorted(refused_fields)}, not on every number field"
+                    )
+                print(
+                    f"shaft sweep: {probe_result['count']} inputs probed x "
+                    f"{len(TOKENS)} tokens, {len(shaft_numbers)} links, {len(blanked)} blanked "
+                    f"tokens refused on {len(shaft_numbers)} fields, "
                     f"{time.perf_counter() - started:.2f} s"
                 )
 
