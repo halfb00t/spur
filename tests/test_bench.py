@@ -20,6 +20,8 @@ modules, beside the six single-feature baselines re-run unchanged. Also pins
 on L19's own recorded table, is adopted or held exactly on both of L19's bars (>=10%
 shrink, <=1.5x wall), and compares level 9 against whichever level is currently adopted,
 not always against level 1. Also pins `maxrss_bytes`'s Darwin/Linux unit split (L24).
+Also pins Phase 32's shaft rows in `bench.build_time` (32-05): the `part` switch, the
+memory columns only for rows measured in their own process, and the `/proc` reading.
 
 Run as `.venv/bin/python -m pytest tests/test_bench.py -q` **from the repo root** -- the
 `-m` form is what puts the repo root on `sys.path`, which is what makes `import bench`
@@ -45,8 +47,16 @@ import httpx
 import pytest
 from pydantic import ValidationError
 
-from bench.build_time import DEFAULT_SWEEP, Timing, load_sweep, report, stl_size
-from bench.export_cost import GzipRow, maxrss_bytes, select_gzip_level
+from bench import maxrss_bytes
+from bench.build_time import (
+    DEFAULT_SWEEP,
+    Timing,
+    _vmrss_bytes,
+    load_sweep,
+    report,
+    stl_size,
+)
+from bench.export_cost import GzipRow, select_gzip_level
 from bench.latency import (
     _SCENARIOS,
     DEFAULT_SCENARIOS,
@@ -97,6 +107,16 @@ from spur.calc import (
     trochoid_root,
 )
 from spur.params import GearParams
+from spur.shaft_params import ShaftParams
+
+
+def load_gear_sweep(path: Path) -> list[tuple[str, GearParams]]:
+    """`load_sweep` returns a part since Phase 32; every gear sweep file below is all
+    gears, and a shaft row in one would fail here by name instead of as an attribute."""
+    sets = load_sweep(path)
+    for label, p in sets:
+        assert isinstance(p, GearParams), f"{path} row {label} is not a gear"
+    return [(label, p) for label, p in sets if isinstance(p, GearParams)]
 
 
 def test_a_peak_equal_to_the_ceiling_is_capped() -> None:
@@ -132,7 +152,7 @@ def test_the_hex_bore_sweep_is_every_combination_d_11_names() -> None:
     1.14s), bore_hex {200, 12.7}, recess_sides {both, none}, bore_chamfer {0.4, 3} (3 is
     the field's `le`; no hex rule binds at 200 teeth). Every row is therefore a buildable
     gear under 08-03's rules -- load_sweep would have raised otherwise."""
-    sets = load_sweep(DEFAULT_SWEEP)
+    sets = load_gear_sweep(DEFAULT_SWEEP)
     assert len(sets) == 16
     got = {(p.teeth, p.module, p.bore_hex, p.recess_sides, p.bore_chamfer)
            for _, p in sets}
@@ -227,7 +247,7 @@ def test_the_keyway_bore_sweep_is_every_combination_with_the_largest_keyway_each
     by keyway_depth's own `le` (200) at module 10, where the field's own bound binds
     before the root ever would.
     """
-    sets = load_sweep(DEFAULT_SWEEP.parent / "keyway_bore.json")
+    sets = load_gear_sweep(DEFAULT_SWEEP.parent / "keyway_bore.json")
     assert len(sets) == 32
 
     # The largest keyway (width, depth) each rule allows, per (module, bore_flat) --
@@ -274,7 +294,7 @@ def test_the_tip_chamfer_sweep_is_every_combination_d_06_names() -> None:
     Every row is therefore a buildable gear under 10-02's rules -- load_sweep would
     have raised otherwise.
     """
-    sets = load_sweep(DEFAULT_SWEEP.parent / "tip_chamfer.json")
+    sets = load_gear_sweep(DEFAULT_SWEEP.parent / "tip_chamfer.json")
     assert len(sets) == 9
 
     module_chamfer_pairs = ((1.75, 0.4), (1.75, 1.75), (10.0, 0.4), (10.0, 3.0))
@@ -329,7 +349,7 @@ def test_the_hole_cutout_sweep_is_every_combination_the_plan_names() -> None:
     at 60 holes -- measured accepted at `hole_d` 5.9, no longer refused -- so only the
     module-1.75 row is pinned here.
     """
-    sets = load_sweep(DEFAULT_SWEEP.parent / "hole_cutout.json")
+    sets = load_gear_sweep(DEFAULT_SWEEP.parent / "hole_cutout.json")
     assert len(sets) == 8
 
     want = {
@@ -375,7 +395,7 @@ def test_the_spoke_cutout_sweep_is_every_combination_the_plan_names() -> None:
     refusal-boundary pin survives either gate's decision, and 32 arms only widens the
     opening further.
     """
-    sets = load_sweep(DEFAULT_SWEEP.parent / "spoke_cutout.json")
+    sets = load_gear_sweep(DEFAULT_SWEEP.parent / "spoke_cutout.json")
     assert len(sets) == 8
 
     want = {
@@ -408,7 +428,7 @@ def test_the_honeycomb_sweep_runs_at_the_cap() -> None:
     Every row is therefore a buildable gear under 11-05's rules -- `load_sweep` would
     have raised otherwise.
     """
-    sets = load_sweep(DEFAULT_SWEEP.parent / "honeycomb.json")
+    sets = load_gear_sweep(DEFAULT_SWEEP.parent / "honeycomb.json")
     assert len(sets) == 8
 
     want = {
@@ -457,7 +477,7 @@ def test_the_composed_sweep_stacks_each_cutout_on_its_heaviest_bore_beside_six_b
     reason), 3 mm at module 10 (the field's own `le`; the analytic caps sit at 3.375 mm,
     uncapped).
     """
-    sets = load_sweep(DEFAULT_SWEEP.parent / "composed.json")
+    sets = load_gear_sweep(DEFAULT_SWEEP.parent / "composed.json")
     assert len(sets) == 18
 
     want = [
@@ -600,6 +620,61 @@ def test_level_9_is_compared_against_the_level_currently_adopted() -> None:
     assert select_gzip_level([level1, level6_adopted, level9_beats_1_not_6]) == 6
 
 
+def test_a_shaft_row_loads_as_shaft_params_and_a_row_without_part_as_gear_params(
+        tmp_path: Path) -> None:
+    """The `part` key picks the model; its absence is a gear, so every earlier sweep
+    file loads unchanged. The label keeps `part` as the file wrote it."""
+    sweep = tmp_path / "s.json"
+    sweep.write_text(json.dumps([{"part": "shaft"}, {"teeth": 21}]))
+    sets = load_sweep(sweep)
+    assert [label for label, _ in sets] == ["part=shaft", "teeth=21"]
+    assert isinstance(sets[0][1], ShaftParams)
+    assert isinstance(sets[1][1], GearParams)
+    assert sets[1][1].teeth == 21
+
+
+def test_an_unknown_part_is_refused_naming_the_set(tmp_path: Path) -> None:
+    sweep = tmp_path / "s.json"
+    sweep.write_text(json.dumps([{"part": "hub"}]))
+    with pytest.raises(ValueError, match=r"set 0 .*'hub'"):
+        load_sweep(sweep)
+
+
+def test_an_infeasible_shaft_row_is_refused_naming_the_set(tmp_path: Path) -> None:
+    """reference_d 30 at the default module and teeth needs a profile shift of +2.45,
+    past the X_MAX the shaft allows: no shaft, so no timing."""
+    sweep = tmp_path / "s.json"
+    sweep.write_text(json.dumps([{"part": "shaft", "reference_d": 30}]))
+    with pytest.raises(ValueError, match=r"set 0 \(part=shaft reference_d=30\) is not a "
+                                          "buildable shaft"):
+        load_sweep(sweep)
+
+
+def test_the_report_adds_the_memory_columns_only_for_rows_measured_in_their_own_process(
+        ) -> None:
+    """None is "not measured": an in-process sweep's ru_maxrss is every row so far, so
+    its report has no memory column (L08); a report mixing the two is refused."""
+    mib = 1048576
+    own = [Timing("a", 1.0, 1.0, 1.0, 100, 1, 300 * mib, 200 * mib),
+           Timing("b", 1.0, 1.0, 1.0, 100, 1, 500 * mib, None)]
+    text = report(Path("x.json"), own, 30, (0.0, 0.0, 0.0))
+    assert "| Peak RSS (MiB) | Resident after build (MiB) |" in text
+    assert "| 300 | 200 |" in text
+    assert "| 500 | - |" in text
+    assert "**Highest peak RSS:** b -- 500 MiB." in text
+    shared = [Timing("a", 1.0, 1.0, 1.0, 100, 1)]
+    plain = report(Path("x.json"), shared, 30, (0.0, 0.0, 0.0))
+    assert "Peak RSS" not in plain
+    assert "Resident" not in plain
+    with pytest.raises(ValueError, match="peak RSS"):
+        report(Path("x.json"), [own[0], shared[0]], 30, (0.0, 0.0, 0.0))
+
+
+def test_vmrss_is_read_from_proc_status_or_reported_as_not_measured() -> None:
+    assert _vmrss_bytes("Name:\tx\nVmRSS:\t   1234 kB\n") == 1234 * 1024
+    assert _vmrss_bytes("Name:\tx\n") is None
+
+
 def test_peak_rss_reads_bytes_on_macos_and_kibibytes_on_linux() -> None:
     """`ru_maxrss` is bytes on Darwin (macOS) and kibibytes on every other platform this
     project runs on (Linux, in the image) -- the same split L24's own reading needs
@@ -621,7 +696,7 @@ def test_the_composed_latency_scenario_fires_the_worst_composed_row_first_then_t
     pulls `spur.model` -- and so cadquery -- into this harness's own measuring client);
     this test is the one place the two readings are checked to agree."""
     got = [GearParams.model_validate(r) for r in _composed_rows()]
-    want = [load_sweep(DEFAULT_SWEEP.parent / "composed.json")[i][1]
+    want = [load_gear_sweep(DEFAULT_SWEEP.parent / "composed.json")[i][1]
             for i in (3, 1, 2, 0, 8, 5, 9, 11, 10, 4)]
     assert got == want
     assert len(got) == 10
@@ -712,7 +787,7 @@ def test_the_identical_scenario_fires_the_worst_composed_row_ten_times() -> None
     rows = _identical_rows()
     assert len(rows) == 10
     assert all(row == _composed_rows()[0] for row in rows)
-    assert GearParams.model_validate(rows[0]) == load_sweep(
+    assert GearParams.model_validate(rows[0]) == load_gear_sweep(
         DEFAULT_SWEEP.parent / "composed.json")[3][1]
 
 
@@ -947,7 +1022,7 @@ def test_the_trochoid_sweep_is_the_corner_rows_in_both_root_shapes() -> None:
     assert raw == expected
     assert [list(r) for r in raw] == [list(r) for r in expected]
 
-    sets = load_sweep(path)
+    sets = load_gear_sweep(path)
     assert len(sets) == len(raw)
     for (_, radial), (_, trochoid) in zip(sets[0::2], sets[1::2], strict=True):
         assert radial.root_shape == "radial"

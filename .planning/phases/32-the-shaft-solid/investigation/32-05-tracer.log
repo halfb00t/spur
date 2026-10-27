@@ -1,0 +1,15 @@
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Python: 3.12.15
+- Kernel: cadquery 2.8.0, cadquery-ocp 7.9.3.1.1
+- HEAD: `99ac99a`
+- Sweep: `.planning/phases/32-the-shaft-solid/investigation/32-05-tracer.json`
+- Load averages at start: 14.25, 15.13, 16.38
+- SPUR_BUILD_TIMEOUT: 30 s, a cold request is one build plus one export
+
+| Parameter set | Build (s) | Fine STL (s) | STEP (s) | Build + slower export (s) | Inside 30 s | Fine STL (bytes) | Triangles | Peak RSS (MiB) | Resident after build (MiB) |
+|---|---|---|---|---|---|---|---|---|---|
+| part=shaft | 0.73 | 0.01 | 0.02 | 0.74 | yes | 283184 | 5662 | 590 | - |
+
+**Heaviest:** part=shaft -- 0.74 s of 30 s.
+**Largest fine STL:** part=shaft -- 283184 bytes, 5662 triangles.
+**Highest peak RSS:** part=shaft -- 590 MiB.

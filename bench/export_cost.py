@@ -39,10 +39,10 @@ from importlib import metadata
 from pathlib import Path
 from typing import TypedDict
 
-from bench import machine_facts
+from bench import machine_facts, maxrss_bytes
 from bench.build_time import load_sweep, stl_size
 from spur import model
-from spur.params import GearParams
+from spur.parts import Part
 
 # L19's own table shape: five single-threaded runs (median), ten concurrent calls,
 # three walls of ten (median) -- src/spur/app.py's `_GZIP_LEVEL` comment table.
@@ -74,14 +74,6 @@ class GzipRow:
     single_ms: float
     out_bytes: int
     concurrent_ms: float
-
-
-def maxrss_bytes(raw: int, system: str) -> int:
-    """`ru_maxrss` is bytes on Darwin (macOS) and kibibytes everywhere else (Linux,
-    where the image actually runs) -- the platform split L24's own reading needs to be
-    believed at all (the interfaces note; no existing bench script reads `ru_maxrss`
-    before this one, per 12-RESEARCH.md Pitfall 4)."""
-    return raw if system == "Darwin" else raw * 1024
 
 
 def gzip_rows(data: bytes) -> list[GzipRow]:
@@ -153,7 +145,7 @@ def select_gzip_level(rows: list[GzipRow]) -> int:
     return level
 
 
-def _find_set(sweep: Path, label: str) -> GearParams:
+def _find_set(sweep: Path, label: str) -> Part:
     sets = load_sweep(sweep)
     for set_label, params in sets:
         if set_label == label:
@@ -164,7 +156,7 @@ def _find_set(sweep: Path, label: str) -> GearParams:
     raise SystemExit(2)
 
 
-def _run_child(params: GearParams, mode: str) -> int:
+def _run_child(params: Part, mode: str) -> int:
     """`--child {copy,in-place}`: build `params` (untimed) and time one fine-STL export
     either on `shape.copy()` (L24's own call, `model._write_export`'s STL branch) or on
     the shape in place (`tests/test_model.py`'s `_export_in_place` shape -- not imported
