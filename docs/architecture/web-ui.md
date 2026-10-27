@@ -42,6 +42,16 @@ drops responses that arrive out of order. The viewer is a `WebGLRenderer` with
 under the part; colours come from CSS custom properties, so light and dark themes are one
 source.
 
+A Gear | Shaft radio group above the form picks the part (L49). `PARTS` holds each part's routes,
+hash tag and page texts, and `buildForm(which)` builds that part's form from its own schema at its
+defaults, emptying everything the other part left; no value crosses a switch. The shaft's result
+rows come from the `dims` list of `/api/shaft/schema`, in its order: a number shows with its unit
+when the row has one, a string (the designation) as itself, a null value as no row. The gear keeps
+its own `DIMS` table because the gear schema's bytes are frozen. Which hint and mate box show is
+CSS on `body[data-part]`. A link opens with `part=shaft` for the shaft and has no `part` for the
+gear; `followHash` picks the part, builds its form when it changed and then reads the hash, so a
+shaft link opens on any page.
+
 `entry.js` names the twelve three.js exports the viewer actually uses — that list is what
 makes the bundle small.
 
@@ -57,6 +67,11 @@ path marks it; the mate box is not a form field, so it shows the message with no
 A token the number box blanks but a number could be read from (`5.`, `+22`, ` 22`, `1_0`) is kept
 aside the same way and the API refuses it as written, so the box never sits blank over a
 non-default part (L49).
+A `part` the page has no form for (`#part=bogus`, `#part=gear`, the key twice) is refused in the
+page's own words, `Unknown part "bogus" in the link; use the Gear or Shaft switch`, because no
+route takes `part` and no server can word it (L49). The gear form shows at its defaults with
+neither radio checked, nothing is drawn or requested, and an edit or Reset builds nothing until a
+click on either radio or a new link.
 
 ## Known gap
 
@@ -91,5 +106,14 @@ The steps `bad link refused`, `bad link cleared`, `bad link on a fresh page` and
 and accepted tokens` prove it, each against the API's own 422 body. It runs inside `make verify` and CI's `test (3.12)`, which
 install the headless shell under `.venv` first; the commit-time `make verify.fast` never
 collects it.
+
+The steps `part switch`, `shaft link round trip` and `bad part refused` cover the shaft page
+(L49). The first clicks Shaft and back, with the rows, downloads, texts and the keyboard walk
+compared with `/api/shaft/schema` and `/api/shaft/info`. The second follows `part=shaft` links on
+the page and on a fresh one, with the odd tooth count (no `M_Re` row, designation `W 26x1.25x19x8f`,
+the download named `spur_shaft_w26x1.25x19.stl`), the shank diameter dimmed exactly when the shank
+length is 0, a 422 marking the shank length and the fit with no shaft STL asked for, and the
+gear's keys ignored. The third sets six bad `part` links and checks the message, the unchecked
+radios, the defaults, and that no build is requested across the links, an edit and Reset.
 
 Rebuild the bundle: `make vendor`. Check it still matches: `make vendor-check`.

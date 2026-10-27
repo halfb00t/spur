@@ -3415,3 +3415,42 @@ once: `cmd_shaft_info` made to print `tip_d` one ulp up (`math.nextafter`) faile
 (`33-05-red-perturbed.log`, `bench/RESULTS.md` `### Seen red once (Phase 33)`), and was reverted; a durable self-test keeps
 `differences()` honest on a one-ulp change, a changed name and a changed order. The test isolates the export cache and the
 backend per test and runs under `-n 8` in `make verify.fast`.
+
+**The part switch** (D-11..D-14, REQ-shaft-web; `src/spur/static/app.js`, `index.html`, `style.css`; 33-06, 33-07). A Gear | Shaft radio
+group sits above `#params`, outside the form, so the form's `input` listeners never see it, it is never a field and `fields.set(`
+stays one (the L42 rule); a radio group is the native keyboard walk (ArrowLeft and ArrowRight switch). Every switch builds that
+part's form at that part's defaults: no value, no stash entry and no mate box content crosses it (D-13, L05). The assumption-delta
+decision of 33-01 is **promote**: the page's implicit gear became an explicit descriptor `PARTS`, holding only the routes (`schema`,
+`info`, `model`), the hash tag and the texts (title, sub line, canvas label, fit tooltip, whether the mate box is sent), and every
+URL the page builds reads it through `P`; the shaft is not added as branches beside gear code. `PARTS` is indexed only by a radio's
+literal value or by a literal in `partOf`, never by text from a link. One add-alongside is accepted, the result rows: the gear keeps
+its JavaScript `DIMS` table and the shaft's rows come from the `dims` list of its schema (a number as its three-decimal text with
+the unit when the row has one, a string as itself, an absent value no row, D-22), because the gear `/api/schema` bytes are frozen.
+It is filed as `docs/ideas/2026-10-27-gear-result-rows-from-the-schema.md` with what would force the promote. Which texts and
+hints show is CSS on `body[data-part]`, never a script write: the guard in `tests/test_api.py` refuses any script that hides or
+shuts a control (L41), and the page's texts go in as `textContent` and attributes. A switch writes its hash with `replaceState`,
+the call a field edit already uses, so there is no new history rule (D-14): the gear's hash is empty at defaults, the shaft's is
+`part=shaft`, and a shaft hash opens with `part` and then names the shaft's fields in schema order. `fit` is a text box, because a
+number box blanks `8f`; the page sets `pattern` and `maxLength` from the schema as hints only and the server decides what a value
+means (L02). A link that names the shaft builds the shaft form first and then fills it; a hashchange that changes the part awaits
+`buildForm(part)` before it reads the hash, one that keeps the part runs in the event itself, as before, because the golden sweep
+sends one request per link and relies on that, and a build counter makes a slower build of an earlier link return without
+touching the page. A `designation=` key and the gear's keys in a shaft link are ignored like any unknown key (D-11): the page has
+no paste box (D-10) and Copy link writes flat fields. The `hashchange` pin in `tests/test_api.py` is replaced, not dropped: the
+listener is `followHash`, which picks the part before it reads the hash, and the old arrow-function token was seen go red against
+the new listener (`33-07-red-pins.log`); every other token stands and four were added. `refuse()` and `gearQuery()` are
+byte-identical to `6800769` (33-01 decision C1). **Reversibility: reversible.** The page's switch and its descriptor change no
+route and no link the gear published; `#part=shaft` becomes a link someone keeps, which `partOf` must go on reading.
+
+**An unknown part** (D-15, D-20; 33-07). A link whose `part` is anything but absent, one empty value or exactly one `shaft` (`bogus`,
+`gear`, `Shaft`, `constructor`, `__proto__`, or the key twice) shows `Unknown part "<value>" in the link; use the Gear or Shaft
+switch` in the message strip, and nothing is built: the gear form shows at its defaults, neither radio is checked, nothing is
+drawn, the downloads have no href, the hash stays as the link wrote it, and no info or STL request is sent. A field edit or Reset in
+that state builds nothing either (`update()` returns while the refusal is set); the state ends on a click of either radio or on
+the next `hashchange`, and on nothing else. `part=gear` is refused and is not a second spelling of the gear link, which carries no
+`part`. This is the narrow, logged exception to "the server words refusals" (L02, L44): no route takes `part`, so no server can word
+it, and the page words it. `partOf` compares the values as literals and returns one of three fixed answers, so a prototype key
+(`__proto__`, `constructor`) never indexes anything and resolves to the refusal (T-33-15); the value is echoed through
+`JSON.stringify` (control characters become escapes) and set as text, never as markup (T-33-23); the browser step `bad part
+refused` counts requests across all six links, an edit and Reset (T-33-24). The same step sets a bad part again from the shaft,
+and ends on a valid link. **Reversibility: reversible.** The wording is the page's own and no front end other than the page reads it.

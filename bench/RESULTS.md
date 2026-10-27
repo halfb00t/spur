@@ -7425,6 +7425,18 @@ as-written sweep: 30 links, 1.18 s
 
 The steps' own timers: `number box tokens` 0.03 s, `as-written sweep` 1.18 s (30 links, B1 of 33-01: 29 gear number fields and the mate box, `#<field>=%2B<default>`), against 1.15 s for the step before them. The two steps add 1.21 s to `test_the_shipped_viewer_in_a_real_browser`, whose call time here is 29.14 s alone (`-n0`, no other test running). Phase 32's figure for the same test, 39.46 s in `### The gate delta (32-06)`'s run (`32-06-verify.log`; 39.22 s in 33-01's baseline), was taken inside the whole `make verify` under 18 xdist workers, so the two are not the same instrument and are not subtracted; 33-09's gate reading carries the whole-gate comparison.
 
+### The page with a part switch (33-07)
+
+Source: `.planning/phases/33-interfaces-and-parity/investigation/33-07-browser.log` (`make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, `3 passed in 40.94s`, 2026-10-27, this host). The 1-minute load average was `14.63` at the start of the run and `10.52` at its end (`sysctl -n vm.loadavg`); the first green run of the same file in this plan read `43.65 s` call time (`3 passed in 44.24s`) at a load of `11.47`, so the two readings differ by 3.2 s on the same code. The two new steps sit after `part switch`; the golden sweep step is unchanged and still reads `golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets`.
+
+```
+step part switch: 0.73 s
+step shaft link round trip: 5.63 s
+step bad part refused: 3.33 s
+```
+
+The steps' own timers: `part switch` (33-06) 0.73 s, `shaft link round trip` 5.63 s (six shaft builds at preview quality, one of them on a fresh page, and one at the fine quality of the download click), `bad part refused` 3.33 s (six bad links, an edit and Reset, each waiting past the debounce, and a switch). The three steps total 9.69 s. The test's call time is 40.41 s here against 29.14 s in `### The as-written sweep in the browser (33-03)`: 11.27 s more, of which the three steps account for 9.69 s and the other 1.58 s is the host (33-03's load was not recorded and this run's was 10.5 to 14.6, on an 18-CPU host, so the two runs are not the same instrument). No speed claim is made from this pair; 33-09's gate reading carries the whole-gate comparison.
+
 ### Seen red once (Phase 33)
 
 Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.

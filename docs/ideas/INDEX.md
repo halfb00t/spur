@@ -17,6 +17,7 @@ the same commit as the file.
 | 2026-10-26 | [A manufacturing-process field that selects the shaft root factor h_fP](2026-10-26-shaft-manufacturing-process-field.md) | Needs a new Lxx decision (a new user parameter, L05/L03); today the root is the broaching value with a hobbed warning |
 | 2026-10-26 | [Print M_Re for an odd tooth count, now that DIN 5480-2 rows confirm the formula](2026-10-26-print-odd-tooth-count-measure-over-pins.md) | The human kept the odd-count gate (D-13) after the Part 2 anchors; decide it with Phase 34's switch to the tabulated pin, so the first odd-count M_Re is at the standard's pin |
 | 2026-10-21 | [A bore-shape stash entry survives a hand edit of its box](2026-10-21-stash-entry-survives-a-hand-edit.md) | It changes L42's write rule, which v0.6 leaves alone (24 IN-01's behavioural half, D-14); the comment now says what the stash holds |
+| 2026-10-27 | [The gear's result rows from its schema, not a JavaScript table](2026-10-27-gear-result-rows-from-the-schema.md) | The gear `/api/schema` bytes are frozen (`make gear.unchanged`), so the gear schema cannot carry `dims`; revisit when a milestone lifts that or a third part type arrives |
 
 ## Retired
 
