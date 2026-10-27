@@ -49,12 +49,56 @@ const DIMS = [
 const fmt = (v) => Number(v).toFixed(3).replace(/\.?0+$/, '');
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+// The parts the page shows: the routes and texts that differ, and nothing else; the fields,
+// their defaults and their rows come from the part's own schema. Indexed only by a radio's
+// literal value or by 'gear' in the bootstrap, never by text from a link: a lookup by hash
+// text would resolve `constructor` (33-RESEARCH Pattern 6). `tag` opens a link's hash, `mate`
+// says whether the page sends the mate box with it.
+const PARTS = {
+  gear: {
+    schema: 'api/schema', info: 'api/info', model: 'api/model', tag: '', noun: 'gear', mate: true,
+  },
+  shaft: {
+    schema: 'api/shaft/schema', info: 'api/shaft/info', model: 'api/shaft/model',
+    tag: 'part=shaft', noun: 'shaft', mate: false,
+  },
+};
+let part = 'gear';
+let P = PARTS.gear;
+// The shaft's result rows come in its schema; null means the gear's table above.
+let dims = null;
+// Bumped by every buildForm: a build that finds a later one started returns false, so a slow
+// schema fetch of the part the user left cannot rebuild the page under the one they chose.
+let formSeq = 0;
+const radios = document.querySelectorAll('.part-switch input');
+
 // ---------------------------------------------------------------- form
 
-async function buildForm() {
-  const res = await fetch('api/schema');
+// Builds the form of one part, first emptying everything the other part's form left: a value
+// from one part's form must never reach the other's request (L05).
+async function buildForm(which) {
+  const build = ++formSeq;
+  const res = await fetch(PARTS[which].schema);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   const schema = await res.json();
+  if (build !== formSeq) return false;
+  form.replaceChildren();
+  fields.clear();
+  for (const key of Object.keys(defaults)) delete defaults[key];
+  selectors.length = 0;
+  stash.clear(); rejected.clear();
+  mateInput.value = '';
+  clearTimeout(debounce);
+  inflight?.abort();
+  inflight = null;
+  seq++;
+  $('#dims').replaceChildren();
+  $('#centre-distance').textContent = '—';
+  showMessages();
+  setDownloads(null);
+  setStatus('');
+  clearScene();
+  dims = schema.dims ?? null;
   const groups = new Map();
 
   for (const [name, prop] of Object.entries(schema.properties)) {
@@ -73,6 +117,14 @@ async function buildForm() {
     if (prop.enum) {
       input = document.createElement('select');
       for (const v of prop.enum) input.add(new Option(v, v));
+    } else if (prop.type === 'string') {
+      // A text box, because a number box blanks `8f` (33-RESEARCH Pitfall 1). `pattern` and
+      // `maxLength` are hints only: the server decides what a value means (L02).
+      input = document.createElement('input');
+      input.type = 'text';
+      if (prop.maxLength !== undefined) input.maxLength = prop.maxLength;
+      if (prop.pattern !== undefined) input.pattern = prop.pattern;
+      input.spellcheck = false;
     } else {
       input = document.createElement('input');
       input.type = 'number';
@@ -107,6 +159,32 @@ async function buildForm() {
   }
 
   buildSelectors(schema.selectors ?? [], groups);
+  part = which;
+  P = PARTS[which];
+  markPart();
+  return true;
+}
+
+// The radios follow the part on the page, not the click: a build that fails or is overtaken
+// leaves the page on the part it shows.
+function markPart() {
+  for (const radio of radios) radio.checked = radio.value === part;
+}
+
+// A radio's change: build that part's form at its defaults, then show it. No value crosses
+// a switch (D-13) and the hash is the new part's, written by update() (D-14).
+async function switchTo(which) {
+  try {
+    if (!(await buildForm(which))) return;
+  } catch (err) {
+    showMessages([`Could not build the form: ${err.message}`]);
+    markPart();
+    return;
+  }
+  for (const [name, { input }] of fields) input.value = defaults[name];
+  applyRelations();
+  deriveSelectors();
+  update();
 }
 
 // Called after the control was assigned the token. A non-empty token that reads back empty is
@@ -220,17 +298,31 @@ async function problems(res) {
   }
 }
 
+function dimRow(label, text) {
+  const row = document.createElement('div');
+  row.append(
+    Object.assign(document.createElement('dt'), { textContent: label }),
+    Object.assign(document.createElement('dd'), { textContent: text }),
+  );
+  return row;
+}
+
 function renderInfo(info) {
   const rows = [];
-  for (const [key, label] of DIMS) {
-    const v = info[key];
-    if (v === null || v === undefined) continue;
-    const row = document.createElement('div');
-    row.append(
-      Object.assign(document.createElement('dt'), { textContent: typeof label === 'function' ? label(info) : label }),
-      Object.assign(document.createElement('dd'), { textContent: `${fmt(v)} mm` }),
-    );
-    rows.push(row);
+  if (dims) {
+    // The part's own rows, in its schema's order. A number shows with its unit when it has one,
+    // a string as itself; an absent value is no row (D-22), as for the gear.
+    for (const { key, label, unit } of dims) {
+      const v = info[key];
+      if (v === null || v === undefined) continue;
+      rows.push(dimRow(label, typeof v === 'string' ? v : unit ? `${fmt(v)} ${unit}` : fmt(v)));
+    }
+  } else {
+    for (const [key, label] of DIMS) {
+      const v = info[key];
+      if (v === null || v === undefined) continue;
+      rows.push(dimRow(typeof label === 'function' ? label(info) : label, `${fmt(v)} mm`));
+    }
   }
   $('#dims').replaceChildren(...rows);
   $('#centre-distance').textContent = info.centre_distance != null ? `${fmt(info.centre_distance)} mm` : '—';
@@ -242,7 +334,7 @@ function setDownloads(q) {
     const a = $(`#dl-${kind}`);
     if (q) {
       const qs = q.toString();
-      a.href = `api/model.${kind}${qs ? `?${qs}` : ''}`;
+      a.href = `${P.model}.${kind}${qs ? `?${qs}` : ''}`;
       a.removeAttribute('aria-disabled');
     } else {
       a.removeAttribute('href');
@@ -262,8 +354,8 @@ async function update() {
   const q = gearQuery();
   const mate = mateInput.value || rejected.get('mate_teeth') || '';
   const infoQ = new URLSearchParams(q);
-  if (mate) infoQ.set('mate_teeth', mate);
-  const hash = infoQ.toString();
+  if (mate && P.mate) infoQ.set('mate_teeth', mate);
+  const hash = [P.tag, infoQ.toString()].filter(Boolean).join('&');
   history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);
 
   for (const { wrap } of fields.values()) wrap.classList.remove('invalid');
@@ -278,11 +370,11 @@ async function update() {
     if (mine !== seq) return;
     showMessages(errors);
     $('#dims').replaceChildren();
-    setStatus(mesh ? 'Showing the last valid gear' : '');
+    setStatus(mesh ? `Showing the last valid ${P.noun}` : '');
   };
 
   try {
-    const infoRes = await fetch(`api/info?${infoQ}`, { signal: ctl.signal });
+    const infoRes = await fetch(`${P.info}?${infoQ}`, { signal: ctl.signal });
     if (!infoRes.ok) return fail(await problems(infoRes));
     const info = await infoRes.json();
     if (mine !== seq) return;
@@ -290,7 +382,7 @@ async function update() {
 
     const stlQ = new URLSearchParams(q);
     stlQ.set('quality', 'preview');
-    const res = await fetch(`api/model.stl?${stlQ}`, { signal: ctl.signal });
+    const res = await fetch(`${P.model}.stl?${stlQ}`, { signal: ctl.signal });
     if (!res.ok) return fail(await problems(res));
     const buf = await res.arrayBuffer();
     if (mine !== seq) return;
@@ -615,6 +707,23 @@ function showModel(buffer) {
   render();
 }
 
+// Empties the scene of the part the user left, so a 422 on the new one never shows the old
+// part under it (and `mesh` then reads null for the status line).
+function clearScene() {
+  if (mesh) {
+    scene.remove(mesh, edges);
+    mesh.geometry.dispose();
+    edges.geometry.dispose();
+    mesh = null;
+    edges = null;
+  }
+  box = null;
+  placeGrid(); // no box: removes the grid
+  fitted = false;
+  delete canvas.dataset.triangles;
+  render();
+}
+
 function resize() {
   const { clientWidth: w, clientHeight: h } = canvas.parentElement;
   if (!w || !h) return;
@@ -633,6 +742,9 @@ form.addEventListener('input', () => { applyRelations(); deriveSelectors(); sche
 mateInput.addEventListener('input', scheduleUpdate);
 mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));
 window.addEventListener('hashchange', () => { readHash(); update(); });
+for (const radio of radios) {
+  radio.addEventListener('change', () => switchTo(radio.value));
+}
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 new ResizeObserver(resize).observe(canvas.parentElement);
 
@@ -661,7 +773,7 @@ $('#copy-link').addEventListener('click', async (e) => {
   applyTheme();
   resize();
   try {
-    await buildForm();
+    await buildForm('gear');
   } catch (err) {
     showMessages([`Could not build the form: ${err.message}`]);
     return;

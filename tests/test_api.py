@@ -181,6 +181,8 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     dims_block = re.search(r"const DIMS = \[.*?\];", source, re.DOTALL)
     assert dims_block  # a regex that silently stopped matching must fail, not pass
     assert dims_keys == re.findall(r"^\s*\['(\w+)',", dims_block.group(0), re.MULTILINE)
+    # The shaft's rows travel in its schema (`dims`); a second row table here would drift.
+    assert source.count("const DIMS = [") == 1
 
     for read_form in (".span_teeth", "info.centre_distance", "info.warnings",
                      ".hex_cell_count"):
@@ -263,6 +265,9 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # under SC2.
     # 28-REVIEW IN-03 dropped `input.value = to;`: the longer write() token contains it, so it
     # could not fail on its own and the longer one supersedes it as the pin of the box write.
+    # L49 (Phase 33) added these tokens and removed none: the tagged hash builder, the part
+    # descriptor's URLs in update() and setDownloads(), buildForm's clears, the schema's `dims`,
+    # the text box and the part switch's listener.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
@@ -309,6 +314,17 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "form.addEventListener('input', (e) => rejected.delete(e.target.name));",
         "mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));",
         "rejected.clear(); mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",  # noqa: E501
+        # Phase 33: the part descriptor (PARTS) and the generic paths that read it.
+        "const hash = [P.tag, infoQ.toString()].filter(Boolean).join('&');",
+        "${P.info}?",
+        "${P.model}.stl?",
+        "${P.model}.${kind}",
+        "fields.clear();",
+        "stash.clear(); rejected.clear();",
+        "selectors.length = 0;",
+        "dims = schema.dims ?? null;",
+        "input.type = 'text';",
+        "radio.addEventListener('change', () => switchTo(radio.value));",
     ):
         assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 
@@ -326,7 +342,7 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # what tells them apart -- '#mate-teeth' has no quote immediately before "teeth".
     assert not re.search(r"""['"]teeth['"]""", "'#mate-teeth'")
 
-    for name in GearParams.model_fields:
+    for name in [*GearParams.model_fields, *ShaftParams.model_fields]:
         # A field name written as a complete quoted string literal ('name' or "name"),
         # not merely as a substring of a longer quoted string (the case above).
         assert not re.search(r"""['"]""" + re.escape(name) + r"""['"]""", rest), name

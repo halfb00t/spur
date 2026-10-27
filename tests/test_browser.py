@@ -136,7 +136,14 @@ REFUSED_LINK = "bore_hex=6&keyway_width=3&keyway_depth=1.4"
 
 MATE_VALUE = "() => document.querySelector('#mate-teeth').value"
 FRAGMENT = "() => location.hash.slice(1)"
+# Each result row as [label, value text], in DOM order.
+DIMS_ROWS = (
+    "() => [...document.querySelectorAll('#dims div')]"
+    ".map(r => [r.querySelector('dt').textContent, r.querySelector('dd').textContent])"
+)
+PART_RADIO = "input[name=part][value={}]"
 CONTROL_VALUE = "(n) => document.querySelector(`form#params [name=${n}]`).value"
+CONTROL_TYPE = "(n) => document.querySelector(`form#params [name=${n}]`).type"
 CONTROL_INDEX = "(n) => document.querySelector(`form#params select[name=${n}]`).selectedIndex"
 CONTROL_OPTIONS = "(n) => document.querySelector(`form#params select[name=${n}]`).options.length"
 
@@ -187,15 +194,37 @@ def _api_get(base: str, path: str, query: str) -> tuple[int, object]:
             return error.code, failure
 
 
-def _schema_properties(base: str) -> dict[str, dict[str, object]]:
-    status, schema = _api_get(base, "/api/schema", "")
-    assert status == 200, f"/api/schema answered {status}"
-    assert isinstance(schema, dict), "/api/schema is not an object"
+def _schema_properties(
+    base: str, path: str = "/api/schema"
+) -> dict[str, dict[str, object]]:
+    status, schema = _api_get(base, path, "")
+    assert status == 200, f"{path} answered {status}"
+    assert isinstance(schema, dict), f"{path} is not an object"
     properties = schema["properties"]
-    assert isinstance(properties, dict), "/api/schema has no properties"
+    assert isinstance(properties, dict), f"{path} has no properties"
     for name, prop in properties.items():
-        assert isinstance(prop, dict), f"/api/schema property {name!r} is not an object"
+        assert isinstance(prop, dict), f"{path} property {name!r} is not an object"
     return properties
+
+
+def _shaft_dims(base: str) -> list[dict[str, object]]:
+    """The result rows the shaft's schema carries, in the order the page must show them."""
+    status, schema = _api_get(base, "/api/shaft/schema", "")
+    assert status == 200, f"/api/shaft/schema answered {status}"
+    assert isinstance(schema, dict), "/api/shaft/schema is not an object"
+    dims = schema["dims"]
+    assert isinstance(dims, list), "/api/shaft/schema has no dims list"
+    assert dims, "/api/shaft/schema holds no dims rows"
+    rows: list[dict[str, object]] = []
+    for row in dims:
+        assert isinstance(row, dict), f"a dims row that is not an object: {row!r}"
+        rows.append(row)
+    return rows
+
+
+def _js_fmt(value: float) -> str:
+    """app.js `fmt`: three decimals with the trailing zeros and a bare point cut."""
+    return re.sub(r"\.?0+$", "", f"{value:.3f}")
 
 
 def _schema_selectors(base: str) -> list[dict[str, object]]:
@@ -279,6 +308,17 @@ def _stl_requests(seen: list[str]) -> int:
     cannot tell a default part from another there; the request count is the evidence.
     """
     return sum(1 for url in seen if urllib.parse.urlsplit(url).path == "/api/model.stl")
+
+
+def _shaft_stl_requests(seen: list[str]) -> int:
+    """How many /api/shaft/model.stl requests the recorded pages sent.
+
+    The main page's STL route matches the gear's path only, so a shaft preview is a real build
+    and its `data-triangles` is the shaft's own; the count shows one was asked for.
+    """
+    return sum(
+        1 for url in seen if urllib.parse.urlsplit(url).path == "/api/shaft/model.stl"
+    )
 
 
 def _differing(
@@ -704,6 +744,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
     properties = _schema_properties(server)
     selectors = _schema_selectors(server)
     field_count = len(properties)
+    shaft_properties = _schema_properties(server, "/api/shaft/schema")
+    shaft_dims = _shaft_dims(server)
     parked: list[Route] = []
     seen: list[str] = []
 
@@ -722,17 +764,27 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
             # field, is refused wherever it leaks.
             allowed_query = set(properties) | {"quality", "mate_teeth"}
             allowed_hash = set(properties) | {"mate_teeth"}
+            # The shaft routes take ShaftParams and `quality`: no mate, and no `designation`
+            # (the page has no such control, D-10, D-11). A shaft page's hash opens with
+            # `part=shaft` and then names shaft fields; on any other hash `part` is foreign.
+            shaft_query = set(shaft_properties) | {"quality"}
 
             def no_foreign_key() -> None:
-                leaked = foreign_keys(seen, allowed_query)
-                assert not leaked, f"a request carried a key GearParams lacks: {leaked}"
-                keys = [
-                    key
-                    for key, _ in urllib.parse.parse_qsl(
-                        eval_str(page, FRAGMENT), keep_blank_values=True
-                    )
+                shaft_seen = [
+                    url
+                    for url in seen
+                    if urllib.parse.urlsplit(url).path.startswith("/api/shaft/")
                 ]
-                stray = [key for key in keys if key not in allowed_hash]
+                gear_seen = [url for url in seen if url not in shaft_seen]
+                leaked = foreign_keys(gear_seen, allowed_query)
+                assert not leaked, f"a request carried a key GearParams lacks: {leaked}"
+                shaft_leaked = foreign_keys(shaft_seen, shaft_query)
+                assert not shaft_leaked, f"a request carried a key the shaft lacks: {shaft_leaked}"
+                pairs = urllib.parse.parse_qsl(eval_str(page, FRAGMENT), keep_blank_values=True)
+                on_shaft = pairs[:1] == [("part", "shaft")]
+                keys = [key for key, _ in (pairs[1:] if on_shaft else pairs)]
+                allowed = set(shaft_properties) if on_shaft else allowed_hash
+                stray = [key for key in keys if key not in allowed]
                 assert not stray, f"the main page's hash carries {stray}, not a field of the form"
 
             with step("webgl2", no_foreign_key):
@@ -753,6 +805,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 _wait_until_parked(page, parked)
                 # The fresh default load: empty hash, readHash() and update() have run.
                 default_pairs = eval_pairs(page)
+                default_rows = eval_pairs(page, DIMS_ROWS)
                 assert page.locator("#dl-stl").get_attribute("href") is None, (
                     "the STL link has an href before any STL was shown"
                 )
@@ -2236,6 +2289,67 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "Root fillet used",
                 ], f"the label follows the request and not the build: {row_labels}"
                 print(f"root_fillet label per link {LABEL_LINKS}: {row_labels}")
+            with step("part switch", no_foreign_key):
+                # D-12..D-14: the radios sit outside the form, the shaft is built from its own
+                # routes at its schema defaults, and a switch carries no value across.
+                status, shaft_info = _api_get(server, "/api/shaft/info", "")
+                assert status == 200, f"/api/shaft/info answered {status}, not 200"
+                assert isinstance(shaft_info, dict), "/api/shaft/info is not an object"
+                expected_rows: list[tuple[str, str]] = []
+                for dim in shaft_dims:
+                    dim_value = shaft_info.get(str(dim["key"]))
+                    if dim_value is None:
+                        continue
+                    dim_unit = str(dim["unit"])
+                    if isinstance(dim_value, str):
+                        row_text = dim_value
+                    else:
+                        assert isinstance(dim_value, int | float), f"{dim['key']}: {dim_value!r}"
+                        row_text = _js_fmt(dim_value) + (f" {dim_unit}" if dim_unit else "")
+                    expected_rows.append((str(dim["label"]), row_text))
+                assert ("Designation", "W 25x1.25x18x8f") in expected_rows, expected_rows
+
+                stl_before = _shaft_stl_requests(seen)
+                with page.expect_response(
+                    lambda response: urllib.parse.urlsplit(response.url).path
+                    == "/api/shaft/model.stl",
+                    timeout=BUILD_WAIT_MS,
+                ) as shaft_served:
+                    page.locator(PART_RADIO.format("shaft")).click()
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(len(shaft_properties))
+                shaft_pairs = eval_pairs(page)
+                assert [name for name, _ in shaft_pairs] == list(shaft_properties), shaft_pairs
+                for shaft_name, shaft_shown in shaft_pairs:
+                    shaft_default = shaft_properties[shaft_name]["default"]
+                    if isinstance(shaft_default, str):
+                        assert shaft_shown == shaft_default, f"{shaft_name} reads {shaft_shown!r}"
+                    else:
+                        assert isinstance(shaft_default, int | float), f"{shaft_name}"
+                        assert float(shaft_shown) == float(shaft_default), shaft_name
+                assert eval_str(page, CONTROL_TYPE, "fit") == "text"
+                assert eval_str(page, FRAGMENT) == "part=shaft"
+                assert eval_pairs(page, DIMS_ROWS) == expected_rows
+                assert page.locator("#dl-step").get_attribute("href") == "api/shaft/model.step"
+                assert _shaft_stl_requests(seen) > stl_before, "no shaft STL was requested"
+                declared_shaft = page.locator("#canvas").get_attribute("data-triangles")
+                assert declared_shaft is not None, "the shaft drew nothing"
+                assert int(declared_shaft) == stl_triangles(shaft_served.value.body())
+                assert page.locator(PART_RADIO.format("shaft")).is_checked()
+
+                page.locator(PART_RADIO.format("gear")).click()
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(field_count)
+                assert eval_pairs(page) == default_pairs, "the gear is not at its defaults"
+                assert eval_str(page, FRAGMENT) == ""
+                assert eval_pairs(page, DIMS_ROWS) == default_rows
+                assert page.locator("#dl-step").get_attribute("href") == "api/model.step"
+                assert page.locator(PART_RADIO.format("gear")).is_checked()
+
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH
             # Finding 9): the count is what shows every page was watched.
