@@ -35,19 +35,26 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic.json_schema import JsonSchemaValue
 from starlette.concurrency import run_in_threadpool
 
 from . import __version__, int_env
 from .build_errors import BuildError, BuildTimeout
 from .calc import DerivedDimensions, derive
+from .din5480 import DesignationError
 from .params import GearParams
 from .parts import Part
 from .pool import BuildPool
 from .records import build_failed, build_started, configure, export_served, queue_refused
 from .shaft_calc import ShaftDimensions, derive_shaft
-from .shaft_params import ShaftParams
+from .shaft_params import (
+    SPLINE_KEYS,
+    ShaftParams,
+    clash_message,
+    designation_clash,
+    resolve_shaft,
+)
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -252,6 +259,12 @@ class ModelQuery(GearParams):
 class ShaftInfoQuery(ShaftParams):
     """The shaft's query model: its fields, validated once, as `/api/info` does for the gear."""
 
+    designation: str | None = Field(
+        None, title="Designation",
+        description="A DIN 5480 designation such as W 25x1.25x18x8f. It replaces reference_d, "
+                    "module, teeth and fit, so it cannot be given together with any of them; "
+                    "the solid's fields combine with it. Read by DIN 5480's codec.")
+
 
 class ShaftModelQuery(ShaftInfoQuery):
     quality: Literal["preview", "fine"] = Field(
@@ -341,13 +354,40 @@ def _gear(q: GearParams) -> GearParams:
     return GearParams(**q.model_dump(include=set(GearParams.model_fields)))
 
 
+def _designation_conflict(request: Request) -> None:
+    """A route dependency refusing a designation beside any spline field, on key presence.
+
+    It reads the raw query string, so it runs before any value is parsed: `designation=...
+    &teeth=abc` is the conflict, not a number error (D-07). Pure: it reads one request.
+    """
+    keys = set(request.query_params.keys())
+    clash = designation_clash(keys) if "designation" in keys else ()
+    if clash:
+        raise HTTPException(422, detail=[{
+            "loc": ["query", "designation"], "type": "conflict", "msg": clash_message(clash),
+            "ctx": {"fields": ["designation", *clash]}}])
+
+
 def _shaft(q: ShaftInfoQuery) -> ShaftParams:
     """Strip the per-endpoint extras back to a plain ShaftParams.
 
     The build caches compare the class as well as the fields, as `_gear` says, so a
-    ShaftModelQuery and a ShaftInfoQuery describing one shaft must not be two keys.
+    ShaftModelQuery and a ShaftInfoQuery describing one shaft must not be two keys. A
+    designation is resolved here to the four spline fields, so a designation link and its
+    flat link are one cache entry. Its refusals are 422s at `designation`, never a 500: the
+    codec's own sentence for text it cannot read, the model's for a shaft it refuses.
     """
-    return ShaftParams(**q.model_dump(include=set(ShaftParams.model_fields)))
+    if q.designation is None:
+        return ShaftParams(**q.model_dump(include=set(ShaftParams.model_fields)))
+    solid = set(ShaftParams.model_fields) - set(SPLINE_KEYS)
+    try:
+        return resolve_shaft(q.designation, q.model_dump(include=solid))
+    except DesignationError as exc:
+        detail = [{"loc": ["query", "designation"], "type": "designation", "msg": str(exc)}]
+    except ValidationError as exc:
+        detail = [{"loc": ["query", "designation"], "type": e["type"], "msg": e["msg"]}
+                  for e in exc.errors()]
+    raise HTTPException(422, detail=detail)
 
 
 def _gzip(data: bytes) -> bytes:
@@ -624,14 +664,16 @@ def shaft_schema() -> JsonSchemaValue:
     return ShaftParams.model_json_schema()
 
 
-@app.get("/api/shaft/info", dependencies=[Depends(_numbers_as_written(ShaftInfoQuery))])
+@app.get("/api/shaft/info", dependencies=[Depends(_designation_conflict),
+                                          Depends(_numbers_as_written(ShaftInfoQuery))])
 def shaft_info(q: Annotated[ShaftInfoQuery, Query()]) -> ShaftDimensions:
     """The shaft's derived dimensions and the warnings that go with them."""
     return derive_shaft(_shaft(q))
 
 
 @app.get("/api/shaft/model.{fmt}", response_class=Response,
-         dependencies=[Depends(_numbers_as_written(ShaftModelQuery))],
+         dependencies=[Depends(_designation_conflict),
+                       Depends(_numbers_as_written(ShaftModelQuery))],
          responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
 async def shaft_model(fmt: Literal["stl", "step"], q: Annotated[ShaftModelQuery, Query()],
                       request: Request,

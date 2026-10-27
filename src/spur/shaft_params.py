@@ -8,10 +8,12 @@ gear's. The default shaft is W 25x1.25x18x8f.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping, Sequence
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
 
-from .din5480 import FIT_PATTERN, X_MAX, X_MIN
+from .din5480 import FIT_PATTERN, X_MAX, X_MIN, parse_designation
 
 # Intentional coupling (31-REVIEW IN-05): a shaft field is built with the gear's `_f` and
 # `_extra`, underscore-private in params.py, so it carries the same schema metadata (group,
@@ -118,3 +120,50 @@ class ShaftParams(BaseModel):
         solid does not depend on it.
         """
         return f"spur_shaft_w{self.reference_d:g}x{self.module:g}x{self.teeth}"
+
+
+# A designation names the four spline fields, so it replaces them (REQ-designation-input).
+# Held in the codec's own order; tests/test_shaft_interfaces.py pins the two together.
+SPLINE_KEYS: tuple[str, ...] = ("reference_d", "module", "teeth", "fit")
+
+
+class DesignationConflict(ValueError):  # noqa: N818 -- the name 33-05's CLI imports
+    """A designation was given beside a spline field; `fields` are the fields it clashes with."""
+
+    def __init__(self, fields: Sequence[str]) -> None:
+        super().__init__(clash_message(fields))
+        self.fields = tuple(fields)
+
+
+def designation_clash(keys: Iterable[str]) -> tuple[str, ...]:
+    """The spline fields present among `keys`, in spline order.
+
+    Key presence, not value (D-07): a value that equals the designation's is still a second
+    statement of it, and judging equality across `25`, `25.0` and `25,0` would be a guess
+    about what the user meant. Every front end calls this one function, on the keys as sent
+    and before any value is parsed, so the API and the CLI refuse the same requests.
+    """
+    present = set(keys)
+    return tuple(k for k in SPLINE_KEYS if k in present)
+
+
+def clash_message(clash: Sequence[str]) -> str:
+    """The sentence for a designation given beside `clash`."""
+    named = " and ".join([", ".join(clash[:-1]), *clash[-1:]] if len(clash) > 1 else clash)
+    return (f"The designation sets {', '.join(SPLINE_KEYS[:-1])} and {SPLINE_KEYS[-1]}, "
+            f"so it cannot be given together with {named}.")
+
+
+def resolve_shaft(designation: str, given: Mapping[str, object]) -> ShaftParams:
+    """The shaft a designation and the solid's fields describe.
+
+    `given` holds the solid's fields (splined_length, end_chamfer, shank_d, shank_length),
+    which combine freely with a designation (D-08). A spline field in it is refused here
+    too, so no caller can let a designation silently win (D-07). DesignationError and
+    pydantic's ValidationError propagate: the first is text the codec cannot read, the
+    second a shaft the model refuses. Pure: it reads its arguments only.
+    """
+    clash = designation_clash(given)
+    if clash:
+        raise DesignationConflict(clash)
+    return ShaftParams.model_validate({**given, **parse_designation(designation)._asdict()})

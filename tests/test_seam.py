@@ -165,6 +165,6 @@ def test_the_shaft_routes_take_the_shaft_fields() -> None:
     """The shaft's keys are the shaft's fields plus `designation` (and `quality` on the
     model route), so a key added to a shaft route is a decision and not a drift (D-15)."""
     fields = set(ShaftParams.model_fields)
-    assert _query_keys("/api/shaft/info") == fields
-    assert _query_keys("/api/shaft/model.{fmt}") == fields | {"quality"}
+    assert _query_keys("/api/shaft/info") == fields | {"designation"}
+    assert _query_keys("/api/shaft/model.{fmt}") == fields | {"designation", "quality"}
     assert _query_keys("/api/shaft/schema") == set()
