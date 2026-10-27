@@ -16,7 +16,6 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
-| must | [The shaft's volume guard accepts a chamfer that was never cut](active/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md) | Phase 33 starts (it exposes shaft downloads); fix before it ships |
 | must | [The shaft profile-shift cap refuses shifts DIN 5480-1 allows as exceptions at larger tooth counts](active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md) | Part 2, or the copy's exception table, gives the z-dependent limits |
 | must | [The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows](active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md) | Phase 34 makes the pin-contact guard live |
 | nice | [The shaft has no contention row: its heaviest build is measured alone, never under concurrent requests](active/2026-10-27-shaft-contention-row.md) | Phase 33 adds `/api/shaft/model.{fmt}` |
@@ -46,6 +45,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [The shaft's volume guard accepts a chamfer that was never cut](resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md) | fix(shaft): refuse a chamfer the kernel never cut (end-face read-back) |
 | [Widening `Part` to the shaft must type `model._build_checked`, `model._write_export` and `records._gear_fields` in the same change](resolved/2026-10-23-parts-one-line-widening-claim-is-false.md) | 4018de8 feat(model): build and export a shaft through the one kernel doorway (Part widens) |
 | [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | 45b6565 test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap |
 | [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | `6497c28` — see the file's own `Resolved in:` field |

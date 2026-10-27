@@ -196,6 +196,21 @@ def test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice(
     assert "fillet" not in str(raised.value)
 
 
+def test_a_chamfer_the_kernel_never_cut_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-16, L08: a kernel intersect that hands the body back unchanged leaves no chamfer on
+    the part while derive_shaft still prints one, so build_shaft refuses it. The stub is on
+    both Shape and Compound because the fused body is a Compound, which overrides
+    intersect. The volume bracket cannot see it (an uncut solid sits on its upper edge:
+    docs/tech_debt/resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md)."""
+    def no_cut(self: cq.Shape, *args: object, **kwargs: object) -> cq.Shape:
+        return self
+
+    monkeypatch.setattr(cq.Shape, "intersect", no_cut)
+    monkeypatch.setattr(cq.Compound, "intersect", no_cut)
+    with pytest.raises(BuildError, match="end face"):
+        build_shaft(ShaftParams())
+
+
 # The default spline (tip_d 24.75, root_d 22.25) with each shank diameter the plan names:
 # equal to the tip, equal to the root, between them, a hair either side of the tip, one ulp
 # above it, below the root, the bound, above the tip (the default), and no shank at all.

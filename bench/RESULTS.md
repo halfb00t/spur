@@ -7393,9 +7393,31 @@ not uniform: none
 
 Of the 91 tokens, 66 read back `''` on every box and 25 read back as given on every box; no token is blank on some boxes and held on others (`not uniform: none`). The rule refuses no token a box holds and lets through no token that a box blanks and the API accepts; the 32 tokens it lets through that a box blanks are all already refused by the API, 10 by a bound or the finite check after pydantic parses them (`Infinity`, `inf`, `-inf`, `infinity`, `NaN`, `nan`, `1e400`, `1e309`, `-1e309` and a 400-digit integer) and 22 because pydantic does not parse them. Of the 17 rows this table shares with `### Tokens a control cannot hold (28-01)` (`abc`, a single space, `0x10`, `NaN`, `Infinity`, `1e`, `--5`, `22,5`, `1e400`, ` 22`, `22 `, `1_0`, `22.`, `5.`, `+5`, `.5`, `1e1`), every one reads as it did there: the same Chromium build, blank on the first 15 and held on `.5` and `1e1`. The empty string reads `''` like the rest and pydantic refuses it; the page never sends it (L44 D-06).
 
+### The applied chamfer, read off the end face (33-02)
+
+`.planning/phases/33-interfaces-and-parity/investigation/33-02-cut-probe.py` (log: `33-02-cut-probe.log`), 2026-10-27, this host. `upper - volume` is what the volume bracket of `_guard_volume` can see of the chamfer; the end-face error is the largest vertex radius of the one planar face at z = 0 minus `tip_d/2 - c`.
+
+| Row | c (mm) | upper - volume (mm^3) | ratio to upper | End-face error (mm) | CONE faces | Build (s) |
+|---|---|---|---|---|---|---|
+| default | 1 | 15.4289 | 6.746e-04 | 2.309e-14 | 19 | 0.68 |
+| c=0.001 | 0.001 | 0.00011546 | 5.048e-09 | 1.776e-14 | 19 | 0.65 |
+| c=0.01 | 0.01 | 0.00124978 | 5.464e-08 | 1.599e-14 | 19 | 0.79 |
+| c=0.05 | 0.05 | 0.0291209 | 1.273e-06 | 1.421e-14 | 19 | 0.85 |
+| c=0.0001 (applies none) | 0 | 0.000103804 | 4.539e-09 | 3.553e-15 | 0 | 0.27 |
+| W6x0.5x10, c=0.001 | 0.001 | 9.04155e-05 | 8.605e-09 | 1.954e-14 | 11 | 0.39 |
+| heaviest (830 / 10 / 82, 500 + 500), c=0.001 | 0.001 | -0.215028 | -4.040e-10 | 1.705e-13 | 83 | 2.86 |
+
+The uncut reproduction (the debt's finding): the solid of `end_chamfer=0` read against the default's `c = 1.0` has an end face 1 mm wider than `tip_d/2 - 1.0`.
+
+- The volume cannot carry the guard: on the heaviest shaft an honest 0.001 mm chamfer reads `upper - volume = -0.215 mm^3`, because the face area's own error outweighs so small a cut, so the debt item's `upper - volume <= 0` would refuse a good part.
+- The end-face reading is within 1.7e-13 mm of the printed number on every row, 5800x under 1e-9, and `end_chamfer=0.0001` applies no chamfer (c 0, no CONE face), so the reading and the printed number agree there too.
+- An uncut face is off by the whole chamfer, at least the 0.001 mm resolution, which is 1000 x `TOL` (1e-6), while the honest rows sit 5.9e6 x under it, so one reading separates the cases.
+- The scan costs no measurable time: the heaviest build reads 2.86 s with it in place (T-33-04; 33-09's gate delta carries the whole-gate figure).
+
 ### Seen red once (Phase 33)
 
 Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.
 
 | Plan | Test or step | Deliberate break | First failure line | Reverted |
 |---|---|---|---|---|
+| 33-02 | test_a_chamfer_the_kernel_never_cut_is_refused | `_guard_volume` without the end-face read-back | `E       Failed: DID NOT RAISE BuildError` | restored |
