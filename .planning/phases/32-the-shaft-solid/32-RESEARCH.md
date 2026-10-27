@@ -359,21 +359,22 @@ Rows run in a fresh process each (`32-row.py`: build, preview + fine STL through
 | A5 | `hash(p) % workers` routes a `ShaftParams` correctly because the pydantic frozen model hashes by field values (ARCHITECTURE F4 says a probe showed `hash(GearParams()) != hash(ShaftParams())`) | Architecture | Low; the `test_pool.py` shaft row proves it end to end |
 | A6 | A memory reading taken on a loaded host equals the idle-host reading (peak RSS does not depend on load; time does) | Bounds sweep | Low |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Where does the chamfer cap's rounding rule live, and is `end_chamfer_effective` keyed to rounded or exact tooth height?**
+1. **Where does the chamfer cap's rounding rule live, and is `end_chamfer_effective` keyed to rounded or exact tooth height?** RESOLVED: keyed to the printed diameters, the radii the solid uses (32-02 objective, OQ1 note); the rounding rule is settled by the human at 32-01 Task 2 (choice A) and implemented by 32-02.
    - What we know: `tip_d` and `root_d` are 3-dp diameters; `(tip_d - root_d)/2` equals `module` to within 0.0005; flooring both caps keeps `ra - c - rf >= 0` on the 0.0005 lattice.
    - What's unclear: whether the planner prefers `cap = module` (exact, simple) or `cap = (tip_d - root_d)/2` (consistent with the radii the solid uses). Both are on the lattice.
    - Recommendation: use the radii the solid uses, floor to 3 dp, so the read-back test compares like with like.
-2. **Does the human want the contention shapes measured for the shaft?**
+2. **Does the human want the contention shapes measured for the shaft?** RESOLVED: settled by the human at 32-01 Task 2 (choice D); 32-05 runs the single-build rows on both hosts and, per that choice, files the `nice` debt item (D1) or adds the pool row (D2).
    - What we know: L37 recorded SC3 (ten distinct rows, both workers busy) for the gear's worst row; a shaft request is 5.5x inside the timeout alone.
    - What's unclear: whether REQ-shaft-build-measured needs a contended row or the single-build row suffices.
    - Recommendation: record the single-build row as the requirement's evidence and file a `nice` debt item "shaft contention row" if not run; the heaviest build is far from the timeout.
-3. **Position of `end_chamfer_effective` among the `ShaftDimensions` keys, and the shaft's `slug()`.**
+3. **Position of `end_chamfer_effective` among the `ShaftDimensions` keys, and the shaft's `slug()`.** RESOLVED: settled by the human at 32-01 Task 2 (choices B and C); 32-02 implements the key position and the stem.
    - What we know: `tests/test_shaft_calc.py:83-87` pins the list "in this order" and says the keys become Phase 33's dims rows; `_write_export` and `records._gear_fields` call `p.slug()`.
    - What's unclear: the key position and the download-name stem (Phase 33 owns the download name, L40 for the gear).
    - Recommendation: append `end_chamfer_effective` after `measure_over_pins` and before `designation` (it groups with the numbers, not the strings); give `ShaftParams.slug()` a plain filename-safe stem (for example `spur_shaft_w{reference_d:g}x{module:g}x{teeth}`) and mark it provisional for Phase 33. Surface both at plan review.
-4. **Does a new kernel test file stay in the commit slice?** See Pitfall 8; decide from a `make verify.fast` reading after the file exists.
+4. **Does a new kernel test file stay in the commit slice?** See Pitfall 8; decide from a `make verify.fast` reading after the file exists. RESOLVED: 32-03 Task 2's measured rule (three warm `make verify.fast` readings; heavy only if the slowest exceeds 20.0 s), re-checked by 32-04 Task 3.
+5. **Which gate baseline does the phase compare against, given CONTEXT's `2387 passed / 221.86 s` has no log (Pitfall 10)?** RESOLVED: a fresh `make verify` on Phase 31's code at 32-01 Task 1 (`### The gate baseline (32-01)`); 32-06 compares against that reading only.
 
 ## Environment Availability
 

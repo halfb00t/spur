@@ -356,7 +356,27 @@ DIN proportions); the existing gear caches and pool are reused, not forked. **Ph
 .github/workflows/ci.yml` empty.
 **Research flag**: Yes — a kernel spike at real DIN proportions first (research Phase 3);
 build times so far were measured on placeholder proportions only.
-**Plans**: TBD
+**Plans**: 6 plans, run one at a time (one shared working tree; deliberate red edits); 32-01 stops at the
+`checkpoint:decision` on the four open research choices and 32-02 cannot start until the human answers
+
+Plans:
+**Wave 1**
+- [ ] 32-01-PLAN.md — tracer: the phase-start `make verify` baseline and the floor-rule evidence, then `checkpoint:decision`: the rounding rule, the 13th key's position, the slug and the contention scope
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 32-02-PLAN.md — the applied end chamfer (`end_chamfer_effective`, floored, capped at tooth height and splined length, warned), the root-form and shank-step sentences, the help texts and `slug()`; L47 amendment; each seen red
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 32-03-PLAN.md — `shaft_model.build_shaft`: outline, extrude, fuse, cone intersect, proved against a stdlib closed form on every shank regime and chamfer cap; the root-band and volume-bracket guards; the kernel file priced; each seen red
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 32-04-PLAN.md — the doorway: `model` dispatches a shaft, `Part` widens, the contract's one ignored edge and the widening debt item in one change; STL and STEP through `model` and a real worker; each seen red
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 32-05-PLAN.md — the bench's shaft rows and `--fresh` per-row peak memory; the heaviest shaft swept on macOS and Linux beside the 199-tooth gear; D-09; the solid-field bounds pinned and logged
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 32-06-PLAN.md — the gate delta against 32-01's baseline, the phase-close checks and the closing `Lxx`
 
 ### Phase 33: Interfaces and Parity
 
