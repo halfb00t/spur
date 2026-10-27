@@ -18,7 +18,7 @@ from .din5480 import FIT_PATTERN, X_MAX, X_MIN
 # unit, step, help) as a gear field. A rename there fails this import loudly (mypy, every
 # test), but no import-linter contract names the pair; change the helpers with both
 # modules in view.
-from .params import _extra, _f
+from .params import _extra, _f, when
 
 # The default shaft sits exactly on X_MAX, so a step off it in any of the three fields
 # below can cross the range (31-REVIEW IN-05).
@@ -69,8 +69,11 @@ class ShaftParams(BaseModel):
                                  "0 = none.")
 
     # --- Shank -----------------------------------------------------------------
+    # Dimmed without a shank (D-18): test_shank_d_changes_nothing_without_a_shank builds four
+    # values at shank_length 0 and finds the solid bit-equal, so the dim claims nothing false.
     shank_d: float = _f(25.0, 1, 850, title="Shank Ø", group="Shank", unit="mm", step=0.05,
-                        help="Diameter of the plain shaft behind the splined part.")
+                        help="Diameter of the plain shaft behind the splined part.",
+                        enabled_when=[when("shank_length", "gt", 0)])
     shank_length: float = _f(20.0, 0, 500, title="Shank length", group="Shank", unit="mm",
                              step=0.5,
                              help="Length of the plain shaft behind the splined part. "

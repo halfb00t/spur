@@ -268,6 +268,23 @@ def test_every_shank_regime_builds_with_the_closed_form_volume(p: ShaftParams) -
     _check(p)
 
 
+def test_shank_d_changes_nothing_without_a_shank() -> None:
+    """D-18, L41: a field the form dims must do nothing. derive_shaft never reads shank_d, and
+    the kernel uses it only in _cone's `big`, which the flat top of the cutter makes
+    irrelevant when no shank is fused. Planning read 13038.149031505543 mm^3, 93 faces, 273
+    edges and 182 vertices for all four, and the volume is compared with ==, not approx."""
+    def shape(d: float) -> tuple[float, tuple[float, ...], tuple[int, int, int]]:
+        solid = build_shaft(ShaftParams(shank_length=0, shank_d=d))
+        box = solid.BoundingBox()
+        return (solid.Volume(),
+                (box.xmin, box.xmax, box.ymin, box.ymax, box.zmin, box.zmax),
+                (len(solid.Faces()), len(solid.Edges()), len(solid.Vertices())))
+
+    first = shape(1.0)
+    for d in (25.0, 60.0, 850.0):
+        assert shape(d) == first
+
+
 @pytest.mark.parametrize("name", CHAMFER_ROWS, ids=CHAMFER_ROWS.keys())
 def test_every_chamfer_cap_builds_at_the_applied_size(name: str) -> None:
     """D-05, D-06: at each cap the solid carries the size derive_shaft prints, with the
