@@ -1,7 +1,8 @@
 # The shaft has no contention row: its heaviest build is measured alone, never under concurrent requests
 
 Severity: nice
-Status: active
+Status: resolved
+Resolved in: docs(bench): the heaviest shaft under ten concurrent requests (D-19) (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-27
 Source: Phase 32 plan 32-01, checkpoint decision D (picked by the human: D1, single-build rows only)
 Related files:
@@ -29,3 +30,9 @@ measurement.
 ## Next step
 Revisit when Phase 33 adds `/api/shaft/model.{fmt}`: record the heaviest shaft row under
 ten concurrent requests the way L37 did for the gear, then resolve this item.
+
+## Resolution
+`bench/RESULTS.md` `### The heaviest shaft under ten concurrent requests (33-09)`: the heaviest allowed
+shaft through `/api/shaft/model.stl` on a fresh `spur serve` at the shipping defaults, ten distinct keys and
+then one key ten times. Four of ten admitted and answered 200 in each run, six refused 503 `busy`, no
+timeout, no `pool_broken`, no 500, no worker replaced. The slowest 200 was 10.16 s of the 30 s timeout.

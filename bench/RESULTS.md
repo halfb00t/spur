@@ -7454,6 +7454,64 @@ Framing, read on screenshots after a click on Fit (`33-08-shaft-default.png`, `-
 
 The gate after this plan: `make verify` read `2775 passed in 257.67s (0:04:17)`, `real 258.58`, rc 0, at a 1-minute load of 4.55 before and 5.29 after; `make verify.fast` read `2308 passed in 11.31s`, `real 12.18`. A gate run leaves the tree clean (the framing pictures go to `tmp_path`).
 
+### The heaviest shaft under ten concurrent requests (33-09)
+
+Source logs, whole outputs, under `.planning/phases/33-interfaces-and-parity/investigation/`: `33-09-shaft.log` and `33-09-shaft-identical.log` (the bench's stdout), `33-09-serve.log` (the two servers' stdout, run 1 first, a `--- run 2 ---` line between; the `/api/health` access lines are the harness's samples). Commands, from the repo root, each against a fresh server so that a worker one run replaced cannot pollute the next (`run_composed`'s docstring): `env -u SPUR_BUILD_TIMEOUT -u SPUR_BUILD_WORKERS -u SPUR_MAX_QUEUED_BUILDS .venv/bin/spur serve` and then `.venv/bin/python -m bench.latency shaft` (run 1), the server stopped, a second fresh server and `.venv/bin/python -m bench.latency shaft-identical` (run 2). Both fetch `/api/shaft/model.stl` at `quality=fine` (the bench's `path=` keyword); the tables are copied from the logs, not re-rounded.
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM; Python 3.12.15; HEAD `2f1e230` (the commit that adds the two scenarios)
+- Server environment: the shipping defaults, none of the three overrides set (`env | grep SPUR_` printed nothing). `/api/health` before each run read `{"workers":2,"queue_available":4,"workers_replaced":0}`: 2 workers, 4 queued builds; the 30 s per-build timeout is `int_env("SPUR_BUILD_TIMEOUT", 30)` in `src/spur/app.py`.
+- Run 1 (`shaft`), 2026-10-27 18:11:05Z to 18:11:17Z, 1-minute load `5.79` before (`{ 5.79 6.22 7.33 }`) and `8.38` after (`{ 8.38 6.75 7.50 }`).
+- Run 2 (`shaft-identical`), 18:11:36Z to 18:11:42Z, load `6.97` before (`{ 6.97 6.52 7.40 }`) and `6.60` after (`{ 6.60 6.45 7.37 }`).
+
+Ten rows: `bench/sweeps/shaft.json` row 5 (`reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500`), the heaviest allowed shaft, fired alone first and confirmed holding a build slot, then nine neighbours at `shank_length` 499 down to 491 (run 1) or the same row nine more times (run 2).
+
+#### `shaft`: ten distinct shafts
+
+| # | Parameters | Outcome | Wall time (s) |
+|---|---|---|---|
+| 1 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.67 |
+| 2 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=499 | 200 | 5.75 |
+| 3 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=498 | 503 busy | 0.00 |
+| 4 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=497 | 200 | 10.16 |
+| 5 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=496 | 200 | 7.95 |
+| 6 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=495 | 503 busy | 0.00 |
+| 7 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=494 | 503 busy | 0.00 |
+| 8 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=493 | 503 busy | 0.00 |
+| 9 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=492 | 503 busy | 0.00 |
+| 10 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=491 | 503 busy | 0.00 |
+
+200: 4, 503 busy: 6
+- /api/health workers_replaced: 0 -> 0
+
+#### `shaft-identical`: one shaft ten times
+
+| # | Parameters | Outcome | Wall time (s) |
+|---|---|---|---|
+| 1 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.75 |
+| 2 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.67 |
+| 3 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.71 |
+| 4 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.75 |
+| 5 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 6 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 7 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 8 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 9 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 10 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+
+200: 4, 503 busy: 6
+- /api/health workers_replaced: 0 -> 0
+
+#### `/api/health` p95, idle and under load
+
+| Run | Idle p95 | Samples | Under-load p95 | Samples | Ratio | `workers_replaced` before to after |
+|---|---|---|---|---|---|---|
+| `shaft` | 0.5 ms | 4540 | 1.5 ms | 11999 | 3.12x | 0 to 0 |
+| `shaft-identical` | 0.5 ms | 4488 | 1.5 ms | 4783 | 3.11x | 0 to 0 |
+
+The 2.00x bar belongs to the `single` and `concurrent` gear scenarios; neither shaft run is read against it (the bench prints none for them), and the ratio is shown only because the log prints it.
+
+**Reading.** No request in either run timed out, lost its pool or returned a 500: 4 of 10 were admitted and answered 200, 6 were refused 503 `busy` by admission control (`MAX_QUEUED_BUILDS` 4), and no worker was replaced. The slowest 200 was 10.16 s (request 4 of the `shaft` run, the third of its four admitted), which is 34% of the 30 s timeout and 4.6 times the 2.23 s that 32-05 measured for the same row alone; the `shaft-identical` run's four 200s took 3.67 to 3.75 s each. The shaft's margin to the timeout under contention is 19.84 s on this host at these loads, a measurement of one run per scenario and not a distribution. `docs/tech_debt/resolved/2026-10-27-shaft-contention-row.md` is retired with this section.
+
 ### Seen red once (Phase 33)
 
 Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.

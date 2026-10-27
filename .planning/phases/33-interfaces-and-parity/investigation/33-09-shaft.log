@@ -1,0 +1,27 @@
+### Per-request outcomes (shaft)
+
+| # | Parameters | Outcome | Wall time (s) |
+|---|---|---|---|
+| 1 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.67 |
+| 2 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=499 | 200 | 5.75 |
+| 3 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=498 | 503 busy | 0.00 |
+| 4 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=497 | 200 | 10.16 |
+| 5 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=496 | 200 | 7.95 |
+| 6 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=495 | 503 busy | 0.00 |
+| 7 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=494 | 503 busy | 0.00 |
+| 8 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=493 | 503 busy | 0.00 |
+| 9 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=492 | 503 busy | 0.00 |
+| 10 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=491 | 503 busy | 0.00 |
+
+200: 4, 503 busy: 6
+- /api/health workers_replaced: 0 -> 0
+
+## Latency: shaft
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM
+- Idle p95: 0.5 ms (n=4540)
+- Under-load p95: 1.5 ms (n=11999)
+- Ratio (under-load / idle): 3.12x
+- Slowest single build observed: 10.16 s
+- Build requests: 10 attempted, 6 refused by admission control (`503`, D-09 -- expected once concurrency exceeds MAX_QUEUED_BUILDS, not a harness failure)
+
