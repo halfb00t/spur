@@ -432,7 +432,7 @@ second row table and quoted field names (`tests/test_api.py:176-180`, `:314-340`
 `app`/`fastapi`/`starlette` (L04); no new dependency. **Phase close**: `make verify` result line
 recorded and `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: No — standard patterns (research Phase 4).
-**Plans**: 9/9 plans executed, run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
+**Plans**: 9/10 plans executed (33-10 closes UAT gap G-33-2), run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
 `checkpoint:decision` on the server rule, the browser token set and the fixing commit's place, and 33-02 cannot start
 until the human answers
 
@@ -463,6 +463,9 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 - [x] 33-09-PLAN.md — ten concurrent heaviest shafts through the real server (D-19), the gate delta against 33-01, the phase-close checks, L49 closed, and the C1 reading written beside SC4 and REQ-wr02-fixed
+
+**Gap closure (UAT G-33-2)** *(wave 10, blocked on Wave 9 completion)*
+- [ ] 33-10-PLAN.md — the three 33-UI-REVIEW fixes, each seen red first in the browser: a refused-part link dims the form and Reset and outlines the switch (CSS on `body[data-refused]`, D-15, D-20, L41); under 820 px the switch is ordered above the canvas and stays the top of `<aside>` (D-12); dark-mode primary button text at WCAG AA, measured; the dark link's 4.47:1 filed as debt
 
 **UI hint**: yes
 
