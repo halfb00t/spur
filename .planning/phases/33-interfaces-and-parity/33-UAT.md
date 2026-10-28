@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 33-interfaces-and-parity
 source: [33-VERIFICATION.md]
 started: 2026-10-28T02:52:43Z
-updated: 2026-10-28T15:26:24.666Z
+updated: 2026-10-28T15:27:08Z
 ---
 
 ## Current Test
@@ -39,5 +39,18 @@ blocked: 0
   reason: "User reported: fix"
   severity: major
   test: 2
-  artifacts: []  # Filled by diagnosis
-  missing: []    # Filled by diagnosis
+  root_cause: "Three independent causes, each cited in 33-UI-REVIEW.md and confirmed against the code: (1) the 820 px media query reorders #view with order:-1 while the Gear | Shaft fieldset lives inside <aside>, so the switch renders after the canvas and results; (2) update() returns early while `refused` is set and nothing marks the form inert, so a refused link leaves a default-looking form that silently ignores edits; (3) dark-mode --accent #e0573f under --accent-fg #fff gives about 3.7:1 for 14 px .btn.primary text, below WCAG AA 4.5:1."
+  artifacts:
+    - path: "src/spur/static/style.css"
+      issue: "@media (max-width: 820px) sets #view { order: -1 } (line 208), pushing the aside-held part switch below the canvas"
+    - path: "src/spur/static/index.html"
+      issue: "fieldset.part-switch sits inside <aside> (line 19), so it moves with the form column"
+    - path: "src/spur/static/app.js"
+      issue: "update() returns on `refused` (line 421); refuseLink() (line 257) sets the message but leaves the form live-looking and editable"
+    - path: "src/spur/static/style.css"
+      issue: "dark-mode --accent #e0573f (line 27) with --accent-fg #fff (line 9) on .btn.primary (line 152) is about 3.7:1"
+  missing:
+    - "Keep the Gear | Shaft switch above the canvas under 820 px (move it out of <aside> or keep it first in the mobile order)"
+    - "Make the refused-link state visibly non-editable (inert/dimmed form) or let an edit end it; place the message by the switch"
+    - "Dark-mode primary button fill/text pair measured at or above 4.5:1; light theme stays as is (about 5.5:1)"
+  debug_session: ""
