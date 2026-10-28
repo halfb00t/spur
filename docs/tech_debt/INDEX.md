@@ -16,6 +16,7 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
+| must | [An int field accepts `0-0`, a token the number box blanks](active/2026-10-28-int-fields-accept-a-blanked-zero-minus-zero-token.md) | L49's rule is next touched, an int field's default moves off 0, or an int field with a lower bound below 0 is added |
 | must | [The shaft profile-shift cap refuses shifts DIN 5480-1 allows as exceptions at larger tooth counts](active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md) | Part 2, or the copy's exception table, gives the z-dependent limits |
 | must | [The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows](active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md) | Phase 34 makes the pin-contact guard live |
 | nice | [The pre-commit hook's name and L36's amendment still say "five heavy files"](active/2026-10-27-pre-commit-hook-name-and-l36-still-say-five-heavy-files.md) | `.pre-commit-config.yaml` is next edited |
