@@ -3,9 +3,9 @@ phase: "33"
 slug: "interfaces-and-parity"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
+status: validated
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-10-27"
 ---
 
@@ -44,12 +44,12 @@ Filled by the planner per task. Requirement-level map (from research):
 
 | Requirement | Behavior | Test Type | Automated Command | File Exists |
 |-------------|----------|-----------|-------------------|-------------|
-| REQ-shaft-api | schema/info/stl/step answer; `dims` key; gear `/api/schema` byte-equal; route table additions only; invalid shaft 422 naming the field | unit + integration | `pytest tests/test_shaft_interfaces.py tests/test_seam.py tests/test_api.py -k shaft` | ❌ W0 |
-| REQ-shaft-cli | `spur shaft` numbers equal the API; exit 2 on refusal; README commands run | integration | `pytest tests/test_cli.py -k shaft` | ❌ W0 |
-| REQ-designation-input | designation alone builds; + spline field = 422 naming both; + solid field fine; bad token named; infeasible designation 422 not 500 | unit | `pytest tests/test_shaft_interfaces.py -k designation` | ❌ W0 |
-| REQ-shaft-web | switch both ways, preview, rows from schema, designation row, STL+STEP, `part=shaft` round trip, gear link no `part`, bad `part` refused | browser + static | `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q"`; `pytest tests/test_api.py -k "shareable or every_key"` | partial |
-| REQ-shaft-parity | web = API = CLI per number and download name over the fixed set; red once on a perturbed number | browser + integration | browser step + `pytest tests/test_shaft_interfaces.py -k parity` | ❌ W0 |
-| REQ-wr02-fixed | no token blank-in-box and 200-at-API; Chromium re-probe equals the table; 37-input browser sweep; golden sweep still sends the 44 pinned queries | unit + browser | `pytest tests/test_shaft_interfaces.py -k as_written`; browser steps | ❌ W0 |
+| REQ-shaft-api | schema/info/stl/step answer; `dims` key; gear `/api/schema` byte-equal; route table additions only; invalid shaft 422 naming the field | unit + integration | `pytest tests/test_shaft_interfaces.py tests/test_seam.py tests/test_api.py -k shaft` | ✅ |
+| REQ-shaft-cli | `spur shaft` numbers equal the API; exit 2 on refusal; README commands run | integration | `pytest tests/test_cli.py -k shaft` | ✅ |
+| REQ-designation-input | designation alone builds; + spline field = 422 naming both; + solid field fine; bad token named; infeasible designation 422 not 500 | unit | `pytest tests/test_shaft_interfaces.py -k designation` | ✅ (repeated `designation` key: manual-only, see below) |
+| REQ-shaft-web | switch both ways, preview, rows from schema, designation row, STL+STEP, `part=shaft` round trip, gear link no `part`, bad `part` refused | browser + static | `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q"`; `pytest tests/test_api.py -k "shareable or every_key"` | ✅ |
+| REQ-shaft-parity | web = API = CLI per number and download name over the fixed set; red once on a perturbed number | browser + integration | browser step `parity: web and API` + `pytest tests/test_shaft_parity.py` | ✅ |
+| REQ-wr02-fixed | no token blank-in-box and 200-at-API; Chromium re-probe equals the table; 37-input browser sweep; golden sweep still sends the 44 pinned queries | unit + browser | `pytest tests/test_number_as_written.py tests/test_shaft_interfaces.py -k as_written`; browser steps `number box tokens`, `as-written sweep`, `shaft as-written sweep` | ⚠️ partial — `0-0` gap, manual-only + debt |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -57,12 +57,12 @@ Filled by the planner per task. Requirement-level map (from research):
 
 ## Wave 0 Requirements
 
-- [ ] `tests/shaft_parity.py` — fixed shaft set (default; `reference_d=30 module=2 teeth=14`; an odd-count shaft such as `26x1.25x19`; `shank_length=0`) and the three readers
-- [ ] `tests/test_shaft_interfaces.py` — light TestClient tests
-- [ ] perturbation test, recorded under "Seen red once (Phase 33)" in `bench/RESULTS.md`
-- [ ] committed Chromium token table and its two walkers
-- [ ] `tests/test_api.py` amendment for the `hashchange` token (new Lxx) and the `dims` test
-- [ ] `tests/test_cli.py` amendment for the `shaft` help partition and README commands
+- [x] `tests/shaft_parity.py` — fixed shaft set (default; `reference_d=30 module=2 teeth=14`; an odd-count shaft such as `26x1.25x19`; `shank_length=0`) and the three readers
+- [x] `tests/test_shaft_interfaces.py` — light TestClient tests
+- [x] perturbation test, recorded under "Seen red once (Phase 33)" in `bench/RESULTS.md`
+- [x] committed Chromium token table and its two walkers
+- [x] `tests/test_api.py` amendment for the `hashchange` token (new Lxx) and the `dims` test
+- [x] `tests/test_cli.py` amendment for the `shaft` help partition and README commands
 
 ---
 
@@ -71,16 +71,26 @@ Filled by the planner per task. Requirement-level map (from research):
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
 | Viewer framing for a long shaft along Z | REQ-shaft-web | Visual judgement (Claude's Discretion in CONTEXT) | Open `#part=shaft&shank_length=<max>`, confirm the whole part is framed |
+| An int field refuses `0-0` / `00-0` (blank in the box) | REQ-wr02-fixed | Deferred by the human 2026-10-28: closing it changes L49's rule; harmless today because `spoke_count` and `hole_count` default to 0 (33-REVIEW IN-01) | `curl '…/api/info?spoke_count=0-0'` answers 200 today; tracked in `docs/tech_debt/active/2026-10-28-int-fields-accept-a-blanked-zero-minus-zero-token.md` |
+| A repeated `designation` key builds the last value | REQ-designation-input | Deferred by the human 2026-10-28 (33-REVIEW IN-06); checked by hand in 33-04, no test pins it | `/api/shaft/info?designation=nonsense&designation=W%2030x2x14x8f` answers 200 with the last value; the reverse order is a 422 at `designation` |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
 - [ ] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** partial — validated 2026-10-28 by /gsd-validate-phase 33; `nyquist_compliant` stays false while the two manual-only rows above stand
+
+## Validation Audit 2026-10-28
+
+| Metric | Count |
+|---|---|
+| Gaps found | 2 |
+| Resolved | 0 |
+| Escalated | 2 |
