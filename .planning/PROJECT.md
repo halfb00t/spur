@@ -735,6 +735,16 @@ pytest — L13). Full list with sources and acceptance evidence:
   REQ-shaft-solid, REQ-shaft-build-measured; verified 4/4; `make verify` 2644 passed in 233.72 s;
   review 0 critical / 2 warning / 2 info open, WR-01 filed `must` before Phase 33 ships;
   human picks A1 B1 C1 D1 and MESH_PREVIEW_REL 6e-3)
+- ✓ The shaft on all three interfaces: `/api/shaft/schema`, `/info`, `/model.stl` and `/model.step`,
+  `spur shaft ...`, and a Gear | Shaft switch on the page, with one set of numbers across web, API
+  and CLI proved by one parity test; a designation can stand in for the spline fields (a clash
+  with a spline field is a 422 naming both); a link token the number box blanks is refused as
+  written (WR-02); gap G-33-2 closed the three UI-review fixes (switch above the canvas under
+  820 px, a refused link dims the form, dark primary buttons at 4.85:1) — Phase 33 (L49;
+  REQ-shaft-api, REQ-shaft-cli, REQ-shaft-web, REQ-designation-input, REQ-shaft-parity,
+  REQ-wr02-fixed; verified 5/5 after 33-10; `make verify` 2779 passed in 245.64 s; security
+  threats_open 0; review 0 critical / 4 warning / 9 info open; Nyquist partial, two manual-only
+  rows deferred by the human; UI 18/24)
 
 ### Active
 
@@ -903,6 +913,7 @@ quick reference.
 | L46 | spur is a gear and spline generator: one parameter model per part type, a second frozen link contract for the shaft (amends L02 and L05) | ✓ Good — logged before the first shaft module (`5d61f8e` ancestor of `bdf224d`); `gear.unchanged` green |
 | L47 | The DIN 5480 shaft's maths: what Phase 31 froze, proved on one designation, and left null (follows L46; applies L03 and L08) | ✓ Good — formulas confirmed by clause against DIN 5480-1:2006-03 (unofficial translation); one Part 1 designation and four DIN 5480-2 rows anchored (2026-10-26 amendment); odd-z M_Re and d_Ff still `null`; verified 5/5 with no override relied on |
 | L48 | How Phase 32 builds the DIN 5480 shaft's solid, what it refuses, and what it hands on (follows L46 and L47; applies L08, L24, L26) | ✓ Good — verified 4/4; Nyquist 16/16 automated; security 14/14 closed; volume within 1e-4 of the closed form; WR-01 (uncut chamfer passes the volume guard) open as `must` debt with a Phase 33 trigger |
+| L49 | Phase 33 puts the shaft on the API, the CLI and the page, and a link token the number box blanks is refused as written (amends L44; follows L46–L48) | ✓ Good — verified 5/5; parity test green; IN-01 (`0-0` int token) deferred by the human as debt |
 
 ## Success Metric (Milestone v0.1)
 
@@ -1010,4 +1021,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-27 after Phase 32*
+*Last updated: 2026-10-29 after Phase 33*

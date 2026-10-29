@@ -22,11 +22,11 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-27)
+See: .planning/PROJECT.md (updated 2026-10-29)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 33 — Interfaces and Parity
+**Current focus:** Phase 34 — Fit Tables and Tolerance Window
 
 ## Current Position
 
@@ -609,10 +609,15 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 33] Verified 5/5 after gap closure 33-10 (G-33-2 closed); security threats_open 0; UI 18/24; Nyquist
+  partial (two manual-only rows deferred by the human). Code review `33-REVIEW-DISPOSITION.md`: 13 open (0 critical,
+  4 warning). New WR-03: a gear build that throws behind a refused link leaves `refused`/`data-refused` set
+  (app.js `followHash` catch), form dimmed and pointer-dead; WR-04: refused look is visual only, no
+  `aria-disabled`. Both need a human disposition (fix or file `must` debt). `.planning/codebase/` map stale (drift gate).
 - ⚠️ [Phase 32] Verified 4/4; Nyquist 16/16; security 14/14 closed. Code review `32-REVIEW-DISPOSITION.md`: 4 open
   (0 critical). WR-01 `_guard_volume` accepts an uncut chamfer (a no-op cone intersect would print an
-  `end_chamfer_effective` not on the part, L08) — filed `must`, fix before Phase 33 ships shaft downloads
-  (`docs/tech_debt/active/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md`). WR-02 bench `--fresh` swallows child
+  `end_chamfer_effective` not on the part, L08) — resolved in 33-02 (end-face guard;
+  `docs/tech_debt/resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md`). WR-02 bench `--fresh` swallows child
   stderr; IN-01 stale comments; IN-02 `load_sweep` rejects explicit `"part": "gear"`. Cross-CLI (Codex) review of the phase
   diff not yet run.
 - ✓ [Phase 31] Re-verified 5/5 with no override relied on, after the human approved four DIN 5480-2 rows (W 25x1.25x18,
@@ -923,7 +928,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-29T01:49:12.802Z
+Last session: 2026-10-29T02:16:28Z
 Stopped at: Phase 33 complete, ready to plan Phase 34
 Resume file: None
 
