@@ -95,6 +95,11 @@ async function buildForm(which) {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   const schema = await res.json();
   if (build !== formSeq) return false;
+  // Past this line the page is emptied, so it holds no part until the build below finishes. A
+  // throw in between (a schema without `properties`, a selector naming no group) must make the
+  // next link or switch rebuild: with `part` still naming the old part, followHash took its
+  // same-part branch and read the link into an empty form, and the old radio stayed checked.
+  part = '';
   form.replaceChildren();
   fields.clear();
   for (const key of Object.keys(defaults)) delete defaults[key];

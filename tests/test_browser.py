@@ -2775,6 +2775,39 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     stranded.close()
                 print("refused link whose build fails: the form is live, the error is the build's")
 
+            with step("form build that throws midway", no_foreign_key):
+                # 33 WR-01: buildForm empties the page before it reads the schema's properties,
+                # so a schema that throws there leaves a blank form. The page must then say it
+                # holds no part: a link for the part it held before has to rebuild that form,
+                # and not run against an empty one. Its own page, with the shaft's schema made
+                # malformed (no `properties`).
+                midway = record_api(browser.new_page(), seen)
+                try:
+                    midway.route("**/api/shaft/schema", lambda route: route.fulfill(json={}))
+                    midway.goto(server + "/")
+                    expect(midway.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    midway.locator(PART_RADIO.format("shaft")).click()
+                    expect(midway.locator("#messages .error")).to_contain_text(
+                        "Could not build the form", timeout=BUILD_WAIT_MS
+                    )
+                    expect(midway.locator("form#params [name]")).to_have_count(0)
+                    for which in ("gear", "shaft"):
+                        assert not midway.locator(PART_RADIO.format(which)).is_checked(), (
+                            f"the {which} radio is checked over a blank form"
+                        )
+                    # The link of the part held before the failure rebuilds its form.
+                    midway.evaluate("(f) => { location.hash = f; }", "teeth=24")
+                    expect(midway.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    assert midway.evaluate(CONTROL_VALUE, "teeth") == "24"
+                    expect(midway.locator(PART_RADIO.format("gear"))).to_be_checked()
+                finally:
+                    midway.close()
+                print("form build that throws midway: no part held, the next link rebuilds")
+
             with step("parity: web and API", no_foreign_key):
                 # D-21 part one, SC3: over the fixed set the page's shaft table is the API's
                 # numbers at the displayed text, and the download is named as the API names it.
