@@ -5,19 +5,19 @@ titles: json
 findings:
   - id: WR-03
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A refusal whose gear build fails leaves a dimmed, unresponsive form of the old part with a message about something else (new)"
   - id: WR-04
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The refused look is visual only; the form stays focusable, typable and announced as live (new)"
   - id: WR-01
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "A `buildForm` that throws after it has emptied the page leaves `part` pointing at the old part (prior)"
   - id: WR-02
     severity: warning
-    disposition: open
+    disposition: fixed
     title: "The shaft's three route rows are cut off from the endpoint table in `http-api.md` (prior)"
   - id: IN-07
     severity: info
@@ -55,19 +55,19 @@ findings:
     severity: info
     disposition: open
     title: "A repeated `designation` key is read as its last value, and no test pins it (prior)"
-open: 13
+open: 9
 total: 13
-recorded: 2026-10-29T02:08:52.330Z
+recorded: 2026-10-29T10:25:49.462Z
 ---
 
 # Phase 33: Code Review Disposition
 
 | Finding | Severity | Disposition | Source |
 |---------|----------|-------------|--------|
-| WR-03 | warning | open | - |
-| WR-04 | warning | open | - |
-| WR-01 | warning | open | - |
-| WR-02 | warning | open | - |
+| WR-03 | warning | fixed | 33-REVIEW-FIX.md |
+| WR-04 | warning | fixed | 33-REVIEW-FIX.md |
+| WR-01 | warning | fixed | 33-REVIEW-FIX.md |
+| WR-02 | warning | fixed | 33-REVIEW-FIX.md |
 | IN-07 | info | open | - |
 | IN-08 | info | open | - |
 | IN-09 | info | open | - |
