@@ -281,6 +281,16 @@ def test_the_codecs_spellings_are_accepted_and_the_row_is_canonical(
     assert r.json()["designation"] == DESIGNATION
 
 
+def test_a_repeated_designation_key_is_read_as_its_last_value() -> None:
+    """The accepted behaviour, pinned (33 IN-06): FastAPI reads the last value of a repeated
+    scalar key, so `designation=nonsense&designation=<good>` builds the good one. An upgrade
+    that read the first value, or refused the repeat, would change which shaft a published
+    link builds; this fails then instead of nobody noticing."""
+    r = client.get(INFO, params=[("designation", "nonsense"), ("designation", DESIGNATION)])
+    assert r.status_code == 200
+    assert r.json()["designation"] == DESIGNATION
+
+
 def test_an_encoded_plus_is_a_refused_plus() -> None:
     r = client.get(f"{INFO}?designation=W%2B30x2x14x8f")
     assert r.status_code == 422
