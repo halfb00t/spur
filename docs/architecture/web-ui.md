@@ -133,9 +133,19 @@ gear's keys ignored. The third sets six bad `part` links and checks the message,
 radios, the defaults, and that no build is requested across the links, an edit and Reset. It also
 reads the refused look (the form and Reset dimmed and marked `aria-disabled`, the switch outlined) and its end on a radio click
 and on a valid link.
-The last step, `narrow layout`, sets an 800 px viewport and reads the boxes: the switch above the
+Three steps pin the exits where a form build fails, each on a page of its own. `refused link whose
+build fails` makes the refusal's gear build answer 500: the page then keeps the shaft form, looks
+live, and says the build failed. `superseded build that fails` holds the shaft schema's answer,
+follows `part=bogus`, then releases the answer as a 500: the newer link's refusal stands and a
+keystroke builds nothing. `form build that throws midway` serves a shaft schema without
+`properties`: the page then holds no part, neither radio is checked, Reset and the mate box build
+nothing, and the next link rebuilds the form.
+The step `narrow layout` sets an 800 px viewport and reads the boxes: the switch above the
 canvas, the results below it and the form last, with the switch still the first child of `<aside>`
-and the landmark still holding both radios, then back at the desktop size the switch in the left column.
+and the landmark still holding both radios. It repeats the stacking at 820 px and the desktop
+columns at 821 px, reads the refused look at 800 px, and then at the desktop size reads the switch
+in the left column. The step `primary button contrast` runs after it and reads the download
+buttons' text on their fill, in each colour scheme, against WCAG AA's 4.5:1.
 
 Three more steps close the page's half of the shaft's parity (L49, D-21). `parity: web and API`
 follows a `part=shaft` link for each of the four shafts of `tests/shaft_parity.py` and compares the
