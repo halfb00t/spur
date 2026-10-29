@@ -161,6 +161,18 @@ PART_TEXTS = {
     },
 }
 CONTROL_VALUE = "(n) => document.querySelector(`form#params [name=${n}]`).value"
+# 33-10, G-33-2: how a refused part link (D-15) leaves the form. [opacity, pointer-events] of
+# the form and of Reset, then the part switch's outline style. CSS on body[data-refused] sets
+# it (app.js may not shut a control, L41), so the page is read as computed.
+REFUSED_LOOK = """() => {
+  const look = (el) => getComputedStyle(el);
+  const form = look(document.querySelector('form#params'));
+  const reset = look(document.querySelector('#reset'));
+  return [form.opacity, form.pointerEvents, reset.opacity, reset.pointerEvents,
+          look(document.querySelector('.part-switch')).outlineStyle];
+}"""
+LIVE_LOOK = ["1", "auto", "1", "auto", "none"]
+DEAD_LOOK = ["0.45", "none", "0.45", "none", "solid"]
 CONTROL_TYPE = "(n) => document.querySelector(`form#params [name=${n}]`).type"
 CONTROL_INDEX = "(n) => document.querySelector(`form#params select[name=${n}]`).selectedIndex"
 CONTROL_OPTIONS = "(n) => document.querySelector(`form#params select[name=${n}]`).options.length"
@@ -2623,6 +2635,9 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     assert page.locator("#dl-stl").get_attribute("href") is None
                     assert page.locator("#canvas").get_attribute("data-triangles") is None
                     assert eval_str(page, FRAGMENT) == bad_link, "the refused link was rewritten"
+                    assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK, (
+                        f"#{bad_link}: the form does not look refused"
+                    )
                 page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                 assert _build_requests(seen) == requests_before, (
                     "a refused part asked for a build"
@@ -2632,7 +2647,11 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 page.fill("input[name=teeth]", "30")
                 page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                 assert _build_requests(seen) == requests_before, "an edit built under a bad part"
-                page.click("#reset")
+                # Reset takes no pointer while the refusal stands (the look above), and Playwright's
+                # click waits for pointer events and times out; a keyboard user still has it. The
+                # pairs check below is what proves the handler ran: teeth was 30 just before.
+                page.locator("#reset").focus()
+                page.keyboard.press("Enter")
                 page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                 assert _build_requests(seen) == requests_before, "Reset built under a bad part"
                 assert eval_pairs(page) == default_pairs
@@ -2640,6 +2659,12 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     [_bad_part_text("shaft, gear")]
                 )
                 assert eval_str(page, FRAGMENT) == "part=shaft&part=gear"
+                assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK
+                # The keyboard Reset scrolled the aside to its end; the switch is at its top.
+                page.evaluate("() => { document.querySelector('aside').scrollTop = 0; }")
+                refused_picture = tmp_path / "33-10-refused.png"
+                page.locator("aside").screenshot(path=refused_picture)
+                assert refused_picture.stat().st_size > 0, "an empty picture of the refused state"
 
                 # A click on a radio ends it.
                 with page.expect_response(
@@ -2653,6 +2678,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 )
                 expect(page.locator("#messages .error")).to_have_count(0)
                 assert eval_str(page, FRAGMENT) == "part=shaft"
+                assert eval_str_list(page, REFUSED_LOOK) == LIVE_LOOK, "a radio click left the look"
 
                 # A new link ends it too, from the shaft as well as from the gear.
                 page.evaluate("(f) => { location.hash = f; }", "part=bogus")
@@ -2670,6 +2696,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 expect(page.locator("#messages .error")).to_have_count(0)
                 assert page.locator(PART_RADIO.format("gear")).is_checked()
                 assert eval_str(page, FRAGMENT) == "teeth=20"
+                assert eval_str_list(page, REFUSED_LOOK) == LIVE_LOOK, "a valid link left the look"
                 print(f"bad part refused: {len(bad_parts)} links, no build under a bad part")
 
             with step("parity: web and API", no_foreign_key):

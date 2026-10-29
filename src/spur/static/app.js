@@ -75,7 +75,8 @@ let part = '';
 let P = PARTS.gear;
 // The page's message for a link whose `part` it has no form for, or null (D-15). While it is
 // set, update() builds nothing: a field edit or Reset must not build a part the link did not
-// name (D-20). A switch, or the next hashchange, clears it.
+// name (D-20). A switch, or the next hashchange, clears it. body[data-refused] follows it and
+// dims the form and Reset (style.css).
 let refused = null;
 // The shaft's result rows come in its schema; null means the gear's table above.
 let dims = null;
@@ -195,6 +196,7 @@ function markPart() {
 // a switch (D-13) and the hash is the new part's, written by update() (D-14).
 async function switchTo(which) {
   refused = null;
+  delete document.body.dataset.refused;
   try {
     if (!(await buildForm(which))) return;
   } catch (err) {
@@ -257,6 +259,7 @@ function partOf(hash) {
 async function refuseLink(values) {
   const text = `Unknown part ${JSON.stringify(values.join(', '))} in the link; use the Gear or Shaft switch`;
   refused = text;
+  document.body.dataset.refused = '';
   if (!(await buildForm('gear'))) return;
   for (const [name, { input }] of fields) input.value = defaults[name];
   applyRelations();
@@ -272,6 +275,7 @@ async function refuseLink(values) {
 // started by an earlier link cannot land under this one.
 async function followHash() {
   refused = null;
+  delete document.body.dataset.refused;
   formSeq++;
   const which = partOf(location.hash);
   if (which === part) { markPart(); readHash(); update(); return; }

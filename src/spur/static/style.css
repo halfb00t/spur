@@ -202,6 +202,20 @@ button, .btn {
 [data-part="shaft"] .hint[data-for="gear"],
 body:not([data-part="shaft"]) .hint[data-for="shaft"] { display: none; }
 
+/* A link whose part the page has no form for (D-15) leaves the gear form on screen, and an edit
+   or Reset builds nothing under it (D-20): a live-looking form misled the user (33-UI-REVIEW
+   fix 2). The form and Reset take the disabled download's own look (.btn[aria-disabled]), and
+   the switch is outlined because the message, kept in #messages (D-15), names it as the way out.
+   CSS on a body attribute and not a script write, because tests/test_api.py's guard refuses a
+   script that shuts a control (L41). L41 protects a field that a shared link's value loads into
+   and that is sent; refuseLink loads no link value into this form and nothing in it is sent.
+   Copy link stays live: it copies the link as written. Keyboard focus still reaches the fields
+   and typing builds nothing: CSS cannot take focus away, and `inert` would need the script write
+   the guard refuses. */
+body[data-refused] #params,
+body[data-refused] #reset { opacity: .45; pointer-events: none; }
+body[data-refused] .part-switch { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+
 @media (max-width: 820px) {
   html, body { height: auto; }
   main { display: flex; flex-direction: column; }

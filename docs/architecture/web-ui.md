@@ -73,7 +73,10 @@ A `part` the page has no form for (`#part=bogus`, `#part=gear`, the key twice) i
 page's own words, `Unknown part "bogus" in the link; use the Gear or Shaft switch`, because no
 route takes `part` and no server can word it (L49). The gear form shows at its defaults with
 neither radio checked, nothing is drawn or requested, and an edit or Reset builds nothing until a
-click on either radio or a new link.
+click on either radio or a new link. While the refusal stands the form and Reset are dimmed and take
+no pointer input, like a disabled download, and the switch is outlined as the way out. That is CSS on
+`body[data-refused]`, which `app.js` sets and clears beside the refused state; keyboard focus still
+reaches the fields and typing builds nothing.
 
 ## Known gap
 
@@ -116,7 +119,9 @@ the page and on a fresh one, with the odd tooth count (no `M_Re` row, designatio
 the download named `spur_shaft_w26x1.25x19.stl`), the shank diameter dimmed exactly when the shank
 length is 0, a 422 marking the shank length and the fit with no shaft STL asked for, and the
 gear's keys ignored. The third sets six bad `part` links and checks the message, the unchecked
-radios, the defaults, and that no build is requested across the links, an edit and Reset.
+radios, the defaults, and that no build is requested across the links, an edit and Reset. It also
+reads the refused look (the form and Reset dimmed, the switch outlined) and its end on a radio click
+and on a valid link.
 
 Three more steps close the page's half of the shaft's parity (L49, D-21). `parity: web and API`
 follows a `part=shaft` link for each of the four shafts of `tests/shaft_parity.py` and compares the
