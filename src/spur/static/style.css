@@ -25,6 +25,12 @@
     --muted: #97a0ab;
     --line: #2b3138;
     --accent: #e0573f;
+    /* White on #e0573f is 3.75:1, under WCAG AA's 4.5:1 for 14 px text (33-UI-REVIEW fix 3).
+       The dark theme's own --bg, #131619, reads 4.85:1 on it, as the step `primary button
+       contrast` measures in the browser. --accent stays: links and the invalid outline read it,
+       and a fill dark enough for white text would push the link further under the bar. The
+       light theme is unchanged: white on #b8412c, 5.48:1. */
+    --accent-fg: #131619;
     --err-bg: #3b1d18;
     --err-fg: #ffb6a9;
     --warn-bg: #3a3015;

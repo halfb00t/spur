@@ -287,6 +287,36 @@ def _js_fmt(value: float) -> str:
     return re.sub(r"\.?0+$", "", f"{value:.3f}")
 
 
+def _rgb(css: str) -> tuple[int, int, int]:
+    """A computed `rgb(r, g, b)` colour as its three channels; anything else fails loudly."""
+    found = re.fullmatch(r"rgb\((\d+), (\d+), (\d+)\)", css)
+    assert found, f"{css!r} is not a computed rgb() colour"
+    return int(found.group(1)), int(found.group(2)), int(found.group(3))
+
+
+def _contrast(fg: tuple[int, int, int], bg: tuple[int, int, int]) -> float:
+    """The WCAG 2 contrast ratio of two sRGB colours, from their relative luminances."""
+
+    def luminance(colour: tuple[int, int, int]) -> float:
+        red, green, blue = (
+            c / 255 / 12.92 if c / 255 <= 0.04045 else ((c / 255 + 0.055) / 1.055) ** 2.4
+            for c in colour
+        )
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+    high, low = sorted((luminance(fg), luminance(bg)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+def test_the_contrast_ratio_is_the_wcag_formula() -> None:
+    """The reference pairs: the formula's own ends, and the ones 33-10 planned its fix on."""
+    assert _contrast((255, 255, 255), (0, 0, 0)) == 21.0
+    assert round(_contrast((0x77, 0x77, 0x77), (255, 255, 255)), 2) == 4.48
+    assert round(_contrast((255, 255, 255), (0xB8, 0x41, 0x2C)), 2) == 5.48
+    assert round(_contrast((255, 255, 255), (0xE0, 0x57, 0x3F)), 2) == 3.75
+    assert _rgb("rgb(19, 22, 25)") == (19, 22, 25)
+
+
 def _schema_selectors(base: str) -> list[dict[str, object]]:
     status, schema = _api_get(base, "/api/schema", "")
     assert status == 200, f"/api/schema answered {status}"
@@ -2920,6 +2950,37 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     "the part switch left the left column at the desktop size"
                 )
                 print(f"narrow layout: {tops}")
+
+            with step("primary button contrast", no_foreign_key):
+                # 33-10, G-33-2: the download buttons' text on their fill, read as computed in each
+                # colour scheme. The buttons are 14 px at normal weight, so WCAG AA's bar for
+                # normal text, 4.5:1, applies, not the 3:1 of large text. A shaft is built at
+                # this point, so the button read is the live one.
+                assert page.locator("#dl-stl").get_attribute("href") is not None, (
+                    "the STL link has no href: the button read is the disabled one"
+                )
+                ratios: dict[str, float] = {}
+                for scheme in ("light", "dark"):
+                    page.emulate_media(color_scheme=scheme)
+                    text, fill = eval_str_list(
+                        page,
+                        "() => { const s = getComputedStyle(document.querySelector('#dl-stl'));"
+                        " return [s.color, s.backgroundColor]; }",
+                    )
+                    ratios[scheme] = _contrast(_rgb(text), _rgb(fill))
+                    assert ratios[scheme] >= 4.5, (
+                        f"{scheme}: the primary button's text {text} on {fill} reads "
+                        f"{ratios[scheme]:.2f}:1, under WCAG AA's 4.5:1"
+                    )
+                    if scheme == "dark":
+                        dark_picture = tmp_path / "33-10-dark-buttons.png"
+                        page.locator(".downloads").screenshot(path=dark_picture)
+                        assert dark_picture.stat().st_size > 0, "an empty picture of the buttons"
+                page.emulate_media(color_scheme="null")
+                print(
+                    f"primary button contrast: light {ratios['light']:.2f}:1, "
+                    f"dark {ratios['dark']:.2f}:1"
+                )
 
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH
