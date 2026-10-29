@@ -464,6 +464,10 @@ let seq = 0;
 let inflight = null;
 
 async function update() {
+  // A build threw after it emptied the page (buildForm). Reset and the mate box sit outside the
+  // form and still call here, but there is no form to read, and P is still the old part's: a
+  // build now would draw that part's defaults under a blank form.
+  if (!part) return;
   if (refused) { showMessages([refused]); return; }
   const q = gearQuery();
   const mate = mateInput.value || rejected.get('mate_teeth') || '';

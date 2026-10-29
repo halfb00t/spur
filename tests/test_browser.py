@@ -2841,6 +2841,17 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                         assert not midway.locator(PART_RADIO.format(which)).is_checked(), (
                             f"the {which} radio is checked over a blank form"
                         )
+                    # 33 WR-05: Reset and the mate box sit outside the emptied form and stay
+                    # live. With no part held they must build nothing: a drawn default solid and
+                    # an enabled download under a blank form is a number no control produced.
+                    builds_before = _build_requests(seen)
+                    midway.locator("#reset").click()
+                    midway.fill("#mate-teeth", "12")
+                    midway.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    assert _build_requests(seen) == builds_before, "a build ran with no part held"
+                    assert eval_pairs(midway, DIMS_ROWS) == [], "rows shown with no part held"
+                    assert midway.locator("#dl-stl").get_attribute("href") is None
+                    assert midway.locator("#canvas").get_attribute("data-triangles") is None
                     # The link of the part held before the failure rebuilds its form.
                     midway.evaluate("(f) => { location.hash = f; }", "teeth=24")
                     expect(midway.locator("form#params [name]")).to_have_count(
