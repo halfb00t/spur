@@ -163,16 +163,24 @@ PART_TEXTS = {
 CONTROL_VALUE = "(n) => document.querySelector(`form#params [name=${n}]`).value"
 # 33-10, G-33-2: how a refused part link (D-15) leaves the form. [opacity, pointer-events] of
 # the form and of Reset, then the part switch's outline style. CSS on body[data-refused] sets
-# it (app.js may not shut a control, L41), so the page is read as computed.
+# it (app.js may not shut a control, L41), so the page is read as computed. The last three are
+# what a screen reader gets (33 WR-04): "aria-disabled/aria-describedby" of the form's groups
+# (one entry for all, so a group that missed it shows), of Reset and of the part switch, which
+# stays live. aria-disabled is valid on a group and a button and not on the unnamed form.
 REFUSED_LOOK = """() => {
   const look = (el) => getComputedStyle(el);
   const form = look(document.querySelector('form#params'));
   const reset = look(document.querySelector('#reset'));
+  const aria = (el) =>
+    [el.getAttribute('aria-disabled'), el.getAttribute('aria-describedby')].join('/');
+  const groups = new Set([...document.querySelectorAll('form#params fieldset')].map(aria));
   return [form.opacity, form.pointerEvents, reset.opacity, reset.pointerEvents,
-          look(document.querySelector('.part-switch')).outlineStyle];
+          look(document.querySelector('.part-switch')).outlineStyle,
+          [...groups].join(), aria(document.querySelector('#reset')),
+          aria(document.querySelector('.part-switch'))];
 }"""
-LIVE_LOOK = ["1", "auto", "1", "auto", "none"]
-DEAD_LOOK = ["0.45", "none", "0.45", "none", "solid"]
+LIVE_LOOK = ["1", "auto", "1", "auto", "none", "/", "/", "/"]
+DEAD_LOOK = ["0.45", "none", "0.45", "none", "solid", "true/messages", "true/messages", "/"]
 CONTROL_TYPE = "(n) => document.querySelector(`form#params [name=${n}]`).type"
 CONTROL_INDEX = "(n) => document.querySelector(`form#params select[name=${n}]`).selectedIndex"
 CONTROL_OPTIONS = "(n) => document.querySelector(`form#params select[name=${n}]`).options.length"
@@ -2674,7 +2682,9 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 )
 
                 # D-20: an edit and Reset in the refused state build nothing and change nothing.
-                page.fill("input[name=teeth]", "30")
+                # Playwright reads aria-disabled on the group as "not enabled" and waits for it
+                # forever (WR-04); force types as a keyboard user, who is not stopped, can.
+                page.fill("input[name=teeth]", "30", force=True)
                 page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                 assert _build_requests(seen) == requests_before, "an edit built under a bad part"
                 # Reset takes no pointer while the refusal stands (the look above), and Playwright's

@@ -192,11 +192,34 @@ function markPart() {
   for (const radio of radios) radio.checked = radio.value === part;
 }
 
+// What a refusal tells a screen reader, beside the look body[data-refused] gives (style.css).
+// aria-disabled is valid on a group and a button, not on the unnamed <form> (WAI-ARIA 1.2), so it
+// goes on the form's fieldsets and on Reset. It is no `disabled` or `inert`, which the guard in
+// test_api.py refuses (L41): the controls stay focusable, and the page only says they do nothing.
+// aria-describedby points at #messages, where the refusal is (D-15). The form's fieldsets are
+// rebuilt by every build, and Reset is not, so a clear must reach both.
+const REFUSAL_MARKED = '#params fieldset, #reset';
+
+function markRefused() {
+  for (const el of document.querySelectorAll(REFUSAL_MARKED)) {
+    el.setAttribute('aria-disabled', 'true');
+    el.setAttribute('aria-describedby', 'messages');
+  }
+}
+
+function clearRefusal() {
+  refused = null;
+  delete document.body.dataset.refused;
+  for (const el of document.querySelectorAll(REFUSAL_MARKED)) {
+    el.removeAttribute('aria-disabled');
+    el.removeAttribute('aria-describedby');
+  }
+}
+
 // A radio's change: build that part's form at its defaults, then show it. No value crosses
 // a switch (D-13) and the hash is the new part's, written by update() (D-14).
 async function switchTo(which) {
-  refused = null;
-  delete document.body.dataset.refused;
+  clearRefusal();
   try {
     if (!(await buildForm(which))) return;
   } catch (err) {
@@ -265,6 +288,7 @@ async function refuseLink(values) {
   applyRelations();
   deriveSelectors();
   for (const radio of radios) radio.checked = false;
+  markRefused();
   showMessages([text]);
 }
 
@@ -274,8 +298,7 @@ async function refuseLink(values) {
 // sweep sends one request per link and relies on it). formSeq is bumped so a slower build
 // started by an earlier link cannot land under this one.
 async function followHash() {
-  refused = null;
-  delete document.body.dataset.refused;
+  clearRefusal();
   formSeq++;
   const which = partOf(location.hash);
   if (which === part) { markPart(); readHash(); update(); return; }
@@ -286,8 +309,7 @@ async function followHash() {
     // refuseLink sets the refusal before its gear build. A build that throws never showed the
     // refusal, and the form still on the page is the old part's, so the page must not keep
     // looking refused or answer that form's keystrokes with a message about the link.
-    refused = null;
-    delete document.body.dataset.refused;
+    clearRefusal();
     showMessages([`Could not build the form: ${err.message}`]);
     markPart();
   }

@@ -217,7 +217,7 @@ body:not([data-part="shaft"]) .hint[data-for="shaft"] { display: none; }
    and that is sent; refuseLink loads no link value into this form and nothing in it is sent.
    Copy link stays live: it copies the link as written. Keyboard focus still reaches the fields
    and typing builds nothing: CSS cannot take focus away, and `inert` would need the script write
-   the guard refuses. */
+   the guard refuses. app.js tells a screen reader what the look tells the eye (markRefused). */
 body[data-refused] #params,
 body[data-refused] #reset { opacity: .45; pointer-events: none; }
 body[data-refused] .part-switch { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }

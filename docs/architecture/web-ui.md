@@ -79,7 +79,9 @@ neither radio checked, nothing is drawn or requested, and an edit or Reset build
 click on either radio or a new link. While the refusal stands the form and Reset are dimmed and take
 no pointer input, like a disabled download, and the switch is outlined as the way out. That is CSS on
 `body[data-refused]`, which `app.js` sets and clears beside the refused state; keyboard focus still
-reaches the fields and typing builds nothing.
+reaches the fields and typing builds nothing. For a screen reader `app.js` also sets `aria-disabled`
+and `aria-describedby="messages"` on the form's fieldsets and on Reset (valid on a group and a
+button, not on the unnamed `<form>`), and clears them with the refusal.
 
 ## Known gap
 
@@ -123,7 +125,7 @@ the download named `spur_shaft_w26x1.25x19.stl`), the shank diameter dimmed exac
 length is 0, a 422 marking the shank length and the fit with no shaft STL asked for, and the
 gear's keys ignored. The third sets six bad `part` links and checks the message, the unchecked
 radios, the defaults, and that no build is requested across the links, an edit and Reset. It also
-reads the refused look (the form and Reset dimmed, the switch outlined) and its end on a radio click
+reads the refused look (the form and Reset dimmed and marked `aria-disabled`, the switch outlined) and its end on a radio click
 and on a valid link.
 The last step, `narrow layout`, sets an 800 px viewport and reads the boxes: the switch above the
 canvas, the results below it and the form last, with the switch still the first child of `<aside>`
