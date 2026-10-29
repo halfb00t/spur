@@ -24,9 +24,10 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 from number_box_tokens import TOKENS
+from pydantic import ValidationError
 
 import spur.app as app_module
-from spur.app import app, build_backend
+from spur.app import InfoQuery, ShaftInfoQuery, app, build_backend
 from spur.params import GearParams
 
 client = TestClient(app)
@@ -229,3 +230,24 @@ def test_the_dependency_adds_no_query_parameter_to_either_route() -> None:
 
     assert query_names("/api/info") == set(GearParams.model_fields) | {"mate_teeth"}
     assert query_names("/api/model.{fmt}") == set(GearParams.model_fields) | {"quality"}
+
+
+def test_an_interior_minus_builds_an_int_field_only_as_its_default() -> None:
+    """IN-01: pydantic reads `0-0` and `00-0` as the int 0, and `0-9` as -9, while Chromium's
+    number box blanks all of them, so the blanked-token invariant (no token builds a part the
+    blank box does not imply) holds for them only where 0 is the field's default. It does for
+    `spoke_count` and `hole_count`, whose range starts at 0 and whose default is 0, and by that
+    coincidence and not by the rule. A new int field that reads one of these tokens as a
+    value other than its default fails here, and then the rule gets a fifth condition (L49)."""
+    for model in (InfoQuery, ShaftInfoQuery):
+        for name, is_int in app_module._number_keys(model).items():
+            if not is_int:
+                continue
+            for token in ("0-0", "00-0", "0-9", "00-9"):
+                try:
+                    value = getattr(model.model_validate({name: token}), name)
+                except ValidationError:
+                    continue
+                assert value == model.model_fields[name].default, (
+                    f"{model.__name__}.{name}={token!r} builds {value}, not the default"
+                )

@@ -280,7 +280,10 @@ def blank_in_a_number_box(token: str) -> bool:
     Measured in the gate's own Chromium over 91 tokens on 37 inputs
     (`bench/RESULTS.md`, `### Tokens the number box blanks, every field (33-01)`): 66 are
     blank, the four conditions refuse 34 of them and none that the box holds; the other 32
-    (`abc`, `Infinity`, `1e400`, `''`, ...) are already a 422 from pydantic or a bound.
+    (`abc`, `Infinity`, `1e400`, `''`, ...) are already a 422 from pydantic or a bound, with
+    one exception that holds by a coincidence of defaults and not by the rule: pydantic reads
+    `0-0` as the int 0, which `spoke_count` and `hole_count` accept and whose default is 0, so
+    the part is the one the blank box implies (IN-01; the walker below pins it).
     tests/test_number_as_written.py walks that table. An empty token is not the rule's: the
     page never sends it (a blank control is the default, L44 D-06) and pydantic answers it.
     """

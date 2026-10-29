@@ -6,7 +6,7 @@ number input of the page: `bench/RESULTS.md`, `### Tokens the number box blanks,
 spec, the authority for `app.blank_in_a_number_box`: tests/test_number_as_written.py walks it
 over the gear routes, and the browser step `number box tokens` re-reads every row on the
 page's own inputs at each gate run, so a Chromium upgrade that moves a row fails there and
-not in a user's browser.
+not in a user's browser. The last three rows were added after that table (33 IN-01).
 
 `blank` is True when the box reads the token back as the empty string. A non-ASCII or
 invisible character is written as an escape so this file stays ASCII.
@@ -114,4 +114,10 @@ TOKENS: tuple[Token, ...] = (
     Token("22,5", True),
     Token("NaN ", True),
     Token("", True),
+    # 33 IN-01: not in the 33-01 table. pydantic reads these as the ints 0 and -9 (and
+    # `spoke_count=0-0` builds, at its default); the browser step reads them on the page's own
+    # inputs at each gate run, which is what records Chromium's side.
+    Token("0-0", True),
+    Token("0-9", True),
+    Token("00-9", True),
 )
