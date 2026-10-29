@@ -2728,6 +2728,11 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 expect(page.locator("form#params [name]")).to_have_count(field_count)
                 assert eval_pairs(page) == default_pairs
                 assert page.locator("#dl-stl").get_attribute("href") is None
+                # The second refusal rebuilds the gear form over a built shaft and then marks the
+                # new fieldsets: the look is read on that path too (33 IN-07).
+                assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK, (
+                    "a refusal reached from the shaft does not look refused"
+                )
                 after_bad = _follow_link(page, "teeth=20")
                 assert _pairs(after_bad) == [("teeth", "20")], after_bad
                 expect(page.locator("#dl-stl")).to_have_attribute(
@@ -3043,8 +3048,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
             with step("narrow layout", no_foreign_key):
                 # 33-10, G-33-2: under 820 px the part switch is the first thing under the header
                 # and the form comes last, and the switch is still the first child of <aside>
-                # (D-12) and inside its landmark. Last in the walk, so no earlier step runs at the
-                # narrow size.
+                # (D-12) and inside its landmark. After the shaft steps, so no earlier step runs at
+                # the narrow size.
                 desktop = page.viewport_size
                 assert desktop is not None, "the page has no viewport size"
                 page.set_viewport_size({"width": 800, "height": 900})
@@ -3077,6 +3082,37 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 narrow_picture = tmp_path / "33-10-narrow.png"
                 page.screenshot(path=narrow_picture, full_page=True)
                 assert narrow_picture.stat().st_size > 0, "an empty picture of the narrow page"
+
+                # 33 IN-07: the breakpoint is 820 px (style.css), and 800 would pass a media
+                # query moved down to max-width: 800px. 820 is still one column, 821 is not.
+                page.set_viewport_size({"width": 820, "height": 900})
+                switch, canvas_wrap = box(".part-switch"), box("#canvas-wrap")
+                assert switch["y"] + switch["height"] <= canvas_wrap["y"], (
+                    "the part switch is not above the canvas at 820 px"
+                )
+                page.set_viewport_size({"width": 821, "height": 900})
+                switch, canvas_wrap = box(".part-switch"), box("#canvas-wrap")
+                assert switch["x"] + switch["width"] <= canvas_wrap["x"], (
+                    "the desktop columns did not return at 821 px"
+                )
+
+                # 33 IN-07: the refused look at the narrow size, where aside draws no box and the
+                # switch's outline sits inside a 1 rem margin. A shaft link brings the page back
+                # to the shaft the next step reads.
+                page.set_viewport_size({"width": 800, "height": 900})
+                page.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                expect(page.locator("#messages .error")).to_have_text(
+                    [_bad_part_text("bogus")], timeout=BUILD_WAIT_MS
+                )
+                assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK, (
+                    "the refused look is not drawn at 800 px"
+                )
+                page.evaluate("(f) => { location.hash = f; }", "part=shaft")
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", re.compile(r"^api/shaft/model\.stl"), timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("#messages .error")).to_have_count(0)
+                assert eval_str_list(page, REFUSED_LOOK) == LIVE_LOOK
 
                 page.set_viewport_size(desktop)
                 switch, canvas_wrap = box(".part-switch"), box("#canvas-wrap")
