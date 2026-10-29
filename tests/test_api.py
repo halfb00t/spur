@@ -1085,10 +1085,12 @@ def test_a_shaft_downloads_as_stl_and_step(fmt: str, ctype: str, magic: bytes | 
         assert r.content.startswith(magic)
 
 
+@pytest.mark.usefixtures("fresh_exports")
 def test_a_saturated_service_refuses_a_shaft() -> None:
     """A shaft competes with the gear for the one build queue (T-33-10).
 
-    A shaft no other test downloads, or the byte cache would answer before the queue is asked.
+    The byte cache is fresh, or an earlier download of this shaft would answer before the
+    queue is asked.
     """
     from spur import app as app_module
 
@@ -1096,8 +1098,7 @@ def test_a_saturated_service_refuses_a_shaft() -> None:
             for _ in range(app_module.MAX_QUEUED_BUILDS)]
     try:
         assert all(held)
-        r = client.get("/api/shaft/model.stl",
-                       params={"quality": "preview", "splined_length": 31})
+        r = client.get("/api/shaft/model.stl", params={"quality": "preview"})
         assert r.status_code == 503
         assert r.headers["retry-after"] == "5"
         assert r.json()["detail"][0]["type"] == "busy"
@@ -1221,6 +1222,7 @@ def test_a_second_identical_download_is_served_from_the_byte_cache() -> None:
     assert calls == 1
 
 
+@pytest.mark.usefixtures("fresh_exports")
 def test_a_designation_and_its_fields_share_one_cached_shaft() -> None:
     """Both links reduce to an equal ShaftParams, so the second never reaches a worker (D-06)."""
     from spur import app as app_module
