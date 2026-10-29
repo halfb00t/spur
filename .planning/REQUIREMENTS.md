@@ -87,7 +87,7 @@ REQ-IDs continue the project's `REQ-slug` convention.
   contract.
 - [ ] **REQ-shaft-cli**: `spur shaft ...` builds the same part and prints the same numbers as
   the API for the same parameters.
-- [ ] **REQ-shaft-web**: the web page switches between gear and shaft, shows the shaft preview,
+- [x] **REQ-shaft-web**: the web page switches between gear and shaft, shows the shaft preview,
   its numbers (from a schema-carried row list) and its designation, downloads it, and round-trips
   a shaft link (`part=shaft&...`); a gear link carries no `part` key; any other `part` value is
   refused visibly; a browser test proves it.
@@ -173,7 +173,7 @@ shaft routes under that rule and cites it, it does not re-map it.
 | REQ-shaft-build-measured | Phase 32 | Complete |
 | REQ-shaft-api | Phase 33 | Pending |
 | REQ-shaft-cli | Phase 33 | Pending |
-| REQ-shaft-web | Phase 33 | Pending |
+| REQ-shaft-web | Phase 33 | Complete |
 | REQ-designation-input | Phase 33 | Pending |
 | REQ-shaft-parity | Phase 33 | Pending |
 | REQ-wr02-fixed | Phase 33 | Pending |
