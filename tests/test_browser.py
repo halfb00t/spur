@@ -290,11 +290,6 @@ def _shaft_dims(base: str) -> list[dict[str, object]]:
     return rows
 
 
-def _js_fmt(value: float) -> str:
-    """app.js `fmt`: three decimals with the trailing zeros and a bare point cut."""
-    return re.sub(r"\.?0+$", "", f"{value:.3f}")
-
-
 def _rgb(css: str) -> tuple[int, int, int]:
     """A computed `rgb(r, g, b)` colour as its three channels; anything else fails loudly."""
     found = re.fullmatch(r"rgb\((\d+), (\d+), (\d+)\)", css)
@@ -2464,7 +2459,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                         row_text = dim_value
                     else:
                         assert isinstance(dim_value, int | float), f"{dim['key']}: {dim_value!r}"
-                        row_text = _js_fmt(dim_value) + (f" {dim_unit}" if dim_unit else "")
+                        row_text = displayed(dim_value) + (f" {dim_unit}" if dim_unit else "")
                     expected_rows.append((str(dim["label"]), row_text))
                 assert ("Designation", "W 25x1.25x18x8f") in expected_rows, expected_rows
 
