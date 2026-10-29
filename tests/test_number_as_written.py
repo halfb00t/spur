@@ -113,6 +113,9 @@ def test_a_trailing_dot_is_refused_as_written_with_the_canonical_form(stub: _Stu
                  id="plus-point-five"),
     pytest.param("mate_teeth", "+30", '"+30" is not a number as written; write it as 30',
                  id="mate-box"),
+    pytest.param("teeth", "+-5",
+                 '"+-5" is not a number as written; write it as a plain number, e.g. 22 or 2.5',
+                 id="plus-then-minus-is-not-guessed"),
 ])
 def test_the_message_quotes_the_token_and_suggests_the_form_when_there_is_one(
         field: str, token: str, msg: str) -> None:

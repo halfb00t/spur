@@ -314,10 +314,12 @@ def _as_written_message(token: str, integer: bool) -> str:
     json.dumps escapes every control and non-ASCII character, so nothing invisible is
     reflected to the page (T-33-06).
     """
-    core = token.strip().removeprefix("+").removesuffix(".")
-    if not _PLAIN_NUMBER.fullmatch(core):
+    written = token.strip()
+    core = written.removeprefix("+").removesuffix(".")
+    # `+-5` is a plus and a minus: nobody knows which sign was meant, so no form is offered.
+    if not _PLAIN_NUMBER.fullmatch(core) or (written.startswith("+") and core.startswith("-")):
         suggestion = "a plain number, e.g. 22 or 2.5"
-    elif token.strip().endswith(".") and not integer:
+    elif written.endswith(".") and not integer:
         suggestion = f"{core} or {core}.0"
     else:
         suggestion = core
