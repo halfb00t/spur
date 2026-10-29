@@ -55,7 +55,13 @@ too when the part's descriptor says `gridAlong` (the shaft's does, the gear's do
 shaft on a grid of 1.6 times its 25 mm width had no visible grid (33-08).
 Under 820 px the page is one column: the switch, the canvas and results, then the form. `<aside>` is
 `display: contents` there, so its first child is ordered above the canvas while it stays the top of
-`<aside>` in the markup (D-12) and inside its `complementary` landmark.
+`<aside>` in the markup (D-12) and inside its `complementary` landmark. Two limits of that layout
+are recorded and not fixed. The landmark is verified on the headless Chromium shell the gate runs
+and nowhere else: engines have shipped accessibility-tree bugs for `display: contents` on landmark
+elements, and the gate cannot see them. And the tab order stays the markup order (switch, form,
+actions, canvas Fit, downloads) while the picture is switch, canvas, downloads, results, form, so
+under 820 px focus does not follow what the eye sees (WCAG 2.4.3; the canvas was already ordered
+first before 33-10, and the results block now moves above the form too).
 
 `entry.js` names the twelve three.js exports the viewer actually uses — that list is what
 makes the bundle small.
