@@ -118,7 +118,10 @@ class ShaftParams(BaseModel):
         record and the `Content-Disposition` of every shaft download. This is the frozen name
         of that download (L49, D-17): `spur_shaft_w25x1.25x18` for the default, changed only
         by a logged decision. No cache is keyed by it (L40). The fit is left out: it is a
-        user-typed string and the solid does not depend on it.
+        user-typed string and the solid does not depend on it. `:g` keeps six significant
+        digits, so two `reference_d` of 123.4567 and 123.4571 at one module and tooth count
+        share the stem `w123.457`, and 25.00004 reads `w25`: a second collision source beside
+        the fit, accepted with the name's freeze (IN-05); a repr-exact name would supersede L49.
         """
         return f"spur_shaft_w{self.reference_d:g}x{self.module:g}x{self.teeth}"
 

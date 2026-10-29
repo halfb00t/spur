@@ -183,7 +183,8 @@ def cmd_shaft_export(ns: argparse.Namespace) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     env = os.environ.get
-    ap = argparse.ArgumentParser(prog="spur", description="Parametric involute spur gears.")
+    ap = argparse.ArgumentParser(
+        prog="spur", description="Parametric spur gears and DIN 5480 splined shafts.")
     ap.add_argument("--version", action="version", version=f"spur {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 

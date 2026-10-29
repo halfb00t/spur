@@ -267,6 +267,16 @@ def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
     assert flags == ["--" + n.replace("_", "-") for n in names]
 
 
+def test_the_top_level_help_names_both_parts(capsys: pytest.CaptureFixture[str]) -> None:
+    """`spur --help` is the first thing a user reads; it said gears only after the shaft
+    group shipped (33 IN-05)."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["--help"])
+    assert exc.value.code == 0
+    out = " ".join(capsys.readouterr().out.split())
+    assert "spur gears and DIN 5480 splined shafts" in out
+
+
 def test_infeasible_parameters_exit_2_and_name_the_problem(
         capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc:
