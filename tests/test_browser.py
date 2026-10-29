@@ -2729,6 +2729,42 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 assert eval_str_list(page, REFUSED_LOOK) == LIVE_LOOK, "a valid link left the look"
                 print(f"bad part refused: {len(bad_parts)} links, no build under a bad part")
 
+            with step("refused link whose build fails", no_foreign_key):
+                # 33 WR-03: the refusal's own gear build can fail (the schema answers 500). The
+                # page then still holds the shaft's form, so it must not look refused, must not
+                # keep refusing the keystrokes of that form, and must say what failed. Its own
+                # page, because the main page's schema route is the real one.
+                stranded = record_api(browser.new_page(), seen)
+                try:
+                    stranded.goto(server + "/#part=shaft")
+                    expect(stranded.locator(PART_RADIO.format("shaft"))).to_be_checked(
+                        timeout=BUILD_WAIT_MS
+                    )
+                    expect(stranded.locator("form#params [name]")).to_have_count(
+                        len(shaft_properties)
+                    )
+                    stranded.route(
+                        "**/api/schema", lambda route: route.fulfill(status=500, body="boom")
+                    )
+                    stranded.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                    expect(stranded.locator("#messages .error")).to_contain_text(
+                        "Could not build the form: 500", timeout=BUILD_WAIT_MS
+                    )
+                    assert eval_str_list(stranded, REFUSED_LOOK) == LIVE_LOOK, (
+                        "a refusal whose build failed left the form looking refused"
+                    )
+                    expect(stranded.locator(PART_RADIO.format("shaft"))).to_be_checked()
+                    # A keystroke in the form it still holds builds that form's part and is not
+                    # answered with the refusal of a link whose form was never built.
+                    stranded.fill("form#params input[name=splined_length]", "40")
+                    expect(stranded.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"^api/shaft/model\.stl\?"), timeout=BUILD_WAIT_MS
+                    )
+                    expect(stranded.locator("#messages .error")).to_have_count(0)
+                finally:
+                    stranded.close()
+                print("refused link whose build fails: the form is live, the error is the build's")
+
             with step("parity: web and API", no_foreign_key):
                 # D-21 part one, SC3: over the fixed set the page's shaft table is the API's
                 # numbers at the displayed text, and the download is named as the API names it.

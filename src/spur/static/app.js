@@ -283,7 +283,13 @@ async function followHash() {
     if (which === null) await refuseLink(partValues(location.hash));
     else if (await buildForm(which)) { readHash(); update(); }
   } catch (err) {
+    // refuseLink sets the refusal before its gear build. A build that throws never showed the
+    // refusal, and the form still on the page is the old part's, so the page must not keep
+    // looking refused or answer that form's keystrokes with a message about the link.
+    refused = null;
+    delete document.body.dataset.refused;
     showMessages([`Could not build the form: ${err.message}`]);
+    markPart();
   }
 }
 
