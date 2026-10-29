@@ -26,7 +26,7 @@ worktree was created). Result line: `======================= 2779 passed in 244.
 
 ## Fixed Issues
 
-### WR-03: A refusal whose gear build fails leaves a dimmed, unresponsive form of the old part
+### WR-03: A refusal whose gear build fails leaves a dimmed, unresponsive form of the old part with a message about something else (new)
 
 **Files modified:** `src/spur/static/app.js`, `tests/test_browser.py`
 **Commit:** 13dcdfd
@@ -37,7 +37,7 @@ still checked, and that a shaft keystroke builds and leaves no error. Watched th
 (`0.45` against `1`) before the fix.
 Status note: the clear is a logic fix; the browser step covers it, but it is the kind of change worth a human glance.
 
-### WR-04: The refused look is visual only; the form stays focusable, typable and announced as live
+### WR-04: The refused look is visual only; the form stays focusable, typable and announced as live (new)
 
 **Files modified:** `src/spur/static/app.js`, `src/spur/static/style.css`, `docs/architecture/web-ui.md`, `tests/test_browser.py`
 **Commit:** cace100
@@ -52,7 +52,7 @@ so every existing look assertion (and the WR-03 step) covers them; watched it fa
 `page.fill` under a refusal needed `force=True`, because Playwright treats an `aria-disabled` group as not enabled
 (which is the intended signal to assistive tech). The CSS comment and `web-ui.md` were updated to match.
 
-### WR-01: A `buildForm` that throws after it has emptied the page leaves `part` pointing at the old part
+### WR-01: A `buildForm` that throws after it has emptied the page leaves `part` pointing at the old part (prior)
 
 **Files modified:** `src/spur/static/app.js`, `tests/test_browser.py`
 **Commit:** 6f4dc28
@@ -64,7 +64,7 @@ checked over a blank form). The review's alternative (ignore a stale build's err
 taken; the stale-error half of the finding remains open.
 Status note: logic fix, covered by the browser step; worth a human glance.
 
-### WR-02: The shaft's three route rows are cut off from the endpoint table in `http-api.md`
+### WR-02: The shaft's three route rows are cut off from the endpoint table in `http-api.md` (prior)
 
 **Files modified:** `docs/architecture/http-api.md`
 **Commit:** dfba6f4
