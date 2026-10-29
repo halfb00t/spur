@@ -1,6 +1,6 @@
 ---
 phase: 33-interfaces-and-parity
-verified: 2026-10-29T09:00:00Z
+verified: 2026-10-29T14:13:48Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -26,6 +26,7 @@ covered_files:
   - ".planning/phases/33-interfaces-and-parity/33-10-SUMMARY.md"
   - "bench/RESULTS.md"
   - "bench/latency.py"
+  - "docs/architecture/http-api.md"
   - "docs/architecture/web-ui.md"
   - "src/spur/app.py"
   - "src/spur/cli.py"
@@ -42,108 +43,116 @@ covered_files:
   - "tests/test_number_as_written.py"
   - "tests/test_shaft_interfaces.py"
   - "tests/test_shaft_parity.py"
-covered_digest: "v3:sha256:054666bedad6bdeeccce5ac1fd0fe97fcec77b3da5564d92d100231df4209074"
+covered_digest: "v3:sha256:0b4ef65c0cb7a3952c26d0b28b52e7f9eab1bef717703f63ebab32295756f661"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
-  previous_status: human_needed
+  previous_status: passed
   previous_score: 5/5
   gaps_closed:
-    - "G-33-2: Gear | Shaft switch below the canvas under 820 px"
-    - "G-33-2: refused-link form still looks editable"
-    - "G-33-2: dark-mode primary button text 3.75:1 under WCAG AA"
+    - "33-REVIEW WR-01: a superseded buildForm that rejects no longer writes its error over a newer page (1d3c2ce)"
+    - "33-REVIEW WR-05: update() builds nothing while the page holds no part (b0de2ba)"
+    - "WR-03 (prior advisory): a refusal whose own gear build fails is cleared, the form is live again (13dcdfd)"
+    - "WR-04 (prior advisory): a refusal now sets aria-disabled / aria-describedby on the form's fieldsets and Reset (cace100)"
+    - "WR-02 (prior advisory): shaft route rows rejoined to the endpoint table in http-api.md (dfba6f4)"
   gaps_remaining: []
   regressions: []
 coincidental_reliance_items:
   - truth: "SC4: no link token the number box blanks builds a non-default part under a blank box"
     reason: undeclared-precondition
-    harden: "Holds for the int-field tokens 0-0 and 00-0 only because spoke_count and hole_count both default to 0; app.py blank_in_a_number_box does not refuse them. Tracked in docs/tech_debt/active/2026-10-28-int-fields-accept-a-blanked-zero-minus-zero-token.md (must). Human accepted this residual at UAT test 1 (result: pass)."
+    harden: "Holds for the int-field tokens 0-0, 00-0, 0-9 and 00-9 only because spoke_count and hole_count both default to 0; app.py blank_in_a_number_box does not refuse them. IN-01 (8e913c4) now says so in the docstring and a walker test fails if any int field of the gear or shaft query models reads those tokens as anything but its default. Residual tracked in docs/tech_debt/active/2026-10-28-int-fields-accept-a-blanked-zero-minus-zero-token.md (must); human accepted it at UAT test 1 (pass)."
 advisory:
-  - finding: "WR-03 (33-REVIEW.md): when the gear build behind a refused link throws, refused and body[data-refused] stay set, so the old part's form is dimmed and unresponsive with a build-error message and no way out except the other radio or a reload (app.js:259-288)"
+  - finding: "33-REVIEW-FIX.md IN-01 and IN-05 each say 'see debt below' but the report has no debt section and no debt file was filed in e6ed56e..HEAD for IN-05 (slug() keeps six significant digits, so reference_d 123.4567 and 123.4571 share a download stem; whether to go repr-exact would supersede L49). The caveat is recorded only in the slug() docstring. IN-01's residual does have its debt file (2026-10-28)"
     category: other
-    reason: "Reachable only with a failing /api/schema fetch or a malformed schema, not from today's server (same reach as WR-01); a side effect of 33-10's visible refused look. Open in 33-REVIEW-DISPOSITION.md"
-    evidence_status: "read by the orchestrator and by me against app.js:259-288; not reproduced in a browser"
-  - finding: "WR-04 (33-REVIEW.md): the refused look is CSS only; the form stays focusable and typable by keyboard and carries no aria-disabled / aria-describedby"
-    category: other
-    reason: "A trade the 33-10 plan and style.css's comment record against the L41 guard; the review notes aria-disabled and aria-describedby do not match the guard. 33-REVIEW.md says to file it as must debt if deferred; no such item exists in docs/tech_debt/active/ yet"
-    evidence_status: "review finding, guard regex not re-run by me"
+    reason: "CLAUDE.md asks for deferred decisions to live in docs/tech_debt or docs/ideas. It touches a download file name only, not a number the tool prints, so it does not touch a must-have; the orchestrator may want to file a nice/must item"
+    evidence_status: "grep of docs/tech_debt/active and docs/ideas for slug / six-digit / repr-exact found nothing; git diff --stat e6ed56e..HEAD -- docs/tech_debt is empty"
 ---
 
 # Phase 33: Interfaces and Parity Verification Report
 
 **Phase Goal:** The same shaft (preview, numbers, designation and STL/STEP) comes from the web page, the API and the CLI, one set of numbers for all three, the designation can be given in place of the fields, and WR-02 is fixed on the same edit of the part switch that would otherwise trip it.
-**Verified:** 2026-10-29T09:00:00Z
+**Verified:** 2026-10-29T14:13:48Z
 **Status:** passed
-**Re-verification:** Yes, after gap closure (UAT gap G-33-2, plan 33-10)
+**Re-verification:** Yes. The previous report (e6ed56e) went stale: two code-review fix rounds (13dcdfd..c496b37) landed on covered files afterwards.
 
 ## What changed since the last report
 
-`git diff --stat 0248ce3 HEAD -- src tests bench Makefile pyproject.toml docs` touches only `src/spur/static/app.js` (6 lines), `src/spur/static/style.css` (34), `tests/test_browser.py` (137), `bench/RESULTS.md`, `docs/architecture/web-ui.md`, the debt INDEX and one new debt file. No Python module under `src/spur/`, no `index.html`, nothing under `src/spur/static/vendor/`, no `tests/regression/` and no `ci.yml` changed (all diffs empty; `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` clean). So the 33-01..33-09 code verified earlier is untouched; the regression check below re-ran its tests rather than trusting that.
+Delta read from the source, not from the fix report. `git diff e6ed56e..HEAD -- src/`:
+
+| File | Change | Read as |
+|------|--------|---------|
+| `src/spur/static/app.js` | `buildForm` wraps the schema fetch in try/catch and returns `false` when overtaken (WR-01); sets `part = ''` once the old page is emptied (WR-05 / midway throw); `update()` returns first when `part` is empty; new `markRefused()` / `clearRefusal()` set and clear `aria-disabled` + `aria-describedby="messages"` on `#params fieldset, #reset`; `followHash` catch clears the refusal and calls `markPart()` (WR-03) | Client-side robustness on failure paths. No change to `refuse()` or `gearQuery()` |
+| `src/spur/app.py` | `_as_written_message` offers the generic suggestion for `+-5` (IN-02); `blank_in_a_number_box` docstring names the `0-0` exception (IN-01) | Message wording and a docstring. The rule's four conditions are unchanged (L49 locks them) |
+| `src/spur/cli.py` | top-level description now "Parametric spur gears and DIN 5480 splined shafts." (IN-05) | Help text |
+| `src/spur/shaft_params.py` | `slug()` docstring only; the output is unchanged (IN-05) | Comment. The frozen download name (L49, D-17) is untouched |
+| `src/spur/static/style.css` | one comment line | none |
+| tests and docs | new browser steps, guard assertions, token table rows, docs paragraphs | evidence, not behaviour |
+
+No other `src/spur/` file, no `index.html`, `vendor/`, `tests/regression/` or `.github/workflows/ci.yml` entry is in the delta.
 
 ## Goal Achievement
 
-### Observable Truths (ROADMAP success criteria, regression-checked)
+### Observable Truths (ROADMAP success criteria)
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | API and CLI serve the shaft with the gear routes' contract; designation in place of the fields; clash is a 422 naming the fields; gear routes and `/api/schema` unchanged | VERIFIED (regression) | No `src/spur/*.py` change since the prior report. I re-ran the 260 light tests (`tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py`): `260 passed in 11.63s` |
-| 2 | Web page serves the shaft: part switch, preview, schema rows, designation, STL/STEP, `part=shaft` round trip, other `part` refused visibly; browser test in `make verify` | VERIFIED (regression) | I ran `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/pytest --no-cov -n0 -q tests/test_browser.py`: `4 passed in 48.62s` (the prior run was 3 tests; the fourth is the new `test_the_contrast_ratio_is_the_wcag_formula`). The `bad part refused`, `part switch`, `shaft link round trip` and `golden sweep` steps are inside the one browser test and pass with 33-10's edits in place |
-| 3 | One parametrised test proves web, API and CLI report the same value for every shaft number and download name | VERIFIED (regression) | `tests/test_shaft_parity.py` in the 260 above; browser step `parity: web and API` inside the passing browser test. Seen-red evidence for it is unchanged in `bench/RESULTS.md` |
-| 4 | WR-02 fixed where the part switch edits `refuse()`/`gearQuery()`, read as C1 (server-side fix); browser proof over every number field | VERIFIED as read by C1, IN-01 residual accepted | `refuse()` and `gearQuery()` bodies at HEAD are string-identical to `6800769` (compared from `git show`, both functions; the `app.js` diff since `0248ce3` contains no line of either). `as-written sweep`, `number box tokens`, `shaft as-written sweep` pass in the browser run above. IN-01 (`0-0`, `00-0` on int fields): human recorded `pass` at UAT test 1, debt file filed |
-| 5 | Gate delta recorded in `bench/RESULTS.md`; Phase 30 check green; the 44 golden links still send what `golden_requests.json` pins | VERIFIED | `golden sweep` step passes in the browser run; `tests/regression/` and `ci.yml` byte-equal to `v0.6`. The orchestrator's gate on this HEAD: `make verify` ends `2779 passed in 245.64s` (`postgate.log` tail read by me). `bench/RESULTS.md` has the 33-01 baseline and 33-09 delta sections plus three new 33-10 seen-red rows |
+| 1 | API and CLI serve the shaft with the gear routes' contract; designation in place of the fields; a clash is a 422 naming the fields; gear routes and `/api/schema` unchanged | VERIFIED | Delta in `app.py`/`cli.py`/`shaft_params.py` is a docstring, a message string for the refusal of a non-number token, and help text. I re-ran `tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py`: `264 passed in 11.66s` (260 last time; the four are IN-01, IN-02, IN-05, IN-06). The new designation test sends `designation=nonsense&designation=W 30x2x14x8f` and pins 200 with the canonical designation |
+| 2 | Web page serves the shaft: part switch, preview, schema rows, designation, STL/STEP, `part=shaft` round trip, other `part` refused visibly; browser test in `make verify` | VERIFIED | I ran `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/pytest --no-cov -n0 -q tests/test_browser.py`: `4 passed in 58.68s`. The one browser test now carries the 33-REVIEW steps `superseded build that fails`, `form build that throws midway`, `refused link whose build fails`, the 820/821 px checks and the `aria-disabled` read (test_browser.py:167-175, 2680, 2747-2869, 3086-3096), beside the earlier `bad part refused`, `part switch`, `shaft link round trip`, `golden sweep` steps; all pass |
+| 3 | One parametrised test proves web, API and CLI report the same value for every shaft number and download name | VERIFIED | `tests/test_shaft_parity.py` is in the 264 above; the `part switch` step now builds its expected rows with `shaft_parity.displayed` (IN-04) and the browser step `parity: web and API` passes. `slug()` output is unchanged (docstring-only diff) so the download name still matches across the three |
+| 4 | WR-02 fixed where the part switch edits `refuse()`/`gearQuery()`, read as C1 (server-side fix); browser proof over every number field | VERIFIED as read by C1, IN-01 residual accepted | I extracted both function bodies from `6800769:src/spur/static/app.js` and from HEAD and compared them: `refuse` equal (99 chars), `gearQuery` equal (296 chars). `as-written sweep`, `number box tokens` (now with `0-0`, `0-9`, `00-9` re-read in Chromium) and `shaft as-written sweep` pass in the browser run. IN-01 is now documented in the rule's docstring and pinned by a walker test over every int field of both query models |
+| 5 | Gate delta recorded in `bench/RESULTS.md`; Phase 30 check green; the 44 golden links still send what `golden_requests.json` pins | VERIFIED | `golden sweep` passes in the browser run; `bench/RESULTS.md` and `tests/regression/` are not in the delta. Orchestrator's gate at HEAD c496b37: `make verify` ends `2783 passed in 236.86s` (not re-run by me; I re-ran the 264 light tests, the 4 browser tests and the L41 group) |
 
 **Score:** 5/5 truths verified (0 present, behavior-unverified).
 
-### Gap closure: G-33-2 and the plan 33-10 must_haves
+### Review-fix delta, checked against the code
 
-Each truth below is behavior-dependent (computed layout, computed style, contrast), so presence in the CSS is not enough: each is backed by a browser step that I ran green in the `4 passed` run above, and that the plan and `bench/RESULTS.md` record as seen red on the unfixed page.
+These are behavior-dependent (ordering, failure paths, ARIA state); each is backed by a browser or guard test that I ran green, and the fix report records the first four seen red on the unfixed code.
 
-| # | 33-10 must-have | Status | Evidence |
-|---|-----------------|--------|----------|
-| G1 | Under 820 px the Gear | Shaft switch sits above the canvas; switch still first child of `<aside>`; index.html unchanged; landmark holds both radios; desktop column unchanged | VERIFIED | `style.css` narrow block: `aside { display: contents; }`, `.part-switch { order: -2; ... }`, `#view { order: -1; }`, margins moved onto the three children; the old `aside { border-right: 0; border-top }` rule is gone with the box. Step `narrow layout` (test_browser.py:2909) passes; recorded tops at 800x900: switch 57, canvas 109, results 604, form 1217; red on the unfixed page: `switch 1170, canvas 45`. `git diff --stat 0248ce3 HEAD -- src/spur/static/index.html` empty. I read `33-10-narrow.png`: header, PART with both radios, canvas, downloads, warnings, results, form, Reset/Copy link |
-| G2 | A refused-part link leaves the form visibly non-editable (opacity 0.45, pointer-events none on `form#params` and `#reset`, solid outline on `.part-switch`); a radio click or valid link restores it; message words unchanged in `#messages`; edits and keyboard Reset still build nothing | VERIFIED | `style.css` `body[data-refused] #params, body[data-refused] #reset { opacity: .45; pointer-events: none; }` and `body[data-refused] .part-switch { outline: 2px solid var(--accent); ... }`. `app.js` sets `document.body.dataset.refused = ''` once (in `refuseLink`, beside `refused = text`) and deletes it twice (`switchTo`, `followHash`, beside each `refused = null`): `grep -n "refused = " ` shows exactly the four assignments, each with its dataset twin. The step `bad part refused` asserts `REFUSED_LOOK == DEAD_LOOK` after each bad link and during the D-20 block, and `LIVE_LOOK` after a radio click (test_browser.py:2711) and after a valid link (:2729). I read `33-10-refused.png`: dimmed fields, outlined PART switch with neither radio checked. Red on the unfixed page: `At index 0 diff: '1' != '0.45'` |
-| G3 | Dark-mode `.btn.primary` text at least 4.5:1, light unchanged | VERIFIED | Dark block sets `--accent-fg: #131619` (the dark `--bg`); `.btn.primary { color: var(--accent-fg); background: var(--accent) }` (style.css:158); light `--accent-fg: #ffffff`, `--accent: #b8412c` untouched. I recomputed with the WCAG 2 formula: `#131619` on `#e0573f` = 4.846:1, white on `#b8412c` = 5.482:1, white on `#e0573f` (old) = 3.747:1. Step `primary button contrast` reads the computed colours of `#dl-stl` under `emulate_media` and passes; `test_the_contrast_ratio_is_the_wcag_formula` passes |
-| G4 | Each new check seen red once, a row under `### Seen red once (Phase 33)` | VERIFIED | `bench/RESULTS.md` lines 7594-7596: three `33-10` rows with the red assertion text (`'1' != '0.45'`, `switch 1170, canvas 45`, `3.75:1`) |
-| G5 | `make verify` green; L41 guard `writes_a_field_shut` green; `refuse()`/`gearQuery()` identical to `6800769`; vendor and index.html unchanged | VERIFIED | Orchestrator gate `2779 passed`; I ran the guard's group myself (`tests/test_api.py -k "shut or field"`: `15 passed`); identity and unchanged-file checks above |
-| G6 | Dark link-text shortfall (4.47:1 on `--panel`) filed as `must` debt, not fixed | VERIFIED | `docs/tech_debt/active/2026-10-29-dark-mode-link-text-under-wcag-aa.md` has `Severity: must`, `Status: active`, and an INDEX row (INDEX.md:19). The file is dated 2026-10-29, not the plan's 2026-10-28; the plan allowed a later date. Dark `--accent` is unchanged (diff adds only `--accent-fg`), as the prohibition requires |
+| # | Change | Status | Evidence |
+|---|--------|--------|----------|
+| R1 | WR-01: a stale `buildForm` that rejects cannot write its error or clear the refusal of a newer link | VERIFIED | `app.js:94-105`: `catch` returns `false` when `build !== formSeq`, else rethrows. Browser step `superseded build that fails` holds the shaft schema answer, follows `part=bogus`, releases a 500 and asserts the refusal text, `DEAD_LOOK`, and that a keystroke builds nothing |
+| R2 | WR-05 / midway throw: after a build throws, the page holds no part and `update()` builds nothing | VERIFIED | `part = ''` at `app.js:110` is set after the last await, so nothing runs between it and the end of the synchronous body that sets `part = which` (`:179`); `update()` returns first when `part` is empty (`:470`). Step `form build that throws midway` asserts no build request, rows, download `href` or `data-triangles` after Reset and a keystroke in `#mate-teeth`, and that the next link rebuilds |
+| R3 | WR-03 (earlier advisory): a refusal whose own gear build throws is cleared | VERIFIED | `followHash` catch calls `clearRefusal()`, shows the build error and `markPart()`; step `refused link whose build fails` asserts the form is live and the error is the build's |
+| R4 | WR-04 (earlier advisory): the refused state is announced, not only dimmed, without the shut verbs the L41 guard refuses | VERIFIED | `markRefused()` sets `aria-disabled` and `aria-describedby="messages"` on fieldsets and Reset (valid on a group and a button, noted in the comment); `clearRefusal()` removes them. The guard test (test_api.py:432-437) now also asserts `dataset.refused` has exactly one setter and one `delete`, and `markRefused(` appears twice. I ran `tests/test_api.py -k "shut or field or refused"`: `17 passed`. The L41 regex is untouched; the attributes are not `disabled`/`inert`, so focus and typing still work and IN-10 asserts the field holds `30` |
+| R5 | IN-07: the narrow breakpoint is read at 800, 820 and 821 px; the refused look is read on the shaft path | VERIFIED | test_browser.py:3086-3096; passes |
+| R6 | WR-02 (earlier advisory): shaft route rows rejoined to the endpoint table | VERIFIED | `docs/architecture/http-api.md` lines 45-48 now sit in one table with the gear rows; I read them |
 
-Prohibitions in 33-10 (all `resolved`, `verification: test` or judgment): none is violated. Switch stays in `<aside>` with index.html untouched (D-12); no script writes a shut verb and the guard is green (L41); the refused message is still `showMessages([text])` into `#messages` with its words unchanged (D-15, `app.js:259-269`); `refuse()`/`gearQuery()` and `vendor/` untouched; the light tokens and dark `--accent` are unchanged in the css diff. None of these test-tier prohibitions is left without enforcement: C1 identity is an explicit check in the plan and the guard test and browser asserts cover the rest.
-
-**Is G-33-2 closed?** Yes. All three root causes named in `33-UAT.md` (the aside-held switch reordered by `#view { order: -1 }`, a refusal that left a live-looking form, dark `--accent-fg` of white at 3.75:1) are fixed in the shipped files, each with a browser assertion and a red-first record. One UAT "missing" item reads "place the message by the switch": the plan met it by outlining the switch while the message stays in `#messages` (D-15 locks the message's place); the orchestrator's fresh `33-UI-REVIEW.md` (18/24) confirms the three fixes on the live page and I read the two pictures above.
+Prohibitions: C1 (`refuse`/`gearQuery` untouched) re-proved above. L41 (no script writes a shut verb) proved by the guard, which is green. D-15 (the refusal is `showMessages([text])` into `#messages`, words unchanged) holds; `aria-describedby="messages"` only points at it. L05 (a value from one part's form never reaches the other's request) is stronger than before: `part = ''` plus the `update()` guard means a failed build cannot send the old part's defaults under a blank form.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/spur/static/style.css` | `display: contents`, `body[data-refused]`, dark `--accent-fg` | VERIFIED | all three present, substantive, used by the page |
-| `src/spur/static/app.js` | `dataset.refused` beside each `refused` assignment | VERIFIED | 3 occurrences (lines 199, 262, 278) |
-| `tests/test_browser.py` | `REFUSED_LOOK`, steps `narrow layout`, `primary button contrast`, `_contrast` + formula test | VERIFIED | lines 167, 2909, 2954, 297, 311; all pass |
-| `docs/tech_debt/active/2026-10-29-dark-mode-link-text-under-wcag-aa.md` | measured, deferred | VERIFIED | `Severity: must`, INDEX row |
-| Prior artifacts (`app.py`, `cli.py`, `shaft_params.py`, `shaft_model.py`, parity tests, `bench/`) | unchanged | VERIFIED | no diff since the prior report; light tests pass |
+| `src/spur/static/app.js` | try/catch in `buildForm`, `part = ''`, `markRefused`/`clearRefusal`, `update()` guard | VERIFIED | all present, substantive, called (`clearRefusal` from `switchTo` and `followHash`; `markRefused` from `refuseLink`) |
+| `src/spur/app.py` | `_as_written_message` `+-5` branch; docstring | VERIFIED | read in the diff; covered by the new parametrised message case |
+| `src/spur/cli.py` | shaft named in `spur --help` | VERIFIED | one-line diff; test in `tests/test_cli.py` passes |
+| `tests/test_browser.py`, `tests/test_api.py`, `tests/number_box_tokens.py`, `tests/test_number_as_written.py`, `tests/test_shaft_interfaces.py` | new steps and pins | VERIFIED | pass |
+| `docs/architecture/web-ui.md`, `docs/architecture/http-api.md` | describe the failed-build steps and the focus-order limit; one endpoint table | VERIFIED | read |
+| Earlier artifacts (`shaft_model.py`, `shaft_parity.py`, `bench/`, `index.html`, `style.css` rules) | unchanged or comment-only | VERIFIED | no code diff |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `app.js` `refuseLink`/`switchTo`/`followHash` | `style.css` `body[data-refused]` | attribute set/deleted beside `refused` | WIRED | grep shows exactly these three writes; step `bad part refused` observes the computed effect |
-| step `bad part refused` | computed opacity/pointer-events/outline | `REFUSED_LOOK` constant | WIRED | used at test_browser.py:2668, 2692, 2711, 2729 |
-| step `primary button contrast` | `#dl-stl` computed colours | `_contrast`, pinned by its formula test | WIRED | both pass |
+| `app.js` `refuseLink` | `markRefused` -> `aria-*` on `#params fieldset, #reset` | one call | WIRED | guard asserts exactly two occurrences of `markRefused(` |
+| `switchTo` / `followHash` | `clearRefusal` -> attribute + aria removal | beside each `refused = null` | WIRED | `refused = null` now lives only in `clearRefusal`; step reads the ARIA values after a radio click and a valid link |
+| `buildForm` | `followHash` / `switchTo` catch | rethrow only when current | WIRED | step `superseded build that fails` |
+| `update()` | `part` | early return when empty | WIRED | step `form build that throws midway` |
 | Prior links (`/api/shaft/model.{fmt}` -> `_serve_model`, CLI -> `resolve_shaft`, `renderInfo` -> `schema.dims`, hash -> `followHash`) | | | WIRED (regression) | tests above |
 
 ### Data-Flow Trace (Level 4)
 
-No new data-rendering artifact in 33-10 (CSS state and one body attribute). Prior shaft rows and preview flows are unchanged and covered by the browser test (`rows equal the API's`, `data-triangles` equals the served STL).
+The delta renders no new data (an attribute and an early return). The shaft rows and preview flows are unchanged and covered by `rows equal the API's` and `data-triangles equals the served STL` inside the passing browser test.
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Browser test incl. the 33-10 steps | `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/pytest --no-cov -n0 -q tests/test_browser.py` | 4 passed in 48.62s | PASS |
-| Light shaft/CLI/parity/as-written/seam tests | `.venv/bin/pytest --no-cov -n0 -q tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py` | 260 passed in 11.63s | PASS |
-| L41 guard group | `.venv/bin/pytest --no-cov -n0 -q tests/test_api.py -k "shut or field"` | 15 passed | PASS |
-| `refuse`/`gearQuery` untouched | body of each at `6800769` vs HEAD | equal | PASS |
-| Contrast numbers | WCAG 2 formula by hand | 4.846 / 5.482 / 3.747 | PASS |
-| Whole gate | not re-run by me; orchestrator: `make verify` `2779 passed in 245.64s` | | PASS (orchestrator evidence, same HEAD, no source change since) |
+| Browser test incl. the review-fix steps | `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/pytest --no-cov -n0 -q tests/test_browser.py` | 4 passed in 58.68s | PASS |
+| Light shaft/CLI/parity/as-written/seam tests | `.venv/bin/pytest --no-cov -n0 -q tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py` | 264 passed in 11.66s | PASS |
+| L41 guard group | `.venv/bin/pytest --no-cov -n0 -q tests/test_api.py -k "shut or field or refused"` | 17 passed | PASS |
+| `refuse`/`gearQuery` identical to `6800769` | function bodies from `git show 6800769:src/spur/static/app.js` vs the working file | equal, both | PASS |
+| Whole gate | orchestrator: `make verify` at c496b37 | 2783 passed in 236.86s | PASS (orchestrator evidence) |
 
 ### Probe Execution
 
@@ -151,40 +160,37 @@ No `probe-*.sh` declared or present. Skipped.
 
 ### Requirements Coverage
 
-All six phase IDs appear in PLAN frontmatter and in REQUIREMENTS.md; none is orphaned. `REQ-gate-cost-recorded` (33-01, 33-09) is mapped by REQUIREMENTS.md to Phase 34 and is not judged here.
+All six phase IDs appear in PLAN frontmatter (the counts are 3, 2, 3, 6, 3 and 5 across plans for the six) and in REQUIREMENTS.md; none is orphaned. `REQ-gate-cost-recorded` (33-01, 33-09) is mapped to Phase 34 and is not judged here.
 
 | Requirement | Source Plans | Status | Evidence |
 |-------------|--------------|--------|----------|
-| REQ-shaft-api | 33-02, 33-04, 33-09 | SATISFIED | truth 1 (regression) |
+| REQ-shaft-api | 33-02, 33-04, 33-09 | SATISFIED | truth 1 |
 | REQ-shaft-cli | 33-05, 33-09 | SATISFIED | truths 1, 3 |
-| REQ-shaft-web | 33-02, 33-06, 33-07, 33-08, 33-09, 33-10 | SATISFIED | truth 2, plus G1-G3: the page's primary control is reachable under 820 px, a refusal looks refused, the download buttons read at 4.85:1 |
-| REQ-designation-input | 33-04, 33-05, 33-09 | SATISFIED | truth 1 |
+| REQ-shaft-web | 33-02, 33-06, 33-07, 33-08, 33-09, 33-10 | SATISFIED | truth 2, R1-R5 |
+| REQ-designation-input | 33-04, 33-05, 33-09 | SATISFIED | truth 1 (IN-06 pins a repeated key) |
 | REQ-shaft-parity | 33-05, 33-08, 33-09 | SATISFIED | truth 3 |
-| REQ-wr02-fixed | 33-01, 33-03, 33-08, 33-09 | SATISFIED as read by C1, IN-01 residual accepted by the human (UAT test 1: pass) | truth 4 |
+| REQ-wr02-fixed | 33-01, 33-03, 33-08, 33-09 | SATISFIED as read by C1, IN-01 residual accepted (UAT test 1: pass) | truth 4 |
 
-Bookkeeping, not a gap: in `.planning/REQUIREMENTS.md` only `REQ-shaft-web` is ticked and marked Complete (lines 90, 176); the other five checkboxes (lines 85, 88, 94, 96, 98) and Pending rows (174, 175, 177-179) are still unticked. Tick them when the phase is closed.
+The earlier bookkeeping note is closed: REQUIREMENTS.md lines 85-98 are ticked `[x]` and the traceability rows 174-179 read `Complete` for all six.
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
-| (33-10 diff) | | `TBD`, `FIXME`, `XXX`, `TODO`, `HACK` in added lines of `src`, `tests`, `bench`, `docs/architecture` | none | grep returned nothing |
-| `src/spur/static/app.js` | 259-288 | WR-03: dimmed, stuck form if the gear build behind a refused link throws | Warning (advisory) | Needs a failing schema fetch or malformed schema; open in the disposition ledger. Not a must-have failure |
-| `src/spur/static/style.css`, `app.js:262` | 221-223 | WR-04: refused look is visual only, no aria state | Warning (advisory) | Deliberate trade recorded in the css comment; the review asks that deferral be filed as `must` debt and no such file exists yet |
-| `src/spur/static/app.js` | 97-113, 174 | WR-01 (prior): `buildForm` throw leaves `part` stale | Warning (open) | as before |
-| `docs/architecture/http-api.md` | 45-48 | WR-02 (prior): split endpoint table | Warning (open) | docs rendering only |
+| `src/spur/static/app.js`, `app.py`, `cli.py` | | `TBD` / `FIXME` / `XXX` | none | grep found none |
+| `docs/tech_debt` | | IN-05 slug rounding noted in a docstring, with no debt file | Info (advisory above) | Download name only |
 
-All of these are `open` in `33-REVIEW-DISPOSITION.md`; `33-REVIEW.md` has 0 critical findings. None touches a must-have.
+`33-REVIEW.md` has 0 critical findings; `33-REVIEW-DISPOSITION.md` records 16 of 16 `fixed`, 0 open. The prior open WR-01, WR-03, WR-04 and the doc WR-02 are all fixed in the code I read above.
 
 ### Human Verification Required
 
-None open for the phase goal. UAT test 1 is `pass` (IN-01 accepted). UAT test 2 is the gap now closed; its visual judgments (that the outline reads as attached to the switch; that the narrow page reads like the desktop column) were checked against the screenshots `33-10-refused.png` and `33-10-narrow.png` and the fresh 33-UI-REVIEW.md. If the human wants a last eyeball, `/gsd-verify-work 33` re-runs UAT test 2. The two manual-only rows in `33-VALIDATION.md` (`nyquist_compliant: false`) are human-deferred and were accepted at `/gsd-validate-phase 33`; they are not a verification item here.
+None. UAT test 1 is `pass` (IN-01 accepted) and UAT test 2 (the G-33-2 gap) was closed and verified in the previous report; nothing in the delta changes what a person sees except a screen-reader announcement on a refused link, which the browser step reads as attributes. The `33-VALIDATION.md` manual-only rows were accepted earlier and are not a verification item here.
 
 ### Gaps Summary
 
-No gap. G-33-2 is closed: three fixes in `style.css` and `app.js`, each asserted by a browser step I ran green, each recorded red on the unfixed page, with D-12, D-15, D-20, L41 and C1 intact. The five roadmap success criteria still hold on the same HEAD (260 light tests, 4 browser tests, orchestrator's `make verify` 2779 passed). Follow-ups, none blocking: file WR-04 as `must` debt or fix it with `aria-disabled`/`aria-describedby` (the review says neither matches the L41 guard), decide WR-03, and tick the five open boxes in REQUIREMENTS.md.
+No gap. The five roadmap success criteria still hold at HEAD c496b37: the two review rounds changed failure-path logic in `app.js`, one refusal message, one help string and docstrings, and every behavior-dependent change has a browser or guard test that I ran green (4 browser, 264 light, 17 guard). `refuse()` and `gearQuery()` are byte-equal to `6800769`, so the WR-02 fix still reads as C1. One non-blocking follow-up: file the IN-05 `slug()` rounding as debt or an idea, since the fix report points to a debt entry that does not exist.
 
 ---
 
-_Verified: 2026-10-29T09:00:00Z_
+_Verified: 2026-10-29T14:13:48Z_
 _Verifier: Claude (gsd-verifier)_
