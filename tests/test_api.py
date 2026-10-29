@@ -425,6 +425,17 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         assert not writes_a_field_shut.search(allowed), allowed
     assert not writes_a_field_shut.search(source)
 
+    # 33-10 shuts the form to pointer input from CSS on `body[data-refused]` (style.css), which
+    # the guard above cannot see. That is sound only while nothing a link loads is in the form
+    # during a refusal, and that holds because the attribute is written at exactly two sites:
+    # refuseLink sets it, before a gear form at its defaults is built, and clearRefusal deletes
+    # it, and markRefused has one caller. A third writer, or a second caller, is a new reading
+    # of L41 and must be argued, not slipped in with the suite green (T-33-26).
+    assert len(re.findall(r"dataset\.refused\s*=", source)) == 1, "a second setter of data-refused"
+    assert len(re.findall(r"delete\s+[\w.]*dataset\.refused\b", source)) == 1, "a second clearer"
+    assert source.count("dataset.refused") == 2, "data-refused is touched somewhere else"
+    assert source.count("markRefused(") == 2, "markRefused has a caller beyond refuseLink"
+
     # "Clears or rewrites" is a write to `.value`, which the page does legitimately in
     # readHash() and #reset, so it is checked where a relation lives and nowhere else: the
     # section between the relations banner and the messages banner (effective, holds,
