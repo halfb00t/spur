@@ -70,7 +70,7 @@ from browser_session import (
     sweep,
 )
 from number_box_tokens import TOKENS
-from playwright.sync_api import Page, Route, expect, sync_playwright
+from playwright.sync_api import FloatRect, Page, Route, expect, sync_playwright
 from shaft_parity import SHAFTS, displayed, web_rows
 
 # app.js's scheduleUpdate() sends its request 350 ms after the event (`setTimeout(update, 350)`),
@@ -2875,6 +2875,51 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     page.locator("#canvas").screenshot(path=picture)
                     assert picture.stat().st_size > 0, f"{label}: an empty picture"
                 print(f"viewer framing: {len(framing_links)} shafts drawn, fitted and saved")
+
+            with step("narrow layout", no_foreign_key):
+                # 33-10, G-33-2: under 820 px the part switch is the first thing under the header
+                # and the form comes last, and the switch is still the first child of <aside>
+                # (D-12) and inside its landmark. Last in the walk, so no earlier step runs at the
+                # narrow size.
+                desktop = page.viewport_size
+                assert desktop is not None, "the page has no viewport size"
+                page.set_viewport_size({"width": 800, "height": 900})
+
+                def box(selector: str) -> FloatRect:
+                    found = page.locator(selector).bounding_box()
+                    assert found is not None, f"{selector} has no box"
+                    return found
+
+                switch, canvas_wrap, results, params = (
+                    box(".part-switch"), box("#canvas-wrap"), box("#bottom"), box("form#params")
+                )
+                tops = (
+                    f"switch {switch['y']:.0f}, canvas {canvas_wrap['y']:.0f}, "
+                    f"results {results['y']:.0f}, form {params['y']:.0f}"
+                )
+                assert switch["y"] + switch["height"] <= canvas_wrap["y"], (
+                    f"the part switch is not above the canvas at 800 px: {tops}"
+                )
+                assert canvas_wrap["y"] < results["y"], f"the results are above the canvas: {tops}"
+                assert results["y"] + results["height"] <= params["y"], (
+                    f"the form is above the results: {tops}"
+                )
+                assert eval_bool(
+                    page,
+                    "() => document.querySelector('aside').firstElementChild"
+                    " === document.querySelector('.part-switch')",
+                ), "the part switch is not the first child of <aside> (D-12)"
+                expect(page.get_by_role("complementary").get_by_role("radio")).to_have_count(2)
+                narrow_picture = tmp_path / "33-10-narrow.png"
+                page.screenshot(path=narrow_picture, full_page=True)
+                assert narrow_picture.stat().st_size > 0, "an empty picture of the narrow page"
+
+                page.set_viewport_size(desktop)
+                switch, canvas_wrap = box(".part-switch"), box("#canvas-wrap")
+                assert switch["x"] + switch["width"] <= canvas_wrap["x"], (
+                    "the part switch left the left column at the desktop size"
+                )
+                print(f"narrow layout: {tops}")
 
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH

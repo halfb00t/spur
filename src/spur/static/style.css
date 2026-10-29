@@ -216,12 +216,22 @@ body[data-refused] #params,
 body[data-refused] #reset { opacity: .45; pointer-events: none; }
 body[data-refused] .part-switch { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
 
+/* Under 820 px the page is one column, and the part switch fell below a 55vh canvas and the whole
+   results block (33-UI-REVIEW fix 1). The switch is the first child of <aside> by D-12, so it is
+   ordered to the top and not moved: <aside> draws no box here, its children join main's column,
+   and the order is switch, canvas and results, then the form. Chromium 153 kept the aside's
+   `complementary` role under `display: contents`, and the step `narrow layout` checks that the
+   landmark still holds both radios. With no aside box, its panel colour moves to main and its
+   side padding to the three children it held. */
 @media (max-width: 820px) {
   html, body { height: auto; }
-  main { display: flex; flex-direction: column; }
+  main { display: flex; flex-direction: column; background: var(--panel); }
+  aside { display: contents; }
+  .part-switch { order: -2; padding-bottom: .6rem; }
   #view { order: -1; }
+  .part-switch, #params, .actions { margin-inline: 1rem; }
+  .actions { margin-bottom: 1rem; }
   #canvas-wrap { flex: none; height: 55vh; }
-  aside { border-right: 0; border-top: 1px solid var(--line); }
   #bottom { grid-template-columns: 1fr; }
 }
 

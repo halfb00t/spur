@@ -53,6 +53,9 @@ gear; `followHash` picks the part, builds its form when it changed and then read
 shaft link opens on any page. The floor grid is sized from the part's width, and from its height
 too when the part's descriptor says `gridAlong` (the shaft's does, the gear's does not): a 1000 mm
 shaft on a grid of 1.6 times its 25 mm width had no visible grid (33-08).
+Under 820 px the page is one column: the switch, the canvas and results, then the form. `<aside>` is
+`display: contents` there, so its first child is ordered above the canvas while it stays the top of
+`<aside>` in the markup (D-12) and inside its `complementary` landmark.
 
 `entry.js` names the twelve three.js exports the viewer actually uses — that list is what
 makes the bundle small.
@@ -122,6 +125,9 @@ gear's keys ignored. The third sets six bad `part` links and checks the message,
 radios, the defaults, and that no build is requested across the links, an edit and Reset. It also
 reads the refused look (the form and Reset dimmed, the switch outlined) and its end on a radio click
 and on a valid link.
+The last step, `narrow layout`, sets an 800 px viewport and reads the boxes: the switch above the
+canvas, the results below it and the form last, with the switch still the first child of `<aside>`
+and the landmark still holding both radios, then back at the desktop size the switch in the left column.
 
 Three more steps close the page's half of the shaft's parity (L49, D-21). `parity: web and API`
 follows a `part=shaft` link for each of the four shafts of `tests/shaft_parity.py` and compares the
