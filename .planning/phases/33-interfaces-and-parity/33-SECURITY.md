@@ -57,6 +57,7 @@ created: "2026-10-28"
 | T-33-23 | Information Disclosure / XSS | echoed `part` in refusal | medium | mitigate | `JSON.stringify` + `textContent` via `showMessages` | closed |
 | T-33-24 | Tampering | edit/Reset under unknown `part` builds | medium | mitigate | `update()` returns while `refused`; `bad part refused` step counts requests | closed |
 | T-33-25 | Repudiation | criterion wording rewritten to match shipped | medium | mitigate | one `Reading (C1…)` sentence beside ROADMAP criterion 4 and `REQ-wr02-fixed`; approved words unchanged | closed |
+| T-33-26 | Tampering | `body[data-refused]` outlives the refusal | medium | mitigate | 33-10: attribute written beside each of the 3 `refused` assignments only (app.js:199, 262, 278); `bad part refused` asserts the live look after a radio click and after a valid link; `writes_a_field_shut` green | closed |
 | T-33-SC | Tampering | package installs | low | accept | see Accepted Risks Log | closed |
 
 *Status: open · closed · open — below high threshold (non-blocking)*
@@ -92,3 +93,11 @@ created: "2026-10-28"
 - [x] `status: verified` set in frontmatter
 
 **Approval:** verified 2026-10-28
+
+## Security Audit 2026-10-29
+
+| Metric | Count |
+|---|---|
+| Threats found | 1 |
+| Closed | 1 |
+| Open | 0 |
