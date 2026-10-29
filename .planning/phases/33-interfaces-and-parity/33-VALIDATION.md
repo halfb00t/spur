@@ -47,7 +47,7 @@ Filled by the planner per task. Requirement-level map (from research):
 | REQ-shaft-api | schema/info/stl/step answer; `dims` key; gear `/api/schema` byte-equal; route table additions only; invalid shaft 422 naming the field | unit + integration | `pytest tests/test_shaft_interfaces.py tests/test_seam.py tests/test_api.py -k shaft` | ✅ |
 | REQ-shaft-cli | `spur shaft` numbers equal the API; exit 2 on refusal; README commands run | integration | `pytest tests/test_cli.py -k shaft` | ✅ |
 | REQ-designation-input | designation alone builds; + spline field = 422 naming both; + solid field fine; bad token named; infeasible designation 422 not 500 | unit | `pytest tests/test_shaft_interfaces.py -k designation` | ✅ (repeated `designation` key: manual-only, see below) |
-| REQ-shaft-web | switch both ways, preview, rows from schema, designation row, STL+STEP, `part=shaft` round trip, gear link no `part`, bad `part` refused | browser + static | `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q"`; `pytest tests/test_api.py -k "shareable or every_key"` | ✅ |
+| REQ-shaft-web | switch both ways, preview, rows from schema, designation row, STL+STEP, `part=shaft` round trip, gear link no `part`, bad `part` refused and the form dimmed while it stands (33-10); under 820 px the switch above the canvas (33-10); `.btn.primary` text ≥ 4.5:1 in both themes (33-10) | browser + static | `make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q"` (steps `bad part refused`, `narrow layout`, `primary button contrast`); `pytest tests/test_api.py -k "shareable or every_key"` | ✅ |
 | REQ-shaft-parity | web = API = CLI per number and download name over the fixed set; red once on a perturbed number | browser + integration | browser step `parity: web and API` + `pytest tests/test_shaft_parity.py` | ✅ |
 | REQ-wr02-fixed | no token blank-in-box and 200-at-API; Chromium re-probe equals the table; 37-input browser sweep; golden sweep still sends the 44 pinned queries | unit + browser | `pytest tests/test_number_as_written.py tests/test_shaft_interfaces.py -k as_written`; browser steps `number box tokens`, `as-written sweep`, `shaft as-written sweep` | ⚠️ partial — `0-0` gap, manual-only + debt |
 
@@ -94,3 +94,11 @@ Filled by the planner per task. Requirement-level map (from research):
 | Gaps found | 2 |
 | Resolved | 0 |
 | Escalated | 2 |
+
+## Validation Audit 2026-10-29
+
+| Metric | Count |
+|---|---|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
