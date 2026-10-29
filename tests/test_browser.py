@@ -2775,6 +2775,50 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     stranded.close()
                 print("refused link whose build fails: the form is live, the error is the build's")
 
+            with step("superseded build that fails", no_foreign_key):
+                # 33 WR-01: a build the user has moved on from can fail after the newer link has
+                # finished. Its error must not land over the newer page, and its catch must not
+                # clear the newer link's refusal. The shaft schema's answer is held until the
+                # refusal of `part=bogus` is on the page, then released as a 500. Its own page.
+                late = record_api(browser.new_page(), seen)
+                try:
+                    schema_held: list[Route] = []
+                    late.route("**/api/shaft/schema", lambda route: schema_held.append(route))
+                    late.goto(server + "/")
+                    expect(late.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    late.evaluate("(f) => { location.hash = f; }", "part=shaft")
+                    for _ in range(100):
+                        if schema_held:
+                            break
+                        late.wait_for_timeout(50)
+                    assert schema_held, "the shaft's schema was never asked for"
+                    late.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                    expect(late.locator("#messages .error")).to_have_text(
+                        [_bad_part_text("bogus")], timeout=BUILD_WAIT_MS
+                    )
+                    with late.expect_response("**/api/shaft/schema"):
+                        schema_held[0].fulfill(status=500, body="boom")
+                    late.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    expect(late.locator("#messages .error")).to_have_text(
+                        [_bad_part_text("bogus")]
+                    )
+                    assert eval_str_list(late, REFUSED_LOOK) == DEAD_LOOK, (
+                        "a superseded build's failure undid the newer link's refusal"
+                    )
+                    # The refusal still stands, so a keystroke builds nothing and keeps the hash.
+                    requests_before = _build_requests(seen)
+                    late.fill("input[name=teeth]", "30", force=True)
+                    late.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    assert _build_requests(seen) == requests_before, (
+                        "a keystroke built under a refused link"
+                    )
+                    assert eval_str(late, FRAGMENT) == "part=bogus"
+                finally:
+                    late.close()
+                print("superseded build that fails: the newer link's refusal stands")
+
             with step("form build that throws midway", no_foreign_key):
                 # 33 WR-01: buildForm empties the page before it reads the schema's properties,
                 # so a schema that throws there leaves a blank form. The page must then say it

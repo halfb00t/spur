@@ -91,9 +91,18 @@ const radios = document.querySelectorAll('.part-switch input');
 // from one part's form must never reach the other's request (L05).
 async function buildForm(which) {
   const build = ++formSeq;
-  const res = await fetch(PARTS[which].schema);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  const schema = await res.json();
+  let schema;
+  try {
+    const res = await fetch(PARTS[which].schema);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    schema = await res.json();
+  } catch (err) {
+    // Overtaken: the newer build owns the page and its message. A failure here must not reach
+    // the caller's catch, which would write its error over the newer page and clear the
+    // refusal of a newer link.
+    if (build !== formSeq) return false;
+    throw err;
+  }
   if (build !== formSeq) return false;
   // Past this line the page is emptied, so it holds no part until the build below finishes. A
   // throw in between (a schema without `properties`, a selector naming no group) must make the
