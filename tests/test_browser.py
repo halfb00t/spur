@@ -2685,6 +2685,11 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                 # Playwright reads aria-disabled on the group as "not enabled" and waits for it
                 # forever (WR-04); force types as a keyboard user, who is not stopped, can.
                 page.fill("input[name=teeth]", "30", force=True)
+                # force skips Playwright's editable check, so the typing is proved here: a field
+                # made readonly or disabled in the markup would otherwise pass the Reset check.
+                assert page.locator("input[name=teeth]").input_value() == "30", (
+                    "the field did not take the typing under a refusal"
+                )
                 page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
                 assert _build_requests(seen) == requests_before, "an edit built under a bad part"
                 # Reset takes no pointer while the refusal stands (the look above), and Playwright's
