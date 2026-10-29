@@ -51,7 +51,7 @@
     {
       "number": "33",
       "name": "Interfaces and Parity",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "34",
@@ -61,8 +61,8 @@
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 4 of 5 · 100% · executing"
+    "label": "Advance to the next step (plan phase 34)",
+    "reason": "Phase 5 of 5 — needs a plan"
   },
-  "updated_at": "2026-10-29T01:49:11.379Z"
+  "updated_at": "2026-10-29T02:14:50.829Z"
 }

@@ -82,20 +82,20 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Interfaces — parity
 
-- [ ] **REQ-shaft-api**: `/api/shaft/schema`, `/api/shaft/info`, `/api/shaft/model.stl` and
+- [x] **REQ-shaft-api**: `/api/shaft/schema`, `/api/shaft/info`, `/api/shaft/model.stl` and
   `/api/shaft/model.step` serve the shaft with the gear routes' admission, cache and error
   contract.
-- [ ] **REQ-shaft-cli**: `spur shaft ...` builds the same part and prints the same numbers as
+- [x] **REQ-shaft-cli**: `spur shaft ...` builds the same part and prints the same numbers as
   the API for the same parameters.
 - [x] **REQ-shaft-web**: the web page switches between gear and shaft, shows the shaft preview,
   its numbers (from a schema-carried row list) and its designation, downloads it, and round-trips
   a shaft link (`part=shaft&...`); a gear link carries no `part` key; any other `part` value is
   refused visibly; a browser test proves it.
-- [ ] **REQ-designation-input**: the API and CLI accept a designation in place of the fields; a
+- [x] **REQ-designation-input**: the API and CLI accept a designation in place of the fields; a
   designation together with an explicit field it contradicts is a `422` (L03).
-- [ ] **REQ-shaft-parity**: one parametrised test proves web, API and CLI agree on every shaft
+- [x] **REQ-shaft-parity**: one parametrised test proves web, API and CLI agree on every shaft
   number and the download name for a fixed set of shafts.
-- [ ] **REQ-wr02-fixed**: WR-02 (a link token the number box blanks but the API accepts) is
+- [x] **REQ-wr02-fixed**: WR-02 (a link token the number box blanks but the API accepts) is
   fixed where the part switch edits `refuse()`/`gearQuery()`; its debt item is retired in the
   fixing commit.
   Reading (C1, 33-01 Decision result; L49): the fix landed in app.py's query layer in 69c1aa3,
@@ -171,12 +171,12 @@ shaft routes under that rule and cites it, it does not re-map it.
 | REQ-designation-codec | Phase 31 | Complete |
 | REQ-shaft-solid | Phase 32 | Complete |
 | REQ-shaft-build-measured | Phase 32 | Complete |
-| REQ-shaft-api | Phase 33 | Pending |
-| REQ-shaft-cli | Phase 33 | Pending |
+| REQ-shaft-api | Phase 33 | Complete |
+| REQ-shaft-cli | Phase 33 | Complete |
 | REQ-shaft-web | Phase 33 | Complete |
-| REQ-designation-input | Phase 33 | Pending |
-| REQ-shaft-parity | Phase 33 | Pending |
-| REQ-wr02-fixed | Phase 33 | Pending |
+| REQ-designation-input | Phase 33 | Complete |
+| REQ-shaft-parity | Phase 33 | Complete |
+| REQ-wr02-fixed | Phase 33 | Complete |
 | REQ-tables-private-file | Phase 34 | Pending |
 | REQ-tables-transcribed-twice | Phase 34 | Pending |
 | REQ-fit-tolerance-window | Phase 34 | Pending |
