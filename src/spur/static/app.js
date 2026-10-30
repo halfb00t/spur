@@ -88,6 +88,10 @@ let formSeq = 0;
 // debounced edit or a Reset of it would rewrite the hash the new form is about to read, so the
 // link's own numbers would be lost to the old part's query (L05; PR #53 review).
 let formShown = 0;
+// Set when update() returned for that reason. If the new schema then fails, the old form takes
+// its edits again, but the edit that was dropped built nothing: its box no longer matches the
+// rows and downloads of the build before it, so those go (L08) and the next edit builds.
+let dropped = false;
 const radios = document.querySelectorAll('.part-switch input');
 
 // ---------------------------------------------------------------- form
@@ -108,6 +112,12 @@ async function buildForm(which) {
     if (build !== formSeq) return false;
     // Nothing was emptied: the old form is on the page and answers its edits again.
     formShown = build;
+    if (dropped) {
+      $('#dims').replaceChildren();
+      setDownloads(null);
+      setStatus(mesh ? `Showing the last valid ${P.noun}` : '');
+    }
+    dropped = false;
     throw err;
   }
   if (build !== formSeq) return false;
@@ -196,6 +206,7 @@ async function buildForm(which) {
   part = which;
   P = PARTS[which];
   formShown = build;
+  dropped = false;
   markPart();
   // The mate box and the other part's hint are hidden by CSS on this attribute and not by a
   // write here: the guard in test_api.py refuses any script that shuts a control (L41). The
@@ -476,7 +487,8 @@ async function update() {
   // form and still call here, but there is no form to read, and P is still the old part's: a
   // build now would draw that part's defaults under a blank form. And while another part's form
   // is loading, the old form must not rewrite the link it will read (formShown).
-  if (!part || formShown !== formSeq) return;
+  if (!part) return;
+  if (formShown !== formSeq) { dropped = true; return; }
   if (refused) { showMessages([refused]); return; }
   const q = gearQuery();
   const mate = mateInput.value || rejected.get('mate_teeth') || '';

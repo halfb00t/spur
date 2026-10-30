@@ -2863,6 +2863,48 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     waiting.close()
                 print("old form edited while a link's form loads: the link's numbers stand")
 
+            with step("old form edited while a failing form loads", no_foreign_key):
+                # The other side of the step above: the new schema fails, so the old form takes
+                # its edits again, but the edit made while it loaded built nothing. Its box then
+                # disagreed with the rows and downloads of the build before it, a number no
+                # control on the page produced (L08). The rows and downloads must go, and the
+                # next edit builds. Its own page.
+                lapsed = record_api(browser.new_page(), seen)
+                try:
+                    failing: list[Route] = []
+                    lapsed.route("**/api/shaft/schema", lambda route: failing.append(route))
+                    lapsed.goto(server + "/")
+                    expect(lapsed.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"^api/model\.stl"), timeout=BUILD_WAIT_MS
+                    )
+                    lapsed.fill("input[name=teeth]", "30")
+                    lapsed.evaluate("(f) => { location.hash = f; }", "part=shaft")
+                    for _ in range(100):
+                        if failing:
+                            break
+                        lapsed.wait_for_timeout(50)
+                    assert failing, "the shaft's schema was never asked for"
+                    lapsed.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    with lapsed.expect_response("**/api/shaft/schema"):
+                        failing[0].fulfill(status=500, body="boom")
+                    expect(lapsed.locator("#messages .error")).to_contain_text(
+                        "Could not build the form", timeout=BUILD_WAIT_MS
+                    )
+                    assert lapsed.evaluate(CONTROL_VALUE, "teeth") == "30"
+                    assert eval_pairs(lapsed, DIMS_ROWS) == [], (
+                        "rows of an earlier build shown under an edit that built nothing"
+                    )
+                    assert lapsed.locator("#dl-stl").get_attribute("href") is None, (
+                        "a download of an earlier build offered under an edit that built nothing"
+                    )
+                    lapsed.fill("input[name=teeth]", "31")
+                    expect(lapsed.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"teeth=31"), timeout=BUILD_WAIT_MS
+                    )
+                finally:
+                    lapsed.close()
+                print("old form edited while a failing form loads: no stale rows or downloads")
+
             with step("form build that throws midway", no_foreign_key):
                 # 33 WR-01: buildForm empties the page before it reads the schema's properties,
                 # so a schema that throws there leaves a blank form. The page must then say it
