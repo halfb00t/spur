@@ -1,6 +1,6 @@
 ---
 phase: 33-interfaces-and-parity
-verified: 2026-10-30T05:33:27Z
+verified: 2026-10-30T05:57:33Z
 status: passed
 score: 5/5 must-haves verified
 covered_files:
@@ -43,15 +43,14 @@ covered_files:
   - "tests/test_number_as_written.py"
   - "tests/test_shaft_interfaces.py"
   - "tests/test_shaft_parity.py"
-covered_digest: "v3:sha256:d48b3122bbc6566175326df047a8152ee5e29ef09a7e33e32f9d5b8b975b7f77"
+covered_digest: "v3:sha256:ff1a12dccfc61a369a2ebb8828d17f672e428b0010808021031ba8e27117216b"
 behavior_unverified: 0
 overrides_applied: 0
 re_verification:
   previous_status: passed
   previous_score: 5/5
   gaps_closed:
-    - "PR #53 Codex review: while a link's or switch's schema loads, the old form's pending debounced edit or a Reset no longer rewrites the hash the new form reads, so a shaft link's numbers are no longer replaced by defaults (91910cd)"
-    - "Prior advisory (IN-05 slug rounding had no debt file): filed as docs/tech_debt/active/2026-10-29-shaft-slug-rounds-to-six-significant-digits.md, severity nice, INDEX row present (737a3ee)"
+    - "Prior advisory: after a non-overtaken schema-fetch failure the re-armed old form could show an edit that update() dropped during the wait, while the rows and STL/STEP links still came from the build before it. Closed by d1c520a (rows and downloads dropped, status set, next edit builds)"
   gaps_remaining: []
   regressions: []
 coincidental_reliance_items:
@@ -59,46 +58,47 @@ coincidental_reliance_items:
     reason: undeclared-precondition
     harden: "Holds for the int-field tokens 0-0, 00-0, 0-9 and 00-9 only because spoke_count and hole_count both default to 0; app.py blank_in_a_number_box does not refuse them. The docstring says so and a walker test fails if any int field of the gear or shaft query models reads those tokens as anything but its default. Residual tracked in docs/tech_debt/active/2026-10-28-int-fields-accept-a-blanked-zero-minus-zero-token.md (must); human accepted it at UAT test 1 (pass)."
 advisory:
-  - finding: "A fetch failure of the new part's schema (non-overtaken) re-arms the old form (formShown = build) but does not replay an edit that update() dropped while the schema was loading. The old form is then live but its preview and hash can lag one edit behind until the next edit or Reset"
+  - finding: "The new `dropped` flag is not reset by a same-part link that overtakes the build it was set under. A later non-overtaken schema failure with no dropped edit of its own then also clears the rows and STL/STEP links, though they still match the form"
     category: other
-    reason: "Error path only (a failed schema fetch), page says 'Could not build the form', the old form is untouched and the next keystroke rebuilds. No number is printed from a stale form: the download href and rows are those of the last successful build. Not a must-have; not reproduced by any test"
-    evidence_status: "read from app.js:104-112 and :479; no test exercises it"
+    reason: "Safe direction only: it removes numbers, never shows a wrong one (L08 holds). Needs an edit during a part-switch fetch, then a same-part link before that fetch returns, then a later failing schema fetch. Read from app.js:94, :115-120, :209, :335, :491 (the only three writes of `dropped = false` are in buildForm); no test exercises it. Resolves with a `dropped = false` in followHash's same-part branch"
+    evidence_status: "read from code; no test"
 ---
 
 # Phase 33: Interfaces and Parity Verification Report
 
 **Phase Goal:** The same shaft (preview, numbers, designation and STL/STEP) comes from the web page, the API and the CLI, one set of numbers for all three, the designation can be given in place of the fields, and WR-02 is fixed on the same edit of the part switch that would otherwise trip it.
-**Verified:** 2026-10-30T05:33:27Z
+**Verified:** 2026-10-30T05:57:33Z
 **Status:** passed
-**Re-verification:** Yes. The previous report (a717ce6, status passed) went stale: commit 91910cd landed on covered files (`src/spur/static/app.js`, `tests/test_browser.py`).
+**Re-verification:** Yes. The previous report (79a245b, status passed) went stale: commit d1c520a landed on covered files (`src/spur/static/app.js`, `tests/test_browser.py`).
 
 ## What changed since the last report
 
-`git diff --stat a717ce6..HEAD -- src tests`: `src/spur/static/app.js` (+12/-3) and `tests/test_browser.py` (+39). The rest of that range is `.planning/STATE.md`, a new tech-debt file and its INDEX row. No other `src/` file moved, so `app.py`, `cli.py`, `shaft_model.py`, `shaft_params.py`, `index.html`, `style.css` and `vendor/` are byte-identical to what the last report verified.
+`git diff --stat 79a245b..HEAD`: `src/spur/static/app.js` (+13/-1) and `tests/test_browser.py` (+42). Nothing else moved, so `app.py`, `cli.py`, `shaft_model.py`, `shaft_params.py`, `index.html`, `style.css`, `bench/` and `docs/` are byte-identical to what the last report verified.
 
-The bug (Codex, PR #53): while a link or a switch fetched another part's schema, the old form was still on the page. Its pending debounced edit, or a Reset, called `update()`, which wrote the old part's query to the hash with `history.replaceState`. The new form then ran `readHash()`, read that hash, and the shaft link's numbers became defaults. That is an L05 breach (an unset or foreign value changing the part).
+The problem it closes: while a link's or a switch's schema loads, `update()` is a no-op (91910cd), so an edit made then builds nothing. If that schema fetch then fails, the old form is re-armed. Its box shows the dropped edit, but the rows and the STL/STEP links on the page were those of the build before it. A number no control on the page produced (L08).
 
-## The fix, read line by line (`app.js`)
+## The fix, read at HEAD (`app.js`)
 
 | Place | Change | Read as |
 |-------|--------|---------|
-| `:90` | `let formShown = 0` -- the `formSeq` of the form on the page | New state, initial 0 = `formSeq` initial 0 |
-| `:324` `followHash` | `formShown = ++formSeq` (was `formSeq++`) | Every link starts with the page "shown at the current seq"; a same-part link stays live, synchronously, before any await |
-| `:110` `buildForm` catch | after the overtaken check, `formShown = build` before rethrow | A non-overtaken fetch failure leaves the old form on the page, so it must answer edits again |
-| `:198` `buildForm` success | `formShown = build`, set in the same synchronous block as `part = which` | No await between the last overtake check (`:113`) and `:198`, so `build === formSeq` there and the new form is live the instant it exists |
-| `:479` `update()` | `if (!part \|\| formShown !== formSeq) return;` | While any `buildForm` is in flight, `formSeq` is ahead of `formShown` and `update()` is a no-op |
+| `:94` | `let dropped = false` | New state |
+| `:491` `update()` | `if (!part) return;` then `if (formShown !== formSeq) { dropped = true; return; }` | The early return is split in two. The `!part` branch (emptied page, WR-05) does not set the flag. Only an edit the old, still shown form lost sets it |
+| `:115-120` `buildForm` catch, after the overtaken check and `formShown = build` | if `dropped`: `#dims` emptied, `setDownloads(null)`, `setStatus(mesh ? "Showing the last valid <noun>" : '')`; then `dropped = false`; then rethrow | Same three calls and same text as `update()`'s own `fail()` (`:510-512`). `P` is still the old part's here because nothing was emptied, so the noun is right. The caller's catch (`switchTo`, `followHash`) shows "Could not build the form" and `markPart()` |
+| `:209` successful build | `dropped = false` | The new form owns the page; the flag belongs to the form that was thrown away |
 
-Paths walked against that code:
+Paths walked:
 
-- **Bootstrap** (`:904`): `followHash` sets both to 1, `buildForm('gear')` takes seq 2, `part` is `''` so `update()` returns either way; success sets `formShown = 2`. A failing bootstrap fetch sets `formShown = 2` and rethrows to the `followHash` catch; `part` stays `''`, so nothing builds (WR-05 holds).
-- **Same-part link** (`which === part`, `:326`): `formShown = ++formSeq` runs first, so `update()` passes. If a switch's build was in flight, it is now overtaken (`build !== formSeq`) and returns `false` after its fetch; the page stays on the part it shows. The golden sweep (one request per link) relies on this synchronous branch and passes.
-- **Link to the other part** (`:329`): `formShown` is behind `formSeq` for the whole fetch; edits and Reset of the old form are dropped; on success the new form is built, `formShown = build`, then `readHash()` reads the untouched link and `update()` sends it. This is the fixed case.
-- **`switchTo`** (`:243`): no `formShown` write of its own; `buildForm` supplies it. During the fetch the old form's edits are dropped (the old form is about to be thrown away and the switch is defined as "no value crosses", D-13). Success: `update()` runs with the new part live. Non-overtaken failure: old form re-armed, `markPart()` puts the radio back.
-- **`refuseLink`** (`:304`): `refused` is set before `buildForm('gear')`; the fetch no longer lets `update()` re-show the refusal message early, but `refuseLink` shows it itself after the build (`:314`), and a keystroke after the build reaches `update()` live and hits `if (refused)`. The superseded-failure case (WR-01) is unchanged: the overtaken build returns `false` at `:108` before the new `formShown` write, so it cannot re-arm a form the newer link owns.
-- **Throw midway** (`:118`-`:196`, WR-05): `part = ''` keeps `update()` a no-op whatever `formShown` is; the next link's `followHash` or the next switch's `buildForm` restores both.
-- **Overtake after the page is emptied**: impossible. No await sits between `:113` and `:208`.
+- **Edit or Reset during the wait, schema fails (the advisory):** flag set, then the catch clears rows and downloads, the box (30) no longer sits above the 24-tooth rows, and the next keystroke runs `update()` live and builds. The new browser step asserts exactly that.
+- **No edit during the wait, schema fails:** `dropped` is false, so rows and downloads of the last build stay. They still match the form. Unchanged behavior.
+- **Schema succeeds after a dropped edit:** the old form is replaced, `dropped = false` at `:209`. The link's numbers are read by `readHash()`. Unchanged (91910cd step still covers it).
+- **Overtaken failure (WR-01):** `return false` at `:112`, before the new block, so a stale failure clears nothing and leaves the flag for the build that owns the page. Unchanged.
+- **Overtaken success:** `return false` at `:123`; the flag survives to the newer build, which resets or acts on it.
+- **Same-part link (`followHash`, `:335`):** untouched. `formShown = ++formSeq` runs first, `update()` is live, nothing is dropped. Golden sweep passes (one request per link).
+- **`refuseLink`:** a failing gear build in it throws to `followHash`'s catch, which calls `clearRefusal()` and shows the error. The clear of rows is the same as above; no refusal state is touched by the new lines.
+- **`switchTo`, bootstrap, WR-05:** bootstrap has `part === ''`, so `update()` returns before the flag; the flag is false and the catch block skips. A throw midway keeps `part = ''`, same.
+- **Mesh left on screen:** the preview still shows the last valid part and the status says so. Same message the 422 path uses.
 
-`refuse()` (102 chars) and `gearQuery()` (299 chars) are byte-equal to `6800769` (compared by SHA-1 of the extracted bodies, both refs), so the WR-02 fix still reads as C1.
+`refuse()` and `gearQuery()` are not in the diff, so the WR-02 fix still reads as C1.
 
 ## Goal Achievement
 
@@ -106,24 +106,24 @@ Paths walked against that code:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | API and CLI serve the shaft with the gear routes' contract; designation in place of the fields; a clash is a 422 naming the fields; gear routes and `/api/schema` unchanged | VERIFIED | No `app.py`/`cli.py`/`shaft_*.py` change since a717ce6. I re-ran `tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py`: `264 passed in 11.80s` |
-| 2 | Web page serves the shaft: part switch, preview, schema rows, designation, STL/STEP, `part=shaft` round trip, other `part` refused visibly; browser test in `make verify` | VERIFIED | `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/python -m pytest tests/test_browser.py -q -n0 --no-cov`: `4 passed in 55.46s`. The one browser test carries `bad part refused`, `part switch`, `shaft link round trip`, `golden sweep`, `superseded build that fails`, `form build that throws midway`, `refused link whose build fails` and the new `old form edited while a link's form loads`; all pass |
-| 3 | One parametrised test proves web, API and CLI report the same value for every shaft number and download name | VERIFIED | `tests/test_shaft_parity.py` is in the 264 above; the browser's `parity: web and API` step passes. `slug()` and the model are untouched |
-| 4 | WR-02 fixed where the part switch edits `refuse()`/`gearQuery()`, read as C1 (server-side fix); browser proof over every number field | VERIFIED as read by C1, IN-01 residual accepted | Both function bodies equal `6800769` (above). `as-written sweep`, `number box tokens` and `shaft as-written sweep` pass in the browser run |
-| 5 | Gate delta recorded in `bench/RESULTS.md`; Phase 30 check green; the 44 golden links still send what `golden_requests.json` pins | VERIFIED | `golden sweep` passes in the browser run (it drives the synchronous same-part branch of `followHash`, the path this fix touched). `bench/RESULTS.md`, `tests/regression/` and `bench/` are not in the delta. Orchestrator gate at HEAD 91910cd: `make verify` = `2783 passed in 239.79s` (not re-run by me) |
+| 1 | API and CLI serve the shaft with the gear routes' contract; designation in place of the fields; a clash is a 422 naming the fields; gear routes and `/api/schema` unchanged | VERIFIED | No `app.py`/`cli.py`/`shaft_*.py` change since 79a245b. I re-ran `tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py`: `264 passed in 13.39s` |
+| 2 | Web page serves the shaft: part switch, preview, schema rows, designation, STL/STEP, `part=shaft` round trip, other `part` refused visibly; browser test in `make verify` | VERIFIED | `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/python -m pytest tests/test_browser.py -q -n0 --no-cov`: `4 passed in 58.74s`. The browser test carries `bad part refused`, `part switch`, `shaft link round trip`, `golden sweep`, `superseded build that fails`, `form build that throws midway`, `refused link whose build fails`, `old form edited while a link's form loads` and the new `old form edited while a failing form loads`; all pass |
+| 3 | One parametrised test proves web, API and CLI report the same value for every shaft number and download name | VERIFIED | `tests/test_shaft_parity.py` in the 264 above; the browser's `parity: web and API` step passes. `slug()` and the model are untouched |
+| 4 | WR-02 fixed where the part switch edits `refuse()`/`gearQuery()`, read as C1 (server-side fix); browser proof over every number field | VERIFIED as read by C1, IN-01 residual accepted | Neither function is in the d1c520a diff. `as-written sweep`, `number box tokens` and `shaft as-written sweep` pass in the browser run |
+| 5 | Gate delta recorded in `bench/RESULTS.md`; Phase 30 check green; the 44 golden links still send what `golden_requests.json` pins | VERIFIED | `golden sweep` passes in the browser run (the synchronous same-part branch). `bench/` and `tests/regression/` are not in the delta. Orchestrator gate at HEAD d1c520a: `make verify` = `2783 passed in 260.70s` (not re-run by me) |
 
 **Score:** 5/5 truths verified (0 present, behavior-unverified).
 
-### Delta check: the 91910cd fix (behavior-dependent: an ordering invariant across an await)
+### Delta check: the d1c520a fix (behavior-dependent: a state invariant across an await)
 
 | # | Claim | Status | Evidence |
 |---|-------|--------|----------|
-| D1 | While another part's schema loads, the old form's debounced edit and Reset cannot rewrite the hash the new form reads | VERIFIED | Code: `update()` returns at `:479` while `formShown !== formSeq`, and `formSeq` is bumped by `buildForm` at `:98` before its fetch. Test: new browser step holds `/api/shaft/schema`, `fill`s a gear field, sets the shaft link, waits 1000 ms (`DEBOUNCE_SETTLE_MS`, past the 350 ms debounce), clicks Reset, asserts the fragment still equals the link, releases the schema and asserts `reference_d=30`, `module=2`, `teeth=14` in the controls. Passes in my run. The orchestrator saw it red on the unfixed code (`assert '' == 'part=shaft&reference_d=30&module=2&teeth=14'`) |
-| D2 | The same-part link path is not broken | VERIFIED | Branch at `:326` runs after `formShown = ++formSeq`, so `update()` is live; `golden sweep` (44 links, one request each) and `shaft link round trip` pass |
-| D3 | The refused-link path (`refuseLink`) is not broken | VERIFIED | `refused` still set first, message shown after the build, `update()` reaches `if (refused)` once live. Steps `bad part refused`, `superseded build that fails`, `refused link whose build fails` and the `aria-disabled` read pass. L41 guard group: `17 passed` (`.venv/bin/python -m pytest --no-cov -n0 -q tests/test_api.py -k "shut or field or refused"`) |
-| D4 | `switchTo` and the bootstrap are not broken | VERIFIED | Walked above; `part switch`, bootstrap load of every page in the browser test, and the radio-follow checks pass |
-| D5 | WR-01 (stale failing build writes no error over a newer page) and WR-05 (no build while the page holds no part) still hold | VERIFIED | The overtaken-failure `return false` at `:108` precedes the `formShown = build` write, so a stale build cannot re-arm a form; `part = ''` precedes everything in the emptied window. Steps `superseded build that fails` and `form build that throws midway` pass |
-| D6 | No new `TBD`/`FIXME`/`XXX`, no shut verb written by script | VERIFIED | `grep` on the changed files finds no marker; `node --check src/spur/static/app.js` is clean; the L41 guard is green |
+| E1 | After a non-overtaken schema failure, rows and downloads of an earlier build are not shown under an edit that built nothing | VERIFIED | Code `:115-120`. Test: new browser step holds `/api/shaft/schema`, loads the gear, `fill`s teeth=30, sets `#part=shaft`, waits past the 350 ms debounce (`DEBOUNCE_SETTLE_MS`), fulfills the schema with a 500, then asserts the "Could not build the form" message, the box still reading 30, `eval_pairs(DIMS_ROWS) == []` and `#dl-stl` with no `href`. Passes in my run. The orchestrator saw it red on the unfixed code ("rows of an earlier build shown under an edit that built nothing", 15 rows of the 24-tooth build under a box reading 30). The step checks the fix's observable effect, not symbol presence |
+| E2 | The next edit after the failure builds | VERIFIED | Same step fills teeth=31 and waits for `href` matching `teeth=31` |
+| E3 | The same-part link path, `refuseLink`, `switchTo` and the bootstrap are not broken | VERIFIED | Walked above; `golden sweep`, `bad part refused`, `refused link whose build fails`, `part switch` and the bootstrap load pass in the browser run |
+| E4 | WR-01 and WR-05 still hold | VERIFIED | The overtaken `return false` precedes the new lines; the `!part` branch does not set the flag. `superseded build that fails` and `form build that throws midway` pass |
+| E5 | The step "old form edited while a link's form loads" (91910cd) still passes | VERIFIED | In the same browser run; the success path resets `dropped` and reads the link's numbers |
+| E6 | No debt marker, no script writes a shut verb, lint clean | VERIFIED | `grep -nE "TBD\|FIXME\|XXX"` on both files: none. `node --check src/spur/static/app.js` clean. `ruff check tests/test_browser.py`: all checks passed. L41 guard group: `17 passed, 52 deselected in 2.49s` |
 
 ### Deferred Items
 
@@ -133,42 +133,42 @@ None. No gap, so nothing to defer.
 
 | # | Finding | Category | Why Advisory |
 |---|---------|----------|--------------|
-| 1 | A failed fetch of the new part's schema re-arms the old form but does not replay an edit `update()` dropped while the schema loaded; preview and hash can lag one edit until the next edit or Reset | other | Error path only, page shows "Could not build the form", no test evidence, no printed number is wrong (rows and download href stay those of the last successful build) |
+| 1 | `dropped` is not reset by a same-part link that overtakes the build it was set under, so a later failing schema fetch can clear rows and links that still match the form | other | Over-clearing only (a number removed, none wrong); rare sequence; code read, no test. Not a must-have |
+
+The earlier advisory (dropped edit not replayed after a failed schema fetch) is closed and removed.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/spur/static/app.js` | `formShown` declared, set in `followHash`, on `buildForm` success and on non-overtaken failure, read in `update()` | VERIFIED | 5 touch points read at `:90 :110 :198 :324 :479`; wired (every `buildForm` caller goes through them); `node --check` clean |
-| `tests/test_browser.py` | step reproducing the race | VERIFIED | `:2827`-`:2864`, runs in the passing browser test |
-| `docs/tech_debt/active/2026-10-29-shaft-slug-rounds-to-six-significant-digits.md` + INDEX row | closes the earlier advisory | VERIFIED | file present, `nice`, INDEX line 23 |
-| Earlier artifacts (`shaft_model.py`, `shaft_parity.py`, `bench/`, `index.html`, `style.css`, `app.py`, `cli.py`) | unchanged | VERIFIED | no diff since a717ce6 |
+| `src/spur/static/app.js` | `dropped` declared, set in `update()`, acted on and reset in the `buildForm` catch, reset on success | VERIFIED | touch points `:94 :115-120 :209 :491`; wired (every `buildForm` caller passes through them); `node --check` clean |
+| `tests/test_browser.py` | step reproducing the failure-after-dropped-edit case | VERIFIED | step "old form edited while a failing form loads", runs in the passing browser test |
+| Earlier artifacts (`shaft_model.py`, `shaft_parity.py`, `bench/`, `index.html`, `style.css`, `app.py`, `cli.py`, `docs/architecture/*`) | unchanged | VERIFIED | no diff since 79a245b |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `buildForm` fetch start | `update()` no-op | `formSeq` ahead of `formShown` | WIRED | new browser step |
-| `buildForm` success / non-overtaken failure | `update()` live | `formShown = build` | WIRED | `part switch`, `refused link whose build fails`, golden and link steps |
-| `followHash` | `update()` live (same-part) | `formShown = ++formSeq` | WIRED | `golden sweep` |
-| `hash` -> `readHash` of the new form | the link's own numbers | old form can no longer rewrite the hash | WIRED | new browser step reads `reference_d`, `module`, `teeth` |
-| Prior links (`/api/shaft/model.{fmt}` -> `_serve_model`, CLI -> `resolve_shaft`, `renderInfo` -> `schema.dims`, `refuseLink` -> `markRefused`) | | | WIRED (regression) | tests above |
+| `update()` dropped return | `buildForm` failure catch | `dropped` flag | WIRED | new browser step |
+| `buildForm` failure catch | `#dims`, `#dl-stl` | `replaceChildren()`, `setDownloads(null)` | WIRED | step asserts empty rows and no `href` |
+| `buildForm` failure catch | next `update()` live | `formShown = build` | WIRED | step builds teeth=31 |
+| Earlier links (`/api/shaft/model.{fmt}`, CLI -> `resolve_shaft`, `renderInfo` -> `schema.dims`, `refuseLink` -> `markRefused`, `followHash` -> `formShown`) | | | WIRED (regression) | tests above |
 
 ### Data-Flow Trace (Level 4)
 
-The delta renders nothing new: an integer counter and an early return. Shaft rows and preview flow as before (`rows equal the API's`, `data-triangles equals the served STL` inside the passing browser test).
+The delta removes rendered data on one error path and renders nothing new. Shaft rows and preview flow as before (`rows equal the API's`, `data-triangles equals the served STL` inside the passing browser test).
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Browser test incl. the new race step | `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/python -m pytest tests/test_browser.py -q -n0 --no-cov` | 4 passed in 55.46s | PASS |
-| Light shaft/CLI/parity/as-written/seam tests | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py` | 264 passed in 11.80s | PASS |
-| L41 guard group | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_api.py -k "shut or field or refused"` | 17 passed, 52 deselected in 2.31s | PASS |
+| Browser test incl. both race steps | `PLAYWRIGHT_BROWSERS_PATH=$PWD/.venv/ms-playwright .venv/bin/python -m pytest tests/test_browser.py -q -n0 --no-cov` | 4 passed in 58.74s | PASS |
+| Shaft/CLI/parity/as-written/seam tests | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_shaft_interfaces.py tests/test_shaft_parity.py tests/test_number_as_written.py tests/test_cli.py tests/test_seam.py tests/test_shaft_params.py` | 264 passed in 13.39s | PASS |
+| L41 guard group | `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_api.py -k "shut or field or refused"` | 17 passed, 52 deselected in 2.49s | PASS |
 | JS syntax | `node --check src/spur/static/app.js` | no output | PASS |
-| `refuse` / `gearQuery` identical to `6800769` | extract bodies from `git show <ref>:src/spur/static/app.js`, SHA-1 | equal (102 and 299 chars) | PASS |
-| New step red before the fix | not re-run by me (would mean editing a covered file); orchestrator saw `assert '' == 'part=shaft&reference_d=30&module=2&teeth=14'` on the unfixed code | | accepted orchestrator evidence |
-| Whole gate | orchestrator: `make verify` at 91910cd | 2783 passed in 239.79s | PASS (orchestrator evidence) |
+| Lint | `.venv/bin/ruff check tests/test_browser.py` | All checks passed | PASS |
+| New step red before the fix | not re-run by me (would mean editing a covered file); orchestrator saw the rows assertion fail on the unfixed code | | accepted orchestrator evidence |
+| Whole gate | orchestrator: `make verify` at d1c520a | 2783 passed in 260.70s | PASS (orchestrator evidence) |
 
 ### Probe Execution
 
@@ -176,13 +176,13 @@ No `probe-*.sh` declared or present. Skipped.
 
 ### Requirements Coverage
 
-All six phase IDs appear in PLAN frontmatter and are ticked `[x]` in REQUIREMENTS.md (lines 85-98) with traceability rows 174-179 reading `Complete`. None is orphaned. `REQ-gate-cost-recorded` (33-01, 33-09) belongs to Phase 34 and is not judged here.
+All six phase IDs appear in PLAN frontmatter (`REQ-shaft-api` x3, `REQ-shaft-cli` x2, `REQ-shaft-web` x6, `REQ-designation-input` x3, `REQ-shaft-parity` x3, `REQ-wr02-fixed` x5) and are ticked `[x]` in REQUIREMENTS.md (lines 85-98) with traceability rows 174-179 reading `Complete`. None is orphaned. `REQ-gate-cost-recorded` (33-01, 33-09) belongs to Phase 34 and is not judged here.
 
 | Requirement | Source Plans | Status | Evidence |
 |-------------|--------------|--------|----------|
 | REQ-shaft-api | 33-02, 33-04, 33-09 | SATISFIED | truth 1 |
 | REQ-shaft-cli | 33-05, 33-09 | SATISFIED | truths 1, 3 |
-| REQ-shaft-web | 33-02, 33-06, 33-07, 33-08, 33-09, 33-10 | SATISFIED | truth 2, D1-D5 |
+| REQ-shaft-web | 33-02, 33-06, 33-07, 33-08, 33-09, 33-10 | SATISFIED | truth 2, E1-E5 |
 | REQ-designation-input | 33-04, 33-05, 33-09 | SATISFIED | truth 1 |
 | REQ-shaft-parity | 33-05, 33-08, 33-09 | SATISFIED | truth 3 |
 | REQ-wr02-fixed | 33-01, 33-03, 33-08, 33-09 | SATISFIED as read by C1, IN-01 residual accepted (UAT test 1: pass) | truth 4 |
@@ -192,17 +192,17 @@ All six phase IDs appear in PLAN frontmatter and are ticked `[x]` in REQUIREMENT
 | File | Line | Pattern | Severity | Impact |
 |------|------|---------|----------|--------|
 | `src/spur/static/app.js` | | `TBD` / `FIXME` / `XXX` | none | grep found none |
-| `src/spur/static/app.js` | `:104-112`, `:479` | dropped edit not replayed after a failed schema fetch | Info (advisory above) | error path only |
+| `src/spur/static/app.js` | `:94`, `:335` | `dropped` outlives an overtaking same-part link | Info (advisory above) | over-clears on a later failure; removes numbers, never shows a wrong one |
 
 ### Human Verification Required
 
-None. UAT test 1 is `pass`; nothing in the delta changes what a person sees on a successful path except that the link's numbers now survive an edit made while its form loads, which the browser step reads directly in the controls.
+None. UAT test 1 is `pass`. The delta changes what a person sees only on a failed schema fetch after an edit made during the wait, and the browser step reads that state directly (box value, rows, download link).
 
 ### Gaps Summary
 
-No gap. The five roadmap success criteria hold at HEAD 91910cd. The one new commit is a 12-line change to `app.js` plus a browser step: `update()` is a no-op while another part's form is loading, and each of the three ways a build ends (success, non-overtaken failure, a same-part link's own bump) re-arms the form on the page. I walked the bootstrap, same-part, other-part, switch, refused-link, overtaken and throw-midway paths against the code and ran the browser test (4 passed), the 264 light tests and the 17 L41 guard tests green. `refuse()` and `gearQuery()` are byte-equal to `6800769`, so the WR-02 fix still reads as C1. The IN-05 follow-up from the previous report is closed by the filed debt item.
+No gap. The five roadmap success criteria hold at HEAD d1c520a. The new commit closes the one advisory of the last report: when a failed form build re-arms the old form after it dropped an edit, the rows and STL/STEP links of the earlier build are removed and the status says the preview is the last valid one, so no number is shown under a box that did not produce it (L08). The fix uses the same calls and text as `update()`'s own failure path, leaves the same-part, switch, refused-link, bootstrap, WR-01 and WR-05 paths as they were, and is proven by a browser step seen red before the fix and green now. The browser test (4 passed), the 264 light tests and the 17 L41 guard tests are green in my run. One minor advisory is recorded: a stale `dropped` flag can over-clear after a rare sequence.
 
 ---
 
-_Verified: 2026-10-30T05:33:27Z_
+_Verified: 2026-10-30T05:57:33Z_
 _Verifier: Claude (gsd-verifier)_
