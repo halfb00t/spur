@@ -2824,6 +2824,45 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     late.close()
                 print("superseded build that fails: the newer link's refusal stands")
 
+            with step("old form edited while a link's form loads", no_foreign_key):
+                # PR #53 review (Codex): while a link's schema is in flight the old part's form
+                # is still on the page. Its pending debounced edit, or a Reset, used to rewrite
+                # the hash with the old part's query, and the new form then read that hash: the
+                # link's own numbers were silently replaced by defaults (L05). The shaft schema
+                # is held while a gear edit's debounce fires and Reset is clicked. Its own page.
+                waiting = record_api(browser.new_page(), seen)
+                try:
+                    schema_wait: list[Route] = []
+                    waiting.route("**/api/shaft/schema", lambda route: schema_wait.append(route))
+                    waiting.goto(server + "/")
+                    expect(waiting.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    link = "part=shaft&reference_d=30&module=2&teeth=14"
+                    waiting.fill("input[name=teeth]", "30")
+                    waiting.evaluate("(f) => { location.hash = f; }", link)
+                    for _ in range(100):
+                        if schema_wait:
+                            break
+                        waiting.wait_for_timeout(50)
+                    assert schema_wait, "the shaft's schema was never asked for"
+                    waiting.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    waiting.locator("#reset").click()
+                    assert eval_str(waiting, FRAGMENT) == link, (
+                        "the old form rewrote the link while the new form loaded"
+                    )
+                    schema_wait[0].continue_()
+                    expect(waiting.locator("input[name=reference_d]")).to_have_count(
+                        1, timeout=BUILD_WAIT_MS
+                    )
+                    for name, value in (("reference_d", "30"), ("module", "2"), ("teeth", "14")):
+                        assert waiting.evaluate(CONTROL_VALUE, name) == value, (
+                            f"the link's {name} was lost while its form loaded"
+                        )
+                finally:
+                    waiting.close()
+                print("old form edited while a link's form loads: the link's numbers stand")
+
             with step("form build that throws midway", no_foreign_key):
                 # 33 WR-01: buildForm empties the page before it reads the schema's properties,
                 # so a schema that throws there leaves a blank form. The page must then say it

@@ -83,6 +83,11 @@ let dims = null;
 // Bumped by every buildForm: a build that finds a later one started returns false, so a slow
 // schema fetch of the part the user left cannot rebuild the page under the one they chose.
 let formSeq = 0;
+// The formSeq of the form on the page. While a link or a switch is fetching another schema,
+// formSeq is ahead of it and update() builds nothing: the old form is still on the page, and a
+// debounced edit or a Reset of it would rewrite the hash the new form is about to read, so the
+// link's own numbers would be lost to the old part's query (L05; PR #53 review).
+let formShown = 0;
 const radios = document.querySelectorAll('.part-switch input');
 
 // ---------------------------------------------------------------- form
@@ -101,6 +106,8 @@ async function buildForm(which) {
     // the caller's catch, which would write its error over the newer page and clear the
     // refusal of a newer link.
     if (build !== formSeq) return false;
+    // Nothing was emptied: the old form is on the page and answers its edits again.
+    formShown = build;
     throw err;
   }
   if (build !== formSeq) return false;
@@ -188,6 +195,7 @@ async function buildForm(which) {
   buildSelectors(schema.selectors ?? [], groups);
   part = which;
   P = PARTS[which];
+  formShown = build;
   markPart();
   // The mate box and the other part's hint are hidden by CSS on this attribute and not by a
   // write here: the guard in test_api.py refuses any script that shuts a control (L41). The
@@ -313,7 +321,7 @@ async function refuseLink(values) {
 // started by an earlier link cannot land under this one.
 async function followHash() {
   clearRefusal();
-  formSeq++;
+  formShown = ++formSeq;
   const which = partOf(location.hash);
   if (which === part) { markPart(); readHash(); update(); return; }
   try {
@@ -466,8 +474,9 @@ let inflight = null;
 async function update() {
   // A build threw after it emptied the page (buildForm). Reset and the mate box sit outside the
   // form and still call here, but there is no form to read, and P is still the old part's: a
-  // build now would draw that part's defaults under a blank form.
-  if (!part) return;
+  // build now would draw that part's defaults under a blank form. And while another part's form
+  // is loading, the old form must not rewrite the link it will read (formShown).
+  if (!part || formShown !== formSeq) return;
   if (refused) { showMessages([refused]); return; }
   const q = gearQuery();
   const mate = mateInput.value || rejected.get('mate_teeth') || '';
