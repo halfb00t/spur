@@ -1,0 +1,28 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_a_kernel_result_that_is_not_one_solid_is_refused _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x141030260>
+
+    def test_a_kernel_result_that_is_not_one_solid_is_refused(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A kernel result of two disjoint solids, each valid, never reaches an export. Until
+        this test the one-solid line was proven only by 32-03's `.clean()` break, which was
+        reverted (investigation/32-03-red-clean.log), so nothing durable held it (the resolved
+        debt item 2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md)."""
+        def two_solids(self: cq.Shape, *args: object, **kwargs: object) -> cq.Shape:
+            return cq.Compound.makeCompound([self, self.translate(cq.Vector(1000, 0, 0))])
+    
+        monkeypatch.setattr(cq.Shape, "intersect", two_solids)
+        monkeypatch.setattr(cq.Compound, "intersect", two_solids)
+>       with pytest.raises(BuildError, match="not one valid solid"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'not one valid solid'
+E         Actual message: "The shaft's end face reaches 12.375 mm, not the 11.375 mm the end chamfer leaves: a modelling defect in spur, not a conflict in these parameters."
+
+tests/test_shaft_model.py:226: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_a_kernel_result_that_is_not_one_solid_is_refused
+1 failed, 42 deselected in 1.62s

@@ -5,7 +5,8 @@
 ## Responsibility
 
 Serve the gear over HTTP — the parameter schema, the derived dimensions, the STL and
-STEP downloads — and serve the web UI's static files. It owns exactly one policy of its
+STEP downloads — and, under `/api/shaft/`, the same three for the DIN 5480 shaft, and serve the
+web UI's static files. It owns exactly one policy of its
 own: how much work it is willing to accept at once.
 
 ## Boundaries
@@ -41,6 +42,20 @@ own: how much work it is willing to accept at once.
 | `GET /api/schema` | `GearParams.model_json_schema()` — the form is built from this; a field's `enabled_when` is a list of `{field, op, value}` conditions (`op` `eq` or `gt`, all must hold) under which it does anything — display metadata, not validation (`L41`); a top-level `selectors` list, each `{title, group, options: [{label, when}]}` with `when` in the same `{field, op, value}` vocabulary, is display metadata too, and is not in `/openapi.json` (`L42`) |
 | `GET /api/info?…[&mate_teeth=N]` | `derive(params, mate_teeth=…)` → a `DerivedDimensions` document; every key always present, `null` where a value does not apply |
 | `GET /api/model.{stl,step}?…` | the bytes, with `Content-Disposition` from `params.slug()`: `spur_z{teeth}_m{module}_pa{pressure_angle}`, with `_trochoid` appended exactly when the hob root is what the part is built with (`L40`); a radial part, and a `root_shape=trochoid` request `calc.root_mode` ignores or refuses, keep the plain name |
+| `GET /api/shaft/schema` | `ShaftParams.model_json_schema()`, with a top-level `dims` list of `{key, label, unit}`, one row per `ShaftDimensions` key but `warnings`, in its order: the result rows ride the schema so the page needs no second row table (`L49`) |
+| `GET /api/shaft/info?…` | `derive_shaft(params)` → a `ShaftDimensions` document, every key always present, `null` where a value does not apply |
+| `GET /api/shaft/model.{stl,step}?…` | the shaft's bytes through the same `_serve_model` as the gear's, named by `ShaftParams.slug()`: `spur_shaft_w{reference_d}x{module}x{teeth}`, frozen (`L49`); `spur_shaft_w25x1.25x18.stl` for the default |
+
+The shaft takes its eight `ShaftParams` fields as query keys, plus `designation` on both `info` and `model`, and `quality`
+on `model`. `designation` (`W 30x2x14x8f`) replaces `reference_d`, `module`, `teeth` and `fit`; it combines freely with
+`splined_length`, `end_chamfer`, `shank_d` and `shank_length`. `ShaftInfoQuery` and `ShaftModelQuery` are the shaft's two
+request models; `_shaft(q)` strips them to a plain `ShaftParams`, resolving a designation to the four spline fields, so a
+designation link and its flat link are one cache entry.
+
+```sh
+curl -s 'http://localhost:8000/api/shaft/info?designation=W%2030x2x14x8f&shank_length=0' | jq .
+curl -OJ 'http://localhost:8000/api/shaft/model.step?designation=W%2030x2x14x8f'
+```
 
 Two request models subclass `GearParams`: `InfoQuery` adds `mate_teeth`, `ModelQuery`
 adds `quality`. `_gear(q)` strips them back to a plain `GearParams` before anything
@@ -67,6 +82,15 @@ and has to measure the event loop, not the pool.
 
 - Parameters that cannot make a part → `422`, from `GearParams`'s own validator, with the
   offending fields in `detail[].ctx.fields` (L03).
+- A number the page's number box would blank (`5.`, `+22`, ` 22`, `1_0`) → `422` before the
+  query is read, one `detail` entry per offending key (`type == "number_as_written"`, `loc ==
+  ["query", <field>]`), on `/api/info`, `/api/model.{fmt}` and the shaft's `info` and `model` routes. Every value of a repeated key
+  is checked; an empty value and every other malformed token keep pydantic's own `422` (L49).
+- A designation given with any of `reference_d`, `module`, `teeth` or `fit` → `422`, whatever the values, checked
+  on key presence before any value is read (`type == "conflict"`, `loc == ["query", "designation"]`, `ctx.fields ==
+  ["designation", <each present key in spline order>]`). An unreadable designation → `422` `type == "designation"`
+  at the same `loc`, with the codec's sentence naming the bad token; an infeasible one (`W 6x0.5x6x8f`) → `422` there
+  with the model's own `type` and sentence. No designation is a `500` (`L49`).
 - `BuildError` from the kernel → `422` with the kernel's message (`detail[0].type ==
   "build_error"`).
 - A build that exceeds `SPUR_BUILD_TIMEOUT` → `503` + `Retry-After`, **not** `422`
@@ -125,6 +149,10 @@ static, the schema actually carrying the form metadata, `info` with a mate, both
 downloads with their media types and magic bytes, the `422` shapes, the impossible-mate
 warning, the small-gear case, and `test_a_saturated_service_refuses_instead_of_queueing`
 for L04.
+
+`tests/test_shaft_interfaces.py` is the light file for the shaft's routes (rows, `info`, the as-written
+rule, the download name, every designation case), with a stub backend; `tests/test_api.py` adds the real
+shaft downloads, the busy refusal and the shared cache entry of a designation and its flat link.
 
 `tests/test_pool.py` proves the actual process boundary and the pool-specific behaviour
 `test_api.py`'s inline override can't: one real build routed to and downloaded from a

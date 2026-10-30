@@ -1,6 +1,8 @@
-"""Command line: `spur serve`, `spur info`, `spur export`.
+"""Command line: `spur serve`, `spur info`, `spur export`, `spur shaft info`, `spur shaft export`.
 
-Gear options are generated from GearParams, so they always match the API.
+Gear options are generated from GearParams and shaft options from ShaftParams, so they
+always match the API. The shaft also takes a DIN 5480 designation in place of its four
+spline fields (REQ-designation-input).
 """
 
 from __future__ import annotations
@@ -14,8 +16,11 @@ from typing import Literal, cast, get_args, get_origin
 from pydantic import ValidationError
 
 from . import __version__
+from .din5480 import DesignationError
 from .params import GearParams
 from .records import configure
+from .shaft_calc import derive_shaft
+from .shaft_params import SPLINE_KEYS, DesignationConflict, ShaftParams, resolve_shaft
 
 # Mirrors InfoQuery.mate_teeth's ge=/le= in app.py, so the CLI refuses what the API
 # refuses (REQ-cli-parity). A tooth count outside this range would produce a centre
@@ -68,6 +73,43 @@ def _params(ns: argparse.Namespace) -> GearParams:
         raise SystemExit(2) from None
 
 
+def _add_shaft_args(ap: argparse.ArgumentParser) -> None:
+    # The gear's loop again, not a shared generator: the two groups' titles differ and the
+    # gear's help text is pinned byte for byte (33-RESEARCH Pattern 5).
+    g = ap.add_argument_group("shaft parameters (defaults in brackets)")
+    for name, field in ShaftParams.model_fields.items():
+        flag = "--" + name.replace("_", "-")
+        help_text = f"{field.description} [{field.default}]".replace("%", "%%")
+        assert field.annotation is not None  # as in _add_gear_args: narrows for type=
+        g.add_argument(flag, dest=name, default=None, help=help_text,
+                       metavar="V", type=field.annotation)
+    g.add_argument("--designation", default=None, metavar="TEXT",
+                   help="a DIN 5480 designation such as 'W 25x1.25x18x8f'. It replaces "
+                        "--reference-d, --module, --teeth and --fit and may not be given "
+                        "with any of them; the solid's flags combine with it")
+
+
+def _shaft_params(ns: argparse.Namespace) -> ShaftParams:
+    values = {k: v for k in ShaftParams.model_fields if (v := getattr(ns, k)) is not None}
+    try:
+        if ns.designation is None:
+            return ShaftParams(**values)
+        return resolve_shaft(ns.designation, values)
+    except (DesignationConflict, DesignationError) as exc:
+        print(f"error: designation: {exc}", file=sys.stderr)
+    except ValidationError as exc:
+        for err in exc.errors():
+            loc = [str(x) for x in err["loc"]]
+            # Read the way the API reads it: a refusal of what the designation spelled, or
+            # of the shaft as a whole, is the designation's; a solid's field keeps its own.
+            if ns.designation is not None and (not loc or loc[0] in SPLINE_KEYS):
+                loc = ["designation"]
+            where = ".".join(loc)
+            msg = err["msg"].removeprefix("Value error, ")
+            print(f"error: {where + ': ' if where else ''}{msg}", file=sys.stderr)
+    raise SystemExit(2)
+
+
 def cmd_serve(ns: argparse.Namespace) -> None:
     import uvicorn
 
@@ -116,9 +158,33 @@ def cmd_export(ns: argparse.Namespace) -> None:
         print(f"warning: {warning}", file=sys.stderr)
 
 
+def cmd_shaft_info(ns: argparse.Namespace) -> None:
+    print(derive_shaft(_shaft_params(ns)).model_dump_json(indent=2))
+
+
+def cmd_shaft_export(ns: argparse.Namespace) -> None:
+    from .build_errors import BuildError
+    from .model import Format, export
+
+    out: Path = ns.output
+    fmt = ns.format or out.suffix.lower().lstrip(".").replace("stp", "step")
+    if fmt not in ("stl", "step"):
+        raise SystemExit("error: output must end in .stl or .step (or pass --format)")
+    p = _shaft_params(ns)
+    try:
+        data = export(p, cast("Format", fmt), ns.quality)   # the check above is the proof
+    except BuildError as exc:
+        raise SystemExit(f"error: {exc}") from None
+    out.write_bytes(data)   # only after the build returned: a refused run leaves no file
+    print(f"wrote {out} ({len(data) / 1024:.0f} KiB)", file=sys.stderr)
+    for warning in derive_shaft(p).warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> None:
     env = os.environ.get
-    ap = argparse.ArgumentParser(prog="spur", description="Parametric involute spur gears.")
+    ap = argparse.ArgumentParser(
+        prog="spur", description="Parametric spur gears and DIN 5480 splined shafts.")
     ap.add_argument("--version", action="version", version=f"spur {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -144,6 +210,21 @@ def main(argv: list[str] | None = None) -> None:
                    help="STL tessellation [fine]")
     _add_gear_args(e)
     e.set_defaults(func=cmd_export)
+
+    sh = sub.add_parser("shaft", help="the DIN 5480 splined shaft")
+    shaft_sub = sh.add_subparsers(dest="shaft_cmd", required=True)
+
+    si = shaft_sub.add_parser("info", help="print the shaft's derived dimensions as JSON")
+    _add_shaft_args(si)
+    si.set_defaults(func=cmd_shaft_info)
+
+    se = shaft_sub.add_parser("export", help="write the shaft as an STL or STEP file")
+    se.add_argument("-o", "--output", type=Path, required=True, help="file.stl or file.step")
+    se.add_argument("--format", choices=["stl", "step"], help="override the file extension")
+    se.add_argument("--quality", choices=["preview", "fine"], default="fine",
+                    help="STL tessellation [fine]")
+    _add_shaft_args(se)
+    se.set_defaults(func=cmd_shaft_export)
 
     ns = ap.parse_args(argv)
     ns.func(ns)

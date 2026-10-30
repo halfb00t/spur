@@ -16,6 +16,7 @@ from spur.build_errors import BuildError, BuildTimeout
 from spur.calc import HEX_CELL_CAP, DerivedDimensions
 from spur.model import Format, Quality, export
 from spur.params import GearParams
+from spur.shaft_params import ShaftParams
 
 client = TestClient(app)
 
@@ -180,6 +181,8 @@ def test_every_key_the_ui_reads_is_a_derived_dimensions_field() -> None:
     dims_block = re.search(r"const DIMS = \[.*?\];", source, re.DOTALL)
     assert dims_block  # a regex that silently stopped matching must fail, not pass
     assert dims_keys == re.findall(r"^\s*\['(\w+)',", dims_block.group(0), re.MULTILINE)
+    # The shaft's rows travel in its schema (`dims`); a second row table here would drift.
+    assert source.count("const DIMS = [") == 1
 
     for read_form in (".span_teeth", "info.centre_distance", "info.warnings",
                      ".hex_cell_count"):
@@ -262,6 +265,12 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # under SC2.
     # 28-REVIEW IN-03 dropped `input.value = to;`: the longer write() token contains it, so it
     # could not fail on its own and the longer one supersedes it as the pin of the box write.
+    # L49 (Phase 33) added these tokens and removed none: the tagged hash builder, the part
+    # descriptor's URLs in update() and setDownloads(), buildForm's clears, the schema's `dims`,
+    # the text box and the part switch's listener. L49 (33-07) replaced the `hashchange` token
+    # and removed no other: the listener is now `followHash`, which picks the part before it
+    # reads the hash, so the old arrow function is gone by design; four tokens were added for
+    # the part of a link and the refused state.
     for snippet in (
         "for (const [name, prop] of Object.entries(schema.properties)) {",
         "fields.set(name, { input, wrap, title, rels: prop.enabled_when ?? [], reason });",
@@ -272,7 +281,7 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "const infoQ = new URLSearchParams(q);",
         "history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);",
         "navigator.clipboard.writeText(location.href)",
-        "window.addEventListener('hashchange', () => { readHash(); update(); });",
+        "window.addEventListener('hashchange', followHash);",
         # One exact token on one line, so a grep for it finds this pin: 108 columns.
         "form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });",  # noqa: E501
         "mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",
@@ -308,6 +317,25 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         "form.addEventListener('input', (e) => rejected.delete(e.target.name));",
         "mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));",
         "rejected.clear(); mateInput.value = ''; stash.clear(); applyRelations(); deriveSelectors(); update();",  # noqa: E501
+        # Phase 33: the part descriptor (PARTS) and the generic paths that read it.
+        "const hash = [P.tag, infoQ.toString()].filter(Boolean).join('&');",
+        "${P.info}?",
+        "${P.model}.stl?",
+        "${P.model}.${kind}",
+        "fields.clear();",
+        "stash.clear(); rejected.clear();",
+        "selectors.length = 0;",
+        "dims = schema.dims ?? null;",
+        "input.type = 'text';",
+        "radio.addEventListener('change', () => switchTo(radio.value));",
+        # Phase 33 (33-07): the link names the part. partOf() compares the `part` values as
+        # literals, followHash() handles a same-part link synchronously (the golden sweep
+        # sends one request per link and relies on it), and update() builds nothing under a
+        # refused part (D-15, D-20).
+        "new URLSearchParams(hash.slice(1)).getAll('part')",
+        "if (which === part) { markPart(); readHash(); update(); return; }",
+        "else if (await buildForm(which)) { readHash(); update(); }",
+        "if (refused) { showMessages([refused]); return; }",
     ):
         assert re.sub(r"\s+", " ", snippet) in collapsed_source, snippet
 
@@ -325,7 +353,7 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # what tells them apart -- '#mate-teeth' has no quote immediately before "teeth".
     assert not re.search(r"""['"]teeth['"]""", "'#mate-teeth'")
 
-    for name in GearParams.model_fields:
+    for name in [*GearParams.model_fields, *ShaftParams.model_fields]:
         # A field name written as a complete quoted string literal ('name' or "name"),
         # not merely as a substring of a longer quoted string (the case above).
         assert not re.search(r"""['"]""" + re.escape(name) + r"""['"]""", rest), name
@@ -338,6 +366,11 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     # it in the hash (REQ-selector-derives-and-writes-through). One `fields.set(` is the
     # buildForm() loop's; a second would be the select joining the form's values.
     assert collapsed_source.count("fields.set(") == 1, "the select must not join `fields`"
+
+    # 33-07: the same-part branch of followHash() runs before any `await`, so a hashchange that
+    # keeps the part is handled inside the event, as the old listener was.
+    follow = collapsed_source[collapsed_source.index("async function followHash()"):]
+    assert "await" not in follow[: follow.index("if (which === part)")], "followHash awaits first"
 
     # L41: an inert field stays a field. A relation dims the field and says why; it never
     # disables, hides, clears or rewrites it, because a shared link such as
@@ -392,6 +425,17 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
         assert not writes_a_field_shut.search(allowed), allowed
     assert not writes_a_field_shut.search(source)
 
+    # 33-10 shuts the form to pointer input from CSS on `body[data-refused]` (style.css), which
+    # the guard above cannot see. That is sound only while nothing a link loads is in the form
+    # during a refusal, and that holds because the attribute is written at exactly two sites:
+    # refuseLink sets it, before a gear form at its defaults is built, and clearRefusal deletes
+    # it, and markRefused has one caller. A third writer, or a second caller, is a new reading
+    # of L41 and must be argued, not slipped in with the suite green (T-33-26).
+    assert len(re.findall(r"dataset\.refused\s*=", source)) == 1, "a second setter of data-refused"
+    assert len(re.findall(r"delete\s+[\w.]*dataset\.refused\b", source)) == 1, "a second clearer"
+    assert source.count("dataset.refused") == 2, "data-refused is touched somewhere else"
+    assert source.count("markRefused(") == 2, "markRefused has a caller beyond refuseLink"
+
     # "Clears or rewrites" is a write to `.value`, which the page does legitimately in
     # readHash() and #reset, so it is checked where a relation lives and nowhere else: the
     # section between the relations banner and the messages banner (effective, holds,
@@ -423,6 +467,31 @@ def test_the_shareable_link_round_trips_every_field_through_generic_code() -> No
     assert "function pick(" in selectors.group(1)
     assert len(writes_a_value.findall(selectors.group(1))) == 1, (
         "the selectors section must hold exactly one value write, in pick()")
+
+
+def test_the_page_formats_numbers_with_the_expression_the_parity_test_ports() -> None:
+    """33-08: the browser step maps numbers through this very expression and compares them with
+    tests/shaft_parity.py `displayed()`, so the page's own rule is what is checked only while
+    app.js still holds exactly it. A changed `fmt` fails here and in the step, not in a user's
+    table (D-21).
+    """
+    source = re.sub(r"\s+", " ", (STATIC / "app.js").read_text())
+    expression = "const fmt = (v) => Number(v).toFixed(3).replace(/\\.?0+$/, '');"
+    assert source.count(expression) == 1, "app.js `fmt` is not the expression the parity step ports"
+
+
+def test_only_the_shaft_sizes_the_floor_grid_from_its_height() -> None:
+    """33-08: a 1000 mm shaft on a grid sized from its 25 mm width has no visible grid, so the
+    shaft's descriptor asks for its height to count (`gridAlong`). The gear's does not, which
+    keeps every gear's grid as it was; the browser step `viewer framing` shows the shaft's.
+    """
+    source = re.sub(r"\s+", " ", (STATIC / "app.js").read_text())
+    assert source.count("gridAlong: false,") == 1, "the gear's grid must not follow its height"
+    assert source.count("gridAlong: true,") == 1, "the shaft must size its grid from its height"
+    assert (
+        "const extent = (P.gridAlong ? Math.max(across, box.max.z - box.min.z) : across) * 1.6;"
+        in source
+    ), "placeGrid() no longer reads the part's descriptor"
 
 
 def test_info_reports_the_mate() -> None:
@@ -999,6 +1068,45 @@ def test_a_saturated_service_refuses_instead_of_queueing() -> None:
             app_module.BUILD_QUEUE.release()
 
 
+@pytest.mark.parametrize(("fmt", "ctype", "magic"), [
+    ("stl", "model/stl", None),
+    ("step", "model/step", b"ISO-10303-21;"),
+])
+def test_a_shaft_downloads_as_stl_and_step(fmt: str, ctype: str, magic: bytes | None) -> None:
+    """The shaft's routes serve the real solid with the gear's contract and a frozen name
+    (D-17, L49): `slug()` is the download name and the fit is not in it."""
+    r = client.get(f"/api/shaft/model.{fmt}", params={"quality": "preview"})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == ctype
+    name = f"spur_shaft_w25x1.25x18.{fmt}"
+    assert r.headers["content-disposition"] == f'attachment; filename="{name}"'
+    assert len(r.content) > 1000
+    if magic:
+        assert r.content.startswith(magic)
+
+
+@pytest.mark.usefixtures("fresh_exports")
+def test_a_saturated_service_refuses_a_shaft() -> None:
+    """A shaft competes with the gear for the one build queue (T-33-10).
+
+    The byte cache is fresh, or an earlier download of this shaft would answer before the
+    queue is asked.
+    """
+    from spur import app as app_module
+
+    held = [app_module.BUILD_QUEUE.acquire(blocking=False)
+            for _ in range(app_module.MAX_QUEUED_BUILDS)]
+    try:
+        assert all(held)
+        r = client.get("/api/shaft/model.stl", params={"quality": "preview"})
+        assert r.status_code == 503
+        assert r.headers["retry-after"] == "5"
+        assert r.json()["detail"][0]["type"] == "busy"
+    finally:
+        for _ in held:
+            app_module.BUILD_QUEUE.release()
+
+
 def test_a_saturated_service_names_its_queue_in_parts() -> None:
     """D-09: the busy message must stay true once a second part type is built, so it
     counts parts, not gears. Status, Retry-After and type are the same as above."""
@@ -1111,6 +1219,33 @@ def test_a_second_identical_download_is_served_from_the_byte_cache() -> None:
 
     assert first.status_code == second.status_code == 200
     assert first.content == second.content
+    assert calls == 1
+
+
+@pytest.mark.usefixtures("fresh_exports")
+def test_a_designation_and_its_fields_share_one_cached_shaft() -> None:
+    """Both links reduce to an equal ShaftParams, so the second never reaches a worker (D-06)."""
+    from spur import app as app_module
+
+    calls = 0
+
+    async def counting_backend(p: ShaftParams, fmt: str, quality: str) -> bytes:
+        nonlocal calls
+        calls += 1
+        return export(p, cast(Format, fmt), cast(Quality, quality))
+
+    app_module.app.dependency_overrides[build_backend] = lambda: counting_backend
+    try:
+        by_designation = client.get("/api/shaft/model.stl",
+                                    params={"designation": "W 30x2x14x8f", "quality": "preview"})
+        by_fields = client.get("/api/shaft/model.stl",
+                               params={"reference_d": 30, "module": 2, "teeth": 14,
+                                       "quality": "preview"})
+    finally:
+        app_module.app.dependency_overrides[build_backend] = lambda: _inline_backend
+
+    assert by_designation.status_code == by_fields.status_code == 200
+    assert by_designation.content == by_fields.content
     assert calls == 1
 
 

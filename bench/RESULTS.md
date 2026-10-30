@@ -7260,3 +7260,337 @@ Each deliberate break is run red once and reverted; the first failure line is co
 | 32-04 | `make lint-imports`, contract `The kernel doorways are model and shaft_model` (T-32-09) | the `ignore_imports` line removed from `pyproject.toml` | `Contracts: 9 kept, 1 broken.`, naming `spur.cli -> spur.model (l.102)` then `spur.model -> spur.shaft_model (l.33)`, log `32-04-red-no-ignore.log` | `git checkout -- pyproject.toml`; `git status --porcelain -- src tests pyproject.toml` empty |
 | 32-04 | `tests/test_shaft_model.py::test_model_builds_and_exports_a_shaft_through_the_one_doorway` (both rows; 2 failed) (T-32-07) | the `isinstance(p, ShaftParams)` dispatch removed from `model._build` | `E           spur.build_errors.BuildError: Geometry kernel failed (AttributeError); try smaller fillets or chamfers.` (the shaft reached the gear's pipeline and read `p.pressure_angle`), log `32-04-red-no-dispatch.log` | `git checkout -- src/spur/model.py`; `git status --porcelain -- src tests pyproject.toml` empty |
 | 32-04 | `tests/test_seam.py::test_the_shaft_solid_never_imports_the_gear_doorway` (1 failed, 6 passed) | a function-local `from . import model` added inside `shaft_model._polar` | `E       AssertionError: assert ['from . impo...# noqa: F401'] == []`, log `32-04-red-cycle.log` | `git checkout -- src/spur/shaft_model.py`; `git status --porcelain -- src tests pyproject.toml` empty |
+
+## Interfaces and parity (Phase 33)
+
+What this section holds: v0.7's fourth phase puts the DIN 5480 shaft on the API (`/api/shaft/...`), the CLI (`spur shaft ...`) and the page (a part switch), takes the designation as an input on the API and the CLI, proves the three agree on every number and on the download name, and fixes WR-02 (a token the number box blanks no longer builds a part). Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/33-interfaces-and-parity/investigation/`; later plans append rows to the table at the end.
+
+### The gate baseline (33-01)
+
+Source logs: `33-01-verify.log` (the whole `/usr/bin/time -p make verify` output) and `33-01-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/33-interfaces-and-parity/investigation/`. Every figure below is copied from them, not re-rounded. One reading, on Phase 32's merged code: `git diff --exit-code 6800769 -- src tests bench pyproject.toml Makefile requirements.txt` exited 0 before the run, so only `.planning/` differed from the tree Phase 32 shipped.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `ead2a4c` (`src`, `tests`, `bench`, `pyproject.toml`, `Makefile` and `requirements.txt` byte-equal to `6800769`; only `.planning/` files were uncommitted or newer) |
+| UTC start -> end | `2026-10-27T15:54:00Z` -> `2026-10-27T15:57:57Z` |
+| 1-minute load before -> after | `4.62` -> `7.15` (`sysctl -n vm.loadavg` printed `{ 4.62 3.41 3.11 }` and `{ 7.15 7.87 5.40 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2644 passed in 229.17s (0:03:49) =======================` |
+| `/usr/bin/time -p` | `real 230.70`, `user 719.77`, `sys 723.33` |
+| Coverage TOTAL line | `TOTAL                         1682     24    450     14  98.22%` (`Required test coverage of 96.0% reached. Total coverage: 98.22%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+
+Phase 32's close read `2644 passed in 233.83s` (`### The gate delta (32-06)`, `HEAD 7a4e108`); that is history, not the comparison. This reading holds the same `2644` tests, because no `src` or `tests` file changed between Phase 32's merge and this run. 33-09 subtracts from this reading, taken on the same host, and no speed claim is made from a single pair of readings: the run began at a 1-minute load of `4.62` and the load after it includes the run's own work, so the figure carries the host's spread (Phase 25's is about 8 %, the Makefile comment at the `test:` target).
+
+### Tokens the number box blanks, every field (33-01)
+
+Source: `33-01-token-probe.log` (script `33-01-token-probe.py`, table `33-01-token-table.json`). Chromium 153.0.8010.12 (the Playwright 1.63.0 headless shell under `.venv/ms-playwright`, the gate's own browser) on a blank page holding 37 `<input type=number>` boxes: the 29 non-enum `GearParams` fields, `mate_teeth` (`min=6 max=1000 step=1`) and the 7 non-enum `ShaftParams` fields, each with the `min`, `max` and `step` that `buildForm()` gives it (`step = prop.step ?? (integer ? 1 : 'any')`). Each of 91 tokens was assigned through `.value` on every box and read back. `Box` is the number of boxes on which the token read back `''`; `int` and `float` are pydantic's lax parse; `/api/info 200 (gear)` counts the 30 fields (29 gear and `mate_teeth`) for which `TestClient(spur.app.app).get("/api/info", params={field: token})` answered 200; `ShaftParams validates` counts the 7 shaft fields for which `ShaftParams.model_validate({field: token})` validated; `Rule` is 33-RESEARCH's four conditions (`token != token.strip()`, `_` anywhere, a leading `+`, a trailing `.`); `Non-finite` is whether `float(token)` reads inf or nan.
+
+| Token | Box | int | float | /api/info 200 (gear) | ShaftParams validates | Rule | Non-finite |
+|---|---|---|---|---|---|---|---|
+| `' 22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22 '` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'%2022'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1_0'` | 37/37 | yes | yes | 14/30 | 4/7 | refuses | no |
+| `'22.'` | 37/37 | no | yes | 11/30 | 3/7 | refuses | no |
+| `'5.'` | 37/37 | no | yes | 14/30 | 4/7 | refuses | no |
+| `'+5'` | 37/37 | yes | yes | 14/30 | 4/7 | refuses | no |
+| `'+22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'2.'` | 37/37 | no | yes | 16/30 | 4/7 | refuses | no |
+| `'22'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'2.5'` | 0/37 | no | yes | 16/30 | 4/7 | lets through | no |
+| `'-1'` | 0/37 | yes | yes | 0/30 | 0/7 | lets through | no |
+| `'1e1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'.5'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'\t22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\n'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\x0b'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\x0c22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\u2028'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\xa0 22'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\xa0'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'\u200322'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'22\u2003'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'2_2'` | 37/37 | yes | yes | 13/30 | 3/7 | refuses | no |
+| `'1_000'` | 37/37 | yes | yes | 1/30 | 0/7 | refuses | no |
+| `'+0'` | 37/37 | yes | yes | 25/30 | 2/7 | refuses | no |
+| `'0.'` | 37/37 | no | yes | 23/30 | 2/7 | refuses | no |
+| `'-5.'` | 37/37 | no | yes | 0/30 | 0/7 | refuses | no |
+| `'+.5'` | 37/37 | no | yes | 18/30 | 2/7 | refuses | no |
+| `'+5e1'` | 37/37 | no | yes | 9/30 | 3/7 | refuses | no |
+| `'+1e1'` | 37/37 | no | yes | 12/30 | 4/7 | refuses | no |
+| `'1e1_0'` | 37/37 | no | yes | 0/30 | 0/7 | refuses | no |
+| `'Infinity'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'inf'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'-inf'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'infinity'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'NaN'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'nan'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'1e400'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'1e309'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'-1e309'` | 37/37 | no | yes | 0/30 | 0/7 | lets through | yes |
+| `'9' * 400` | 37/37 | yes | yes | 0/30 | 0/7 | lets through | yes |
+| `'abc'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'0x10'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1e'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1e+'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'--5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1,5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'0.5.'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'- 5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1__0'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'_1'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'1_'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'-+5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'+-5'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'0b1'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'5.e'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'.e1'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'-.'` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'1e0.5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1.5.2'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1 0'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'1\xa00'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'%'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\u0663'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\uff12\uff12'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'\ufeff22\ufeff'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'-.5'` | 0/37 | no | yes | 1/30 | 0/7 | lets through | no |
+| `'1E+1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'1e+1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'1e-1'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'00022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'0022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'022'` | 0/37 | yes | yes | 13/30 | 3/7 | lets through | no |
+| `'-0'` | 0/37 | yes | yes | 25/30 | 2/7 | lets through | no |
+| `'5.0'` | 0/37 | yes | yes | 14/30 | 4/7 | lets through | no |
+| `'1.e1'` | 0/37 | no | yes | 12/30 | 4/7 | lets through | no |
+| `'5.e1'` | 0/37 | no | yes | 9/30 | 3/7 | lets through | no |
+| `'5e0'` | 0/37 | no | yes | 14/30 | 4/7 | lets through | no |
+| `'5E0'` | 0/37 | no | yes | 14/30 | 4/7 | lets through | no |
+| `'1E5'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'00.5'` | 0/37 | no | yes | 18/30 | 2/7 | lets through | no |
+| `'-.5e1'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'0e0'` | 0/37 | no | yes | 23/30 | 2/7 | lets through | no |
+| `'1e-400'` | 0/37 | no | yes | 23/30 | 2/7 | lets through | no |
+| `'1e308'` | 0/37 | no | yes | 0/30 | 0/7 | lets through | no |
+| `'0.1e1'` | 0/37 | no | yes | 17/30 | 4/7 | lets through | no |
+| `' '` | 37/37 | no | no | 0/30 | 0/7 | refuses | no |
+| `'22,5'` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+| `'NaN '` | 37/37 | no | yes | 0/30 | 0/7 | refuses | yes |
+| `''` | 37/37 | no | no | 0/30 | 0/7 | lets through | no |
+
+```
+held but the rule refuses: none
+blank, accepted somewhere, the rule lets it through: none
+blank, refused everywhere already, the rule lets it through: '%2022', 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400, 'abc', '0x10', '1e', '1e+', '--5', '1,5', '- 5', '-+5', '0b1', '5.e', '.e1', '1e0.5', '1.5.2', '1 0', '1\xa00', '%', '\u0663', '\uff12\uff12', '\ufeff22\ufeff', '22,5', ''
+  of which pydantic parses it (a bound or the finite check refuses): 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400
+  of which pydantic refuses to parse it: '%2022', 'abc', '0x10', '1e', '1e+', '--5', '1,5', '- 5', '-+5', '0b1', '5.e', '.e1', '1e0.5', '1.5.2', '1 0', '1\xa00', '%', '\u0663', '\uff12\uff12', '\ufeff22\ufeff', '22,5', ''
+  of which float() reads non-finite: 'Infinity', 'inf', '-inf', 'infinity', 'NaN', 'nan', '1e400', '1e309', '-1e309', '9' * 400
+not uniform: none
+```
+
+Of the 91 tokens, 66 read back `''` on every box and 25 read back as given on every box; no token is blank on some boxes and held on others (`not uniform: none`). The rule refuses no token a box holds and lets through no token that a box blanks and the API accepts; the 32 tokens it lets through that a box blanks are all already refused by the API, 10 by a bound or the finite check after pydantic parses them (`Infinity`, `inf`, `-inf`, `infinity`, `NaN`, `nan`, `1e400`, `1e309`, `-1e309` and a 400-digit integer) and 22 because pydantic does not parse them. Of the 17 rows this table shares with `### Tokens a control cannot hold (28-01)` (`abc`, a single space, `0x10`, `NaN`, `Infinity`, `1e`, `--5`, `22,5`, `1e400`, ` 22`, `22 `, `1_0`, `22.`, `5.`, `+5`, `.5`, `1e1`), every one reads as it did there: the same Chromium build, blank on the first 15 and held on `.5` and `1e1`. The empty string reads `''` like the rest and pydantic refuses it; the page never sends it (L44 D-06).
+
+### The applied chamfer, read off the end face (33-02)
+
+`.planning/phases/33-interfaces-and-parity/investigation/33-02-cut-probe.py` (log: `33-02-cut-probe.log`), 2026-10-27, this host. `upper - volume` is what the volume bracket of `_guard_volume` can see of the chamfer; the end-face error is the largest vertex radius of the one planar face at z = 0 minus `tip_d/2 - c`.
+
+| Row | c (mm) | upper - volume (mm^3) | ratio to upper | End-face error (mm) | CONE faces | Build (s) |
+|---|---|---|---|---|---|---|
+| default | 1 | 15.4289 | 6.746e-04 | 2.309e-14 | 19 | 0.68 |
+| c=0.001 | 0.001 | 0.00011546 | 5.048e-09 | 1.776e-14 | 19 | 0.65 |
+| c=0.01 | 0.01 | 0.00124978 | 5.464e-08 | 1.599e-14 | 19 | 0.79 |
+| c=0.05 | 0.05 | 0.0291209 | 1.273e-06 | 1.421e-14 | 19 | 0.85 |
+| c=0.0001 (applies none) | 0 | 0.000103804 | 4.539e-09 | 3.553e-15 | 0 | 0.27 |
+| W6x0.5x10, c=0.001 | 0.001 | 9.04155e-05 | 8.605e-09 | 1.954e-14 | 11 | 0.39 |
+| heaviest (830 / 10 / 82, 500 + 500), c=0.001 | 0.001 | -0.215028 | -4.040e-10 | 1.705e-13 | 83 | 2.86 |
+
+The uncut reproduction (the debt's finding): the solid of `end_chamfer=0` read against the default's `c = 1.0` has an end face 1 mm wider than `tip_d/2 - 1.0`.
+
+- The volume cannot carry the guard: on the heaviest shaft an honest 0.001 mm chamfer reads `upper - volume = -0.215 mm^3`, because the face area's own error outweighs so small a cut, so the debt item's `upper - volume <= 0` would refuse a good part.
+- The end-face reading is within 1.7e-13 mm of the printed number on every row, 5800x under 1e-9, and `end_chamfer=0.0001` applies no chamfer (c 0, no CONE face), so the reading and the printed number agree there too.
+- An uncut face is off by the whole chamfer, at least the 0.001 mm resolution, which is 1000 x `TOL` (1e-6), while the honest rows sit 5.9e6 x under it, so one reading separates the cases.
+- The scan costs no measurable time: the heaviest build reads 2.86 s with it in place (T-33-04; 33-09's gate delta carries the whole-gate figure).
+
+### The as-written sweep in the browser (33-03)
+
+Source: `.planning/phases/33-interfaces-and-parity/investigation/33-03-browser.log` (`make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, 3 passed in 29.71s, 2026-10-27, this host). The two new steps sit right after `blank, unknown and accepted tokens`; the golden sweep step is unchanged and still reads `golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets`.
+
+```
+number box tokens: 30 inputs x 91 tokens agree
+as-written sweep: 30 links, 1.18 s
+```
+
+The steps' own timers: `number box tokens` 0.03 s, `as-written sweep` 1.18 s (30 links, B1 of 33-01: 29 gear number fields and the mate box, `#<field>=%2B<default>`), against 1.15 s for the step before them. The two steps add 1.21 s to `test_the_shipped_viewer_in_a_real_browser`, whose call time here is 29.14 s alone (`-n0`, no other test running). Phase 32's figure for the same test, 39.46 s in `### The gate delta (32-06)`'s run (`32-06-verify.log`; 39.22 s in 33-01's baseline), was taken inside the whole `make verify` under 18 xdist workers, so the two are not the same instrument and are not subtracted; 33-09's gate reading carries the whole-gate comparison.
+
+### The page with a part switch (33-07)
+
+Source: `.planning/phases/33-interfaces-and-parity/investigation/33-07-browser.log` (`make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, `3 passed in 40.94s`, 2026-10-27, this host). The 1-minute load average was `14.63` at the start of the run and `10.52` at its end (`sysctl -n vm.loadavg`); the first green run of the same file in this plan read `43.65 s` call time (`3 passed in 44.24s`) at a load of `11.47`, so the two readings differ by 3.2 s on the same code. The two new steps sit after `part switch`; the golden sweep step is unchanged and still reads `golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets`.
+
+```
+step part switch: 0.73 s
+step shaft link round trip: 5.63 s
+step bad part refused: 3.33 s
+```
+
+The steps' own timers: `part switch` (33-06) 0.73 s, `shaft link round trip` 5.63 s (six shaft builds at preview quality, one of them on a fresh page, and one at the fine quality of the download click), `bad part refused` 3.33 s (six bad links, an edit and Reset, each waiting past the debounce, and a switch). The three steps total 9.69 s. The test's call time is 40.41 s here against 29.14 s in `### The as-written sweep in the browser (33-03)`: 11.27 s more, of which the three steps account for 9.69 s and the other 1.58 s is the host (33-03's load was not recorded and this run's was 10.5 to 14.6, on an 18-CPU host, so the two runs are not the same instrument). No speed claim is made from this pair; 33-09's gate reading carries the whole-gate comparison.
+
+### The page's half of parity (33-08)
+
+Source: `.planning/phases/33-interfaces-and-parity/investigation/33-08-browser.log` (`make test PYTEST_ARGS="tests/test_browser.py -n0 --no-cov -q -s"`, `3 passed in 47.64s`, 2026-10-28, this host; the file holds three tests, so the last line reads `3 passed`). The 1-minute load average was `5.79` before the run and `4.91` after (`sysctl -n vm.loadavg`). The three new steps sit after `bad part refused`; the golden sweep step is unchanged and still reads `golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets`.
+
+```
+parity: 4 shafts, 42 rows equal the API's, 47 numbers rounded as the browser does, 1.19 s
+shaft sweep: 7 inputs probed x 91 tokens, 7 links, 65 blanked tokens refused on 7 fields, 1.11 s
+viewer framing: 3 shafts drawn, fitted and saved
+step viewer framing: 4.39 s
+```
+
+The steps' own timers: `parity: web and API` 1.19 s (four shaft builds at preview quality, four fine-quality STL downloads and one STEP), `shaft as-written sweep` 1.12 s (seven links and 65 API requests), `viewer framing` 4.39 s (three builds, the 1000 mm and the 830 mm shaft among them, three screenshots). The three steps total 6.71 s. The test's call time in this run is 47.12 s, against 40.41 s in 33-07's (`### The page with a part switch (33-07)`): 6.71 s more, and the three new steps total 6.71 s. The runs are not the same instrument (load 5 here, 10 to 15 there, and 33-07 recorded 3.2 s between two runs of the same code), so no speed claim is made from the pair; 33-09's gate reading carries the whole-gate comparison.
+
+Framing, read on screenshots after a click on Fit (`33-08-shaft-default.png`, `-longest.png`, `-widest.png`; `-after` copies after the fix): the whole part is in view in all three. The longest shaft's grid, from the 25 mm width alone, was 40 mm (step 2) under a 1000 mm part and not visible. `placeGrid()` now counts the part's height when the part's descriptor says `gridAlong` (the shaft's, not the gear's): default shaft 40 to 80 mm (step 2 to 5), longest 40 to 1600 mm (step 100), widest 1400 mm (step 100) unchanged. The default gear's grid is size 60, step 5 before and after (STL box 36.56 x 36.68 x 7.5 mm).
+
+The gate after this plan: `make verify` read `2775 passed in 257.67s (0:04:17)`, `real 258.58`, rc 0, at a 1-minute load of 4.55 before and 5.29 after; `make verify.fast` read `2308 passed in 11.31s`, `real 12.18`. A gate run leaves the tree clean (the framing pictures go to `tmp_path`).
+
+### The heaviest shaft under ten concurrent requests (33-09)
+
+Source logs, whole outputs, under `.planning/phases/33-interfaces-and-parity/investigation/`: `33-09-shaft.log` and `33-09-shaft-identical.log` (the bench's stdout), `33-09-serve.log` (the two servers' stdout, run 1 first, a `--- run 2 ---` line between; the `/api/health` access lines are the harness's samples). Commands, from the repo root, each against a fresh server so that a worker one run replaced cannot pollute the next (`run_composed`'s docstring): `env -u SPUR_BUILD_TIMEOUT -u SPUR_BUILD_WORKERS -u SPUR_MAX_QUEUED_BUILDS .venv/bin/spur serve` and then `.venv/bin/python -m bench.latency shaft` (run 1), the server stopped, a second fresh server and `.venv/bin/python -m bench.latency shaft-identical` (run 2). Both fetch `/api/shaft/model.stl` at `quality=fine` (the bench's `path=` keyword); the tables are copied from the logs, not re-rounded.
+
+- Machine: 18 CPUs, arm64, 64.0 GiB RAM; Python 3.12.15; HEAD `2f1e230` (the commit that adds the two scenarios)
+- Server environment: the shipping defaults, none of the three overrides set (`env | grep SPUR_` printed nothing). `/api/health` before each run read `{"workers":2,"queue_available":4,"workers_replaced":0}`: 2 workers, 4 queued builds; the 30 s per-build timeout is `int_env("SPUR_BUILD_TIMEOUT", 30)` in `src/spur/app.py`.
+- Run 1 (`shaft`), 2026-10-27 18:11:05Z to 18:11:17Z, 1-minute load `5.79` before (`{ 5.79 6.22 7.33 }`) and `8.38` after (`{ 8.38 6.75 7.50 }`).
+- Run 2 (`shaft-identical`), 18:11:36Z to 18:11:42Z, load `6.97` before (`{ 6.97 6.52 7.40 }`) and `6.60` after (`{ 6.60 6.45 7.37 }`).
+
+Ten rows: `bench/sweeps/shaft.json` row 5 (`reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500`), the heaviest allowed shaft, fired alone first and confirmed holding a build slot, then nine neighbours at `shank_length` 499 down to 491 (run 1) or the same row nine more times (run 2).
+
+#### `shaft`: ten distinct shafts
+
+| # | Parameters | Outcome | Wall time (s) |
+|---|---|---|---|
+| 1 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.67 |
+| 2 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=499 | 200 | 5.75 |
+| 3 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=498 | 503 busy | 0.00 |
+| 4 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=497 | 200 | 10.16 |
+| 5 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=496 | 200 | 7.95 |
+| 6 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=495 | 503 busy | 0.00 |
+| 7 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=494 | 503 busy | 0.00 |
+| 8 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=493 | 503 busy | 0.00 |
+| 9 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=492 | 503 busy | 0.00 |
+| 10 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=491 | 503 busy | 0.00 |
+
+200: 4, 503 busy: 6
+- /api/health workers_replaced: 0 -> 0
+
+#### `shaft-identical`: one shaft ten times
+
+| # | Parameters | Outcome | Wall time (s) |
+|---|---|---|---|
+| 1 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.75 |
+| 2 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.67 |
+| 3 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.71 |
+| 4 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 200 | 3.75 |
+| 5 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 6 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 7 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 8 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 9 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+| 10 | reference_d=830 module=10 teeth=82 splined_length=500 end_chamfer=10 shank_d=828 shank_length=500 | 503 busy | 0.00 |
+
+200: 4, 503 busy: 6
+- /api/health workers_replaced: 0 -> 0
+
+#### `/api/health` p95, idle and under load
+
+| Run | Idle p95 | Samples | Under-load p95 | Samples | Ratio | `workers_replaced` before to after |
+|---|---|---|---|---|---|---|
+| `shaft` | 0.5 ms | 4540 | 1.5 ms | 11999 | 3.12x | 0 to 0 |
+| `shaft-identical` | 0.5 ms | 4488 | 1.5 ms | 4783 | 3.11x | 0 to 0 |
+
+The 2.00x bar belongs to the `single` and `concurrent` gear scenarios; neither shaft run is read against it (the bench prints none for them), and the ratio is shown only because the log prints it.
+
+**Reading.** No request in either run timed out, lost its pool or returned a 500: 4 of 10 were admitted and answered 200, 6 were refused 503 `busy` by admission control (`MAX_QUEUED_BUILDS` 4), and no worker was replaced. The slowest 200 was 10.16 s (request 4 of the `shaft` run, the third of its four admitted), which is 34% of the 30 s timeout and 4.6 times the 2.23 s that 32-05 measured for the same row alone; the `shaft-identical` run's four 200s took 3.67 to 3.75 s each. The shaft's margin to the timeout under contention is 19.84 s on this host at these loads, a measurement of one run per scenario and not a distribution. `docs/tech_debt/resolved/2026-10-27-shaft-contention-row.md` is retired with this section.
+
+### The gate delta (33-09)
+
+Source logs: `33-09-verify.log` (the whole `/usr/bin/time -p make verify` output) and `33-09-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/33-interfaces-and-parity/investigation/`. Every figure below is copied from them, not re-rounded. One reading, taken after the last Phase 33 code, test and bench commit (`git status --porcelain -- src tests bench pyproject.toml Makefile requirements.txt` printed nothing before the run; the last commit touching `src`, `tests` or `bench` is `2f1e230`, the two bench scenarios, and the commits after it hold only `bench/RESULTS.md`, the two debt files, the three measurement logs and the sha line). It is the plan's one gate run: no run was discarded, none hung, none was red.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `603031a` (`src`, `tests` and `bench` as of `2f1e230`; only `.planning/`, `docs/` and `bench/RESULTS.md` newer) |
+| UTC start -> end | `2026-10-27T18:13:28Z` -> `2026-10-27T18:17:31Z` |
+| 1-minute load before -> after | `5.30` -> `7.21` (`sysctl -n vm.loadavg` printed `{ 5.30 5.80 6.99 }` and `{ 7.21 10.29 9.13 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2778 passed in 241.55s (0:04:01) =======================` |
+| `/usr/bin/time -p` | `real 242.47`, `user 747.85`, `sys 771.75` |
+| Coverage TOTAL line | `TOTAL                         1821     22    484     13  98.48%` (`Required test coverage of 96.0% reached. Total coverage: 98.48%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| Browser test, call time | `61.24s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (`.planning/phases/33-interfaces-and-parity/investigation/33-09-verify.log`, the slowest-durations list); `39.22s` in `33-01-verify.log` |
+
+The shaft modules' and the app and CLI modules' coverage rows, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`):
+
+```
+src/spur/app.py                222      3     38      3  97.69%
+src/spur/cli.py                145      6     26      1  95.91%
+src/spur/din5480.py            107      0     28      0 100.00%
+src/spur/din5480_tables.py       0      0      0      0 100.00%
+src/spur/parts.py                3      0      0      0 100.00%
+src/spur/shaft_calc.py         105      0     16      0 100.00%
+src/spur/shaft_model.py         79      0     18      0 100.00%
+src/spur/shaft_params.py        43      0      4      0 100.00%
+```
+
+All four shaft modules read 100 %, `src/spur/shaft_model.py` among them (`79 0 18 0`): the two guard lines `### The gate delta (32-06)` named (179 and 187) are covered or gone, one pinned by a test and one dead re-raise dropped (`49021f5`). `src/spur/app.py` reads `97.69 %` with 3 lines and 3 branch parts missed and `src/spur/cli.py` `95.91 %` with 6 lines missed; the log does not name the lines and this plan does not read them.
+
+#### Against the phase-start baseline (33-01)
+
+Compared with `### The gate baseline (33-01)`, same host, both readings from logs.
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 33 start, `HEAD ead2a4c` | `2644 passed` | `229.17 s` | `230.70 s` | 4.62 -> 7.15 | `### The gate baseline (33-01)`, `33-01-verify.log` |
+| This reading: Phase 33 close, `HEAD 603031a` | `2778 passed` | `241.55 s` | `242.47 s` | 5.30 -> 7.21 | `33-09-verify.log` |
+
+| This reading minus the baseline | Tests | pytest `passed in` | `real` | Coverage TOTAL |
+|---|---|---|---|---|
+| difference | `+134` | `+12.38 s` (`+5.40 %`) | `+11.77 s` (`+5.10 %`) | `1682` -> `1821` statements, `98.22 %` -> `98.48 %` |
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 18.33 s of 229.17 s: both differences are inside it, so no speed claim is made in either direction. The loads differ little between the two readings (4.62 to 7.15 and 5.30 to 7.21), but each is one run, and the browser test alone moved from `39.22 s` to `61.24 s`, and the phase added browser steps to that test (the number box tokens, the part switch, the bad part and the shaft parity); this section does not say how much of the 22.02 s they account for. The reading of record is under L43's 300 s bar by 58.45 s (`pytest`) and 57.53 s (`real`). The plans' own full-gate readings during the phase, from their SUMMARYs (the load is recorded for some and not others, so they are shown for the spread only): 33-01 `229.17 s`, 33-03 `314.50 s`, 33-04 `215.57 s`, 33-05 `240.77 s`, 33-06 `280.47 s`, 33-07 `249.66 s`, 33-08 `257.67 s`; 33-03's `314.50 s` is above 300 s on a load its SUMMARY does not record, and no later reading, this one included, is above it.
+
+### Phase close checks (33-09)
+
+Source: `33-09-close-checks.log`, run once on `HEAD 603031a` with the final Phase 33 tree (check 12 after L49's closing paragraph was appended). All twelve read `PASS` and the log holds no `FAIL`.
+
+1. PASS `make gear.unchanged`: `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+2. PASS `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml`: exit 0, empty.
+3. PASS the gate log shows `PASSED tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (`33-09-verify.log` line 5276), whose `golden sweep` step sends the pinned queries of `tests/regression/golden_requests.json`, which holds 44 records.
+4. PASS `/usr/bin/time -p make verify.fast`: `real 13.57`, under 30 s, rc 0, `2311 passed in 12.68s`, load `6.08` after.
+5. PASS `make lint-imports`: `Contracts: 10 kept, 0 broken.`
+6. PASS `.venv/bin/python -c "import sys, spur.cli; print(sorted(m for m in sys.modules if m.split('.')[0] in {'fastapi', 'starlette', 'cadquery', 'OCP'} or m in {'spur.app', 'spur.model', 'spur.shaft_model'}))"` prints `[]`.
+7. PASS `git diff --exit-code 6800769 -- src/spur/params.py src/spur/calc.py tests/regression/ .github/workflows/ci.yml requirements.txt`: exit 0, empty.
+8. PASS the `function refuse(` and `function gearQuery(` bodies of `git show 6800769:src/spur/static/app.js` and of the working file are equal (101 and 298 characters), the byte-identity 33-01's decision C1 requires.
+9. PASS `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_seam.py`: `8 passed in 0.12s`.
+10. PASS `make no-fake-done`: exit 0.
+11. PASS the four Phase 33 items (the shaft's volume guard, its two guard lines, WR-02 and the contention row) are in `docs/tech_debt/resolved/` with `Status: resolved`, absent from `active/`, and their `Resolved in:` shas `3e1eded`, `49021f5`, `69c1aa3` and `3ee9a0a` pass `git cat-file -e <sha>^{commit}`.
+12. PASS `git diff 6800769 -- docs/architecture/decision_log.md | grep -c '^-[^-]'` prints `0` and `## L49` is the last `## L` heading.
+
+### Seen red once (Phase 33)
+
+Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted; later plans append rows.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 33-02 | test_a_chamfer_the_kernel_never_cut_is_refused | `_guard_volume` without the end-face read-back | `E       Failed: DID NOT RAISE BuildError` | restored |
+| 33-02 | test_a_kernel_result_that_is_not_one_solid_is_refused | the `len(solids) != 1 or not solids[0].isValid()` check deleted | `E       AssertionError: Regex pattern did not match.` (the end-face read-back refused the two solids instead, so the test fails on the message it pins) | restored |
+| 33-03 | tests/test_number_as_written.py (15 of its 19 cases) | `app.py` without `_numbers_as_written` (the unfixed tree) | `E       AssertionError: /api/info [('face_width', '5.')] answered 200` | restored |
+| 33-03 | browser step `blank, unknown and accepted tokens` | `app.py` without `_numbers_as_written` (the unfixed tree) | `E                   AssertionError: /api/info?face_width=5. answered 200, not 422` | restored |
+| 33-05 | test_shaft_parity.py | cmd_shaft_info printed tip_d one ulp up | `E       AssertionError: assert ['tip_d: 24.7...004 != 24.75'] == []` (all four shafts of the set fail naming `tip_d`; `4 failed, 13 passed`; log `33-05-red-perturbed.log`) | reverted |
+| 33-06 | shareable-link pins | the descriptor tokens written before app.js has them | `E           AssertionError: const hash = [P.tag, infoQ.toString()].filter(Boolean).join('&');` (`1 failed, 1 passed`; log `33-06-red-pins.log`) | n/a: made green by this task |
+| 33-07 | shareable-link pins | the followHash tokens written before app.js has them | `E           AssertionError: window.addEventListener('hashchange', followHash);` (`1 failed, 1 passed`; log `33-07-red-pins.log`) | n/a: made green by this task |
+| 33-08 | parity: web and API | app.js `fmt` dropping the sign (`Math.abs(Number(v))`), which no step before it reads: no number they compare is negative | `E                       AssertionError: w30x2x14: the page's rows differ from the API's.` (`Profile shift x` reads `0.05` for `-0.05`; the `fmt` pin fails in the same run; log `33-08-red-fmt.log`, run 2) | reverted |
+| 33-08 | test_the_page_formats_numbers_with_the_expression_the_parity_test_ports, browser step `part switch` | app.js `fmt` with `toFixed(2)` (the plan's perturbation) | `E                   At index 2 diff: ('Profile shift x·m', '0.56 mm') != ('Profile shift x·m', '0.562 mm')` in step `part switch`, which runs before the parity step and so stops the walk first; the pin fails too (`E       AssertionError: app.js `fmt` is not the expression the parity step ports`; log run 1) | reverted |
+| 33-10 | bad part refused | the check written before the fix (the unfixed page) | `E                       AssertionError: #part=bogus: the form does not look refused` (`E         At index 0 diff: '1' != '0.45'`; `1 failed, 2 passed`) | n/a: made green by this task |
+| 33-10 | narrow layout | the check written before the fix (the unfixed page) | `E                   AssertionError: the part switch is not above the canvas at 800 px: switch 1170, canvas 45, results 540, form 1225` (`1 failed, 2 passed`; fixed: switch 57, canvas 109, results 604, form 1217) | n/a: made green by this task |
+| 33-10 | primary button contrast | the check written before the fix (the unfixed page) | `E                       AssertionError: dark: the primary button's text rgb(255, 255, 255) on rgb(224, 87, 63) reads 3.75:1, under WCAG AA's 4.5:1` (`1 failed, 3 passed`; fixed: light 5.48:1, dark 4.85:1) | n/a: made green by this task |

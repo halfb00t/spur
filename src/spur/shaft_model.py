@@ -122,9 +122,9 @@ def _guard_cone_start(ra: float, rf: float, c: float) -> None:
                          f"circle, where the kernel can hang: {_SHAFT_DEFECT}")
 
 
-def _guard_volume(solid: cq.Solid, area: float, rf: float, c: float, length: float,
-                  shank_length: float, shank_d: float) -> None:
-    """Refuse a solid whose volume or length is not the shape that was asked for.
+def _guard_volume(solid: cq.Solid, area: float, ra: float, rf: float, c: float,
+                  length: float, shank_length: float, shank_d: float) -> None:
+    """Refuse a solid whose volume, length or end chamfer is not the shape that was asked for.
 
     isValid() is True for a 3-face remnant 4 percent off and for a cone that ate the root
     core, so the volume is bracketed from numbers the kernel did not produce here. The upper
@@ -132,6 +132,14 @@ def _guard_volume(solid: cq.Solid, area: float, rf: float, c: float, length: flo
     times the tooth area, because the disc of radius rf lies inside every cone section while
     c is at most the tooth height; past it the cone eats the core and the volume leaves the
     bracket (32-RESEARCH Pitfalls 3 and 5, L26).
+
+    The bracket cannot see a missing chamfer: an uncut solid sits on its upper edge, and at
+    0.001 mm the cut is smaller than the face area's own error (the heaviest shaft reads
+    upper - volume = -0.215 mm^3, so refusing upper - volume <= 0 would refuse an honest
+    part; 33-02-cut-probe.log). So the end face is read back, the same reading the tests use
+    (`_end_face_radius`): its largest vertex radius must be ra - c, or ra with no chamfer.
+    The probe reads it within 2e-13 mm of that on every honest row, and an uncut face is off
+    by the whole chamfer, at least 0.001 mm, which is 1000 x TOL.
     """
     upper = area * length + math.pi * (shank_d / 2) ** 2 * shank_length
     lower = upper - c * (area - math.pi * rf ** 2)
@@ -142,6 +150,12 @@ def _guard_volume(solid: cq.Solid, area: float, rf: float, c: float, length: flo
         raise BuildError(f"The shaft solid is not the shape that was asked for (volume "
                          f"{volume:.6g} mm^3 outside {lower:.6g} to {upper:.6g}): "
                          f"{_SHAFT_DEFECT}")
+    ends = [f for f in solid.Faces() if f.geomType() == "PLANE"
+            and abs(f.BoundingBox().zmax) <= TOL]
+    radius = max((math.hypot(v.X, v.Y) for f in ends for v in f.Vertices()), default=0.0)
+    if len(ends) != 1 or abs(radius - (ra - c)) > TOL:
+        raise BuildError(f"The shaft's end face reaches {radius:.6g} mm, not the "
+                         f"{ra - c:.6g} mm the end chamfer leaves: {_SHAFT_DEFECT}")
 
 
 def build_shaft(p: ShaftParams) -> cq.Solid:
@@ -175,8 +189,6 @@ def build_shaft(p: ShaftParams) -> cq.Solid:
             body = body.fuse(shank)
         if c > 0:
             body = body.intersect(_cone(ra, c, p.splined_length, p.shank_length, p.shank_d))
-    except BuildError:
-        raise
     except Exception as exc:  # OCCT raises assorted Standard_Failure subclasses
         # Never the gear's "try smaller fillets or chamfers": a shaft has no fillets, and
         # the same parameters fail the same way, so retrying or trimming changes nothing.
@@ -185,5 +197,5 @@ def build_shaft(p: ShaftParams) -> cq.Solid:
     solids = body.Solids()
     if len(solids) != 1 or not solids[0].isValid():
         raise BuildError(f"The shaft solid is not one valid solid: {_SHAFT_DEFECT}")
-    _guard_volume(solids[0], area, rf, c, p.splined_length, p.shank_length, p.shank_d)
+    _guard_volume(solids[0], area, ra, rf, c, p.splined_length, p.shank_length, p.shank_d)
     return solids[0]

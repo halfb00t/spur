@@ -25,6 +25,12 @@
     --muted: #97a0ab;
     --line: #2b3138;
     --accent: #e0573f;
+    /* White on #e0573f is 3.75:1, under WCAG AA's 4.5:1 for 14 px text (33-UI-REVIEW fix 3).
+       The dark theme's own --bg, #131619, reads 4.85:1 on it, as the step `primary button
+       contrast` measures in the browser. --accent stays: links and the invalid outline read it,
+       and a fill dark enough for white text would push the link further under the bar. The
+       light theme is unchanged: white on #b8412c, 5.48:1. */
+    --accent-fg: #131619;
     --err-bg: #3b1d18;
     --err-fg: #ffb6a9;
     --warn-bg: #3a3015;
@@ -87,6 +93,11 @@ legend {
   letter-spacing: .06em;
   text-transform: uppercase;
 }
+
+/* The part switch sits above the form and is not in it: two radios in a row, native keyboard
+   behaviour (arrows move within the group). */
+.part-switch { display: flex; gap: 1rem; align-items: center; }
+.part-switch label { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
 
 .field, .selector {
   display: grid;
@@ -190,13 +201,43 @@ button, .btn {
 #dims dt { color: var(--muted); }
 #dims dd { margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hint { margin: .6rem 0 0; color: var(--muted); font-size: .78rem; }
+/* Which part's text shows is CSS on body[data-part] on purpose: app.js may not write a hide
+   (the writes_a_field_shut guard in tests/test_api.py). The gear is the unset default, so a
+   page whose script never ran still reads as the gear. */
+[data-part="shaft"] .mate,
+[data-part="shaft"] .hint[data-for="gear"],
+body:not([data-part="shaft"]) .hint[data-for="shaft"] { display: none; }
 
+/* A link whose part the page has no form for (D-15) leaves the gear form on screen, and an edit
+   or Reset builds nothing under it (D-20): a live-looking form misled the user (33-UI-REVIEW
+   fix 2). The form and Reset take the disabled download's own look (.btn[aria-disabled]), and
+   the switch is outlined because the message, kept in #messages (D-15), names it as the way out.
+   CSS on a body attribute and not a script write, because tests/test_api.py's guard refuses a
+   script that shuts a control (L41). L41 protects a field that a shared link's value loads into
+   and that is sent; refuseLink loads no link value into this form and nothing in it is sent.
+   Copy link stays live: it copies the link as written. Keyboard focus still reaches the fields
+   and typing builds nothing: CSS cannot take focus away, and `inert` would need the script write
+   the guard refuses. app.js tells a screen reader what the look tells the eye (markRefused). */
+body[data-refused] #params,
+body[data-refused] #reset { opacity: .45; pointer-events: none; }
+body[data-refused] .part-switch { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+
+/* Under 820 px the page is one column, and the part switch fell below a 55vh canvas and the whole
+   results block (33-UI-REVIEW fix 1). The switch is the first child of <aside> by D-12, so it is
+   ordered to the top and not moved: <aside> draws no box here, its children join main's column,
+   and the order is switch, canvas and results, then the form. Chromium 153 kept the aside's
+   `complementary` role under `display: contents`, and the step `narrow layout` checks that the
+   landmark still holds both radios. With no aside box, its panel colour moves to main and its
+   side padding to the three children it held. */
 @media (max-width: 820px) {
   html, body { height: auto; }
-  main { display: flex; flex-direction: column; }
+  main { display: flex; flex-direction: column; background: var(--panel); }
+  aside { display: contents; }
+  .part-switch { order: -2; padding-bottom: .6rem; }
   #view { order: -1; }
+  .part-switch, #params, .actions { margin-inline: 1rem; }
+  .actions { margin-bottom: 1rem; }
   #canvas-wrap { flex: none; height: 55vh; }
-  aside { border-right: 0; border-top: 1px solid var(--line); }
   #bottom { grid-template-columns: 1fr; }
 }
 

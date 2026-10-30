@@ -1,0 +1,366 @@
+[
+  {
+    "token": " 22",
+    "blank": true
+  },
+  {
+    "token": "22 ",
+    "blank": true
+  },
+  {
+    "token": "%2022",
+    "blank": true
+  },
+  {
+    "token": "1_0",
+    "blank": true
+  },
+  {
+    "token": "22.",
+    "blank": true
+  },
+  {
+    "token": "5.",
+    "blank": true
+  },
+  {
+    "token": "+5",
+    "blank": true
+  },
+  {
+    "token": "+22",
+    "blank": true
+  },
+  {
+    "token": "2.",
+    "blank": true
+  },
+  {
+    "token": "22",
+    "blank": false
+  },
+  {
+    "token": "2.5",
+    "blank": false
+  },
+  {
+    "token": "-1",
+    "blank": false
+  },
+  {
+    "token": "1e1",
+    "blank": false
+  },
+  {
+    "token": ".5",
+    "blank": false
+  },
+  {
+    "token": "\t22",
+    "blank": true
+  },
+  {
+    "token": "22\n",
+    "blank": true
+  },
+  {
+    "token": "22\u000b",
+    "blank": true
+  },
+  {
+    "token": "\f22",
+    "blank": true
+  },
+  {
+    "token": "22\u2028",
+    "blank": true
+  },
+  {
+    "token": "\u00a0 22",
+    "blank": true
+  },
+  {
+    "token": "22\u00a0",
+    "blank": true
+  },
+  {
+    "token": "\u200322",
+    "blank": true
+  },
+  {
+    "token": "22\u2003",
+    "blank": true
+  },
+  {
+    "token": "2_2",
+    "blank": true
+  },
+  {
+    "token": "1_000",
+    "blank": true
+  },
+  {
+    "token": "+0",
+    "blank": true
+  },
+  {
+    "token": "0.",
+    "blank": true
+  },
+  {
+    "token": "-5.",
+    "blank": true
+  },
+  {
+    "token": "+.5",
+    "blank": true
+  },
+  {
+    "token": "+5e1",
+    "blank": true
+  },
+  {
+    "token": "+1e1",
+    "blank": true
+  },
+  {
+    "token": "1e1_0",
+    "blank": true
+  },
+  {
+    "token": "Infinity",
+    "blank": true
+  },
+  {
+    "token": "inf",
+    "blank": true
+  },
+  {
+    "token": "-inf",
+    "blank": true
+  },
+  {
+    "token": "infinity",
+    "blank": true
+  },
+  {
+    "token": "NaN",
+    "blank": true
+  },
+  {
+    "token": "nan",
+    "blank": true
+  },
+  {
+    "token": "1e400",
+    "blank": true
+  },
+  {
+    "token": "1e309",
+    "blank": true
+  },
+  {
+    "token": "-1e309",
+    "blank": true
+  },
+  {
+    "token": "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+    "blank": true
+  },
+  {
+    "token": "abc",
+    "blank": true
+  },
+  {
+    "token": "0x10",
+    "blank": true
+  },
+  {
+    "token": "1e",
+    "blank": true
+  },
+  {
+    "token": "1e+",
+    "blank": true
+  },
+  {
+    "token": "--5",
+    "blank": true
+  },
+  {
+    "token": "1,5",
+    "blank": true
+  },
+  {
+    "token": "0.5.",
+    "blank": true
+  },
+  {
+    "token": "- 5",
+    "blank": true
+  },
+  {
+    "token": "1__0",
+    "blank": true
+  },
+  {
+    "token": "_1",
+    "blank": true
+  },
+  {
+    "token": "1_",
+    "blank": true
+  },
+  {
+    "token": "-+5",
+    "blank": true
+  },
+  {
+    "token": "+-5",
+    "blank": true
+  },
+  {
+    "token": "0b1",
+    "blank": true
+  },
+  {
+    "token": "5.e",
+    "blank": true
+  },
+  {
+    "token": ".e1",
+    "blank": true
+  },
+  {
+    "token": "-.",
+    "blank": true
+  },
+  {
+    "token": "1e0.5",
+    "blank": true
+  },
+  {
+    "token": "1.5.2",
+    "blank": true
+  },
+  {
+    "token": "1 0",
+    "blank": true
+  },
+  {
+    "token": "1\u00a00",
+    "blank": true
+  },
+  {
+    "token": "%",
+    "blank": true
+  },
+  {
+    "token": "\u0663",
+    "blank": true
+  },
+  {
+    "token": "\uff12\uff12",
+    "blank": true
+  },
+  {
+    "token": "\ufeff22\ufeff",
+    "blank": true
+  },
+  {
+    "token": "-.5",
+    "blank": false
+  },
+  {
+    "token": "1E+1",
+    "blank": false
+  },
+  {
+    "token": "1e+1",
+    "blank": false
+  },
+  {
+    "token": "1e-1",
+    "blank": false
+  },
+  {
+    "token": "00022",
+    "blank": false
+  },
+  {
+    "token": "0022",
+    "blank": false
+  },
+  {
+    "token": "022",
+    "blank": false
+  },
+  {
+    "token": "-0",
+    "blank": false
+  },
+  {
+    "token": "5.0",
+    "blank": false
+  },
+  {
+    "token": "1.e1",
+    "blank": false
+  },
+  {
+    "token": "5.e1",
+    "blank": false
+  },
+  {
+    "token": "5e0",
+    "blank": false
+  },
+  {
+    "token": "5E0",
+    "blank": false
+  },
+  {
+    "token": "1E5",
+    "blank": false
+  },
+  {
+    "token": "00.5",
+    "blank": false
+  },
+  {
+    "token": "-.5e1",
+    "blank": false
+  },
+  {
+    "token": "0e0",
+    "blank": false
+  },
+  {
+    "token": "1e-400",
+    "blank": false
+  },
+  {
+    "token": "1e308",
+    "blank": false
+  },
+  {
+    "token": "0.1e1",
+    "blank": false
+  },
+  {
+    "token": " ",
+    "blank": true
+  },
+  {
+    "token": "22,5",
+    "blank": true
+  },
+  {
+    "token": "NaN ",
+    "blank": true
+  },
+  {
+    "token": "",
+    "blank": true
+  }
+]

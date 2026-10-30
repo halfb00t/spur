@@ -1,0 +1,9 @@
+row                         c  upper-volume mm^3      /upper  end-face err mm  CONE  build s
+default                     1            15.4289   6.746e-04        2.309e-14    19     0.68
+c=0.001                 0.001         0.00011546   5.048e-09        1.776e-14    19     0.65
+c=0.01                   0.01         0.00124978   5.464e-08        1.599e-14    19     0.79
+c=0.05                   0.05          0.0291209   1.273e-06        1.421e-14    19     0.85
+c=0.0001                    0        0.000103804   4.539e-09        3.553e-15     0     0.27
+W6x0.5x10 c=0.001       0.001        9.04155e-05   8.605e-09        1.954e-14    11     0.39
+heaviest c=0.001        0.001          -0.215028  -4.040e-10        1.705e-13    83     2.86
+uncut reproduction: end_chamfer=0 solid read against c=1.0 -> end-face radius minus (tip_d/2 - 1.0) = 1 mm

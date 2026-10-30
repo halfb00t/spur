@@ -1,9 +1,10 @@
 # spur
 
-Parametric involute spur gear generator. Set the parameters in a web page, get a live
-3D preview and the numbers you'd measure on a real gear, and download the result as
-**STL** (for slicing) or **STEP** (a proper solid for CAD). The same thing is available
-as an HTTP API and a CLI.
+Parametric generator for an involute spur gear and a DIN 5480 splined shaft (external,
+W), each from one parameter model. Set the parameters in a web page, get a live 3D preview
+and the numbers you'd measure on the real part, and download the result as **STL** (for
+slicing) or **STEP** (a proper solid for CAD). The same thing is available as an HTTP API
+and a CLI.
 
 Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI and three.js.
 
@@ -18,6 +19,9 @@ Built on [CadQuery](https://github.com/CadQuery/cadquery) (OpenCascade), FastAPI
 - Measurement aids: calipers across tips (corrected for odd tooth counts), span over
   *k* teeth (Wildhaber), centre distance to a mating gear
 - Shareable links: every parameter lives in the URL
+- A DIN 5480 splined shaft (external, W): reference diameter, module and tooth count (or
+  a designation such as `W 30x2x14x8f`), the splined length, a shank and an end chamfer,
+  with the measurement over pins and the other numbers you would measure
 
 ## Run it
 
@@ -111,6 +115,15 @@ pip install -e '.[dev]'
 spur serve                                    # http://127.0.0.1:8000
 ```
 
+## Web
+
+The page opens on the gear. The **Gear | Shaft** switch above the form shows the shaft's
+parameters instead; each part starts at its own defaults and nothing carries across the
+switch. A shaft link opens with `part=shaft` (`/#part=shaft&reference_d=26&teeth=19`) and
+a gear link has no `part`; a `part` the page does not know is refused and builds nothing.
+The shaft's designation (`W 25x1.25x18x8f`) is printed as a result row; to set a shaft
+from a designation, give it to the API or the CLI.
+
 ## CLI
 
 ```sh
@@ -125,6 +138,9 @@ spur export -o spokes.stl --spoke-count 4 --spoke-width 2 --hub-d 12 --rim-wall 
 spur export -o honeycomb.stl --hex-cell 3 --hex-wall 1     # honeycomb web
 spur export -o everything.stl --bore-flat 0 --keyway-width 3 --keyway-depth 1.4 --spoke-count 4 --spoke-width 2 --hub-d 13.2 --rim-wall 1 --spoke-fillet 1 --tip-chamfer 0.4  # every v0.2 family on one gear
 spur info --teeth 19 --mate-teeth 40                      # derived dims as JSON
+spur shaft export -o shaft.step                           # the default DIN 5480 splined shaft, W 25x1.25x18x8f
+spur shaft export -o w30.stl --designation "W 30x2x14x8f" --splined-length 50  # a designation in place of --reference-d --module --teeth --fit
+spur shaft info --designation "W 26x1.25x19x8f"           # the shaft's derived dims as JSON
 spur export --help                                        # every parameter
 ```
 
@@ -140,9 +156,14 @@ Interactive docs are at `/docs`.
 | `GET /api/info?…[&mate_teeth=N]` | Derived dimensions, measurement aids, warnings |
 | `GET /api/schema` | JSON schema of the parameters (the UI form is built from it); a field's `enabled_when` lists the `{field, op, value}` conditions under which it does anything, and a top-level `selectors` list describes the form's bore-shape select in the same vocabulary |
 | `GET /api/health` | Liveness |
+| `GET /api/shaft/model.stl?…&quality=preview\|fine` | Binary STL of a DIN 5480 splined shaft |
+| `GET /api/shaft/model.step?…` | STEP solid of the shaft |
+| `GET /api/shaft/info?…` | The shaft's derived dimensions and warnings |
+| `GET /api/shaft/schema` | JSON schema of the shaft's parameters, with its result rows in `dims` |
 
 ```sh
 curl -OJ 'http://localhost:8000/api/model.step?teeth=19&module=1.75&pressure_angle=25'
+curl -OJ 'http://localhost:8000/api/shaft/model.step?designation=W%2030x2x14x8f'  # a DIN 5480 designation in place of reference_d, module, teeth and fit
 ```
 
 Parameters that can't make a sound part — a bore wider than the root, teeth that come

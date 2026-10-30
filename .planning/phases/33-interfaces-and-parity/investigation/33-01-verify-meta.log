@@ -1,0 +1,7 @@
+UTC start: 2026-10-27T15:54:00Z
+HEAD: ead2a4c
+Host: 18 CPUs, arm64, 64.0 GiB RAM
+Load before: { 4.62 3.41 3.11 }
+UTC end: 2026-10-27T15:57:57Z
+Load after: { 7.15 7.87 5.40 }
+make exit status: 0

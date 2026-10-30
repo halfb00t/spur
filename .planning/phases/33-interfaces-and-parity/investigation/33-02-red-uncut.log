@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________________ test_a_chamfer_the_kernel_never_cut_is_refused ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x142db0770>
+
+    def test_a_chamfer_the_kernel_never_cut_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+        """D-16, L08: a kernel intersect that hands the body back unchanged leaves no chamfer on
+        the part while derive_shaft still prints one, so build_shaft refuses it. The stub is on
+        both Shape and Compound because the fused body is a Compound, which overrides
+        intersect. The volume bracket cannot see it (an uncut solid sits on its upper edge:
+        docs/tech_debt/resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md)."""
+        def no_cut(self: cq.Shape, *args: object, **kwargs: object) -> cq.Shape:
+            return self
+    
+        monkeypatch.setattr(cq.Shape, "intersect", no_cut)
+        monkeypatch.setattr(cq.Compound, "intersect", no_cut)
+>       with pytest.raises(BuildError, match="end face"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE BuildError
+
+tests/test_shaft_model.py:210: Failed
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_a_chamfer_the_kernel_never_cut_is_refused
+1 failed, 41 deselected in 2.32s

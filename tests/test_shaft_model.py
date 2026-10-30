@@ -196,6 +196,37 @@ def test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice(
     assert "fillet" not in str(raised.value)
 
 
+def test_a_chamfer_the_kernel_never_cut_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-16, L08: a kernel intersect that hands the body back unchanged leaves no chamfer on
+    the part while derive_shaft still prints one, so build_shaft refuses it. The stub is on
+    both Shape and Compound because the fused body is a Compound, which overrides
+    intersect. The volume bracket cannot see it (an uncut solid sits on its upper edge:
+    docs/tech_debt/resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md)."""
+    def no_cut(self: cq.Shape, *args: object, **kwargs: object) -> cq.Shape:
+        return self
+
+    monkeypatch.setattr(cq.Shape, "intersect", no_cut)
+    monkeypatch.setattr(cq.Compound, "intersect", no_cut)
+    with pytest.raises(BuildError, match="end face"):
+        build_shaft(ShaftParams())
+
+
+def test_a_kernel_result_that_is_not_one_solid_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A kernel result of two disjoint solids, each valid, never reaches an export. Until
+    this test the one-solid line was proven only by 32-03's `.clean()` break, which was
+    reverted (investigation/32-03-red-clean.log), so nothing durable held it (the resolved
+    debt item 2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md)."""
+    def two_solids(self: cq.Shape, *args: object, **kwargs: object) -> cq.Shape:
+        return cq.Compound.makeCompound([self, self.translate(cq.Vector(1000, 0, 0))])
+
+    monkeypatch.setattr(cq.Shape, "intersect", two_solids)
+    monkeypatch.setattr(cq.Compound, "intersect", two_solids)
+    with pytest.raises(BuildError, match="not one valid solid"):
+        build_shaft(ShaftParams())
+
+
 # The default spline (tip_d 24.75, root_d 22.25) with each shank diameter the plan names:
 # equal to the tip, equal to the root, between them, a hair either side of the tip, one ulp
 # above it, below the root, the bound, above the tip (the default), and no shank at all.
@@ -235,6 +266,23 @@ def test_every_shank_regime_builds_with_the_closed_form_volume(p: ShaftParams) -
     """D-07: a shank against the spline never changes whether the solid builds, including
     the tangent cases the cleaning step broke (32-negatives2.log)."""
     _check(p)
+
+
+def test_shank_d_changes_nothing_without_a_shank() -> None:
+    """D-18, L41: a field the form dims must do nothing. derive_shaft never reads shank_d, and
+    the kernel uses it only in _cone's `big`, which the flat top of the cutter makes
+    irrelevant when no shank is fused. Planning read 13038.149031505543 mm^3, 93 faces, 273
+    edges and 182 vertices for all four, and the volume is compared with ==, not approx."""
+    def shape(d: float) -> tuple[float, tuple[float, ...], tuple[int, int, int]]:
+        solid = build_shaft(ShaftParams(shank_length=0, shank_d=d))
+        box = solid.BoundingBox()
+        return (solid.Volume(),
+                (box.xmin, box.xmax, box.ymin, box.ymax, box.zmin, box.zmax),
+                (len(solid.Faces()), len(solid.Edges()), len(solid.Vertices())))
+
+    first = shape(1.0)
+    for d in (25.0, 60.0, 850.0):
+        assert shape(d) == first
 
 
 @pytest.mark.parametrize("name", CHAMFER_ROWS, ids=CHAMFER_ROWS.keys())

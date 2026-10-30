@@ -1,7 +1,8 @@
 # Two guard lines in shaft_model.build_shaft are reached by no passing test
 
 Severity: nice
-Status: active
+Status: resolved
+Resolved in: 49021f5 test(shaft): pin the one-valid-solid guard and drop a dead re-raise (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-27
 Source: 32-06 `make verify` coverage table, `src/spur/shaft_model.py 77 2 16 1 96.77%` (`coverage report -m` names lines 179 and 187)
 Related files:
@@ -24,3 +25,10 @@ one-valid-solid check from firing, no test says so: the shaft would hand a broke
 Revisit when `src/spur/shaft_model.py` is next touched: add a test that makes the kernel return two solids (or an invalid
 one) through a stub and asserts the BuildError, as `test_a_kernel_failure_is_a_shaft_modelling_defect_and_never_fillet_advice`
 does for the kernel's own exception; then decide whether the re-raise is needed at all.
+
+## Resolution
+The bare `except BuildError: raise` was removed: nothing inside the `try` raises a `BuildError` (`_guard_cone_start` runs
+before it, the guards after), and a guard added inside it later would surface wrapped with its class name, which the
+message already prints. The one-valid-solid line is now held by
+`test_a_kernel_result_that_is_not_one_solid_is_refused` (the kernel stubbed to return two disjoint solids), seen red once
+(`bench/RESULTS.md` `### Seen red once (Phase 33)`).

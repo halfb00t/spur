@@ -16,11 +16,11 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
-| must | [The shaft's volume guard accepts a chamfer that was never cut](active/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md) | Phase 33 starts (it exposes shaft downloads); fix before it ships |
+| must | [Dark-mode link text reads under WCAG AA's 4.5:1](active/2026-10-29-dark-mode-link-text-under-wcag-aa.md) | the dark palette is next edited, or the next UI review |
+| must | [An int field accepts `0-0`, a token the number box blanks](active/2026-10-28-int-fields-accept-a-blanked-zero-minus-zero-token.md) | L49's rule is next touched, an int field's default moves off 0, or an int field with a lower bound below 0 is added |
 | must | [The shaft profile-shift cap refuses shifts DIN 5480-1 allows as exceptions at larger tooth counts](active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md) | Part 2, or the copy's exception table, gives the z-dependent limits |
 | must | [The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows](active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md) | Phase 34 makes the pin-contact guard live |
-| nice | [The shaft has no contention row: its heaviest build is measured alone, never under concurrent requests](active/2026-10-27-shaft-contention-row.md) | Phase 33 adds `/api/shaft/model.{fmt}` |
-| nice | [Two guard lines in `shaft_model.build_shaft` are reached by no passing test](active/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md) | `src/spur/shaft_model.py` is next touched |
+| nice | [The shaft download name rounds `reference_d` and `module` to six significant digits](active/2026-10-29-shaft-slug-rounds-to-six-significant-digits.md) | L49 is next superseded, or a download-name collision is reported |
 | nice | [The pre-commit hook's name and L36's amendment still say "five heavy files"](active/2026-10-27-pre-commit-hook-name-and-l36-still-say-five-heavy-files.md) | `.pre-commit-config.yaml` is next edited |
 | nice | [FIT_PATTERN accepts deviation letters and tolerance classes outside DIN 5480-1 Table 7/9](active/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md) | Phase 34 takes the fit tables |
 | must | [`gear.unchanged` runs git and the schema probe with no timeout, inside the pre-commit hook](active/2026-10-23-gear-unchanged-has-no-timeout-on-git-or-probe.md) | the hook next stalls, or `scripts/gear_unchanged.py` is next touched |
@@ -40,12 +40,15 @@ Severity (grep-able `Severity:` field):
 | nice | [`_wait_until_parked` spins `page.evaluate("0")` with no pause until a route parks](active/2026-10-15-wait-until-parked-spins-without-a-pause.md) | `_wait_until_parked` is next touched |
 | nice | [Nothing pins that `_build` passes its own `rm` to `_chamfer_tips`](active/2026-10-20-nothing-pins-that-build-passes-its-own-rm-to-chamfer-tips.md) | `_build` or `_chamfer_tips` is next touched, or a public per-build cost counter exists |
 | nice | [Phase 18's review leftovers and Phase 10's hard-coded chamfer bound](active/2026-10-21-phase-18-review-info-findings-deferred.md) | the next phase that changes the trochoid / hob-root maths in calc.py or its tests; for 10 IN-01, the next edit of bench/tip_chamfer_spike.py or the tip_chamfer bound |
-| must | [A link token the number box blanks but the API accepts builds a non-default part under a blank box](active/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | the next edit of `refuse()` or `gearQuery()` in `src/spur/static/app.js`, or a report of a part that does not match a blank box |
 
 ## Resolved
 
 | Item | Resolved in |
 |---|---|
+| [The shaft has no contention row: its heaviest build is measured alone, never under concurrent requests](resolved/2026-10-27-shaft-contention-row.md) | 3ee9a0a docs(bench): the heaviest shaft under ten concurrent requests (D-19) |
+| [A link token the number box blanks but the API accepts builds a non-default part under a blank box](resolved/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | 69c1aa3 fix(api): refuse a link number the box would blank (WR-02, L49) |
+| [Two guard lines in `shaft_model.build_shaft` are reached by no passing test](resolved/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md) | 49021f5 test(shaft): pin the one-valid-solid guard and drop a dead re-raise |
+| [The shaft's volume guard accepts a chamfer that was never cut](resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md) | 3e1eded fix(shaft): refuse a chamfer the kernel never cut (end-face read-back) |
 | [Widening `Part` to the shaft must type `model._build_checked`, `model._write_export` and `records._gear_fields` in the same change](resolved/2026-10-23-parts-one-line-widening-claim-is-false.md) | 4018de8 feat(model): build and export a shaft through the one kernel doorway (Part widens) |
 | [DIN 5480 anchor rows beyond Part 1 are missing: the Phase 31 checkpoint passed only partly](resolved/2026-10-26-din5480-anchor-rows-beyond-part-1-are-missing.md) | 45b6565 test(31): anchor four DIN 5480-2 rows and close the Part 1 anchor gap |
 | [tip_chamfer_effective prints 0.0 for a chamfer that was not cut, because its null-gate reads the request](resolved/2026-10-21-tip-chamfer-effective-gate-reads-the-request.md) | `6497c28` — see the file's own `Resolved in:` field |

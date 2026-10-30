@@ -5,7 +5,8 @@
 ## Responsibility
 
 `spur serve`, `spur info`, `spur export` — the same gear, the same numbers, the same
-errors as the API, from a shell.
+errors as the API, from a shell. `spur shaft info` and `spur shaft export` do the same for
+the DIN 5480 splined shaft (L46, L49).
 
 ## Boundaries
 
@@ -30,6 +31,39 @@ field prefix (see "Errors" below).
 `spur export` derives the format from the file extension (`.stp` → `step`) unless
 `--format` says otherwise, writes the bytes, then prints any `warnings` to stderr — so a
 capped recess is visible to someone scripting exports.
+
+## The shaft group
+
+`spur shaft info` prints the JSON `/api/shaft/info` answers for the same parameters, in
+`ShaftDimensions` key order; `spur shaft export -o FILE` writes the solid through
+`model.export`, with the format, `--format` and `--quality` rules of `spur export`. Its flags
+are generated from `ShaftParams.model_fields` under the help group `shaft parameters
+(defaults in brackets)`, spelled as the gear's are (`--reference-d`), and the gear's group
+and help are untouched. `-o` is required: the shaft has no default output name (D-17).
+
+`--designation "W 30x2x14x8f"` replaces `--reference-d`, `--module`, `--teeth` and `--fit`;
+the solid's flags (`--splined-length`, `--end-chamfer`, `--shank-d`, `--shank-length`)
+combine with it. `_shaft_params` calls `shaft_params.resolve_shaft`, the function the API
+calls, so the refusals are the API's, on stderr, with exit 2 and no file written:
+
+- a spline flag beside a designation: `error: designation: ` and the sentence of the API's
+  `conflict` 422 (one `designation_clash` / `clash_message`, judged on which flags were
+  given, not their values);
+- a designation the codec cannot read, an empty one, or one the model refuses: `error:
+  designation: ` and that sentence;
+- a solid field out of bounds: `error: <field>: <message>`, as the API's 422 names it.
+
+A `BuildError` is exit 1, as for the gear. The bytes are written only after the build
+returns, so a refused or interrupted run leaves no partial file. The warnings of
+`derive_shaft` print to stderr after `wrote ...`.
+
+`cli.py` imports `shaft_params`, `shaft_calc` and `din5480` at the top (none reaches the
+kernel) and `model` inside `cmd_shaft_export`, so `spur shaft info` stays as light as
+`spur info`. The import contracts that keep `app`, `fastapi`, `starlette` and
+`shaft_model` out of `cli.py` cover the new group unchanged.
+
+Pinned by `tests/test_cli.py` (`-k shaft`) and, over a fixed set of shafts,
+`tests/test_shaft_parity.py`: the API and the CLI print one document.
 
 ## Errors
 

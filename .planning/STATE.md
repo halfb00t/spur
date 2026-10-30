@@ -2,37 +2,37 @@
 gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Splined Shaft
-current_phase: 33
-current_phase_name: Interfaces and Parity
-status: "Phase 32 shipped — PR #52"
-stopped_at: Phase 32 complete, ready to plan Phase 33
-last_updated: "2026-10-27T12:37:22.777Z"
-last_activity: 2026-10-27
-state_head: 2d3368818668d03b1763beb12269bf7e06b1a9af
+current_phase: 34
+current_phase_name: Fit Tables and Tolerance Window
+status: "Phase 33 shipped — PR #53"
+stopped_at: Phase 33 complete, ready to plan Phase 34
+last_updated: "2026-10-30T03:09:12.100Z"
+last_activity: 2026-10-30
+state_head: 737a3ee7b84d7ef63ff17f7ba401b890a0b4c51c
 progress:
   total_phases: 5
-  completed_phases: 9
-  total_plans: 17
-  completed_plans: 17
-  percent: 82
+  completed_phases: 10
+  total_plans: 27
+  completed_plans: 27
+  percent: 91
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-27)
+See: .planning/PROJECT.md (updated 2026-10-29)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 33 — Interfaces and Parity
+**Current focus:** Phase 34 — Fit Tables and Tolerance Window
 
 ## Current Position
 
-Phase: 33 — Interfaces and Parity
+Phase: 34 — Fit Tables and Tolerance Window
 Plan: Not started
-Status: Phase 32 shipped — PR #52
-Last activity: 2026-10-27
+Status: Phase 33 shipped — PR #53
+Last activity: 2026-10-30
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Last activity: 2026-10-27
 | 30 | 5 | - | - |
 | 31 | 6 | - | - |
 | 32 | 6 | - | - |
+| 33 | 10 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -286,6 +287,16 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 32 P04 | 45 min | 3 tasks | 17 files |
 | Phase 32 P05 | 55 min | 3 tasks | 14 files |
 | Phase 32 P06 | 12 min | 3 tasks | 7 files |
+| Phase 33 P01 | 11 min | 2 tasks | 7 files |
+| Phase 33 P02 | 8 min | 3 tasks | 12 files |
+| Phase 33 P03 | 14 min | 2 tasks | 13 files |
+| Phase 33 P04 | 11 min | 3 tasks | 8 files |
+| Phase 33 P05 | 11 min | 3 tasks | 10 files |
+| Phase 33 P06 | 17 min | 2 tasks | 6 files |
+| Phase 33 P07 | 15 min | 2 tasks | 7 files |
+| Phase 33 P08 | 22 min | 3 tasks | 15 files |
+| Phase 33 P09 | 14 min | 3 tasks | 14 files |
+| Phase 33 P10 | 25 min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -573,6 +584,23 @@ pending; the next milestone starts this list fresh.
 - [Phase 32]: 32-05: the Linux row is the linux/amd64 container emulated on the arm64 host; shaft-to-gear ratios within a run are the comparison, never Linux against macOS walls
 - [Phase 32]: 32-06: gate reading of record 2644 passed in 233.83 s (real 234.78 s, load 5.24 to 7.66), -17.32 s (-6.90 %) vs 32-01's 251.15 s, inside the ~8 % spread so no speed claim; 66.17 s under L43's 300 s bar — Same host, both readings from logs; REQ-gate-cost-recorded stays open until Phase 34's milestone reading. Two in-phase readings (32-04 358.81 s, 32-05 312.50 s) exceeded 300 s under load and are written down, not trimmed.
 - [Phase 32]: 32-06: L48 closes Phase 32 in the decision log (construction, forbidden routes, guards, doorway, bars, gate delta, handoffs to 33 and 34) — Cites the two L47 amendments instead of restating; heading reworded so the plan's case-sensitive verify matches.
+- [Phase 33]: 33-01 A1: server as-written rule = token != token.strip(), '_' anywhere, leading '+', trailing '.'; pinned as invariant over the committed Chromium table; non-finite/overflow tokens keep their bound's or pydantic's sentence; '' not covered by the rule — Probe over 37 inputs and 91 tokens: held-but-refused and blank-accepted-somewhere lists are both empty (picked by the human 2026-10-27)
+- [Phase 33]: 33-01 B1: browser proof = one #<field>=%2B<default> link per number field and mate_teeth (30 gear in 33-03, 7 shaft in 33-08); full 91-token table in the light test — Seconds of gate time against L43's 300s bar versus 85-140s for 925 links (picked by the human 2026-10-27)
+- [Phase 33]: 33-01 C1: WR-02 fixing commit is 33-03's in app.py before the part switch; refuse()/gearQuery() byte-identical through the phase, diffed against 6800769 in 33-09; L49 records the SC4 reading — 33-RESEARCH Pitfall 2: the switch needs no edit to either function (picked by the human 2026-10-27)
+- [Phase 33]: 33-02: the uncut-chamfer guard reads the solid's end face (largest vertex radius of the one planar face at z = 0 = tip_d/2 - c), not the volume, which reads -0.215 mm^3 on the heaviest honest shaft
+- [Phase 33]: 33-02: shank_d is dimmed when shank_length is 0 (enabled_when), backed by a kernel test: four shank_d values give a bit-equal solid (D-18)
+- [Phase 33]: L49 (33-03): a gear link number the box blanks is refused as written (422 number_as_written) by a request-only route dependency in app.py; rule A1, browser proof B1, fix before the switch C1
+- [Phase 33]: A designation is refused beside any spline field on query key presence (D-07), before any value is parsed, by one shared function designation_clash; the solid fields combine freely (D-08) — No equality question across 25, 25.0 and 25,0; 33-05's CLI uses the same function
+- [Phase 33]: The shaft's result rows ride ShaftParams.model_json_schema() as dims, not a second row table in app.js — Two pins forbid a second table and the gear schema bytes are frozen; a light test keeps the rows complete against ShaftDimensions
+- [Phase 33]: 33-05: a ValidationError under --designation prints at designation for the model's own refusal and a spline field, and at the solid field's own name for a bound on it, as the API's 422 does
+- [Phase 33]: 33-05: API = CLI is raw-equal as parsed JSON over the fixed four-shaft set (no tolerance); web = API is compared at the displayed text; seen red once on a one-ulp tip_d
+- [Phase 33]: 33-06: switchTo loads the new part's defaults into its fields itself (readHash would read the other part's hash); update() keeps the pinned mate line and gates the send with P.mate
+- [Phase 33]: 33-07: part starts empty and refuseLink rebuilds the gear form through buildForm, so one place clears the page; followHash bumps formSeq so a slower earlier build cannot land under the newest link
+- [Phase 33]: gridAlong in the PARTS descriptor sizes the shaft's floor grid from its height and leaves every gear's grid unchanged
+- [Phase 33]: Framing pictures go to pytest tmp_path (kept with --basetemp), not into the tree and not through an environment read (D-02 pin)
+- [Phase 33]: B2 in the browser is the 91-token re-read on the seven shaft inputs plus one all-fields API request per blanked token
+- [Phase 33]: 33-09: the shaft scenarios stay out of DEFAULT_SCENARIOS and out of the report's baseline/2.00x lines; heaviest shaft under ten concurrent requests: 4 of 10 admitted, 6 busy, no timeout/pool_broken/500, slowest 200 10.16 s of 30 s; gate 2778 passed in 241.55 s (real 242.47) vs 33-01's 2644 in 229.17 s, no speed claim
+- [Phase 33]: 33-10: the refused look is CSS on body[data-refused] and the narrow order is aside { display: contents } plus order, so D-12, D-15, D-20 and L41 stand; the review's message-by-the-switch is met by outlining the switch
 
 ### Pending Todos
 
@@ -580,10 +608,15 @@ None yet.
 
 ### Blockers/Concerns
 
+- ⚠️ [Phase 33] Verified 5/5 after gap closure 33-10 (G-33-2 closed); security threats_open 0; UI 18/24; Nyquist
+  partial (two manual-only rows deferred by the human). Code review `33-REVIEW-DISPOSITION.md`: 13 open (0 critical,
+  4 warning). New WR-03: a gear build that throws behind a refused link leaves `refused`/`data-refused` set
+  (app.js `followHash` catch), form dimmed and pointer-dead; WR-04: refused look is visual only, no
+  `aria-disabled`. Both need a human disposition (fix or file `must` debt). `.planning/codebase/` map stale (drift gate).
 - ⚠️ [Phase 32] Verified 4/4; Nyquist 16/16; security 14/14 closed. Code review `32-REVIEW-DISPOSITION.md`: 4 open
   (0 critical). WR-01 `_guard_volume` accepts an uncut chamfer (a no-op cone intersect would print an
-  `end_chamfer_effective` not on the part, L08) — filed `must`, fix before Phase 33 ships shaft downloads
-  (`docs/tech_debt/active/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md`). WR-02 bench `--fresh` swallows child
+  `end_chamfer_effective` not on the part, L08) — resolved in 33-02 (end-face guard;
+  `docs/tech_debt/resolved/2026-10-27-shaft-volume-guard-accepts-an-uncut-chamfer.md`). WR-02 bench `--fresh` swallows child
   stderr; IN-01 stale comments; IN-02 `load_sweep` rejects explicit `"part": "gear"`. Cross-CLI (Codex) review of the phase
   diff not yet run.
 - ✓ [Phase 31] Re-verified 5/5 with no override relied on, after the human approved four DIN 5480-2 rows (W 25x1.25x18,
@@ -894,8 +927,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-27T11:11:19.494Z
-Stopped at: Phase 32 complete, ready to plan Phase 33
+Last session: 2026-10-29T02:16:28Z
+Stopped at: Phase 33 complete, ready to plan Phase 34
 Resume file: None
 
 ## Operator Next Steps

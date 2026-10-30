@@ -1,0 +1,142 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term -v --durations=25 tests/test_browser.py -n0 --no-cov -q -s
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+collected 3 items
+
+tests/test_browser.py ..webgl2 renderer: ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)
+step webgl2: 0.01 s
+step form built: 0.06 s
+schema: 31 fields in 7 groups
+step form from schema: 0.01 s
+canvas PNG blank 3917 B, drawn 38908 B, ratio 9.93 (bar 4.9); data-triangles 9066, STL header 9066
+step first build drawn: 2.04 s
+step href after showModel: 0.04 s
+422 #bore_flat=3: marked ['D-flat'], text ['D-flat must be between 4.5 and 9 mm (flat to opposite side).']
+422 #teeth=2: marked ['Teeth'], text ['Teeth: Input should be greater than or equal to 6']
+step invalid field marked: 0.08 s
+warnings per link (two, one, none expected): [2, 1, 0]
+step warning rendered: 0.20 s
+step link round trip: 0.26 s
+golden sweep: 44 records, 44 distinct queries, 1 distinct dimmed sets
+golden sweep: shown {'D-flat': 32, 'No bore': 8, 'Round': 4}
+step golden sweep: 0.26 s
+inert fields: hex_wall: Needs Honeycomb cell A/F above 0
+inert fields: hole_circle_d: Needs Lightening holes above 0
+inert fields: hole_d: Needs Lightening holes above 0
+inert fields: hub_d: Needs Spoke arms above 0
+inert fields: rim_wall: Needs Spoke arms above 0
+inert fields: spoke_fillet: Needs Spoke arms above 0
+inert fields: spoke_width: Needs Spoke arms above 0
+inert fields: flip #bore_hex=0.05: API 200, dimmed ['bore_d', 'bore_flat', 'hex_wall', 'hole_circle_d', 'hole_d', 'hub_d', 'keyway_depth', 'keyway_width', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: flip #spoke_count=1: API 422, dimmed ['hex_wall', 'hole_circle_d', 'hole_d']
+inert fields: flip #hole_count=1: API 422, dimmed ['hex_wall', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: flip #hex_cell=0.05: API 422, dimmed ['hole_circle_d', 'hole_d', 'hub_d', 'rim_wall', 'spoke_fillet', 'spoke_width']
+inert fields: refused pair: invalid ['bore_hex', 'keyway_depth', 'keyway_width'], dimmed and invalid ['keyway_depth', 'keyway_width']
+step inert fields: 1.14 s
+bore shape: loaded #bore_hex=0.05: shows 'Hex'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> sent ''
+bore shape: bore_flat back to '8' from the stash
+bore shape: # + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_hex=0.05'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+bore shape: loaded #bore_flat=0: shows 'Round'
+bore shape: loaded #bore_hex=0.05: shows 'Hex'
+bore shape: loaded #bore_d=0: shows 'No bore'
+bore shape: loaded #bore_flat=0.0: shows 'Round'
+bore shape: loaded #bore_hex=-0.05: shows ''
+bore shape: #bore_flat=0 + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+bore shape: bore_flat emptied, D-flat still pending
+bore shape: completed D-flat with 1 number(s) -> sent ''
+bore shape: #bore_flat=0 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_flat=0&bore_hex=0.05'
+bore shape: #bore_flat=0 + No bore -> sent 'bore_d=0&bore_flat=0'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: # + D-flat -> sent ''
+bore shape: # + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_hex=0.05'
+bore shape: # + No bore -> sent 'bore_d=0'
+bore shape: #bore_hex=0.05 + Round -> sent 'bore_flat=0'
+bore shape: #bore_hex=0.05 + D-flat -> sent ''
+bore shape: #bore_hex=0.05 + Hex -> sent 'bore_hex=0.05'
+bore shape: #bore_hex=0.05 + No bore -> sent 'bore_d=0'
+bore shape: #bore_d=0 + Round -> pending: bore_d: Round needs Bore Ø above 0
+bore shape: bore_d emptied, Round still pending
+bore shape: completed Round with 1 number(s) -> sent 'bore_flat=0'
+bore shape: #bore_d=0 + D-flat -> pending: bore_d: D-flat needs Bore Ø above 0
+bore shape: bore_d emptied, D-flat still pending
+bore shape: completed D-flat with 1 number(s) -> sent ''
+bore shape: #bore_d=0 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'bore_d=0&bore_hex=0.05'
+bore shape: #bore_d=0 + No bore -> sent 'bore_d=0'
+bore shape: #bore_d=0&bore_flat=0 + D-flat -> pending: bore_d: D-flat needs Bore Ø above 0
+bore shape: typed bore_d=9, D-flat still pending: bore_flat: D-flat needs D-flat above 0
+bore shape: completed D-flat with 2 number(s) -> sent ''
+bore shape: #bore_flat=0 + D-flat -> pending: bore_flat: D-flat needs D-flat above 0
+bore shape: #bore_flat=0 + D-flat abandoned by bore_d=200: shows 'Round'
+bore shape: # + Round -> sent 'bore_flat=0'
+bore shape: #bore_flat=0 + D-flat -> sent ''
+bore shape: the stash outlived #bore_hex=0.05 and #bore_flat=0
+bore shape: #keyway_width=3&keyway_depth=1.4 + Round -> sent 'bore_flat=0&keyway_width=3&keyway_depth=1.4'
+bore shape: keyed + Round -> 'bore_flat=0&keyway_width=3&keyway_depth=1.4': API 200
+bore shape: #keyway_width=3&keyway_depth=1.4 + D-flat -> sent 'keyway_width=3&keyway_depth=1.4'
+bore shape: keyed + D-flat -> 'keyway_width=3&keyway_depth=1.4': API 200
+bore shape: #keyway_width=3&keyway_depth=1.4 + Hex -> pending: bore_hex: Hex needs Hex bore A/F above 0
+bore shape: completed Hex with 1 number(s) -> sent 'keyway_width=3&keyway_depth=1.4&bore_hex=0.05'
+bore shape: keyed + Hex -> 'keyway_width=3&keyway_depth=1.4&bore_hex=0.05': API 422
+bore shape: #keyway_width=3&keyway_depth=1.4 + No bore -> sent 'bore_d=0&keyway_width=3&keyway_depth=1.4'
+bore shape: keyed + No bore -> 'bore_d=0&keyway_width=3&keyway_depth=1.4': API 422
+step bore shape: 12.58 s
+twin selectors: #bore_flat=0 + D-flat in one, then Hex in the other: the first back to 'Round', the second pending on bore_hex
+step twin selectors: 2.12 s
+unknown relation op: bore_d unreadable, the bore-shape select blank, two holding options blank, the form still builds the part
+step unknown relation op: 2.62 s
+form build error: the bootstrap names 'Bore shape', sent no info
+step form build error: 1.09 s
+download name: spur_z23_m1.75_pa25_trochoid.stl, click to download 0.08 s
+step download name: 0.96 s
+bad link #root_shape=bogus&teeth=22: sent 'teeth=22&root_shape=bogus', API 422, marked ['Root shape'], text ["Root shape: Input should be 'radial' or 'trochoid'"]
+bad link #recess_sides=bogus: sent 'recess_sides=bogus', API 422, marked ['Recess sides'], text ["Recess sides: Input should be 'both', 'top', 'bottom' or 'none'"]
+bad link #teeth=abc: sent 'teeth=abc', API 422, marked ['Teeth'], text ['Teeth: Input should be a valid integer, unable to parse string as an integer']
+bad link #mate_teeth=abc: sent 'mate_teeth=abc', API 422, marked [], text ['Input should be a valid integer, unable to parse string as an integer']
+bad link #root_shape=Trochoid: sent 'root_shape=Trochoid', API 422, marked ['Root shape'], text ["Root shape: Input should be 'radial' or 'trochoid'"]
+step bad link refused: 1.06 s
+bad link cleared: edit, pick, mate, Reset and a new link all recover
+step bad link cleared: 2.25 s
+bad link on a fresh page: sent 'teeth=22&root_shape=bogus', API 422, text ["Root shape: Input should be 'radial' or 'trochoid'"]
+step bad link on a fresh page: 1.10 s
+blank, unknown and refused: face_width=8, face_width=9, face_width=5.
+step blank, unknown and accepted tokens: 1.15 s
+number box tokens: 30 inputs x 91 tokens agree
+step number box tokens: 0.03 s
+as-written sweep: 30 links, 1.17 s
+step as-written sweep: 1.17 s
+root_fillet label per link ('teeth=26&root_shape=trochoid', 'teeth=27&root_shape=trochoid', 'teeth=23'): ['Hob tip radius used', 'Root fillet used', 'Root fillet used']
+step root_fillet label: 0.20 s
+step part switch: 0.72 s
+shaft link round trip: part=shaft&reference_d=26&teeth=19 -> spur_shaft_w26x1.25x19.stl
+step shaft link round trip: 5.64 s
+bad part refused: 6 links, no build under a bad part
+step bad part refused: 3.34 s
+parity: 4 shafts, 42 rows equal the API's, 47 numbers rounded as the browser does, 1.19 s
+step parity: web and API: 1.19 s
+shaft sweep: 7 inputs probed x 91 tokens, 7 links, 65 blanked tokens refused on 7 fields, 1.11 s
+step shaft as-written sweep: 1.12 s
+viewer framing: 3 shafts drawn, fitted and saved
+step viewer framing: 4.39 s
+request recorder: 422 /api requests (214 api/info) from every page, every key a GearParams field, quality or mate_teeth
+.server group members before the kill: 4
+
+
+============================= slowest 25 durations =============================
+47.12s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+0.32s teardown tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+0.17s setup    tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser
+
+(6 durations < 0.005s hidden.  Use -vv to show these durations.)
+============================== 3 passed in 47.64s ==============================

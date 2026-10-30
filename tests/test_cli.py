@@ -2,6 +2,7 @@
 
 import json
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -16,9 +17,12 @@ import spur.app
 import spur.model
 from spur import cli
 from spur.app import InfoQuery, build_backend
+from spur.build_errors import BuildError
 from spur.calc import DerivedDimensions, check
 from spur.model import Format, Quality
 from spur.params import GearParams
+from spur.shaft_calc import ShaftDimensions, derive_shaft
+from spur.shaft_params import ShaftParams, resolve_shaft
 
 # The README's composed link (D-14): every v0.2 family on one 19-tooth gear -- a keyed
 # round bore, spoke arms, both recesses (the default) and a tooth-tip chamfer. Order
@@ -261,6 +265,16 @@ def test_every_gear_field_reaches_the_schema_the_form_and_the_cli_in_one_order(
     assert after  # the section header must have been found
     flags = re.findall(r"^\s+(--[a-z][a-z-]*)", after, re.MULTILINE)
     assert flags == ["--" + n.replace("_", "-") for n in names]
+
+
+def test_the_top_level_help_names_both_parts(capsys: pytest.CaptureFixture[str]) -> None:
+    """`spur --help` is the first thing a user reads; it said gears only after the shaft
+    group shipped (33 IN-05)."""
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["--help"])
+    assert exc.value.code == 0
+    out = " ".join(capsys.readouterr().out.split())
+    assert "spur gears and DIN 5480 splined shafts" in out
 
 
 def test_infeasible_parameters_exit_2_and_name_the_problem(
@@ -698,3 +712,171 @@ def test_a_kernel_refusal_in_the_hob_root_outline_is_a_422_that_names_the_outlin
     assert "hob-root outline could not be built (RuntimeError)" in detail["msg"]
     assert "root_shape" in detail["msg"]
     assert "try smaller" not in detail["msg"]
+
+
+# --- spur shaft (Phase 33, REQ-shaft-cli) ---------------------------------------------
+
+
+def test_cli_and_api_print_the_same_shaft_document(capsys: pytest.CaptureFixture[str]) -> None:
+    """REQ-shaft-cli, REQ-designation-input: `spur shaft info` prints the model's own JSON,
+    so the CLI and `/api/shaft/info` share one serialiser. Defaults (empty), flags and a
+    designation all read the same document, in `ShaftDimensions` key order."""
+    client = TestClient(spur.app.app)
+
+    cli.main(["shaft", "info"])
+    cli_out = json.loads(capsys.readouterr().out)
+    assert cli_out == client.get("/api/shaft/info").json()
+    assert list(cli_out) == list(ShaftDimensions.model_fields)
+
+    cli.main(["shaft", "info", "--designation", "W 30x2x14x8f"])
+    by_designation = json.loads(capsys.readouterr().out)
+    assert by_designation == client.get(
+        "/api/shaft/info", params={"designation": "W 30x2x14x8f"}).json()
+    assert by_designation["designation"] == "W 30x2x14x8f"
+
+    cli.main(["shaft", "info", "--reference-d", "30", "--module", "2", "--teeth", "14"])
+    assert json.loads(capsys.readouterr().out) == by_designation
+
+
+def test_a_shaft_designation_with_a_spline_flag_exits_2_like_the_api_422(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-07: a designation beside a spline field is a refusal with one sentence, the API's
+    `conflict` 422 `msg`, on stderr and exit 2."""
+    api = TestClient(spur.app.app).get(
+        "/api/shaft/info", params={"designation": "W 30x2x14x8f", "teeth": 14})
+    assert api.status_code == 422
+    sentence = api.json()["detail"][0]["msg"]
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["shaft", "info", "--designation", "W 30x2x14x8f", "--teeth", "14"])
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == f"error: designation: {sentence}\n"
+
+
+def test_shaft_export_writes_the_step_and_the_stl_and_warns_on_stderr(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    step = tmp_path / "shaft.step"
+    cli.main(["shaft", "export", "-o", str(step)])
+    assert step.read_bytes().startswith(b"ISO-10303-21;")
+    assert f"wrote {step} (" in capsys.readouterr().err
+
+    # A chamfer the tooth height cannot hold is capped and warned, never silent (L03).
+    stl = tmp_path / "shaft.stl"
+    cli.main(["shaft", "export", "-o", str(stl), "--quality", "preview",
+              "--designation", "W 30x2x14x8f", "--end-chamfer", "9"])
+    assert stl.stat().st_size > 1000
+    err = capsys.readouterr().err
+    p = resolve_shaft("W 30x2x14x8f", {"end_chamfer": 9.0})
+    assert derive_shaft(p).warnings
+    assert [ln for ln in err.splitlines() if ln.startswith("warning: ")] == [
+        f"warning: {w}" for w in derive_shaft(p).warnings]
+
+
+@pytest.mark.parametrize("argv", [
+    ["--designation", "W 30x2x14x8f", "--teeth", "14"],      # clash (D-07)
+    ["--designation", ""],                                   # empty
+    ["--designation", "W 25x1.25x18x8F"],                    # the codec cannot read it
+    ["--designation", "W 6x0.5x6x8f"],                       # read, but the model refuses it
+    ["--shank-length", "500.5"],                             # a bound
+    ["--designation", "W 30x2x14x8f", "--shank-length", "500.5"],
+], ids=["clash", "empty", "unreadable", "infeasible", "bound", "bound-with-designation"])
+def test_a_refused_shaft_exits_2_and_writes_no_file(
+        argv: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    out = tmp_path / "shaft.stl"
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["shaft", "export", "-o", str(out), *argv])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert err.startswith("error: ")
+    assert not out.exists()
+
+
+def test_a_shaft_refusal_reads_the_same_on_the_api_and_the_cli(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """The API's 422 `msg` is the CLI's sentence, for what the designation spelled and for
+    a solid field, with the same `loc` prefix."""
+    client = TestClient(spur.app.app)
+    for designation, flag, value in (("W 6x0.5x6x8f", None, None),
+                                     ("W 25x1.25x18x8F", None, None),
+                                     ("", None, None),
+                                     ("W 30x2x14x8f", "shank_length", "500.5")):
+        params = {"designation": designation, **({flag: value} if flag else {})}
+        argv = ["shaft", "info", "--designation", designation]
+        if flag:
+            argv += ["--" + flag.replace("_", "-"), str(value)]
+        detail = client.get("/api/shaft/info", params=params).json()["detail"]
+        with pytest.raises(SystemExit) as exc:
+            cli.main(argv)
+        assert exc.value.code == 2
+        want = "".join(f"error: {e['loc'][-1]}: {e['msg']}\n" for e in detail)
+        assert capsys.readouterr().err == want
+
+
+def test_a_shaft_build_error_exits_nonzero_and_writes_no_file(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The bytes are written only after the build returns, so a kernel failure (or an
+    interrupt) leaves no partial file."""
+    def refuse(*_: object) -> bytes:
+        raise BuildError("the kernel refused this shaft")
+
+    monkeypatch.setattr(spur.model, "export", refuse)
+    out = tmp_path / "shaft.step"
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["shaft", "export", "-o", str(out)])
+    assert exc.value.code == "error: the kernel refused this shaft"
+    assert not out.exists()
+
+
+def test_shaft_export_has_no_default_name_and_refuses_an_unknown_suffix(
+        tmp_path: Path) -> None:
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["shaft", "export"])
+    assert exc.value.code == 2  # -o is required (D-17): no name is invented
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["shaft", "export", "-o", str(tmp_path / "shaft.obj")])
+    assert exc.value.code == "error: output must end in .stl or .step (or pass --format)"
+
+
+def test_every_shaft_field_is_a_flag_under_its_own_group_and_the_gear_help_is_unchanged(
+        capsys: pytest.CaptureFixture[str]) -> None:
+    for command in ("info", "export"):
+        with pytest.raises(SystemExit) as exc:
+            cli.main(["shaft", command, "--help"])
+        assert exc.value.code == 0
+        out = capsys.readouterr().out
+        _, _, after = out.partition("shaft parameters (defaults in brackets):\n")
+        assert after
+        flags = re.findall(r"^\s+(--[a-z][a-z-]*)", after, re.MULTILINE)
+        assert flags == ["--" + n.replace("_", "-") for n in ShaftParams.model_fields] + [
+            "--designation"]
+        assert "gear parameters" not in out
+
+    with pytest.raises(SystemExit):
+        cli.main(["info", "--help"])
+    out = capsys.readouterr().out
+    assert "gear parameters (defaults in brackets):\n" in out
+    assert "shaft parameters" not in out
+
+
+def test_readme_shaft_examples_run(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """The README's own `spur shaft ...` lines run, each with its output under tmp_path."""
+    readme = (Path(__file__).parents[1] / "README.md").read_text()
+    cli_block = readme.partition("## CLI")[2].partition("```sh\n")[2].partition("```")[0]
+    lines = [ln.partition("  #")[0].strip() for ln in cli_block.splitlines()
+             if ln.startswith("spur shaft ")]
+    assert len(lines) >= 3
+    for line in lines:
+        argv = shlex.split(line)[1:]
+        written: Path | None = None
+        if "-o" in argv:
+            i = argv.index("-o") + 1
+            written = tmp_path / Path(argv[i]).name
+            argv[i] = str(written)
+        cli.main(argv)
+        out = capsys.readouterr().out
+        if written is not None:
+            assert written.stat().st_size > 1000
+        else:
+            assert json.loads(out)["designation"]

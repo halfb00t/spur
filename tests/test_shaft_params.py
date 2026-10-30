@@ -242,3 +242,12 @@ def test_the_slug_is_a_filename_safe_stem_built_from_numbers() -> None:
     for designation in ("W 25x1.25x18x8f", "W 10x0.5x18x8f", "W 120x3x38x8f", "W 835x10x82x8f"):
         p = ShaftParams(**parse_designation(designation)._asdict())
         assert re.fullmatch(r"spur_shaft_[a-z0-9_.]+", p.slug()), designation
+
+
+def test_shank_d_is_dimmed_without_a_shank() -> None:
+    """D-18, L41: shank_d is inert at shank_length 0, proved by the kernel row
+    test_shank_d_changes_nothing_without_a_shank, so it alone carries a relation."""
+    props = ShaftParams.model_json_schema()["properties"]
+    assert props["shank_d"]["enabled_when"] == [
+        {"field": "shank_length", "op": "gt", "value": 0}]
+    assert [name for name, prop in props.items() if "enabled_when" in prop] == ["shank_d"]

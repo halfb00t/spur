@@ -6,14 +6,21 @@
     GET /api/info?...        derived dimensions, measurement aids, warnings
     GET /api/model.stl?...   binary STL   (quality=preview|fine)
     GET /api/model.step?...  STEP AP214 solid
+    GET /api/shaft/schema          JSON schema of the shaft, with the result rows in `dims`
+    GET /api/shaft/info?...        the shaft's derived dimensions and warnings
+    GET /api/shaft/model.{stl,step}?...  the shaft's solid (quality=preview|fine for the STL)
 
 Every gear parameter is a query string field, so a model URL is shareable and
-curl-able. Unset fields take their defaults.
+curl-able. Unset fields take their defaults. A number written the way the page's number box
+would blank it (`5.`, `+22`, ` 22`, `1_0`) is a 422, so no link builds a part under a blank
+box (L49).
 """
 
 from __future__ import annotations
 
 import gzip
+import json
+import re
 import threading
 import time
 import uuid
@@ -22,23 +29,32 @@ from collections.abc import AsyncIterator, Awaitable, Callable, Hashable, Iterat
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, get_args
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic.json_schema import JsonSchemaValue
 from starlette.concurrency import run_in_threadpool
 
 from . import __version__, int_env
 from .build_errors import BuildError, BuildTimeout
 from .calc import DerivedDimensions, derive
+from .din5480 import DesignationError
 from .params import GearParams
 from .parts import Part
 from .pool import BuildPool
 from .records import build_failed, build_started, configure, export_served, queue_refused
+from .shaft_calc import ShaftDimensions, derive_shaft
+from .shaft_params import (
+    SPLINE_KEYS,
+    ShaftParams,
+    clash_message,
+    designation_clash,
+    resolve_shaft,
+)
 
 STATIC = Path(__file__).parent / "static"
 MEDIA_TYPES = {"stl": "model/stl", "step": "model/step"}
@@ -240,6 +256,99 @@ class ModelQuery(GearParams):
         "fine", description="STL tessellation: preview (coarse, small) or fine.")
 
 
+class ShaftInfoQuery(ShaftParams):
+    """The shaft's query model: its fields, validated once, as `/api/info` does for the gear."""
+
+    designation: str | None = Field(
+        None, title="Designation",
+        description="A DIN 5480 designation such as W 25x1.25x18x8f. It replaces reference_d, "
+                    "module, teeth and fit, so it cannot be given together with any of them; "
+                    "the solid's fields combine with it. Read by DIN 5480's codec.")
+
+
+class ShaftModelQuery(ShaftInfoQuery):
+    quality: Literal["preview", "fine"] = Field(
+        "fine", description="STL tessellation: preview (coarse, small) or fine.")
+
+
+def blank_in_a_number_box(token: str) -> bool:
+    """True when Chromium's number box reads `token` back as blank although it is a number
+    the server would parse (WR-02, L49).
+
+    The four conditions are the whole of what the API could read and the box could not: a
+    leading or trailing space of any kind, an underscore, a leading `+` and a trailing `.`.
+    Measured in the gate's own Chromium over 91 tokens on 37 inputs
+    (`bench/RESULTS.md`, `### Tokens the number box blanks, every field (33-01)`): 66 are
+    blank, the four conditions refuse 34 of them and none that the box holds; the other 32
+    (`abc`, `Infinity`, `1e400`, `''`, ...) are already a 422 from pydantic or a bound, with
+    one exception that holds by a coincidence of defaults and not by the rule: pydantic reads
+    `0-0` as the int 0, which `spoke_count` and `hole_count` accept and whose default is 0, so
+    the part is the one the blank box implies (IN-01; the walker below pins it).
+    tests/test_number_as_written.py walks that table. An empty token is not the rule's: the
+    page never sends it (a blank control is the default, L44 D-06) and pydantic answers it.
+    """
+    return token != token.strip() or "_" in token or token.startswith("+") or token.endswith(".")
+
+
+def _number_keys(model: type[BaseModel]) -> dict[str, bool]:
+    """Each `int`, `float` or `int | None` field of `model`, mapped to whether it is an int.
+
+    These are the fields a number box edits. A `bool`, a `Literal` or a `str` field is read
+    by a select or not at all, so its token keeps pydantic's own answer.
+    """
+    keys: dict[str, bool] = {}
+    for name, field in model.model_fields.items():
+        parts = get_args(field.annotation) or (field.annotation,)
+        kinds = [k for k in parts if k is not type(None)]
+        if len(kinds) == 1 and kinds[0] in (int, float):
+            keys[name] = kinds[0] is int
+    return keys
+
+
+_PLAIN_NUMBER = re.compile(r"-?[0-9]+(\.[0-9]+)?")
+
+
+def _as_written_message(token: str, integer: bool) -> str:
+    """The sentence for a refused token: quoted as JSON, plus the canonical form if clear.
+
+    json.dumps escapes every control and non-ASCII character, so nothing invisible is
+    reflected to the page (T-33-06).
+    """
+    written = token.strip()
+    core = written.removeprefix("+").removesuffix(".")
+    # `+-5` is a plus and a minus: nobody knows which sign was meant, so no form is offered.
+    if not _PLAIN_NUMBER.fullmatch(core) or (written.startswith("+") and core.startswith("-")):
+        suggestion = "a plain number, e.g. 22 or 2.5"
+    elif written.endswith(".") and not integer:
+        suggestion = f"{core} or {core}.0"
+    else:
+        suggestion = core
+    return f"{json.dumps(token)} is not a number as written; write it as {suggestion}"
+
+
+def _numbers_as_written(model: type[BaseModel]) -> Callable[[Request], None]:
+    """A route dependency refusing every number `model`'s box would blank, as written.
+
+    It reads the raw query string, so it runs before pydantic and adds no OpenAPI parameter.
+    Every value of a repeated key is checked (pydantic would read one), the first offending
+    value of a key names it, and the entries come in query order. It holds no state: it is a
+    pure function of one request's query string.
+    """
+    keys = _number_keys(model)
+
+    def check(request: Request) -> None:
+        refused: dict[str, str] = {}
+        for key, value in request.query_params.multi_items():
+            if key in keys and key not in refused and blank_in_a_number_box(value):
+                refused[key] = _as_written_message(value, keys[key])
+        if refused:
+            raise HTTPException(422, detail=[
+                {"loc": ["query", key], "msg": msg, "type": "number_as_written"}
+                for key, msg in refused.items()])
+
+    return check
+
+
 def _gear(q: GearParams) -> GearParams:
     """Strip the per-endpoint extras back to a plain GearParams.
 
@@ -248,6 +357,42 @@ def _gear(q: GearParams) -> GearParams:
     never hit each other's cache entries.
     """
     return GearParams(**q.model_dump(include=set(GearParams.model_fields)))
+
+
+def _designation_conflict(request: Request) -> None:
+    """A route dependency refusing a designation beside any spline field, on key presence.
+
+    It reads the raw query string, so it runs before any value is parsed: `designation=...
+    &teeth=abc` is the conflict, not a number error (D-07). Pure: it reads one request.
+    """
+    keys = set(request.query_params.keys())
+    clash = designation_clash(keys) if "designation" in keys else ()
+    if clash:
+        raise HTTPException(422, detail=[{
+            "loc": ["query", "designation"], "type": "conflict", "msg": clash_message(clash),
+            "ctx": {"fields": ["designation", *clash]}}])
+
+
+def _shaft(q: ShaftInfoQuery) -> ShaftParams:
+    """Strip the per-endpoint extras back to a plain ShaftParams.
+
+    The build caches compare the class as well as the fields, as `_gear` says, so a
+    ShaftModelQuery and a ShaftInfoQuery describing one shaft must not be two keys. A
+    designation is resolved here to the four spline fields, so a designation link and its
+    flat link are one cache entry. Its refusals are 422s at `designation`, never a 500: the
+    codec's own sentence for text it cannot read, the model's for a shaft it refuses.
+    """
+    if q.designation is None:
+        return ShaftParams(**q.model_dump(include=set(ShaftParams.model_fields)))
+    solid = set(ShaftParams.model_fields) - set(SPLINE_KEYS)
+    try:
+        return resolve_shaft(q.designation, q.model_dump(include=solid))
+    except DesignationError as exc:
+        detail = [{"loc": ["query", "designation"], "type": "designation", "msg": str(exc)}]
+    except ValidationError as exc:
+        detail = [{"loc": ["query", "designation"], "type": e["type"], "msg": e["msg"]}
+                  for e in exc.errors()]
+    raise HTTPException(422, detail=detail)
 
 
 def _gzip(data: bytes) -> bytes:
@@ -376,7 +521,7 @@ def schema() -> JsonSchemaValue:
     return GearParams.model_json_schema()
 
 
-@app.get("/api/info")
+@app.get("/api/info", dependencies=[Depends(_numbers_as_written(InfoQuery))])
 def info(q: Annotated[InfoQuery, Query()]) -> DerivedDimensions:
     """Derived dimensions. With `mate_teeth`, also the centre distance to that gear."""
     return derive(_gear(q), mate_teeth=q.mate_teeth)
@@ -510,9 +655,32 @@ async def _serve_model(params: Part, fmt: Literal["stl", "step"],
 
 
 @app.get("/api/model.{fmt}", response_class=Response,
+         dependencies=[Depends(_numbers_as_written(ModelQuery))],
          responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
 async def model(fmt: Literal["stl", "step"], q: Annotated[ModelQuery, Query()],
                 request: Request,
                 backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
     # The route builds the gear's params; everything after that is _serve_model's.
     return await _serve_model(_gear(q), fmt, q.quality, request, backend)
+
+
+@app.get("/api/shaft/schema")
+def shaft_schema() -> JsonSchemaValue:
+    return ShaftParams.model_json_schema()
+
+
+@app.get("/api/shaft/info", dependencies=[Depends(_designation_conflict),
+                                          Depends(_numbers_as_written(ShaftInfoQuery))])
+def shaft_info(q: Annotated[ShaftInfoQuery, Query()]) -> ShaftDimensions:
+    """The shaft's derived dimensions and the warnings that go with them."""
+    return derive_shaft(_shaft(q))
+
+
+@app.get("/api/shaft/model.{fmt}", response_class=Response,
+         dependencies=[Depends(_designation_conflict),
+                       Depends(_numbers_as_written(ShaftModelQuery))],
+         responses={200: {"content": {t: {} for t in MEDIA_TYPES.values()}}})
+async def shaft_model(fmt: Literal["stl", "step"], q: Annotated[ShaftModelQuery, Query()],
+                      request: Request,
+                      backend: Annotated[BuildBackend, Depends(build_backend)]) -> Response:
+    return await _serve_model(_shaft(q), fmt, q.quality, request, backend)

@@ -3304,3 +3304,191 @@ publishes a shaft link (L05, L44), as their amendments say.
 Reason: a number the tool prints is a number someone will cut metal to, and a solid the kernel calls valid can still be empty or
 wrong. The shaft is built by the one route that held on every row, each forbidden route is written down with the log that
 forbids it, and every silent failure became a refusal that was seen red once.
+
+## L49 — Phase 33 puts the shaft on the API, the CLI and the page, and a link token the number box blanks is refused as written (amends L44's **The server decides**; follows L46, L47 and L48; keeps L02, L03, L05 and L08)
+
+Date: 2026-10-27.
+
+Phase 33 gives the shaft its routes, its CLI and its page. L49 is the one entry its plans append to: each plan adds a paragraph
+under its own bold lead, and no earlier line of this entry or of any other is edited. The first paragraph is the WR-02 fix, which
+lands before the part switch (33-03).
+
+**Refused as written** (D-01..D-06; `src/spur/app.py`, `tests/number_box_tokens.py`). L44's paragraph **The server decides**
+recorded that some tokens a number box blanks are accepted by the API, and that they are sent and built as the server reads them
+while the box shows blank. That is a form that says "default" over a part that is not (L05), and a number from that part is one
+someone will cut metal to (L08). L49 reverses it on the gear routes. `/api/info` and `/api/model.{fmt}` answer `422` for such a
+token before pydantic reads the query, with one `detail` entry per offending key, `{"loc": ["query", <field>], "type":
+"number_as_written", "msg": ...}`. The unchanged `problems()` marks the box, the unchanged `fail()` returns before the STL
+request, and no part is drawn. The rule is one function in the query layer, `blank_in_a_number_box`, applied by a route
+dependency to every `int`, `float` and `int | None` field of the route's query model, and to every value of a repeated key
+(pydantic would read one). `params.py`, `cli.py`, `app.js` and the gear `/api/schema` bytes do not change; `make gear.unchanged`
+is green and the OpenAPI query parameters of both routes are pinned.
+
+**The rule, and why Chromium's table and not the HTML spec** (D-02, 33-01 choice A1). A token is refused as written when any of
+four things holds: `token != token.strip()`, `"_" in token`, `token.startswith("+")`, `token.endswith(".")`. It is what the
+gate's own Chromium (Playwright's headless shell, 153.0.8010.12) does, measured over 91 tokens on 37 number inputs and recorded in
+`bench/RESULTS.md`, `### Tokens the number box blanks, every field (33-01)`: 66 tokens read back blank on all 37 inputs, 25 are
+held, and no token differs between inputs. The two lines the human was asked to read were both empty: no token the box holds is
+refused by the rule, and no token the box blanks is accepted by the API for some field. The rule refuses 34 of the 66; the other
+32 (`Infinity`, `inf`, `NaN`, `1e400`, `1e309`, `abc`, `0x10`, `1,5`, `''`, ...) are already a `422` from pydantic or a bound,
+so none builds under a blank box, and the rule leaves them their own sentence. An empty value is never the rule's: the page does
+not send it (a blank control is the default, L44 D-06) and pydantic answers it. `tests/number_box_tokens.py` transcribes the table
+and `tests/test_number_as_written.py` walks it over both routes; the browser step `number box tokens` re-reads every row on the
+page's own inputs at every gate run, so a Chromium upgrade that moves a row fails there and not for a user.
+
+**The human's picks** (33-01 `## Decision result`, 2026-10-27, typed "recommended"). A1: the four conditions above, the 10
+non-finite and overflowing tokens not added. B1: one `#<field>=%2B<default>` link per number field and `mate_teeth` in the browser
+(30 gear links), the full table walked in the light test. C1: this fix lands in `app.py` in 33-03, before the switch.
+
+**The move from 200 to 422** is an invalid-link change of the L44/L46 class: a link that built a part before is refused now. The
+golden fixtures carry no such token (`tests/regression/` is byte-equal to `v0.6`, `gear.unchanged`, and the browser's golden
+sweep still sends every pinned query unchanged). `face_width=5.`, which `tests/test_browser.py`
+pinned as built, is now pinned as refused. The CLI stays as it is (D-03): it has no number box, argparse reads `5.` as 5.0, and
+nothing there can show blank over a hidden value.
+
+**The wording** (D-04). The token is quoted with `json.dumps`, so no control or non-ASCII character reaches the page. The
+suggestion is the token with surrounding whitespace, one leading `+` and one trailing `.` removed when that is a plain number,
+plus `or <n>.0` for a float field that lost a trailing `.`: `"5." is not a number as written; write it as 5 or 5.0`, `"+22" is
+not a number as written; write it as 22`. Otherwise `a plain number, e.g. 22 or 2.5`. The mate box shows the message with no
+outline (L44 D-05, unchanged). Bounds keep their own sentence: `teeth=200` builds, `teeth=+200` is refused as written,
+`teeth=201` is pydantic's.
+
+**SC4's wording.** ROADMAP criterion 4 reads "where the part switch edits `refuse()`/`gearQuery()`". With C1 that is met with
+both functions byte-identical through the phase: the part switch needs no edit to either (33-RESEARCH Pitfall 2), because
+`gearQuery()` is generic over `fields`. 33-09 proves the byte-identity against `6800769` at close and writes this reading beside
+criterion 4 and REQ-wr02-fixed.
+
+**Reversibility:** costly. Accepting these tokens again turns refused links back into builds under a blank box; it needs another
+`Lxx` and moves the browser steps, the pins, `web-ui.md` and `http-api.md` together.
+
+**The shaft's API** (D-07..D-09, D-17; `src/spur/app.py`, `src/spur/shaft_params.py`; 33-04). Three routes, all under `/api/shaft/`:
+`GET /api/shaft/schema`, `GET /api/shaft/info` and `GET /api/shaft/model.{stl,step}`. The query keys are the eight `ShaftParams`
+fields plus `designation`, and `quality` on the model route; `/api/shaft/schema` takes none. The model route is the gear's through
+the same `_serve_model` (admission, `503 busy`, the byte cache, gzip, `build_error` as a `422`), unchanged. A shaft and a gear
+share one `BUILD_QUEUE`. The gear routes, their keys and the gear `/api/schema` bytes are unchanged (`make gear.unchanged`).
+The result rows ride the shaft's schema, in a top-level `dims` list of `{key, label, unit}`, one per `ShaftDimensions` key but
+`warnings`, in its order, because a second row table in `app.js` is forbidden by two pins and the gear schema's bytes are frozen;
+`tests/test_shaft_interfaces.py` keeps the rows complete against `ShaftDimensions`. The as-written rule above
+applies to all seven shaft number fields on `/api/shaft/info` and `/api/shaft/model.{fmt}`, by the same dependency
+(`number_as_written`).
+
+`designation` is a public query key and takes the place of `reference_d`, `module`, `teeth` and `fit`: `designation=W 30x2x14x8f`
+answers what `reference_d=30&module=2&teeth=14&fit=8f` answers, and both build one cache entry because each reduces to an equal
+`ShaftParams`. **Reversibility: one-way** (D-09, L05): a link carrying `designation` is a link someone keeps, so the key cannot be
+renamed or dropped once the page and the CLI publish it. A designation given beside any of the four spline fields is refused
+and never resolved in favour of either (D-07, L03): the check reads **key presence** before any value is parsed, so
+`designation=W 30x2x14x8f&teeth=abc` is the conflict and not a number error, and no equality question arises across `25`, `25.0`
+and `25,0`. The solid's fields, `splined_length`, `end_chamfer`, `shank_d` and `shank_length`, combine with a designation freely
+(D-08). The refusal is `422` with `loc` `["query", "designation"]`, type `conflict` and `ctx.fields` `["designation", <each
+present key in spline order>]`; one function, `designation_clash`, decides it for the API and the CLI. A designation the codec
+cannot read is a `422` of type `designation` at the same `loc` with the codec's own sentence naming the bad token; an infeasible
+one (`W 6x0.5x6x8f`) is a `422` there too, with the model's own type and sentence, and no designation a user can send is a `500`.
+The codec counts the length in code points and refuses beyond 64 before any pattern runs; its character classes are ASCII; a raw
+`+` in a query decodes to a space and is read as one, `%2B` is a refused `+`.
+
+The download is named by `ShaftParams.slug()` and the name is frozen (D-17): `spur_shaft_w25x1.25x18.stl` for the default shaft, the
+fit left out as before. L40's note that the shaft's name was provisional ends here.
+
+**The shaft's CLI** (D-17, REQ-shaft-cli, REQ-designation-input; `src/spur/cli.py`; 33-05). `spur shaft info` prints the JSON
+`/api/shaft/info` answers and `spur shaft export -o FILE` writes the STL or STEP, the format from the suffix or `--format`,
+`--quality` for the STL. The flags are generated from `ShaftParams.model_fields` under the help group `shaft parameters
+(defaults in brackets)`, spelled as the gear's are (`--reference-d`), plus `--designation`, which replaces `--reference-d`,
+`--module`, `--teeth` and `--fit`. The gear's group, its help and its commands are unchanged (`make gear.unchanged`). `-o` is
+required: the shaft has no default output name. `_shaft_params` calls `resolve_shaft`, the function the API's `_shaft` calls,
+and `designation_clash` / `clash_message` for the clash, so the two refuse the same requests with the same sentence. A refusal
+(a spline flag beside a designation, a designation the codec cannot read, an empty one, one the model refuses, a field out of
+bounds) is exit 2 with `error: designation: <sentence>` or `error: <field>: <message>` on stderr and no file; a `BuildError` is
+exit 1 as for the gear. The bytes are written after the build returns, so a refused or interrupted run leaves no partial file.
+`cli.py` still imports no `app`, `fastapi`, `starlette` or `shaft_model`: ten contracts kept. **Reversibility: one-way** for
+`--designation` (D-09: a command line someone keeps), reversible for the rest.
+
+**One shaft, three readers** (D-21, REQ-shaft-parity; `tests/shaft_parity.py`, `tests/test_shaft_parity.py`; 33-05). One fixed
+set of four shafts is read by the web (33-08), the API and the CLI: `default` (the empty link, profile shift 0.45, the range's
+upper edge), `w30x2x14` (-0.05, the lower edge), `odd-z` (W 26x1.25x19, no measurement over pins, so `measure_over_pins` is null)
+and `no-shank-no-chamfer` (`shank_length` 0, the minimum, and `end_chamfer_effective` null; its name equals the default's, the
+adjacency the name test pins). Two comparison rules, chosen by the planner and written beside the test. The API and the CLI are
+**raw-equal** as parsed JSON, in `ShaftDimensions` key order, nulls included, and the download name equals `ShaftParams.slug()`
+plus the suffix as ASCII strings: no tolerance, because both print the one model through one serialiser, so a difference of one
+ulp is a real one. The web is compared with the API at the **displayed text** only, through a Python port of `fmt()`
+(`displayed`), because the page rounds to three decimals; 33-08 checks the port against the browser. The comparison was seen red
+once: `cmd_shaft_info` made to print `tip_d` one ulp up (`math.nextafter`) failed all four shafts naming `tip_d`
+(`33-05-red-perturbed.log`, `bench/RESULTS.md` `### Seen red once (Phase 33)`), and was reverted; a durable self-test keeps
+`differences()` honest on a one-ulp change, a changed name and a changed order. The test isolates the export cache and the
+backend per test and runs under `-n 8` in `make verify.fast`.
+
+**The part switch** (D-11..D-14, REQ-shaft-web; `src/spur/static/app.js`, `index.html`, `style.css`; 33-06, 33-07). A Gear | Shaft radio
+group sits above `#params`, outside the form, so the form's `input` listeners never see it, it is never a field and `fields.set(`
+stays one (the L42 rule); a radio group is the native keyboard walk (ArrowLeft and ArrowRight switch). Every switch builds that
+part's form at that part's defaults: no value, no stash entry and no mate box content crosses it (D-13, L05). The assumption-delta
+decision of 33-01 is **promote**: the page's implicit gear became an explicit descriptor `PARTS`, holding only the routes (`schema`,
+`info`, `model`), the hash tag and the texts (title, sub line, canvas label, fit tooltip, whether the mate box is sent), and every
+URL the page builds reads it through `P`; the shaft is not added as branches beside gear code. `PARTS` is indexed only by a radio's
+literal value or by a literal in `partOf`, never by text from a link. One add-alongside is accepted, the result rows: the gear keeps
+its JavaScript `DIMS` table and the shaft's rows come from the `dims` list of its schema (a number as its three-decimal text with
+the unit when the row has one, a string as itself, an absent value no row, D-22), because the gear `/api/schema` bytes are frozen.
+It is filed as `docs/ideas/2026-10-27-gear-result-rows-from-the-schema.md` with what would force the promote. Which texts and
+hints show is CSS on `body[data-part]`, never a script write: the guard in `tests/test_api.py` refuses any script that hides or
+shuts a control (L41), and the page's texts go in as `textContent` and attributes. A switch writes its hash with `replaceState`,
+the call a field edit already uses, so there is no new history rule (D-14): the gear's hash is empty at defaults, the shaft's is
+`part=shaft`, and a shaft hash opens with `part` and then names the shaft's fields in schema order. `fit` is a text box, because a
+number box blanks `8f`; the page sets `pattern` and `maxLength` from the schema as hints only and the server decides what a value
+means (L02). A link that names the shaft builds the shaft form first and then fills it; a hashchange that changes the part awaits
+`buildForm(part)` before it reads the hash, one that keeps the part runs in the event itself, as before, because the golden sweep
+sends one request per link and relies on that, and a build counter makes a slower build of an earlier link return without
+touching the page. A `designation=` key and the gear's keys in a shaft link are ignored like any unknown key (D-11): the page has
+no paste box (D-10) and Copy link writes flat fields. The `hashchange` pin in `tests/test_api.py` is replaced, not dropped: the
+listener is `followHash`, which picks the part before it reads the hash, and the old arrow-function token was seen go red against
+the new listener (`33-07-red-pins.log`); every other token stands and four were added. `refuse()` and `gearQuery()` are
+byte-identical to `6800769` (33-01 decision C1). **Reversibility: reversible.** The page's switch and its descriptor change no
+route and no link the gear published; `#part=shaft` becomes a link someone keeps, which `partOf` must go on reading.
+
+**An unknown part** (D-15, D-20; 33-07). A link whose `part` is anything but absent, one empty value or exactly one `shaft` (`bogus`,
+`gear`, `Shaft`, `constructor`, `__proto__`, or the key twice) shows `Unknown part "<value>" in the link; use the Gear or Shaft
+switch` in the message strip, and nothing is built: the gear form shows at its defaults, neither radio is checked, nothing is
+drawn, the downloads have no href, the hash stays as the link wrote it, and no info or STL request is sent. A field edit or Reset in
+that state builds nothing either (`update()` returns while the refusal is set); the state ends on a click of either radio or on
+the next `hashchange`, and on nothing else. `part=gear` is refused and is not a second spelling of the gear link, which carries no
+`part`. This is the narrow, logged exception to "the server words refusals" (L02, L44): no route takes `part`, so no server can word
+it, and the page words it. `partOf` compares the values as literals and returns one of three fixed answers, so a prototype key
+(`__proto__`, `constructor`) never indexes anything and resolves to the refusal (T-33-15); the value is echoed through
+`JSON.stringify` (control characters become escapes) and set as text, never as markup (T-33-23); the browser step `bad part
+refused` counts requests across all six links, an edit and Reset (T-33-24). The same step sets a bad part again from the shaft,
+and ends on a valid link. **Reversibility: reversible.** The wording is the page's own and no front end other than the page reads it.
+
+**The page agrees** (D-21 part one, D-17, SC3, SC4; `tests/test_browser.py`, `tests/test_api.py`; 33-08). The browser step `parity: web and API`
+follows `part=shaft` for each of the four shafts of `tests/shaft_parity.py` and asserts that the page's `#dims` rows, read as `(dt, dd)`
+pairs, **equal** `web_rows()` over the API's `/api/shaft/info` and the schema's `dims` (labels, order, `fmt(v)` and the unit, the
+designation as printed, no row for a null): 4 shafts, 42 rows, no tolerance. The saved download name equals the API's `Content-Disposition`
+filename and a written literal, byte for byte, for each member (the default's STEP too). `displayed()` is the Python port of `fmt`, so the
+step also maps the tie and sign cases and every number of every document through the browser's own `Number(v).toFixed(3).replace(...)`
+and asserts the text equal (47 numbers); `test_the_page_formats_numbers_with_the_expression_the_parity_test_ports` holds `app.js`'s `fmt`
+to exactly that expression, so the browser check is of the page's own rule. Seen red twice on a perturbed `fmt`: a sign-dropping `fmt`
+failed the parity step on `w30x2x14`'s `Profile shift x` (`0.05` for `-0.05`), and the plan's `toFixed(2)` failed the pin and the earlier
+step `part switch`, which runs first and stops the walk (`33-08-red-fmt.log`, `bench/RESULTS.md`). `shaft as-written sweep` is SC4 on the
+shaft's own inputs (33-01 choice B1): the 91-token table is re-read in Chromium on the seven number inputs and agrees, `fit` is a text box
+and holds `+8f` (the server decides what it means), one `#part=shaft&<field>=%2B<default>` link per number field (seven) is refused as
+written with its box blank and no shaft STL asked for, and every blanked token is refused by the shaft route on all seven fields at
+once; the per-link check is one helper the gear's sweep shares. **The framing** of the shaft was read on screenshots of the default, the
+longest (`splined_length=500 shank_length=500`) and the widest (`reference_d=830 module=10 teeth=82`) after a click on Fit: the whole part
+is in view in all three, but the longest shaft's grid, sized from the 25 mm width alone, was 40 mm under a 1000 mm part and could not be
+seen. `placeGrid()` now also counts the part's height when the part's descriptor says `gridAlong`; the shaft's does and the gear's does
+not, so every gear's grid is as it was (the default gear: size 60, step 5, before and after; `refuse()` and `gearQuery()` are untouched).
+The shaft's default grid goes from 40 to 80 mm (step 2 to 5), the longest from 40 to 1600 mm (step 100), the widest is unchanged. The
+pictures are saved under pytest's `tmp_path`, so a gate run writes nothing into the tree. **Reversibility: reversible.** Tests and one
+descriptor field; no route, link or number changes.
+
+**What Phase 33 closed on** (D-19, ROADMAP criterion 5; `bench/RESULTS.md` `### The heaviest shaft under ten concurrent requests (33-09)`,
+`### The gate delta (33-09)`, `### Phase close checks (33-09)`; 33-09). The gate: `make verify` read `2778 passed in 241.55s`, `real 242.47`, rc 0,
+at a 1-minute load of 5.30 before and 7.21 after, against 33-01's `2644 passed in 229.17s`, `real 230.70`, at 4.62 before and 7.15 after, the
+same host. The phase added 134 tests and the reading is 12.38 s (5.40 %) higher, inside Phase 25's run-to-run spread of about 8 % (18.33 s of
+229.17 s), so no speed claim is made in either direction; it is 58.45 s under L43's 300 s bar (57.53 s by `real`). The browser test's call time
+went from 39.22 s to 61.24 s over the phase, which added steps to it (the number box tokens, the part switch, the bad part, the shaft parity);
+this entry does not apportion the 22.02 s. The contention row L37 gave the gear, the shaft now has: the heaviest allowed shaft through
+`/api/shaft/model.stl` on a fresh `spur serve` at the shipping defaults, ten distinct keys and then one key ten times, answered 200 for the
+four the queue admitted in each run and `503 busy` for the six it refused, with no timeout, no `pool_broken`, no 500 and no worker replaced; the
+slowest 200 was 10.16 s of the 30 s timeout (34 %), one run per scenario. The twelve close checks all read `PASS` in `33-09-close-checks.log`,
+among them `make gear.unchanged`, `tests/regression/` and `ci.yml` byte-equal to `v0.6`, `Contracts: 10 kept, 0 broken.`, `import spur.cli`
+loading no web or kernel module, and `refuse()` and `gearQuery()` byte-identical to `6800769` (the reading **Refused as written** gave SC4).
+Four debt items the phase fired are retired: the shaft's volume guard (`3e1eded`), its two unreached guard lines (`49021f5`), the blank-box link
+token, WR-02 (`69c1aa3`), and the shaft's missing contention row (`3ee9a0a`). **Reversibility: reversible.** Records only; no route, link or
+number changes.

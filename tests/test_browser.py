@@ -35,6 +35,7 @@ import urllib.parse
 import urllib.request
 from collections import Counter
 from collections.abc import Callable, Iterator
+from pathlib import Path
 
 import pytest
 from browser_session import (
@@ -68,7 +69,9 @@ from browser_session import (
     stl_triangles,
     sweep,
 )
-from playwright.sync_api import Page, Route, expect, sync_playwright
+from number_box_tokens import TOKENS
+from playwright.sync_api import FloatRect, Page, Route, expect, sync_playwright
+from shaft_parity import SHAFTS, displayed, web_rows
 
 # app.js's scheduleUpdate() sends its request 350 ms after the event (`setTimeout(update, 350)`),
 # so a request count taken sooner can pass before a stray request is sent (24 CX-05). The settle
@@ -105,8 +108,9 @@ LINK_C_OTHER = "face_width=8"
 
 # Links the page must refuse (L44). Each token is one its control cannot hold AND the API
 # refuses, so the page sends it as given. A number box also blanks ` 22`, `1_0`, `22.`, `5.`
-# and `+5`, which the API accepts for some fields, so none of those may stand for a bad link
-# (28-RESEARCH); select options compare case-sensitively, so `Trochoid` is as bad as `bogus`.
+# and `+5`, which the API refuses as written since L49, so none of those stands for a bad link
+# here (the step `as-written sweep` owns them); select options compare case-sensitively, so
+# `Trochoid` is as bad as `bogus`.
 # The second member is the field the 422 names, or the mate box, which is not a schema field.
 BAD_LINKS = (
     ("root_shape=bogus&teeth=22", "root_shape"),
@@ -118,7 +122,8 @@ BAD_LINKS = (
 # Blank is the default on the page (D-06), though the API answers 422 for an empty value.
 BLANK_LINK = "teeth=&root_shape=&mate_teeth=&face_width=8"
 UNKNOWN_KEY_LINK = "not_a_field=1&face_width=9"
-# The box blanks `5.`, the API reads it as 5: it is sent and built as the server reads it.
+# The box blanks `5.` and the API refuses it as written (L49): it is sent as given, answered
+# 422 `number_as_written`, and the face_width field is marked. Before L49 this link built.
 ACCEPTED_LINK = "face_width=5."
 
 # Links for `root_fillet label`. 26 is the last tooth count where a trochoid request builds the
@@ -133,9 +138,87 @@ REFUSED_LINK = "bore_hex=6&keyway_width=3&keyway_depth=1.4"
 
 MATE_VALUE = "() => document.querySelector('#mate-teeth').value"
 FRAGMENT = "() => location.hash.slice(1)"
+# Each result row as [label, value text], in DOM order.
+DIMS_ROWS = (
+    "() => [...document.querySelectorAll('#dims div')]"
+    ".map(r => [r.querySelector('dt').textContent, r.querySelector('dd').textContent])"
+)
+PART_RADIO = "input[name=part][value={}]"
+# What the page says about the part it shows (D-12): the gear's are the page's static texts, so
+# the gear page reads as it did before the switch. The fit button's tooltip is `#fit`'s title.
+PART_TEXTS = {
+    "gear": {
+        "title": "spur · parametric spur gear",
+        "sub": "parametric involute spur gear",
+        "aria": "3D preview of the gear",
+        "fit": "Fit gear to view",
+    },
+    "shaft": {
+        "title": "spur · DIN 5480 splined shaft",
+        "sub": "DIN 5480 splined shaft",
+        "aria": "3D preview of the shaft",
+        "fit": "Fit shaft to view",
+    },
+}
 CONTROL_VALUE = "(n) => document.querySelector(`form#params [name=${n}]`).value"
+# 33-10, G-33-2: how a refused part link (D-15) leaves the form. [opacity, pointer-events] of
+# the form and of Reset, then the part switch's outline style. CSS on body[data-refused] sets
+# it (app.js may not shut a control, L41), so the page is read as computed. The last three are
+# what a screen reader gets (33 WR-04): "aria-disabled/aria-describedby" of the form's groups
+# (one entry for all, so a group that missed it shows), of Reset and of the part switch, which
+# stays live. aria-disabled is valid on a group and a button and not on the unnamed form.
+REFUSED_LOOK = """() => {
+  const look = (el) => getComputedStyle(el);
+  const form = look(document.querySelector('form#params'));
+  const reset = look(document.querySelector('#reset'));
+  const aria = (el) =>
+    [el.getAttribute('aria-disabled'), el.getAttribute('aria-describedby')].join('/');
+  const groups = new Set([...document.querySelectorAll('form#params fieldset')].map(aria));
+  return [form.opacity, form.pointerEvents, reset.opacity, reset.pointerEvents,
+          look(document.querySelector('.part-switch')).outlineStyle,
+          [...groups].join(), aria(document.querySelector('#reset')),
+          aria(document.querySelector('.part-switch'))];
+}"""
+LIVE_LOOK = ["1", "auto", "1", "auto", "none", "/", "/", "/"]
+DEAD_LOOK = ["0.45", "none", "0.45", "none", "solid", "true/messages", "true/messages", "/"]
+CONTROL_TYPE = "(n) => document.querySelector(`form#params [name=${n}]`).type"
 CONTROL_INDEX = "(n) => document.querySelector(`form#params select[name=${n}]`).selectedIndex"
 CONTROL_OPTIONS = "(n) => document.querySelector(`form#params select[name=${n}]`).options.length"
+
+# Assign every [token, blank] pair to every number input of the page through `.value`, which fires
+# no event and so starts no update, and list the (input, token, read-back) triples whose
+# read-back is not blank exactly when the table says. The kept value is put back (L49).
+NUMBER_BOX_PROBE = """(tokens) => {
+    const inputs = [...document.querySelectorAll('form#params input[type=number], #mate-teeth')];
+    const off = [];
+    for (const input of inputs) {
+        const kept = input.value;
+        for (const [text, blank] of tokens) {
+            input.value = text;
+            if ((input.value === '') !== blank) {
+                off.push([input.name || input.id, text, input.value]);
+            }
+        }
+        input.value = kept;
+    }
+    return JSON.stringify({count: inputs.length, off});
+}"""
+
+# D-17: the name each member of tests/shaft_parity.py SHAFTS downloads under, written out, so the
+# page and the API are held to a literal and not only to one another. The fourth member's solid
+# differs from the default's and its name does not (the slug carries the designation's fields).
+SHAFT_FILES = {
+    "default": "spur_shaft_w25x1.25x18",
+    "w30x2x14": "spur_shaft_w30x2x14",
+    "odd-z": "spur_shaft_w26x1.25x19",
+    "no-shank-no-chamfer": "spur_shaft_w25x1.25x18",
+}
+# app.js `fmt`, mapped over numbers in the page (tests/test_api.py pins that the source is exactly
+# this expression), so `displayed()` is checked against the browser's own rounding.
+JS_FMT_ALL = r"(vs) => vs.map((v) => Number(v).toFixed(3).replace(/\.?0+$/, ''))"
+# Ties and signs, where a port of `toFixed` goes wrong: binary ties either side of the half, a
+# negative that rounds to zero, a negative zero, a number past six digits and a tiny one.
+FMT_CASES = (0.0625, 0.0005, 1.0005, 2.675, -0.0001, -0.0, 27.9994, 123456.7895, 1e-7)
 
 
 @pytest.fixture(scope="module")
@@ -165,15 +248,76 @@ def _api_get(base: str, path: str, query: str) -> tuple[int, object]:
             return error.code, failure
 
 
-def _schema_properties(base: str) -> dict[str, dict[str, object]]:
-    status, schema = _api_get(base, "/api/schema", "")
-    assert status == 200, f"/api/schema answered {status}"
-    assert isinstance(schema, dict), "/api/schema is not an object"
+def _download_name(base: str, path: str, query: str) -> str:
+    """The filename the API's `Content-Disposition` gives `path?query`, without reading a body.
+
+    The header is read and the connection closed, so a part the page's download already put in
+    the export cache costs nothing here.
+    """
+    url = f"{base}{path}?{query}" if query else f"{base}{path}"
+    with urllib.request.urlopen(url, timeout=60) as response:
+        header = response.headers["Content-Disposition"]
+    found = re.fullmatch(r'attachment; filename="([^"]+)"', header or "")
+    assert found, f"{path}?{query} sent Content-Disposition {header!r}"
+    return found.group(1)
+
+
+def _schema_properties(
+    base: str, path: str = "/api/schema"
+) -> dict[str, dict[str, object]]:
+    status, schema = _api_get(base, path, "")
+    assert status == 200, f"{path} answered {status}"
+    assert isinstance(schema, dict), f"{path} is not an object"
     properties = schema["properties"]
-    assert isinstance(properties, dict), "/api/schema has no properties"
+    assert isinstance(properties, dict), f"{path} has no properties"
     for name, prop in properties.items():
-        assert isinstance(prop, dict), f"/api/schema property {name!r} is not an object"
+        assert isinstance(prop, dict), f"{path} property {name!r} is not an object"
     return properties
+
+
+def _shaft_dims(base: str) -> list[dict[str, object]]:
+    """The result rows the shaft's schema carries, in the order the page must show them."""
+    status, schema = _api_get(base, "/api/shaft/schema", "")
+    assert status == 200, f"/api/shaft/schema answered {status}"
+    assert isinstance(schema, dict), "/api/shaft/schema is not an object"
+    dims = schema["dims"]
+    assert isinstance(dims, list), "/api/shaft/schema has no dims list"
+    assert dims, "/api/shaft/schema holds no dims rows"
+    rows: list[dict[str, object]] = []
+    for row in dims:
+        assert isinstance(row, dict), f"a dims row that is not an object: {row!r}"
+        rows.append(row)
+    return rows
+
+
+def _rgb(css: str) -> tuple[int, int, int]:
+    """A computed `rgb(r, g, b)` colour as its three channels; anything else fails loudly."""
+    found = re.fullmatch(r"rgb\((\d+), (\d+), (\d+)\)", css)
+    assert found, f"{css!r} is not a computed rgb() colour"
+    return int(found.group(1)), int(found.group(2)), int(found.group(3))
+
+
+def _contrast(fg: tuple[int, int, int], bg: tuple[int, int, int]) -> float:
+    """The WCAG 2 contrast ratio of two sRGB colours, from their relative luminances."""
+
+    def luminance(colour: tuple[int, int, int]) -> float:
+        red, green, blue = (
+            c / 255 / 12.92 if c / 255 <= 0.04045 else ((c / 255 + 0.055) / 1.055) ** 2.4
+            for c in colour
+        )
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+    high, low = sorted((luminance(fg), luminance(bg)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+def test_the_contrast_ratio_is_the_wcag_formula() -> None:
+    """The reference pairs: the formula's own ends, and the ones 33-10 planned its fix on."""
+    assert _contrast((255, 255, 255), (0, 0, 0)) == 21.0
+    assert round(_contrast((0x77, 0x77, 0x77), (255, 255, 255)), 2) == 4.48
+    assert round(_contrast((255, 255, 255), (0xB8, 0x41, 0x2C)), 2) == 5.48
+    assert round(_contrast((255, 255, 255), (0xE0, 0x57, 0x3F)), 2) == 3.75
+    assert _rgb("rgb(19, 22, 25)") == (19, 22, 25)
 
 
 def _schema_selectors(base: str) -> list[dict[str, object]]:
@@ -245,6 +389,66 @@ def _follow_link(page: Page, fragment: str) -> str:
     return urllib.parse.urlsplit(sent.value.url).query
 
 
+def _follow_shaft_link(page: Page, fragment: str) -> str:
+    """Open `#fragment` and return the query string of the /api/shaft/info request it caused.
+
+    `_follow_link` waits for a URL holding `/api/info`, which `/api/shaft/info` does not, so a
+    shaft link needs its own wait. The fragment must differ from the current one, as there.
+    """
+    current = eval_str(page, "() => location.hash.slice(1)")
+    assert current != fragment, f"the page is already on #{fragment}: no hashchange would fire"
+    with page.expect_request(
+        lambda request: urllib.parse.urlsplit(request.url).path == "/api/shaft/info",
+        timeout=BUILD_WAIT_MS,
+    ) as sent:
+        page.evaluate("(f) => { location.hash = f; }", fragment)
+    return urllib.parse.urlsplit(sent.value.url).query
+
+
+def _assert_refused_as_written(
+    page: Page,
+    base: str,
+    properties: dict[str, dict[str, object]],
+    name: str,
+    default: str,
+    *,
+    shaft: bool,
+) -> None:
+    """Follow `#<name>=%2B<default>` and check the page refuses it as written (L49, 33-01 B1).
+
+    `+<default>` is a number the box blanks and the server could read, so the page must send
+    it as given, show its box blank, mark the field with the server's text (the gear's mate box
+    shows the text with no outline, L44 D-05) and give the download no href. The caller counts
+    the STL requests over its whole loop. The shaft's links open with `part=shaft`.
+    """
+    link = f"{'part=shaft&' if shaft else ''}{name}=%2B{default}"
+    info_path = "/api/shaft/info" if shaft else "/api/info"
+    sent = (_follow_shaft_link if shaft else _follow_link)(page, link)
+    assert _pairs(sent) == [(name, f"+{default}")], f"#{link}: sent {sent!r}"
+    held = eval_str(page, MATE_VALUE if name == "mate_teeth" else CONTROL_VALUE, name)
+    assert held == "", f"#{link}: the {name} box reads {held!r}"
+    status, body = _api_get(base, info_path, sent)
+    assert status == 422, f"{info_path}?{sent} answered {status}, not 422"
+    assert isinstance(body, dict), f"{info_path}?{sent} is not an object"
+    detail = body["detail"]
+    assert [(d["type"], d["loc"]) for d in detail] == [
+        ("number_as_written", ["query", name])
+    ], f"#{link}: the 422 is {detail}"
+    marked, texts = _expected_422(properties, body)
+    expect(page.locator("#messages .error")).to_have_text(texts, timeout=BUILD_WAIT_MS)
+    if name == "mate_teeth":
+        assert not marked, f"#{link}: the 422 names {sorted(marked)}"
+        assert page.locator("label.field.invalid").count() == 0, (
+            f"#{link}: a field is outlined for the mate box's refusal"
+        )
+    else:
+        assert marked == {_title(properties, name)}, sorted(marked)
+        expect(page.locator("label.field.invalid .name")).to_have_text(sorted(marked))
+    assert page.locator("#dl-stl").get_attribute("href") is None, (
+        f"#{link}: the STL link has an href for a refused link"
+    )
+
+
 def _pairs(query: str) -> list[tuple[str, str]]:
     """A query string as its (name, value) pairs, sorted: order is not what a link means."""
     return sorted(urllib.parse.parse_qsl(query, keep_blank_values=True))
@@ -257,6 +461,45 @@ def _stl_requests(seen: list[str]) -> int:
     cannot tell a default part from another there; the request count is the evidence.
     """
     return sum(1 for url in seen if urllib.parse.urlsplit(url).path == "/api/model.stl")
+
+
+def _shaft_stl_requests(seen: list[str]) -> int:
+    """How many /api/shaft/model.stl requests the recorded pages sent.
+
+    The main page's STL route matches the gear's path only, so a shaft preview is a real build
+    and its `data-triangles` is the shaft's own; the count shows one was asked for.
+    """
+    return sum(
+        1 for url in seen if urllib.parse.urlsplit(url).path == "/api/shaft/model.stl"
+    )
+
+
+def _bad_part_text(shown: str) -> str:
+    """The page's refusal of a `part` it has no form for (D-15); `shown` is the link's value."""
+    return f'Unknown part "{shown}" in the link; use the Gear or Shaft switch'
+
+
+def _build_requests(seen: list[str]) -> int:
+    """How many info or STL requests, of either part, the recorded pages sent."""
+    builds = {"/api/info", "/api/model.stl", "/api/shaft/info", "/api/shaft/model.stl"}
+    return sum(1 for url in seen if urllib.parse.urlsplit(url).path in builds)
+
+
+def _expect_part_texts(page: Page, which: str) -> None:
+    """The title, sub line, canvas label, fit tooltip, mate box and hint of the part shown."""
+    texts = PART_TEXTS[which]
+    other = "gear" if which == "shaft" else "shaft"
+    expect(page.locator("body")).to_have_attribute("data-part", which)
+    assert page.title() == texts["title"], page.title()
+    expect(page.locator("header .sub")).to_have_text(texts["sub"])
+    expect(page.locator("#canvas")).to_have_attribute("aria-label", texts["aria"])
+    expect(page.locator("#fit")).to_have_attribute("title", texts["fit"])
+    expect(page.locator(f'.hint[data-for="{which}"]')).to_be_visible()
+    expect(page.locator(f'.hint[data-for="{other}"]')).to_be_hidden()
+    if which == "gear":
+        expect(page.locator(".mate")).to_be_visible()
+    else:
+        expect(page.locator(".mate")).to_be_hidden()
 
 
 def _differing(
@@ -677,11 +920,13 @@ def test_a_fixture_link_refuses_a_value_no_person_would_type() -> None:
     assert link == "teeth=19&module=1.75&root_shape=trochoid"
 
 
-def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
+def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> None:
     """Opens the shipped page and draws the first part; costs are in bench/RESULTS.md."""
     properties = _schema_properties(server)
     selectors = _schema_selectors(server)
     field_count = len(properties)
+    shaft_properties = _schema_properties(server, "/api/shaft/schema")
+    shaft_dims = _shaft_dims(server)
     parked: list[Route] = []
     seen: list[str] = []
 
@@ -700,17 +945,27 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
             # field, is refused wherever it leaks.
             allowed_query = set(properties) | {"quality", "mate_teeth"}
             allowed_hash = set(properties) | {"mate_teeth"}
+            # The shaft routes take ShaftParams and `quality`: no mate, and no `designation`
+            # (the page has no such control, D-10, D-11). A shaft page's hash opens with
+            # `part=shaft` and then names shaft fields; on any other hash `part` is foreign.
+            shaft_query = set(shaft_properties) | {"quality"}
 
             def no_foreign_key() -> None:
-                leaked = foreign_keys(seen, allowed_query)
-                assert not leaked, f"a request carried a key GearParams lacks: {leaked}"
-                keys = [
-                    key
-                    for key, _ in urllib.parse.parse_qsl(
-                        eval_str(page, FRAGMENT), keep_blank_values=True
-                    )
+                shaft_seen = [
+                    url
+                    for url in seen
+                    if urllib.parse.urlsplit(url).path.startswith("/api/shaft/")
                 ]
-                stray = [key for key in keys if key not in allowed_hash]
+                gear_seen = [url for url in seen if url not in shaft_seen]
+                leaked = foreign_keys(gear_seen, allowed_query)
+                assert not leaked, f"a request carried a key GearParams lacks: {leaked}"
+                shaft_leaked = foreign_keys(shaft_seen, shaft_query)
+                assert not shaft_leaked, f"a request carried a key the shaft lacks: {shaft_leaked}"
+                pairs = urllib.parse.parse_qsl(eval_str(page, FRAGMENT), keep_blank_values=True)
+                on_shaft = pairs[:1] == [("part", "shaft")]
+                keys = [key for key, _ in (pairs[1:] if on_shaft else pairs)]
+                allowed = set(shaft_properties) if on_shaft else allowed_hash
+                stray = [key for key in keys if key not in allowed]
                 assert not stray, f"the main page's hash carries {stray}, not a field of the form"
 
             with step("webgl2", no_foreign_key):
@@ -731,6 +986,7 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 _wait_until_parked(page, parked)
                 # The fresh default load: empty hash, readHash() and update() have run.
                 default_pairs = eval_pairs(page)
+                default_rows = eval_pairs(page, DIMS_ROWS)
                 assert page.locator("#dl-stl").get_attribute("href") is None, (
                     "the STL link has an href before any STL was shown"
                 )
@@ -2060,8 +2316,8 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
 
             with step("blank, unknown and accepted tokens", no_foreign_key):
                 # D-06: blank is the default and unknown keys are ignored, as before; the API
-                # alone is stricter about an empty value. A token the box blanks but the API
-                # accepts (`5.`) is sent and built as the server reads it (L44).
+                # alone is stricter about an empty value. A token the box blanks (`5.`) is sent
+                # as given and refused as written, not built under a blank box (L44, L49).
                 sent = _follow_link(page, BLANK_LINK)
                 assert _pairs(sent) == [("face_width", "8")], f"the blank link sent {sent!r}"
                 status, _ = _api_get(server, "/api/info", sent)
@@ -2084,15 +2340,76 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                 )
                 assert eval_str(page, FRAGMENT) == sent
 
+                # L49 (WR-02): the box blanks `5.`, so the API refuses it as written and no
+                # part is built under a blank box.
+                stl_before = _stl_requests(seen)
                 sent = _follow_link(page, ACCEPTED_LINK)
-                assert _pairs(sent) == [("face_width", "5.")], f"the accepted link sent {sent!r}"
-                status, _ = _api_get(server, "/api/info", sent)
-                assert status == 200, f"/api/info?{sent} answered {status}, not 200"
-                expect(page.locator("#dl-stl")).to_have_attribute(
-                    "href", f"api/model.stl?{sent}", timeout=BUILD_WAIT_MS
+                assert _pairs(sent) == [("face_width", "5.")], f"the refused link sent {sent!r}"
+                status, body = _api_get(server, "/api/info", sent)
+                assert status == 422, f"/api/info?{sent} answered {status}, not 422"
+                assert isinstance(body, dict), f"/api/info?{sent} is not an object"
+                assert body["detail"][0]["type"] == "number_as_written", body
+                marked, texts = _expected_422(properties, body)
+                assert marked == {_title(properties, "face_width")}, sorted(marked)
+                expect(page.locator("#messages .error")).to_have_text(texts, timeout=BUILD_WAIT_MS)
+                expect(page.locator("label.field.invalid .name")).to_have_text(sorted(marked))
+                assert page.locator("#dl-stl").get_attribute("href") is None, (
+                    "the STL link has an href for a link the API refuses as written"
                 )
-                assert page.locator("#messages .error").count() == 0
-                print("blank, unknown and accepted: face_width=8, face_width=9, face_width=5.")
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _stl_requests(seen) == stl_before, "the page asked for an STL after it"
+                print("blank, unknown and refused: face_width=8, face_width=9, face_width=5.")
+            with step("number box tokens", no_foreign_key):
+                # D-02: the server rule is Chromium's table (tests/number_box_tokens.py), so
+                # this Chromium re-reads every row on every number input of the page. A row
+                # that moved fails here, at the gate, and not in a user's browser.
+                fragment_before = eval_str(page, FRAGMENT)
+                pairs_before = eval_pairs(page)
+                probe: object = json.loads(
+                    eval_str(page, NUMBER_BOX_PROBE, [[t.text, t.blank] for t in TOKENS])
+                )
+                assert isinstance(probe, dict), f"the probe gave {probe!r}"
+                off, probed = probe["off"], probe["count"]
+                assert not off, (
+                    f"{len(off)} (input, token, read-back) rows differ from the committed table "
+                    f"(tests/number_box_tokens.py), first {off[:3]}: this Chromium no longer "
+                    "matches it. Re-run 33-01's probe and re-decide the rule under D-02."
+                )
+                numbers = [
+                    name for name, prop in properties.items()
+                    if prop.get("type") in ("integer", "number") and "enum" not in prop
+                ]
+                assert probed == len(numbers) + 1, (
+                    f"the probe read {probed} number inputs, the schema has {len(numbers)} "
+                    "number fields and the mate box"
+                )
+                assert eval_str(page, FRAGMENT) == fragment_before, "the probe moved the hash"
+                assert eval_pairs(page) == pairs_before, "the probe left a field changed"
+                print(f"number box tokens: {probed} inputs x {len(TOKENS)} tokens agree")
+
+            with step("as-written sweep", no_foreign_key):
+                # L49, 33-01 choice B1: one `#<field>=%2B<default>` link per number field and
+                # for the mate box. `+<default>` is a number the box blanks and the server could
+                # read, so each must be refused as written, marked on its field (the mate shows
+                # the message with no outline, L44 D-05), and never reach an STL request.
+                stl_before = _stl_requests(seen)
+                tokens_by_field = {
+                    name: str(properties[name]["default"])
+                    for name, prop in properties.items()
+                    if prop.get("type") in ("integer", "number") and "enum" not in prop
+                }
+                tokens_by_field["mate_teeth"] = "30"
+                started = time.perf_counter()
+                for name, default in tokens_by_field.items():
+                    _assert_refused_as_written(
+                        page, server, properties, name, default, shaft=False
+                    )
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _stl_requests(seen) == stl_before, "the sweep asked for an STL"
+                print(
+                    f"as-written sweep: {len(tokens_by_field)} links, "
+                    f"{time.perf_counter() - started:.2f} s"
+                )
             with step("root_fillet label", no_foreign_key):
                 # D-09, D-10: while a hob root is in force the row reads "Hob tip radius used",
                 # else "Root fillet used"; the key is the info document's `root_form_d`, so a
@@ -2126,6 +2443,796 @@ def test_the_shipped_viewer_in_a_real_browser(server: str) -> None:
                     "Root fillet used",
                 ], f"the label follows the request and not the build: {row_labels}"
                 print(f"root_fillet label per link {LABEL_LINKS}: {row_labels}")
+            with step("part switch", no_foreign_key):
+                # D-12..D-14: the radios sit outside the form, the shaft is built from its own
+                # routes at its schema defaults, and a switch carries no value across.
+                status, shaft_info = _api_get(server, "/api/shaft/info", "")
+                assert status == 200, f"/api/shaft/info answered {status}, not 200"
+                assert isinstance(shaft_info, dict), "/api/shaft/info is not an object"
+                expected_rows: list[tuple[str, str]] = []
+                for dim in shaft_dims:
+                    dim_value = shaft_info.get(str(dim["key"]))
+                    if dim_value is None:
+                        continue
+                    dim_unit = str(dim["unit"])
+                    if isinstance(dim_value, str):
+                        row_text = dim_value
+                    else:
+                        assert isinstance(dim_value, int | float), f"{dim['key']}: {dim_value!r}"
+                        row_text = displayed(dim_value) + (f" {dim_unit}" if dim_unit else "")
+                    expected_rows.append((str(dim["label"]), row_text))
+                assert ("Designation", "W 25x1.25x18x8f") in expected_rows, expected_rows
+
+                stl_before = _shaft_stl_requests(seen)
+                with page.expect_response(
+                    lambda response: urllib.parse.urlsplit(response.url).path
+                    == "/api/shaft/model.stl",
+                    timeout=BUILD_WAIT_MS,
+                ) as shaft_served:
+                    page.locator(PART_RADIO.format("shaft")).click()
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(len(shaft_properties))
+                shaft_pairs = eval_pairs(page)
+                assert [name for name, _ in shaft_pairs] == list(shaft_properties), shaft_pairs
+                for shaft_name, shaft_shown in shaft_pairs:
+                    shaft_default = shaft_properties[shaft_name]["default"]
+                    if isinstance(shaft_default, str):
+                        assert shaft_shown == shaft_default, f"{shaft_name} reads {shaft_shown!r}"
+                    else:
+                        assert isinstance(shaft_default, int | float), f"{shaft_name}"
+                        assert float(shaft_shown) == float(shaft_default), shaft_name
+                assert eval_str(page, CONTROL_TYPE, "fit") == "text"
+                assert eval_str(page, FRAGMENT) == "part=shaft"
+                assert eval_pairs(page, DIMS_ROWS) == expected_rows
+                assert page.locator("#dl-step").get_attribute("href") == "api/shaft/model.step"
+                assert _shaft_stl_requests(seen) > stl_before, "no shaft STL was requested"
+                declared_shaft = page.locator("#canvas").get_attribute("data-triangles")
+                assert declared_shaft is not None, "the shaft drew nothing"
+                assert int(declared_shaft) == stl_triangles(shaft_served.value.body())
+                assert page.locator(PART_RADIO.format("shaft")).is_checked()
+                _expect_part_texts(page, "shaft")
+
+                # The keyboard walks the group natively (D-12): ArrowLeft on the checked
+                # Shaft radio checks Gear and fires `change`, with no click.
+                page.locator(PART_RADIO.format("shaft")).focus()
+                page.keyboard.press("ArrowLeft")
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(field_count)
+                assert eval_pairs(page) == default_pairs, "the gear is not at its defaults"
+                assert eval_str(page, FRAGMENT) == ""
+                assert eval_pairs(page, DIMS_ROWS) == default_rows
+                assert page.locator("#dl-step").get_attribute("href") == "api/model.step"
+                assert page.locator(PART_RADIO.format("gear")).is_checked()
+                _expect_part_texts(page, "gear")
+
+            with step("shaft link round trip", no_foreign_key):
+                # D-11, D-22, SC2: a link that names the shaft builds the shaft form first and
+                # then fills it, on any page; the hash opens with `part=shaft`, a gear link has
+                # no `part`, and the page asks the server for the numbers and the file name.
+                odd_z_fields = "reference_d=26&teeth=19"
+                odd_z_link = f"part=shaft&{odd_z_fields}"
+                status, odd_info = _api_get(server, "/api/shaft/info", odd_z_fields)
+                assert status == 200, f"/api/shaft/info?{odd_z_fields} answered {status}"
+                assert isinstance(odd_info, dict), "/api/shaft/info is not an object"
+                pins_label = next(
+                    str(dim["label"]) for dim in shaft_dims if dim["key"] == "measure_over_pins"
+                )
+                assert pins_label == "Measurement over pins M_Re", pins_label
+                assert odd_info["measure_over_pins"] is None, "an odd tooth count has no M_Re"
+                assert odd_info["designation"] == "W 26x1.25x19x8f", odd_info["designation"]
+
+                shaft_sent = _follow_shaft_link(page, odd_z_link)
+                assert _pairs(shaft_sent) == _pairs(odd_z_fields), f"the link sent {shaft_sent!r}"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/shaft/model.stl?{shaft_sent}", timeout=BUILD_WAIT_MS
+                )
+                assert eval_str(page, FRAGMENT) == odd_z_link
+                odd_form = dict(eval_pairs(page))
+                assert list(odd_form) == list(shaft_properties), list(odd_form)
+                assert float(odd_form["reference_d"]) == 26, odd_form
+                assert int(odd_form["teeth"]) == 19, odd_form
+                assert page.locator(PART_RADIO.format("shaft")).is_checked()
+                odd_rows = eval_pairs(page, DIMS_ROWS)
+                assert pins_label not in [label for label, _ in odd_rows], odd_rows
+                assert ("Designation", "W 26x1.25x19x8f") in odd_rows, odd_rows
+                with page.expect_download(timeout=BUILD_WAIT_MS) as shaft_download:
+                    page.click("#dl-stl")
+                shaft_file = shaft_download.value.suggested_filename
+                assert shaft_file == "spur_shaft_w26x1.25x19.stl", (
+                    f"the download is named {shaft_file!r}, not the name the server gives it"
+                )
+
+                shank_title = _title(shaft_properties, "shank_length")
+                shaft_sent = _follow_shaft_link(page, "part=shaft&shank_length=0")
+                assert _pairs(shaft_sent) == [("shank_length", "0")], shaft_sent
+                assert eval_inactive(page) == {
+                    "shank_d": f"Needs {shank_title} above 0"
+                }, eval_inactive(page)
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/shaft/model.stl?{shaft_sent}", timeout=BUILD_WAIT_MS
+                )
+                shaft_sent = _follow_shaft_link(page, "part=shaft&shank_length=20")
+                assert _pairs(shaft_sent) == [], f"the default shank length was sent: {shaft_sent}"
+                assert eval_inactive(page) == {}, eval_inactive(page)
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl", timeout=BUILD_WAIT_MS
+                )
+
+                shaft_sent = _follow_shaft_link(page, "part=shaft&shank_length=500")
+                assert _pairs(shaft_sent) == [("shank_length", "500")], shaft_sent
+                status, _ = _api_get(server, "/api/shaft/info", shaft_sent)
+                assert status == 200, f"/api/shaft/info?{shaft_sent} answered {status}"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", f"api/shaft/model.stl?{shaft_sent}", timeout=BUILD_WAIT_MS
+                )
+                assert page.locator("#canvas").get_attribute("data-triangles") is not None
+
+                for bad_field, bad_value in (("shank_length", "500.5"), ("fit", "8F")):
+                    stl_before = _shaft_stl_requests(seen)
+                    shaft_sent = _follow_shaft_link(page, f"part=shaft&{bad_field}={bad_value}")
+                    assert _pairs(shaft_sent) == [(bad_field, bad_value)], shaft_sent
+                    status, body = _api_get(server, "/api/shaft/info", shaft_sent)
+                    assert status == 422, f"/api/shaft/info?{shaft_sent} answered {status}"
+                    shaft_marked, shaft_texts = _expected_422(shaft_properties, body)
+                    assert shaft_marked == {_title(shaft_properties, bad_field)}, shaft_marked
+                    expect(page.locator("#messages .error")).to_have_text(
+                        shaft_texts, timeout=BUILD_WAIT_MS
+                    )
+                    expect(page.locator("label.field.invalid .name")).to_have_text(
+                        sorted(shaft_marked)
+                    )
+                    assert page.locator("#dl-stl").get_attribute("href") is None
+                    page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    assert _shaft_stl_requests(seen) == stl_before, (
+                        f"a shaft STL was asked for after #{bad_field}={bad_value}"
+                    )
+
+                # D-11: gear keys and a designation in a shaft link are ignored, as any unknown key.
+                foreign_link = (
+                    "part=shaft&teeth=19&mate_teeth=30&face_width=9&designation=W%2030x2x14x8f"
+                )
+                shaft_sent = _follow_shaft_link(page, foreign_link)
+                assert _pairs(shaft_sent) == [("teeth", "19")], f"the link sent {shaft_sent!r}"
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl?teeth=19", timeout=BUILD_WAIT_MS
+                )
+                assert eval_str(page, FRAGMENT) == "part=shaft&teeth=19"
+
+                # A fresh page opened on the link builds the shaft form and not the gear's.
+                fresh = record_api(browser.new_page(), seen)
+                try:
+                    with fresh.expect_request(
+                        lambda request: urllib.parse.urlsplit(request.url).path
+                        == "/api/shaft/info",
+                        timeout=BUILD_WAIT_MS,
+                    ) as shaft_request:
+                        fresh.goto(f"{server}/#{odd_z_link}")
+                    fresh_sent = urllib.parse.urlsplit(shaft_request.value.url).query
+                    assert _pairs(fresh_sent) == _pairs(odd_z_fields), fresh_sent
+                    expect(fresh.locator("form#params [name]")).to_have_count(len(shaft_properties))
+                    expect(fresh.locator("#dl-stl")).to_have_attribute(
+                        "href", f"api/shaft/model.stl?{fresh_sent}", timeout=BUILD_WAIT_MS
+                    )
+                    assert eval_str(fresh, FRAGMENT) == odd_z_link
+                    assert fresh.locator(PART_RADIO.format("shaft")).is_checked()
+                finally:
+                    fresh.close()
+
+                # Back to the gear by a link with no `part`, and by an empty one.
+                shaft_sent = _follow_link(page, "teeth=24")
+                assert _pairs(shaft_sent) == [("teeth", "24")], shaft_sent
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl?teeth=24", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(field_count)
+                assert page.locator(PART_RADIO.format("gear")).is_checked()
+                assert eval_str(page, FRAGMENT) == "teeth=24"
+                shaft_sent = _follow_link(page, "part=&teeth=23")
+                assert _pairs(shaft_sent) == [("teeth", "23")], shaft_sent
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl?teeth=23", timeout=BUILD_WAIT_MS
+                )
+                assert eval_str(page, FRAGMENT) == "teeth=23"
+                print(f"shaft link round trip: {odd_z_link} -> {shaft_file}")
+
+            with step("bad part refused", no_foreign_key):
+                # D-15, D-20: a `part` other than `shaft` or empty is refused in the page's own
+                # words, the gear form shows at its defaults with neither radio checked, nothing
+                # is drawn and no build is asked for; only a switch or a new link ends it.
+                bad_parts = (
+                    ("part=bogus", "bogus"),
+                    ("part=gear", "gear"),
+                    ("part=Shaft", "Shaft"),
+                    ("part=constructor", "constructor"),
+                    ("part=__proto__", "__proto__"),
+                    ("part=shaft&part=gear", "shaft, gear"),
+                )
+                requests_before = _build_requests(seen)
+                for bad_link, bad_shown in bad_parts:
+                    refusal = _bad_part_text(bad_shown)
+                    page.evaluate("(f) => { location.hash = f; }", bad_link)
+                    expect(page.locator("#messages .error")).to_have_text(
+                        [refusal], timeout=BUILD_WAIT_MS
+                    )
+                    for which in ("gear", "shaft"):
+                        assert not page.locator(PART_RADIO.format(which)).is_checked(), (
+                            f"#{bad_link}: the {which} radio is checked"
+                        )
+                    expect(page.locator("form#params [name]")).to_have_count(field_count)
+                    assert eval_pairs(page) == default_pairs, f"#{bad_link}: not at the defaults"
+                    assert eval_pairs(page, DIMS_ROWS) == [], f"#{bad_link}: rows shown"
+                    assert page.locator("#dl-stl").get_attribute("href") is None
+                    assert page.locator("#canvas").get_attribute("data-triangles") is None
+                    assert eval_str(page, FRAGMENT) == bad_link, "the refused link was rewritten"
+                    assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK, (
+                        f"#{bad_link}: the form does not look refused"
+                    )
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _build_requests(seen) == requests_before, (
+                    "a refused part asked for a build"
+                )
+
+                # D-20: an edit and Reset in the refused state build nothing and change nothing.
+                # Playwright reads aria-disabled on the group as "not enabled" and waits for it
+                # forever (WR-04); force types as a keyboard user, who is not stopped, can.
+                page.fill("input[name=teeth]", "30", force=True)
+                # force skips Playwright's editable check, so the typing is proved here: a field
+                # made readonly or disabled in the markup would otherwise pass the Reset check.
+                assert page.locator("input[name=teeth]").input_value() == "30", (
+                    "the field did not take the typing under a refusal"
+                )
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _build_requests(seen) == requests_before, "an edit built under a bad part"
+                # Reset takes no pointer while the refusal stands (the look above), and Playwright's
+                # click waits for pointer events and times out; a keyboard user still has it. The
+                # pairs check below is what proves the handler ran: teeth was 30 just before.
+                page.locator("#reset").focus()
+                page.keyboard.press("Enter")
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _build_requests(seen) == requests_before, "Reset built under a bad part"
+                assert eval_pairs(page) == default_pairs
+                expect(page.locator("#messages .error")).to_have_text(
+                    [_bad_part_text("shaft, gear")]
+                )
+                assert eval_str(page, FRAGMENT) == "part=shaft&part=gear"
+                assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK
+                # The keyboard Reset scrolled the aside to its end; the switch is at its top.
+                page.evaluate("() => { document.querySelector('aside').scrollTop = 0; }")
+                refused_picture = tmp_path / "33-10-refused.png"
+                page.locator("aside").screenshot(path=refused_picture)
+                assert refused_picture.stat().st_size > 0, "an empty picture of the refused state"
+
+                # A click on a radio ends it.
+                with page.expect_response(
+                    lambda response: urllib.parse.urlsplit(response.url).path
+                    == "/api/shaft/model.stl",
+                    timeout=BUILD_WAIT_MS,
+                ):
+                    page.locator(PART_RADIO.format("shaft")).click()
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/shaft/model.stl", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("#messages .error")).to_have_count(0)
+                assert eval_str(page, FRAGMENT) == "part=shaft"
+                assert eval_str_list(page, REFUSED_LOOK) == LIVE_LOOK, "a radio click left the look"
+
+                # A new link ends it too, from the shaft as well as from the gear.
+                page.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                expect(page.locator("#messages .error")).to_have_text(
+                    [_bad_part_text("bogus")], timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("form#params [name]")).to_have_count(field_count)
+                assert eval_pairs(page) == default_pairs
+                assert page.locator("#dl-stl").get_attribute("href") is None
+                # The second refusal rebuilds the gear form over a built shaft and then marks the
+                # new fieldsets: the look is read on that path too (33 IN-07).
+                assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK, (
+                    "a refusal reached from the shaft does not look refused"
+                )
+                after_bad = _follow_link(page, "teeth=20")
+                assert _pairs(after_bad) == [("teeth", "20")], after_bad
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", "api/model.stl?teeth=20", timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("#messages .error")).to_have_count(0)
+                assert page.locator(PART_RADIO.format("gear")).is_checked()
+                assert eval_str(page, FRAGMENT) == "teeth=20"
+                assert eval_str_list(page, REFUSED_LOOK) == LIVE_LOOK, "a valid link left the look"
+                print(f"bad part refused: {len(bad_parts)} links, no build under a bad part")
+
+            with step("refused link whose build fails", no_foreign_key):
+                # 33 WR-03: the refusal's own gear build can fail (the schema answers 500). The
+                # page then still holds the shaft's form, so it must not look refused, must not
+                # keep refusing the keystrokes of that form, and must say what failed. Its own
+                # page, because the main page's schema route is the real one.
+                stranded = record_api(browser.new_page(), seen)
+                try:
+                    stranded.goto(server + "/#part=shaft")
+                    expect(stranded.locator(PART_RADIO.format("shaft"))).to_be_checked(
+                        timeout=BUILD_WAIT_MS
+                    )
+                    expect(stranded.locator("form#params [name]")).to_have_count(
+                        len(shaft_properties)
+                    )
+                    stranded.route(
+                        "**/api/schema", lambda route: route.fulfill(status=500, body="boom")
+                    )
+                    stranded.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                    expect(stranded.locator("#messages .error")).to_contain_text(
+                        "Could not build the form: 500", timeout=BUILD_WAIT_MS
+                    )
+                    assert eval_str_list(stranded, REFUSED_LOOK) == LIVE_LOOK, (
+                        "a refusal whose build failed left the form looking refused"
+                    )
+                    expect(stranded.locator(PART_RADIO.format("shaft"))).to_be_checked()
+                    # A keystroke in the form it still holds builds that form's part and is not
+                    # answered with the refusal of a link whose form was never built.
+                    stranded.fill("form#params input[name=splined_length]", "40")
+                    expect(stranded.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"^api/shaft/model\.stl\?"), timeout=BUILD_WAIT_MS
+                    )
+                    expect(stranded.locator("#messages .error")).to_have_count(0)
+                finally:
+                    stranded.close()
+                print("refused link whose build fails: the form is live, the error is the build's")
+
+            with step("superseded build that fails", no_foreign_key):
+                # 33 WR-01: a build the user has moved on from can fail after the newer link has
+                # finished. Its error must not land over the newer page, and its catch must not
+                # clear the newer link's refusal. The shaft schema's answer is held until the
+                # refusal of `part=bogus` is on the page, then released as a 500. Its own page.
+                late = record_api(browser.new_page(), seen)
+                try:
+                    schema_held: list[Route] = []
+                    late.route("**/api/shaft/schema", lambda route: schema_held.append(route))
+                    late.goto(server + "/")
+                    expect(late.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    late.evaluate("(f) => { location.hash = f; }", "part=shaft")
+                    for _ in range(100):
+                        if schema_held:
+                            break
+                        late.wait_for_timeout(50)
+                    assert schema_held, "the shaft's schema was never asked for"
+                    late.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                    expect(late.locator("#messages .error")).to_have_text(
+                        [_bad_part_text("bogus")], timeout=BUILD_WAIT_MS
+                    )
+                    with late.expect_response("**/api/shaft/schema"):
+                        schema_held[0].fulfill(status=500, body="boom")
+                    late.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    expect(late.locator("#messages .error")).to_have_text(
+                        [_bad_part_text("bogus")]
+                    )
+                    assert eval_str_list(late, REFUSED_LOOK) == DEAD_LOOK, (
+                        "a superseded build's failure undid the newer link's refusal"
+                    )
+                    # The refusal still stands, so a keystroke builds nothing and keeps the hash.
+                    requests_before = _build_requests(seen)
+                    late.fill("input[name=teeth]", "30", force=True)
+                    late.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    assert _build_requests(seen) == requests_before, (
+                        "a keystroke built under a refused link"
+                    )
+                    assert eval_str(late, FRAGMENT) == "part=bogus"
+                finally:
+                    late.close()
+                print("superseded build that fails: the newer link's refusal stands")
+
+            with step("old form edited while a link's form loads", no_foreign_key):
+                # PR #53 review (Codex): while a link's schema is in flight the old part's form
+                # is still on the page. Its pending debounced edit, or a Reset, used to rewrite
+                # the hash with the old part's query, and the new form then read that hash: the
+                # link's own numbers were silently replaced by defaults (L05). The shaft schema
+                # is held while a gear edit's debounce fires and Reset is clicked. Its own page.
+                waiting = record_api(browser.new_page(), seen)
+                try:
+                    schema_wait: list[Route] = []
+                    waiting.route("**/api/shaft/schema", lambda route: schema_wait.append(route))
+                    waiting.goto(server + "/")
+                    expect(waiting.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    link = "part=shaft&reference_d=30&module=2&teeth=14"
+                    waiting.fill("input[name=teeth]", "30")
+                    waiting.evaluate("(f) => { location.hash = f; }", link)
+                    for _ in range(100):
+                        if schema_wait:
+                            break
+                        waiting.wait_for_timeout(50)
+                    assert schema_wait, "the shaft's schema was never asked for"
+                    waiting.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    waiting.locator("#reset").click()
+                    assert eval_str(waiting, FRAGMENT) == link, (
+                        "the old form rewrote the link while the new form loaded"
+                    )
+                    schema_wait[0].continue_()
+                    expect(waiting.locator("input[name=reference_d]")).to_have_count(
+                        1, timeout=BUILD_WAIT_MS
+                    )
+                    for name, value in (("reference_d", "30"), ("module", "2"), ("teeth", "14")):
+                        assert waiting.evaluate(CONTROL_VALUE, name) == value, (
+                            f"the link's {name} was lost while its form loaded"
+                        )
+                finally:
+                    waiting.close()
+                print("old form edited while a link's form loads: the link's numbers stand")
+
+            with step("old form edited while a failing form loads", no_foreign_key):
+                # The other side of the step above: the new schema fails, so the old form takes
+                # its edits again, but the edit made while it loaded built nothing. Its box then
+                # disagreed with the rows and downloads of the build before it, a number no
+                # control on the page produced (L08). The rows and downloads must go, and the
+                # next edit builds. Its own page.
+                lapsed = record_api(browser.new_page(), seen)
+                try:
+                    failing: list[Route] = []
+                    lapsed.route("**/api/shaft/schema", lambda route: failing.append(route))
+                    lapsed.goto(server + "/")
+                    expect(lapsed.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"^api/model\.stl"), timeout=BUILD_WAIT_MS
+                    )
+                    lapsed.fill("input[name=teeth]", "30")
+                    lapsed.evaluate("(f) => { location.hash = f; }", "part=shaft")
+                    for _ in range(100):
+                        if failing:
+                            break
+                        lapsed.wait_for_timeout(50)
+                    assert failing, "the shaft's schema was never asked for"
+                    lapsed.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    with lapsed.expect_response("**/api/shaft/schema"):
+                        failing[0].fulfill(status=500, body="boom")
+                    expect(lapsed.locator("#messages .error")).to_contain_text(
+                        "Could not build the form", timeout=BUILD_WAIT_MS
+                    )
+                    assert lapsed.evaluate(CONTROL_VALUE, "teeth") == "30"
+                    assert eval_pairs(lapsed, DIMS_ROWS) == [], (
+                        "rows of an earlier build shown under an edit that built nothing"
+                    )
+                    assert lapsed.locator("#dl-stl").get_attribute("href") is None, (
+                        "a download of an earlier build offered under an edit that built nothing"
+                    )
+                    lapsed.fill("input[name=teeth]", "31")
+                    expect(lapsed.locator("#dl-stl")).to_have_attribute(
+                        "href", re.compile(r"teeth=31"), timeout=BUILD_WAIT_MS
+                    )
+                finally:
+                    lapsed.close()
+                print("old form edited while a failing form loads: no stale rows or downloads")
+
+            with step("form build that throws midway", no_foreign_key):
+                # 33 WR-01: buildForm empties the page before it reads the schema's properties,
+                # so a schema that throws there leaves a blank form. The page must then say it
+                # holds no part: a link for the part it held before has to rebuild that form,
+                # and not run against an empty one. Its own page, with the shaft's schema made
+                # malformed (no `properties`).
+                midway = record_api(browser.new_page(), seen)
+                try:
+                    midway.route("**/api/shaft/schema", lambda route: route.fulfill(json={}))
+                    midway.goto(server + "/")
+                    expect(midway.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    midway.locator(PART_RADIO.format("shaft")).click()
+                    expect(midway.locator("#messages .error")).to_contain_text(
+                        "Could not build the form", timeout=BUILD_WAIT_MS
+                    )
+                    expect(midway.locator("form#params [name]")).to_have_count(0)
+                    for which in ("gear", "shaft"):
+                        assert not midway.locator(PART_RADIO.format(which)).is_checked(), (
+                            f"the {which} radio is checked over a blank form"
+                        )
+                    # 33 WR-05: Reset and the mate box sit outside the emptied form and stay
+                    # live. With no part held they must build nothing: a drawn default solid and
+                    # an enabled download under a blank form is a number no control produced.
+                    builds_before = _build_requests(seen)
+                    midway.locator("#reset").click()
+                    midway.fill("#mate-teeth", "12")
+                    midway.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                    assert _build_requests(seen) == builds_before, "a build ran with no part held"
+                    assert eval_pairs(midway, DIMS_ROWS) == [], "rows shown with no part held"
+                    assert midway.locator("#dl-stl").get_attribute("href") is None
+                    assert midway.locator("#canvas").get_attribute("data-triangles") is None
+                    # The link of the part held before the failure rebuilds its form.
+                    midway.evaluate("(f) => { location.hash = f; }", "teeth=24")
+                    expect(midway.locator("form#params [name]")).to_have_count(
+                        field_count, timeout=BUILD_WAIT_MS
+                    )
+                    assert midway.evaluate(CONTROL_VALUE, "teeth") == "24"
+                    expect(midway.locator(PART_RADIO.format("gear"))).to_be_checked()
+                finally:
+                    midway.close()
+                print("form build that throws midway: no part held, the next link rebuilds")
+
+            with step("parity: web and API", no_foreign_key):
+                # D-21 part one, SC3: over the fixed set the page's shaft table is the API's
+                # numbers at the displayed text, and the download is named as the API names it.
+                # The rows are compared as `(dt, dd)` pairs, equal and not near: the label, the
+                # order of `dims`, `fmt(v)` and the unit, no row for a null.
+                assert set(SHAFTS) == set(SHAFT_FILES), "a shaft joined the set with no file name"
+                parity_dims = [
+                    {"key": str(d["key"]), "label": str(d["label"]), "unit": str(d["unit"])}
+                    for d in shaft_dims
+                ]
+                started = time.perf_counter()
+                parity_rows = 0
+                parity_numbers: list[float] = list(FMT_CASES)
+                for member, values in SHAFTS.items():
+                    api_query = urllib.parse.urlencode(values)
+                    link = f"part=shaft&{api_query}" if api_query else "part=shaft"
+                    shaft_sent = _follow_shaft_link(page, link)
+                    # The page drops a value that is the field's default (gearQuery), so what it
+                    # sends is the set's values less those; the API is asked for them all.
+                    want_sent = sorted(
+                        (name, str(value)) for name, value in values.items()
+                        if float(value) != float(str(shaft_properties[name]["default"]))
+                    )
+                    assert _pairs(shaft_sent) == want_sent, f"{member}: sent {shaft_sent!r}"
+                    href = "api/shaft/model.stl" + (f"?{shaft_sent}" if shaft_sent else "")
+                    expect(page.locator("#dl-stl")).to_have_attribute(
+                        "href", href, timeout=BUILD_WAIT_MS
+                    )
+                    status, parity_doc = _api_get(server, "/api/shaft/info", api_query)
+                    assert status == 200, f"{member}: /api/shaft/info answered {status}"
+                    assert isinstance(parity_doc, dict), f"{member}: no info object"
+                    page_rows = eval_pairs(page, DIMS_ROWS)
+                    api_rows = web_rows(parity_doc, parity_dims)
+                    assert page_rows == api_rows, (
+                        f"{member}: the page's rows differ from the API's.\n"
+                        f"  page: {page_rows}\n  API:  {api_rows}"
+                    )
+                    parity_rows += len(page_rows)
+                    parity_numbers.extend(
+                        v for v in parity_doc.values()
+                        if isinstance(v, int | float) and not isinstance(v, bool)
+                    )
+
+                    with page.expect_download(timeout=BUILD_WAIT_MS) as parity_download:
+                        page.click("#dl-stl")
+                    page_name = parity_download.value.suggested_filename
+                    api_name = _download_name(server, "/api/shaft/model.stl", api_query)
+                    want_name = f"{SHAFT_FILES[member]}.stl"
+                    assert page_name == api_name == want_name, (
+                        f"{member}: the page saves {page_name!r}, the API names {api_name!r}, "
+                        f"the literal is {want_name!r}"
+                    )
+                    if member == "default":
+                        with page.expect_download(timeout=BUILD_WAIT_MS) as step_download:
+                            page.click("#dl-step")
+                        assert step_download.value.suggested_filename == (
+                            f"{SHAFT_FILES[member]}.step"
+                        ), step_download.value.suggested_filename
+
+                # The port against the browser's own rounding: the cases and every number of
+                # every document above, as text, equal.
+                browser_text = eval_str_list(page, JS_FMT_ALL, parity_numbers)
+                port_text = [displayed(v) for v in parity_numbers]
+                wrong = [
+                    (v, got, want)
+                    for v, got, want in zip(parity_numbers, browser_text, port_text, strict=True)
+                    if got != want
+                ]
+                assert not wrong, f"displayed() differs from the browser's fmt: {wrong}"
+                print(
+                    f"parity: {len(SHAFTS)} shafts, {parity_rows} rows equal the API's, "
+                    f"{len(parity_numbers)} numbers rounded as the browser does, "
+                    f"{time.perf_counter() - started:.2f} s"
+                )
+
+            with step("shaft as-written sweep", no_foreign_key):
+                # SC4, D-03, 33-01 choice B: the refusal of a token the number box blanks holds
+                # on the shaft page's own inputs. The shaft's number fields are read from its
+                # schema; `fit` is a text box, holds any text and leaves the verdict to the
+                # server (L02).
+                assert eval_str(page, FRAGMENT).startswith("part=shaft"), "not on the shaft page"
+                shaft_numbers = {
+                    name: str(prop["default"])
+                    for name, prop in shaft_properties.items()
+                    if prop.get("type") in ("integer", "number") and "enum" not in prop
+                }
+                fragment_before = eval_str(page, FRAGMENT)
+                pairs_before = eval_pairs(page)
+                # The gear page's probe also reads the (hidden) mate box; the shaft form has none.
+                shaft_probe_js = NUMBER_BOX_PROBE.replace(", #mate-teeth", "")
+                assert shaft_probe_js != NUMBER_BOX_PROBE, "the probe no longer names the mate box"
+                probe_result: object = json.loads(
+                    eval_str(page, shaft_probe_js, [[t.text, t.blank] for t in TOKENS])
+                )
+                assert isinstance(probe_result, dict), f"the probe gave {probe_result!r}"
+                assert not probe_result["off"], (
+                    f"{len(probe_result['off'])} (input, token, read-back) rows differ from the "
+                    f"committed table on the shaft's inputs, first {probe_result['off'][:3]}"
+                )
+                assert probe_result["count"] == len(shaft_numbers), (
+                    f"the probe read {probe_result['count']} number inputs, the shaft schema "
+                    f"has {len(shaft_numbers)} number fields"
+                )
+                assert eval_str(page, CONTROL_TYPE, "fit") == "text"
+                held_fit = eval_str(
+                    page,
+                    "(v) => { const i = document.querySelector('form#params [name=fit]');"
+                    " const kept = i.value; i.value = v; const read = i.value; i.value = kept;"
+                    " return read; }",
+                    "+8f",
+                )
+                assert held_fit == "+8f", f"the fit box blanked '+8f' into {held_fit!r}"
+                assert eval_str(page, FRAGMENT) == fragment_before, "the probe moved the hash"
+                assert eval_pairs(page) == pairs_before, "the probe left a field changed"
+
+                # B1: one link per number field. A link a field's box blanks is sent as given
+                # and refused; no shaft STL is asked for across the sweep.
+                shaft_stl_before = _shaft_stl_requests(seen)
+                started = time.perf_counter()
+                for name, default in shaft_numbers.items():
+                    _assert_refused_as_written(
+                        page, server, shaft_properties, name, default, shaft=True
+                    )
+                page.wait_for_timeout(DEBOUNCE_SETTLE_MS)
+                assert _shaft_stl_requests(seen) == shaft_stl_before, "the sweep asked for an STL"
+
+                # B2: every token the box blanks is refused by the shaft route on every number
+                # field, the rule's or pydantic's: one request names all seven fields at once, and
+                # the 422 must name each of them. The empty token is the page's default (D-06).
+                blanked = [t.text for t in TOKENS if t.blank and t.text != ""]
+                for text in blanked:
+                    query = urllib.parse.urlencode(dict.fromkeys(shaft_numbers, text))
+                    status, body = _api_get(server, "/api/shaft/info", query)
+                    assert status == 422, f"{text!r} on every shaft number field answered {status}"
+                    assert isinstance(body, dict), f"{text!r}: the 422 is not an object"
+                    refused_fields = {d["loc"][1] for d in body["detail"] if len(d["loc"]) > 1}
+                    assert refused_fields == set(shaft_numbers), (
+                        f"{text!r}: refused on {sorted(refused_fields)}, not on every number field"
+                    )
+                print(
+                    f"shaft sweep: {probe_result['count']} inputs probed x "
+                    f"{len(TOKENS)} tokens, {len(shaft_numbers)} links, {len(blanked)} blanked "
+                    f"tokens refused on {len(shaft_numbers)} fields, "
+                    f"{time.perf_counter() - started:.2f} s"
+                )
+
+            with step("viewer framing", no_foreign_key):
+                # 33-08, Claude's Discretion: the shaft's three extremes drawn and fitted, the
+                # canvas saved as a picture for a person to read ("is the whole part in view and
+                # does the grid reach it?"). The pictures go to pytest's `tmp_path`, so a gate run
+                # leaves no file in the tree; `--basetemp=<dir>` on the command line keeps them.
+                # The default shaft is the part switch's; `longest` is the longest solid the
+                # bounds allow and `widest` the widest (bench/RESULTS.md, L37).
+                framing_links = (
+                    ("default", "part=shaft"),
+                    ("longest", "part=shaft&splined_length=500&shank_length=500"),
+                    ("widest", "part=shaft&reference_d=830&module=10&teeth=82&shank_d=828"),
+                )
+                for label, framing_link in framing_links:
+                    with page.expect_response(
+                        lambda response: urllib.parse.urlsplit(response.url).path
+                        == "/api/shaft/model.stl",
+                        timeout=BUILD_WAIT_MS,
+                    ) as framing_served:
+                        page.evaluate("(f) => { location.hash = f; }", framing_link)
+                    expect(page.locator("#canvas")).to_have_attribute(
+                        "data-triangles",
+                        str(stl_triangles(framing_served.value.body())),
+                        timeout=BUILD_WAIT_MS,
+                    )
+                    page.click("#fit")
+                    page.wait_for_timeout(300)  # one animation frame to draw the fit view
+                    picture = tmp_path / f"33-08-shaft-{label}.png"
+                    page.locator("#canvas").screenshot(path=picture)
+                    assert picture.stat().st_size > 0, f"{label}: an empty picture"
+                print(f"viewer framing: {len(framing_links)} shafts drawn, fitted and saved")
+
+            with step("narrow layout", no_foreign_key):
+                # 33-10, G-33-2: under 820 px the part switch is the first thing under the header
+                # and the form comes last, and the switch is still the first child of <aside>
+                # (D-12) and inside its landmark. After the shaft steps, so no earlier step runs at
+                # the narrow size.
+                desktop = page.viewport_size
+                assert desktop is not None, "the page has no viewport size"
+                page.set_viewport_size({"width": 800, "height": 900})
+
+                def box(selector: str) -> FloatRect:
+                    found = page.locator(selector).bounding_box()
+                    assert found is not None, f"{selector} has no box"
+                    return found
+
+                switch, canvas_wrap, results, params = (
+                    box(".part-switch"), box("#canvas-wrap"), box("#bottom"), box("form#params")
+                )
+                tops = (
+                    f"switch {switch['y']:.0f}, canvas {canvas_wrap['y']:.0f}, "
+                    f"results {results['y']:.0f}, form {params['y']:.0f}"
+                )
+                assert switch["y"] + switch["height"] <= canvas_wrap["y"], (
+                    f"the part switch is not above the canvas at 800 px: {tops}"
+                )
+                assert canvas_wrap["y"] < results["y"], f"the results are above the canvas: {tops}"
+                assert results["y"] + results["height"] <= params["y"], (
+                    f"the form is above the results: {tops}"
+                )
+                assert eval_bool(
+                    page,
+                    "() => document.querySelector('aside').firstElementChild"
+                    " === document.querySelector('.part-switch')",
+                ), "the part switch is not the first child of <aside> (D-12)"
+                expect(page.get_by_role("complementary").get_by_role("radio")).to_have_count(2)
+                narrow_picture = tmp_path / "33-10-narrow.png"
+                page.screenshot(path=narrow_picture, full_page=True)
+                assert narrow_picture.stat().st_size > 0, "an empty picture of the narrow page"
+
+                # 33 IN-07: the breakpoint is 820 px (style.css), and 800 would pass a media
+                # query moved down to max-width: 800px. 820 is still one column, 821 is not.
+                page.set_viewport_size({"width": 820, "height": 900})
+                switch, canvas_wrap = box(".part-switch"), box("#canvas-wrap")
+                assert switch["y"] + switch["height"] <= canvas_wrap["y"], (
+                    "the part switch is not above the canvas at 820 px"
+                )
+                page.set_viewport_size({"width": 821, "height": 900})
+                switch, canvas_wrap = box(".part-switch"), box("#canvas-wrap")
+                assert switch["x"] + switch["width"] <= canvas_wrap["x"], (
+                    "the desktop columns did not return at 821 px"
+                )
+
+                # 33 IN-07: the refused look at the narrow size, where aside draws no box and the
+                # switch's outline sits inside a 1 rem margin. A shaft link brings the page back
+                # to the shaft the next step reads.
+                page.set_viewport_size({"width": 800, "height": 900})
+                page.evaluate("(f) => { location.hash = f; }", "part=bogus")
+                expect(page.locator("#messages .error")).to_have_text(
+                    [_bad_part_text("bogus")], timeout=BUILD_WAIT_MS
+                )
+                assert eval_str_list(page, REFUSED_LOOK) == DEAD_LOOK, (
+                    "the refused look is not drawn at 800 px"
+                )
+                page.evaluate("(f) => { location.hash = f; }", "part=shaft")
+                expect(page.locator("#dl-stl")).to_have_attribute(
+                    "href", re.compile(r"^api/shaft/model\.stl"), timeout=BUILD_WAIT_MS
+                )
+                expect(page.locator("#messages .error")).to_have_count(0)
+                assert eval_str_list(page, REFUSED_LOOK) == LIVE_LOOK
+
+                page.set_viewport_size(desktop)
+                switch, canvas_wrap = box(".part-switch"), box("#canvas-wrap")
+                assert switch["x"] + switch["width"] <= canvas_wrap["x"], (
+                    "the part switch left the left column at the desktop size"
+                )
+                print(f"narrow layout: {tops}")
+
+            with step("primary button contrast", no_foreign_key):
+                # 33-10, G-33-2: the download buttons' text on their fill, read as computed in each
+                # colour scheme. The buttons are 14 px at normal weight, so WCAG AA's bar for
+                # normal text, 4.5:1, applies, not the 3:1 of large text. A shaft is built at
+                # this point, so the button read is the live one.
+                assert page.locator("#dl-stl").get_attribute("href") is not None, (
+                    "the STL link has no href: the button read is the disabled one"
+                )
+                ratios: dict[str, float] = {}
+                for scheme in ("light", "dark"):
+                    page.emulate_media(color_scheme=scheme)
+                    text, fill = eval_str_list(
+                        page,
+                        "() => { const s = getComputedStyle(document.querySelector('#dl-stl'));"
+                        " return [s.color, s.backgroundColor]; }",
+                    )
+                    ratios[scheme] = _contrast(_rgb(text), _rgb(fill))
+                    assert ratios[scheme] >= 4.5, (
+                        f"{scheme}: the primary button's text {text} on {fill} reads "
+                        f"{ratios[scheme]:.2f}:1, under WCAG AA's 4.5:1"
+                    )
+                    if scheme == "dark":
+                        dark_picture = tmp_path / "33-10-dark-buttons.png"
+                        page.locator(".downloads").screenshot(path=dark_picture)
+                        assert dark_picture.stat().st_size > 0, "an empty picture of the buttons"
+                page.emulate_media(color_scheme="null")
+                print(
+                    f"primary button contrast: light {ratios['light']:.2f}:1, "
+                    f"dark {ratios['dark']:.2f}:1"
+                )
+
             # The sweep's page sends one api/info request per record by itself, so a recorder
             # that missed any page but the main one would count fewer than that (24-RESEARCH
             # Finding 9): the count is what shows every page was watched.

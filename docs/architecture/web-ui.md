@@ -42,6 +42,27 @@ drops responses that arrive out of order. The viewer is a `WebGLRenderer` with
 under the part; colours come from CSS custom properties, so light and dark themes are one
 source.
 
+A Gear | Shaft radio group above the form picks the part (L49). `PARTS` holds each part's routes,
+hash tag and page texts, and `buildForm(which)` builds that part's form from its own schema at its
+defaults, emptying everything the other part left; no value crosses a switch. The shaft's result
+rows come from the `dims` list of `/api/shaft/schema`, in its order: a number shows with its unit
+when the row has one, a string (the designation) as itself, a null value as no row. The gear keeps
+its own `DIMS` table because the gear schema's bytes are frozen. Which hint and mate box show is
+CSS on `body[data-part]`. A link opens with `part=shaft` for the shaft and has no `part` for the
+gear; `followHash` picks the part, builds its form when it changed and then reads the hash, so a
+shaft link opens on any page. The floor grid is sized from the part's width, and from its height
+too when the part's descriptor says `gridAlong` (the shaft's does, the gear's does not): a 1000 mm
+shaft on a grid of 1.6 times its 25 mm width had no visible grid (33-08).
+Under 820 px the page is one column: the switch, the canvas and results, then the form. `<aside>` is
+`display: contents` there, so its first child is ordered above the canvas while it stays the top of
+`<aside>` in the markup (D-12) and inside its `complementary` landmark. Two limits of that layout
+are recorded and not fixed. The landmark is verified on the headless Chromium shell the gate runs
+and nowhere else: engines have shipped accessibility-tree bugs for `display: contents` on landmark
+elements, and the gate cannot see them. And the tab order stays the markup order (switch, form,
+actions, canvas Fit, downloads) while the picture is switch, canvas, downloads, results, form, so
+under 820 px focus does not follow what the eye sees (WCAG 2.4.3; the canvas was already ordered
+first before 33-10, and the results block now moves above the form too).
+
 `entry.js` names the twelve three.js exports the viewer actually uses — that list is what
 makes the bundle small.
 
@@ -54,6 +75,19 @@ makes the bundle small.
 the stronger (L41).
 A link value its control cannot hold is kept aside and sent in the control's place, so the same
 path marks it; the mate box is not a form field, so it shows the message with no outline (L44).
+A token the number box blanks but a number could be read from (`5.`, `+22`, ` 22`, `1_0`) is kept
+aside the same way and the API refuses it as written, so the box never sits blank over a
+non-default part (L49).
+A `part` the page has no form for (`#part=bogus`, `#part=gear`, the key twice) is refused in the
+page's own words, `Unknown part "bogus" in the link; use the Gear or Shaft switch`, because no
+route takes `part` and no server can word it (L49). The gear form shows at its defaults with
+neither radio checked, nothing is drawn or requested, and an edit or Reset builds nothing until a
+click on either radio or a new link. While the refusal stands the form and Reset are dimmed and take
+no pointer input, like a disabled download, and the switch is outlined as the way out. That is CSS on
+`body[data-refused]`, which `app.js` sets and clears beside the refused state; keyboard focus still
+reaches the fields and typing builds nothing. For a screen reader `app.js` also sets `aria-disabled`
+and `aria-describedby="messages"` on the form's fieldsets and on Reset (valid on a group and a
+button, not on the unnamed `<form>`), and clears them with the refusal.
 
 ## Known gap
 
@@ -88,5 +122,44 @@ The steps `bad link refused`, `bad link cleared`, `bad link on a fresh page` and
 and accepted tokens` prove it, each against the API's own 422 body. It runs inside `make verify` and CI's `test (3.12)`, which
 install the headless shell under `.venv` first; the commit-time `make verify.fast` never
 collects it.
+
+The steps `part switch`, `shaft link round trip` and `bad part refused` cover the shaft page
+(L49). The first clicks Shaft and back, with the rows, downloads, texts and the keyboard walk
+compared with `/api/shaft/schema` and `/api/shaft/info`. The second follows `part=shaft` links on
+the page and on a fresh one, with the odd tooth count (no `M_Re` row, designation `W 26x1.25x19x8f`,
+the download named `spur_shaft_w26x1.25x19.stl`), the shank diameter dimmed exactly when the shank
+length is 0, a 422 marking the shank length and the fit with no shaft STL asked for, and the
+gear's keys ignored. The third sets six bad `part` links and checks the message, the unchecked
+radios, the defaults, and that no build is requested across the links, an edit and Reset. It also
+reads the refused look (the form and Reset dimmed and marked `aria-disabled`, the switch outlined) and its end on a radio click
+and on a valid link.
+Three steps pin the exits where a form build fails, each on a page of its own. `refused link whose
+build fails` makes the refusal's gear build answer 500: the page then keeps the shaft form, looks
+live, and says the build failed. `superseded build that fails` holds the shaft schema's answer,
+follows `part=bogus`, then releases the answer as a 500: the newer link's refusal stands and a
+keystroke builds nothing. `form build that throws midway` serves a shaft schema without
+`properties`: the page then holds no part, neither radio is checked, Reset and the mate box build
+nothing, and the next link rebuilds the form.
+The step `narrow layout` sets an 800 px viewport and reads the boxes: the switch above the
+canvas, the results below it and the form last, with the switch still the first child of `<aside>`
+and the landmark still holding both radios. It repeats the stacking at 820 px and the desktop
+columns at 821 px, reads the refused look at 800 px, and then at the desktop size reads the switch
+in the left column. The step `primary button contrast` runs after it and reads the download
+buttons' text on their fill, in each colour scheme, against WCAG AA's 4.5:1.
+
+Three more steps close the page's half of the shaft's parity (L49, D-21). `parity: web and API`
+follows a `part=shaft` link for each of the four shafts of `tests/shaft_parity.py` and compares the
+`#dims` rows, as `(dt, dd)` pairs, with the rows `web_rows()` derives from `/api/shaft/info` and the
+schema's `dims`: the same labels in the same order, `fmt(v)` and the unit as the text, no row for a
+null. Equal, not near. It then clicks each download and compares the saved name with the API's
+`Content-Disposition` and with a literal (`spur_shaft_w25x1.25x18.stl`, and so on; the default's STEP
+too), and maps every number through the browser's own `toFixed(3)` rule to check the Python port
+`displayed()`; `tests/test_api.py` pins that `fmt` in `app.js` is exactly that expression.
+`shaft as-written sweep` re-reads the 91-token table on the shaft's seven number inputs (the `fit`
+box is text and holds `+8f`), follows one `#part=shaft&<field>=%2B<default>` link per number field,
+each refused as written with its box blank and no shaft STL asked for, and checks that the API
+refuses every blanked token on all seven fields. `viewer framing` draws the default, the longest and
+the widest shaft, clicks Fit and saves the canvas (to pytest's `tmp_path`; `--basetemp=<dir>` keeps
+the pictures) for a person to read.
 
 Rebuild the bundle: `make vendor`. Check it still matches: `make vendor-check`.

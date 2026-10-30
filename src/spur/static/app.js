@@ -49,12 +49,100 @@ const DIMS = [
 const fmt = (v) => Number(v).toFixed(3).replace(/\.?0+$/, '');
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+// The parts the page shows: the routes and texts that differ, and nothing else; the fields,
+// their defaults and their rows come from the part's own schema. Indexed only by a radio's
+// literal value or by 'gear' in the bootstrap, never by text from a link: a lookup by hash
+// text would resolve `constructor` (33-RESEARCH Pattern 6). `tag` opens a link's hash, `mate`
+// says whether the page sends the mate box with it, `gridAlong` whether the floor grid is also
+// sized from the part's height (a shaft is long where a gear is flat: 33-08). The gear's texts
+// are the ones index.html ships, so the gear page reads as it did before the switch.
+const PARTS = {
+  gear: {
+    schema: 'api/schema', info: 'api/info', model: 'api/model', tag: '', noun: 'gear', mate: true,
+    gridAlong: false,
+    title: 'spur · parametric spur gear', sub: 'parametric involute spur gear',
+    aria: '3D preview of the gear', fitTitle: 'Fit gear to view',
+  },
+  shaft: {
+    schema: 'api/shaft/schema', info: 'api/shaft/info', model: 'api/shaft/model',
+    tag: 'part=shaft', noun: 'shaft', mate: false, gridAlong: true,
+    title: 'spur · DIN 5480 splined shaft', sub: 'DIN 5480 splined shaft',
+    aria: '3D preview of the shaft', fitTitle: 'Fit shaft to view',
+  },
+};
+// The part whose form is built; empty until the first build, so the first link always builds.
+let part = '';
+let P = PARTS.gear;
+// The page's message for a link whose `part` it has no form for, or null (D-15). While it is
+// set, update() builds nothing: a field edit or Reset must not build a part the link did not
+// name (D-20). A switch, or the next hashchange, clears it. body[data-refused] follows it and
+// dims the form and Reset (style.css).
+let refused = null;
+// The shaft's result rows come in its schema; null means the gear's table above.
+let dims = null;
+// Bumped by every buildForm: a build that finds a later one started returns false, so a slow
+// schema fetch of the part the user left cannot rebuild the page under the one they chose.
+let formSeq = 0;
+// The formSeq of the form on the page. While a link or a switch is fetching another schema,
+// formSeq is ahead of it and update() builds nothing: the old form is still on the page, and a
+// debounced edit or a Reset of it would rewrite the hash the new form is about to read, so the
+// link's own numbers would be lost to the old part's query (L05; PR #53 review).
+let formShown = 0;
+// Set when update() returned for that reason. If the new schema then fails, the old form takes
+// its edits again, but the edit that was dropped built nothing: its box no longer matches the
+// rows and downloads of the build before it, so those go (L08) and the next edit builds.
+let dropped = false;
+const radios = document.querySelectorAll('.part-switch input');
+
 // ---------------------------------------------------------------- form
 
-async function buildForm() {
-  const res = await fetch('api/schema');
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  const schema = await res.json();
+// Builds the form of one part, first emptying everything the other part's form left: a value
+// from one part's form must never reach the other's request (L05).
+async function buildForm(which) {
+  const build = ++formSeq;
+  let schema;
+  try {
+    const res = await fetch(PARTS[which].schema);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    schema = await res.json();
+  } catch (err) {
+    // Overtaken: the newer build owns the page and its message. A failure here must not reach
+    // the caller's catch, which would write its error over the newer page and clear the
+    // refusal of a newer link.
+    if (build !== formSeq) return false;
+    // Nothing was emptied: the old form is on the page and answers its edits again.
+    formShown = build;
+    if (dropped) {
+      $('#dims').replaceChildren();
+      setDownloads(null);
+      setStatus(mesh ? `Showing the last valid ${P.noun}` : '');
+    }
+    dropped = false;
+    throw err;
+  }
+  if (build !== formSeq) return false;
+  // Past this line the page is emptied, so it holds no part until the build below finishes. A
+  // throw in between (a schema without `properties`, a selector naming no group) must make the
+  // next link or switch rebuild: with `part` still naming the old part, followHash took its
+  // same-part branch and read the link into an empty form, and the old radio stayed checked.
+  part = '';
+  form.replaceChildren();
+  fields.clear();
+  for (const key of Object.keys(defaults)) delete defaults[key];
+  selectors.length = 0;
+  stash.clear(); rejected.clear();
+  mateInput.value = '';
+  clearTimeout(debounce);
+  inflight?.abort();
+  inflight = null;
+  seq++;
+  $('#dims').replaceChildren();
+  $('#centre-distance').textContent = '—';
+  showMessages();
+  setDownloads(null);
+  setStatus('');
+  clearScene();
+  dims = schema.dims ?? null;
   const groups = new Map();
 
   for (const [name, prop] of Object.entries(schema.properties)) {
@@ -73,6 +161,14 @@ async function buildForm() {
     if (prop.enum) {
       input = document.createElement('select');
       for (const v of prop.enum) input.add(new Option(v, v));
+    } else if (prop.type === 'string') {
+      // A text box, because a number box blanks `8f` (33-RESEARCH Pitfall 1). `pattern` and
+      // `maxLength` are hints only: the server decides what a value means (L02).
+      input = document.createElement('input');
+      input.type = 'text';
+      if (prop.maxLength !== undefined) input.maxLength = prop.maxLength;
+      if (prop.pattern !== undefined) input.pattern = prop.pattern;
+      input.spellcheck = false;
     } else {
       input = document.createElement('input');
       input.type = 'number';
@@ -107,6 +203,67 @@ async function buildForm() {
   }
 
   buildSelectors(schema.selectors ?? [], groups);
+  part = which;
+  P = PARTS[which];
+  formShown = build;
+  dropped = false;
+  markPart();
+  // The mate box and the other part's hint are hidden by CSS on this attribute and not by a
+  // write here: the guard in test_api.py refuses any script that shuts a control (L41). The
+  // texts go in as text and attributes, never markup.
+  document.body.dataset.part = which;
+  document.title = P.title;
+  $('header .sub').textContent = P.sub;
+  canvas.setAttribute('aria-label', P.aria);
+  $('#fit').setAttribute('title', P.fitTitle);
+  return true;
+}
+
+// The radios follow the part on the page, not the click: a build that fails or is overtaken
+// leaves the page on the part it shows.
+function markPart() {
+  for (const radio of radios) radio.checked = radio.value === part;
+}
+
+// What a refusal tells a screen reader, beside the look body[data-refused] gives (style.css).
+// aria-disabled is valid on a group and a button, not on the unnamed <form> (WAI-ARIA 1.2), so it
+// goes on the form's fieldsets and on Reset. It is no `disabled` or `inert`, which the guard in
+// test_api.py refuses (L41): the controls stay focusable, and the page only says they do nothing.
+// aria-describedby points at #messages, where the refusal is (D-15). The form's fieldsets are
+// rebuilt by every build, and Reset is not, so a clear must reach both.
+const REFUSAL_MARKED = '#params fieldset, #reset';
+
+function markRefused() {
+  for (const el of document.querySelectorAll(REFUSAL_MARKED)) {
+    el.setAttribute('aria-disabled', 'true');
+    el.setAttribute('aria-describedby', 'messages');
+  }
+}
+
+function clearRefusal() {
+  refused = null;
+  delete document.body.dataset.refused;
+  for (const el of document.querySelectorAll(REFUSAL_MARKED)) {
+    el.removeAttribute('aria-disabled');
+    el.removeAttribute('aria-describedby');
+  }
+}
+
+// A radio's change: build that part's form at its defaults, then show it. No value crosses
+// a switch (D-13) and the hash is the new part's, written by update() (D-14).
+async function switchTo(which) {
+  clearRefusal();
+  try {
+    if (!(await buildForm(which))) return;
+  } catch (err) {
+    showMessages([`Could not build the form: ${err.message}`]);
+    markPart();
+    return;
+  }
+  for (const [name, { input }] of fields) input.value = defaults[name];
+  applyRelations();
+  deriveSelectors();
+  update();
 }
 
 // Called after the control was assigned the token. A non-empty token that reads back empty is
@@ -136,6 +293,59 @@ function gearQuery() {
     if (input.value !== '' && String(input.value) !== String(defaults[name])) q.set(name, input.value);
   }
   return q;
+}
+
+// The `part` values of a link, read as text. partOf compares them as literals and nothing
+// indexes PARTS by them: a lookup by hash text would resolve `constructor` and `__proto__`
+// (T-33-15).
+const partValues = (hash) => new URLSearchParams(hash.slice(1)).getAll('part');
+
+/** 'gear' for no part or one empty value, 'shaft' for exactly one `shaft`, else null. The gear
+ *  link carries no `part` key, and `gear` is not a second spelling of it (D-15). */
+function partOf(hash) {
+  const values = partValues(hash);
+  if (values.length === 0 || (values.length === 1 && values[0] === '')) return 'gear';
+  return values.length === 1 && values[0] === 'shaft' ? 'shaft' : null;
+}
+
+// A link with a part the page has no form for: the gear form at its defaults, nothing drawn,
+// neither radio checked, and the hash as the link wrote it. This message is the narrow exception
+// to "the server words refusals" (L02): no route takes `part`, so no server can word it (D-15).
+// The value is echoed quoted by JSON.stringify and shown as text, never as markup (T-33-23).
+async function refuseLink(values) {
+  const text = `Unknown part ${JSON.stringify(values.join(', '))} in the link; use the Gear or Shaft switch`;
+  refused = text;
+  document.body.dataset.refused = '';
+  if (!(await buildForm('gear'))) return;
+  for (const [name, { input }] of fields) input.value = defaults[name];
+  applyRelations();
+  deriveSelectors();
+  for (const radio of radios) radio.checked = false;
+  markRefused();
+  showMessages([text]);
+}
+
+// The hashchange listener and the bootstrap: a link names the part, and the form of that part
+// is built before the link is read into it (D-14). A link that keeps the part is handled before
+// any await, in the event itself, as the listener did before there were two parts (the golden
+// sweep sends one request per link and relies on it). formSeq is bumped so a slower build
+// started by an earlier link cannot land under this one.
+async function followHash() {
+  clearRefusal();
+  formShown = ++formSeq;
+  const which = partOf(location.hash);
+  if (which === part) { markPart(); readHash(); update(); return; }
+  try {
+    if (which === null) await refuseLink(partValues(location.hash));
+    else if (await buildForm(which)) { readHash(); update(); }
+  } catch (err) {
+    // refuseLink sets the refusal before its gear build. A build that throws never showed the
+    // refusal, and the form still on the page is the old part's, so the page must not keep
+    // looking refused or answer that form's keystrokes with a message about the link.
+    clearRefusal();
+    showMessages([`Could not build the form: ${err.message}`]);
+    markPart();
+  }
 }
 
 // ---------------------------------------------------------------- relations (L41)
@@ -220,17 +430,31 @@ async function problems(res) {
   }
 }
 
+function dimRow(label, text) {
+  const row = document.createElement('div');
+  row.append(
+    Object.assign(document.createElement('dt'), { textContent: label }),
+    Object.assign(document.createElement('dd'), { textContent: text }),
+  );
+  return row;
+}
+
 function renderInfo(info) {
   const rows = [];
-  for (const [key, label] of DIMS) {
-    const v = info[key];
-    if (v === null || v === undefined) continue;
-    const row = document.createElement('div');
-    row.append(
-      Object.assign(document.createElement('dt'), { textContent: typeof label === 'function' ? label(info) : label }),
-      Object.assign(document.createElement('dd'), { textContent: `${fmt(v)} mm` }),
-    );
-    rows.push(row);
+  if (dims) {
+    // The part's own rows, in its schema's order. A number shows with its unit when it has one,
+    // a string as itself; an absent value is no row (D-22), as for the gear.
+    for (const { key, label, unit } of dims) {
+      const v = info[key];
+      if (v === null || v === undefined) continue;
+      rows.push(dimRow(label, typeof v === 'string' ? v : unit ? `${fmt(v)} ${unit}` : fmt(v)));
+    }
+  } else {
+    for (const [key, label] of DIMS) {
+      const v = info[key];
+      if (v === null || v === undefined) continue;
+      rows.push(dimRow(typeof label === 'function' ? label(info) : label, `${fmt(v)} mm`));
+    }
   }
   $('#dims').replaceChildren(...rows);
   $('#centre-distance').textContent = info.centre_distance != null ? `${fmt(info.centre_distance)} mm` : '—';
@@ -242,7 +466,7 @@ function setDownloads(q) {
     const a = $(`#dl-${kind}`);
     if (q) {
       const qs = q.toString();
-      a.href = `api/model.${kind}${qs ? `?${qs}` : ''}`;
+      a.href = `${P.model}.${kind}${qs ? `?${qs}` : ''}`;
       a.removeAttribute('aria-disabled');
     } else {
       a.removeAttribute('href');
@@ -259,11 +483,18 @@ let seq = 0;
 let inflight = null;
 
 async function update() {
+  // A build threw after it emptied the page (buildForm). Reset and the mate box sit outside the
+  // form and still call here, but there is no form to read, and P is still the old part's: a
+  // build now would draw that part's defaults under a blank form. And while another part's form
+  // is loading, the old form must not rewrite the link it will read (formShown).
+  if (!part) return;
+  if (formShown !== formSeq) { dropped = true; return; }
+  if (refused) { showMessages([refused]); return; }
   const q = gearQuery();
   const mate = mateInput.value || rejected.get('mate_teeth') || '';
   const infoQ = new URLSearchParams(q);
-  if (mate) infoQ.set('mate_teeth', mate);
-  const hash = infoQ.toString();
+  if (mate && P.mate) infoQ.set('mate_teeth', mate);
+  const hash = [P.tag, infoQ.toString()].filter(Boolean).join('&');
   history.replaceState(null, '', hash ? `#${hash}` : location.pathname + location.search);
 
   for (const { wrap } of fields.values()) wrap.classList.remove('invalid');
@@ -278,11 +509,11 @@ async function update() {
     if (mine !== seq) return;
     showMessages(errors);
     $('#dims').replaceChildren();
-    setStatus(mesh ? 'Showing the last valid gear' : '');
+    setStatus(mesh ? `Showing the last valid ${P.noun}` : '');
   };
 
   try {
-    const infoRes = await fetch(`api/info?${infoQ}`, { signal: ctl.signal });
+    const infoRes = await fetch(`${P.info}?${infoQ}`, { signal: ctl.signal });
     if (!infoRes.ok) return fail(await problems(infoRes));
     const info = await infoRes.json();
     if (mine !== seq) return;
@@ -290,7 +521,7 @@ async function update() {
 
     const stlQ = new URLSearchParams(q);
     stlQ.set('quality', 'preview');
-    const res = await fetch(`api/model.stl?${stlQ}`, { signal: ctl.signal });
+    const res = await fetch(`${P.model}.stl?${stlQ}`, { signal: ctl.signal });
     if (!res.ok) return fail(await problems(res));
     const buf = await res.arrayBuffer();
     if (mine !== seq) return;
@@ -558,7 +789,10 @@ function placeGrid() {
     grid = null;
   }
   if (!box) return;
-  const extent = Math.max(box.max.x - box.min.x, box.max.y - box.min.y) * 1.6;
+  // A grid sized from the width alone is 40 mm under a 1000 mm shaft and cannot be seen; a part
+  // that says so (`gridAlong`) also counts its height. The gear's grid is as it was.
+  const across = Math.max(box.max.x - box.min.x, box.max.y - box.min.y);
+  const extent = (P.gridAlong ? Math.max(across, box.max.z - box.min.z) : across) * 1.6;
   const step = [0.5, 1, 2, 5, 10, 20, 50, 100].find((s) => extent / s <= 24) ?? 200;
   const size = Math.ceil(extent / step) * step;
   const colour = css('--grid');
@@ -615,6 +849,23 @@ function showModel(buffer) {
   render();
 }
 
+// Empties the scene of the part the user left, so a 422 on the new one never shows the old
+// part under it (and `mesh` then reads null for the status line).
+function clearScene() {
+  if (mesh) {
+    scene.remove(mesh, edges);
+    mesh.geometry.dispose();
+    edges.geometry.dispose();
+    mesh = null;
+    edges = null;
+  }
+  box = null;
+  placeGrid(); // no box: removes the grid
+  fitted = false;
+  delete canvas.dataset.triangles;
+  render();
+}
+
 function resize() {
   const { clientWidth: w, clientHeight: h } = canvas.parentElement;
   if (!w || !h) return;
@@ -632,7 +883,10 @@ form.addEventListener('input', (e) => rejected.delete(e.target.name));
 form.addEventListener('input', () => { applyRelations(); deriveSelectors(); scheduleUpdate(); });
 mateInput.addEventListener('input', scheduleUpdate);
 mateInput.addEventListener('input', () => rejected.delete('mate_teeth'));
-window.addEventListener('hashchange', () => { readHash(); update(); });
+window.addEventListener('hashchange', followHash);
+for (const radio of radios) {
+  radio.addEventListener('change', () => switchTo(radio.value));
+}
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 new ResizeObserver(resize).observe(canvas.parentElement);
 
@@ -657,15 +911,6 @@ $('#copy-link').addEventListener('click', async (e) => {
   }
 });
 
-(async () => {
-  applyTheme();
-  resize();
-  try {
-    await buildForm();
-  } catch (err) {
-    showMessages([`Could not build the form: ${err.message}`]);
-    return;
-  }
-  readHash();
-  update();
-})();
+applyTheme();
+resize();
+followHash();

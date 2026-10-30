@@ -1,0 +1,13 @@
+HEAD 603031a, 2026-10-27T18:18:22Z, load { 5.46 9.34 8.84 }
+PASS 1 make gear.unchanged: gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+PASS 2 git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml: exit 0, empty
+PASS 3 gate log: browser test passed: golden_requests.json holds 44 records; 33-09-verify.log line 5276
+PASS 4 /usr/bin/time -p make verify.fast: real 13.57 (under 30 s), rc 0, 2311 passed in 12.68s , load { 6.08 9.29 8.83 }
+PASS 5 make lint-imports: Contracts: 10 kept, 0 broken.
+PASS 6 import spur.cli loads none of fastapi, starlette, cadquery, OCP, spur.app, spur.model, spur.shaft_model: prints []
+PASS 7 git diff --exit-code 6800769 -- src/spur/params.py src/spur/calc.py tests/regression/ .github/workflows/ci.yml requirements.txt: exit 0, empty
+PASS 8 refuse() and gearQuery() bodies byte-identical to 6800769:src/spur/static/app.js: True [('refuse', True, 101), ('gearQuery', True, 298)]
+PASS 9 pytest --no-cov -n0 -q tests/test_seam.py: 8 passed in 0.12s
+PASS 10 make no-fake-done
+PASS 11 volume guard, two guard lines, WR-02 and contention items are in resolved/ with Status: resolved: Resolved in shas 3e1eded 49021f5 69c1aa3 3ee9a0a pass git cat-file -e
+PASS 12 decision_log.md only appended since 6800769: 0 removed lines (grep -c '^-[^-]' prints 0) and '## L49' is the last '## L' heading

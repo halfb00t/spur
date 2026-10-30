@@ -16,6 +16,11 @@
 
   <main>
     <aside>
+      <fieldset class="part-switch">
+        <legend>Part</legend>
+        <label><input type="radio" name="part" value="gear"> Gear</label>
+        <label><input type="radio" name="part" value="shaft"> Shaft</label>
+      </fieldset>
       <form id="params" autocomplete="off"></form>
       <div class="actions">
         <button type="button" id="reset">Reset</button>
@@ -45,8 +50,10 @@
         </div>
         <div class="col">
           <dl id="dims"></dl>
-          <p class="hint">Calipers across tips and span over <i>k</i> teeth are nominal values to
+          <p class="hint" data-for="gear">Calipers across tips and span over <i>k</i> teeth are nominal values to
             compare against the original gear.</p>
+          <p class="hint" data-for="shaft">Measurement over pins and the pin diameter are nominal values at the
+            nominal tooth thickness; the warnings say which numbers are not printed and why.</p>
         </div>
       </div>
     </section>

@@ -1,7 +1,8 @@
 # The shaft's volume guard accepts a chamfer that was never cut
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: 3e1eded fix(shaft): refuse a chamfer the kernel never cut (end-face read-back) (gsd/phase-33-interfaces-and-parity)
 Date: 2026-10-27
 Source: Phase 32 code review, 32-REVIEW.md WR-01 (confirmed by the phase verifier, 32-VERIFICATION.md)
 Related files:
@@ -27,3 +28,11 @@ For `c > 0`, refuse `cut = upper - volume <= 0` with a `BuildError` (the reviewe
 lower bound is the stronger option), plus a test that hands `_guard_volume` an uncut solid with `c > 0`
 and expects `BuildError`, seen red once. Revisit when Phase 33 starts (it exposes shaft downloads); fix
 before that phase ships.
+
+## Resolution
+The next step's volume test (`upper - volume <= 0`) was replaced by an end-face read-back in `_guard_volume`: on the
+heaviest shaft an honest 0.001 mm chamfer reads `upper - volume = -0.215 mm^3` (the face area's own error outweighs so
+small a cut), so that test would refuse a good part, while the largest vertex radius of the one planar face at z = 0
+matches `tip_d/2 - c` within 1.7e-13 mm on every probed row and an uncut face is off by the whole chamfer
+(`bench/RESULTS.md` `### The applied chamfer, read off the end face (33-02)`). Held by
+`test_a_chamfer_the_kernel_never_cut_is_refused`, seen red once (`DID NOT RAISE`).

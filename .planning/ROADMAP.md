@@ -170,7 +170,7 @@ baseline, the gear `/api/schema` response byte-equal.
 - [x] **Phase 32: The Shaft Solid** - Splined section, plain shank and end chamfer as a valid solid (completed 2026-10-27)
       that exports to STL and STEP, its volume matched to a closed form, its heaviest build
       measured against the memory ceiling and the timeout
-- [ ] **Phase 33: Interfaces and Parity** - The shaft served under `/api/shaft/...`, by
+- [x] **Phase 33: Interfaces and Parity** - The shaft served under `/api/shaft/...`, by (completed 2026-10-29)
       `spur shaft` and by a part switch on the web page, one parametrised test proving the three
       agree, the designation accepted as input, and WR-02 fixed on the same edit
 - [ ] **Phase 34: Fit Tables and Tolerance Window** - The human's DIN 5480 values in a private
@@ -413,6 +413,11 @@ REQ-shaft-parity, REQ-wr02-fixed
      (the debt item says the token list is wider than its table); the debt item
      `2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md` is retired in the fixing
      commit (status, sha, `git mv` into `resolved/`, INDEX row).
+     Reading (C1, 33-01 Decision result; L49): the fix landed in app.py's query layer in 69c1aa3,
+     33-03's fixing commit, before the part switch (D-01 puts the refusal there, and 33-RESEARCH
+     Pitfall 2 found the switch needs no edit to either function); refuse() and gearQuery() are
+     byte-identical to 6800769 at phase close (33-09 close check 8), so the switch edits neither
+     and no build window opened under it.
   5. The gate delta is recorded: this phase's `make verify` time against Phase 32's on the same
      host, in `bench/RESULTS.md`, browser test included; the Phase 30 check is green and the 44
      fixture links still send the requests `tests/regression/golden_requests.json` pins.
@@ -427,7 +432,41 @@ second row table and quoted field names (`tests/test_api.py:176-180`, `:314-340`
 `app`/`fastapi`/`starlette` (L04); no new dependency. **Phase close**: `make verify` result line
 recorded and `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml` empty.
 **Research flag**: No — standard patterns (research Phase 4).
-**Plans**: TBD
+**Plans**: 10/10 plans complete (33-10 closes UAT gap G-33-2), run one at a time (one shared working tree; deliberate red edits); 33-01 stops at the
+`checkpoint:decision` on the server rule, the browser token set and the fixing commit's place, and 33-02 cannot start
+until the human answers
+
+Plans:
+**Wave 1**
+- [x] 33-01-PLAN.md — tracer: the phase-start `make verify` baseline and the number box probed in Chromium over every number field and `mate_teeth`, then `checkpoint:decision` (D-02's stop-and-ask)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 33-02-PLAN.md — the shaft kernel's open guards first (D-16): the applied chamfer read back off the end face, the one-solid guard pinned, `shank_d` dimmed without a shank (D-18); two debt items retired
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 33-03-PLAN.md — WR-02 fixed on the gear routes: a token the box blanks is refused as written (D-01..D-06), the table walked, the browser proof over every gear number field and `mate_teeth`; L49 opened; the debt item retired in the fixing commit
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 33-04-PLAN.md — `/api/shaft/schema`, `/info`, `/model.{fmt}` through `_serve_model`, rows in the schema's `dims`, the designation in place of the spline fields and every clash a 422 (D-07..D-09, D-17)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 33-05-PLAN.md — `spur shaft info|export` with `--designation`; the fixed parity set and API = CLI on every number and the download name, seen red once (D-21 part two)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 33-06-PLAN.md — the page's Gear | Shaft switch and part descriptor: the shaft's form, preview, rows and downloads from its own routes, the page's texts and mate box following the part, the switch by keyboard (D-10, D-12..D-14)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [x] 33-07-PLAN.md — the page's links: shaft links round-tripped with `part=shaft`, gear links `part`-free, an unknown `part` refused and nothing built, null rows skipped; L49's page paragraphs, web-ui.md and the rows idea (D-11, D-15, D-20, D-22)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [x] 33-08-PLAN.md — web = API over the fixed set in the browser (D-21 part one), the as-written proof on the shaft's inputs, the viewer framing and the README
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [x] 33-09-PLAN.md — ten concurrent heaviest shafts through the real server (D-19), the gate delta against 33-01, the phase-close checks, L49 closed, and the C1 reading written beside SC4 and REQ-wr02-fixed
+
+**Gap closure (UAT G-33-2)** *(wave 10, blocked on Wave 9 completion)*
+- [x] 33-10-PLAN.md — the three 33-UI-REVIEW fixes, each seen red first in the browser: a refused-part link dims the form and Reset and outlines the switch (CSS on `body[data-refused]`, D-15, D-20, L41); under 820 px the switch is ordered above the canvas and stays the top of `<aside>` (D-12); dark-mode primary button text at WCAG AA, measured; the dark link's 4.47:1 filed as debt
+
 **UI hint**: yes
 
 ### Phase 34: Fit Tables and Tolerance Window
@@ -518,5 +557,5 @@ comes from.
 | 30. Scope, Seam and Gear-Safety Guard | v0.7 | 5/5 | Complete    | 2026-10-23 |
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
-| 33. Interfaces and Parity | v0.7 | 0/? | Not started | - |
+| 33. Interfaces and Parity | v0.7 | 10/10 | Complete    | 2026-10-29 |
 | 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |
