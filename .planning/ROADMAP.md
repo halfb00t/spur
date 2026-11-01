@@ -569,10 +569,18 @@ reaches) and the `gear.unchanged` guard (no timeout on git or the probe, lightwe
 `v0.6` tag accepted). Scope is set at discuss-phase.
 **Requirements**: TBD
 **Depends on:** Phase 34
-**Plans:** 0 plans
+**Plans:** 5 plans in 4 waves (two human checkpoints: k and the sizes ruling at 34.1-01, the real-file load at 34.1-04)
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 34.1 to break down)
+Wave 1
+- [ ] 34.1-01-PLAN.md — every loader refusal reached by a case, each seen red; the human sets k and rules on sizes (D-01, D-05, D-11)
+- [ ] 34.1-02-PLAN.md — gear.unchanged: bounded git and probe, prompts off, v0.6 pinned annotated at 792b45c (D-06..D-08)
+Wave 2
+- [ ] 34.1-03-PLAN.md — the dead odd_confirmed branch deleted, the flanks return tested (D-09, D-11)
+Wave 3
+- [ ] 34.1-04-PLAN.md — Table 7 whole or absent, each A_s cell capped at k per mm of module, the human loads the real file (D-01..D-05)
+Wave 4
+- [ ] 34.1-05-PLAN.md — the gate run and its delta, L51, the close checks and the seen-red table (D-12, REQ-gate-cost-recorded)
 
 ## Process Notes (carried forward)
 
