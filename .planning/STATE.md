@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Splined Shaft
-current_phase: 34
-status: "Phase 34 shipped — PR #55"
-stopped_at: Phase 34 complete — all phases complete
-last_updated: "2026-11-01T05:34:04.776Z"
+current_phase: "34.1"
+status: Phase 34.1 inserted after the v0.7 audit — not planned yet
+stopped_at: Phase 34.1 context gathered
+last_updated: "2026-11-01T16:29:04.672Z"
 last_activity: 2026-11-01
-state_head: 37739b0fd12dd87b60e83a288c7166ce9171eb8b
+state_head: ff98afcb6c70eaa73442be64756fea87bc64d0a1
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 11
   total_plans: 44
   completed_plans: 44
@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-10-29)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 34 — Fit Tables and Tolerance Window
+**Current focus:** Phase 34.1 — Address tech debt: DIN 5480 table loader and gear guard
 
 ## Current Position
 
-Phase: 34
+Phase: 34.1
 Plan: Not started
-Status: Phase 34 shipped — PR #55
+Status: Phase 34.1 inserted after the v0.7 audit — not planned yet
 Last activity: 2026-11-01
 
 ## Performance Metrics
@@ -954,6 +954,7 @@ None yet.
 - Phase 29 closed (trigger not fired), 2026-10-22: no ubuntu-latest run named Ubuntu 26.04 by the milestone close (last read 2026-10-22T13:13Z, bench/RESULTS.md); the Ubuntu 26 item stays active with its trigger restated; REQ-ubuntu26-classified-on-migration moved to Future Requirements with the human.
 - Milestone v0.6 closed 2026-10-23: audit `tech_debt` (16/16 requirements, 11/12 integration, 5/6 flows), verified closeout; archived to `milestones/v0.6-*`.
 - v0.7 roadmap created: Phases 30–34 (Scope, Seam and Gear-Safety Guard; Shaft Maths, Parameters and Designation; The Shaft Solid; Interfaces and Parity; Fit Tables and Tolerance Window) — 24/24 v0.7 requirements mapped, 0 orphans, numbering continues from Phase 29; Phase 31 needs anchor rows from the human's DIN 5480 copy and Phase 34 is blocked on the copy's local path; REQ-gate-cost-recorded is cross-cutting and closes at Phase 34; REQ-wr02-fixed (Phase 33) retires the WR-02 debt item in its fixing commit
+- Phase 34.1 inserted after Phase 34: Address tech debt: DIN 5480 table loader and gear guard (v0.7 audit, option B) (URGENT)
 
 ## Deferred Items
 
@@ -963,9 +964,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-31T17:01:41.010Z
-Stopped at: Phase 34 complete — all phases complete
-Resume file: None
+Last session: 2026-11-01T16:29:04.502Z
+Stopped at: Phase 34.1 context gathered
+Resume file: .planning/phases/34.1-address-tech-debt-din-5480-table-loader-and-gear-guard/34.1-CONTEXT.md
 
 ## Operator Next Steps
 
