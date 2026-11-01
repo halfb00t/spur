@@ -39,7 +39,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic.json_schema import JsonSchemaValue
 from starlette.concurrency import run_in_threadpool
 
-from . import __version__, int_env
+from . import __version__, din5480_tables, int_env
 from .build_errors import BuildError, BuildTimeout
 from .calc import DerivedDimensions, derive
 from .din5480 import DesignationError
@@ -150,6 +150,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # idempotent, so the default SPUR_WORKERS=1 case, where this and cli.cmd_serve's own
     # call both run in one process, still installs exactly one handler, not two.
     configure()
+    # D-04, defence in depth for a direct `uvicorn spur.app:app` start (`spur serve` already
+    # refused in cli.main): a set but unusable table file raises TablesError here and uvicorn
+    # exits (measured exit 3 with one worker, 34-RESEARCH), before any pool exists. This runs
+    # in every uvicorn worker, so each reads the same variable (D-02); the build workers get
+    # this object, not a re-read (D-13).
+    tables = din5480_tables.active()
     app.state.pool = BuildPool(
         int_env("SPUR_BUILD_WORKERS", 2),
         # D-10: set above the worst measured build. bench/latency.py's two load
@@ -166,6 +172,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # the `identical` scenario's 30003, "Same-slot timeout race (Phase 17)"), and
         # L37 keeps 30 s with `503 timeout` as the documented answer there.
         int_env("SPUR_BUILD_TIMEOUT", 30),
+        tables=tables,
     )
     try:
         yield

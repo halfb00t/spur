@@ -1,0 +1,11 @@
+UTC start: 2026-10-30T13:21:07Z
+HEAD: 78d167d
+Host: 18 CPUs, arm64, 64.0 GiB RAM
+Load before: { 5.04 10.29 11.89 }
+Precondition: git diff --exit-code ddfb3ea -- src tests bench scripts pyproject.toml Makefile requirements.txt .gitignore .dockerignore; exit status: 0
+Other heavy processes at start: 0 (sibling project 'screw')
+UTC end: 2026-10-30T13:24:59Z
+Load after: { 8.15 12.36 12.78 }
+make exit status: 0
+Other heavy processes at end: 1
+Note: the 'at end: 1' count is one process whose command line matches 'halfb00t-screw'; it was not identified (pgrep -f also matches a shell whose own command text names the pattern). Nothing else is claimed from it.

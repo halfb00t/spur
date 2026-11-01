@@ -1,0 +1,216 @@
+F..F.................................................................... [ 23%]
+........................................................................ [ 46%]
+.................................FFFFFFF...F...........F................ [ 69%]
+........................................................................ [ 92%]
+........................                                                 [100%]
+=================================== FAILURES ===================================
+_____________ test_the_default_shaft_derives_its_basic_dimensions ______________
+
+    def test_the_default_shaft_derives_its_basic_dimensions() -> None:
+        d = derive_shaft(ShaftParams())
+        assert d.reference_d == 25.0
+        assert d.profile_shift == 0.45
+        # 0.5625 is an exact tie in binary64 and round() sends it to the even digit: the same
+        # behaviour as the gear's r3 in calc.py.
+        assert d.profile_shift_mm == 0.562
+        assert d.pitch_d == 22.5
+        assert d.tip_d == 24.75
+        assert d.root_d == 22.25
+        assert d.nominal_thickness == 2.613
+>       assert d.warnings == _no_file_warnings()
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests/test_shaft_calc.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _no_file_warnings() -> tuple[str, ...]:
+        return (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
+>               MEASURE_AT_NOMINAL_THICKNESS, shaft_calc.NO_TABLE_FILE,
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^
+                shaft_calc.SOLID_AT_NOMINAL_THICKNESS, ROOT_FORM_CONSTRUCTION, SHANK_STEP_NO_RELIEF)
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'NO_TABLE_FILE'
+
+tests/test_shaft_calc.py:57: AttributeError
+_________ test_the_default_shaft_prints_its_pin_and_measure_over_pins __________
+
+    def test_the_default_shaft_prints_its_pin_and_measure_over_pins() -> None:
+        """D_Re 2.73 is the theoretical pin rounded to 0.01 mm; M_Re is for that pin. The form
+        diameter stays null, with its reason, because no DIN 5480 row proves the construction.
+        The designation names a fit, so a printed M_Re says in a warning that it is the measure
+        at the nominal thickness and carries no allowance or tolerance for that fit."""
+        d = derive_shaft(ShaftParams())
+        assert d.pin_d == 2.73
+        assert d.measure_over_pins == 27.999
+        assert d.form_d is None
+>       assert d.warnings == _no_file_warnings()
+                             ^^^^^^^^^^^^^^^^^^^
+
+tests/test_shaft_calc.py:127: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _no_file_warnings() -> tuple[str, ...]:
+        return (FORM_DIAMETER_UNPROVEN, THEORETICAL_PIN, DEFAULT_HOBBED_ROOT_WARNING,
+>               MEASURE_AT_NOMINAL_THICKNESS, shaft_calc.NO_TABLE_FILE,
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^
+                shaft_calc.SOLID_AT_NOMINAL_THICKNESS, ROOT_FORM_CONSTRUCTION, SHANK_STEP_NO_RELIEF)
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'NO_TABLE_FILE'
+
+tests/test_shaft_calc.py:57: AttributeError
+_ test_with_no_file_the_five_rows_are_null_and_the_sentence_names_the_variable_not_a_path _
+
+    def test_with_no_file_the_five_rows_are_null_and_the_sentence_names_the_variable_not_a_path(
+    ) -> None:
+        d = derive_shaft(ShaftParams())
+        assert _window(d) == [None] * 5
+        assert (d.pin_d, d.measure_over_pins, d.nominal_thickness) == (2.73, 27.999, 2.613)
+>       assert "SPUR_DIN5480_TABLES" in shaft_calc.NO_TABLE_FILE
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'NO_TABLE_FILE'
+
+tests/test_shaft_calc.py:518: AttributeError
+________________ test_the_warnings_are_one_fixed_tuple_per_tier ________________
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_the_warnings_are_one_fixed_tuple_per_tier() -> None:
+        listed = derive_shaft(ShaftParams())
+        assert listed.warnings == (FORM_DIAMETER_UNPROVEN, shaft_calc.TABULATED_PIN,
+                                   DEFAULT_HOBBED_ROOT_WARNING, shaft_calc.MEASURE_LIMITS_AT_FIT,
+                                   ROOT_FORM_CONSTRUCTION, SHANK_STEP_NO_RELIEF)
+        assert MEASURE_AT_NOMINAL_THICKNESS not in listed.warnings
+        assert THEORETICAL_PIN not in listed.warnings
+    
+        off = ShaftParams(reference_d=30.001, module=2, teeth=14)
+        unlisted = derive_shaft(off)
+        assert unlisted.warnings[3:5] == (
+>           MEASURE_AT_NOMINAL_THICKNESS, shaft_calc.size_not_tabulated_warning(off))
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'size_not_tabulated_warning'
+
+tests/test_shaft_calc.py:535: AttributeError
+_ test_the_size_sentence_prints_a_nudged_diameter_in_full_and_takes_no_nearest_row _
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_the_size_sentence_prints_a_nudged_diameter_in_full_and_takes_no_nearest_row() -> None:
+        p = ShaftParams(reference_d=30.001, module=2, teeth=14)
+>       sentence = shaft_calc.size_not_tabulated_warning(p)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'size_not_tabulated_warning'
+
+tests/test_shaft_calc.py:552: AttributeError
+_ test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window[3z] _
+
+fit = '3z'
+with_tables = Tables(schema_version=1, sizes=(SizeRow(provenance=Provenance(part=2, clause='9', table='12 and 13', pages=(18, 19)), ...'10.9', table='7', pages=(24,)), module_min_mm=5.0, module_max_mm=10.0, d_b_over_mm=None, d_b_upto_mm=None, column=3)))
+
+    @pytest.mark.parametrize("fit", ["3z", "13f", "8q"])
+    def test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window(
+            fit: str, with_tables: din5480_tables.Tables) -> None:
+        d = derive_shaft(ShaftParams(fit=fit))
+>       sentence = shaft_calc.fit_not_in_table_7_warning(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            fit, with_tables.letters, with_tables.tolerance_classes)
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'fit_not_in_table_7_warning'
+
+tests/test_shaft_calc.py:563: AttributeError
+_ test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window[13f] _
+
+fit = '13f'
+with_tables = Tables(schema_version=1, sizes=(SizeRow(provenance=Provenance(part=2, clause='9', table='12 and 13', pages=(18, 19)), ...'10.9', table='7', pages=(24,)), module_min_mm=5.0, module_max_mm=10.0, d_b_over_mm=None, d_b_upto_mm=None, column=3)))
+
+    @pytest.mark.parametrize("fit", ["3z", "13f", "8q"])
+    def test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window(
+            fit: str, with_tables: din5480_tables.Tables) -> None:
+        d = derive_shaft(ShaftParams(fit=fit))
+>       sentence = shaft_calc.fit_not_in_table_7_warning(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            fit, with_tables.letters, with_tables.tolerance_classes)
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'fit_not_in_table_7_warning'
+
+tests/test_shaft_calc.py:563: AttributeError
+_ test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window[8q] _
+
+fit = '8q'
+with_tables = Tables(schema_version=1, sizes=(SizeRow(provenance=Provenance(part=2, clause='9', table='12 and 13', pages=(18, 19)), ...'10.9', table='7', pages=(24,)), module_min_mm=5.0, module_max_mm=10.0, d_b_over_mm=None, d_b_upto_mm=None, column=3)))
+
+    @pytest.mark.parametrize("fit", ["3z", "13f", "8q"])
+    def test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window(
+            fit: str, with_tables: din5480_tables.Tables) -> None:
+        d = derive_shaft(ShaftParams(fit=fit))
+>       sentence = shaft_calc.fit_not_in_table_7_warning(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            fit, with_tables.letters, with_tables.tolerance_classes)
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'fit_not_in_table_7_warning'
+
+tests/test_shaft_calc.py:563: AttributeError
+_______ test_off_table_neighbours_read_as_off_the_tables_field_for_field _______
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_off_table_neighbours_read_as_off_the_tables_field_for_field() -> None:
+        """A d_B 0.001 above a listed row, a module step and a tooth step, each feasible, print
+        the no-file document's numbers: no nearest row is taken (L08, T-34-14)."""
+        neighbours = [
+            ShaftParams(reference_d=30.001, module=2, teeth=14),
+            ShaftParams(reference_d=25, module=1.3, teeth=18),
+            ShaftParams(reference_d=25, module=1.25, teeth=19),
+        ]
+        assert len(neighbours) == 3
+        for p in neighbours:
+            with_file = derive_shaft(p)
+            din5480_tables.install(None)
+            try:
+                without_file = derive_shaft(p)
+            finally:
+                din5480_tables.install(din5480_tables_fixture.build())
+            numbers = {k: v for k, v in with_file.model_dump().items() if k != "warnings"}
+            assert numbers == {k: v for k, v in without_file.model_dump().items() if k != "warnings"}
+>           assert shaft_calc.NO_TABLE_FILE in without_file.warnings
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'spur.shaft_calc' has no attribute 'NO_TABLE_FILE'
+
+tests/test_shaft_calc.py:593: AttributeError
+_____ test_an_odd_count_nulls_both_limits_without_a_sentence_of_their_own ______
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_an_odd_count_nulls_both_limits_without_a_sentence_of_their_own() -> None:
+        d = derive_shaft(ShaftParams(reference_d=26, module=1.25, teeth=19))
+        assert (d.measure_over_pins, d.measure_over_pins_max, d.measure_over_pins_min) == (
+            None, None, None)
+        assert d.pin_d == 2.75
+        assert (d.max_effective_thickness, d.max_actual_thickness, d.min_actual_thickness) != (
+            None, None, None)
+        assert ODD_Z_UNCONFIRMED in d.warnings
+>       assert sum("M_Re max" in w or "M_Re min" in w for w in d.warnings) == 0
+E       assert 1 == 0
+E        +  where 1 = sum(<generator object test_an_odd_count_nulls_both_limits_without_a_sentence_of_their_own.<locals>.<genexpr> at 0x10cab1f20>)
+
+tests/test_shaft_calc.py:644: AssertionError
+__________ test_a_fit_outside_table_7_is_a_warning_and_null_not_a_422 __________
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_a_fit_outside_table_7_is_a_warning_and_null_not_a_422() -> None:
+        """D-14: FIT_PATTERN is shape only, so every link that validated still validates; a fit
+        the file's Table 7 does not hold is a 200 with the five rows null and the sentence."""
+        r = client.get("/api/shaft/info", params={"fit": "3z"})
+        assert r.status_code == 200
+        body = r.json()
+        for key in ("max_effective_thickness", "max_actual_thickness", "min_actual_thickness",
+                    "measure_over_pins_max", "measure_over_pins_min"):
+            assert body[key] is None, key
+>       assert any("fit 3z is not in DIN 5480-1 Table 7" in w for w in body["warnings"])
+E       assert False
+E        +  where False = any(<generator object test_a_fit_outside_table_7_is_a_warning_and_null_not_a_422.<locals>.<genexpr> at 0x10c9fd970>)
+
+tests/test_shaft_interfaces.py:156: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_calc.py::test_the_default_shaft_derives_its_basic_dimensions
+FAILED tests/test_shaft_calc.py::test_the_default_shaft_prints_its_pin_and_measure_over_pins
+FAILED tests/test_shaft_calc.py::test_with_no_file_the_five_rows_are_null_and_the_sentence_names_the_variable_not_a_path
+FAILED tests/test_shaft_calc.py::test_the_warnings_are_one_fixed_tuple_per_tier
+FAILED tests/test_shaft_calc.py::test_the_size_sentence_prints_a_nudged_diameter_in_full_and_takes_no_nearest_row
+FAILED tests/test_shaft_calc.py::test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window[3z]
+FAILED tests/test_shaft_calc.py::test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window[13f]
+FAILED tests/test_shaft_calc.py::test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window[8q]
+FAILED tests/test_shaft_calc.py::test_off_table_neighbours_read_as_off_the_tables_field_for_field
+FAILED tests/test_shaft_calc.py::test_an_odd_count_nulls_both_limits_without_a_sentence_of_their_own
+FAILED tests/test_shaft_interfaces.py::test_a_fit_outside_table_7_is_a_warning_and_null_not_a_422
+11 failed, 301 passed in 1.33s

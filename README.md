@@ -81,6 +81,9 @@ filesystem, `tmpfs` on `/tmp`, `cap_drop: ALL` and `no-new-privileges`.
 | `SPUR_EXPORT_CACHE_MB` | `64` | Budget for cached STL/STEP bytes — one budget in the serving process, not one per worker |
 | `SPUR_MAX_QUEUED_BUILDS` | `2 × SPUR_BUILD_WORKERS` | Requests allowed to queue before the API answers `503`. Set explicitly to override the derived default |
 | `SPUR_LOG_LEVEL` | `INFO` | Root logger level for the structured JSON logs on stderr. An unrecognised value falls back to `INFO` |
+| `SPUR_DIN5480_TABLES` | | Path of the private DIN 5480 table file (JSON). Unset, the shaft's tooth-thickness limits and M_Re limits are null and its warnings say why. Set to a file that cannot be loaded, `spur` and the server refuse to start and print the reason. Never commit it or build it into an image: it holds licensed values (D-01) |
+
+Keep the table file readable by the account that runs the service and nobody else: mode 0600 on the host, or owned by uid 10001 with mode 0400 for the container (see `docs/architecture/packaging.md`).
 
 The service writes one JSON object per log line to stderr (`L20`); `docker logs` — or
 `make serve 2>&1 | jq` outside Docker — captures them.

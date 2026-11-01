@@ -67,7 +67,7 @@ Pinned by `tests/test_cli.py` (`-k shaft`) and, over a fixed set of shafts,
 
 ## Errors
 
-Three cases, two exit statuses — the CLI's real contract, not a guess from the API's:
+Four cases, two exit statuses — the CLI's real contract, not a guess from the API's:
 
 - A parameter error raises `SystemExit(2)` — exit 2 — with one of three stderr shapes:
   argparse's own `spur <cmd>: error: argument --x: ...` for a flag it cannot parse;
@@ -80,6 +80,11 @@ Three cases, two exit statuses — the CLI's real contract, not a guess from the
   turns into exit 1, not exit 2.
 - Every `BuildError` raises `SystemExit(f"error: {exc}")` the same way — exit 1, same
   as the extension case.
+- A `SPUR_DIN5480_TABLES` that names a file which cannot be loaded (missing, unreadable, not
+  valid) stops every command, `spur serve` included, before it does anything: `error:
+  SPUR_DIN5480_TABLES=<path>: <reason>` on stderr, exit 1, nothing written and no socket
+  opened (D-04; `main()` makes the one check, so `--help` and `--version` still answer). An
+  unset variable is not an error: the shaft's table rows are null and its warnings say why.
 
 Nothing is written when the build fails.
 
@@ -89,7 +94,9 @@ Pinned by `tests/test_cli.py::test_unknown_output_extension_is_refused` (asserts
 (asserts `exc.value.code` is a string, not `2`), and
 `::test_an_unknown_output_extension_exits_1_from_the_real_process` (the real
 `python -m spur.cli export` process's own exit status, not just `SystemExit`'s `code`
-attribute).
+attribute). The table-file refusal is pinned by `::test_a_broken_table_file_stops_every_
+command_with_the_reason` and, from the real process, `::test_spur_serve_refuses_a_broken_
+table_file_from_the_real_process`.
 
 ## Logging
 

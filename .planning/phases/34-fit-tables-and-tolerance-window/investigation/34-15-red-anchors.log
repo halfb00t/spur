@@ -1,0 +1,76 @@
+34-15 seen red: one approved value changed per run in a copy of tests/test_din5480_anchors.py; the file is restored after each run; no value is logged.
+
+W 120x3x38x8f | A_s: 2 failed, 19 passed in 0.06s
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 120x3x38x8f]
+  FAILED test_anchor_w120x3x38x8f_page_example_measure_over_pins_at_the_smallest_thickness
+
+W 120x3x38x8f | T_G: 3 failed, 18 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 120x3x38x8f]
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 120x3x38x8f]
+  FAILED test_anchor_w120x3x38x8f_page_example_measure_over_pins_at_the_smallest_thickness
+
+W 120x3x38x8f | T_act: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 120x3x38x8f]
+
+W 120x3x38x8f | T_eff: 2 failed, 19 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 120x3x38x8f]
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 120x3x38x8f]
+
+W 120x3x38x8f | s_vmax: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 120x3x38x8f]
+
+W 120x3x38x8f | d_Ff1 (last digit +1): 21 passed in 0.06s
+
+W 120x3x38x8f | d_Ff1 (set to the pin contact's bound, gross): 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_part_2_form_diameter_maximum_bounds_the_guard_below[W 120x3x38x8f]
+
+W 25x1.25x18x8f | A_s: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 25x1.25x18x8f]
+
+W 25x1.25x18x8f | T_G: 2 failed, 19 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 25x1.25x18x8f]
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 25x1.25x18x8f]
+
+W 25x1.25x18x8f | T_act: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 25x1.25x18x8f]
+
+W 25x1.25x18x8f | T_eff: 2 failed, 19 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 25x1.25x18x8f]
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 25x1.25x18x8f]
+
+W 25x1.25x18x8f | s_vmax: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 25x1.25x18x8f]
+
+W 25x1.25x18x8f | d_Ff1 (last digit +1): 21 passed in 0.06s
+
+W 25x1.25x18x8f | d_Ff1 (set to the pin contact's bound, gross): 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_part_2_form_diameter_maximum_bounds_the_guard_below[W 25x1.25x18x8f]
+
+W 26x1.25x19x8f | A_s: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 26x1.25x19x8f]
+
+W 26x1.25x19x8f | T_G: 2 failed, 19 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 26x1.25x19x8f]
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 26x1.25x19x8f]
+
+W 26x1.25x19x8f | T_act: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 26x1.25x19x8f]
+
+W 26x1.25x19x8f | T_eff: 2 failed, 19 passed in 0.06s
+  FAILED test_anchor_table_7_actual_and_effective_tolerances_add_up_to_the_total[W 26x1.25x19x8f]
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 26x1.25x19x8f]
+
+W 26x1.25x19x8f | s_vmax: 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_table_7_cells_give_the_limit_thicknesses[W 26x1.25x19x8f]
+
+W 26x1.25x19x8f | d_Ff1 (last digit +1): 21 passed in 0.06s
+
+W 26x1.25x19x8f | d_Ff1 (set to the pin contact's bound, gross): 1 failed, 20 passed in 0.06s
+  FAILED test_anchor_part_2_form_diameter_maximum_bounds_the_guard_below[W 26x1.25x19x8f]
+
+Reading of the d_Ff1 rows. The copy prints d_Ff1 as a maximum and the tool cannot reproduce it
+(Tables 3 and 4 tie it to the mating part), so the tests only bound the guard with it: the
+tabulated pin touches well inside the window. A change of the last printed digit
+therefore leaves the run green (21 passed) and only a change that crosses the pin's contact
+fails. The cells are held to the exact printed digits by 34-16's check of the real table
+file against these constants, not by this file.

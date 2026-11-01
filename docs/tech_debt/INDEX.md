@@ -16,14 +16,23 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
+| must | [`limit_measurement`'s `odd_confirmed` parameter and its odd-count branch are unreachable in production](active/2026-11-01-limit-measurement-odd-confirmed-branch-is-dead.md) | `limit_measurement` is next edited |
+| nice | [A code comment still points at the debt file Phase 34 moved to `resolved/`](active/2026-11-01-din5480-comment-points-at-a-moved-debt-file.md) | `src/spur/din5480.py` is next edited |
+| nice | [`SCHEMA_VERSION` is defined and never used](active/2026-11-01-schema-version-constant-is-never-used.md) | the schema version next changes |
+| nice | [`load_file` reads the whole file before enforcing the size cap on what it read](active/2026-11-01-load-file-reads-the-whole-file-before-its-size-cap.md) | `load_file` is next edited |
+| nice | [Two real-file and anchor assertions are tautologies](active/2026-11-01-two-real-file-and-anchor-assertions-are-tautologies.md) | either file is next edited |
+| must | [A file with Table 7 only partly present loads and then prints a false sentence](active/2026-11-01-table-7-partly-present-loads-and-prints-a-false-sentence.md) | the loader is next edited |
+| nice | [Read 1 matches digits with `\d`, against the repository's own stated rule](active/2026-11-01-read1-matches-digits-with-backslash-d.md) | `scripts/din5480_read1.py` is next edited |
+| must | [An oversized A_s cell loads and shifts every limit printed from it](active/2026-11-01-an-oversized-a-s-cell-loads-and-shifts-every-limit.md) | the loader is next edited, or a transcription is redone |
+| must | [The table loader's refusal paths are not all reached by a test: din5480_tables.py reads 93.48 % in the gate](active/2026-10-31-din5480-tables-loader-refusals-not-reached-by-a-test.md) | the loader is next edited, or the table file is next regenerated |
+| must | [Table 12's m=1.25 d_B 19 z 14 nominal row is not printed in our copy of DIN 5480-2, so the table file has 720 size rows, not 721](active/2026-10-31-table-12-m1-25-db19-z14-row-missing-from-our-copy.md) | a second copy or the publisher's corrigendum becomes available |
+| must | [The browser test's 5 s wait for the shaft schema flakes under host load](active/2026-10-30-browser-test-shaft-schema-wait-flakes-under-host-load.md) | the test next goes red under load, or the browser test is next edited |
 | must | [Dark-mode link text reads under WCAG AA's 4.5:1](active/2026-10-29-dark-mode-link-text-under-wcag-aa.md) | the dark palette is next edited, or the next UI review |
 | must | [An int field accepts `0-0`, a token the number box blanks](active/2026-10-28-int-fields-accept-a-blanked-zero-minus-zero-token.md) | L49's rule is next touched, an int field's default moves off 0, or an int field with a lower bound below 0 is added |
 | must | [The shaft profile-shift cap refuses shifts DIN 5480-1 allows as exceptions at larger tooth counts](active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md) | Part 2, or the copy's exception table, gives the z-dependent limits |
-| must | [The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows](active/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md) | Phase 34 makes the pin-contact guard live |
 | nice | [The `dropped` flag survives a same-part link that overtakes its build](active/2026-10-30-dropped-flag-survives-a-same-part-link.md) | `app.js`'s form-build guards are next touched |
 | nice | [The shaft download name rounds `reference_d` and `module` to six significant digits](active/2026-10-29-shaft-slug-rounds-to-six-significant-digits.md) | L49 is next superseded, or a download-name collision is reported |
 | nice | [The pre-commit hook's name and L36's amendment still say "five heavy files"](active/2026-10-27-pre-commit-hook-name-and-l36-still-say-five-heavy-files.md) | `.pre-commit-config.yaml` is next edited |
-| nice | [FIT_PATTERN accepts deviation letters and tolerance classes outside DIN 5480-1 Table 7/9](active/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md) | Phase 34 takes the fit tables |
 | must | [`gear.unchanged` runs git and the schema probe with no timeout, inside the pre-commit hook](active/2026-10-23-gear-unchanged-has-no-timeout-on-git-or-probe.md) | the hook next stalls, or `scripts/gear_unchanged.py` is next touched |
 | must | [`gear.unchanged` accepts any local `v0.6` tag, including a lightweight or moved one](active/2026-10-23-gear-unchanged-accepts-a-lightweight-or-moved-v0-6-tag.md) | `scripts/gear_unchanged.py` is next touched, or any CI path is found that can see a local tag |
 | must | [CI's `ubuntu-latest` moves to Ubuntu 26 on 2026-10-19; the browser test's install has only run on 24.04](active/2026-10-10-ubuntu-latest-migrates-to-ubuntu-26-on-19-october.md) | the first `ubuntu-latest` run of `ci` whose job log holds `Image: ubuntu-26.04` (Phase 29's own PR and the v0.6 milestone-close PR count; read all three jobs whole against `bench/RESULTS.md` `### Ubuntu 26.04, pre-classified (26-02)` before any fix; Phase 29 closed 2026-10-22, trigger not fired) |
@@ -46,6 +55,9 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [The tooling and the phase 34 plans expect 24 rows in Table 7's tolerance table; the printed page has 30](resolved/2026-10-30-table-7-tolerance-table-has-30-rows-not-24.md) | 072ddd2 fix(34-14): Table 7's tolerance table has 30 rows; the completeness check says so (gsd/phase-34-fit-tables-and-tolerance-window) |
+| [The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows](resolved/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md) | 1fa8deb feat(shaft): the pin-contact guard starts at DIN 5480-2's d_Ff1 maximum (D-12) (gsd/phase-34-fit-tables-and-tolerance-window) |
+| [FIT_PATTERN accepts deviation letters and tolerance classes outside DIN 5480-1 Table 7/9](resolved/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md) | 51d5e63 docs(shaft): say what the fit tables change; resolve the fit-pattern item (D-14) (gsd/phase-34-fit-tables-and-tolerance-window) |
 | [The shaft has no contention row: its heaviest build is measured alone, never under concurrent requests](resolved/2026-10-27-shaft-contention-row.md) | 3ee9a0a docs(bench): the heaviest shaft under ten concurrent requests (D-19) |
 | [A link token the number box blanks but the API accepts builds a non-default part under a blank box](resolved/2026-10-21-an-accepted-link-token-builds-under-a-blank-box.md) | 69c1aa3 fix(api): refuse a link number the box would blank (WR-02, L49) |
 | [Two guard lines in `shaft_model.build_shaft` are reached by no passing test](resolved/2026-10-27-shaft-model-two-guard-lines-no-passing-test-reaches.md) | 49021f5 test(shaft): pin the one-valid-solid guard and drop a dead re-raise |

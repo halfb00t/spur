@@ -1,0 +1,45 @@
+34-14 Task 1: the two reads of each table compared, by location. Counts and locations only; no value of the standard.
+run 2026-10-30; the table file does not exist (test ! -e private/din5480-tables.json held before and after)
+
+== read 2 of Part 2 joined
+make tables.join OUT=private/reads/part2-read2.json IN=part2-read2-{a,b,c,d}.json
+  parts: a (modules 0.5 to 0.8), b (1 to 1.75), c (2 to 4), d (5 to 10); no key held by two parts (join did not refuse)
+  rows in the joined document: 719 (161 + 202 + 179 + 177), 16 modules
+make tables.check FILE=private/reads/part2-read2.json
+  last line: ok
+
+== pair 1: Part 2, read 1 (pdftotext parser, 34-03) against read 2 (page renders, 34-08..34-11)
+make tables.diff A=private/reads/part2-read1.json B=private/reads/part2-read2.json
+  exit status: 0
+  location lines (a field that differs): none
+  "only in A" lines: none
+  "only in B" lines: none
+  last line: 0 differences
+  rows per read: 719 and 719; the two documents are byte-identical once canonical
+
+== pair 2: Table 7, read A (34-12) against read B (34-13)
+make tables.diff A=private/reads/table7-a.json B=private/reads/table7-b.json
+  exit status: 0
+  location lines (a field that differs): none
+  "only in A" lines: none
+  "only in B" lines: none
+  last line: 0 differences
+  rows per read, each block: deviations 18, classes 8, tolerances 30, columns 21; the two documents are byte-identical once canonical
+  (the plan expected exit 1 while the reads differ; they do not differ)
+
+== keys a read left out (from the reads' own logs, 34-03-read1.log and 34-09-read2.log)
+both reads left out the same two keys, both module 1.25, Tables 12 and 13 (pages 18, 19), by the exactly-once rule:
+  1. d_B 19 z 14: printed 0 times on the nominal page (18), once on the inspection page (19)
+     left out by: read 1 (34-03) and read 2 part b (34-09)
+  2. d_B 20 z 14: printed 2 times on the nominal page (18), once on the inspection page (19)
+     left out by: read 1 (34-03) and read 2 part b (34-09)
+no other key was left out by either read (34-08, 34-10, 34-11 report none; 34-09 reports these two)
+the values of both reads for these two keys, and the page text around them, are in private/reads/disagreements.txt (ignored)
+
+== totals per block
+sizes:        differences 0, rows only one read holds 0, keys left out by both reads 2 (each read holds 719 of 721)
+deviations:   differences 0
+classes:      differences 0
+tolerances:   differences 0 (30 rows in each read; the count was authorized at 30 by the human, see the SUMMARY)
+columns:      differences 0
+locations for the human to settle at the checkpoint: 2 (the module 1.25 pair), 0 cell disagreements

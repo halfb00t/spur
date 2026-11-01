@@ -1,0 +1,15 @@
+34-16 seen red: the real-file check on a copy of the table file with one approved cell changed
+by one unit of its last printed digit (no value is logged; node names and counts only)
+
+W 25x1.25x18x8f | A_s of f changed by one unit | exit 1 | 2 failed, 18 passed in 5.30s | red tests: test_the_file_holds_the_approved_table_7_cells, test_the_files_cells_give_the_approved_limit_thicknesses
+W 25x1.25x18x8f | T_eff of class 8 (T_act -1, T_G kept) changed by one unit | exit 1 | 2 failed, 18 passed in 5.26s | red tests: test_the_file_holds_the_approved_table_7_cells, test_the_files_cells_give_the_approved_limit_thicknesses
+W 26x1.25x19x8f | T_G of class 8 (T_act +1, T_eff kept) changed by one unit | exit 1 | 2 failed, 18 passed in 5.25s | red tests: test_the_file_holds_the_approved_table_7_cells, test_the_files_cells_give_the_approved_limit_thicknesses
+W 120x3x38x8f | d_Ff1 maximum changed by one unit | exit 1 | 1 failed, 19 passed in 5.27s | red tests: test_the_file_holds_the_approved_form_diameter_and_pin
+W 26x1.25x19x8f | d_Ff1 maximum changed by one unit | exit 1 | 1 failed, 19 passed in 5.34s | red tests: test_the_file_holds_the_approved_form_diameter_and_pin
+W 30x2x14x8f | D_M changed by one unit | exit 1 | 20 errors in 0.13s | red tests: test_every_size_agrees_with_its_m1_at_the_tabulated_pin, test_the_file_holds_the_approved_form_diameter_and_pin, test_the_file_holds_the_approved_part_2_rows, test_the_file_holds_the_approved_table_7_cells, test_the_file_is_complete, test_the_files_cells_give_the_approved_limit_thicknesses, test_the_guard_form_term_is_each_rows_d_ff1_maximum, test_the_guard_sweep_finds_the_accepted_findings_and_no_other, test_the_page_example_prints_its_three_thicknesses_and_m_re_min, test_the_tabulated_pin_touches_inside_the_window_at_every_thickness, test_the_tip_land_and_overlap_sweep_finds_the_accepted_findings_and_no_other
+W 30x2x13x8f | M1 changed by one unit | exit 1 | 20 errors in 0.13s | red tests: test_every_size_agrees_with_its_m1_at_the_tabulated_pin, test_the_file_holds_the_approved_form_diameter_and_pin, test_the_file_holds_the_approved_part_2_rows, test_the_file_holds_the_approved_table_7_cells, test_the_file_is_complete, test_the_files_cells_give_the_approved_limit_thicknesses, test_the_guard_form_term_is_each_rows_d_ff1_maximum, test_the_guard_sweep_finds_the_accepted_findings_and_no_other, test_the_page_example_prints_its_three_thicknesses_and_m_re_min, test_the_tabulated_pin_touches_inside_the_window_at_every_thickness, test_the_tip_land_and_overlap_sweep_finds_the_accepted_findings_and_no_other
+
+Note: for D_M and M1 the loader's own invariant (the printed M1 against the formula at the printed pin)
+refuses the changed file, so every test errors at load ("20 errors"). The check is red there too; the
+approved-row test is not reached on its own, because the file never loads. The other five cells reach
+the check module's own comparison and fail only the tests named.

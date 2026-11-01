@@ -3492,3 +3492,143 @@ loading no web or kernel module, and `refuse()` and `gearQuery()` byte-identical
 Four debt items the phase fired are retired: the shaft's volume guard (`3e1eded`), its two unreached guard lines (`49021f5`), the blank-box link
 token, WR-02 (`69c1aa3`), and the shaft's missing contention row (`3ee9a0a`). **Reversibility: reversible.** Records only; no route, link or
 number changes.
+
+## L50 — Phase 34 reads DIN 5480's fit tables from a private file and prints the tooth-thickness window (follows L46..L49; keeps L03, L05, L08 and L49)
+
+Date: 2026-10-31.
+
+Phase 34 gives the shaft the numbers the standard's fit tables hold: the tooth-thickness window of the designation's fit, the
+M_Re limits that follow from it, the pin the standard measures with, and a solid cut at the maximum-material thickness. The
+standard is a licensed text, so none of its values is in the repository: they live in one JSON file the human assembled from two
+independent reads, under the git-ignored `private/`, and the code reads that file and prints what it holds. L50 is the one entry
+the phase appends. No earlier line of this entry or of any other is edited, and no table value is written here; the only values
+in the repository are the three anchors the human approved by name, below.
+
+**The private file** (D-01, D-02, D-03, D-04, A7; `src/spur/din5480_tables.py`, `.gitignore`, `.dockerignore`; 34-01, 34-02,
+34-05). One environment variable, `SPUR_DIN5480_TABLES`, names the file (D-02); there is no config file and no default path. The
+document is JSON of `schema_version` 1, validated by a pydantic model at the loader boundary (D-03), and every row carries its
+provenance: part, clause, table and pages. It holds five kinds of row: sizes (module, reference diameter, tooth count, the
+tabulated form diameter maximum, pin and M1), deviations (the letters a to v), classes (the tolerance classes), tolerance rows (T_G,
+T_act, T_eff) and the columns that tie a diameter range to a deviation series; the real file loads as `720 16 18 8 30 21`
+(sizes, modules, deviation letters, classes, tolerance rows, columns; 34-14). Two limits guard it: `MAX_FILE_BYTES` (4 MiB; the
+real file is 201779 bytes) against a wrong path naming a large file, and `UM_LIMIT` (1000), because a micrometre value with three
+extra digits is a millimetre value typed in micrometres. The structural checks (D-04) are `T_G = T_act + T_eff`, the
+micrometre-against-millimetre range, no Unicode minus, no duplicate key, and at load the M1 identity: the computed measure over pins at
+the tabulated pin must equal the row's M1 inside half a printed digit (`M1_TOLERANCE`), so a wrong D_M or M1 refuses the file. The checker as
+a group was seen red once, by making `problems()` return nothing (`34-02-red-guards.log`, `34-02-red-invariants.log`, `bench/RESULTS.md` `### Seen red once (Phase 34)`);
+that proves it is called, not that every line of it refuses what it says: twelve of its refusal lines are reached by no test, and are filed in
+`docs/tech_debt/active/2026-10-31-din5480-tables-loader-refusals-not-reached-by-a-test.md`. With the variable unset the
+five window rows are null with a warning that names the variable and never a path (T-34-15); set and broken, the process
+refuses (**A broken file at startup**). The tables are loaded once per process (`active()`) and a failed load is cached and
+re-raised on every call, never re-read. The parent's one loaded object reaches every build worker, and every replacement worker,
+through `ProcessPoolExecutor(initargs=...)` (`BuildPool(tables=...)`, `f38c1e1`), so the solid cache, keyed by the parameters,
+stays correct for a process whose tables cannot change (D-13). A worker built without it was seen red (34-07). The home is
+`private/` at the repository root, as 34-RESEARCH recommended (A7): `/private/` in `.gitignore` and `private` in `.dockerignore`
+(`4bc8080`), pinned by `test_the_private_directory_is_ignored_by_git_and_by_docker` and `test_no_tracked_json_file_is_a_table_file`.
+**Reversibility:** one-way for D-01 (a committed value is public history); reversible for the path, the limits and the home.
+
+**Two reads, zero diff** (D-05, D-06, D-08; `scripts/din5480_tables_tool.py`, `scripts/din5480_read1.py`, `Makefile`; 34-03, 34-08..34-14). The
+file is assembled from two reads of each source that were made without sight of each other. Part 2: read 1 is a `pdftotext -layout`
+parser that guesses nothing (`5823392`); read 2 is a vision read of the rendered pages by agents (34-08..34-11). Part 1 Table 7, an
+image of a nomogram with no text layer: two vision reads, A and B, each alone on the page (34-12, 34-13). Each read's SUMMARY lists
+the files its agent opened, which is the blindness evidence (D-05, D-06): no agent opened another read's output. The exposures are disclosed there and
+are small: a file name seen in a directory listing (34-08), and a commit subject in the harness's status snapshot that named a differing Table 7 row count, which
+read B did not act on (34-13: its count of 30 came from the rows on the page). `make
+tables.diff` lists each disagreement by location and prints values only with `ARGS=--values`; `make tables.assemble` is the only
+writer of the table file and refuses while a pair of reads differs, so nothing loads and no number prints until the diff is
+zero (D-08; seen red once, `34-03-red-diff.log`). The human settled what the reads could not (34-14, 2026-10-31): Part 2 read 1 against read 2
+had 0 differences on 719 rows and two keys both reads had left out; Table 7 A against B had 0 differences. **Two counts are not the
+plan's first numbers, both by the human's decision.** Table 7's tolerance table has 30 rows, not 24; both reads counted 30 and the
+human authorized it before the tracer (`072ddd2`, `EXPECTED_COUNTS["tolerance_rows"] = 30`). Part 2's size count is 720, not
+721: Table 12's m=1.25 d_B 19 z 14 nominal row is not printed on page 18 of the human's copy, which prints the d_B 20 row twice
+in that slot, consistent with the 2026-10-26 amendment above; the row is left out and no value is supplied from anywhere else
+(`655a46a`, `docs/tech_debt/active/2026-10-31-table-12-m1-25-db19-z14-row-missing-from-our-copy.md`). Completeness
+(`EXPECTED_COUNTS`) is a transcription-time check run by `check --complete` and by `assemble`, not a load-time one. `make
+tables.test FILE=<table file>` (34-16, `706dd73`, `tests/din5480_real_tables_check.py`, 22 tests) runs the checks that need the real file:
+the anchors to the last digit, completeness, M1 at every tabulated pin, the sweep findings and the range edges. The gate does not
+collect it (close check 14 in `### Phase close checks (34-17)`), so `make verify` needs no private file.
+
+**The anchors** (D-07; `tests/test_din5480_anchors.py`; 34-15). The human approved, by name and on 2026-10-31, W 120x3x38x8f (the page's
+worked example), W 25x1.25x18x8f (the default shaft) and W 26x1.25x19x8f (an odd tooth count); no candidate was rejected. Their
+Table 7 cells, their derived limit thicknesses (`TABLE_7_THICKNESS`, held in a tracked file; the human accepted that), their form diameter maximum and
+pin, and the page example's M_Re minimum are the only values of the standard in the repository, beside the Phase 31 anchors that were already there (L47). Each
+cell was seen red once by changing its last printed digit in a copy of the test file (`34-15-red-anchors.log`). Two deviations
+the human accepted: the d_Ff1 cells are bounds in those tests, because the copy ties d_Ff1 to the mating part and the tool cannot reproduce
+it, so a last-digit change leaves them green; and the exact digits are held instead by `make tables.test`, which compares every approved
+constant to the file with `==` and was seen red on a one-unit change of each cell (`34-16-red-anchors.log`). The leak review of the
+whole phase is in `### Phase close checks (34-17)` (close check 15).
+
+**The window and the limits** (D-09, D-10, D-15; `src/spur/shaft_calc.py`; 34-04, 34-07). For a size in the tables, D_Re is the
+tabulated D_M and M_Re is computed for it by the existing `din5480.measure_over_pins`, never copied from M1 (D-09; the load-time identity and the real-file check compare the two). That
+changes an output number only and moves no default, so L05 does not apply. The limits are computed by the same formula at the thickness
+limits of DIN 5480-1 Table 6: s_vmax = s1 + A_s, s_max = s_vmax - T_eff and s_min = s_vmax - T_G, M_Re max at s_max and M_Re min at s_min
+(D-10); Part 2's deviation factor is not transcribed. `MEASURE_AT_NOMINAL_THICKNESS` stays only where no limit prints beside the nominal
+M_Re; where one does, `MEASURE_LIMITS_AT_FIT` replaces it. The user sees five new rows (D-15), in this order, after
+`measure_over_pins`: `max_effective_thickness` (s_vmax), `max_actual_thickness` (s_max), `min_actual_thickness` (s_min),
+`measure_over_pins_max` and `measure_over_pins_min`. A_s, T_G, T_act and T_eff are not printed, and the existing nominal row stays. The
+rows ride the schema's `dims` list, and the parity test (L49) covers them on four shafts with and without the tables (`18bf9a8`, `656cf02`).
+**There are four tiers, and each is one fixed warning tuple** (`test_the_warnings_are_one_fixed_tuple_per_tier`): (1) no file: the five rows are null
+and `NO_TABLE_FILE` names the variable; (2) a file that does not list the size: the five rows are null, the sentence says the size is
+not tabulated (it prints a nudged diameter in full and takes no nearest row, L08), the pin is the theoretical one; (3) a listed
+size and a fit Table 7 does not hold: the five rows are null and the sentence names Table 7's letters and classes; (4) a listed size and
+a fit it holds: the five rows print. **The tier-3 pin** (A6, 34-04): in tier 3 the tabulated pin and the nominal M_Re still print, because
+D-09 reads "for a size in the tables", independent of the fit, and D-14 builds at nominal; the research flagged this as a reading and
+the human has not asked to change it (`test_off_table_neighbours_read_as_off_the_tables_field_for_field`, `test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window`).
+**A known behaviour, not a new decision** (34-14): for a size the file does not list, W 19x1.25x14 for example, the window rows are null with warnings
+while the existing tier-2 nominal M_Re at the theoretical pin still prints for an even tooth count; the human has not asked to change that. A
+limit whose pin touches no flank says so in its own sentence and the other limit still prints. **Reversibility: costly.** Each row key is a wire key in
+the info response, the CLI output and the page.
+
+**The guard and odd counts** (D-11, D-12; `1fa8deb`, `8208de3`; 34-06, 34-15). For a tabulated size the pin-contact guard's lower bound is the copy's
+d_Ff1 maximum plus the unchanged margin (`GUARD_MARGIN_FACTOR` 0.1), so the guard is live with the tabulated pin; off the tables the
+theoretical pin and the construction stay as they were (D-12), which resolves
+`docs/tech_debt/resolved/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md` (`1fa8deb`). An odd tooth count prints M_Re and both limits at the tabulated
+pin for a size in the tables (D-11; 211 of 211 odd rows agree with the formula); off the tables it stays null with `ODD_Z_UNCONFIRMED`. That
+retires `docs/ideas/retired/2026-10-26-print-odd-tooth-count-measure-over-pins.md` (`8208de3`). The sweeps on the real file (`bench/RESULTS.md`
+`### The guard and tip-land sweeps on the real file (34-15)`, `34-15-sweeps.log`) found the guard never trips: 102096 combinations ran, no limit null at
+the guard, no tabulated size without its nominal M_Re, no closed tip land and no touching teeth. The human's answers (34-15): **F1**, accepted as printed: the 11 sizes
+whose profile shift lies above `X_MAX` keep the honest `422` from `ShaftParams` (never clamped, L03), under the existing debt item
+`docs/tech_debt/active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md`; **F2**, accepted: no guard nulls, closed tips or overlaps.
+
+**The solid** (D-13; `src/spur/shaft_model.py`; 34-04, 34-07). With the tables loaded and the fit in them the solid carries the maximum effective
+thickness s_vmax, read back from the solid (`b3461d7`, `test_with_the_tables_the_solid_carries_the_maximum_effective_thickness`, seen red at 34 times
+its bar before the change); otherwise it carries the nominal thickness and `SOLID_AT_NOMINAL_THICKNESS` says so. The human chose **keep** at 34-04: there is no
+separate, always-present thickness row. `max_effective_thickness` is that row: printed means the solid is cut at it, null means the solid is cut at nominal.
+No sixth key was added. The solid carries the printed value, rounded to 0.001 mm, not the unrounded s_vmax, so the number and the part name one
+shaft (L08). The download name stays as L49 froze it (`spur_shaft_w<d_B>x<m>x<z>`): the row and the warning tell the two solids apart, and
+a test pins the slug as unchanged. A build worker builds the maximum-material shaft from the parent's tables
+(`test_a_worker_builds_the_maximum_material_shaft_from_the_parents_tables`, seen red without `tables=`), and the browser step `parity with tables` was seen red with the
+server's environment left out (`34-07-red-browser.log`). **Reversibility: costly,** with the rows.
+
+**Off the tables** (D-14, D-15, REQ-off-table-builds; 34-04, 34-07). A fit outside Table 7, `3z` for example, is a warning and null, not a `422`: the
+part builds at nominal and the warning names Table 7's letters and classes (D-14). `FIT_PATTERN` is unchanged (`^[1-9][0-9]?[a-z]$`), so no link that validates today
+starts failing and no ISO-style alias is added; the fit-pattern debt item is resolved through the warning
+(`docs/tech_debt/resolved/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md`, `51d5e63`). With no file, or a size or fit the file does not hold, every
+solid, name and cache key is what `v0.6` and L49 produced (`make gear.unchanged`, `tests/regression/` and `ci.yml` byte-equal to `v0.6`; close checks 3, 4, 5, 7 and 8).
+
+**The range edge** (A1; `Tables.column_for`, `_columns_selecting`; 34-02, 34-15, 34-16). The copy prints a diameter range as "über x bis y". 34-RESEARCH
+assumed it reads x < d_B <= y, the DIN ISO 286 reading, and asked the human to settle it. **The human confirmed edge-upper against page 24 at 34-15
+(2026-10-31): a reference diameter on an edge belongs to the range the edge closes.** The loader already read it so, so `Tables.column_for` did not
+change, and the default shaft W 25x1.25x18 takes its column by that reading. It is pinned on both sides of an edge in the synthetic fixture
+(`test_edge_a_d_b_on_a_range_edge_falls_in_the_range_it_closes`, `test_edge_the_fit_changes_with_the_column_across_the_edge`) and on the real
+file by `test_every_printed_range_edge_reads_as_the_range_it_closes`, which failed when the comparison was flipped to over <= d_B < upto
+(`34-16-red-edge.log`, `8a8258b`). A size is keyed by its exact floats: a diameter one float step off a listed size is off the tables (tier 2).
+
+**A broken file at startup** (D-04, A5; `src/spur/cli.py`, `src/spur/app.py`; 34-05, `ba6c305`). A set-but-broken file makes every `spur`
+subcommand refuse, the gear commands included: `cli.main` reads the tables once after `parse_args` and a `TablesError` exits 1 with
+`error: SPUR_DIN5480_TABLES=<path>: <reason>` on stderr, before `cmd_serve` imports uvicorn, so the refusal does not depend on how uvicorn's
+supervisor treats a lifespan failure. `--help` and `--version` still answer. The server's lifespan reads the tables too, before it builds the pool,
+as defence in depth for a direct `uvicorn spur.app:app` start. 34-RESEARCH assumed (A5) that the gear commands could be spared; the human
+decided that every subcommand refuses: an operator who set a broken file is told so whatever they run, and with the variable unset, which is
+everyone's default, the gear is untouched. The refusals were seen red against the unchanged CLI (11 failed, `34-05-red-refusal.log`). The uvicorn
+exit status for a lifespan failure is taken from the research and was not re-measured; the test pins what is ours: the error out of the lifespan and no pool left.
+
+**Reversibility:** costly. The five rows and their keys are wire keys, and the file's schema version 1 and its provenance fields are what a
+future regeneration must keep or supersede; the startup policy and the home of the file are reversible, and the reads and the gate cost are records. A
+committed table value cannot be taken back (D-01), which is why the repository holds the three approved anchors and counts only.
+
+**Reason:** the tool prints numbers someone will cut metal to (L08), and the standard's fit tables decide which numbers those are. Reading them from a private file
+the human transcribed twice and settled by diff, instead of from memory or from a copy in the repository, keeps both rules: no value is invented, and no licensed text is
+published. The same rules make a missing size print no number rather than a near one, a fit Table 7 does not hold a warning rather than a guess (L03), and a broken file a refusal rather
+than a quiet `null`. Phase 34's gate cost is one logged reading, `2934 passed in 213.54s` and `real 214.53` against the baseline's `2783 passed in 230.90s` and `real 232.23`,
+85.47 s under L43's 300 s bar by `real` (`bench/RESULTS.md` `### The gate delta (34-17)`).

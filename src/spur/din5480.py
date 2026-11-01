@@ -108,6 +108,22 @@ def tooth_thickness(m: float, xm: float) -> float:
     return math.pi * m / 2 + 2 * xm * math.tan(ALPHA)
 
 
+def thickness_limits(
+    s1: float, a_s_um: int, t_g_um: int, t_eff_um: int,
+) -> tuple[float, float, float]:
+    """(s_vmax, s_max, s_min) in mm for a fit: the maximum-material (effective) thickness and
+    the largest and smallest actual thickness.
+
+    DIN 5480-1:2006, Table 6: s_vmax = s1 + A_s, s_max = s_vmax - T_eff and s_min = s_vmax - T_G,
+    with s1 the nominal thickness (`tooth_thickness`). The deviations arrive in micrometres from
+    Table 7 and are divided here, so the caller never mixes the units. No rounding: the caller
+    rounds once, from this sum. The page's own worked example W 120x3x38x8f is the anchor
+    34-16 commits.
+    """
+    s_vmax = s1 + a_s_um / 1000
+    return s_vmax, s_vmax - t_eff_um / 1000, s_vmax - t_g_um / 1000
+
+
 def flank_half_angle(m: float, z: int, xm: float, r: float) -> float:
     """The tooth's half-angle in radians at radius r, from the tooth centre line.
 
@@ -156,8 +172,8 @@ def measure_over_pins(m: float, z: int, s: float, pin_d: float) -> tuple[float, 
     gauge pin 6.000 and the row's own thickness (tests/test_din5480_anchors.py). The odd
     factor is DIN 5480-1:2006, cl. 4, eq. (1). Both counts reproduce M1 of DIN 5480-2:2006-05,
     Tables 13 and 19, at the tabulated pin and the nominal thickness (four approved rows, two
-    odd, in the same test file). shaft_calc still prints no odd-count M_Re: the human kept the
-    gate (D-13; docs/ideas/2026-10-26-print-odd-tooth-count-measure-over-pins.md).
+    odd, in the same test file). shaft_calc prints an odd-count M_Re for a size the tables list
+    and keeps the gate elsewhere (D-11).
     Part 1 names these D_M, M1 and M2 and points to DIN 5480-15, 5.2.4.3 for D_Re and
     M_Re; that clause has not been read. ASSUMPTION (clause: DIN 5480-15,
     5.2.4.3 unread)

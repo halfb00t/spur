@@ -1,0 +1,189 @@
+34-17 close checks, HEAD d7c09b8, 2026-10-31T16:54:07Z
+Checks 1-14 below; 15 (the leak review) is appended by its own script.
+PASS 1. nothing under private/ is tracked
+  command: files="$(git ls-files -- private)" && test -z "$files"
+  | tracked files under private/: 0
+PASS 2. private/din5480-tables.json is git-ignored and .dockerignore holds private
+  command: git check-ignore -q private/din5480-tables.json; grep -x private .dockerignore; grep -x /private/ .gitignore
+  | check-ignore exit 0 (private/din5480-tables.json); .dockerignore: 22:private; .gitignore: 36:/private/
+PASS 3. tests/regression/ and ci.yml are byte-equal to v0.6
+  command: git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml
+  | exit 0, output lines: 0
+PASS 4. requirements.txt, tests/regression/, params.py and calc.py are unchanged since ddfb3ea
+  command: git diff --exit-code ddfb3ea -- requirements.txt tests/regression/ src/spur/params.py src/spur/calc.py
+  | exit 0, output lines: 0
+PASS 5. make gear.unchanged
+  command: make gear.unchanged
+  | gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6
+PASS 6. make lint-imports
+  command: make lint-imports
+  | Contracts: 10 kept, 0 broken.
+PASS 7. FIT_PATTERN reads r"^[1-9][0-9]?[a-z]$"
+  command: grep -n '^FIT_PATTERN' src/spur/din5480.py
+  | 47:FIT_PATTERN = r"^[1-9][0-9]?[a-z]$"
+PASS 8. ShaftParams().slug() is spur_shaft_w25x1.25x18 with and without SPUR_DIN5480_TABLES
+  command: python -c 'from spur.shaft_params import ShaftParams; print(ShaftParams().slug())' (unset, then set)
+  | unset: spur_shaft_w25x1.25x18; set: spur_shaft_w25x1.25x18
+PASS 9. make verify.fast under 30 s
+  command: /usr/bin/time -p make verify.fast
+  | real 14.75, rc 0, ============================ 2444 passed in 13.82s =============================, load after { 7.44 12.83 12.38 }
+PASS 10. make no-fake-done
+  command: make no-fake-done
+  | exit 0; 
+PASS 11. the two debt items are in resolved/ and the idea in retired/, with commits that exist
+  command: ls/grep on docs/tech_debt/{active,resolved}, docs/ideas/{,retired}; git cat-file -e <sha>^{commit}
+  | 2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md: Status resolved, absent from active/, in resolved/, Resolved in 51d5e63 (commit exists)
+  | 2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md: Status resolved, absent from active/, in resolved/, Resolved in 1fa8deb (commit exists)
+  | idea: Status retired, absent from docs/ideas/ top level, in retired/, moved in 8208de3 (commit exists)
+  | idea INDEX row is under retired
+PASS 12. make tables.test on the real table file
+  command: make tables.test FILE="$MAIN/private/din5480-tables.json"
+  | SPUR_DIN5480_TABLES="/Users/half/git/halfb00t/spur/private/din5480-tables.json" .venv/bin/python -m pytest --no-cov -n0 -q tests/din5480_real_tables_check.py
+  | ......................                                                   [100%]
+  | 22 passed in 5.36s
+PASS 13. the loader's read-once test and the tracked-JSON guard (tests/test_din5480_tables.py)
+  command: .venv/bin/python -m pytest --no-cov -n0 -q tests/test_din5480_tables.py
+  | .....................................................                    [100%]
+  | 53 passed in 0.15s
+PASS 14. the gate does not collect din5480_real_tables_check.py
+  command: grep -c din5480_real_tables_check 34-17-verify.log; pytest --collect-only -q | grep -c din5480_real_tables_check
+  | gate log lines naming it: 0; collected test ids naming it: 0
+PASS 15. the leak review: no number on an added line of the phase is a value of the standard beyond the approved anchors
+  command: git diff --name-only ddfb3ea HEAD (captured first, 117 files after leaving out the user's uncommitted .planning/state.json), then each file's added lines read with `git diff -U0 ddfb3ea HEAD -- <file>`; two passes in the scratchpad (leak_review.py, leak_review2.py), never committed
+  method, pass 1 (a number against every value): every number on an added line is compared with (a) every mm cell of the private table file (pin, M1, form diameter maximum; >= 2 decimals), (b) every micrometre cell (A_s, T_G, T_act, T_eff) where the line also names the quantity, and (c) every value `derive_shaft` prints from the file for any tabulated size and any of the 144 fits (s_vmax, s_max, s_min, M_Re max, M_Re min; 3 decimals). A number that equals none of them cannot be a value of the standard; one that equals one is read by eye and given a class.
+  method, pass 2 (a record against a line): two numbers of ONE record (one size's pin, M1 and form diameter; one size and fit's five derived values; a full T_G/T_act/T_eff row) on ONE line are not a coincidence. Each such line is read by eye.
+  limit: pass 1 cannot tell a leaked small integer from an equal small integer in prose, so an integer equal to a number of tests/test_din5480_anchors.py is counted as that anchor; pass 2 is what catches a leaked record. Text (clause wording) is not a number and was not scanned.
+  files: 117; value sets: mm cells 1258, um cells 81, derived 100721, anchor-file numbers 86
+  per file (added lines; numbers on them; numbers equal to a private value AND to a number of the anchors file; numbers equal to a private value and read by eye):
+  | .dockerignore: added 3, numbers 1, anchor 0, reviewed 0
+  | .gitignore: added 4, numbers 3, anchor 0, reviewed 0
+  | .planning/REQUIREMENTS.md: added 12, numbers 7, anchor 1, reviewed 0
+  | .planning/ROADMAP.md: added 39, numbers 110, anchor 3, reviewed 1
+  | .planning/STATE.md: added 48, numbers 189, anchor 25, reviewed 2
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-01-PLAN.md: added 277, numbers 399, anchor 70, reviewed 2
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-01-SUMMARY.md: added 180, numbers 262, anchor 18, reviewed 4
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-02-PLAN.md: added 403, numbers 469, anchor 99, reviewed 8
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-02-SUMMARY.md: added 243, numbers 255, anchor 42, reviewed 5
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-03-PLAN.md: added 303, numbers 269, anchor 39, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-03-SUMMARY.md: added 207, numbers 230, anchor 8, reviewed 5
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-04-PLAN.md: added 380, numbers 396, anchor 67, reviewed 47
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-04-SUMMARY.md: added 234, numbers 228, anchor 30, reviewed 17
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-05-PLAN.md: added 306, numbers 172, anchor 28, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-05-SUMMARY.md: added 196, numbers 117, anchor 9, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-06-PLAN.md: added 252, numbers 285, anchor 59, reviewed 17
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-06-SUMMARY.md: added 206, numbers 223, anchor 23, reviewed 18
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-07-PLAN.md: added 311, numbers 202, anchor 34, reviewed 7
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-07-SUMMARY.md: added 225, numbers 223, anchor 11, reviewed 7
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-08-PLAN.md: added 200, numbers 226, anchor 24, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-08-SUMMARY.md: added 139, numbers 205, anchor 18, reviewed 4
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-09-PLAN.md: added 201, numbers 236, anchor 32, reviewed 9
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-09-SUMMARY.md: added 127, numbers 172, anchor 20, reviewed 7
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-10-PLAN.md: added 199, numbers 227, anchor 24, reviewed 1
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-10-SUMMARY.md: added 136, numbers 192, anchor 17, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-11-PLAN.md: added 198, numbers 225, anchor 24, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-11-SUMMARY.md: added 113, numbers 144, anchor 14, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-12-PLAN.md: added 208, numbers 228, anchor 72, reviewed 1
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-12-SUMMARY.md: added 166, numbers 228, anchor 68, reviewed 2
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-13-PLAN.md: added 212, numbers 230, anchor 67, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-13-SUMMARY.md: added 160, numbers 192, anchor 56, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-14-PLAN.md: added 239, numbers 223, anchor 42, reviewed 1
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-14-SUMMARY.md: added 167, numbers 230, anchor 42, reviewed 3
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-15-PLAN.md: added 271, numbers 271, anchor 63, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-15-SUMMARY.md: added 165, numbers 207, anchor 22, reviewed 2
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-16-PLAN.md: added 251, numbers 166, anchor 30, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-16-SUMMARY.md: added 178, numbers 125, anchor 22, reviewed 3
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-17-PLAN.md: added 254, numbers 322, anchor 63, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-CONTEXT.md: added 271, numbers 193, anchor 22, reviewed 3
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-DISCUSSION-LOG.md: added 125, numbers 22, anchor 2, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-RESEARCH.md: added 645, numbers 798, anchor 108, reviewed 15
+  | .planning/phases/34-fit-tables-and-tolerance-window/34-VALIDATION.md: added 96, numbers 34, anchor 2, reviewed 1
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-01-toolchain.log: added 20, numbers 54, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-01-verify-contended-meta.log: added 9, numbers 27, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-01-verify-contended.log: added 5671, numbers 4178, anchor 50, reviewed 63
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-01-verify-meta.log: added 11, numbers 24, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-01-verify.log: added 5671, numbers 4178, anchor 53, reviewed 62
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-02-red-guards.log: added 32, numbers 27, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-02-red-invariants.log: added 61, numbers 27, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-03-read1.log: added 12, numbers 43, anchor 2, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-03-red-diff.log: added 24, numbers 41, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-04-red-tiers.log: added 216, numbers 135, anchor 6, reviewed 5
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-04-red-window.log: added 361, numbers 82, anchor 8, reviewed 14
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-05-red-initargs.log: added 62, numbers 35, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-05-red-refusal.log: added 530, numbers 197, anchor 1, reviewed 12
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-06-red-guard.log: added 74, numbers 73, anchor 8, reviewed 13
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-06-red-odd.log: added 53, numbers 35, anchor 10, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-07-red-browser.log: added 2324, numbers 645, anchor 0, reviewed 1
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-07-red-thickness.log: added 40, numbers 54, anchor 5, reviewed 7
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-08-read2.log: added 38, numbers 80, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-09-read2.log: added 39, numbers 80, anchor 6, reviewed 3
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-10-read2.log: added 38, numbers 65, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-11-read2.log: added 20, numbers 69, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-12-table7.log: added 25, numbers 70, anchor 26, reviewed 4
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-13-table7.log: added 43, numbers 85, anchor 40, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-14-assemble.log: added 40, numbers 71, anchor 10, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-14-disagreements.log: added 45, numbers 103, anchor 9, reviewed 1
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-15-red-anchors.log: added 76, numbers 115, anchor 22, reviewed 5
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-15-sweeps.log: added 54, numbers 114, anchor 9, reviewed 3
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-15-sweeps.py: added 384, numbers 179, anchor 9, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-16-real-file.log: added 8, numbers 11, anchor 0, reviewed 1
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-16-red-anchors.log: added 15, numbers 40, anchor 8, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-16-red-edge.log: added 16, numbers 12, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-17-verify-meta.log: added 10, numbers 23, anchor 0, reviewed 0
+  | .planning/phases/34-fit-tables-and-tolerance-window/investigation/34-17-verify.log: added 5973, numbers 4369, anchor 48, reviewed 61
+  | Makefile: added 28, numbers 15, anchor 0, reviewed 0
+  | README.md: added 3, numbers 3, anchor 0, reviewed 0
+  | bench/RESULTS.md: added 137, numbers 553, anchor 20, reviewed 6
+  | docs/architecture/cli.md: added 9, numbers 2, anchor 0, reviewed 0
+  | docs/architecture/decision_log.md: added 140, numbers 283, anchor 18, reviewed 1
+  | docs/architecture/http-api.md: added 1, numbers 5, anchor 0, reviewed 0
+  | docs/architecture/packaging.md: added 22, numbers 5, anchor 0, reviewed 0
+  | docs/ideas/INDEX.md: added 1, numbers 11, anchor 0, reviewed 0
+  | docs/ideas/retired/2026-10-26-print-odd-tooth-count-measure-over-pins.md: added 29, numbers 41, anchor 1, reviewed 0
+  | docs/tech_debt/INDEX.md: added 6, numbers 58, anchor 25, reviewed 1
+  | docs/tech_debt/active/2026-10-30-browser-test-shaft-schema-wait-flakes-under-host-load.md: added 33, numbers 27, anchor 0, reviewed 0
+  | docs/tech_debt/active/2026-10-31-din5480-tables-loader-refusals-not-reached-by-a-test.md: added 23, numbers 41, anchor 0, reviewed 0
+  | docs/tech_debt/active/2026-10-31-table-12-m1-25-db19-z14-row-missing-from-our-copy.md: added 23, numbers 46, anchor 5, reviewed 0
+  | docs/tech_debt/resolved/2026-10-26-fit-pattern-accepts-fits-outside-the-standards-set.md: added 29, numbers 31, anchor 7, reviewed 0
+  | docs/tech_debt/resolved/2026-10-26-form-diameter-construction-exceeds-din5480-2-maximum.md: added 31, numbers 42, anchor 2, reviewed 0
+  | docs/tech_debt/resolved/2026-10-30-table-7-tolerance-table-has-30-rows-not-24.md: added 24, numbers 78, anchor 51, reviewed 1
+  | scripts/din5480_read1.py: added 220, numbers 91, anchor 0, reviewed 0
+  | scripts/din5480_tables_tool.py: added 314, numbers 80, anchor 20, reviewed 0
+  | src/spur/app.py: added 8, numbers 5, anchor 0, reviewed 0
+  | src/spur/cli.py: added 10, numbers 3, anchor 0, reviewed 0
+  | src/spur/din5480.py: added 18, numbers 12, anchor 1, reviewed 0
+  | src/spur/din5480_tables.py: added 419, numbers 160, anchor 13, reviewed 2
+  | src/spur/pool.py: added 19, numbers 7, anchor 0, reviewed 0
+  | src/spur/shaft_calc.py: added 214, numbers 89, anchor 3, reviewed 1
+  | src/spur/shaft_model.py: added 11, numbers 6, anchor 0, reviewed 0
+  | src/spur/shaft_params.py: added 20, numbers 9, anchor 0, reviewed 0
+  | tests/browser_session.py: added 12, numbers 3, anchor 0, reviewed 0
+  | tests/conftest.py: added 47, numbers 7, anchor 0, reviewed 0
+  | tests/din5480_real_tables_check.py: added 300, numbers 104, anchor 6, reviewed 2
+  | tests/din5480_tables_fixture.py: added 100, numbers 121, anchor 22, reviewed 2
+  | tests/shaft_parity.py: added 3, numbers 3, anchor 0, reviewed 0
+  | tests/test_browser.py: added 71, numbers 11, anchor 0, reviewed 0
+  | tests/test_cli.py: added 64, numbers 12, anchor 1, reviewed 0
+  | tests/test_din5480_anchors.py: added 103, numbers 164, anchor 28, reviewed 0
+  | tests/test_din5480_read1.py: added 184, numbers 225, anchor 4, reviewed 13
+  | tests/test_din5480_tables.py: added 434, numbers 195, anchor 45, reviewed 3
+  | tests/test_din5480_tables_tool.py: added 328, numbers 127, anchor 23, reviewed 0
+  | tests/test_pool.py: added 111, numbers 36, anchor 0, reviewed 0
+  | tests/test_shaft_calc.py: added 366, numbers 290, anchor 45, reviewed 46
+  | tests/test_shaft_interfaces.py: added 32, numbers 16, anchor 0, reviewed 0
+  | tests/test_shaft_model.py: added 113, numbers 38, anchor 1, reviewed 2
+  | tests/test_shaft_parity.py: added 27, numbers 7, anchor 0, reviewed 0
+  | TOTAL {tokens: 27539, anchor-equal: 2091, to-review: 527}
+  pass 2: 34632 added lines read, 68 flagged and read by eye (log leak-review2 in the scratchpad): 0 outside the classes below.
+  classes of the numbers read by eye (all 527 pass-1 and all 68 pass-2 lines; none is outside the six):
+  | approved anchor: the Table 7 cells, limit thicknesses, form diameter maximum and pin of W 120x3x38x8f, W 25x1.25x18x8f and W 26x1.25x19x8f, the page example's thicknesses and M1 minimum and the page example's hub-space widths (tests/test_din5480_anchors.py, 34-CONTEXT D-05); the Phase 31 anchors (D_M and M1 of W 25x1.25x18, W 26x1.25x19, W 30x2x14, W 30x2x13) which tests/din5480_tables_fixture.py uses and which 34-RESEARCH quotes.
+  | invented fixture value: tests/din5480_tables_fixture.py's Table 7 (formula-made) and the numbers the light tests and plans/logs derive from it (34-04, 34-06, 34-07 PLAN, SUMMARY, red logs, tests/test_shaft_calc.py, tests/test_shaft_model.py, tests/test_din5480_tables.py, tests/test_din5480_read1.py's invented read text). Checked against the real file, cell by cell: the fixture's 4 Part 2 rows agree with it on the approved pin and M1 only, its 4 non-approved form diameter maxima disagree, 15 of 15 tolerance cells disagree, 9 of 9 class cells disagree, and 9 deviation cells agree in 3 (the letter h, whose deviation is 0 by definition).
+  | count: 720/16/18/8/30/21, 102096, 1584, 144, 211, byte and character counts, test and plan counts, row counts in the SUMMARYs and logs.
+  | location key: module, d_B and z of a size, the module list and range edges, the float-key tests around 25 (25.000001, 24.999, 30.001), designation strings such as W 3.75x0.5x6x8f, the 11 refused sizes' module/d_B/z.
+  | measurement of this repository's code: timings, host load, test counts, coverage rows, the gear and shaft values the existing tests and the red logs print (root_d, base_d, M for the default gear, test_span_measurement ids), the numbers in the Makefile, the code's own constants (UM_LIMIT, MAX_FILE_BYTES, GUARD_MARGIN_FACTOR, coefficients of the construction).
+  | page, table or clause number: page 18, 19, 24, Tables 6, 7, 12, 13, clause 9.1, 10.9 and the like.
+  | exception found: none. One coincidence, checked and recorded: the invented fixture's default-shaft limits (the test pair of tests/test_shaft_calc.py and 34-04-PLAN, made by the formula from the fixture's invented A_s, T_G, T_act and T_eff) equal, as a pair, a real derived pair (retired after the human's ruling, 282f264); the fixture's s_vmax differs from the approved anchor's for the same designation, and its cells differ from the file's (above). The pass-2 lines in .planning/phases/34-*/34-04-PLAN.md etc. are the fixture's arithmetic for the same reason. The equality is the dense value space and the formula, not a copy.
+  result: 0 numbers outside the six classes. Re-run once more at the final HEAD for the files this plan adds (see the last line).
+closing re-run of check 15 over the files this plan adds after d7c09b8 (bench/RESULTS.md sections, this log, 34-17-SUMMARY.md, STATE.md, ROADMAP.md, REQUIREMENTS.md; the user's .planning/state.json is not in the review), same two passes, read against the working tree before the final commit:
+  | 6 files, 417 added lines, 1465 numbers; pass 1: 54 numbers equal to a value and not to an anchor number, all read by eye (counts in this log, the test-pair and the location keys 30.001, 3.75, 25.000001 and 24.999 copied from the SUMMARYs into the seen-red table, timestamps in STATE.md); pass 2: 1 line flagged (a list of plan numbers in the SUMMARY that happens to contain a tolerance triple's integers).
+  | result: 0 numbers outside the six classes.
+check 15, closing re-run included: the leak review stands (its PASS line is above).

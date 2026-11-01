@@ -8,7 +8,10 @@ imports it, and the reverse edge would be a cycle.
 `build_shaft` reads every number from `derive_shaft` (the printed tip and root diameters
 and the applied end chamfer) and the flank from `din5480.flank_half_angle`, and re-derives
 none of them, so the part and the numbers printed for it cannot name different shafts (L08).
-The solid is the nominal one; Phase 34 switches the thickness (ROADMAP Phase 32).
+The solid carries the printed maximum effective tooth thickness s_vmax when the tables give
+one for the shaft's size and fit, and the nominal thickness otherwise, with the warning that
+says so (D-13, REQ-solid-max-material). The download name is L49's either way: the row and
+the warning, not the file name, tell the two solids apart.
 
 The walls are tested against an independent closed form (tests/shaft_oracle.py), never
 against isValid() alone: the kernel returns an empty shape and a 3-face remnant that both
@@ -178,9 +181,15 @@ def build_shaft(p: ShaftParams) -> cq.Solid:
     ra, rf = dims.tip_d / 2, dims.root_d / 2
     c = dims.end_chamfer_effective or 0.0
     xm = din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module
+    # The printed s_vmax (rounded to 0.001 mm) is what the solid carries, written as the
+    # flank's shift s = pi*m/2 + 2*xm*tan(ALPHA), so the part and the number name one shaft
+    # (L08). Tip and root stay the printed diameters: A_s moves the flank, not them.
+    s_vmax = dims.max_effective_thickness
+    xm_flank = xm if s_vmax is None else (
+        (s_vmax - math.pi * p.module / 2) / (2 * math.tan(din5480.ALPHA)))
     _guard_cone_start(ra, rf, c)
     try:
-        face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm, ra, rf))
+        face = cq.Face.makeFromWires(_outline(p.module, p.teeth, xm_flank, ra, rf))
         area = face.Area()
         body: cq.Shape = cq.Solid.extrudeLinear(face, cq.Vector(0, 0, p.splined_length))
         if p.shank_length > 0:

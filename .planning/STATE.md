@@ -3,18 +3,17 @@ gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Splined Shaft
 current_phase: 34
-current_phase_name: Fit Tables and Tolerance Window
-status: "Phase 33 shipped — PR #53"
-stopped_at: Phase 33 complete, ready to plan Phase 34
-last_updated: "2026-10-30T03:09:12.100Z"
-last_activity: 2026-10-30
-state_head: 737a3ee7b84d7ef63ff17f7ba401b890a0b4c51c
+status: "Phase 34 shipped — PR #55"
+stopped_at: Phase 34 complete — all phases complete
+last_updated: "2026-11-01T05:34:04.776Z"
+last_activity: 2026-11-01
+state_head: 37739b0fd12dd87b60e83a288c7166ce9171eb8b
 progress:
   total_phases: 5
-  completed_phases: 10
-  total_plans: 27
-  completed_plans: 27
-  percent: 91
+  completed_phases: 11
+  total_plans: 44
+  completed_plans: 44
+  percent: 100
 ---
 
 # Project State
@@ -29,10 +28,10 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 
 ## Current Position
 
-Phase: 34 — Fit Tables and Tolerance Window
+Phase: 34
 Plan: Not started
-Status: Phase 33 shipped — PR #53
-Last activity: 2026-10-30
+Status: Phase 34 shipped — PR #55
+Last activity: 2026-11-01
 
 ## Performance Metrics
 
@@ -81,6 +80,7 @@ Last activity: 2026-10-30
 | 31 | 6 | - | - |
 | 32 | 6 | - | - |
 | 33 | 10 | - | - |
+| 34 | 17 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -297,6 +297,23 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 33 P08 | 22 min | 3 tasks | 15 files |
 | Phase 33 P09 | 14 min | 3 tasks | 14 files |
 | Phase 33 P10 | 25 min | 3 tasks | 10 files |
+| Phase 34 P01 | 22 min | 3 tasks | 8 files |
+| Phase 34 P02 | 6 min | 3 tasks | 6 files |
+| Phase 34 P03 | 15min | 2 tasks | 7 files |
+| Phase 34 P04 | 11 min | 3 tasks | 11 files |
+| Phase 34 P05 | 13 min | 3 tasks | 8 files |
+| Phase 34 P06 | 10 min | 2 tasks | 12 files |
+| Phase 34 P08 | 30 min | 2 tasks | 1 files |
+| Phase 34 P09 | 6min | 2 tasks | 1 files |
+| Phase 34 P10 | 4 min | 2 tasks | 1 files |
+| Phase 34 P11 | 6 min | 2 tasks | 1 files |
+| Phase 34 P12 | 7 min | 2 tasks | 3 files |
+| Phase 34 P13 | 25 min | 2 tasks | 1 files |
+| Phase 34 P07 | 23 min | 3 tasks | 7 files |
+| Phase 34 P14 | 1h | 3 tasks | 6 files |
+| Phase 34 P15 | about 1 h | 3 tasks | 5 files |
+| Phase 34 P16 | 40min | 2 tasks | 8 files |
+| Phase 34 P17 | 50min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -601,6 +618,25 @@ pending; the next milestone starts this list fresh.
 - [Phase 33]: B2 in the browser is the 91-token re-read on the seven shaft inputs plus one all-fields API request per blanked token
 - [Phase 33]: 33-09: the shaft scenarios stay out of DEFAULT_SCENARIOS and out of the report's baseline/2.00x lines; heaviest shaft under ten concurrent requests: 4 of 10 admitted, 6 busy, no timeout/pool_broken/500, slowest 200 10.16 s of 30 s; gate 2778 passed in 241.55 s (real 242.47) vs 33-01's 2644 in 229.17 s, no speed claim
 - [Phase 33]: 33-10: the refused look is CSS on body[data-refused] and the narrow order is aside { display: contents } plus order, so D-12, D-15, D-20 and L41 stand; the review's message-by-the-switch is met by outlining the switch
+- [Phase 34]: 34-01: the gate baseline of record is the second make verify run (2783 passed in 230.90s, real 232.23); the first, green but under a sibling project's load (338.98s, load 26.16), is kept as a contended reading.
+- [Phase 34]: 34-02: the d_B edge reads over < d_B <= upto ([ASSUMED] A1) in one function, _columns_selecting; 34-15 confirms or reverses it
+- [Phase 34]: 34-02: a failed table load is cached and re-raised on every call, never retried or turned into a quiet None
+- [Phase 34]: 34-03: the tables tool is scripts/din5480_tables_tool.py (not scripts/din5480_tables.py); completeness is checked by check --complete and by assemble, not at load; diff reads schema-only so an invariant-failing read stays comparable
+- [Phase 34]: 34-04: no sixth thickness row; max_effective_thickness is the row the solid carries (null = nominal, SOLID_AT_NOMINAL_THICKNESS says so)
+- [Phase 34]: 34-04: a fit outside Table 7 is a 200 with a warning and a null window, FIT_PATTERN unchanged (D-14); fit-pattern debt resolved in 51d5e63
+- [Phase 34]: 34-05 A5: every spur subcommand refuses on a broken SPUR_DIN5480_TABLES (one call in cli.main); gear commands included, unset variable changes nothing — CONTEXT: the server and the CLI refuse to start; one line is simpler than three; cmd_serve refuses before uvicorn, independent of A4
+- [Phase 34]: 34-05: app.lifespan reads the tables too (defence in depth for a direct uvicorn start); the parent's object reaches every build worker via initargs, never a re-read (D-13) — A replaced worker must build the part the parent's printed numbers describe
+- [Phase 34]: 34-06: for a listed size the pin-contact guard's floor is the copy's d_Ff1 maximum plus the unchanged 0.1*m margin, per reading; the odd-count gate lifts exactly where the table has the row (D-11, D-12)
+- [Phase 34]: 34-08: read 2 part a is a typed TSV plus a throwaway converter in private/reads (join on d_B,z exactly-once rule in code); 161 rows, 0 left out, 0 re-read
+- [Phase 34]: 34-12: read A of Table 7 holds the 30 tolerance rows the page prints, not the 24 the plan and RESEARCH expect; filed as must debt for 34-14 (the tooling constant), nothing trimmed (L08, D-05).
+- [Phase 34]: 34-13: read B of Table 7 records 30 tolerance rows as the page prints them, not the plan's 24; recorded as a disagreement for 34-14, nothing trimmed
+- [Phase 34]: D-13 (raised by 34-04, human chose KEEP): no separate always-present thickness row; max_effective_thickness is the row the solid carries (printed: solid cut at it; null: cut at nominal thickness, SOLID_AT_NOMINAL_THICKNESS says so). No sixth thickness key. — 34-07: the solid carries the printed value rounded to 0.001 mm; the download name stays L49's.
+- [Phase 34]: Table 7's tolerance table has 30 rows; EXPECTED_COUNTS tolerance_rows is 30 (human, 34-14)
+- [Phase 34]: Table 12's m=1.25 d_B 19 z 14 nominal row is not printed in our copy; it stays out and EXPECTED_COUNTS sizes is 720 (human, 34-14)
+- [Phase 34]: 34-15: range edge reads x < d_B <= y (edge-upper), confirmed by the human against page 24; Tables.column_for unchanged
+- [Phase 34]: 34-15: F1 accepted as printed - the 11 shift-range-refused sizes keep the 422 under the existing debt item; F2 accepted
+- [Phase 34]: 34-16: range edge reads x < d_B <= y (edge-upper), confirmed by the human against page 24; pinned on both sides of every printed edge of the real file by make tables.test
+- [Phase 34]: L50 logs Phase 34: the private table file, the two reads, the approved anchors, the window and limits by tier, the solid at maximum material, the range edge (edge-upper) and the refusal of every subcommand on a broken file
 
 ### Pending Todos
 
@@ -927,8 +963,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-29T02:16:28Z
-Stopped at: Phase 33 complete, ready to plan Phase 34
+Last session: 2026-10-31T17:01:41.010Z
+Stopped at: Phase 34 complete — all phases complete
 Resume file: None
 
 ## Operator Next Steps

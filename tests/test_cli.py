@@ -9,13 +9,14 @@ from pathlib import Path
 from typing import Literal, cast, get_args, get_origin
 
 import cadquery as cq
+import din5480_tables_fixture
 import pytest
 from composition import BORE_REFUSALS, CUTOUT_REFUSALS, TROCHOID_THICKNESS
 from fastapi.testclient import TestClient
 
 import spur.app
 import spur.model
-from spur import cli
+from spur import cli, din5480_tables
 from spur.app import InfoQuery, build_backend
 from spur.build_errors import BuildError
 from spur.calc import DerivedDimensions, check
@@ -880,3 +881,65 @@ def test_readme_shaft_examples_run(tmp_path: Path, capsys: pytest.CaptureFixture
             assert written.stat().st_size > 1000
         else:
             assert json.loads(out)["designation"]
+
+
+def _table_file_with_a_wrong_t_g(tmp_path: Path) -> Path:
+    """The fixture file with its first tolerance row's T_G off by one, so T_G != T_act + T_eff."""
+    document = json.loads(din5480_tables_fixture.text())
+    document["tolerances"][0]["t_g_um"] += 1
+    path = tmp_path / "tables.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize("which", ["unvalidated", "missing"])
+@pytest.mark.parametrize("argv", [
+    ["shaft", "info"], ["shaft", "export", "-o", "{tmp}/s.stl"], ["info"],
+    ["export", "-o", "{tmp}/g.stl"], ["serve"]], ids=lambda a: " ".join(a[:2]))
+def test_a_broken_table_file_stops_every_command_with_the_reason(
+        argv: list[str], which: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """D-04: a file someone set and that cannot be loaded is a refusal at startup, never a
+    shaft that quietly prints every table number as null. One call in `main()` serves all
+    five commands, and `spur serve` never reaches uvicorn."""
+    def uvicorn_must_not_run(*args: object, **kwargs: object) -> None:
+        raise AssertionError("uvicorn.run was reached with a broken table file")
+
+    monkeypatch.setattr("uvicorn.run", uvicorn_must_not_run)
+    path = (_table_file_with_a_wrong_t_g(tmp_path) if which == "unvalidated"
+            else tmp_path / "absent.json")
+    monkeypatch.setenv(din5480_tables.ENV_VAR, str(path))
+    with pytest.raises(SystemExit) as exc:
+        cli.main([a.replace("{tmp}", str(tmp_path)) for a in argv])
+    code = str(exc.value.code)
+    assert code.startswith(f"error: SPUR_DIN5480_TABLES={path}")
+    assert ("tolerances" in code) if which == "unvalidated" else ("does not exist" in code)
+    assert not list(tmp_path.glob("*.stl"))
+    assert capsys.readouterr().out == ""
+
+
+def test_version_still_answers_with_a_broken_table_file(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        capsys: pytest.CaptureFixture[str]) -> None:
+    """argparse exits on --version before `main()` reads the tables, so an operator can
+    still ask which build is installed while the file is being fixed."""
+    monkeypatch.setenv(din5480_tables.ENV_VAR, str(tmp_path / "absent.json"))
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["--version"])
+    assert exc.value.code == 0
+    assert capsys.readouterr().out.startswith("spur ")
+
+
+def test_spur_serve_refuses_a_broken_table_file_from_the_real_process(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """D-04 executed once against the real process: exit 1, the reason on stderr, nothing
+    on stdout and no socket (`--port 0` would otherwise print uvicorn's address)."""
+    path = _table_file_with_a_wrong_t_g(tmp_path)
+    monkeypatch.setenv(din5480_tables.ENV_VAR, str(path))
+    result = subprocess.run(
+        [sys.executable, "-m", "spur.cli", "serve", "--port", "0"],
+        capture_output=True, text=True, check=False, timeout=60)
+    assert result.returncode == 1
+    assert result.stderr.startswith("error: SPUR_DIN5480_TABLES=")
+    assert str(path) in result.stderr
+    assert result.stdout == ""

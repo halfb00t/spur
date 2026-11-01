@@ -31,10 +31,21 @@ client = TestClient(app)
 
 # Typed from the planning measurements, never computed from the code under test (L08): the
 # keys each shaft prints as null.
+_WINDOW = {"max_effective_thickness", "max_actual_thickness", "min_actual_thickness",
+           "measure_over_pins_max", "measure_over_pins_min"}
 NULLS = {
+    "default": {"form_d"} | _WINDOW,
+    "w30x2x14": {"form_d"} | _WINDOW,
+    "odd-z": {"form_d", "measure_over_pins"} | _WINDOW,
+    "no-shank-no-chamfer": {"form_d", "end_chamfer_effective"} | _WINDOW,
+}
+# With the synthetic tables loaded the four shafts are all listed with a fit in Table 7, so
+# the window prints, and the listed odd count prints M_Re and both limits at the tabulated pin
+# (34-06 planning measurement, 2026-10-30; D-11).
+NULLS_WITH_TABLES = {
     "default": {"form_d"},
     "w30x2x14": {"form_d"},
-    "odd-z": {"form_d", "measure_over_pins"},
+    "odd-z": {"form_d"},
     "no-shank-no-chamfer": {"form_d", "end_chamfer_effective"},
 }
 
@@ -64,6 +75,21 @@ def test_the_api_and_the_cli_print_one_shaft_document(
     assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
     assert list(from_api) == list(ShaftDimensions.model_fields)
     assert {k for k, v in from_cli.items() if v is None} == NULLS[name]   # empty
+
+
+@pytest.mark.usefixtures("with_tables")
+@pytest.mark.parametrize("name", SHAFTS)
+def test_the_api_and_the_cli_print_one_shaft_document_with_the_tables(
+        name: str, capsys: pytest.CaptureFixture[str]) -> None:
+    values = SHAFTS[name]
+    cli.main(cli_argv(values))
+    from_cli = json.loads(capsys.readouterr().out)
+    from_api = client.get("/api/shaft/info", params=values).json()
+
+    assert differences(from_cli, from_api) == []
+    assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+    assert set(from_cli) >= _WINDOW                                   # the five keys exist
+    assert {k for k, v in from_cli.items() if v is None} == NULLS_WITH_TABLES[name]
 
 
 @pytest.mark.parametrize("name", SHAFTS)

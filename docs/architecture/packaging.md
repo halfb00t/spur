@@ -70,6 +70,34 @@ CI additionally builds the image and curls `/api/health`, `/api/model.stl` and
 `/api/model.step` against the running container, and rebuilds the three.js bundle to
 prove it still matches `web/` (L11).
 
+## The private table file
+
+The DIN 5480 table values are a licensed copy and the image never contains them: `.dockerignore`
+lists `private`, and the Dockerfile copies only `src` and `docker`. To serve with them,
+bind-mount the file read-only into the container and name it with the variable, in an
+override file the operator keeps (`compose.yaml` has no default path, D-02):
+
+```yaml
+services:
+  spur:
+    volumes:
+      - ./private/din5480-tables.json:/run/spur/din5480-tables.json:ro
+    environment:
+      SPUR_DIN5480_TABLES: /run/spur/din5480-tables.json
+```
+
+The image runs as uid 10001, so the file must be readable by that uid, which a host file
+owned by the operator at mode 0600 is not; the container then exits at startup (D-04). Give
+it to the container's user and drop everyone else:
+`chown 10001 private/din5480-tables.json && chmod 0400 private/din5480-tables.json`
+(the operator then reads it with `sudo`, or chowns it back).
+
+`read_only: true` on the root filesystem needs no change for a read-only mount. A file that
+cannot be loaded stops the container with the reason on stderr (D-04, exit 1 from `spur
+serve`). Every uvicorn worker then reads the same variable, and every build worker receives
+the one object the parent loaded, so a replaced worker builds the part the numbers describe
+(D-13; `tests/test_pool.py::test_a_worker_and_its_replacement_carry_the_parents_tables`).
+
 ## Platform notes
 
 `make venv` picks `python3.12` itself and says so if it cannot find one, because a

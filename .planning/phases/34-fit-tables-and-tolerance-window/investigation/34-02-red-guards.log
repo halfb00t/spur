@@ -1,0 +1,32 @@
+# guard 1: test_the_private_directory_is_ignored_by_git_and_by_docker, with the /private/ line removed from .gitignore
+F                                                                        [100%]
+=================================== FAILURES ===================================
+E   AssertionError: private/din5480-tables.json
+    assert 1 == 0
+     +  where 1 = CompletedProcess(args=['git', 'check-ignore', '-q', 'private/din5480-tables.json'], returncode=1).returncode
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:387: AssertionError: private/din5480-tables.json
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_the_private_directory_is_ignored_by_git_and_by_docker
+1 failed, 52 deselected in 0.02s
+
+# guard 1b: the same test with the 'private' line removed from .dockerignore
+F                                                                        [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert 'private' in ['.git', '.gitignore', '.venv', 'venv', '**/__pycache__', '**/*.py[cod]', ...]
+     +  where ['.git', '.gitignore', '.venv', 'venv', '**/__pycache__', '**/*.py[cod]', ...] = <built-in method splitlines of str object at 0x10bb9b840>()
+     +    where <built-in method splitlines of str object at 0x10bb9b840> = '.git\n.gitignore\n.venv\nvenv\n**/__pycache__\n**/*.py[cod]\n.pytest_cache\nbuild\ndist\n*.egg-info\nweb\ntests\n*.st...is is the second belt that keeps the\n# private DIN 5480 table directory out of the build context sent to the daemon\n'.splitlines
+     +      where '.git\n.gitignore\n.venv\nvenv\n**/__pycache__\n**/*.py[cod]\n.pytest_cache\nbuild\ndist\n*.egg-info\nweb\ntests\n*.st...is is the second belt that keeps the\n# private DIN 5480 table directory out of the build context sent to the daemon\n' = read_text(encoding='utf-8')
+     +        where read_text = (PosixPath('/Users/half/git/halfb00t/spur') / '.dockerignore').read_text
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:388: AssertionError: assert 'private' in ['.git', '.gitignore', '.venv', 'venv', '**/__pycache__', '**/*.py[cod]', ...]
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_the_private_directory_is_ignored_by_git_and_by_docker
+1 failed, 52 deselected in 0.02s
+
+# guard 2: test_no_tracked_json_file_is_a_table_file, with a renamed copy of the synthetic document tracked at tests/_seen_red_tables.json
+F                                                                        [100%]
+=================================== FAILURES ===================================
+E   Failed: DID NOT RAISE ValidationError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:399: Failed: DID NOT RAISE ValidationError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_no_tracked_json_file_is_a_table_file
+1 failed, 52 deselected in 0.02s

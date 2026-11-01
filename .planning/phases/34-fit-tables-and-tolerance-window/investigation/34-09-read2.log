@@ -1,0 +1,39 @@
+34-09 read 2, part b of DIN 5480-2 (modules 1, 1.25, 1.5, 1.75). Counts and locations only; no value.
+
+== Module 1 (section 8, Tables 10 and 11, pages 16 and 17) ==
+rows read, nominal page (16): 42
+rows read, inspection page (17): 42
+keys left out: none
+rows in the document: 42
+rows re-read after `make tables.check`: none
+make tables.check on part2-read2-b.json (module 1 only): ok
+
+== Module 1.25 (section 9, Tables 12 and 13, pages 18 and 19) ==
+rows read, nominal page (18): 48
+rows read, inspection page (19): 48
+keys left out (2), as the pages print them:
+  module 1.25, Tables 12 and 13, page 18, d_B 20, z 14: printed twice on the nominal page, once on the inspection page (19)
+  module 1.25, Tables 12 and 13, page 19, d_B 19, z 14: printed once on the inspection page, not on the nominal page (18)
+  Which row belongs under which d_B is the human's call from the page at 34-14 (D-08).
+rows in the document: 46
+rows re-read after `make tables.check`: none
+
+== Module 1.5 (section 10, Tables 14 and 15, pages 20 and 21) ==
+rows read, nominal page (20): 56
+rows read, inspection page (21): 56
+keys left out: none
+rows in the document: 56
+rows re-read after `make tables.check`: none
+
+== Module 1.75 (section 11, Tables 16 and 17, pages 22 and 23) ==
+rows read, nominal page (22): 58
+rows read, inspection page (23): 58
+keys left out: none
+rows in the document: 58
+rows re-read after `make tables.check`: none
+
+== Whole part b ==
+total rows in the document: 202 (modules 1, 1.25, 1.5, 1.75)
+total keys left out: 2 (both module 1.25)
+total rows re-read: 0
+make tables.check on part2-read2-b.json: ok

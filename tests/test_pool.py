@@ -12,6 +12,8 @@ from __future__ import annotations
 import ast
 import asyncio
 import gc
+import hashlib
+import json
 import logging
 import multiprocessing as mp
 import os
@@ -27,10 +29,12 @@ from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
 from typing import cast
 
+import din5480_tables_fixture
 import pytest
 from fastapi.testclient import TestClient
 
 import spur.pool
+from spur import din5480_tables
 from spur.app import ModelQuery, _gear, app, build_backend
 from spur.build_errors import BuildError, BuildTimeout
 from spur.params import GearParams
@@ -714,6 +718,113 @@ def test_a_real_worker_builds_and_exports_a_shaft() -> None:
         # filterwarnings = error: an executor this test left running would be a failure
         for each in pool._executors:
             each.shutdown(wait=True)
+
+
+def _installed_tables() -> bytes:
+    """Module-level for `spawn`: the SHA-256 of the tables this worker would build with."""
+    tables = din5480_tables.active()
+    if tables is None:
+        return b"none"
+    return hashlib.sha256(din5480_tables.canonical(tables).encode()).hexdigest().encode()
+
+
+def _fingerprint(tables: din5480_tables.Tables) -> bytes:
+    return hashlib.sha256(din5480_tables.canonical(tables).encode()).hexdigest().encode()
+
+
+def test_a_worker_and_its_replacement_carry_the_parents_tables(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """D-13: the parent's one loaded object reaches every build worker, and a worker replaced
+    after a timeout gets the same object, never a re-read. The variable names file B, a valid
+    file that differs from the parent's tables, so a worker that read it would show B's hash."""
+    document = json.loads(din5480_tables_fixture.text())
+    del document["sizes"][0]
+    other = tmp_path / "other.json"
+    other.write_text(json.dumps(document), encoding="utf-8")
+    monkeypatch.setenv(din5480_tables.ENV_VAR, str(other))
+    din5480_tables.reset()
+    read_from_b = din5480_tables.active()
+    assert read_from_b is not None
+
+    parents = din5480_tables_fixture.build()
+    assert _fingerprint(read_from_b) != _fingerprint(parents)
+    want = _fingerprint(parents)
+    params = ShaftParams()
+    pool = BuildPool(1, 30, tables=parents)
+    old = pool.executor_for(params)
+    try:
+        assert asyncio.run(pool._run_with_timeout(params, _installed_tables)) == want
+        pool.recreate_for(params, old, "timeout")
+        assert pool.executor_for(params) is not old
+        assert asyncio.run(pool._run_with_timeout(params, _installed_tables)) == want
+    finally:
+        # filterwarnings = error: an executor this test left running would be a failure
+        old.shutdown(wait=True)
+        for each in pool._executors:
+            each.shutdown(wait=True)
+
+
+def _built_volume() -> bytes:
+    """Module-level for `spawn`: the volume of the default shaft this worker builds, as the
+    repr of a float so the parent compares numbers and not rounded text. The kernel is
+    imported here, inside the worker, never in the serving process (L17)."""
+    from spur import shaft_model
+
+    return repr(shaft_model.build_shaft(ShaftParams()).Volume()).encode()
+
+
+def test_a_worker_builds_the_maximum_material_shaft_from_the_parents_tables(
+        with_tables: din5480_tables.Tables) -> None:
+    """REQ-solid-max-material, D-13: the parent's one loaded object reaches the worker
+    through `initargs` (34-05), so the solid a request gets from a worker is the
+    maximum-material one the parent's numbers describe. The volumes compare as numbers, not
+    as STL bytes: a preview mesh's own error (MESH_PREVIEW_REL, 6e-3) is 9x the s_vmax
+    solid's volume change on the default shaft (22841.013 against 22855.626 mm^3, 6.4e-4
+    relative), so the mesh could not tell the two solids apart."""
+    from spur import shaft_model
+
+    in_process = shaft_model.build_shaft(ShaftParams()).Volume()
+    din5480_tables.install(None)
+    nominal = shaft_model.build_shaft(ShaftParams()).Volume()
+    din5480_tables.install(with_tables)
+    assert abs(in_process / nominal - 1) > 1e-6, "the tables must change the solid"
+
+    pool = BuildPool(1, 30, tables=with_tables)
+    try:
+        worker = float(asyncio.run(pool._run_with_timeout(ShaftParams(), _built_volume)))
+        assert abs(worker / in_process - 1) <= 1e-9
+        assert abs(worker / nominal - 1) > 1e-6
+        data = asyncio.run(pool.export(ShaftParams(), "stl", "preview"))
+        n = int.from_bytes(data[80:84], "little")
+        assert n > 0
+        assert len(data) == 84 + 50 * n
+    finally:
+        # filterwarnings = error: an executor this test left running would be a failure
+        for each in pool._executors:
+            each.shutdown(wait=True)
+
+
+def test_a_pool_built_without_tables_gives_its_workers_none(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The parent decides: a valid file named in the environment is not read by a worker."""
+    valid = din5480_tables_fixture.write(tmp_path / "t.json")
+    monkeypatch.setenv(din5480_tables.ENV_VAR, str(valid))
+    pool = BuildPool(1, 30)
+    try:
+        assert asyncio.run(pool._run_with_timeout(ShaftParams(), _installed_tables)) == b"none"
+    finally:
+        for each in pool._executors:
+            each.shutdown(wait=True)
+
+
+def test_a_broken_table_file_stops_the_server_starting(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """D-04, defence in depth for a direct `uvicorn spur.app:app` start: the lifespan reads
+    the tables before it builds the pool, so a refusal leaves no pool behind."""
+    monkeypatch.setenv(din5480_tables.ENV_VAR, str(tmp_path / "absent.json"))
+    with pytest.raises(din5480_tables.TablesError, match="does not exist"), TestClient(app):
+        raise AssertionError("the lifespan started with a broken table file")
+    assert getattr(app.state, "pool", None) is None
 
 
 _FORCED_GC_IDS = (

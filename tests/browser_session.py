@@ -105,7 +105,10 @@ def _wait_for_pool(base: str, proc: subprocess.Popen[bytes], log: IO[bytes]) -> 
 
 
 @contextlib.contextmanager
-def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
+def serve(
+    floor_applies: Callable[[], bool] = lambda: True,
+    env: Mapping[str, str] | None = None,
+) -> Iterator[str]:
     """Run the shipped app in its own uvicorn process and yield its base URL.
 
     The listening socket is bound here, to port 0 on 127.0.0.1, and handed down by
@@ -118,6 +121,11 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
     members, macOS 2026-10-10); a worker starts at its executor's first build (see
     `MIN_GROUP_MEMBERS`). A test that failed before it built anything must not add a second,
     misleading error here, so the caller says when the floor is meaningful.
+
+    `env` is the one way a step gives its own server a variable, added after the `SPUR_*`
+    strip so nothing else inherited gets through. Only the tables step uses it: the shared
+    server must stay a no-table one, and `SPUR_DIN5480_TABLES` is read by the server like by
+    every process (D-02, 34-RESEARCH Pitfall 12).
     """
     sock = socket.socket()
     try:
@@ -125,7 +133,8 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
         sock.listen(128)
         fd = sock.fileno()
         base = f"http://127.0.0.1:{sock.getsockname()[1]}"
-        env = {k: v for k, v in os.environ.items() if not k.startswith("SPUR_")}
+        child_env = {k: v for k, v in os.environ.items() if not k.startswith("SPUR_")}
+        child_env.update(env or {})
         # A file and not a PIPE: a pipe nobody reads deadlocks the server once it fills.
         with tempfile.TemporaryFile() as log:
             proc = subprocess.Popen(
@@ -134,7 +143,7 @@ def serve(floor_applies: Callable[[], bool] = lambda: True) -> Iterator[str]:
                 start_new_session=True,
                 stdout=log,
                 stderr=log,
-                env=env,
+                env=child_env,
             )
             body_finished = False
             try:

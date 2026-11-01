@@ -7594,3 +7594,210 @@ Each row is a deliberate break of a guard that this phase adds, run once to see 
 | 33-10 | bad part refused | the check written before the fix (the unfixed page) | `E                       AssertionError: #part=bogus: the form does not look refused` (`E         At index 0 diff: '1' != '0.45'`; `1 failed, 2 passed`) | n/a: made green by this task |
 | 33-10 | narrow layout | the check written before the fix (the unfixed page) | `E                   AssertionError: the part switch is not above the canvas at 800 px: switch 1170, canvas 45, results 540, form 1225` (`1 failed, 2 passed`; fixed: switch 57, canvas 109, results 604, form 1217) | n/a: made green by this task |
 | 33-10 | primary button contrast | the check written before the fix (the unfixed page) | `E                       AssertionError: dark: the primary button's text rgb(255, 255, 255) on rgb(224, 87, 63) reads 3.75:1, under WCAG AA's 4.5:1` (`1 failed, 3 passed`; fixed: light 5.48:1, dark 4.85:1) | n/a: made green by this task |
+
+## Fit tables and tolerance window (Phase 34)
+
+What this section holds: v0.7's fifth phase loads the human's DIN 5480 values from a private, gitignored file, transcribed twice, and prints the tooth-thickness window, the M_Re limits and the maximum-material solid with them. Readings are appended per plan, never rewritten; each plan inserts its own subsections above the final table. Every whole log is under `.planning/phases/34-fit-tables-and-tolerance-window/investigation/`; later plans append rows to the table at the end. No value of the standard appears in this section except the anchors the human approved by name (D-01).
+
+### The gate baseline (34-01)
+
+Source logs: `34-01-verify.log` (the whole `/usr/bin/time -p make verify` output) and `34-01-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/34-fit-tables-and-tolerance-window/investigation/`. Every figure below is copied from them, not re-rounded. One reading, on Phase 33's merged code: `git diff --exit-code ddfb3ea -- src tests bench scripts pyproject.toml Makefile requirements.txt .gitignore .dockerignore` exited 0 before the run, so only `.planning/` differed from the tree Phase 33 shipped.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `78d167d` (`src`, `tests`, `bench`, `scripts`, `pyproject.toml`, `Makefile`, `requirements.txt`, `.gitignore` and `.dockerignore` byte-equal to `ddfb3ea`; only `.planning/` files were uncommitted or newer) |
+| UTC start -> end | `2026-10-30T13:21:07Z` -> `2026-10-30T13:24:59Z` |
+| 1-minute load before -> after | `5.04` -> `8.15` (`sysctl -n vm.loadavg` printed `{ 5.04 10.29 11.89 }` and `{ 8.15 12.36 12.78 }`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2783 passed in 230.90s (0:03:50) =======================` |
+| `/usr/bin/time -p` | `real 232.23`, `user 784.29`, `sys 762.08` |
+| Coverage TOTAL line | `TOTAL                         1822     22    484     13  98.48%` (`Required test coverage of 96.0% reached. Total coverage: 98.48%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| Browser test, call time | `74.97s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (the slowest-durations list of `34-01-verify.log`) |
+
+This is the second run of the plan, and the first is kept, not hidden. The first (`34-01-verify.log` before it was renamed `34-01-verify-contended.log`, meta `34-01-verify-contended-meta.log`) was green and read `2783 passed in 338.98s (0:05:38)`, `real 340.22`, `user 802.08`, `sys 620.06`, coverage `98.48 %`, browser test `82.61s`, UTC `2026-10-30T13:07:39Z` -> `2026-10-30T13:13:22Z`, 1-minute load `3.55` -> `26.16`. While it ran, a sibling project's test jobs (the `halfb00t-screw` checkout: nine python processes, several above 150 % CPU each, seen by `ps` right after the run) shared the host, which the load after it shows; the host's own work in the Phase 33 baselines took the load to about 7. That reading is 108.08 s (`pytest`) above the one of record and sits over L43's 300 s bar, and a baseline taken under another project's jobs would make the bar look crossed by Phase 33's code and would shrink 34-17's delta. It was set aside for a stated, measured cause (not for its size), the host was polled until the 1-minute load read 5.05 with no sibling process, and the run above is the one of record. Neither run is a distribution: two readings of one tree, 108 s apart, say what a shared host can do to this gate and nothing about the gate's own spread (Phase 25's is about 8 %, the Makefile comment at the `test:` target).
+
+Phase 33's close read `2778 passed in 241.55s`, `real 242.47` (`### The gate delta (33-09)`, `HEAD 603031a`); that is history, not the comparison. This reading holds `2783` tests because the tree is not `603031a`: `git diff --stat 603031a ddfb3ea -- src tests bench scripts` lists 12 files and 652 insertions (the merge `419aaed`, among them `tests/test_browser.py`, `tests/test_cli.py`, `tests/test_api.py` and `src/spur/static/style.css`). 34-17 subtracts from this reading, taken on the same host, and no speed claim is made from a single pair of readings: the loads differ and the load after a run includes the run's own work. The reading of record is under L43's 300 s bar by 69.10 s (`pytest`) and 67.77 s (`real`).
+
+### The reading toolchain (34-01)
+
+Source: `34-01-toolchain.log`, under the phase's `investigation/`. Versions, counts, paths and yes/no only; nothing the pages show is recorded here (D-01).
+
+| Item | Reading |
+|---|---|
+| `pdftotext`, `pdftoppm`, `pdfimages`, `pdfinfo` | each `version 26.10.0` |
+| Part 1 (`din-5480-1.pdf`, 518733 bytes) | `Pages: 27` |
+| Part 2 (`din-5480-2.pdf`, 1053112 bytes) | `Pages: 40` |
+| Part 1 page 24, `pdfimages -list -f 24 -l 24` | 19 images |
+| 600 ppi render of Part 1 page 24 | `4959 x 7017` px, in the main checkout's ignored `private/renders/34-01/` |
+| Crops, `3689 x 271` px | the plan's crop at `y 0` lands in the page's top margin and is blank; a second crop at `y 1000` holds printed text |
+| Read tool displayed the crops | yes, both; the second was legible at that size, so the vision reads of 34-08..34-13 are possible (D-05, D-06) |
+| `git ls-files --others --exclude-standard -- private` | nothing |
+
+### The guard and tip-land sweeps on the real file (34-15)
+
+What ran: `investigation/34-15-sweeps.py` (probe) into `investigation/34-15-sweeps.log`, once, with `SPUR_DIN5480_TABLES` set to the ignored table file (`720 16 18 8 30 21` rows by kind, as 34-14 left it), on the host of `### The gate baseline (34-01)`. Counts, locations, pass/fail and timings only; every cell and every computed number is in the two ignored files `private/reads/sweep-findings.txt` and `private/reads/anchor-candidates.txt` (`git check-ignore` confirms both), which the 34-15 checkpoint reads. No value of the standard is in this section (D-01).
+
+| Sweep | Population | Result |
+|---|---|---|
+| Guard, through `derive_shaft` | 720 sizes x 144 fits (8 classes x 18 letters) = 103680 combinations; every combination has a Table 7 tolerance (0 without) | 102096 combinations ran |
+| `ShaftParams` refusals | 11 sizes x 144 fits = 1584 combinations, all one reason (`infeasible model`, the profile shift above `X_MAX`) | 11 locations, see below |
+| M_Re nominal | 102096 | 102096 printed, 0 null at the guard, 0 null for another reason |
+| M_Re max | 102096 | 102096 printed, 0 null at the guard, 0 null for another reason |
+| M_Re min | 102096 | 102096 printed, 0 null at the guard, 0 null for another reason |
+| Sizes whose nominal M_Re is null although the copy prints its M1 | 720 | 0 |
+| Guard, cross-check without `derive_shaft` (contact against `pin_contact_window`, all 720 sizes including the 11 refused, 3 thicknesses x 144 fits) | 311040 readings | 0 outside the window, 0 where the pin touches no flank |
+| Tip land, 18 letters (half angle at the tip radius > 0, at the printed s_vmax as `build_shaft` writes it) | 720 sizes x 18 = 12960 | 0 closed |
+| Space between teeth (half angle at the root radius < pi/z) | 12960 | 0 overlapping |
+| Extreme build: thinnest tip land (m 0.5, d_B 6, z 10, letter a) | one solid via `build_shaft`, splined length 10, default chamfer, no shank | PASS: valid, 1 solid, volume 1.35e-07 from the oracle (bar `VOLUME_REL` 1e-4), build 0.49 s, wall 2.1 s |
+| Extreme build: thickest tooth at the root (m 0.5, d_B 40, z 78, letter v) | same | PASS: valid, 1 solid, volume 6.2e-10 from the oracle, build 2.29 s, wall 3.9 s |
+| The page's example W 120x3x38x8f through `derive_shaft` | s_vmax, s_max, s_min, M_Re min | 4 of 4 PASS against CONTEXT D-05's numbers |
+
+The 11 refused locations, by m / d_B / z: 0.6/40/64, 0.6/47/76, 0.75/47/60, 0.75/50/64, 0.8/50/60, 0.8/55/66, 0.8/58/70, 1.25/78/60, 1.5/100/64, 1.75/110/60, 1.75/120/66. They are the eleven Part 2 rows already recorded as lying above the shaft shift range (decision log, 2026-10-26 amendment; `docs/tech_debt/active/2026-10-26-shaft-shift-range-narrower-than-din-5480-exceptions.md`), refused with the shift-range sentence and never clamped (L03). Not a new finding; no table value is involved. The guard sweep does not reach them through `derive_shaft`; the cross-check reaches them by maths and finds the pin inside the window at all three thicknesses.
+
+Timings, one run (load not recorded): guard sweep 4.6 s (about 45 microseconds per combination, so the plan's split over 8 processes was not needed), cross-check 1.2 s, tip-land sweep under 0.1 s, both builds 6.0 s together, the whole probe 11.8 s. The sweeps are cheap enough to rerun whenever the file changes.
+
+What the sweeps say: on this file the pin-contact guard never trips at the tabulated pin, at any of the three thicknesses, for any of the 144 fits Table 7 lists; no tabulated size loses its nominal M_Re; and no tabulated size with any of the 18 letters has a closed tip land or touching teeth at its printed s_vmax. The two extreme shapes build as one valid solid. Source: probe `investigation/34-15-sweeps.py`, log `investigation/34-15-sweeps.log`.
+
+### The gate delta (34-17)
+
+Source logs: `34-17-verify.log` (the whole `/usr/bin/time -p make verify` output) and `34-17-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/34-fit-tables-and-tolerance-window/investigation/`. Every figure below is copied from them or from `### The gate baseline (34-01)`, not re-rounded; the differences are computed from the copied figures. One reading, on the final Phase 34 tree: `git status --porcelain -- src tests bench scripts pyproject.toml Makefile requirements.txt` printed nothing before the run (the meta log records 0 lines), `SPUR_DIN5480_TABLES` was unset (as for the baseline: the gate does not read the private file), and the commits after the last one touching `src`, `tests`, `bench` or `scripts` (`8a8258b`, `706dd73`) hold only `.planning/` and `docs/`. It is the plan's one gate run: no run was discarded, none hung, none was red.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), Apple M5 Max |
+| HEAD | `dc31539` (`src`, `tests`, `bench`, `scripts`, `pyproject.toml`, `Makefile` and `requirements.txt` as of the Phase 34 code; only `.planning/` and `docs/` newer) |
+| UTC start -> end | `2026-10-31T16:44:18Z` -> `2026-10-31T16:48:00Z` |
+| 1-minute load before -> after | `3.43` -> `11.64` (`sysctl -n vm.loadavg` printed `{ 3.43 9.55 9.66 }` and `{ 11.64 14.27 12.06 }`) |
+| Sibling-project processes above 50 % CPU | 0 at the start, 0 at the end (`ps` for a command line naming `screw`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2934 passed in 213.54s (0:03:33) =======================` |
+| `/usr/bin/time -p` | `real 214.53`, `user 801.35`, `sys 827.89` |
+| Coverage TOTAL line | `TOTAL                         2132     37    590     23  97.80%` (`Required test coverage of 96.0% reached. Total coverage: 97.80%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| Browser test, call time | `74.16s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (the slowest-durations list of `34-17-verify.log`; it `PASSED` in the run, so no rerun was needed) |
+
+The coverage rows of the modules this phase touched, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`), with the baseline's row of the same module beside each:
+
+```
+close (34-17-verify.log)
+src/spur/app.py                224      3     38      3  97.71%
+src/spur/cli.py                149      6     26      1  96.00%
+src/spur/din5480.py            110      0     28      0 100.00%
+src/spur/din5480_tables.py     238     13     84      8  93.48%
+src/spur/pool.py                60      0      8      0 100.00%
+src/spur/shaft_calc.py         164      2     38      2  98.02%
+src/spur/shaft_model.py         81      0     18      0 100.00%
+src/spur/shaft_params.py        43      0      4      0 100.00%
+
+baseline (34-01-verify.log)
+src/spur/app.py                223      3     38      3  97.70%
+src/spur/cli.py                145      6     26      1  95.91%
+src/spur/din5480.py            107      0     28      0 100.00%
+src/spur/din5480_tables.py       0      0      0      0 100.00%
+src/spur/pool.py                57      0      8      0 100.00%
+src/spur/shaft_calc.py         105      0     16      0 100.00%
+src/spur/shaft_model.py         79      0     18      0 100.00%
+src/spur/shaft_params.py        43      0      4      0 100.00%
+```
+
+Two modules read under 100 %: `src/spur/din5480_tables.py` (13 lines and 8 branch parts missed) and `src/spur/shaft_calc.py` (2 lines missed). The gate log does not name the lines; they were read from the `.coverage` file this run left (`coverage report -m` on those two files, no test run): `din5480_tables.py` lines 181, 245-246, 254, 290, 296, 303, 306, 344-345, 353-354 and 358, which are the loader's `return None` at 181 and twelve refusal lines (the module-set, the positive `m1_mm`, the two column-count checks, the module-bounds check and the range-order check, the two `OSError` paths and the size cap) that no test reaches; `shaft_calc.py` lines 394 and 405, two `LimitReading` returns. The 96.0 % floor is on the total and the total reads `97.80 %`, so the gate does not fail on them. They are filed as `docs/tech_debt/active/2026-10-31-din5480-tables-loader-refusals-not-reached-by-a-test.md`. None of these figures is a speed claim.
+
+#### Against the phase-start baseline (34-01)
+
+Compared with `### The gate baseline (34-01)`, same host, both readings from logs, both with a quiet host at the start (no sibling process above 50 % CPU).
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 34 start, `HEAD 78d167d` | `2783 passed` | `230.90 s` | `232.23 s` | 5.04 -> 8.15 | `### The gate baseline (34-01)`, `34-01-verify.log` |
+| This reading: Phase 34 close, `HEAD dc31539` | `2934 passed` | `213.54 s` | `214.53 s` | 3.43 -> 11.64 | `34-17-verify.log` |
+
+| This reading minus the baseline | Tests | pytest `passed in` | `real` | Coverage TOTAL | Browser test, call time |
+|---|---|---|---|---|---|
+| difference | `+151` | `-17.36 s` (`-7.52 %`) | `-17.70 s` (`-7.62 %`) | `1822` -> `2132` statements, `98.48 %` -> `97.80 %` | `74.97 s` -> `74.16 s` (`-0.81 s`) |
+
+The baseline's browser call time is `74.97 s`; 34-07's SUMMARY gives `60.43 s` for the browser test at the commit that added the `parity with tables` step, on a load this section does not know. The three readings are not one series and none is read as the step's cost.
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), which is about 18.47 s of 230.90 s. The phase added 151 tests and this reading is 17.36 s lower than the baseline, which is inside that spread, so no speed claim is made in either direction: the loads differ (the baseline's second run began at 5.04, this one at 3.43, and the load after a run includes the run's own work), and each is one run. The lower figure is not read as the phase making the gate faster.
+
+The distance to the bar: the reading of record is under L43's 300 s bar by 86.46 s (`pytest`, `300.00 - 213.54`) and 85.47 s (`real`, `300.00 - 214.53`); the comparison is with the log's figures as printed, and both are under.
+
+The plans' own full-gate readings during the phase, from their SUMMARYs (the load is recorded for some and not others, and the host was shared with the human's other sessions and, at 34-01, with a sibling project, so they are shown for the spread only and not as the gate's cost): 34-01 `230.90 s` (the baseline), 34-03 `381.37 s`, 34-04 `226.92 s`, 34-05 `290.37 s`, 34-06 `317.83 s`, 34-07 `364.29 s` (host load 7 at the time, per its SUMMARY), 34-14 `354.38 s`, 34-15 `300.62 s`, 34-16 `342.72 s`. Six of those nine are over 300 s on loads that the SUMMARYs do not fully record; they were not set aside and are not the reading of record, and this section does not say what moved them. The one reading made for this comparison, on a quiet host, is under the bar. If a later quiet-host run reads over it, the bar is the human's to move (L43).
+
+### The human's ruling and the review-fix reading (Phase 34)
+
+Two more full-gate readings were taken after 34-17. Their logs are `34-regression-verify.log` and `34-review-fixes-verify.log`, under the phase's `investigation/`.
+
+| Reading | HEAD | Tests | pytest `passed in` | `real` | 1-minute load, before -> after |
+|---|---|---|---|---|---|
+| Regression gate, after the code review | `287f0f3` (same `src`, `tests`, `bench`, `scripts` as `dc31539`) | `2934 passed` | `308.61 s` | `309.67 s` | not recorded |
+| After the review fixes | `504d5c5` | `2940 passed` | `235.27 s` | `236.30 s` | 5.58 -> 7.68 |
+
+The `308.61 s` reading is above L43's 300 s bar, on code identical to the 213.54 s reading of record. The gap of 95.07 s is about 44 % of the reading of record, far outside Phase 25's 8 % spread, so it is put down to host load and not to the code. The criterion hands a reading above the bar to the human. On 2026-11-01 the human accepted `213.54 s` (`real 214.53 s`) as Phase 34's milestone-close reading. The `308.61 s` reading is recorded here and not set aside.
+
+The review fixes (`d299fe3`..`504d5c5`) added 6 tests. The reading after them is under the bar by 64.73 s (`pytest`) and 63.70 s (`real`). It is one run and is not read as a delta against the reading of record.
+
+### Phase close checks (34-17)
+
+Source: `34-17-close-checks.log`, under the phase's `investigation/`, run once on `HEAD d7c09b8` (the tree with L50 appended; the two sections above and the table below were written after it). All fifteen read `PASS` and the log holds no `FAIL`. Numbers are as the log prints them.
+
+1. PASS `files="$(git ls-files -- private)" && test -z "$files"`: no file under `private/` is tracked.
+2. PASS `git check-ignore -q private/din5480-tables.json` exits 0, `.dockerignore` line 22 reads `private` and `.gitignore` line 36 reads `/private/`.
+3. PASS `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml`: exit 0, empty.
+4. PASS `git diff --exit-code ddfb3ea -- requirements.txt tests/regression/ src/spur/params.py src/spur/calc.py`: exit 0, empty (no package was installed).
+5. PASS `make gear.unchanged`: `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+6. PASS `make lint-imports`: `Contracts: 10 kept, 0 broken.`
+7. PASS `grep -n '^FIT_PATTERN' src/spur/din5480.py` prints `47:FIT_PATTERN = r"^[1-9][0-9]?[a-z]$"`.
+8. PASS `ShaftParams().slug()` prints `spur_shaft_w25x1.25x18` with `SPUR_DIN5480_TABLES` unset and with it set to the private file.
+9. PASS `/usr/bin/time -p make verify.fast`: `real 14.75`, under 30 s, rc 0, `2444 passed in 13.82s`, load `{ 7.44 12.83 12.38 }` after.
+10. PASS `make no-fake-done`: exit 0.
+11. PASS the two debt items are in `docs/tech_debt/resolved/` with `Status: resolved`, absent from `active/` and listed in the INDEX, `Resolved in:` `51d5e63` (fit pattern, D-14) and `1fa8deb` (form diameter, D-12); the idea is in `docs/ideas/retired/` with `Status: retired`, absent from `docs/ideas/`, moved in `8208de3`; each sha passes `git cat-file -e <sha>^{commit}`.
+12. PASS `make tables.test FILE="$MAIN/private/din5480-tables.json"`: `22 passed in 5.36s` (the approved anchors to the last digit, completeness, M1 at every tabulated pin, the accepted sweep findings, the range edges).
+13. PASS `.venv/bin/python -m pytest --no-cov -n0 -q tests/test_din5480_tables.py`: `53 passed in 0.15s` (the read-once test, the broken-file test, the M1 identity, the private-directory and tracked-JSON guards).
+14. PASS the gate does not collect `tests/din5480_real_tables_check.py`: 0 lines of `34-17-verify.log` name it and `pytest --collect-only -q` lists 0 test ids from it.
+15. PASS the leak review: 117 files read (`git diff --name-only ddfb3ea HEAD`, captured first), 34632 added lines, 27539 numbers. Pass 1 compared every number with every mm cell of the private file, every micrometre cell where the line names the quantity, and every value `derive_shaft` prints from the file (100721 distinct values at three decimals); pass 2 looked for two numbers of one record on one line (68 lines). Every number that equals a value was read by eye and is an approved anchor, an invented fixture value (or arithmetic on one), a count, a location key, a measurement of this repository's code, or a page, table or clause number: 0 outside the six. The fixture was also compared with the file cell by cell: it agrees on the approved pin and M1 of its five sizes and on the letter h (0 by definition), and on nothing else (15 of 15 tolerance cells, 9 of 9 class cells and all 4 unapproved form diameter maxima differ). One coincidence is recorded in the log: an invented fixture value pair matched a real derived pair; the human ruled `change fixture` and `282f264` retired it. The per-file counts are in the log; the scratch lists of numbers are not committed. No clause text was scanned for. A closing pass over the files this plan adds after `d7c09b8` (this section, the SUMMARY, STATE, ROADMAP) is the last line of the log.
+
+Where the checks stop: they prove the repository holds no table value beyond the anchors that a number-for-number comparison with the human's file can find; they do not prove the absence of a value the file does not hold (a value from another edition), and the debt item `docs/tech_debt/active/2026-10-31-din5480-tables-loader-refusals-not-reached-by-a-test.md` records the lines of the loader that no test reaches.
+
+### Seen red once (Phase 34)
+
+Each row is a deliberate break of a guard that this phase adds, run once to see the test or step go red and then reverted. Each plan writes its own rows into its SUMMARY (`## Seen red`) and its `investigation/` log; 34-17 copies them into this table.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 34-02 | `test_a_broken_row_refuses_to_load[t_g sum off by one]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (tests/test_din5480_tables.py:215) (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[deviation over the micrometre limit]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[pin typed in micrometres]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[form diameter at d_B]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[duplicate size]`, `[duplicate deviation]`, `[duplicate class]`, `[duplicate tolerance row]`, `[duplicate column row]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[clause changed]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[column index beyond the last]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[row_by_column naming no row]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[default size has no column]`, `[two columns select the default size]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `[M1 plus a thousandth]`, `[pin plus a hundredth]` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `test_the_m1_identity_refuses_a_hair_beyond_half_a_printed_digit` | `problems()` returns `[]` at its first line | `Failed: DID NOT RAISE TablesError` (:269) (log `34-02-red-invariants.log`) | yes |
+| 34-02 | `test_the_private_directory_is_ignored_by_git_and_by_docker` | `/private/` line removed from `.gitignore` | `AssertionError: private/din5480-tables.json`, `assert 1 == 0` (:387) (log `34-02-red-guards.log`) | yes, `git diff` empty, `git check-ignore` exits 0 |
+| 34-02 | same test | `private` line removed from `.dockerignore` | `AssertionError: assert 'private' in [...]` (:388) (log `34-02-red-guards.log`) | yes |
+| 34-02 | `test_no_tracked_json_file_is_a_table_file` | a copy of the synthetic document tracked at `tests/_seen_red_tables.json` | `Failed: DID NOT RAISE ValidationError` (:399) (log `34-02-red-guards.log`) | yes, `git rm --cached` and deleted, never committed |
+| 34-03 | `test_diff_one_changed_cell_gives_one_location_line_and_no_value` | the cell comparison in `diff_lines` replaced by `if False` | `assert 0 == 1` (tests/test_din5480_tables_tool.py:123) (log `34-03-red-diff.log`) | yes |
+| 34-03 | `test_diff_prints_values_only_on_request`, `test_diff_compares_provenance_too`, `test_diff_locates_a_tuple_cell_by_its_column` | the cell comparison in `diff_lines` replaced by `if False` | `assert 0 == 1` (log `34-03-red-diff.log`) | yes |
+| 34-03 | `test_assemble_refuses_while_the_part_2_reads_differ`, `..._table_7_reads_differ` | the cell comparison in `diff_lines` replaced by `if False` | `assert 0 == 1` (:264, :281) (log `34-03-red-diff.log`) | yes |
+| 34-04 | `test_with_the_tables_the_default_shaft_prints_its_window_and_m_re_limits`, `test_the_thickness_limits_are_table_6_over_table_7`, `test_each_m_re_limit_agrees_with_the_oracle_at_the_thickness_written_as_the_shift[max/min]`, `test_the_shaft_dimensions_keys_are_fixed`, the four `..._with_the_tables[...]` parity cases and the four no-table parity cases | none: the tests ran against the unchanged code | `AttributeError` for the missing fields and function (13 failed, `investigation/34-04-red-window.log`) | n/a, then implemented |
+| 34-04 | `test_the_warnings_are_one_fixed_tuple_per_tier`, `test_a_fit_outside_table_7_names_the_files_letters_and_classes_and_nulls_the_window[3z/13f/8q]`, `test_off_table_neighbours_read_as_off_the_tables_field_for_field`, `test_the_size_sentence_prints_a_nudged_diameter_in_full_and_takes_no_nearest_row`, `test_with_no_file_the_five_rows_are_null_...`, the two updated no-file tuples, `test_an_odd_count_nulls_both_limits_without_a_sentence_of_their_own`, `test_a_fit_outside_table_7_is_a_warning_and_null_not_a_422` | none: the tests ran against Task 1's code | `AttributeError: module 'spur.shaft_calc' has no attribute ...` and the missing sentence (11 failed, `investigation/34-04-red-tiers.log`) | n/a, then implemented |
+| 34-06 | `test_for_a_listed_size_the_guard_starts_at_the_tabulated_form_diameter_maximum`, `test_the_tabulated_floor_is_closed`, `test_a_limit_thickness_below_the_floor_nulls_that_limit_only`, `test_each_branch_of_the_floor_is_reached_by_its_own_thickness` | none: the tests ran against 34-04's code | `TypeError` for the missing `form_d_max` argument; the variant tests `assert [retired fixture value] is None` and `assert ([retired fixture value], [retired fixture value]) == (None, None)` (4 failed, `investigation/34-06-red-guard.log`) | n/a, then implemented |
+| 34-06 | `test_a_listed_odd_tooth_count_prints_m_re_at_the_tabulated_pin`, `test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[odd-z]` | none: the tests ran against Task 1's code | the listed odd count printed no M_Re (`measure_over_pins`, `_max` and `_min` null where the parity set now expects them; 2 failed, `investigation/34-06-red-odd.log`) | n/a, then implemented |
+| 34-07 | `test_with_the_tables_the_solid_carries_the_maximum_effective_thickness` | none: ran against the unchanged `build_shaft` | `assert 0.02101449881648243 <= (0.0005 * 1.25)` (read 2.6130145 against 2.592; 34x the bar), `investigation/34-07-red-thickness.log` | n/a, then implemented |
+| 34-07 | `test_a_worker_builds_the_maximum_material_shaft_from_the_parents_tables` | `BuildPool(1, 30)` with no `tables=` | `assert 0.0006397595291864899 <= 1e-09` (worker 22855.626 against the in-process 22841.013) (no log of its own: the run is quoted in the SUMMARY row) | `tables=with_tables` put back, green |
+| 34-07 | `test_the_shipped_viewer_in_a_real_browser`, step `parity with tables` | `serve()` with the `env` argument left out | `AssertionError: the default shows no ['Max actual tooth thickness s_max', 'Max effective tooth thickness s_vmax', 'Measurement over pins M_Re max', 'Measurement over pins M_Re min', 'Min actual tooth thickness s_min'] with the tables loaded`, `investigation/34-07-red-browser.log` | `env=` put back, green |
+| 34-05 | the ten in-process refusal cases and the real-process `serve` (Task 1) | none: the five commands with a broken file run against the unchanged CLI | 11 failed, 1 passed: the gear commands ran, the shaft commands raised a bare `TablesError`, `uvicorn.run` was reached, and the real-process `serve` started a server and hit its 60 s timeout; the `--version` guard passed, as it should before and after (log `34-05-red-refusal.log`) | n/a, then implemented |
+| 34-05 | `test_a_worker_and_its_replacement_carry_the_parents_tables` | `initargs` removed from the `recreate_for` construction only | `assert b'none' == b'e9d70dbdacb...'` on the replaced worker; the first worker (initargs intact) passed that test's first assertion (log `34-05-red-initargs.log`) | restored; green |
+| 34-15 | `tests/test_din5480_anchors.py`, W 120x3x38x8f | A_s, T_G, T_act, T_eff and s_vmax, each changed in its last printed digit, one failing run per cell, in a copy of the test file | red each (log `34-15-red-anchors.log`; no value is logged) | restored (the copy is discarded) |
+| 34-15 | `tests/test_din5480_anchors.py`, W 25x1.25x18x8f | A_s, T_G, T_act, T_eff and s_vmax, each changed in its last printed digit, one failing run per cell, in a copy of the test file | red each (log `34-15-red-anchors.log`; no value is logged) | restored (the copy is discarded) |
+| 34-15 | `tests/test_din5480_anchors.py`, W 26x1.25x19x8f | A_s, T_G, T_act, T_eff and s_vmax, each changed in its last printed digit, one failing run per cell, in a copy of the test file | red each (log `34-15-red-anchors.log`; no value is logged) | restored (the copy is discarded) |
+| 34-15 | `tests/test_din5480_anchors.py`, the three d_Ff1 cells | each changed in its last digit | green (21 passed): the cells are bounds, not exact values (the human accepted this at 34-15); a change that crosses the pin's contact is red; the exact digits are held by the 34-16 rows below (log `34-15-red-anchors.log`) | restored |
+| 34-16 | `tests/din5480_real_tables_check.py` (anchor cells) | a copy of the table file with one approved cell changed by one unit | A_s, T_eff, T_G: 2 failed (Table 7 cells, limit thicknesses); d_Ff1 of W 120x3x38 and of W 26x1.25x19: 1 failed (form diameter and pin); D_M, M1: the load refuses the file, 20 errors (log `34-16-red-anchors.log`) | the copy is discarded |
+| 34-16 | `test_every_printed_range_edge_reads_as_the_range_it_closes` | `Tables.column_for` comparison flipped in place to over <= d_B < upto | failed; the same flip fails the fixture's two edge tests (log `34-16-red-edge.log`) | restored |
+| 34-16 | `test_a_tabulated_size_on_an_edge_...` | the same flip | passes under the flip, by design: it pins the exact float key and that every tabulated size has a column, whichever way the edge reads (log `34-16-red-edge.log`) | restored |
+
+Every row is copied from the `## Seen red` section of its plan's SUMMARY, plan order, with the log that holds the run; the 34-02 rows are 14 table rows for 4 deliberate breaks (the checker disabled, each of the two ignore lines removed, and a tracked copy of the synthetic document). Plans 34-01 and 34-08 state that they add no guard test or step, and 34-09 to 34-14 (the reads, the settlement and the assembly) have no `## Seen red` section: the reads are held by `make tables.diff` and the real file by 34-16's rows. Not seen red, as the SUMMARYs say: 34-03's parser tests other than the diff, 34-04's `test_a_limit_outside_the_contact_window_is_null_with_its_own_sentence_and_the_other_prints`, `test_a_size_is_on_the_tables_only_by_an_exact_key`, `test_an_iso_style_fit_alias_is_still_refused` and `test_no_warning_carries_the_table_files_path`, 34-06's `test_an_odd_tooth_count_the_tables_do_not_list_stays_null_with_its_sentence` and the renamed off-table odd-count test, and 34-07's tier-3, off-table, no-file and name tests; each pins behaviour the code already had before the test was written, and none is claimed red here.

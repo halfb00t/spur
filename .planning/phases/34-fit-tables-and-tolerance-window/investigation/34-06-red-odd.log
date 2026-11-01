@@ -1,0 +1,53 @@
+........................................................................ [ 24%]
+........................................................................ [ 48%]
+...............................................F........F............... [ 72%]
+........................................................................ [ 96%]
+...........                                                              [100%]
+=================================== FAILURES ===================================
+________ test_a_listed_odd_tooth_count_prints_m_re_at_the_tabulated_pin ________
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_a_listed_odd_tooth_count_prints_m_re_at_the_tabulated_pin() -> None:
+        """W 26x1.25x19x8f, column 2, A_s -17 (planning measurement 2026-10-30): at the tabulated
+        pin 2.75 M_Re is 29.026, the approved M1 of DIN 5480-2 Tables 12 and 13, and the limits
+        follow at s_max and s_min."""
+        d = derive_shaft(ShaftParams(reference_d=26, module=1.25, teeth=19))
+        assert d.pin_d == 2.75
+>       assert d.measure_over_pins == pytest.approx(29.026, abs=0.0005)
+E       assert None == 29.026 ± 5.0e-04
+E         
+E         comparison failed
+E         Obtained: None
+E         Expected: 29.026 ± 5.0e-04
+
+tests/test_shaft_calc.py:756: AssertionError
+___ test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[odd-z] ___
+
+name = 'odd-z', capsys = <_pytest.capture.CaptureFixture object at 0x109ec2d50>
+
+    @pytest.mark.usefixtures("with_tables")
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document_with_the_tables(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+        assert set(from_cli) >= _WINDOW                                   # the five keys exist
+>       assert {k for k, v in from_cli.items() if v is None} == NULLS_WITH_TABLES[name]
+E       AssertionError: assert {'form_d', 'm...ver_pins_min'} == {'form_d'}
+E         
+E         Extra items in the left set:
+E         'measure_over_pins'
+E         'measure_over_pins_min'
+E         'measure_over_pins_max'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:92: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_calc.py::test_a_listed_odd_tooth_count_prints_m_re_at_the_tabulated_pin
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[odd-z]
+2 failed, 297 passed in 1.01s

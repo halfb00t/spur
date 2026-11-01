@@ -1,0 +1,9 @@
+UTC start: 2026-10-30T13:07:39Z
+HEAD: 78d167d
+Host: 18 CPUs, arm64, 64.0 GiB RAM
+Load before: { 3.55 5.22 5.88 }
+Precondition: git diff --exit-code ddfb3ea -- src tests bench scripts pyproject.toml Makefile requirements.txt .gitignore .dockerignore; exit status: 0
+UTC end: 2026-10-30T13:13:22Z
+Load after: { 26.16 23.59 15.05 }
+make exit status: 0
+Discarded as a baseline: a sibling project's test jobs (/private/tmp/claude-501/-Users-half-git-halfb00t-screw, python workers at 150-250 percent CPU, nine processes) ran on this host during the run; 1-minute load read 26.16 after against 3.55 before. The run was green; it is kept as a contended reading, not as the baseline.

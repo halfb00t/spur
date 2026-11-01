@@ -105,25 +105,25 @@ REQ-IDs continue the project's `REQ-slug` convention.
 
 ### Fit tables and tolerance window
 
-- [ ] **REQ-tables-private-file**: transcribed DIN 5480 values load from a gitignored file whose
+- [x] **REQ-tables-private-file**: transcribed DIN 5480 values load from a gitignored file whose
   path is set by config/env; without it, every table-dependent number is `null` with a warning
   naming the missing file; no transcribed value is committed beyond human-approved anchors.
-- [ ] **REQ-tables-transcribed-twice**: the file is produced by two independent reads diffed to
+- [x] **REQ-tables-transcribed-twice**: the file is produced by two independent reads diffed to
   zero; every row carries part/clause/table; a loader check enforces structural invariants
   (e.g. `T_G = T_act + T_eff`, µm-vs-mm range, no Unicode minus) and is seen red once.
-- [ ] **REQ-fit-tolerance-window**: for a tabulated size and fit the user sees the effective and
+- [x] **REQ-fit-tolerance-window**: for a tabulated size and fit the user sees the effective and
   actual tooth-thickness windows; a fit outside the tables is a warning and `null`.
-- [ ] **REQ-mre-limits**: the user sees M_Re max and min at the chosen fit with D_Re from the
+- [x] **REQ-mre-limits**: the user sees M_Re max and min at the chosen fit with D_Re from the
   copy, proved against the oracle on the anchor rows.
-- [ ] **REQ-solid-max-material**: with tables loaded, the solid carries the effective
+- [x] **REQ-solid-max-material**: with tables loaded, the solid carries the effective
   maximum-material tooth thickness (s + es); without them, the nominal thickness with a warning
   saying so.
-- [ ] **REQ-off-table-builds**: a d_B/m/z absent from the size tables builds from the formulas,
+- [x] **REQ-off-table-builds**: a d_B/m/z absent from the size tables builds from the formulas,
   with every table-dependent number `null` and warned.
 
 ### Gate
 
-- [ ] **REQ-gate-cost-recorded**: each phase records the `make verify` time against its
+- [x] **REQ-gate-cost-recorded**: each phase records the `make verify` time against its
   predecessor on the same host; the milestone close reading is inside L43's 300 s bar or the
   human decides.
 
@@ -177,13 +177,13 @@ shaft routes under that rule and cites it, it does not re-map it.
 | REQ-designation-input | Phase 33 | Complete |
 | REQ-shaft-parity | Phase 33 | Complete |
 | REQ-wr02-fixed | Phase 33 | Complete |
-| REQ-tables-private-file | Phase 34 | Pending |
-| REQ-tables-transcribed-twice | Phase 34 | Pending |
-| REQ-fit-tolerance-window | Phase 34 | Pending |
-| REQ-mre-limits | Phase 34 | Pending |
-| REQ-solid-max-material | Phase 34 | Pending |
-| REQ-off-table-builds | Phase 34 | Pending |
-| REQ-gate-cost-recorded | Phase 34 | Pending |
+| REQ-tables-private-file | Phase 34 | Complete |
+| REQ-tables-transcribed-twice | Phase 34 | Complete |
+| REQ-fit-tolerance-window | Phase 34 | Complete |
+| REQ-mre-limits | Phase 34 | Complete |
+| REQ-solid-max-material | Phase 34 | Complete |
+| REQ-off-table-builds | Phase 34 | Complete |
+| REQ-gate-cost-recorded | Phase 34 | Complete |
 
 **Coverage:**
 - v0.7 requirements: 24 total

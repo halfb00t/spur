@@ -46,6 +46,16 @@ class ShaftParams(BaseModel):
         {"key": "form_d", "label": "Form Ø d_Ff", "unit": "mm"},
         {"key": "pin_d", "label": "Pin Ø D_Re", "unit": "mm"},
         {"key": "measure_over_pins", "label": "Measurement over pins M_Re", "unit": "mm"},
+        {"key": "max_effective_thickness", "label": "Max effective tooth thickness s_vmax",
+         "unit": "mm"},
+        {"key": "max_actual_thickness", "label": "Max actual tooth thickness s_max",
+         "unit": "mm"},
+        {"key": "min_actual_thickness", "label": "Min actual tooth thickness s_min",
+         "unit": "mm"},
+        {"key": "measure_over_pins_max", "label": "Measurement over pins M_Re max",
+         "unit": "mm"},
+        {"key": "measure_over_pins_min", "label": "Measurement over pins M_Re min",
+         "unit": "mm"},
         {"key": "end_chamfer_effective", "label": "End chamfer used", "unit": "mm"},
         {"key": "designation", "label": "Designation", "unit": ""},
     ]})
@@ -62,13 +72,16 @@ class ShaftParams(BaseModel):
                             + _SHIFT_RANGE_HELP)
     teeth: int = _f(18, 6, 82, title="Teeth", group="Spline", step=1,
                     help="Number of teeth." + _SHIFT_RANGE_HELP)
-    # One string holding the designation's token (D-02). Only its shape is checked here;
-    # whether the fit exists in the tables is Phase 34's.
+    # One string holding the designation's token (D-02). Only its shape is checked here, and
+    # that stays so (D-14): a narrower pattern would refuse links that validate today. A fit
+    # DIN 5480-1 Table 7 does not hold builds at the nominal tooth thickness, with a warning
+    # and no tolerance limits (shaft_calc.fit_not_in_table_7_warning).
     fit: str = Field("8f", pattern=FIT_PATTERN, max_length=3, title="Fit",
                      description="Tolerance token of the designation, such as 8f. Checked "
                                  "for shape only: one or two digits, then one lower-case "
-                                 "letter. Whether the fit exists in the tables is not "
-                                 "checked yet.",
+                                 "letter. A fit DIN 5480-1 Table 7 does not hold builds at "
+                                 "the nominal tooth thickness, with a warning and no "
+                                 "tolerance limits.",
                      json_schema_extra=_extra("Spline"))
     # The four fields below belong to the solid. No cross-field rule among them: every shank_d
     # is allowed against the spline (D-07), and end_chamfer is capped and warned in
@@ -118,7 +131,9 @@ class ShaftParams(BaseModel):
         record and the `Content-Disposition` of every shaft download. This is the frozen name
         of that download (L49, D-17): `spur_shaft_w25x1.25x18` for the default, changed only
         by a logged decision. No cache is keyed by it (L40). The fit is left out: it is a
-        user-typed string and the solid does not depend on it. `:g` keeps six significant
+        user-typed string, and the solid depends on it only when a table file gives it a
+        maximum-material thickness (D-13); the printed row and the warning say which solid
+        this is, not the name. `:g` keeps six significant
         digits, so two `reference_d` of 123.4567 and 123.4571 at one module and tooth count
         share the stem `w123.457`, and 25.00004 reads `w25`: a second collision source beside
         the fit, accepted with the name's freeze (IN-05); a repr-exact name would supersede L49.

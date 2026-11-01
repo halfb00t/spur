@@ -30,3 +30,7 @@ web/node_modules/
 # future .coveragerc.
 .coverage
 .coverage.*
+
+# the transcribed DIN 5480 table file and every read and page render of the human's
+# licensed copy: never committed (D-01); the loader reads the file from the path in SPUR_DIN5480_TABLES (D-02)
+/private/

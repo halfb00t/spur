@@ -1,0 +1,20 @@
+34-01 reading toolchain log. Versions, counts, paths and yes/no only; no value or text of the standard.
+
+pdftotext -v (first line): pdftotext version 26.10.0
+pdftoppm -v (first line): pdftoppm version 26.10.0
+pdfimages -v (first line): pdfimages version 26.10.0
+pdfinfo -v (first line): pdfinfo version 26.10.0
+
+Part 1 ($HOME/Downloads/ISO standards/din-5480-1.pdf, 518733 bytes): pdfinfo Pages: 27
+Part 2 ($HOME/Downloads/ISO standards/din-5480-2.pdf, 1053112 bytes): pdfinfo Pages: 40
+Part 1 page 24, pdfimages -list -f 24 -l 24: 19 images
+
+Renders (600 ppi, pdftoppm -f 24 -l 24 -png), all under $MAIN/private/renders/34-01/ with MAIN=/Users/half/git/halfb00t/spur (the main checkout; this run is not in a worktree):
+- p1-24-24.png: PNG 4959 x 7017 (the whole page)
+- p1-24-crop-24.png: PNG 3689 x 271, the plan's crop (-x 0 -y 0 -W 3689 -H 271). It lands in the page's top margin and is blank (3660 bytes); the Read tool displayed it, and it proves only that an image displays.
+- p1-24-band-24.png: PNG 3689 x 271, a second crop (-x 0 -y 1000 -W 3689 -H 271) at the first rows that hold ink (the first non-white row of the page render is 304).
+
+Did the Read tool display the crop: yes, both crops. The second one displayed as an image with legible printed text, so a vision read of a 600 ppi band works at the size the strips have (19 strips of 3689 x 271 px per research).
+
+git ls-files --others --exclude-standard -- private prints nothing: yes (0 lines).
+git ls-files -- private prints nothing: yes (0 lines).

@@ -1,0 +1,61 @@
+.FFFF........FFFFFFFFFFFF                                                [100%]
+=================================== FAILURES ===================================
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:215: Failed: DID NOT RAISE TablesError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[t_g sum off by one]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[deviation over the micrometre limit]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[pin typed in micrometres]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[form diameter at d_B]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[duplicate size]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[duplicate deviation]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[duplicate class]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[duplicate tolerance row]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[duplicate column row]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[clause changed]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[column index beyond the last]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[row_by_column naming no row]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[default size has no column]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[two columns select the default size]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[M1 plus a thousandth]
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[pin plus a hundredth]
+16 failed, 9 passed, 16 deselected in 0.04s
+
+# the identity's boundary pair, same disabled checker:
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+E   Failed: DID NOT RAISE TablesError
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables.py:269: Failed: DID NOT RAISE TablesError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_the_m1_identity_refuses_a_hair_beyond_half_a_printed_digit
+1 failed, 1 passed, 39 deselected in 0.02s
