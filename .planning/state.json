@@ -56,13 +56,18 @@
     {
       "number": "34",
       "name": "Fit Tables and Tolerance Window",
+      "status": "complete"
+    },
+    {
+      "number": "34.1",
+      "name": "Address tech debt: DIN 5480 table loader and gear guard",
       "status": "pending"
     }
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step (plan phase 34)",
-    "reason": "Phase 5 of 5 — needs a plan"
+    "label": "Advance to the next step (plan phase 34.1)",
+    "reason": "Phase 6 of 6 — needs a plan"
   },
-  "updated_at": "2026-10-29T02:14:50.829Z"
+  "updated_at": "2026-11-01T17:13:52.852Z"
 }
