@@ -177,6 +177,8 @@ baseline, the gear `/api/schema` response byte-equal.
       gitignored file, transcribed twice and checked; tooth-thickness windows, M_Re limits and the
       maximum-material solid with them, `null` and warned without them; blocked until the copy's
       local path is supplied
+- [ ] **Phase 34.1: Address tech debt: DIN 5480 table loader and gear guard** (INSERTED) - The
+      audit's must debt on the tables loader and the gear guard, closed before the milestone closes
 
 ## Phase Details
 
@@ -559,6 +561,19 @@ Plans:
 **Wave 8** *(blocked on Wave 7 completion)*
 - [x] 34-17-PLAN.md — the gate delta against the baseline and the 300 s bar, L50, the phase close checks with the leak review, the seen-red table
 
+### Phase 34.1: Address tech debt: DIN 5480 table loader and gear guard (INSERTED)
+
+**Goal:** Close the v0.7 audit's must debt before the milestone closes (`.planning/v0.7-MILESTONE-AUDIT.md`):
+the DIN 5480 tables loader (oversized `A_s` cell, Table 7 partly present, loader refusals no test
+reaches) and the `gear.unchanged` guard (no timeout on git or the probe, lightweight or moved
+`v0.6` tag accepted). Scope is set at discuss-phase.
+**Requirements**: TBD
+**Depends on:** Phase 34
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 34.1 to break down)
+
 ## Process Notes (carried forward)
 
 - Phases run on `gsd/phase-NN-*` branches cut from `origin/main` and land only through
@@ -596,3 +611,4 @@ Plans:
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
 | 33. Interfaces and Parity | v0.7 | 10/10 | Complete    | 2026-10-29 |
 | 34. Fit Tables and Tolerance Window | v0.7 | 17/17 | Complete    | 2026-11-01 |
+| 34.1. Address tech debt: DIN 5480 table loader and gear guard | v0.7 | 0/0 | Not started | - |
