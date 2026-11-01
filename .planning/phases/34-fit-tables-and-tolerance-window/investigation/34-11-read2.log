@@ -1,0 +1,20 @@
+34-11 read 2, part d of DIN 5480-2 (modules 5, 6, 8, 10). Counts and locations only; no value of the standard.
+
+== Task 1: module 5 (section 16, Tables 26 and 27, pages 32 and 33) ==
+nominal page 32: 47 rows read
+inspection page 33: 47 rows read
+rows joined on (d_B, z), printed exactly once on both pages: 47
+keys left out: none
+rows re-read from a 600 ppi crop: none (the check refused nothing)
+make tables.check, last line: ok
+
+== Task 2: modules 6, 8 and 10 ==
+module 6 (section 17, Tables 28 and 29, pages 34 and 35): nominal page 34: 53 rows read; inspection page 35: 53 rows read; joined 53
+module 8 (section 18, Tables 30 and 31, pages 36 and 37): nominal page 36: 39 rows read; inspection page 37: 39 rows read; joined 39
+  footnote mark b: seen once, on the hub D_M of one inspection row of page 37 (not a column this read keeps); not part of any number
+module 10 (section 19, Tables 32 and 33, pages 38 and 39): nominal page 38: 38 rows read; inspection page 39: 38 rows read; joined 38
+keys left out, all four modules: none
+rows re-read from a 600 ppi crop, all four modules: none (the check refused nothing)
+module 5 rows (Task 1): 47
+total rows in part2-read2-d.json: 177 (47 + 53 + 39 + 38)
+make tables.check on the whole part, last line: ok

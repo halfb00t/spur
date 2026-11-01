@@ -17,3 +17,6 @@ compose.yaml
 Dockerfile
 docs
 .github
+# the Dockerfile copies only src and docker, so this is the second belt that keeps the
+# private DIN 5480 table directory out of the build context sent to the daemon
+private

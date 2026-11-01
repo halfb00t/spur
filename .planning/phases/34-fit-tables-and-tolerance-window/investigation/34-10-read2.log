@@ -1,0 +1,38 @@
+34-10 read 2, part c (DIN 5480-2, modules 2, 2.5, 3, 4): counts and locations only, no value of the standard.
+
+== Module 2 (section 12, Tables 18 and 19, pages 24 and 25) ==
+rows read, page 24 (nominal): 46
+rows read, page 25 (inspection): 46
+keys joined into the document: 46
+keys left out: none
+rows re-read from a 600 ppi crop: none (the check refused nothing)
+tables.check last line: ok
+
+== Module 2.5 (section 13, Tables 20 and 21, pages 26 and 27) ==
+rows read, page 26 (nominal): 41
+rows read, page 27 (inspection): 41
+keys joined into the document: 41
+keys left out: none
+rows re-read from a 600 ppi crop: none
+
+== Module 3 (section 14, Tables 22 and 23, pages 28 and 29) ==
+rows read, page 28 (nominal): 48
+rows read, page 29 (inspection): 48
+keys joined into the document: 48
+keys left out: none
+rows re-read from a 600 ppi crop: none
+
+== Module 4 (section 15, Tables 24 and 25, pages 30 and 31) ==
+rows read, page 30 (nominal): 44
+rows read, page 31 (inspection): 44
+keys joined into the document: 44
+keys left out: none
+rows re-read from a 600 ppi crop: none
+
+== Whole part c ==
+total rows in part2-read2-c.json: 179 (46 + 41 + 48 + 44)
+keys left out in total: 0
+rows re-read in total: 0
+rows kept as printed after a refusal: 0
+tables.check on the whole part, last line: ok
+(the check covers the M1 identity and ranges; d_Ff1 max is covered by the two reads only)

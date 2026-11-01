@@ -1,6 +1,8 @@
 # Print M_Re for an odd tooth count, now that DIN 5480-2 rows confirm the formula
 
 Date: 2026-10-26
+Status: retired
+Retired in: feat(shaft): print an odd tooth count's M_Re at DIN 5480-2's pin (D-11)
 Source: The Phase 31 follow-up that anchored DIN 5480-2:2006-05 rows. The human approved four rows by name and chose to keep the odd-count gate for now.
 Related files:
 - src/spur/shaft_calc.py (`ODD_Z_UNCONFIRMED`, `pin_measurement`)
@@ -21,3 +23,7 @@ An odd-count shaft is a normal DIN 5480 part (211 of the 721 Part 2 inspection r
 
 ## Next step
 Remove the odd-count branch in `pin_measurement` and retire `ODD_Z_UNCONFIRMED`. Make the odd-count test assert an M_Re. Note that the printed M_Re is at the tool's theoretical pin, not the tabulated D_M: Part 2's pin matches the theoretical pin rounded to 0.01 mm in only 16 of 721 rows. Decide this together with Phase 34's switch to the tabulated pin, so an odd-count M_Re is printed at the standard's pin the first time it appears.
+
+## Outcome
+
+Decided with the tabulated pin, as the next step asked (D-11): for a size the table file lists, an odd tooth count prints M_Re, M_Re max and M_Re min at the tabulated pin, so the first odd-count M_Re is at the standard's pin (W 26x1.25x19x8f prints 29.026, the approved M1). Off the tables and with no file the gate stays and `ODD_Z_UNCONFIRMED` still says so.

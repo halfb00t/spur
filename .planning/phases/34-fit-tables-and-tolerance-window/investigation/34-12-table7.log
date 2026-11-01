@@ -1,0 +1,25 @@
+34-12: DIN 5480-1:2006 Table 7, read A (page 24, 600 ppi render, own vision reading; counts and locations only, no value)
+
+== Task 1: the tolerance table ==
+page 24 has no text layer; rendered at 600 ppi (4959 x 7017) and at 100 ppi for the overview; the table read from five crops of the tolerance block, each at most 9 rows with the column labels in the first
+tolerance rows read: 30 (row 1 at the top, row 30 at the bottom); the plan and 34-RESEARCH expect 24
+  COUNT DISCREPANCY: the printed table of T_G, T_act and T_eff has 30 rows, counted twice, once on the 100 ppi overview and once on the 600 ppi crops (the last crop ends on the bottom border of row 30)
+  consequence: `make tables.check --complete` and tests/test_din5480_tables_tool.py hold `tolerance_rows: 24`; read A is NOT adjusted to 24 (D-05, L08); filed as debt, see the SUMMARY
+stray-slash quirk: the T_eff digits that look like "1/4" at 100 ppi were each read from the 600 ppi crop; none needed a second crop
+rows re-read from a fresh crop: none (the T_G = T_act + T_eff check refused nothing)
+rows whose T_G sum the check refuses: none
+make tables.check, last line: ok
+
+== Task 2: the deviations, the class diagonals and the column map ==
+rows per block: deviations 18 (letters a to v, nine columns each, the merged h cell expanded to nine entries), columns 21 (3 module groups x 7 d_B ranges), classes 8 (nine tolerance rows each), tolerances 30 (see Task 1; the plan expects 24)
+how each block was read:
+  deviations: three crops of 6 rows each at 600 ppi
+  columns: one 600 ppi crop of the skewed grid; each header label sits on the slanted line it names (checked against the page's example arrow), each line meets a module row over one of the 9 verticals
+  classes: 300 ppi overview plus two 450 ppi crops; for every class, the vertical lines where its diagonal meets them and the horizontal that leaves each meeting towards the tolerance table; class 5 and class 6 read at all nine verticals, the other six at the right-hand vertical and the left-hand one, the middle ones checked as parallel
+  STRUCTURE NOTE: the page draws ONE family of 8 diagonals, read by the shaft (class 8 in the example) and by the hub (class 9 in the example) alike; there is no separate shaft family as the plan expects. The 8 ClassRows are that family.
+  STRUCTURE NOTE: the example box labels "shaft" with N ... 9H and "hub" with W ... 8f; the diagram's arrows mark class 8 for the 8f and class 9 for the 9H. The W fit is the one this read keeps.
+cells re-read from a fresh crop: none
+make tables.check, last line: ok
+make tables.check --complete: refuses only the tolerance row count (30, expected 24) and the absent sizes and modules (part 2 is another read)
+affine check of the classes against row(q, k) = r0 + c(q-5) + s(k-1) (34-RESEARCH A2): holds on all 72 entries; sign and monotone checks of the deviations (A3): hold
+worked example reproduced: yes. Tables.fit(3.0, 120.0, "8f") gives the box's A_s, T_G, T_act and T_eff; din5480.thickness_limits at W 120x3x38's s1 gives s_vmax, s_max and s_min, and s1 itself, all four within 0.0005 of the box. No cell was edited to make it so.

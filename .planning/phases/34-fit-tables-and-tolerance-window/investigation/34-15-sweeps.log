@@ -1,0 +1,54 @@
+table file loaded: 720 sizes, 18 letters, 8 classes, 30 tolerance rows, 21 columns
+
+== 1. guard sweep: every tabulated size x every fit Table 7 lists
+fits per size: 144 (8 classes x 18 letters)
+sizes: 720; fit combinations with a Table 7 tolerance and a valid ShaftParams: 102096; no Table 7 tolerance: 0; ShaftParams refused: 1584
+  refusal reason: infeasible model: 1584
+  sizes refused by ShaftParams: 11
+    REFUSED m=0.6 d_B=40 z=64
+    REFUSED m=0.6 d_B=47 z=76
+    REFUSED m=0.75 d_B=47 z=60
+    REFUSED m=0.75 d_B=50 z=64
+    REFUSED m=0.8 d_B=50 z=60
+    REFUSED m=0.8 d_B=55 z=66
+    REFUSED m=0.8 d_B=58 z=70
+    REFUSED m=1.25 d_B=78 z=60
+    REFUSED m=1.5 d_B=100 z=64
+    REFUSED m=1.75 d_B=110 z=60
+    REFUSED m=1.75 d_B=120 z=66
+measurement | printed | null at the guard | null for another reason
+M_Re nominal | 102096 | 0 | 0
+M_Re max | 102096 | 0 | 0
+M_Re min | 102096 | 0 | 0
+sizes whose nominal M_Re is null although the copy prints its M1: 0
+sizes with M_Re max null at the guard for at least one fit: 0
+sizes with M_Re min null at the guard for at least one fit: 0
+sizes with M_Re max null for another reason for at least one fit: 0
+sizes with M_Re min null for another reason for at least one fit: 0
+guard sweep wall clock: 4.6 s
+
+== 1b. cross-check without derive_shaft: contact against the window, every size x fit
+readings checked: 311040; contact outside the window: 0; pin touches no flank: 0; wall clock 1.2 s
+
+== 2. tip-land and overlap sweep: every tabulated size x every Table 7 letter
+size x letter combinations: 12960 (class 5 stands for all: A_s depends on the letter and the column only); sizes without a column: 0
+tip land closed (half angle at the tip radius <= 0): 0
+space closed (half angle at the root radius >= pi/z): 0
+thinnest tip land: m=0.5 d_B=6 z=10 letter a (its width is in private/reads/sweep-findings.txt)
+thickest tooth at the root: m=0.5 d_B=40 z=78 letter v (its fraction of the space is in private/reads/sweep-findings.txt)
+tip sweep wall clock: 0.0 s
+
+== 3. extreme builds through build_shaft (120 s wall clock each)
+  thinnest tip land: m=0.5 d_B=6 z=10 letter a: PASS valid=True solids=1 volume rel error 1.35e-07 (bar 0.0001) build 0.49 s, wall 2.1 s
+  thickest tooth: m=0.5 d_B=40 z=78 letter v: PASS valid=True solids=1 volume rel error 6.17e-10 (bar 0.0001) build 2.29 s, wall 3.9 s
+
+== 4. the page's example W 120x3x38x8f through derive_shaft
+  max_effective_thickness: PASS
+  max_actual_thickness: PASS
+  min_actual_thickness: PASS
+  measure_over_pins_min: PASS
+  M_Re (nominal) printed: True; M_Re max printed: True
+
+private files written: sweep-findings.txt (2 lines), anchor-candidates.txt
+total probe time: 11.8 s
+SPUR_DIN5480_TABLES="$PWD/private/din5480-tables.json" .venv/bin/python -I   14.12s user 24.31s system 323% cpu 11.890 total

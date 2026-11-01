@@ -19,8 +19,9 @@ Why each shaft is in the set (numbers measured at planning with `derive_shaft`):
 - `default`: the empty link, W 25x1.25x18x8f; profile shift 0.45, the upper edge of the
   range; slug `spur_shaft_w25x1.25x18`; `measure_over_pins` 27.999.
 - `w30x2x14`: profile shift -0.05, the lower edge; `measure_over_pins` 33.685.
-- `odd-z`: W 26x1.25x19, an odd tooth count, where no measurement over pins exists:
-  `measure_over_pins` is null (L08), shift 0.35.
+- `odd-z`: W 26x1.25x19, an odd tooth count, where no measurement over pins exists
+  without the tables: `measure_over_pins` is null (L08), shift 0.35. With the tables it
+  prints at the tabulated pin (D-11).
 - `no-shank-no-chamfer`: `shank_length` 0, the field's minimum, and `end_chamfer` 0, so
   `end_chamfer_effective` is null; its slug equals the default's, which is the adjacency
   the name test pins (the solid's fields are not in the name).

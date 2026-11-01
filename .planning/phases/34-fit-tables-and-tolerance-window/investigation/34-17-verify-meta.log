@@ -1,0 +1,10 @@
+UTC start: 2026-10-31T16:44:18Z
+HEAD: dc31539
+Host: 18 CPUs, arm64, 64.0 GiB RAM
+Load before: { 3.43 9.55 9.66 }
+Precondition: git status --porcelain -- src tests bench scripts pyproject.toml Makefile requirements.txt; printed lines:        0
+Other heavy processes at start:        0 (sibling project 'screw', processes above 50% CPU naming it)
+UTC end: 2026-10-31T16:48:00Z
+Load after: { 11.64 14.27 12.06 }
+make exit status: 0
+Other heavy processes at end:        0

@@ -15,7 +15,7 @@ from typing import Literal, cast, get_args, get_origin
 
 from pydantic import ValidationError
 
-from . import __version__
+from . import __version__, din5480_tables
 from .din5480 import DesignationError
 from .params import GearParams
 from .records import configure
@@ -227,6 +227,15 @@ def main(argv: list[str] | None = None) -> None:
     se.set_defaults(func=cmd_shaft_export)
 
     ns = ap.parse_args(argv)
+    # A table file someone named and that cannot be loaded would otherwise print every table
+    # number as null, a silent partial success (D-04). One call for every subcommand, before
+    # cmd_serve imports uvicorn, so `spur serve` refuses whatever uvicorn's supervisor does
+    # with a lifespan failure (34-RESEARCH A4, unverified). Exit 1 is the BuildError
+    # convention; an unset variable is no file and changes nothing.
+    try:
+        din5480_tables.active()
+    except din5480_tables.TablesError as exc:
+        raise SystemExit(f"error: {exc}") from None
     ns.func(ns)
 
 

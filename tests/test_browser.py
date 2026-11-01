@@ -37,6 +37,7 @@ from collections import Counter
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
+import din5480_tables_fixture
 import pytest
 from browser_session import (
     BUILD_WAIT_MS,
@@ -3022,6 +3023,76 @@ def test_the_shipped_viewer_in_a_real_browser(server: str, tmp_path: Path) -> No
                     f"parity: {len(SHAFTS)} shafts, {parity_rows} rows equal the API's, "
                     f"{len(parity_numbers)} numbers rounded as the browser does, "
                     f"{time.perf_counter() - started:.2f} s"
+                )
+
+            with step("parity with tables", no_foreign_key):
+                # ROADMAP criterion 3, 34-07: with a table file loaded the page prints the five
+                # tolerance rows from the schema's `dims`, with no page code. Its own server,
+                # for this step only: the shared one strips every SPUR_* variable and its rows
+                # must stay the no-table ones (34-RESEARCH Pitfall 12). The file is the
+                # synthetic fixture in tmp_path, never the real one (T-34-26).
+                tables_file = din5480_tables_fixture.write(tmp_path / "din5480-tables.json")
+                started = time.perf_counter()
+                tabled_rows = 0
+                tabled_labels = {
+                    "Max effective tooth thickness s_vmax",
+                    "Max actual tooth thickness s_max",
+                    "Min actual tooth thickness s_min",
+                    "Measurement over pins M_Re max",
+                    "Measurement over pins M_Re min",
+                }
+                with serve(env={"SPUR_DIN5480_TABLES": str(tables_file)}) as tabled:
+                    tabled_dims = [
+                        {"key": str(d["key"]), "label": str(d["label"]), "unit": str(d["unit"])}
+                        for d in _shaft_dims(tabled)
+                    ]
+                    tabled_page = record_api(browser.new_page(), [])
+                    try:
+                        tabled_page.goto(tabled + "/")
+                        expect(tabled_page.locator("form#params [name]")).to_have_count(
+                            field_count, timeout=BUILD_WAIT_MS
+                        )
+                        for member, values in SHAFTS.items():
+                            api_query = urllib.parse.urlencode(values)
+                            link = f"part=shaft&{api_query}" if api_query else "part=shaft"
+                            _follow_shaft_link(tabled_page, link)
+                            status, tabled_doc = _api_get(tabled, "/api/shaft/info", api_query)
+                            assert status == 200, f"{member}: /api/shaft/info answered {status}"
+                            assert isinstance(tabled_doc, dict), f"{member}: no info object"
+                            api_rows = web_rows(tabled_doc, tabled_dims)
+                            # The rows land when the info response does, after the request
+                            # `_follow_shaft_link` waited for; the previous member's rows differ
+                            # from this one's, so waiting for equality waits for this one's.
+                            deadline = time.monotonic() + BUILD_WAIT_MS / 1000
+                            page_rows = eval_pairs(tabled_page, DIMS_ROWS)
+                            while page_rows != api_rows and time.monotonic() < deadline:
+                                tabled_page.wait_for_timeout(100)
+                                page_rows = eval_pairs(tabled_page, DIMS_ROWS)
+                            assert page_rows == api_rows, (
+                                f"{member}: the page's rows differ from the API's.\n"
+                                f"  page: {page_rows}\n  API:  {api_rows}"
+                            )
+                            tabled_rows += len(page_rows)
+                            if member == "default":
+                                tabled_shown = {label for label, _ in page_rows}
+                                assert tabled_labels <= tabled_shown, (
+                                    f"the default shows no {sorted(tabled_labels - tabled_shown)} "
+                                    "with the tables loaded"
+                                )
+                                # A build worker must exist before the server is torn down
+                                # (MIN_GROUP_MEMBERS): one STL download builds one.
+                                with tabled_page.expect_download(
+                                    timeout=BUILD_WAIT_MS
+                                ) as tabled_download:
+                                    tabled_page.click("#dl-stl")
+                                assert tabled_download.value.suggested_filename == (
+                                    f"{SHAFT_FILES[member]}.stl"
+                                ), "the download name follows the tables (L49)"
+                    finally:
+                        tabled_page.close()
+                print(
+                    f"parity with tables: {len(SHAFTS)} shafts, {tabled_rows} rows equal the "
+                    f"API's, {time.perf_counter() - started:.2f} s"
                 )
 
             with step("shaft as-written sweep", no_foreign_key):

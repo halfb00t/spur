@@ -1,7 +1,8 @@
 # The internal form-diameter construction sits above DIN 5480-2's d_Ff1 maximum on most rows
 
 Severity: must
-Status: active
+Status: resolved
+Resolved in: 1fa8deb feat(shaft): the pin-contact guard starts at DIN 5480-2's d_Ff1 maximum (D-12) (gsd/phase-34-fit-tables-and-tolerance-window)
 Date: 2026-10-26
 Source: The Phase 31 follow-up that compared every size table of DIN 5480-2:2006-05 with `spur.din5480`. This was a scratch comparison; no Part 2 value beyond the four approved rows is committed.
 Related files:
@@ -26,5 +27,5 @@ In Phase 34 the tabulated pin replaces the computed one and the guard goes live.
 ## Next step
 Revisit when Phase 34 makes the pin-contact guard live. Choose the guard's lower bound from the standard's d_Ff1 maximum (which needs the mating part's tip, Part 1 Tables 3 and 4) or from a construction that stays below it on every Part 2 row. Add a test over the approved rows that the bound stays at or below the maximum.
 
-<!-- On resolve: set Status: resolved, add `Resolved in: <commit sha>`,
-     git mv into resolved/, move the INDEX row to Resolved — same commit as the fix. -->
+## Resolution
+For a size the tables list, the guard's floor is the copy's own d_Ff1 maximum plus the margin, so the internal construction no longer narrows the window there. Off the tables the internal construction stays the floor and cannot fire (31 D-20). The margin is unchanged. 34-15 sweeps the real file and surfaces any row where a limit still leaves the window.

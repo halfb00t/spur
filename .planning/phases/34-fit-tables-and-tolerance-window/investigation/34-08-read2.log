@@ -1,0 +1,38 @@
+34-08 read 2 of DIN 5480-2, part a (modules 0.5, 0.6, 0.75, 0.8). Counts and locations only; no value of the standard.
+Method: page renders (100 ppi to find columns, 300 ppi bands of at most 12 rows overlapping by one row), read by the executor; no other read opened.
+
+== module 0.5 (section 4, Tables 2 and 3, pages 8 and 9)
+nominal page 8: 35 rows read
+inspection page 9: 35 rows read
+rows in the document: 35
+keys left out: 0
+rows re-read after the check: 0
+make tables.check: ok
+
+== module 0.6 (section 5, Tables 4 and 5, pages 10 and 11)
+nominal page 10: 39 rows read
+inspection page 11: 39 rows read
+rows in the document: 39
+keys left out: 0
+rows re-read after the check: 0
+
+== module 0.75 (section 6, Tables 6 and 7, pages 12 and 13)
+nominal page 12: 42 rows read
+inspection page 13: 42 rows read
+rows in the document: 42
+keys left out: 0
+rows re-read after the check: 0
+
+== module 0.8 (section 7, Tables 8 and 9, pages 14 and 15)
+nominal page 14: 45 rows read
+inspection page 15: 45 rows read
+rows in the document: 45
+keys left out: 0
+rows re-read after the check: 0
+note: d_B 20 is printed on two rows of each page (z 23 and z 24); the keys differ in z, so both are rows
+
+== part a whole
+total rows in the document: 161 (35 + 39 + 42 + 45); modules [0.5, 0.6, 0.75, 0.8]
+keys left out: 0 (none for the human at 34-14 from this read)
+rows refused by the check and re-read: 0
+make tables.check on the whole part: ok

@@ -1,0 +1,74 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_for_a_listed_size_the_guard_starts_at_the_tabulated_form_diameter_maximum _
+
+with_tables = Tables(schema_version=1, sizes=(SizeRow(provenance=Provenance(part=2, clause='9', table='12 and 13', pages=(18, 19)), ...'10.9', table='7', pages=(24,)), module_min_mm=5.0, module_max_mm=10.0, d_b_over_mm=None, d_b_upto_mm=None, column=3)))
+
+    def test_for_a_listed_size_the_guard_starts_at_the_tabulated_form_diameter_maximum(
+            with_tables: din5480_tables.Tables) -> None:
+        p = ShaftParams(reference_d=120, module=3, teeth=38)
+        margin = shaft_calc.GUARD_MARGIN_FACTOR * p.module
+>       assert pin_contact_window(p, 113.91)[0] == pytest.approx(113.91 + 0.1 * 3, abs=1e-12)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: pin_contact_window() takes 1 positional argument but 2 were given
+
+tests/test_shaft_calc.py:647: TypeError
+______________________ test_the_tabulated_floor_is_closed ______________________
+
+    def test_the_tabulated_floor_is_closed() -> None:
+        """The default shaft with a d_Ff1 maximum of 23.46: the floor is 23.585. The pin touching
+        exactly there is found by bisection, then moved 1e-6 mm either way, as for the internal
+        floor in test_the_pin_contact_window_is_closed."""
+        p = ShaftParams()
+        m, z = p.module, p.teeth
+        s = din5480.tooth_thickness(m, din5480.profile_shift(p.reference_d, m, z) * m)
+    
+        def contact(pin: float) -> float:
+            result = din5480.measure_over_pins(m, z, s, pin)
+            assert result is not None
+            return result[1]
+    
+>       low, _ = pin_contact_window(p, 23.46)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: pin_contact_window() takes 1 positional argument but 2 were given
+
+tests/test_shaft_calc.py:674: TypeError
+_________ test_a_limit_thickness_below_the_floor_nulls_that_limit_only _________
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_a_limit_thickness_below_the_floor_nulls_that_limit_only() -> None:
+        """Pitfall 6, planning measurement 2026-10-30: the default row's contacts at pin 2.75 are
+        23.6411 (nominal), 23.5989 (s_max) and 23.5736 (s_min). A d_Ff1 maximum of 23.46 puts the
+        floor at 23.585, between the last two: M_Re and M_Re max print, M_Re min alone is null."""
+        _install_default_row_with_form_d_max(23.46)
+        d = derive_shaft(ShaftParams())
+        assert (d.pin_d, d.measure_over_pins) == (2.75, 28.05)
+        assert d.measure_over_pins_max == [retired fixture value]
+>       assert d.measure_over_pins_min is None
+E       AssertionError: assert [retired fixture value] is None
+E        +  where [retired fixture value] = ShaftDimensions(reference_d=25.0, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=22.5, tip_d=24.75, root_d=22.25,...nto the shank: the solid has no relief groove (DIN 509) and no hob run-out, and splined_length is a full-form prism.')).measure_over_pins_min
+
+tests/test_shaft_calc.py:710: AssertionError
+________ test_each_branch_of_the_floor_is_reached_by_its_own_thickness _________
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_each_branch_of_the_floor_is_reached_by_its_own_thickness() -> None:
+        """Floor 23.625 sits between the nominal and the s_max contact: M_Re prints, both limits
+        are null with a sentence each. Floor 23.655 is above all three: no pin, no limits, and the
+        pin's own sentence alone."""
+        _install_default_row_with_form_d_max(23.50)
+        d = derive_shaft(ShaftParams())
+        assert (d.pin_d, d.measure_over_pins) == (2.75, 28.05)
+>       assert (d.measure_over_pins_max, d.measure_over_pins_min) == (None, None)
+E       assert ([retired fixture value], [retired fixture value]) == (None, None)
+E         
+E         At index 0 diff: [retired fixture value] != None
+E         Use -v to get more diff
+
+tests/test_shaft_calc.py:730: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_calc.py::test_for_a_listed_size_the_guard_starts_at_the_tabulated_form_diameter_maximum
+FAILED tests/test_shaft_calc.py::test_the_tabulated_floor_is_closed - TypeErr...
+FAILED tests/test_shaft_calc.py::test_a_limit_thickness_below_the_floor_nulls_that_limit_only
+FAILED tests/test_shaft_calc.py::test_each_branch_of_the_floor_is_reached_by_its_own_thickness
+4 failed, 189 deselected in 0.09s

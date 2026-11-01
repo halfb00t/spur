@@ -32,13 +32,14 @@ PLATFORM_ARG := $(if $(PLATFORM),--platform $(PLATFORM),)
 
 .DEFAULT_GOAL := help
 .PHONY: help venv verify verify.static verify.fast lint typecheck lint-imports \
-        no-fake-done gear.unchanged test test.fast serve \
+        no-fake-done gear.unchanged tables.read1 tables.check tables.diff \
+        tables.join tables.assemble tables.test test test.fast serve \
         check image test-image smoke up down logs lock vendor vendor-check fixture.regen golden.regen \
         bench bench.latency bench.memory bench.build bench.export \
         worktree.bootstrap worktree.new worktree.land pr.land clean clean-docker
 
 help:  ## list the targets
-	@grep -hE '^[a-z][a-z.-]*:.*##' $(MAKEFILE_LIST) | sed 's/:[^#]*##/\t/' | expand -t18
+	@grep -hE '^[a-z][a-z0-9.-]*:.*##' $(MAKEFILE_LIST) | sed 's/:[^#]*##/\t/' | expand -t18
 
 # --- local python ------------------------------------------------------------------
 
@@ -164,6 +165,31 @@ no-fake-done: ## refuse unfinished work dressed up as finished
 # (D-05), it never skips.
 gear.unchanged: $(STAMP)  ## prove tests/regression/, ci.yml and the gear /api/schema bytes are unchanged since the v0.6 tag
 	$(PY) -m scripts.gear_unchanged
+
+# 34-03: the developer-time tools that turn the licensed copy of DIN 5480 into a private
+# table file (D-06, D-08). Output is locations and counts; the reads stay in the directory
+# git ignores, and each script refuses an output path it does not.
+tables.read1: $(STAMP)  ## PDF=<din-5480-2.pdf> OUT=<path git ignores> : read 1 of DIN 5480-2, the pdftotext parser (D-06)
+	$(PY) -m scripts.din5480_read1 "$(PDF)" -o "$(OUT)"
+
+tables.check: $(STAMP)  ## FILE=<table file> ARGS=--complete : the loader's checks on one table file or read (counts and locations, no value)
+	$(PY) -m scripts.din5480_tables_tool check "$(FILE)" $(ARGS)
+
+tables.diff: $(STAMP)  ## A=<read> B=<read> ARGS=--values : every disagreement between two reads, by location (values only with ARGS=--values)
+	$(PY) -m scripts.din5480_tables_tool diff "$(A)" "$(B)" $(ARGS)
+
+tables.join: $(STAMP)  ## OUT=<path git ignores> IN="<part> <part>..." : concatenate the parts of one read
+	$(PY) -m scripts.din5480_tables_tool join "$(OUT)" $(IN)
+
+tables.assemble: $(STAMP)  ## OUT=<path git ignores> P2A= P2B= T7A= T7B= : write the table file only when both pairs of reads agree
+	$(PY) -m scripts.din5480_tables_tool assemble "$(OUT)" --part2 "$(P2A)" "$(P2B)" --table7 "$(T7A)" "$(T7B)"
+
+# 34-16: the real-file checks. tests/din5480_real_tables_check.py is not a test_*.py file, so the
+# gate never collects it (no run, no skip in the result line): the table file is the human's,
+# private and never in CI. It reads the file from SPUR_DIN5480_TABLES, set here from FILE.
+tables.test: $(STAMP)  ## FILE=<table file> : the real-file checks (approved anchors, completeness, accepted sweeps); never part of the gate
+	@test -n "$(FILE)" || { echo "make tables.test: set FILE=<the table file>, e.g. make tables.test FILE=private/din5480-tables.json"; exit 1; }
+	SPUR_DIN5480_TABLES="$(FILE)" $(PY) -m pytest --no-cov -n0 -q tests/din5480_real_tables_check.py
 
 # --cov gates every run on [tool.coverage.report] fail_under (bench/RESULTS.md, Phase 15,
 # Coverage floor). A run over part of the suite reads a low total and fails it: pass

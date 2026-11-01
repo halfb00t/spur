@@ -173,7 +173,7 @@ baseline, the gear `/api/schema` response byte-equal.
 - [x] **Phase 33: Interfaces and Parity** - The shaft served under `/api/shaft/...`, by (completed 2026-10-29)
       `spur shaft` and by a part switch on the web page, one parametrised test proving the three
       agree, the designation accepted as input, and WR-02 fixed on the same edit
-- [ ] **Phase 34: Fit Tables and Tolerance Window** - The human's DIN 5480 values in a private
+- [x] **Phase 34: Fit Tables and Tolerance Window** - The human's DIN 5480 values in a private (completed 2026-11-01)
       gitignored file, transcribed twice and checked; tooth-thickness windows, M_Re limits and the
       maximum-material solid with them, `null` and warned without them; blocked until the copy's
       local path is supplied
@@ -520,7 +520,44 @@ recorded, `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.y
 **Research flag**: Yes — transcription risk (research Phase 5); the 2006 edition's tolerance
 system is in Part 1 and its size tables in Part 2, so the plan names which part each table
 comes from.
-**Plans**: TBD
+**Plans**: 17/17 plans complete in 8 waves. The six read plans (34-08..34-13) must each run as their own agent, blind to the other
+reads (D-05, D-06). 34-14 stops at a `blocking-human` checkpoint for the disagreements (D-08). 34-15 stops at a
+`blocking-human` `checkpoint:decision` for the anchors and the range-edge reading (D-07, research A1). Every value of the
+copy stays under the ignored `private/` (D-01).
+
+Plans:
+**Wave 1**
+- [x] 34-01-PLAN.md — tracer: the phase-start `make verify` baseline; `private/` ignored by git and the build context; the reading toolchain proved on the copy
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [x] 34-02-PLAN.md — `din5480_tables`: the strict schema, the load-time invariants and M1 identity, the per-process load, the synthetic fixture and `with_tables` (D-02..D-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [x] 34-03-PLAN.md — read 1 of Part 2 (the `pdftotext` parser) and the check, diff, join and assemble tool, locations only (D-06, D-08)
+- [x] 34-04-PLAN.md — the five rows: s_vmax, s_max, s_min, M_Re max and min at the tabulated pin, the tiers and their warnings; the fit-pattern debt resolved (D-09, D-10, D-14, D-15)
+- [x] 34-05-PLAN.md — a broken table file refuses at startup in the CLI and the server; the parent's tables reach every build worker (D-04, A5)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [x] 34-06-PLAN.md — the pin-contact guard at the tabulated d_Ff1 maximum, each limit guarded alone; odd tooth counts at the tabulated pin; the form-diameter debt resolved and the odd-count idea retired (D-11, D-12)
+- [x] 34-07-PLAN.md — the solid carries the printed s_vmax, read back from its section, in-process and in a worker; the five rows in a real browser from the schema (D-13)
+- [x] 34-08-PLAN.md — read 2 of Part 2, modules 0.5 to 0.8, from the rendered pages, blind (D-06)
+- [x] 34-09-PLAN.md — read 2 of Part 2, modules 1 to 1.75, blind; the Table 12 duplicate listed (D-06)
+- [x] 34-10-PLAN.md — read 2 of Part 2, modules 2 to 4, blind (D-06)
+- [x] 34-11-PLAN.md — read 2 of Part 2, modules 5 to 10, blind (D-06)
+- [x] 34-12-PLAN.md — Table 7 read A from the 600 ppi render, blind, checked against the page's worked example (D-05)
+- [x] 34-13-PLAN.md — Table 7 read B, blind, in the opposite order (D-05)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [x] 34-14-PLAN.md — the reads joined and diffed, every disagreement settled by the human from the page, the table file assembled only at zero diff (D-08)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [x] 34-15-PLAN.md — tracer over the real file: the guard and tip-land sweeps and the page's example; the human approves anchors by name and the range-edge reading; the approved anchors committed as tests (D-07, A1)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [x] 34-16-PLAN.md — `make tables.test`, the real-file checks outside the gate; the chosen range-edge reading pinned on both sides; the sweep responses
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [x] 34-17-PLAN.md — the gate delta against the baseline and the 300 s bar, L50, the phase close checks with the leak review, the seen-red table
 
 ## Process Notes (carried forward)
 
@@ -558,4 +595,4 @@ comes from.
 | 31. Shaft Maths, Parameters and Designation | v0.7 | 6/6 | Complete    | 2026-10-26 |
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
 | 33. Interfaces and Parity | v0.7 | 10/10 | Complete    | 2026-10-29 |
-| 34. Fit Tables and Tolerance Window | v0.7 | 0/? | Not started (blocked until the copy's local path is supplied) | - |
+| 34. Fit Tables and Tolerance Window | v0.7 | 17/17 | Complete    | 2026-11-01 |

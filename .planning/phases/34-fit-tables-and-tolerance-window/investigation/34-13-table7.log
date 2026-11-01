@@ -1,0 +1,43 @@
+34-13 Table 7 read B (counts and locations only; no value of the standard)
+
+Task 1, the tolerance table (page 24, rendered at 600 ppi, cut into 4 crops of at most 8 rows)
+
+order read: from the bottom row of the printed table upward
+rows printed on the page: 30 (contiguous, the four crops overlap by one row and joined without a gap)
+rows written to the read: 30 (row 1 = top row of the printed table, row 30 = bottom row)
+rows re-read from a tighter crop because the T_G sum refused them: none
+crops re-cut for layout only (first crop windows were mis-aimed): 1 round; no cell was re-read
+stray-slash print quirk: looked for on every T_eff cell at 600 ppi; no cell needed a second look
+other blocks in the document at this point: empty (deviations, classes, columns, sizes)
+
+make tables.check FILE=private/reads/table7-b.json
+  last line: ok
+
+DISAGREEMENT WITH THE PLAN (reported, not adjusted): the plan, the tooling's EXPECTED_COUNTS
+and the Task 1 verify expect 24 tolerance rows; the page printed 30. All 30 satisfy T_G = T_act + T_eff.
+The Task 1 verify, run as written, prints "30 False" (the 1..24 comparison); against 1..30 it is True.
+Nothing was trimmed or padded to 24. `--complete` compares tolerance_rows with 24, so a
+complete file of this read will not match it until the human settles the count at 34-14.
+
+Task 2, the column map, the class diagonals and the deviations (600 ppi crops of at most 6 rows or one diagram region)
+
+order read: column map (b), class diagonals (c), deviations (a), each deviation row right to left
+rows per block in the read: deviations 18 (a..v, 9 values each, the h row expanded to nine), columns 21 (3 module groups x 7 d_B ranges), classes 8 (5..12, 9 tolerance-row numbers each), tolerances 30
+rows per block expected by the plan: 18, 21, 8, 24; the page differs in the last block only (see below)
+cells re-read after a first look: none (no cell was changed after it was first written)
+vision aid: the diagonals were read on a private copy of the render with the 30 tolerance rows and the 9 vertical lines numbered; a copy only, in private/renders/34-13/
+page notes (structure, no value): one family of 8 diagonals; the page's example marks the shaft's class and the hub's class on it, so the shaft's diagonals are the class 5..12 ones; the 7 header ranges print "bis" blank on the first and "über" blank on the last, read as null on those sides; the grid's three module rows project onto 7 of the 9 vertical lines each, shifted by one line per module row
+column rows in the document: 21; column numbers used per module group: 7 (consecutive), the three groups overlapping on 5 shared lines
+
+make tables.check FILE=private/reads/table7-b.json
+  last line: ok
+make tables.check FILE=private/reads/table7-b.json --complete (run once, for the count only)
+  sizes: 0, expected 721 (not part of this read); modules: 0, expected 16 (not part of this read); tolerance_rows: 30, expected 24
+
+optional invariants run as checks on the read, never as targets (34-RESEARCH A2, A3): classes affine in (class, column): yes; deviation signs by letter (a..g not above 0, h zero, j..v not below 0): yes; magnitudes not increasing left to right on every row: yes
+
+worked example reproduced: yes
+  Tables.fit(3.0, 120.0, "8f") returns a result; the column the lookup picks for module 3 at d_B 120 is the one the page's arrow marks; A_s, T_G, T_act and T_eff all equal the page's box; s_vmax, s_max and s_min from din5480.thickness_limits at W 120x3x38's s1 are each within 0.0005 of the box (box read from a 600 ppi crop of the page)
+  cells edited toward the example: none
+
+DISAGREEMENT WITH THE PLAN (unchanged from Task 1): 30 tolerance rows on the page, 24 expected. Supporting structure seen on the page: the 8 classes step 3 rows apiece and a diagonal steps 1 row per column, so class 12 reaches the 30th row at column 1; with 24 rows classes 11 and 12 would point at rows that do not exist. For the human at 34-14 (and for EXPECTED_COUNTS tolerance_rows).

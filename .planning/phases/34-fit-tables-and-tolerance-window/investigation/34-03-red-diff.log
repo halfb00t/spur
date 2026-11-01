@@ -1,0 +1,24 @@
+# 34-03 Task 2: tests/test_din5480_tables_tool.py -k diff with the field comparison in diff_lines disabled (the cell comparison replaced by 'if False')
+# run 2026-10-30, synthetic fixture only; the row-presence cases still pass, every cell case fails
+.FFFF.....FF                                                             [100%]
+=================================== FAILURES ===================================
+E   assert 0 == 1
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables_tool.py:123: assert 0 == 1
+E   assert 0 == 1
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables_tool.py:138: assert 0 == 1
+E   assert 0 == 1
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables_tool.py:150: assert 0 == 1
+E   assert 0 == 1
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables_tool.py:162: assert 0 == 1
+E   assert 0 == 1
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables_tool.py:264: assert 0 == 1
+E   assert 0 == 1
+/Users/half/git/halfb00t/spur/tests/test_din5480_tables_tool.py:281: assert 0 == 1
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables_tool.py::test_diff_one_changed_cell_gives_one_location_line_and_no_value
+FAILED tests/test_din5480_tables_tool.py::test_diff_prints_values_only_on_request
+FAILED tests/test_din5480_tables_tool.py::test_diff_compares_provenance_too
+FAILED tests/test_din5480_tables_tool.py::test_diff_locates_a_tuple_cell_by_its_column
+FAILED tests/test_din5480_tables_tool.py::test_assemble_refuses_while_the_part_2_reads_differ
+FAILED tests/test_din5480_tables_tool.py::test_assemble_refuses_while_the_table_7_reads_differ
+6 failed, 6 passed, 11 deselected in 0.21s

@@ -1,0 +1,8 @@
+34-16 task 1: make tables.test FILE=<the table file> (counts only, no value)
+20 passed in 5.23s
+real 5.40
+user 5.35
+sys 0.03
+
+task 2 (edge tests added): make tables.test FILE=<the table file>
+22 passed in 5.37s

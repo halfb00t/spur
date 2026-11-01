@@ -1,0 +1,12 @@
+# 34-03 Task 1: read 1 of DIN 5480-2 (make tables.read1), counts and locations only, no value of the standard
+# run 2026-10-30 20:04 local, load average 74.90 68.79 57.54 (shared host); poppler pdftotext 26.10.0
+# output: $MAIN/private/reads/part2-read1.json (git-ignored, not committed)
+pages: 32
+nominal_rows: 721
+inspection_rows: 721
+joined: 719
+report_lines: 2
+module 1.25, tables 12 and 13, pages 18, 19: d_B 19 z 14 is printed 0 times on the nominal page and 1 on the inspection page; not joined
+module 1.25, tables 12 and 13, pages 18, 19: d_B 20 z 14 is printed 2 times on the nominal page and 1 on the inspection page; not joined
+# load check: din5480_tables.load_file on the read -> 719 size rows over 16 modules, every row through the M1 identity
+# the two report lines wait for the human at 34-14 (D-08); the parser did not guess them

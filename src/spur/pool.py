@@ -29,6 +29,7 @@ from concurrent.futures.process import BrokenProcessPool
 from typing import ParamSpec, cast
 
 from .build_errors import BuildTimeout
+from .din5480_tables import Tables, install
 from .parts import Part
 from .records import worker_replaced
 
@@ -38,15 +39,22 @@ P = ParamSpec("P")  # the real call shapes: build_export(p, fmt, quality),
 # _sleep_past_timeout(seconds), _die() -- see _run_with_timeout below
 
 
-def _warm() -> None:
+def _warm(tables: Tables | None = None) -> None:
     """`ProcessPoolExecutor`'s initializer: runs once per worker, before its first task.
 
-    Loads the kernel into the worker before it accepts work (D-04), so the first real
-    request doesn't pay the cadquery/OCP import cost. This import is the reason the
-    contract in Task 3 must be `allow_indirect_imports = false` scoped to `spur.app`
-    only -- `spur.pool` importing `spur.model` at runtime, inside a worker, is exactly
-    the boundary this phase is drawing, not a violation of it.
+    Installs the parent's DIN 5480 tables, then loads the kernel into the worker before it
+    accepts work (D-04), so the first real request doesn't pay the cadquery/OCP import
+    cost. This import is the reason the contract in Task 3 must be
+    `allow_indirect_imports = false` scoped to `spur.app` only -- `spur.pool` importing
+    `spur.model` at runtime, inside a worker, is exactly the boundary this phase is drawing,
+    not a violation of it.
+
+    A worker never reads `SPUR_DIN5480_TABLES` itself: a worker replaced by `recreate_for`
+    after the file was edited would then build a different part from the numbers the parent
+    printed (D-13: the tables are fixed for the process). The frozen pydantic model pickles
+    across `spawn` once per worker, through `initargs`.
     """
+    install(tables)
     importlib.import_module("spur.model")
 
 
@@ -70,8 +78,9 @@ def build_export(p: Part, fmt: str, quality: str) -> bytes:
 class BuildPool:
     """N independent single-worker executors, routed to by parameter-hash affinity (D-07)."""
 
-    def __init__(self, workers: int, timeout: int) -> None:
+    def __init__(self, workers: int, timeout: int, *, tables: Tables | None = None) -> None:
         self.workers = workers
+        self._tables = tables  # D-13: handed to every worker, and to every replacement
         self.timeout = timeout  # D-10: per-build ceiling in seconds; see app.py's
         # lifespan for where the number itself comes from -- this class only enforces it.
         self.replaced = 0  # D-13: workers replaced since start, reported at /api/health
@@ -93,7 +102,8 @@ class BuildPool:
         # tests/test_pool.py::test_a_closed_pool_never_builds_a_replacement_worker).
         self._closed = False
         self._executors = [
-            ProcessPoolExecutor(max_workers=1, mp_context=_SPAWN, initializer=_warm)
+            ProcessPoolExecutor(max_workers=1, mp_context=_SPAWN, initializer=_warm,
+                                initargs=(self._tables,))
             for _ in range(workers)
         ]
 
@@ -157,7 +167,7 @@ class BuildPool:
         # 260924-bv5-SUMMARY.md for the run transcript.]
         self._executors[i].shutdown(wait=False)
         self._executors[i] = ProcessPoolExecutor(
-            max_workers=1, mp_context=_SPAWN, initializer=_warm)
+            max_workers=1, mp_context=_SPAWN, initializer=_warm, initargs=(self._tables,))
         self.replaced += 1
         worker_replaced(slot=i, cause=cause)
 

@@ -745,6 +745,16 @@ pytest — L13). Full list with sources and acceptance evidence:
   REQ-wr02-fixed; verified 5/5 after 33-10; `make verify` 2779 passed in 245.64 s; security
   threats_open 0; review 0 critical / 4 warning / 9 info open; Nyquist partial, two manual-only
   rows deferred by the human; UI 18/24)
+- ✓ DIN 5480 fit tables read from a private git-ignored file (`SPUR_DIN5480_TABLES`), transcribed
+  twice and diffed to zero, 720 sizes after the human left out the one Table 12 row the copy does
+  not print; the tooth-thickness window, the M_Re limits and the maximum-material solid with the
+  tables, `null` and warned without them or off-table; a broken or unreadable file refuses to
+  start — Phase 34 (L50; REQ-tables-private-file, REQ-tables-transcribed-twice,
+  REQ-fit-tolerance-window, REQ-mre-limits, REQ-solid-max-material, REQ-off-table-builds,
+  REQ-gate-cost-recorded; verified 5/5 after the review fixes; `make verify` 2940 passed in
+  235.27 s; gate close reading 213.54 s accepted by the human against a 308.61 s loaded run;
+  security 65/65 closed; review 0 critical, 4 warnings fixed, 7 info deferred as debt; Nyquist
+  12/12 green; UAT 3/3)
 
 ### Active
 
@@ -914,6 +924,7 @@ quick reference.
 | L47 | The DIN 5480 shaft's maths: what Phase 31 froze, proved on one designation, and left null (follows L46; applies L03 and L08) | ✓ Good — formulas confirmed by clause against DIN 5480-1:2006-03 (unofficial translation); one Part 1 designation and four DIN 5480-2 rows anchored (2026-10-26 amendment); odd-z M_Re and d_Ff still `null`; verified 5/5 with no override relied on |
 | L48 | How Phase 32 builds the DIN 5480 shaft's solid, what it refuses, and what it hands on (follows L46 and L47; applies L08, L24, L26) | ✓ Good — verified 4/4; Nyquist 16/16 automated; security 14/14 closed; volume within 1e-4 of the closed form; WR-01 (uncut chamfer passes the volume guard) open as `must` debt with a Phase 33 trigger |
 | L49 | Phase 33 puts the shaft on the API, the CLI and the page, and a link token the number box blanks is refused as written (amends L44; follows L46–L48) | ✓ Good — verified 5/5; parity test green; IN-01 (`0-0` int token) deferred by the human as debt |
+| L50 | Phase 34 reads DIN 5480's fit tables from a private file and prints the tooth-thickness window (follows L46..L49; keeps L03, L05, L08 and L49) | ✓ Good — verified 5/5; the three approved anchors and the edge-upper range reading confirmed by the human; real-file checks 22 passed; the oversized-`A_s` bound and loader refusal coverage open as `must` debt |
 
 ## Success Metric (Milestone v0.1)
 
@@ -1021,4 +1032,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-29 after Phase 33*
+*Last updated: 2026-11-01 after Phase 34*

@@ -1,0 +1,62 @@
+.venv/bin/python -m pytest -n 8 --cov --cov-report=term -v --durations=25 tests/test_pool.py -n0 --no-cov -q -k 'a_worker_and_its_replacement'
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/half/git/halfb00t/spur
+configfile: pyproject.toml
+plugins: platformdirs-4.12.4, cov-7.1.0, xdist-3.8.0, anyio-4.15.1
+collected 25 items / 24 deselected / 1 selected
+
+tests/test_pool.py F                                                     [100%]
+
+=================================== FAILURES ===================================
+__________ test_a_worker_and_its_replacement_carry_the_parents_tables __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cb3b7d0>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2316/test_a_worker_and_its_replacem0')
+
+    def test_a_worker_and_its_replacement_carry_the_parents_tables(
+            monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """D-13: the parent's one loaded object reaches every build worker, and a worker replaced
+        after a timeout gets the same object, never a re-read. The variable names file B, a valid
+        file that differs from the parent's tables, so a worker that read it would show B's hash."""
+        document = json.loads(din5480_tables_fixture.text())
+        del document["sizes"][0]
+        other = tmp_path / "other.json"
+        other.write_text(json.dumps(document), encoding="utf-8")
+        monkeypatch.setenv(din5480_tables.ENV_VAR, str(other))
+        din5480_tables.reset()
+        read_from_b = din5480_tables.active()
+        assert read_from_b is not None
+    
+        parents = din5480_tables_fixture.build()
+        assert _fingerprint(read_from_b) != _fingerprint(parents)
+        params = ShaftParams()
+        pool = BuildPool(1, 30, tables=parents)
+        old = pool.executor_for(params)
+        try:
+            assert asyncio.run(pool._run_with_timeout(params, _installed_tables)) == _fingerprint(parents)
+            pool.recreate_for(params, old, "timeout")
+            assert pool.executor_for(params) is not old
+>           assert asyncio.run(pool._run_with_timeout(params, _installed_tables)) == _fingerprint(parents)
+E           AssertionError: assert b'none' == b'e9d70dbdacb...2cbdd99c48f21'
+E             
+E             At index 0 diff: b'n' != b'e'
+E             Use -v to get more diff
+
+tests/test_pool.py:758: AssertionError
+----------------------------- Captured stderr call -----------------------------
+/Users/half/git/halfb00t/spur/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+/Users/half/git/halfb00t/spur/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+------------------------------ Captured log call -------------------------------
+ERROR    spur.records:records.py:210 worker.replaced
+============================= slowest 25 durations =============================
+4.24s call     tests/test_pool.py::test_a_worker_and_its_replacement_carry_the_parents_tables
+0.01s teardown tests/test_pool.py::test_a_worker_and_its_replacement_carry_the_parents_tables
+
+(1 durations < 0.005s hidden.  Use -vv to show these durations.)
+=========================== short test summary info ============================
+FAILED tests/test_pool.py::test_a_worker_and_its_replacement_carry_the_parents_tables
+======================= 1 failed, 24 deselected in 4.42s =======================
+make: *** [Makefile:217: test] Error 1

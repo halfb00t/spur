@@ -1,0 +1,40 @@
+34-14 Task 3: the settlements applied to both reads, the two pairs diffed, the table file assembled. Counts and locations only; no value of the standard.
+run 2026-10-31
+
+== settlements (from the human at the Task 2 checkpoint; the values stay in private/reads/settlements.tsv)
+Part 2, module 1.25, Tables 12 and 13 (pages 18 and 19), 2 locations:
+  d_B 19 z 14: the nominal row is not printed in the copy and there is no other source. Left out of both reads. A size row needs both pages' columns, so no row is built from page 19 alone.
+  d_B 20 z 14: the single printed row. Added to both reads identically (neither held it, both had left it out by the exactly-once rule).
+Table 7: 0 settlements (the two reads agreed cell for cell).
+settlements per block: sizes 1 row added, 1 key left out; deviations 0; classes 0; tolerances 0; columns 0
+rows per Part 2 read: 719 -> 720 (read 1 and read 2 alike)
+EXPECTED_COUNTS["sizes"] 721 -> 720 (commit 655a46a; debt item docs/tech_debt/active/2026-10-31-table-12-m1-25-db19-z14-row-missing-from-our-copy.md)
+
+== pair 1: Part 2, read 1 against read 2, after the settlement
+make tables.diff A=private/reads/part2-read1.json B=private/reads/part2-read2.json
+  exit status: 0
+  last line: 0 differences
+
+== pair 2: Table 7, read A against read B (unchanged, no settlement)
+make tables.diff A=private/reads/table7-a.json B=private/reads/table7-b.json
+  exit status: 0
+  last line: 0 differences
+
+== assemble
+make tables.assemble OUT=private/din5480-tables.json P2A=private/reads/part2-read1.json P2B=private/reads/part2-read2.json T7A=private/reads/table7-a.json T7B=private/reads/table7-b.json
+  wrote private/din5480-tables.json: 201779 bytes, sha256 ef4ef66bcc2f78e60395981cffbc1c915025f5dee984c3b07aec5a1a8d66b1c9
+
+== check
+make tables.check FILE=private/din5480-tables.json ARGS=--complete
+  last line: ok
+
+== load, the way every process loads it (SPUR_DIN5480_TABLES=private/din5480-tables.json, din5480_tables.active())
+sizes, modules, deviations, classes, tolerances, columns: 720 16 18 8 30 21
+(the plan's acceptance line said 721 16 18 8 24 21; both counts were authorized by the human, 24 -> 30 at 072ddd2 and 721 -> 720 at 655a46a)
+
+== the file is git-ignored, and nothing under private/ is tracked or unignored
+git check-ignore -q private/din5480-tables.json: yes
+git ls-files -- private, plus untracked-not-ignored files under private: none
+
+== the size the settlement leaves out, through the shaft maths with the real file loaded (W 19x1.25x14)
+Table lookup for the key: none. The tolerance window (5 rows: max effective thickness, max and min actual thickness, M_Re max and min) is null. The size-not-tabulated sentence, the theoretical-pin sentence and the nominal-thickness sentence are in the warnings. The tabulated-pin sentence is not.

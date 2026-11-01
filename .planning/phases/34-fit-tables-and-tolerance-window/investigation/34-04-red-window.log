@@ -1,0 +1,361 @@
+..F..................................................................... [ 25%]
+........................................................................ [ 51%]
+.............................FFFFFFFFFFFF............................... [ 77%]
+................................................................         [100%]
+=================================== FAILURES ===================================
+___________________ test_the_shaft_dimensions_keys_are_fixed ___________________
+
+    def test_the_shaft_dimensions_keys_are_fixed() -> None:
+        """These keys become Phase 33's dims rows, in this order; renaming or moving one after
+        Phase 33 changes the API document. The warnings are the same on every call. The five
+        tolerance-window keys sit as one block after `measure_over_pins` (34-04, D-15);
+        `end_chamfer_effective` was the 13th key before them (32-01 choice B1, L47)."""
+>       assert list(ShaftDimensions.model_fields) == [
+            "reference_d", "profile_shift", "profile_shift_mm", "pitch_d", "tip_d", "root_d",
+            "nominal_thickness", "form_d", "pin_d", "measure_over_pins",
+            "max_effective_thickness", "max_actual_thickness", "min_actual_thickness",
+            "measure_over_pins_max", "measure_over_pins_min",
+            "end_chamfer_effective", "designation", "warnings",
+        ]
+E       AssertionError: assert ['reference_d...'root_d', ...] == ['reference_d...'root_d', ...]
+E         
+E         At index 10 diff: 'end_chamfer_effective' != 'max_effective_thickness'
+E         Right contains 5 more items, first extra item: 'measure_over_pins_max'
+E         Use -v to get more diff
+
+tests/test_shaft_calc.py:94: AssertionError
+______________ test_the_thickness_limits_are_table_6_over_table_7 ______________
+
+    def test_the_thickness_limits_are_table_6_over_table_7() -> None:
+        """DIN 5480-1:2006, Table 6: s_vmax = s1 + A_s, s_max = s_vmax - T_eff, s_min = s_vmax - T_G.
+        The deviations arrive in micrometres; the planning numbers are the default shaft's."""
+>       s_vmax, s_max, s_min = din5480.thickness_limits(2.613014, -21, 35, 14)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'spur.din5480' has no attribute 'thickness_limits'
+
+tests/test_shaft_calc.py:455: AttributeError
+___ test_with_the_tables_the_default_shaft_prints_its_window_and_m_re_limits ___
+
+    @pytest.mark.usefixtures("with_tables")
+    def test_with_the_tables_the_default_shaft_prints_its_window_and_m_re_limits() -> None:
+        d = derive_shaft(ShaftParams())
+        assert d.nominal_thickness == 2.613
+>       assert d.max_effective_thickness == 2.592
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_shaft_calc.py:466: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ShaftDimensions(reference_d=25.0, profile_shift=0.45, profile_shift_mm=0.562, pitch_d=22.5, tip_d=24.75, root_d=22.25,...nto the shank: the solid has no relief groove (DIN 509) and no hob run-out, and splined_length is a full-form prism.'))
+item = 'max_effective_thickness'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+    
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+    
+            if pydantic_extra and item in pydantic_extra:
+                return pydantic_extra[item]
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'ShaftDimensions' object has no attribute 'max_effective_thickness'
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:1042: AttributeError
+_ test_each_m_re_limit_agrees_with_the_oracle_at_the_thickness_written_as_the_shift[max] _
+
+which = 'max', thickness = 2.578014, printed = [retired fixture value]
+
+    @pytest.mark.usefixtures("with_tables")
+    @pytest.mark.parametrize(("which", "thickness", "printed"), [
+        ("max", 2.578014, [retired fixture value]), ("min", 2.557014, [retired fixture value])], ids=["max", "min"])
+    def test_each_m_re_limit_agrees_with_the_oracle_at_the_thickness_written_as_the_shift(
+            which: str, thickness: float, printed: float) -> None:
+        p = ShaftParams()
+        x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
+        s1 = din5480.tooth_thickness(p.module, x * p.module)
+        s = {"max": s1 - 0.021 - 0.014, "min": s1 - 0.021 - 0.035}[which]
+        assert s == pytest.approx(thickness, abs=1e-6)
+>       unrounded, warnings = shaft_calc.limit_measurement(p, 2.75, s, which)       # type: ignore[arg-type]
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'limit_measurement'. Did you mean: 'pin_measurement'?
+
+tests/test_shaft_calc.py:485: AttributeError
+_ test_each_m_re_limit_agrees_with_the_oracle_at_the_thickness_written_as_the_shift[min] _
+
+which = 'min', thickness = 2.557014, printed = [retired fixture value]
+
+    @pytest.mark.usefixtures("with_tables")
+    @pytest.mark.parametrize(("which", "thickness", "printed"), [
+        ("max", 2.578014, [retired fixture value]), ("min", 2.557014, [retired fixture value])], ids=["max", "min"])
+    def test_each_m_re_limit_agrees_with_the_oracle_at_the_thickness_written_as_the_shift(
+            which: str, thickness: float, printed: float) -> None:
+        p = ShaftParams()
+        x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
+        s1 = din5480.tooth_thickness(p.module, x * p.module)
+        s = {"max": s1 - 0.021 - 0.014, "min": s1 - 0.021 - 0.035}[which]
+        assert s == pytest.approx(thickness, abs=1e-6)
+>       unrounded, warnings = shaft_calc.limit_measurement(p, 2.75, s, which)       # type: ignore[arg-type]
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'spur.shaft_calc' has no attribute 'limit_measurement'. Did you mean: 'pin_measurement'?
+
+tests/test_shaft_calc.py:485: AttributeError
+__________ test_the_api_and_the_cli_print_one_shaft_document[default] __________
+
+name = 'default'
+capsys = <_pytest.capture.CaptureFixture object at 0x10a704ef0>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+        assert list(from_api) == list(ShaftDimensions.model_fields)
+>       assert {k for k, v in from_cli.items() if v is None} == NULLS[name]   # empty
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'form_d'} == {'form_d', 'm...al_thickness'}
+E         
+E         Extra items in the right set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:77: AssertionError
+_________ test_the_api_and_the_cli_print_one_shaft_document[w30x2x14] __________
+
+name = 'w30x2x14'
+capsys = <_pytest.capture.CaptureFixture object at 0x10a706db0>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+        assert list(from_api) == list(ShaftDimensions.model_fields)
+>       assert {k for k, v in from_cli.items() if v is None} == NULLS[name]   # empty
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'form_d'} == {'form_d', 'm...al_thickness'}
+E         
+E         Extra items in the right set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:77: AssertionError
+___________ test_the_api_and_the_cli_print_one_shaft_document[odd-z] ___________
+
+name = 'odd-z', capsys = <_pytest.capture.CaptureFixture object at 0x10a707950>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+        assert list(from_api) == list(ShaftDimensions.model_fields)
+>       assert {k for k, v in from_cli.items() if v is None} == NULLS[name]   # empty
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'form_d', 'm...re_over_pins'} == {'form_d', 'm...ins_min', ...}
+E         
+E         Extra items in the right set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:77: AssertionError
+____ test_the_api_and_the_cli_print_one_shaft_document[no-shank-no-chamfer] ____
+
+name = 'no-shank-no-chamfer'
+capsys = <_pytest.capture.CaptureFixture object at 0x10a704ef0>
+
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+        assert list(from_api) == list(ShaftDimensions.model_fields)
+>       assert {k for k, v in from_cli.items() if v is None} == NULLS[name]   # empty
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'end_chamfer...ve', 'form_d'} == {'end_chamfer...ins_min', ...}
+E         
+E         Extra items in the right set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+E         Use -v to get more diff
+
+tests/test_shaft_parity.py:77: AssertionError
+__ test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[default] __
+
+name = 'default'
+capsys = <_pytest.capture.CaptureFixture object at 0x10a7041d0>
+
+    @pytest.mark.usefixtures("with_tables")
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document_with_the_tables(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+>       assert _WINDOW <= set(from_cli)                                   # the five keys exist
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'max_actual_...al_thickness'} <= {'designation... 'pin_d', ...}
+E         
+E         Extra items in the left set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+
+tests/test_shaft_parity.py:91: AssertionError
+_ test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[w30x2x14] __
+
+name = 'w30x2x14'
+capsys = <_pytest.capture.CaptureFixture object at 0x10a7217c0>
+
+    @pytest.mark.usefixtures("with_tables")
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document_with_the_tables(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+>       assert _WINDOW <= set(from_cli)                                   # the five keys exist
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'max_actual_...al_thickness'} <= {'designation... 'pin_d', ...}
+E         
+E         Extra items in the left set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+
+tests/test_shaft_parity.py:91: AssertionError
+___ test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[odd-z] ___
+
+name = 'odd-z', capsys = <_pytest.capture.CaptureFixture object at 0x10a7c33e0>
+
+    @pytest.mark.usefixtures("with_tables")
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document_with_the_tables(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+>       assert _WINDOW <= set(from_cli)                                   # the five keys exist
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'max_actual_...al_thickness'} <= {'designation... 'pin_d', ...}
+E         
+E         Extra items in the left set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+
+tests/test_shaft_parity.py:91: AssertionError
+_ test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[no-shank-no-chamfer] _
+
+name = 'no-shank-no-chamfer'
+capsys = <_pytest.capture.CaptureFixture object at 0x10a7210a0>
+
+    @pytest.mark.usefixtures("with_tables")
+    @pytest.mark.parametrize("name", SHAFTS)
+    def test_the_api_and_the_cli_print_one_shaft_document_with_the_tables(
+            name: str, capsys: pytest.CaptureFixture[str]) -> None:
+        values = SHAFTS[name]
+        cli.main(cli_argv(values))
+        from_cli = json.loads(capsys.readouterr().out)
+        from_api = client.get("/api/shaft/info", params=values).json()
+    
+        assert differences(from_cli, from_api) == []
+        assert list(from_cli) == list(ShaftDimensions.model_fields)       # ordering
+>       assert _WINDOW <= set(from_cli)                                   # the five keys exist
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert {'max_actual_...al_thickness'} <= {'designation... 'pin_d', ...}
+E         
+E         Extra items in the left set:
+E         'max_actual_thickness'
+E         'max_effective_thickness'
+E         'measure_over_pins_max'
+E         'min_actual_thickness'
+E         'measure_over_pins_min'
+
+tests/test_shaft_parity.py:91: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_calc.py::test_the_shaft_dimensions_keys_are_fixed - A...
+FAILED tests/test_shaft_calc.py::test_the_thickness_limits_are_table_6_over_table_7
+FAILED tests/test_shaft_calc.py::test_with_the_tables_the_default_shaft_prints_its_window_and_m_re_limits
+FAILED tests/test_shaft_calc.py::test_each_m_re_limit_agrees_with_the_oracle_at_the_thickness_written_as_the_shift[max]
+FAILED tests/test_shaft_calc.py::test_each_m_re_limit_agrees_with_the_oracle_at_the_thickness_written_as_the_shift[min]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[default]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[w30x2x14]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[odd-z]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document[no-shank-no-chamfer]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[default]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[w30x2x14]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[odd-z]
+FAILED tests/test_shaft_parity.py::test_the_api_and_the_cli_print_one_shaft_document_with_the_tables[no-shank-no-chamfer]
+13 failed, 267 passed in 0.68s

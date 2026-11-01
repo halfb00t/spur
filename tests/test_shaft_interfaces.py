@@ -143,6 +143,28 @@ def test_an_infeasible_shaft_is_a_422_naming_the_fields() -> None:
     assert _detail(r.json())[0]["type"] == "infeasible"
 
 
+@pytest.mark.usefixtures("with_tables")
+def test_a_fit_outside_table_7_is_a_warning_and_null_not_a_422() -> None:
+    """D-14: FIT_PATTERN is shape only, so every link that validated still validates; a fit
+    the file's Table 7 does not hold is a 200 with the five rows null and the sentence."""
+    r = client.get("/api/shaft/info", params={"fit": "3z"})
+    assert r.status_code == 200
+    body = r.json()
+    for key in ("max_effective_thickness", "max_actual_thickness", "min_actual_thickness",
+                "measure_over_pins_max", "measure_over_pins_min"):
+        assert body[key] is None, key
+    assert any("fit 3z is not in DIN 5480-1 Table 7" in w for w in body["warnings"])
+
+
+def test_an_iso_style_fit_alias_is_still_refused() -> None:
+    """One spelling per field: `f8` is ISO 286's order, DIN 5480's is class then letter."""
+    r = client.get("/api/shaft/info", params={"fit": "f8"})
+    assert r.status_code == 422
+    assert _detail(r.json())[0]["loc"] == ["query", "fit"]
+    with pytest.raises(ValueError, match="fit"):
+        ShaftParams(fit="f8")
+
+
 # --- the 33-03 rule on the shaft's number fields --------------------------------------
 
 
@@ -177,6 +199,16 @@ def test_the_default_shaft_downloads_under_its_frozen_name(stub: _Stub, fmt: str
     name = f"spur_shaft_w25x1.25x18.{fmt}"
     assert r.headers["content-disposition"] == f'attachment; filename="{name}"'
     assert r.headers["content-type"] == {"stl": "model/stl", "step": "model/step"}[fmt]
+
+
+@pytest.mark.usefixtures("with_tables")
+def test_the_download_name_does_not_follow_the_tables(stub: _Stub) -> None:
+    """L49, D-13: the `Content-Disposition` is the frozen name with the tables loaded as
+    without them, for the default shaft and for a fit outside Table 7."""
+    for params in ({}, {"fit": "3z"}):
+        r = client.get("/api/shaft/model.stl", params=params)
+        assert r.headers["content-disposition"] == (
+            'attachment; filename="spur_shaft_w25x1.25x18.stl"')
 
 
 def test_the_quality_key_belongs_to_the_model_route(stub: _Stub) -> None:

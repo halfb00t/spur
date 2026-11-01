@@ -17,7 +17,7 @@ import shaft_oracle
 from test_din5480 import GRID
 from test_model import _closed_shell_volume, _stl_triangles
 
-from spur import din5480, model, shaft_model
+from spur import din5480, model, shaft_calc, shaft_model
 from spur.build_errors import BuildError
 from spur.model import Quality
 from spur.params import GearParams
@@ -60,10 +60,20 @@ MESH_ROWS: dict[str, ShaftParams] = {
 }
 
 
+def _flank_shift(p: ShaftParams) -> float:
+    """The shift the oracle writes the solid's flank at: the printed s_vmax as a shift when
+    the tables give one (D-13), else the nominal profile shift. The inversion is the one
+    tests/test_din5480_anchors.py uses, so the solid is never compared with itself."""
+    printed = derive_shaft(p).max_effective_thickness
+    if printed is None:
+        return din5480.profile_shift(p.reference_d, p.module, p.teeth)
+    return (printed - math.pi * p.module / 2) / (2 * p.module * math.tan(din5480.ALPHA))
+
+
 def _closed_form(p: ShaftParams) -> float:
     dims = derive_shaft(p)
     return shaft_oracle.shaft_volume(
-        p.module, p.teeth, din5480.profile_shift(p.reference_d, p.module, p.teeth),
+        p.module, p.teeth, _flank_shift(p),
         dims.root_d / 2, dims.tip_d / 2, p.splined_length, dims.end_chamfer_effective or 0.0,
         p.shank_d, p.shank_length)
 
@@ -147,7 +157,7 @@ def _flank_error(solid: cq.Solid, p: ShaftParams) -> float:
     and a sparse sample steps over the peak (investigation/32-03-tolerances.log).
     """
     dims = derive_shaft(p)
-    x = din5480.profile_shift(p.reference_d, p.module, p.teeth)
+    x = _flank_shift(p)
     pitch = 2 * math.pi / p.teeth
     section = cq.Workplane("XY").add(solid).section(
         ((dims.end_chamfer_effective or 0.0) + p.splined_length) / 2)
@@ -162,6 +172,43 @@ def _flank_error(solid: cq.Solid, p: ShaftParams) -> float:
             worst = max(worst, r * abs(off_centre - shaft_oracle.tooth_half_angle(
                 p.module, p.teeth, x, r)))
     return worst
+
+
+def _thickness_at_reference_circle(solid: cq.Solid, p: ShaftParams) -> list[float]:
+    """The tooth thickness the solid carries on the circle m*z, one value per flank.
+
+    The section `_flank_error` uses. For every BSPLINE edge the parameter is bisected to the
+    point at radius m*z/2 (the radius is monotone along a flank, and the circle must lie on
+    it), and m*z times that point's polar distance from the nearest tooth centre line is the
+    arc thickness on that circle, as `din5480.tooth_thickness` defines it. A flank read on
+    its own, so a thickness that held on average but not on every flank cannot pass.
+    """
+    target = p.module * p.teeth / 2
+    pitch = 2 * math.pi / p.teeth
+    section = cq.Workplane("XY").add(solid).section(
+        ((derive_shaft(p).end_chamfer_effective or 0.0) + p.splined_length) / 2)
+    thicknesses: list[float] = []
+    for edge in cast(cq.Shape, section.val()).Edges():
+        if edge.geomType() != "BSPLINE":
+            continue
+
+        def radius(t: float, edge: cq.Edge = edge) -> float:
+            v = edge.positionAt(t)
+            return math.hypot(v.x, v.y)
+
+        rising = radius(1.0) > radius(0.0)
+        assert min(radius(0.0), radius(1.0)) < target < max(radius(0.0), radius(1.0))
+        lo, hi = 0.0, 1.0
+        for _ in range(60):
+            mid = (lo + hi) / 2
+            if (radius(mid) < target) == rising:
+                lo = mid
+            else:
+                hi = mid
+        v = edge.positionAt(lo)
+        theta = math.atan2(v.y, v.x)
+        thicknesses.append(p.module * p.teeth * abs(theta - round(theta / pitch) * pitch))
+    return thicknesses
 
 
 def test_the_default_shaft_is_one_valid_solid_with_the_closed_form_volume() -> None:
@@ -456,3 +503,66 @@ def test_a_shaft_kernel_failure_through_model_keeps_its_own_words(
         model.build(ShaftParams(splined_length=31.0))
     assert "modelling defect" in str(raised.value)
     assert "fillet" not in str(raised.value)
+
+
+# --- the thickness the solid carries (Phase 34, D-13) ------------------------------------
+
+
+def _assert_every_flank_carries(solid: cq.Solid, p: ShaftParams, thickness: float) -> None:
+    flanks = _thickness_at_reference_circle(solid, p)
+    assert len(flanks) == 2 * p.teeth
+    for read in flanks:
+        assert abs(read - thickness) <= FLANK_BAR_PER_MODULE * p.module, (read, thickness)
+
+
+def test_with_the_tables_the_solid_carries_the_maximum_effective_thickness(
+    with_tables: object,
+) -> None:
+    """D-13, REQ-solid-max-material, L08: the default shaft's printed s_vmax (2.592 on the
+    synthetic fixture, 0.021 mm under the nominal 2.613, 34x the flank bar) is the thickness
+    on every flank of the solid, its flank is the oracle's at that thickness written as the
+    shift, and so is its volume (`_check` reads both through `_flank_shift`)."""
+    p = ShaftParams()
+    printed = derive_shaft(p).max_effective_thickness
+    assert printed == 2.592
+    solid = build_shaft(p)
+    _assert_every_flank_carries(solid, p, printed)
+    assert _flank_error(solid, p) <= FLANK_BAR_PER_MODULE * p.module
+    assert _volume_error(solid, p) <= VOLUME_REL
+
+
+@pytest.mark.parametrize("p", [
+    ShaftParams(fit="3z"),
+    ShaftParams(reference_d=25.0, module=1.3, teeth=18),
+], ids=["fit-outside-table-7", "size-off-the-tables"])
+def test_a_fit_outside_table_7_and_an_off_table_size_build_the_nominal_solid(
+    with_tables: object, p: ShaftParams,
+) -> None:
+    """D-13, REQ-solid-max-material: the solid switches exactly where the row does. Tier 3
+    (size listed, fit not in Table 7) and an off-table size print no s_vmax, say
+    SOLID_AT_NOMINAL_THICKNESS, and carry the nominal thickness on every flank."""
+    dims = derive_shaft(p)
+    assert dims.max_effective_thickness is None
+    assert shaft_calc.SOLID_AT_NOMINAL_THICKNESS in dims.warnings
+    nominal = din5480.tooth_thickness(
+        p.module, din5480.profile_shift(p.reference_d, p.module, p.teeth) * p.module)
+    _assert_every_flank_carries(_check(p), p, nominal)
+
+
+def test_without_the_tables_the_solid_carries_the_nominal_thickness() -> None:
+    """D-13: with no file the solid is the nominal one it always was, and the warning says
+    so; `_flank_shift` is the nominal shift there, so every other test reads unchanged."""
+    p = ShaftParams()
+    dims = derive_shaft(p)
+    assert dims.max_effective_thickness is None
+    assert shaft_calc.SOLID_AT_NOMINAL_THICKNESS in dims.warnings
+    assert _flank_shift(p) == din5480.profile_shift(p.reference_d, p.module, p.teeth)
+    nominal = din5480.tooth_thickness(p.module, _flank_shift(p) * p.module)
+    _assert_every_flank_carries(_check(p), p, nominal)
+
+
+def test_the_download_name_does_not_follow_the_tables(with_tables: object) -> None:
+    """L49, D-13: the name is the frozen `spur_shaft_w<d_B>x<m>x<z>` with the tables as
+    without them; the row and the warning, not the file name, tell the two solids apart."""
+    assert ShaftParams().slug() == "spur_shaft_w25x1.25x18"
+    assert ShaftParams(fit="3z").slug() == "spur_shaft_w25x1.25x18"

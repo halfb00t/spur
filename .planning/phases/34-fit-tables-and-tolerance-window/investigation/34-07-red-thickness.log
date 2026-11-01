@@ -1,0 +1,40 @@
+F....                                                                    [100%]
+=================================== FAILURES ===================================
+____ test_with_the_tables_the_solid_carries_the_maximum_effective_thickness ____
+
+with_tables = Tables(schema_version=1, sizes=(SizeRow(provenance=Provenance(part=2, clause='9', table='12 and 13', pages=(18, 19)), ...'10.9', table='7', pages=(24,)), module_min_mm=5.0, module_max_mm=10.0, d_b_over_mm=None, d_b_upto_mm=None, column=3)))
+
+    def test_with_the_tables_the_solid_carries_the_maximum_effective_thickness(
+        with_tables: object,
+    ) -> None:
+        """D-13, REQ-solid-max-material, L08: the default shaft's printed s_vmax (2.592 on the
+        synthetic fixture, 0.021 mm under the nominal 2.613, 34x the flank bar) is the thickness
+        on every flank of the solid, its flank is the oracle's at that thickness written as the
+        shift, and so is its volume (`_check` reads both through `_flank_shift`)."""
+        p = ShaftParams()
+        printed = derive_shaft(p).max_effective_thickness
+        assert printed == 2.592
+        solid = build_shaft(p)
+>       _assert_every_flank_carries(solid, p, printed)
+
+tests/test_shaft_model.py:529: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+solid = <cadquery.occ_impl.shapes.Solid object at 0x13edded50>
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+thickness = 2.592
+
+    def _assert_every_flank_carries(solid: cq.Solid, p: ShaftParams, thickness: float) -> None:
+        flanks = _thickness_at_reference_circle(solid, p)
+        assert len(flanks) == 2 * p.teeth
+        for read in flanks:
+>           assert abs(read - thickness) <= FLANK_BAR_PER_MODULE * p.module, (read, thickness)
+E           AssertionError: (2.6130144988164825, 2.592)
+E           assert 0.02101449881648243 <= (0.0005 * 1.25)
+E            +  where 0.02101449881648243 = abs((2.6130144988164825 - 2.592))
+E            +  and   1.25 = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0).module
+
+tests/test_shaft_model.py:515: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_model.py::test_with_the_tables_the_solid_carries_the_maximum_effective_thickness
+1 failed, 4 passed, 44 deselected in 5.59s
