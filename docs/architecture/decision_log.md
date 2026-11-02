@@ -3632,3 +3632,88 @@ the human transcribed twice and settled by diff, instead of from memory or from 
 published. The same rules make a missing size print no number rather than a near one, a fit Table 7 does not hold a warning rather than a guess (L03), and a broken file a refusal rather
 than a quiet `null`. Phase 34's gate cost is one logged reading, `2934 passed in 213.54s` and `real 214.53` against the baseline's `2783 passed in 230.90s` and `real 232.23`,
 85.47 s under L43's 300 s bar by `real` (`bench/RESULTS.md` `### The gate delta (34-17)`).
+
+## L51 — Phase 34.1 caps each A_s cell by its column's module, refuses a partly present table file, and pins and bounds the gear guard (amends L50; follows L46; keeps L08, L36 and L43)
+
+Date: 2026-11-02.
+
+The v0.7 audit left must debt on two files: the table loader (`src/spur/din5480_tables.py`) and the gear guard
+(`scripts/gear_unchanged.py`). Phase 34.1 closes it before the milestone closes. L51 is the one entry the phase appends. No earlier
+line of this entry or of any other is edited, and no value of the standard is written here: the only figure in it taken from the
+private file is `k`, the constant the human decided, and the aggregate figures of the human's measurement stay in `.planning/` CONTEXT.
+
+**The A_s cap** (D-01, D-02, D-03, D-04; `A_S_CAP_UM_PER_MM`, `problems()`; 34.1-04, `2fa48b8`). `problems()` refuses a deviation cell
+whose absolute value exceeds `A_S_CAP_UM_PER_MM = 60` micrometres per millimetre of the largest module of the column the cell sits in
+(the largest `module_max_mm` over the column rows that carry that column number). `k = 60` is one global constant, fixed by the human in
+`15c46fc`: the human measured the private file in aggregate, no cell value recorded, and 60 leaves headroom over the largest ratio it
+holds. The cap is coarse on purpose. It catches a tenfold slip on the cells whose ratio is large and lets one through on a cell whose
+ratio is small; that residual is accepted because the two-reads diff (L50, `make tables.diff`) stays the primary guard and the cap is a
+belt behind it, and a per-column cap is not taken. The rule is in
+`problems()` and there is no startup check from a module above both the loader and `shaft_calc`, because the derived order `s_min <=
+s_max <= s_vmax` does not see the slip: `A_s` moves all three together (D-03, found at the discussion; the debt item's second idea is
+dropped and its text corrected in the resolving commit). There is no sign rule (D-02): the letters' sign conventions are not checked
+against the human's copy, and a rule on them would encode a claim about the standard; a sign slip stays with the diff. `UM_LIMIT` is kept
+(D-04) as the outer belt, and it is the only bound on a cell of a column no row selects, as the comment at the check says. The case is
+seen red once (`34.1-04-red-a-s-cap.log`, `bench/RESULTS.md` `### Seen red once (Phase 34.1)`). The human loaded the real file under the
+cap and the rule below at `12aae8b`: `make tables.test FILE=private/din5480-tables.json` read `22 passed in 5.94s` (34.1-04 SUMMARY,
+`## Checkpoint result`).
+
+**Whole or absent** (D-05; `1ea2e45`). `problems()` refuses a file whose four Table 7 lists (`deviations`, `classes`, `tolerances`,
+`columns`) are neither all empty nor all non-empty, naming the empty ones: `Table 7 is partly present: <lists> empty while the other ...`.
+A document of empty row tuples still loads (`test_a_document_of_empty_row_tuples_loads`). The four cases, one per list, are seen red
+(`34.1-04-red-table-7.log`). The human answered the edge question on 2026-11-02 with option a (34.1-01 SUMMARY, `## Checkpoint result`):
+the rule covers the four Table 7 lists only. A file with the sizes alone, or Table 7 alone, still loads, and the two transcription tools
+and their tests stay untouched; that finding is filed as a must item,
+`docs/tech_debt/active/2026-11-02-a-table-file-with-sizes-or-table-7-alone-loads-and-prints-a-false-sentence.md`, with the loader's next
+edit as its trigger.
+
+**Every refusal reached** (D-11, D-12; `c11c0ea`, `78f508a`, `7876797`). Ten refusal lines of the loader that the gate never executed now
+have a test each, in `test_a_broken_row_refuses_to_load` or as an I/O case (the module set, a non-positive `m1_mm`, the two column-count
+checks, the column module bounds, the `d_B` range order, the stat error, the read error, the grown file, and the unchecked fit), each
+seen red with only its line disabled (`34.1-01-red-*.log`). The honest `None` of `Tables.fit` for a document that names a missing
+tolerance row is kept and reached. The debt item that listed the lines is resolved. The coverage floor did not move (D-12):
+`fail_under = 96` and `pyproject.toml` are as at `e2299c4`, no per-file floor and no coverage rule was added. The phase's own gate run
+reads `src/spur/din5480_tables.py` and `src/spur/shaft_calc.py` at `100.00%` (`bench/RESULTS.md` `### The gate delta (34.1-05)`).
+
+**The dead branch** (D-09; `8e0885f`). `limit_measurement` lost its `odd_confirmed` keyword and the odd-count return behind it: no caller
+could reach it, since `pin_measurement` keeps its own gate and `derive_shaft` still passes `odd_confirmed` to that one. It was deleted,
+not tested, and no printed number moved (the shaft test files ran unedited). The other return of that function, a pin that misses the
+flanks at a limit thickness, is reachable and gets a test (`7876797`, seen red in `34.1-03-red-flanks.log`).
+
+**The size cap's order** (D-10; `8fb0d9e`). `load_file` keeps its `stat` pre-check, which refuses a wrong path that names a large file
+before it is opened, and reads through `path.open("rb")` taking `f.read(MAX_FILE_BYTES + 1)`: one byte past the cap, so a file that grew
+after the `stat` is never read whole. There is one read-time check on `len(raw)`. The two checks are told apart by their tests: the
+stat-time test faults the open and asserts it was not reached (`test_a_file_over_the_cap_is_refused_at_the_stat_before_it_is_opened`),
+and the grown-file test asserts the bytes taken as well as the refusal
+(`test_a_file_that_grew_past_the_cap_after_the_stat_refuses`); each is seen red with its own line removed (`34.1-03-red-stat-cap.log`,
+`34.1-03-red-read-bound.log`, `34.1-03-red-read-cap.log`). The nice item for this order is resolved in the same plan.
+
+**The tag** (D-06, D-08; `9653865`). `gear.unchanged` requires `refs/tags/v0.6` to be annotated (`git cat-file -t` prints `tag`) and to
+peel to `BASELINE_SHA`, `792b45c`, the sha ROADMAP Phase 30 and `30-VERIFICATION.md` name. It reads the tag by its full ref, so a branch
+named `v0.6` never stands in for it. There is no ancestor check. A deliberate re-baseline edits the one constant. A lightweight tag, a
+moved annotated tag and a branch of that name each fail in a scratch repository, seen red once (`34.1-02-red-lightweight.log`,
+`34.1-02-red-moved.log`, `34.1-02-red-branch.log`).
+
+**The bounds** (D-07, D-08; `904ced5`, `9aa8c95`). Every `subprocess.run` in the script carries a `timeout=` and `stdin=subprocess.DEVNULL`;
+git runs with `GIT_TERMINAL_PROMPT=0`; an expired bound becomes a `SystemExit` naming the command. `GIT_TIMEOUT_S = 20` is at least
+twice the slowest fetch reading, and `PROBE_TIMEOUT_S = 60` is about two hundred and seventy times the slowest probe reading; both
+readings are in `bench/RESULTS.md` `### The guard's bounds, measured (34.1-02)`. The fetch bound fits L36's 30 s because `gear.unchanged`
+ends `verify.static`, which `verify.fast` runs before `test.fast`: a fetch hung to the bound stops make there, at about the static
+step's own time plus the bound. `GIT_TERMINAL_PROMPT=0` covers git's own prompts only: an ssh prompt that opens the terminal itself is
+not covered, and the bound is what ends that wait. Where the tag is local, as in this checkout, no fetch runs. Both bounds are seen red
+(`34.1-02-red-git-timeout.log`, `34.1-02-red-prompt.log`, `34.1-02-red-probe-timeout.log`).
+
+**Not taken** (D-10a). `SCHEMA_VERSION` unused, and every other nice or must item outside the five audit items, D-09's and D-10's, stay in
+`docs/tech_debt/active/`, and no new item was filed for them. The one new item is option a's, above. The seven items the phase resolves
+are in `docs/tech_debt/resolved/`, each with the sha of its fixing commit.
+
+**The gate.** One `make verify` on the final tree reads `2964 passed in 283.77s` and `real 284.91`, 15.09 s under L43's 300 s bar by
+`real`, with the coverage floor unchanged (`bench/RESULTS.md` `### The gate delta (34.1-05)`; the reading is above both of Phase 34's by more than
+Phase 25's spread, and the section does not attribute it).
+
+**Reversibility:** reversible. `k`, `GIT_TIMEOUT_S`, `PROBE_TIMEOUT_S` and `BASELINE_SHA` are one constant each; the refusals bind only a
+file that was already wrong; the edge question can be reopened by taking the filed item.
+
+**Reason:** a number the tool prints is a number someone will cut metal to (L08). A cell ten times too large and a half-present Table 7
+both load quietly and move every limit or print a sentence that is false; the guard that proves the gear part did not move is what lets
+the shaft work grow beside it, so it has to fail loudly and in bounded time, and against the tag the audit named.
