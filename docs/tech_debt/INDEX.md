@@ -16,7 +16,6 @@ Severity (grep-able `Severity:` field):
 
 | Severity | Item | Trigger to revisit |
 |---|---|---|
-| must | [`limit_measurement`'s `odd_confirmed` parameter and its odd-count branch are unreachable in production](active/2026-11-01-limit-measurement-odd-confirmed-branch-is-dead.md) | `limit_measurement` is next edited |
 | nice | [A code comment still points at the debt file Phase 34 moved to `resolved/`](active/2026-11-01-din5480-comment-points-at-a-moved-debt-file.md) | `src/spur/din5480.py` is next edited |
 | nice | [`SCHEMA_VERSION` is defined and never used](active/2026-11-01-schema-version-constant-is-never-used.md) | the schema version next changes |
 | nice | [`load_file` reads the whole file before enforcing the size cap on what it read](active/2026-11-01-load-file-reads-the-whole-file-before-its-size-cap.md) | `load_file` is next edited |
@@ -53,6 +52,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [`limit_measurement`'s `odd_confirmed` parameter and its odd-count branch are unreachable in production](resolved/2026-11-01-limit-measurement-odd-confirmed-branch-is-dead.md) | refactor(34.1-03): drop limit_measurement's unreachable odd-count branch (D-09) (gsd/phase-34.1-table-loader-and-gear-guard) |
 | [`gear.unchanged` accepts any local `v0.6` tag, including a lightweight or moved one](resolved/2026-10-23-gear-unchanged-accepts-a-lightweight-or-moved-v0-6-tag.md) | 9653865 fix(34.1-02): gear.unchanged requires an annotated v0.6 that peels to 792b45c (D-06) (gsd/phase-34.1-table-loader-and-gear-guard) |
 | [`gear.unchanged` runs git and the schema probe with no timeout, inside the pre-commit hook](resolved/2026-10-23-gear-unchanged-has-no-timeout-on-git-or-probe.md) | 9aa8c95 fix(34.1-02): bound the schema probe; resolve the gear.unchanged timeout item (D-07) (gsd/phase-34.1-table-loader-and-gear-guard) |
 | [The tooling and the phase 34 plans expect 24 rows in Table 7's tolerance table; the printed page has 30](resolved/2026-10-30-table-7-tolerance-table-has-30-rows-not-24.md) | 072ddd2 fix(34-14): Table 7's tolerance table has 30 rows; the completeness check says so (gsd/phase-34-fit-tables-and-tolerance-window) |
