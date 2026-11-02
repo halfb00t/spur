@@ -7823,3 +7823,56 @@ Two constants, each set by a rule:
 
 - `GIT_TIMEOUT_S = 20`. The slowest fetch reading, 5.61 s, is at or under half of it (10 s), so 20 s is not under twice a real fetch. It fits L36's 30 s commit stage because `gear.unchanged` is the last step of `verify.static`, which `verify.fast` runs before `test.fast`: a fetch hung to the bound stops make there, and the hook ends at about `verify.static`'s 0.74 s plus 20 s. In this checkout the tag is local and no fetch runs; the fetch runs where the tag is missing, as in CI's shallow checkout with no tags, which has no 30 s kill.
 - `PROBE_TIMEOUT_S = 60`. The slowest probe reading, 0.22 s (the archived v0.6 tree), is below one hundredth of it, so only a hung probe crosses it. It is longer than the git bound and not held to the hook's 30 s: the SDK's 30 s kill already ends a hung commit, and `make verify` and CI, which have no such kill, are what it bounds.
+
+### The gate delta (34.1-05)
+
+Source logs: `34.1-05-verify.log` (the whole `/usr/bin/time -p make verify` output) and `34.1-05-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/34.1-address-tech-debt-din-5480-table-loader-and-gear-guard/investigation/`. Every figure below is copied from them or from the Phase 34 sections above, not re-rounded; the differences are computed from the copied figures. One reading, on the final Phase 34.1 tree: `git status --porcelain -- src tests bench scripts pyproject.toml Makefile requirements.txt` printed nothing before the run (exit 0 in the meta log), and `SPUR_DIN5480_TABLES` was not set by the run (the gate does not read the private file). It is the plan's one gate run: no run was discarded, none hung, none was red.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`) |
+| HEAD | `24ac95a` (`src`, `tests`, `bench`, `scripts`, `pyproject.toml`, `Makefile` and `requirements.txt` as the phase left them; the commits after `2fa48b8` hold only `docs/` and `.planning/`) |
+| UTC start -> end | `2026-11-02T16:49:20Z` -> `2026-11-02T16:54:19Z` |
+| 1-minute load before -> after | `6.90` -> `4.70` (`sysctl -n vm.loadavg` printed `{ 6.90 6.08 5.34 }` and `{ 4.70 9.76 7.92 }`) |
+| Sibling-project processes above 50 % CPU | 0 at the start, 0 at the end (`ps` for a command line naming `screw`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2964 passed in 283.77s (0:04:43) =======================` |
+| `/usr/bin/time -p` | `real 284.91`, `user 811.32`, `sys 812.23` |
+| Coverage TOTAL line | `TOTAL                         2144     22    598     13  98.72%` (`Required test coverage of 96.0% reached. Total coverage: 98.72%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| Browser test, call time | `79.06s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (the slowest-durations list of `34.1-05-verify.log`; it `PASSED` in the run) |
+
+The coverage rows of the modules this phase touched, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`), with the Phase 34 close row of the same module beside each:
+
+```
+close (34.1-05-verify.log)
+src/spur/din5480.py            110      0     28      0 100.00%
+src/spur/din5480_tables.py     252      0     94      0 100.00%
+src/spur/shaft_calc.py         162      0     36      0 100.00%
+
+Phase 34 close (34-17-verify.log)
+src/spur/din5480.py            110      0     28      0 100.00%
+src/spur/din5480_tables.py     238     13     84      8  93.48%
+src/spur/shaft_calc.py         164      2     38      2  98.02%
+```
+
+`src/spur/din5480_tables.py` and `src/spur/shaft_calc.py` both read `100.00 %` in this run, which closes the two modules Phase 34 left under it (D-11). `fail_under = 96` and `pyproject.toml` are unchanged since `e2299c4` (`git diff --quiet e2299c4 -- pyproject.toml` exits 0); no per-file floor and no coverage rule was added (D-12).
+
+#### Against Phase 34's readings
+
+Both readings are on the same host; the loads at the start differ.
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 34 close, `HEAD dc31539` (reading of record) | `2934 passed` | `213.54 s` | `214.53 s` | 3.43 -> 11.64 | `### The gate delta (34-17)` |
+| Phase 34 after the review fixes, `HEAD 504d5c5` | `2940 passed` | `235.27 s` | `236.30 s` | 5.58 -> 7.68 | `### The human's ruling and the review-fix reading (Phase 34)` |
+| This reading: Phase 34.1 close, `HEAD 24ac95a` | `2964 passed` | `283.77 s` | `284.91 s` | 6.90 -> 4.70 | `34.1-05-verify.log` |
+
+| This reading minus | Tests | pytest `passed in` | `real` |
+|---|---|---|---|
+| the reading of record | `+30` | `+70.23 s` (`+32.89 %`) | `+70.38 s` (`+32.81 %`) |
+| the review-fix reading | `+24` | `+48.50 s` (`+20.61 %`) | `+48.61 s` (`+20.57 %`) |
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), about 17.08 s of 213.54 s and 18.82 s of 235.27 s. This reading is above both Phase 34 readings by more than that spread, so it is not inside it, and no claim is made that the phase made the gate faster. It is also not read as the phase making it slower: each is one run, the loads differ (6.90 at the start here against 3.43 and 5.58), and the browser test's call time moved from `74.16 s` to `79.06 s` (`+4.90 s`), which is a small part of the difference. The 30 added tests are loader, guard and limit-reading tests; this section does not say what moved the rest. The Phase 34 close already recorded a reading of `308.61 s` on code identical to its reading of record, put down to host load, so one run moving by this much is on record for this gate; one run here does not settle it.
+
+The distance to the bar: this reading is under L43's 300 s bar by 16.23 s (`pytest`, `300.00 - 283.77`) and 15.09 s (`real`, `300.00 - 284.91`); the comparison is with the log's figures as printed, and both are under. The margin is smaller than at Phase 34's close (86.46 s and 85.47 s). If a later quiet-host run reads over the bar, the bar is the human's to move (L43).
