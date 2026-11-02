@@ -633,6 +633,20 @@ def test_a_limit_outside_the_contact_window_is_null_with_its_own_sentence_and_th
     assert "s_min" in outside.warnings[0]
 
 
+def test_a_pin_that_misses_the_flanks_at_a_limit_thickness_is_null_with_its_own_sentence() -> None:
+    """A direct call, as the analog's: a pin that touches at the nominal thickness can miss the
+    flanks altogether at a thinner limit. 0.1 mm is a pin `measure_over_pins` answers None for
+    on this shaft at s = 2.577014 (checked at plan time), and that is a different sentence from
+    the window's: there is no contact diameter to quote."""
+    p = ShaftParams()
+    reading = shaft_calc.limit_measurement(p, 0.1, 2.577014, "min")
+    assert reading.measure is None
+    assert len(reading.warnings) == 1
+    assert reading.warnings[0].startswith(
+        "M_Re min is not given: a pin of 0.1 mm does not touch the involute flanks")
+    assert "s_min" in reading.warnings[0]
+
+
 # --- 34-06: the guard starts at the tabulated d_Ff1 maximum (D-12) -----------------------
 
 # Part 1 Fig. 6: W 120x3x38x8f, d_Ff1 max 113.91 (approved). The fixture's other rows carry
