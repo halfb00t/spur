@@ -258,3 +258,19 @@ def test_git_runs_with_terminal_prompts_off(tmp_path: Path) -> None:
         check(lone, _schema_json)
 
     assert "could not be fetched from origin: prompt=0" in str(refused.value.code)
+
+
+def test_a_probe_that_hangs_fails_inside_its_bound(monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-07: a probe that never answers ends the check with a sentence naming its tree."""
+    monkeypatch.setattr(gear_unchanged, "PROBE", "import time; time.sleep(10)")
+    monkeypatch.setattr(gear_unchanged, "PROBE_TIMEOUT_S", 1)
+
+    started = time.monotonic()
+    with pytest.raises(SystemExit) as refused:
+        schema_of(REPO_ROOT / "src")
+    elapsed = time.monotonic() - started
+
+    code = str(refused.value.code)
+    assert code.startswith("gear.unchanged: the probe for ")
+    assert code.endswith("timed out after 1 s")
+    assert elapsed < 5

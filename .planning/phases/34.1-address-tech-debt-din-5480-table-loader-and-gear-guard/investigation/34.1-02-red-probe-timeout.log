@@ -1,0 +1,43 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________________ test_a_probe_that_hangs_fails_inside_its_bound ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x108b6c0e0>
+
+    def test_a_probe_that_hangs_fails_inside_its_bound(monkeypatch: pytest.MonkeyPatch) -> None:
+        """D-07: a probe that never answers ends the check with a sentence naming its tree."""
+        monkeypatch.setattr(gear_unchanged, "PROBE", "import time; time.sleep(10)")
+        monkeypatch.setattr(gear_unchanged, "PROBE_TIMEOUT_S", 1)
+    
+        started = time.monotonic()
+        with pytest.raises(SystemExit) as refused:
+>           schema_of(REPO_ROOT / "src")
+
+tests/test_gear_unchanged.py:270: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+src = PosixPath('/Users/half/git/halfb00t/spur/src')
+
+    def schema_of(src: Path) -> bytes:
+        try:
+            done = subprocess.run(
+                [sys.executable, "-P", "-c", PROBE],
+                env={**os.environ, "PYTHONPATH": str(src)},
+                capture_output=True, check=False,
+                stdin=subprocess.DEVNULL,
+            )
+        except subprocess.TimeoutExpired:
+            raise SystemExit(
+                f"gear.unchanged: the probe for {src} timed out after {PROBE_TIMEOUT_S} s"
+            ) from None
+        if done.returncode != 0:
+            tail = "\n".join(done.stderr.decode(errors="replace").strip().splitlines()[-5:])
+            raise SystemExit(f"gear.unchanged: the probe for {src} failed:\n{tail}")
+>       where, status, body = done.stdout.split(b"\n", 2)
+        ^^^^^^^^^^^^^^^^^^^
+E       ValueError: not enough values to unpack (expected 3, got 1)
+
+scripts/gear_unchanged.py:154: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_a_probe_that_hangs_fails_inside_its_bound
+1 failed in 10.15s

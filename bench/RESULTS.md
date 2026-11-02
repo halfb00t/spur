@@ -7801,3 +7801,25 @@ Each row is a deliberate break of a guard that this phase adds, run once to see 
 | 34-16 | `test_a_tabulated_size_on_an_edge_...` | the same flip | passes under the flip, by design: it pins the exact float key and that every tabulated size has a column, whichever way the edge reads (log `34-16-red-edge.log`) | restored |
 
 Every row is copied from the `## Seen red` section of its plan's SUMMARY, plan order, with the log that holds the run; the 34-02 rows are 14 table rows for 4 deliberate breaks (the checker disabled, each of the two ignore lines removed, and a tracked copy of the synthetic document). Plans 34-01 and 34-08 state that they add no guard test or step, and 34-09 to 34-14 (the reads, the settlement and the assembly) have no `## Seen red` section: the reads are held by `make tables.diff` and the real file by 34-16's rows. Not seen red, as the SUMMARYs say: 34-03's parser tests other than the diff, 34-04's `test_a_limit_outside_the_contact_window_is_null_with_its_own_sentence_and_the_other_prints`, `test_a_size_is_on_the_tables_only_by_an_exact_key`, `test_an_iso_style_fit_alias_is_still_refused` and `test_no_warning_carries_the_table_files_path`, 34-06's `test_an_odd_tooth_count_the_tables_do_not_list_stays_null_with_its_sentence` and the renamed off-table odd-count test, and 34-07's tier-3, off-table, no-file and name tests; each pins behaviour the code already had before the test was written, and none is claimed red here.
+
+## Tech debt: the table loader and the gear guard (Phase 34.1)
+
+This section holds what Phase 34.1 measured: the bounds `scripts/gear_unchanged.py` puts on its subprocesses (34.1-02).
+
+### The guard's bounds, measured (34.1-02)
+
+Source: `.planning/phases/34.1-address-tech-debt-din-5480-table-loader-and-gear-guard/investigation/34.1-02-bounds.log`. Host: `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), git 2.56.0. The three fetch readings were taken at `HEAD` `10773d0` (2026-11-02T02:53:56Z), the `make verify.static` reading at `aa29856` (2026-11-02T10:21:26Z), the ten probe readings at `904ced5` (2026-11-02T10:23:07Z), each before the change that the reading sets. The 1-minute load read `9.43` and `8.90` around the fetches, `3.54` and `3.45` around `verify.static`, `5.01` and `5.01` around the probes (`sysctl -n vm.loadavg`), so none is an idle-host reading under Phase 25's rule, and each figure is one reading on this host. Every local git call (`rev-parse`, `diff`, `ls-files`, `archive`, `cat-file`) reads under 0.01 s and is not tabled.
+
+| Step | Real | Notes |
+|---|---|---|
+| depth-1 fetch of `v0.6` from `https://github.com/halfb00t/spur.git`, reading 1 | 3.86 s | fresh scratch shallow clone, `GIT_TERMINAL_PROMPT=0`, stdin from /dev/null |
+| the same, reading 2 | 5.61 s | slowest |
+| the same, reading 3 | 3.62 s | |
+| `make verify.static` | 0.74 s | the step `gear.unchanged` ends |
+| `schema_of` on the archived v0.6 `src`, readings 1 to 5 | 0.21, 0.22, 0.22, 0.21, 0.22 s | 8723 bytes each; the extract holds no bytecode, so always cold |
+| `schema_of` on this repository's `src`, readings 1 to 5 | 0.21, 0.21, 0.22, 0.21, 0.21 s | 8723 bytes each |
+
+Two constants, each set by a rule:
+
+- `GIT_TIMEOUT_S = 20`. The slowest fetch reading, 5.61 s, is at or under half of it (10 s), so 20 s is not under twice a real fetch. It fits L36's 30 s commit stage because `gear.unchanged` is the last step of `verify.static`, which `verify.fast` runs before `test.fast`: a fetch hung to the bound stops make there, and the hook ends at about `verify.static`'s 0.74 s plus 20 s. In this checkout the tag is local and no fetch runs; the fetch runs where the tag is missing, as in CI's shallow checkout with no tags, which has no 30 s kill.
+- `PROBE_TIMEOUT_S = 60`. The slowest probe reading, 0.22 s (the archived v0.6 tree), is below one hundredth of it, so only a hung probe crosses it. It is longer than the git bound and not held to the hook's 30 s: the SDK's 30 s kill already ends a hung commit, and `make verify` and CI, which have no such kill, are what it bounds.

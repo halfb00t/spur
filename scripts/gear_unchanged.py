@@ -35,8 +35,9 @@ Why each choice is what it is:
   at plan time). A failed fetch fails the check naming git's message. It never skips and
   never passes without comparing (L08).
 - requirements.txt is not watched; the human chose the two paths at plan time.
-- Every git call is bounded, reads no stdin and runs with git's terminal prompt off; any
-  other wait is cut by the bound, and a hang fails naming the command (D-07).
+- Every git call and each schema probe is bounded and reads no stdin; git also runs with
+  its terminal prompt off. Any other wait is cut by the bound, and a hang fails naming the
+  command or the probe's tree (D-07).
 
 Every failure is a SystemExit whose message starts `gear.unchanged: ` and names the cause.
 """
@@ -62,6 +63,12 @@ TAG = "v0.6"
 # make there, and the hook ends at about verify.static's 0.74 s reading plus 20 s. Read at
 # call time so a test can lower it.
 GIT_TIMEOUT_S = 20
+# Bound on each schema probe, in seconds. Slowest reading 0.22 s (the archived v0.6 tree,
+# always cold, 2026-11-02, same bench section), so 60 s is about 270 times a real probe and
+# only a hung one crosses it. It is longer than the git bound and not held to the hook's
+# 30 s: the SDK's 30 s kill already ends a hung commit, and `make verify` and CI, which
+# have no such kill, are what this bounds. Read at call time so a test can lower it.
+PROBE_TIMEOUT_S = 60
 WATCHED = ("tests/regression/", ".github/workflows/ci.yml")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -130,11 +137,18 @@ def changed_paths(root: Path) -> list[str]:
 
 
 def schema_of(src: Path) -> bytes:
-    done = subprocess.run(
-        [sys.executable, "-P", "-c", PROBE],
-        env={**os.environ, "PYTHONPATH": str(src)},
-        capture_output=True, check=False,
-    )
+    try:
+        done = subprocess.run(
+            [sys.executable, "-P", "-c", PROBE],
+            env={**os.environ, "PYTHONPATH": str(src)},
+            capture_output=True, check=False,
+            stdin=subprocess.DEVNULL,
+            timeout=PROBE_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        raise SystemExit(
+            f"gear.unchanged: the probe for {src} timed out after {PROBE_TIMEOUT_S} s"
+        ) from None
     if done.returncode != 0:
         tail = "\n".join(done.stderr.decode(errors="replace").strip().splitlines()[-5:])
         raise SystemExit(f"gear.unchanged: the probe for {src} failed:\n{tail}")
