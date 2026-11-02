@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-11-01
-Resolved in: refactor(34.1-03): drop limit_measurement's unreachable odd-count branch (D-09)
+Resolved in: 8e0885f refactor(34.1-03): drop limit_measurement's unreachable odd-count branch (D-09)
 Source: Phase 34 code review (34-REVIEW.md IN-01)
 Related files:
 - src/spur/shaft_calc.py:380-406

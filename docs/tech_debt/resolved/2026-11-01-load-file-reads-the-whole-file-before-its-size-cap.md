@@ -3,7 +3,7 @@
 Severity: nice
 Status: resolved
 Date: 2026-11-01
-Resolved in: fix(34.1-03): read at most one byte past the table file's size cap (D-10)
+Resolved in: 8fb0d9e fix(34.1-03): read at most one byte past the table file's size cap (D-10)
 Source: Phase 34 code review (34-REVIEW.md IN-04)
 Related files:
 - src/spur/din5480_tables.py:343-358

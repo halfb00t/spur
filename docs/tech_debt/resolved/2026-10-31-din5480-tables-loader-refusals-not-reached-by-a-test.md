@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-10-31
-Resolved in: test(34.1-03): the limit reading for a pin that misses the flanks; resolve the loader-refusals item (D-11)
+Resolved in: 7876797 test(34.1-03): the limit reading for a pin that misses the flanks; resolve the loader-refusals item (D-11)
 Source: 34-17 (the gate delta): the coverage rows of `34-17-verify.log` show `src/spur/din5480_tables.py` at 238 statements, 13 missed, 8 branch parts missed, `93.48%`, and `src/spur/shaft_calc.py` at 2 missed; the line numbers come from `coverage report -m` on the `.coverage` file that run left.
 Related files:
 - src/spur/din5480_tables.py (lines 181, 245-246, 254, 290, 296, 303, 306, 344-345, 353-354, 358)
