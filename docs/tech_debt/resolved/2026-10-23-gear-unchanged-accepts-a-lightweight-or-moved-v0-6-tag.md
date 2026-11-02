@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-10-23
-Resolved in: fix(34.1-02): gear.unchanged requires an annotated v0.6 that peels to 792b45c (D-06)
+Resolved in: 9653865 fix(34.1-02): gear.unchanged requires an annotated v0.6 that peels to 792b45c (D-06)
 Source: Phase 30 code review, IN-02 (raised by the verifier as worth a follow-up)
 Related files:
 - scripts/gear_unchanged.py:84-87 (`ensure_tag`)

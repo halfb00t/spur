@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-10-23
-Resolved in: fix(34.1-02): bound the schema probe; resolve the gear.unchanged timeout item (D-07)
+Resolved in: 9aa8c95 fix(34.1-02): bound the schema probe; resolve the gear.unchanged timeout item (D-07)
 Source: Phase 30 code review, WR-01 (`.planning/phases/30-scope-seam-and-gear-safety-guard/30-REVIEW.md`)
 Related files:
 - scripts/gear_unchanged.py:73-77 (`_git`)
