@@ -227,6 +227,9 @@ BROKEN: list[tuple[str, Callable[[str], str], str]] = [
      "selected by 2 column rows"),
     ("M1 plus a thousandth", _doc(_m1_plus(0.001)), "M1 disagrees with the formula"),
     ("pin plus a hundredth", _doc(_pin_plus), "M1 disagrees with the formula"),
+    # 34.1: one case per refusal line the gate did not reach (D-11, the loader-refusals debt item).
+    ("module not one of the sixteen", _set("sizes", 0, "module", 1.3),
+     "module is not one of DIN 5480-2's sixteen"),
 ]
 
 
