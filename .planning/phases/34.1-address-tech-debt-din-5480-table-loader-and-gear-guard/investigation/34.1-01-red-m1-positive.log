@@ -1,0 +1,22 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_a_broken_row_refuses_to_load[m1 not positive] ______________
+
+edit = <function _doc.<locals>.apply at 0x10942f600>
+needle = 'm1_mm is not positive'
+
+    @pytest.mark.parametrize(("edit", "needle"), [(e, n) for _, e, n in BROKEN],
+                             ids=[i for i, _, _ in BROKEN])
+    def test_a_broken_row_refuses_to_load(edit: Callable[[str], str], needle: str) -> None:
+        """D-04, REQ-tables-transcribed-twice: a transcription that breaks any rule cannot load."""
+        with pytest.raises(TablesError) as refused:
+            din5480_tables.parse(edit(fixture.text()))
+>       assert needle in str(refused.value)
+E       AssertionError: assert 'm1_mm is not positive' in 'sizes (1.25, 25.0, 18) (pages 18, 19): M1 disagrees with the formula at the printed pin'
+E        +  where 'sizes (1.25, 25.0, 18) (pages 18, 19): M1 disagrees with the formula at the printed pin' = str(TablesError('sizes (1.25, 25.0, 18) (pages 18, 19): M1 disagrees with the formula at the printed pin'))
+E        +    where TablesError('sizes (1.25, 25.0, 18) (pages 18, 19): M1 disagrees with the formula at the printed pin') = <ExceptionInfo TablesError('sizes (1.25, 25.0, 18) (pages 18, 19): M1 disagrees with the formula at the printed pin') tblen=2>.value
+
+tests/test_din5480_tables.py:272: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[m1 not positive]
+1 failed in 0.02s

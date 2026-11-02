@@ -1,0 +1,19 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_a_broken_row_refuses_to_load[column d_B range reversed] _________
+
+edit = <function _doc.<locals>.apply at 0x10beffb00>
+needle = 'd_b_over_mm is not below d_b_upto_mm'
+
+    @pytest.mark.parametrize(("edit", "needle"), [(e, n) for _, e, n in BROKEN],
+                             ids=[i for i, _, _ in BROKEN])
+    def test_a_broken_row_refuses_to_load(edit: Callable[[str], str], needle: str) -> None:
+        """D-04, REQ-tables-transcribed-twice: a transcription that breaks any rule cannot load."""
+>       with pytest.raises(TablesError) as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE TablesError
+
+tests/test_din5480_tables.py:270: Failed
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_broken_row_refuses_to_load[column d_B range reversed]
+1 failed in 0.02s

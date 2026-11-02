@@ -1,0 +1,39 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_a_path_the_system_cannot_stat_refuses_naming_it _____________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2590/test_a_path_the_system_cannot_0')
+
+    def test_a_path_the_system_cannot_stat_refuses_naming_it(tmp_path: Path) -> None:
+        """A name over NAME_MAX is an OSError that `Path.is_file` re-raises on CPython 3.12 (L23),
+        so the `stat` handler answers, not the "does not exist" branch."""
+        path = tmp_path / ("x" * 300 + ".json")
+        with pytest.raises(TablesError) as refused:
+>           din5480_tables.load_file(path)
+
+tests/test_din5480_tables.py:311: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/din5480_tables.py:347: in load_file
+    size = path.stat().st_size if path.is_file() else None
+                                  ^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/pathlib.py:892: in is_file
+    return S_ISREG(self.stat().st_mode)
+                   ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2590/test_a_path_the_system_...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.json')
+follow_symlinks = True
+
+    def stat(self, *, follow_symlinks=True):
+        """
+        Return the result of the stat() system call on this path, like
+        os.stat() does.
+        """
+>       return os.stat(self, follow_symlinks=follow_symlinks)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       OSError: [Errno 63] File name too long: '/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2590/test_a_path_the_system_cannot_0/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.json'
+
+/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/pathlib.py:840: OSError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_path_the_system_cannot_stat_refuses_naming_it
+1 failed in 0.13s

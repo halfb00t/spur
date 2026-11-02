@@ -7,6 +7,7 @@ quiet null, D-13 the file is read once per process (the keystroke path never tou
 
 from __future__ import annotations
 
+import errno
 import json
 import math
 import shutil
@@ -133,6 +134,14 @@ def _element(kind: str, index: int, field: str, at: int, value: object) -> Calla
     return _doc(edit)
 
 
+def _append(kind: str, index: int, field: str, value: object) -> Callable[[str], str]:
+    def edit(document: Document) -> None:
+        values = document[kind][index][field]
+        assert isinstance(values, list)
+        values.append(value)
+    return _doc(edit)
+
+
 def _duplicate(kind: str) -> Callable[[str], str]:
     return _doc(lambda d: d[kind].append(dict(d[kind][0])))
 
@@ -178,6 +187,14 @@ def _pin_plus(document: Document) -> None:
     row = _default_row(document)
     assert isinstance(row["pin_d_mm"], float)
     row["pin_d_mm"] = row["pin_d_mm"] + 0.01
+
+
+def _last_column_d_b(document: Document) -> None:
+    document["columns"][-1].update(d_b_over_mm=60.0, d_b_upto_mm=50.0)
+
+
+def _last_column_reversed(document: Document) -> None:
+    document["columns"][-1].update(module_min_mm=10.0, module_max_mm=5.0)
 
 
 def _clause_changed(document: Document) -> None:
@@ -230,6 +247,19 @@ BROKEN: list[tuple[str, Callable[[str], str], str]] = [
     # 34.1: one case per refusal line the gate did not reach (D-11, the loader-refusals debt item).
     ("module not one of the sixteen", _set("sizes", 0, "module", 1.3),
      "module is not one of DIN 5480-2's sixteen"),
+    # The last column row is m 5 to 10, which no fixture size selects, so each column edit
+    # below trips only its own rule.
+    ("m1 not positive", _set("sizes", 0, "m1_mm", 0.0), "m1_mm is not positive"),
+    ("a deviation row one column wider", _append("deviations", 1, "a_s_um", 0),
+     "deviations 'h' (page 24): column count differs"),
+    ("a class row one column wider", _append("classes", 1, "row_by_column", 2),
+     "classes 8 (page 24): column count differs"),
+    ("column module bounds reversed", _doc(_last_column_reversed),
+     "module bounds are reversed or not DIN 5480-2 modules"),
+    ("column module bound not a DIN 5480-2 module", _set("columns", -1, "module_max_mm", 12.0),
+     "module bounds are reversed or not DIN 5480-2 modules"),
+    ("column d_B range reversed", _doc(_last_column_d_b),
+     "d_b_over_mm is not below d_b_upto_mm"),
 ]
 
 
@@ -271,6 +301,61 @@ def test_the_file_size_cap_is_exact(tmp_path: Path) -> None:
     path.write_bytes(body + b" " * (MAX_FILE_BYTES - len(body) + 1))
     with pytest.raises(TablesError, match=str(MAX_FILE_BYTES)):
         din5480_tables.load_file(path)
+
+
+def test_a_path_the_system_cannot_stat_refuses_naming_it(tmp_path: Path) -> None:
+    """A name over NAME_MAX is an OSError that `Path.is_file` re-raises on CPython 3.12 (L23),
+    so the `stat` handler answers, not the "does not exist" branch."""
+    path = tmp_path / ("x" * 300 + ".json")
+    with pytest.raises(TablesError) as refused:
+        din5480_tables.load_file(path)
+    assert str(refused.value).startswith(str(path))
+    assert "cannot be read (" in str(refused.value)
+
+
+def _read_returning(monkeypatch: pytest.MonkeyPatch, path: Path,
+                    answer: Callable[[], bytes]) -> None:
+    """`Path.read_bytes` answers `answer()` for `path` only and is the original otherwise."""
+    original = Path.read_bytes
+
+    def read_bytes(self: Path) -> bytes:
+        return answer() if self == path else original(self)
+    monkeypatch.setattr(Path, "read_bytes", read_bytes)
+
+
+def test_a_read_error_after_the_stat_refuses_naming_the_path(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The fault is injected: a mode-000 file still reads as root, and `make test-image` runs
+    as root. A file that is readable at the stat and not at the read is a race."""
+    path = fixture.write(tmp_path / "t.json")
+
+    def refuse() -> bytes:
+        raise PermissionError(errno.EACCES, "Permission denied")
+    _read_returning(monkeypatch, path, refuse)
+    with pytest.raises(TablesError) as refused:
+        din5480_tables.load_file(path)
+    assert str(refused.value) == f"{path}: cannot be read (Permission denied)"
+
+
+def test_a_file_that_grew_past_the_cap_after_the_stat_refuses(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A file that grows between the stat and the read is a race, so the read is injected.
+    The stat-time cap has its own test, `test_the_file_size_cap_is_exact`; that the cap is
+    checked before the read rather than while reading is the open nice item (D-10)."""
+    path = fixture.write(tmp_path / "t.json")
+    _read_returning(monkeypatch, path, lambda: b" " * (MAX_FILE_BYTES + 1))
+    with pytest.raises(TablesError) as refused:
+        din5480_tables.load_file(path)
+    assert str(refused.value) == f"{path}: is larger than the {MAX_FILE_BYTES} byte cap"
+
+
+def test_fit_is_none_when_an_unchecked_document_names_a_missing_tolerance_row() -> None:
+    """A caller of `install` can hold a document that skipped `problems()`. The lookup then
+    answers None, not an IndexError or a near row (L08). `parse` refuses such a document
+    (`[row_by_column naming no row]`)."""
+    tables = Tables.model_validate_json(
+        _element("classes", 1, "row_by_column", 0, 99)(fixture.text()))
+    assert tables.fit(1.25, 25.0, "8f") is None
 
 
 def _w26_m1_plus(amount: float) -> Callable[[str], str]:
