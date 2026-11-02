@@ -1,0 +1,38 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_a_file_over_the_cap_is_refused_at_the_stat_before_it_is_opened ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109b5e9f0>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2646/test_a_file_over_the_cap_is_re0')
+
+    def test_a_file_over_the_cap_is_refused_at_the_stat_before_it_is_opened(
+            monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """Tells the stat-time check from the read-time one, which prints the same sentence
+        (D-10): the open is faulted, so only the stat can have refused."""
+        path = tmp_path / "t.json"
+        path.write_bytes(b" " * (MAX_FILE_BYTES + 1))
+    
+        def opened() -> AbstractContextManager[IO[bytes]]:
+            raise AssertionError("opened past the stat-time cap")
+        _open_answering(monkeypatch, path, opened)
+        with pytest.raises(TablesError) as refused:
+>           din5480_tables.load_file(path)
+
+tests/test_din5480_tables.py:342: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/din5480_tables.py:357: in load_file
+    with path.open("rb") as f:
+         ^^^^^^^^^^^^^^^
+tests/test_din5480_tables.py:327: in open_
+    return answer() if self == path else original(self, mode)
+           ^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def opened() -> AbstractContextManager[IO[bytes]]:
+>       raise AssertionError("opened past the stat-time cap")
+E       AssertionError: opened past the stat-time cap
+
+tests/test_din5480_tables.py:339: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_file_over_the_cap_is_refused_at_the_stat_before_it_is_opened
+1 failed in 0.03s

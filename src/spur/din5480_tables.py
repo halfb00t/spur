@@ -352,8 +352,12 @@ def load_file(path: Path) -> Tables:
         raise TablesError(f"{path}: {reason}")
     if size > MAX_FILE_BYTES:
         raise TablesError(f"{path}: is larger than the {MAX_FILE_BYTES} byte cap")
+    # One byte past the cap is enough to know the file is over it, so a file that grew after
+    # the stat costs at most that much memory; reading it whole spent the memory before the
+    # check below could fire (34-REVIEW IN-04).
     try:
-        raw = path.read_bytes()
+        with path.open("rb") as f:
+            raw = f.read(MAX_FILE_BYTES + 1)
     except OSError as exc:
         raise TablesError(f"{path}: cannot be read ({exc.strerror})") from None
     if not raw:

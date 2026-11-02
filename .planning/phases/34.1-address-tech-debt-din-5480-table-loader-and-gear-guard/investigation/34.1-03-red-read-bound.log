@@ -1,0 +1,28 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_a_file_that_grew_past_the_cap_after_the_stat_refuses ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10be32750>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2648/test_a_file_that_grew_past_the0')
+
+    def test_a_file_that_grew_past_the_cap_after_the_stat_refuses(
+            monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """The read-time check's test; the stat-time check's is the one before the read-error
+        test. A file that grows between the stat and the read is a race, so the open is injected
+        with a file twice the cap, and the loader must have taken exactly one byte past the cap
+        from it, not the whole of it (D-10)."""
+        path = fixture.write(tmp_path / "t.json")
+        grown = io.BytesIO(b" " * (2 * (MAX_FILE_BYTES + 1)))
+        _open_answering(monkeypatch, path, lambda: nullcontext(grown))
+        with pytest.raises(TablesError) as refused:
+            din5480_tables.load_file(path)
+        assert str(refused.value) == f"{path}: is larger than the {MAX_FILE_BYTES} byte cap"
+>       assert grown.tell() == MAX_FILE_BYTES + 1
+E       assert 8388610 == (4194304 + 1)
+E        +  where 8388610 = <built-in method tell of _io.BytesIO object at 0x10be0f970>()
+E        +    where <built-in method tell of _io.BytesIO object at 0x10be0f970> = <_io.BytesIO object at 0x10be0f970>.tell
+
+tests/test_din5480_tables.py:373: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_file_that_grew_past_the_cap_after_the_stat_refuses
+1 failed in 0.03s

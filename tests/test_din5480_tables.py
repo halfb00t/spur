@@ -8,14 +8,17 @@ quiet null, D-13 the file is read once per process (the keystroke path never tou
 from __future__ import annotations
 
 import errno
+import io
 import json
 import math
 import shutil
 import subprocess
 import sys
 from collections.abc import Callable
+from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 from types import ModuleType
+from typing import IO, Literal
 
 import din5480_tables_fixture as fixture
 import pytest
@@ -313,25 +316,43 @@ def test_a_path_the_system_cannot_stat_refuses_naming_it(tmp_path: Path) -> None
     assert "cannot be read (" in str(refused.value)
 
 
-def _read_returning(monkeypatch: pytest.MonkeyPatch, path: Path,
-                    answer: Callable[[], bytes]) -> None:
-    """`Path.read_bytes` answers `answer()` for `path` only and is the original otherwise."""
-    original = Path.read_bytes
+def _open_answering(monkeypatch: pytest.MonkeyPatch, path: Path,
+                    answer: Callable[[], AbstractContextManager[IO[bytes]]]) -> None:
+    """`Path.open("rb")`, the loader's one call, answers `answer()` for `path` only and is the
+    original otherwise. Write the file before calling this: CPython 3.12's `Path.write_bytes`
+    opens through `Path.open`."""
+    original = Path.open
 
-    def read_bytes(self: Path) -> bytes:
-        return answer() if self == path else original(self)
-    monkeypatch.setattr(Path, "read_bytes", read_bytes)
+    def open_(self: Path, mode: Literal["rb"]) -> AbstractContextManager[IO[bytes]]:
+        return answer() if self == path else original(self, mode)
+    monkeypatch.setattr(Path, "open", open_)
+
+
+def test_a_file_over_the_cap_is_refused_at_the_stat_before_it_is_opened(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Tells the stat-time check from the read-time one, which prints the same sentence
+    (D-10): the open is faulted, so only the stat can have refused."""
+    path = tmp_path / "t.json"
+    path.write_bytes(b" " * (MAX_FILE_BYTES + 1))
+
+    def opened() -> AbstractContextManager[IO[bytes]]:
+        raise AssertionError("opened past the stat-time cap")
+    _open_answering(monkeypatch, path, opened)
+    with pytest.raises(TablesError) as refused:
+        din5480_tables.load_file(path)
+    assert str(refused.value) == f"{path}: is larger than the {MAX_FILE_BYTES} byte cap"
 
 
 def test_a_read_error_after_the_stat_refuses_naming_the_path(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """The fault is injected: a mode-000 file still reads as root, and `make test-image` runs
-    as root. A file that is readable at the stat and not at the read is a race."""
+    """The fault is injected at the open: a mode-000 file still opens as root, and
+    `make test-image` runs as root. A file that is readable at the stat and not at the open
+    is a race."""
     path = fixture.write(tmp_path / "t.json")
 
-    def refuse() -> bytes:
+    def refuse() -> AbstractContextManager[IO[bytes]]:
         raise PermissionError(errno.EACCES, "Permission denied")
-    _read_returning(monkeypatch, path, refuse)
+    _open_answering(monkeypatch, path, refuse)
     with pytest.raises(TablesError) as refused:
         din5480_tables.load_file(path)
     assert str(refused.value) == f"{path}: cannot be read (Permission denied)"
@@ -339,14 +360,17 @@ def test_a_read_error_after_the_stat_refuses_naming_the_path(
 
 def test_a_file_that_grew_past_the_cap_after_the_stat_refuses(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    """A file that grows between the stat and the read is a race, so the read is injected.
-    The stat-time cap has its own test, `test_the_file_size_cap_is_exact`; that the cap is
-    checked before the read rather than while reading is the open nice item (D-10)."""
+    """The read-time check's test; the stat-time check's is the one before the read-error
+    test. A file that grows between the stat and the read is a race, so the open is injected
+    with a file twice the cap, and the loader must have taken exactly one byte past the cap
+    from it, not the whole of it (D-10)."""
     path = fixture.write(tmp_path / "t.json")
-    _read_returning(monkeypatch, path, lambda: b" " * (MAX_FILE_BYTES + 1))
+    grown = io.BytesIO(b" " * (2 * (MAX_FILE_BYTES + 1)))
+    _open_answering(monkeypatch, path, lambda: nullcontext(grown))
     with pytest.raises(TablesError) as refused:
         din5480_tables.load_file(path)
     assert str(refused.value) == f"{path}: is larger than the {MAX_FILE_BYTES} byte cap"
+    assert grown.tell() == MAX_FILE_BYTES + 1
 
 
 def test_fit_is_none_when_an_unchecked_document_names_a_missing_tolerance_row() -> None:
