@@ -19,7 +19,7 @@ Severity (grep-able `Severity:` field):
 | nice | [A code comment still points at the debt file Phase 34 moved to `resolved/`](active/2026-11-01-din5480-comment-points-at-a-moved-debt-file.md) | `src/spur/din5480.py` is next edited |
 | nice | [`SCHEMA_VERSION` is defined and never used](active/2026-11-01-schema-version-constant-is-never-used.md) | the schema version next changes |
 | nice | [Two real-file and anchor assertions are tautologies](active/2026-11-01-two-real-file-and-anchor-assertions-are-tautologies.md) | either file is next edited |
-| must | [A file with Table 7 only partly present loads and then prints a false sentence](active/2026-11-01-table-7-partly-present-loads-and-prints-a-false-sentence.md) | the loader is next edited |
+| must | [A table file with the sizes list or Table 7 alone loads and prints a false sentence](active/2026-11-02-a-table-file-with-sizes-or-table-7-alone-loads-and-prints-a-false-sentence.md) | the loader is next edited |
 | nice | [Read 1 matches digits with `\d`, against the repository's own stated rule](active/2026-11-01-read1-matches-digits-with-backslash-d.md) | `scripts/din5480_read1.py` is next edited |
 | must | [An oversized A_s cell loads and shifts every limit printed from it](active/2026-11-01-an-oversized-a-s-cell-loads-and-shifts-every-limit.md) | the loader is next edited, or a transcription is redone |
 | must | [Table 12's m=1.25 d_B 19 z 14 nominal row is not printed in our copy of DIN 5480-2, so the table file has 720 size rows, not 721](active/2026-10-31-table-12-m1-25-db19-z14-row-missing-from-our-copy.md) | a second copy or the publisher's corrigendum becomes available |
@@ -50,6 +50,7 @@ Severity (grep-able `Severity:` field):
 
 | Item | Resolved in |
 |---|---|
+| [A file with Table 7 only partly present loads and then prints a false sentence](resolved/2026-11-01-table-7-partly-present-loads-and-prints-a-false-sentence.md) | fix(34.1-04): refuse a table file with Table 7 partly present (D-05) (gsd/phase-34.1-table-loader-and-gear-guard) |
 | [The table loader's refusal paths are not all reached by a test: din5480_tables.py reads 93.48 % in the gate](resolved/2026-10-31-din5480-tables-loader-refusals-not-reached-by-a-test.md) | 7876797 test(34.1-03): the limit reading for a pin that misses the flanks; resolve the loader-refusals item (D-11) (gsd/phase-34.1-table-loader-and-gear-guard) |
 | [`load_file` reads the whole file before enforcing the size cap on what it read](resolved/2026-11-01-load-file-reads-the-whole-file-before-its-size-cap.md) | 8fb0d9e fix(34.1-03): read at most one byte past the table file's size cap (D-10) (gsd/phase-34.1-table-loader-and-gear-guard) |
 | [`limit_measurement`'s `odd_confirmed` parameter and its odd-count branch are unreachable in production](resolved/2026-11-01-limit-measurement-odd-confirmed-branch-is-dead.md) | 8e0885f refactor(34.1-03): drop limit_measurement's unreachable odd-count branch (D-09) (gsd/phase-34.1-table-loader-and-gear-guard) |

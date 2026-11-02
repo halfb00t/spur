@@ -267,10 +267,19 @@ def problems(t: Tables) -> list[str]:
             n_selecting = len(_columns_selecting(t, size.module, size.reference_d))
             if n_selecting != 1:
                 found.append(f"{at}: selected by {n_selecting} column rows, not one")
-    for kind, rows in (("deviations", t.deviations), ("classes", t.classes),
-                       ("tolerances", t.tolerances), ("columns", t.columns)):
+    table_7 = (("deviations", t.deviations), ("classes", t.classes),
+               ("tolerances", t.tolerances), ("columns", t.columns))
+    for kind, rows in table_7:
         found += [f"{kind}: a row's provenance is not Part 1 Table 7's"
                   for row in rows if row.provenance != TABLE_7_PROVENANCE]
+    # Table 7 is whole or absent: a truncated file loaded and printed a sentence about the
+    # standard that is really about the file ("the fit 8f is not in DIN 5480-1 Table 7, whose
+    # shaft deviations are ...", 34-REVIEW IN-06, L08). The all-empty document still loads,
+    # because completeness is checked at transcription (L50); D-05.
+    empty = [kind for kind, rows in table_7 if not rows]
+    if 0 < len(empty) < len(table_7):
+        found.append(f"Table 7 is partly present: {', '.join(empty)} empty while the other "
+                     f"Table 7 lists are not")
     for tol in t.tolerances:
         at = f"tolerances {tol.row} (page 24)"
         if tol.t_g_um != tol.t_act_um + tol.t_eff_um:

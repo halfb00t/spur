@@ -263,6 +263,17 @@ BROKEN: list[tuple[str, Callable[[str], str], str]] = [
      "module bounds are reversed or not DIN 5480-2 modules"),
     ("column d_B range reversed", _doc(_last_column_d_b),
      "d_b_over_mm is not below d_b_upto_mm"),
+    # 34.1-04, D-05: Table 7 is whole or absent. The columns case is the debt item's own
+    # reproduction. Without the rule the tolerances case is still refused, by the row_by_column
+    # check, so its needle (the rule's sentence) is what fails.
+    ("Table 7 without its deviations", _doc(lambda d: d.update(deviations=[])),
+     "Table 7 is partly present: deviations empty"),
+    ("Table 7 without its classes", _doc(lambda d: d.update(classes=[])),
+     "Table 7 is partly present: classes empty"),
+    ("Table 7 without its tolerances", _doc(lambda d: d.update(tolerances=[])),
+     "Table 7 is partly present: tolerances empty"),
+    ("Table 7 without its columns", _doc(lambda d: d.update(columns=[])),
+     "Table 7 is partly present: columns empty"),
 ]
 
 
