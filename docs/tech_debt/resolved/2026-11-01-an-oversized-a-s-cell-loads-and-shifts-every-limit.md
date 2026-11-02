@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-11-01
-Resolved in: fix(34.1-04): cap each A_s cell at 60 micrometres per millimetre of its column's module (D-01)
+Resolved in: 2fa48b8 fix(34.1-04): cap each A_s cell at 60 micrometres per millimetre of its column's module (D-01)
 Source: Phase 34 code review (34-REVIEW.md WR-03, the part left after the fix in `d299fe3`)
 Related files:
 - src/spur/din5480_tables.py (`A_S_CAP_UM_PER_MM`, `problems()`)

@@ -3,7 +3,7 @@
 Severity: must
 Status: resolved
 Date: 2026-11-01
-Resolved in: fix(34.1-04): refuse a table file with Table 7 partly present (D-05)
+Resolved in: 1ea2e45 fix(34.1-04): refuse a table file with Table 7 partly present (D-05)
 Source: Phase 34 code review (34-REVIEW.md IN-06)
 Related files:
 - src/spur/din5480_tables.py:266
