@@ -13,11 +13,13 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from scripts import gear_unchanged
 from scripts.gear_unchanged import REPO_ROOT, check, schema_of
 from spur.app import app
 
@@ -59,6 +61,19 @@ def _work_repo(tmp_path: Path) -> Path:
     _git(work, "commit", "-q", "-m", "v0.6")
     _git(work, "tag", "-a", "v0.6", "-m", "v0.6")
     return work
+
+
+def _ext_origin(tmp_path: Path, command: str) -> Path:
+    """A lone repository, one empty commit, whose origin is `ext::<command>`. Git's ext
+    transport runs the command as the remote, so a fetch needs no network and the command
+    decides what the remote does: hang, or print what git's child sees."""
+    lone = tmp_path / "lone"
+    lone.mkdir()
+    _git(lone, "init", "-q", "-b", "main")
+    _git(lone, "commit", "-q", "--allow-empty", "-m", "no tag here")
+    _git(lone, "config", "protocol.ext.allow", "always")
+    _git(lone, "remote", "add", "origin", f"ext::{command}")
+    return lone
 
 
 def _schema_json(src: Path) -> bytes:
@@ -213,3 +228,33 @@ def test_the_probe_reads_the_bytes_the_app_serves() -> None:
 
     assert probed
     assert probed == served.content
+
+
+def test_a_fetch_that_hangs_fails_inside_its_bound_naming_the_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D-07: an origin that never answers must end the check with a sentence, not hold the
+    pre-commit hook until the SDK kills the commit."""
+    lone = _ext_origin(tmp_path, "sleep 10")
+    monkeypatch.setattr(gear_unchanged, "GIT_TIMEOUT_S", 1)
+
+    started = time.monotonic()
+    with pytest.raises(SystemExit) as refused:
+        check(lone, _schema_json)
+    elapsed = time.monotonic() - started
+
+    assert refused.value.code == "gear.unchanged: git fetch origin tag v0.6 timed out after 1 s"
+    assert elapsed < 5
+
+
+def test_git_runs_with_terminal_prompts_off(tmp_path: Path) -> None:
+    """`_clean_git_env` removed every GIT_* variable, so only the script can have set
+    GIT_TERMINAL_PROMPT. The remote here is a shell that reports what its environment holds.
+    This proves the variable reaches git's children, which is all it can prove: an ssh
+    prompt that opens the terminal itself is ended by the bound, not by this."""
+    lone = _ext_origin(tmp_path, "sh -c echo% prompt=$GIT_TERMINAL_PROMPT>&2")
+
+    with pytest.raises(SystemExit) as refused:
+        check(lone, _schema_json)
+
+    assert "could not be fetched from origin: prompt=0" in str(refused.value.code)

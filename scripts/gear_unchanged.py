@@ -35,6 +35,8 @@ Why each choice is what it is:
   at plan time). A failed fetch fails the check naming git's message. It never skips and
   never passes without comparing (L08).
 - requirements.txt is not watched; the human chose the two paths at plan time.
+- Every git call is bounded, reads no stdin and runs with git's terminal prompt off; any
+  other wait is cut by the bound, and a hang fails naming the command (D-07).
 
 Every failure is a SystemExit whose message starts `gear.unchanged: ` and names the cause.
 """
@@ -52,6 +54,14 @@ from collections.abc import Callable
 from pathlib import Path
 
 TAG = "v0.6"
+# Bound on every git call, in seconds. Measured 2026-11-02 (bench/RESULTS.md, "The guard's
+# bounds, measured (34.1-02)"): each local call reads under 0.01 s; the one slow call is
+# the depth-1 tag fetch, slowest reading 5.61 s, so 20 s is more than three times it. It
+# fits L36's 30 s commit stage because `gear.unchanged` is the last step of `verify.static`,
+# which `verify.fast` runs before `test.fast` (Makefile): a fetch hung to the bound stops
+# make there, and the hook ends at about verify.static's 0.74 s reading plus 20 s. Read at
+# call time so a test can lower it.
+GIT_TIMEOUT_S = 20
 WATCHED = ("tests/regression/", ".github/workflows/ci.yml")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -71,10 +81,22 @@ sys.stdout.buffer.write(
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
-    return subprocess.run(
-        ["git", "--no-optional-locks", *args],
-        cwd=root, capture_output=True, check=False,
-    )
+    # The hook runs with a terminal attached, where git would wait on a credential prompt,
+    # and nothing here should read the hook's stdin. GIT_TERMINAL_PROMPT=0 turns off git's
+    # own terminal prompts (HTTP credentials); a wait it does not cover, an ssh passphrase
+    # or host-key question that opens the terminal itself, is ended by the bound.
+    try:
+        return subprocess.run(
+            ["git", "--no-optional-locks", *args],
+            cwd=root, capture_output=True, check=False,
+            stdin=subprocess.DEVNULL,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            timeout=GIT_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        raise SystemExit(
+            f"gear.unchanged: git {' '.join(args)} timed out after {GIT_TIMEOUT_S} s"
+        ) from None
 
 
 def _stderr(done: subprocess.CompletedProcess[bytes]) -> str:

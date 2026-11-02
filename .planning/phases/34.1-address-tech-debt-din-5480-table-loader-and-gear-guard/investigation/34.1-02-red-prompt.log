@@ -1,0 +1,26 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________________ test_git_runs_with_terminal_prompts_off ____________________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2623/test_git_runs_with_terminal_pr0')
+
+    def test_git_runs_with_terminal_prompts_off(tmp_path: Path) -> None:
+        """`_clean_git_env` removed every GIT_* variable, so only the script can have set
+        GIT_TERMINAL_PROMPT. The remote here is a shell that reports what its environment holds.
+        This proves the variable reaches git's children, which is all it can prove: an ssh
+        prompt that opens the terminal itself is ended by the bound, not by this."""
+        lone = _ext_origin(tmp_path, "sh -c echo% prompt=$GIT_TERMINAL_PROMPT>&2")
+    
+        with pytest.raises(SystemExit) as refused:
+            check(lone, _schema_json)
+    
+>       assert "could not be fetched from origin: prompt=0" in str(refused.value.code)
+E       AssertionError: assert 'could not be fetched from origin: prompt=0' in 'gear.unchanged: tag v0.6 is not local and could not be fetched from origin: prompt=\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.'
+E        +  where 'gear.unchanged: tag v0.6 is not local and could not be fetched from origin: prompt=\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.' = str('gear.unchanged: tag v0.6 is not local and could not be fetched from origin: prompt=\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.')
+E        +    where 'gear.unchanged: tag v0.6 is not local and could not be fetched from origin: prompt=\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.' = SystemExit('gear.unchanged: tag v0.6 is not local and could not be fetched from origin: prompt=\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.').code
+E        +      where SystemExit('gear.unchanged: tag v0.6 is not local and could not be fetched from origin: prompt=\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.') = <ExceptionInfo SystemExit('gear.unchanged: tag v0.6 is not local and could not be fetched from origin: prompt=\nfatal:...d from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.') tblen=3>.value
+
+tests/test_gear_unchanged.py:260: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_git_runs_with_terminal_prompts_off
+1 failed in 0.27s
