@@ -5,17 +5,17 @@ milestone_name: Splined Shaft
 current_phase: "34.1"
 current_phase_name: "Address tech debt: DIN 5480 table loader and gear guard"
 status: executing
-stopped_at: Completed 34.1-02-PLAN.md
-last_updated: "2026-11-02T10:33:40.275Z"
+stopped_at: Completed 34.1-03-PLAN.md
+last_updated: "2026-11-02T10:47:41.232Z"
 last_activity: 2026-11-02
 last_activity_desc: Phase 34.1 execution started
-state_head: 0980b93f2a10abb579a9146b85655c47053d8a3b
+state_head: 668e70bc80f6abf3415c90193e3afbc082cd08bb
 progress:
   total_phases: 6
   completed_phases: 11
   total_plans: 49
-  completed_plans: 46
-  percent: 94
+  completed_plans: 47
+  percent: 96
 ---
 
 # Project State
@@ -31,7 +31,7 @@ dimension is computed honestly or reported as a warning, never guessed (L08).
 ## Current Position
 
 Phase: 34.1 (Address tech debt: DIN 5480 table loader and gear guard) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-11-02 — Phase 34.1 execution started
 
@@ -317,6 +317,7 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 34 P16 | 40min | 2 tasks | 8 files |
 | Phase 34 P17 | 50min | 3 tasks | 7 files |
 | Phase 34.1 P02 | 17 min | 3 tasks | 13 files |
+| Phase 34.1 P03 | 11 min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -641,6 +642,8 @@ pending; the next milestone starts this list fresh.
 - [Phase 34]: 34-16: range edge reads x < d_B <= y (edge-upper), confirmed by the human against page 24; pinned on both sides of every printed edge of the real file by make tables.test
 - [Phase 34]: L50 logs Phase 34: the private table file, the two reads, the approved anchors, the window and limits by tier, the solid at maximum material, the range edge (edge-upper) and the refusal of every subcommand on a broken file
 - [Phase 34.1]: 34.1-02: GIT_TIMEOUT_S = 20 s (slowest fetch 5.61 s) and PROBE_TIMEOUT_S = 60 s (slowest probe 0.22 s); v0.6 must be annotated and peel to BASELINE_SHA 792b45c, read as refs/tags/v0.6
+- [Phase 34.1]: 34.1-03: limit_measurement's odd-count branch deleted, not tested (D-09)
+- [Phase 34.1]: 34.1-03: load_file keeps both cap checks (stat and bounded read), each with a test that fails without it (D-10)
 
 ### Pending Todos
 
@@ -968,8 +971,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-02T10:33:40.102Z
-Stopped at: Completed 34.1-02-PLAN.md
+Last session: 2026-11-02T10:47:41.043Z
+Stopped at: Completed 34.1-03-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

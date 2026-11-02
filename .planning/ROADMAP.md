@@ -569,7 +569,7 @@ reaches) and the `gear.unchanged` guard (no timeout on git or the probe, lightwe
 `v0.6` tag accepted). Scope is set at discuss-phase.
 **Requirements**: TBD
 **Depends on:** Phase 34
-**Plans:** 2/5 plans executed in 4 waves (two human checkpoints: the sizes ruling and the D-10 reply at 34.1-01, the real-file load at 34.1-04; k is fixed at 60 by D-01)
+**Plans:** 3/5 plans executed in 4 waves (two human checkpoints: the sizes ruling and the D-10 reply at 34.1-01, the real-file load at 34.1-04; k is fixed at 60 by D-01)
 
 Plans:
 Wave 1
@@ -577,7 +577,7 @@ Wave 1
 - [x] 34.1-02-PLAN.md — gear.unchanged: bounded git and probe, prompts off, v0.6 pinned annotated at 792b45c (D-06..D-08)
 
 Wave 2
-- [ ] 34.1-03-PLAN.md — the dead odd_confirmed branch deleted, the flanks return tested (D-09, D-11)
+- [x] 34.1-03-PLAN.md — the dead odd_confirmed branch deleted, the flanks return tested (D-09, D-11)
 
 Wave 3
 - [ ] 34.1-04-PLAN.md — Table 7 whole or absent, each A_s cell capped at k = 60 per mm of module, the human loads the real file (D-01..D-05)
@@ -622,4 +622,4 @@ Wave 4
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
 | 33. Interfaces and Parity | v0.7 | 10/10 | Complete    | 2026-10-29 |
 | 34. Fit Tables and Tolerance Window | v0.7 | 17/17 | Complete    | 2026-11-01 |
-| 34.1. Address tech debt: DIN 5480 table loader and gear guard | v0.7 | 2/5 | In Progress | - |
+| 34.1. Address tech debt: DIN 5480 table loader and gear guard | v0.7 | 3/5 | In Progress | - |
