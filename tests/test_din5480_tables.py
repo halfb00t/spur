@@ -274,6 +274,11 @@ BROKEN: list[tuple[str, Callable[[str], str], str]] = [
      "Table 7 is partly present: tolerances empty"),
     ("Table 7 without its columns", _doc(lambda d: d.update(columns=[])),
      "Table 7 is partly present: columns empty"),
+    # 34.1-04, D-01: f's column-1 cell at ten times its value is beyond 1.5 * 60 and under
+    # UM_LIMIT, so only the cap refuses it.
+    ("A_s ten times its cell, under the micrometre limit",
+     _element("deviations", 0, "a_s_um", 0, -210),
+     "deviations 'f' (page 24): A_s in column 1 is beyond"),
 ]
 
 
