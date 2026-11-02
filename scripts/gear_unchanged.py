@@ -10,13 +10,17 @@ edit of a gear-side file is proved by this check, never by reading the diff.
 Why each choice is what it is:
 
 - The baseline is the tag, read at run time; nothing is committed (D-02). A committed
-  snapshot would be a second source of truth that someone could regenerate by mistake. For
-  the same reason there is no pinned sha: the annotated tag is the one name for v0.6.
+  snapshot would be a second source of truth that someone could regenerate by mistake. The
+  tag is the one name for v0.6, but a name can be moved: `v0.6` must be an annotated tag
+  that peels to `BASELINE_SHA`, else the check refuses. A lightweight tag on HEAD, or a
+  tag force-moved there, would compare the tree with itself and read green (30-REVIEW
+  IN-02). A deliberate re-baseline edits that one constant. There is no ancestor check
+  (D-06).
 - The v0.6 tree is extracted with `git archive`, not checked out as a git worktree. This
   check runs in the pre-commit hook, where git exports GIT_INDEX_FILE, and a worktree added
   there emptied the commit in progress (30-RESEARCH Pitfall 1, scratch repo, 2026-10-23;
-  the human chose `git archive`). Every git call here is read-only (`rev-parse`, `diff`,
-  `ls-files`, `archive`, and a fetch of the one tag), with `--no-optional-locks`, so the
+  the human chose `git archive`). Every git call here is read-only (`rev-parse`, `cat-file`,
+  `diff`, `ls-files`, `archive`, and a fetch of the one tag), with `--no-optional-locks`, so the
   index is never written and no worktree is registered.
 - Each tree is probed in its own interpreter with PYTHONPATH pointing at its `src` and
   `-P`, and the probe's `spur.__file__` is asserted. The editable install appends this
@@ -55,6 +59,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 TAG = "v0.6"
+# v0.6's commit, `792b45c` in ROADMAP Phase 30 and 30-VERIFICATION.md (whose `git ls-remote`
+# showed the tag object `b7f217f` peeling to it). Held in full so no short prefix can
+# collide. A deliberate re-baseline edits this one line (D-06).
+BASELINE_SHA = "792b45c033c38b0fef12f85cdbba1df36adb3a69"
 # Bound on every git call, in seconds. Measured 2026-11-02 (bench/RESULTS.md, "The guard's
 # bounds, measured (34.1-02)"): each local call reads under 0.01 s; the one slow call is
 # the depth-1 tag fetch, slowest reading 5.61 s, so 20 s is more than three times it. It
@@ -110,16 +118,32 @@ def _stderr(done: subprocess.CompletedProcess[bytes]) -> str:
     return done.stderr.decode(errors="replace").strip()
 
 
-def ensure_tag(root: Path) -> None:
-    if _git(root, "rev-parse", "-q", "--verify", f"{TAG}^{{commit}}").returncode == 0:
-        return
-    shallow = _git(root, "rev-parse", "--is-shallow-repository").stdout.strip() == b"true"
-    depth = ["--depth=1"] if shallow else []
-    fetched = _git(root, "fetch", *depth, "origin", "tag", TAG)
-    if fetched.returncode != 0:
+def ensure_tag(root: Path, baseline: str) -> None:
+    # The tag is read by its full ref: a branch named v0.6 would answer to the bare name,
+    # skip the fetch and be refused with the wrong sentence. `changed_paths` and
+    # `baseline_src` keep the bare name, which resolves to the tag once it is checked here.
+    ref = f"refs/tags/{TAG}"
+    if _git(root, "rev-parse", "-q", "--verify", f"{ref}^{{commit}}").returncode != 0:
+        shallow = _git(root, "rev-parse", "--is-shallow-repository").stdout.strip() == b"true"
+        depth = ["--depth=1"] if shallow else []
+        fetched = _git(root, "fetch", *depth, "origin", "tag", TAG)
+        if fetched.returncode != 0:
+            raise SystemExit(
+                f"gear.unchanged: tag {TAG} is not local and could not be fetched from "
+                f"origin: {_stderr(fetched)}"
+            )
+    kind = _git(root, "cat-file", "-t", ref).stdout.decode().strip()
+    if kind != "tag":
         raise SystemExit(
-            f"gear.unchanged: tag {TAG} is not local and could not be fetched from origin: "
-            f"{_stderr(fetched)}"
+            f"gear.unchanged: {TAG} is not an annotated tag (git cat-file -t printed "
+            f"'{kind}'); a lightweight tag can sit on any commit and make the check "
+            "compare that commit with itself"
+        )
+    peeled = _git(root, "rev-parse", f"{ref}^{{commit}}").stdout.decode().strip()
+    if peeled != baseline:
+        raise SystemExit(
+            f"gear.unchanged: {TAG} peels to {peeled}, not BASELINE_SHA {baseline}; a "
+            "deliberate re-baseline edits BASELINE_SHA in scripts/gear_unchanged.py"
         )
 
 
@@ -176,8 +200,10 @@ def baseline_src(root: Path, dest: Path) -> Path:
     return dest / "src"
 
 
-def check(root: Path, probe: Callable[[Path], bytes] = schema_of) -> str:
-    ensure_tag(root)
+def check(
+    root: Path, probe: Callable[[Path], bytes] = schema_of, *, baseline: str = BASELINE_SHA
+) -> str:
+    ensure_tag(root, baseline)
     changed = changed_paths(root)
     if changed:
         raise SystemExit(

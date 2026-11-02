@@ -6,6 +6,8 @@ reads `src/schema.json`, so `git archive` and the tar extraction run for real wh
 tree is needed; the two tests at the end drive the real probe. What is pinned is each way
 the check can lie: a watched path that moved, a schema that moved by one byte or by key
 order, a baseline that could not be read, and a probe that compared a tree with itself.
+The scratch repository's tag commit stands in for `BASELINE_SHA`, which names this
+repository's v0.6.
 """
 
 from __future__ import annotations
@@ -80,16 +82,20 @@ def _schema_json(src: Path) -> bytes:
     return (src / "schema.json").read_bytes()
 
 
-def _refused(work: Path, pattern: str) -> None:
+def _tagged(repo: Path) -> str:
+    return _git(repo, "rev-parse", "v0.6^{commit}")
+
+
+def _refused(work: Path, pattern: str, baseline: str | None = None) -> None:
     with pytest.raises(SystemExit, match=pattern) as refused:
-        check(work, _schema_json)
+        check(work, _schema_json, baseline=baseline or _tagged(work))
     assert str(refused.value.code).startswith("gear.unchanged: ")
 
 
 def test_an_unchanged_tree_reads_green_and_names_what_it_compared(tmp_path: Path) -> None:
     work = _work_repo(tmp_path)
 
-    line = check(work, _schema_json)
+    line = check(work, _schema_json, baseline=_tagged(work))
 
     assert line.endswith("are byte-equal to v0.6")
     assert f"({len(SCHEMA)} bytes)" in line
@@ -145,7 +151,7 @@ def test_an_empty_schema_is_never_a_pass(tmp_path: Path) -> None:
     work = _work_repo(tmp_path)
 
     with pytest.raises(SystemExit, match="read empty"):
-        check(work, lambda _src: b"")
+        check(work, lambda _src: b"", baseline=_tagged(work))
 
 
 def test_a_missing_tag_with_an_unreachable_origin_fails_naming_the_cause(
@@ -174,7 +180,7 @@ def test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow(tmp_path: 
     _git(tmp_path, "clone", "-q", "--no-tags", str(work), str(clone))
     assert _git(clone, "tag") == ""
 
-    line = check(clone, _schema_json)
+    line = check(clone, _schema_json, baseline=_tagged(work))
 
     assert line.endswith("are byte-equal to v0.6")
     assert _git(clone, "rev-parse", "--verify", "v0.6^{commit}")
@@ -189,7 +195,7 @@ def test_a_shallow_clone_fetches_the_tag_at_depth_one(tmp_path: Path) -> None:
     _git(tmp_path, "clone", "-q", "--depth=1", "--no-tags", f"file://{work}", str(clone))
     assert _git(clone, "rev-parse", "--is-shallow-repository") == "true"
 
-    line = check(clone, _schema_json)
+    line = check(clone, _schema_json, baseline=_tagged(work))
 
     assert line.endswith("are byte-equal to v0.6")
     assert _git(clone, "rev-parse", "--is-shallow-repository") == "true"
@@ -203,7 +209,7 @@ def test_the_check_leaves_the_repository_as_it_found_it(tmp_path: Path) -> None:
     index_before = (work / ".git/index").read_bytes()
     status_before = _git(work, "status", "--porcelain")
 
-    check(work, _schema_json)
+    check(work, _schema_json, baseline=_tagged(work))
 
     assert (work / ".git/index").read_bytes() == index_before
     assert _git(work, "status", "--porcelain") == status_before
@@ -274,3 +280,36 @@ def test_a_probe_that_hangs_fails_inside_its_bound(monkeypatch: pytest.MonkeyPat
     assert code.startswith("gear.unchanged: the probe for ")
     assert code.endswith("timed out after 1 s")
     assert elapsed < 5
+
+
+def test_a_lightweight_v0_6_tag_is_refused(tmp_path: Path) -> None:
+    """`git tag v0.6` on any commit would compare that commit with itself and read green
+    (30-REVIEW IN-02); only an annotated tag is a baseline someone chose."""
+    work = _work_repo(tmp_path)
+    _git(work, "tag", "-d", "v0.6")
+    _git(work, "tag", "v0.6")
+
+    _refused(work, "not an annotated tag")
+
+
+def test_a_moved_annotated_tag_is_refused(tmp_path: Path) -> None:
+    """An annotated tag force-moved to a later commit is still annotated; only the peeled
+    sha tells it from the baseline."""
+    work = _work_repo(tmp_path)
+    baseline = _tagged(work)
+    _git(work, "commit", "-q", "--allow-empty", "-m", "later")
+    _git(work, "tag", "-f", "-a", "v0.6", "-m", "moved")
+
+    _refused(work, "peels to", baseline)
+
+
+def test_a_branch_named_v0_6_is_not_taken_for_the_tag(tmp_path: Path) -> None:
+    """The bare name `v0.6` would resolve to the branch, skip the fetch and be refused with
+    the wrong sentence (not annotated). The tag is read as refs/tags/v0.6, so the check
+    goes to the fetch, which a repository with no origin cannot do."""
+    work = _work_repo(tmp_path)
+    baseline = _tagged(work)
+    _git(work, "tag", "-d", "v0.6")
+    _git(work, "branch", "v0.6")
+
+    _refused(work, "is not local and could not be fetched", baseline)

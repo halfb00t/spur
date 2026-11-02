@@ -1,0 +1,35 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_a_branch_named_v0_6_is_not_taken_for_the_tag _______________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2634/test_a_branch_named_v0_6_is_no0')
+
+    def test_a_branch_named_v0_6_is_not_taken_for_the_tag(tmp_path: Path) -> None:
+        """The bare name `v0.6` would resolve to the branch, skip the fetch and be refused with
+        the wrong sentence (not annotated). The tag is read as refs/tags/v0.6, so the check
+        goes to the fetch, which a repository with no origin cannot do."""
+        work = _work_repo(tmp_path)
+        baseline = _tagged(work)
+        _git(work, "tag", "-d", "v0.6")
+        _git(work, "branch", "v0.6")
+    
+>       _refused(work, "is not local and could not be fetched", baseline)
+
+tests/test_gear_unchanged.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+work = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2634/test_a_branch_named_v0_6_is_no0/work')
+pattern = 'is not local and could not be fetched'
+baseline = '708f5a385c7a96f85fc16ab9d3db1ffc5f45584f'
+
+    def _refused(work: Path, pattern: str, baseline: str | None = None) -> None:
+>       with pytest.raises(SystemExit, match=pattern) as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'is not local and could not be fetched'
+E         Actual message: "gear.unchanged: v0.6 is not an annotated tag (git cat-file -t printed ''); a lightweight tag can sit on any commit and make the check compare that commit with itself"
+
+tests/test_gear_unchanged.py:90: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_a_branch_named_v0_6_is_not_taken_for_the_tag
+1 failed in 0.32s
