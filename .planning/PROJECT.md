@@ -18,6 +18,8 @@ either computed honestly or reported as a warning, never guessed (L08). Everythi
 
 ## Current State
 
+**Shipped: v0.7 Splined Shaft (2026-11-03).** spur is a gear and spline generator (L46). An external DIN 5480 involute shaft with a plain shank is a second part type beside the gear, on the web page (a Gear | Shaft switch), the API (`/api/shaft/...`) and the CLI (`spur shaft`), proved against one another by a parity test and against an independent oracle. Every printed number is derived from the standard or warned with no number: the fit tables (tooth-thickness window, M_Re limits, the maximum-material solid) come from a private git-ignored file read once from `SPUR_DIN5480_TABLES` (L50), and without it, off-table or on a fit outside Table 7 the five rows are `null` with one fixed sentence. The table loader refuses a file with Table 7 partly present or an `A_s` cell above 60 µm per mm of its module, and reads at most one byte past its size cap; `make gear.unchanged` bounds every subprocess and pins `v0.6` to an annotated tag, proving every gear link still builds the same part (L51). No new `GearParams` field. Record: `.planning/MILESTONES.md`, `milestones/v0.7-ROADMAP.md`, `milestones/v0.7-MILESTONE-AUDIT.md` (status `tech_debt`: 24/24 requirements, 5/5 integration, 13/13 flows; its must debt closed by the inserted Phase 34.1). Closed as an override closeout: the verification reports of Phases 30–34 read stale after later phases edited files they cover; each had passed, and the audit and the final gate run (`make verify` 2964 passed in 283.77 s, 15.09 s under L43's bar) postdate those edits.
+
 **Shipped: v0.6 Clean Ledger (2026-10-23).** The gate passes or fails with a cause. The twin-selectors race and the `resource_tracker` flake were fixed from reproductions, a stalled test leaves its id and stack in the log, and `make test-image` runs what it claims (Phase 26). The harness's tests and records are true: slug totality is guarded in the commit slice, the failed-build name test is independent of cache order, `stop_group` signals before it reads `ps`, and the group floor and launch message say what was observed (Phase 27). A shared link carrying a value its control cannot hold is refused through the API's 422 instead of silently building the default part (L44). A tip chamfer asked for and not cut prints `null` (L45), and the `root_fillet` label follows the root (Phase 28). Every open review finding of Phases 10, 18, 19, 21–24 and 26–28 carries a disposition. Ubuntu 26 was pre-classified green, but no `ubuntu-latest` run reached 26.04 by the close, so Phase 29 closed with its item active (trigger not fired). No new `GearParams` field; `tests/regression/` and `ci.yml` byte-identical to the `v0.5` tag. Fifteen debt items retired; nine filed, four of them still active. Record: `.planning/MILESTONES.md`, `milestones/v0.6-ROADMAP.md`, `milestones/v0.6-MILESTONE-AUDIT.md` (status `tech_debt`: 16/16 requirements, 11/12 integration, 5/6 flows; the partial is the known WR-02 deferral; 16 active debt items with triggers, 3 `must`).
 
 Codebase at `a620399`: 4,158 lines of package Python, 17,664 of tests, 4,548 of bench, 671 lines of hand-written UI JS, 1,348 tests, 31 pinned runtime packages (unchanged since v0), `make verify` green under L43's 300 s bar on the 18-CPU M5 Max (`1348 passed in 236.23s` at the close re-verification).
@@ -72,7 +74,7 @@ itself surfaced are retired (L24, L25). Record: `.planning/MILESTONES.md`,
 Codebase at `1173d21`: 6,410 lines of Python, 361 lines of hand-written UI JS, 191 tests,
 31 pinned runtime packages (unchanged over v0.1), `make verify` green.
 
-## Current Milestone: v0.7 Splined Shaft
+## Current Milestone: v0.7 Splined Shaft (shipped 2026-11-03; the next `/gsd-new-milestone` replaces this section)
 
 **Goal:** Generate an external DIN 5480 involute splined shaft with a plain shank as a second
 part type beside the gear, every printed number derived from the standard (or from the copy
@@ -755,12 +757,11 @@ pytest — L13). Full list with sources and acceptance evidence:
   235.27 s; gate close reading 213.54 s accepted by the human against a 308.61 s loaded run;
   security 65/65 closed; review 0 critical, 4 warnings fixed, 7 info deferred as debt; Nyquist
   12/12 green; UAT 3/3)
+- ✓ The table loader refuses a file with Table 7 partly present and an `A_s` cell above 60 µm per mm of its module, reads at most one byte past its size cap, and every refusal line is reached by a test seen red; `gear.unchanged` is bounded and pinned to the annotated `v0.6` tag; the dead odd-count branch of `limit_measurement` is gone — Phase 34.1 (L51; REQ-tables-private-file, REQ-fit-tolerance-window, REQ-mre-limits, REQ-solid-max-material, REQ-gear-unchanged-proof, REQ-gate-cost-recorded; verified 9/9; `make verify` 2964 passed in 283.77 s; the real table file loads, 22 passed)
 
 ### Active
 
-- v0.7 Splined Shaft — a DIN 5480 external splined shaft with a plain shank, its basic
-  dimensions, M_Re over pins, DIN 5480-2 fit tolerances and the designation string, at parity
-  on all three interfaces (`.planning/REQUIREMENTS.md`, written by `/gsd-new-milestone`).
+- None open. The next milestone is defined by `/gsd-new-milestone`; candidates are in `docs/ideas/` and the filed debt (`docs/tech_debt/INDEX.md`).
 - Carried, not active: CI green or its failure classified on Ubuntu 26 `ubuntu-latest`.
   Phase 29 closed on its close condition 2026-10-22 (trigger not fired; every read through
   run 39795628539 on `ubuntu-24.04`). REQ-ubuntu26-classified-on-migration sits in
@@ -1032,4 +1033,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-01 after Phase 34*
+*Last updated: 2026-11-03 after v0.7 milestone*

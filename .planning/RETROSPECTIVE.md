@@ -394,6 +394,41 @@
 
 ---
 
+## Milestone: v0.7 — Splined Shaft
+
+**Shipped:** 2026-11-03
+**Phases:** 6 (30–34 and the inserted 34.1) | **Plans:** 49
+
+### What Was Built
+- A second part type, the external DIN 5480 involute shaft with a plain shank, on the web page, the API and the CLI, proved against an independent oracle and against itself by a parity test.
+- The fit tables read from a private git-ignored file, transcribed twice and diffed to zero; tooth-thickness window, M_Re limits and the maximum-material solid with them, `null` and warned without them.
+- `make gear.unchanged`: every existing gear link provably builds the same part, checked at every phase close, then bounded and pinned to an annotated tag in 34.1.
+
+### What Worked
+- The gear-safety guard went in first (Phase 30), so every later phase added shaft code under a check instead of hoping.
+- Blind double reads of the standard's tables, settled by the human, kept every licensed value out of the repository.
+- A milestone audit before the close found the table loader's gaps, and one inserted phase (34.1) closed them with each refusal seen red.
+
+### What Was Inefficient
+- Verification reports of Phases 30–34 all went stale because later phases edited shared files; the close needed an override instead of five re-verifications.
+- A plan checkpoint (34-04's real-file load) waited on the human for a command the agent could have run; the agent opened no private file either way.
+- Gap G-33-2 was closed by plan 33-10 but its UAT file stayed `diagnosed` until the close audit caught it.
+
+### Patterns Established
+- A decision is logged as one `Lxx` per phase (L46–L51), holding the reasoning and no licensed value.
+- A bound on loaded data is measured against the real file with aggregates only, then set with headroom (k = 60 against a measured maximum of 53.33).
+- A scratch-repo red for each guard on git state (lightweight tag, moved tag, hung origin).
+
+### Key Lessons
+1. Close a gap's UAT artifact in the same change that closes the gap, or the close audit lists it as open.
+2. A cap that cannot catch a given slip says so in the decision log (a 10x slip under k = 60 still loads; the two-reads diff stays the main guard).
+3. Phase gate cost grew with the suite (213.54 s to 283.77 s) and now has 15 s of margin under the 300 s bar; the next milestone should read it before adding tests.
+
+### Cost Observations
+- Model mix: not recorded.
+- Sessions: not recorded.
+- Notable: `make verify` real time at the close 284.91 s against L43's 300 s bar.
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -406,6 +441,7 @@
 | v0.5 | n/a | 5 | A headless browser test in the gate with the 44 links' requests pinned first; UI behaviour as schema metadata proved in Python and JS; Codex cross-review finding behaviour bugs; a measurement rule pre-registered alone, its precondition unmet and overridden on the record; a recurring loop promoted to a project skill |
 | v0.6 | n/a | 4 | Debt sweep with every open review finding dispositioned by the human; a date-gated last phase with a pre-agreed close condition; stale phases re-verified at the close for the first verified closeout |
 | v0.3 | n/a | 4 | Debt-only milestone scoped from the ledger and the v0.2 audit; pre-registered measurement campaigns; UAT gap-closure plan (14-04); a draft PR mid-phase to read CI (15-05); retroactive Nyquist on archived phases |
+| v0.7 | n/a | 6 (1 inserted) | Gear-safety guard first, shaft code under it; blind double reads of a licensed standard into a private file; a milestone audit followed by an inserted debt phase |
 
 ### Cumulative Quality
 
@@ -417,6 +453,7 @@
 | v0.5 | 1,318 | 97.99 % against `fail_under = 96`; `make verify` bar re-set to 300 s (L43), readings 195.23 s / 179.21 s | 0 — 31 → 31 pins; `playwright` pinned in `[dev]` only |
 | v0.6 | 1,348 | not read at the close; `make verify` 236.23 s at the close re-verification against the 300 s bar | 0 — `requirements.txt` 39 → 39 lines |
 | v0.3 | 929 | 97.24 % against `fail_under = 96` (L34) | 0 — 31 → 31 pins; `pytest-xdist`, `pytest-cov` in `[dev]` only |
+| v0.7 | 2,964 | 98.72 % against `fail_under = 96`; `make verify` 283.77 s (real 284.91 s) against the 300 s bar | 0 — no new runtime dependency; `requirements.txt` and `pyproject.toml` unchanged since `e2299c4` in 34.1 |
 
 ### Top Lessons (Verified Across Milestones)
 
