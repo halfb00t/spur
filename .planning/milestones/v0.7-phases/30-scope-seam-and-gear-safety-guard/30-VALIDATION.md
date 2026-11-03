@@ -4,7 +4,7 @@ slug: "scope-seam-and-gear-safety-guard"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: true) (#2117)
 status: validated
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-10-23"
 ---
@@ -55,11 +55,11 @@ created: "2026-10-23"
 
 ## Wave 0 Requirements
 
-- [ ] `scripts/gear_unchanged.py` + Makefile wiring (`gear.unchanged` target, `verify.static` prerequisite)
-- [ ] `tests/test_gear_unchanged.py` — scratch repo, red/green per watched item, missing-tag path, shadow guard
-- [ ] `tests/test_seam.py` — route pin, contract-module existence guard, regex belt
-- [ ] `tests/test_hooks.py` — dry-run pin: both `verify` and `verify.fast` run the check
-- [ ] `tests/test_api.py` — 503 part-neutral text pin
+- [x] `scripts/gear_unchanged.py` + Makefile wiring (`gear.unchanged` target, `verify.static` prerequisite)
+- [x] `tests/test_gear_unchanged.py` — scratch repo, red/green per watched item, missing-tag path, shadow guard
+- [x] `tests/test_seam.py` — route pin, contract-module existence guard, regex belt
+- [x] `tests/test_hooks.py` — dry-run pin: both `verify` and `verify.fast` run the check
+- [x] `tests/test_api.py` — 503 part-neutral text pin
 
 ---
 
@@ -67,22 +67,22 @@ created: "2026-10-23"
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| L46 commit precedes the first shaft-module commit | REQ-scope-decision-logged | commit order is history, not a test | `git log --format='%h %s' --diff-filter=A -- src/spur/shaft_*.py src/spur/din5480*.py` vs the L46 commit |
-| Each guard seen red once, reds recorded | REQ-gear-unchanged-proof, REQ-shaft-routes-separate | deliberate violations are reverted, not committed | rows in `bench/RESULTS.md` `### Seen red once (Phase 30)` |
-| CI shallow checkout fetches the `v0.6` tag | REQ-gear-unchanged-proof | not testable from this host (A1) | first CI run of the phase reads green |
+| L46 commit precedes the first shaft-module commit | REQ-scope-decision-logged | commit order is history, not a test; the phase PR (#50) was squash-merged, so `main` no longer shows it. Evidence: `bench/RESULTS.md` Phase 30 close check 3, `D-20 order: L46 5d61f8e... precedes 1 placeholder commit(s)` on a non-empty list | `git log --format='%h %s' --diff-filter=A -- src/spur/shaft_*.py src/spur/din5480*.py` vs the L46 commit |
+| Each guard seen red once, reds recorded | REQ-gear-unchanged-proof, REQ-shaft-routes-separate | deliberate violations are reverted, not committed; rows present in `bench/RESULTS.md` `### Seen red once (Phase 30)` | rows in `bench/RESULTS.md` `### Seen red once (Phase 30)` |
+| CI shallow checkout fetches the `v0.6` tag | REQ-gear-unchanged-proof | not testable from this host (A1); confirmed in CI: the `main` run for PR #56 logs `gear.unchanged: ... byte-equal to v0.6` | first CI run of the phase reads green |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-11-03 (validate-phase 30: 0 gaps; 192 phase tests green in 28 s, `make gear.unchanged` and `make lint-imports` green)
 
 ## Validation Audit 2026-10-23
 
