@@ -1,0 +1,48 @@
+# 34.1-02 bounds: depth-1 tag fetch from the public origin, measured 2026-11-02T02:53:56Z
+host: 18 CPUs, arm64, 64.0 GiB RAM
+git: git version 2.56.0
+HEAD: 10773d0
+load before: { 9.43 7.34 6.19 }
+--- fetch reading 1
+real 3.86
+user 0.36
+sys 0.07
+exit=0
+--- fetch reading 2
+real 5.61
+user 0.35
+sys 0.07
+exit=0
+--- fetch reading 3
+real 3.62
+user 0.34
+sys 0.06
+exit=0
+load after: { 8.90 7.33 6.20 }
+
+# Task 1 measurement continued at HEAD aa29856, 2026-11-02T10:21:26Z: make verify.static before any edit
+load before: { 3.54 6.77 6.43 }
+--- make verify.static
+real 0.74
+user 0.62
+sys 0.17
+exit=0
+load after: { 3.45 6.64 6.39 }
+
+# slowest fetch reading: 5.61 s (reading 2), at or under half of GIT_TIMEOUT_S = 20 (10 s)
+
+# Task 2: schema_of readings, 2026-11-02T10:23:07Z, HEAD 904ced5
+load before: { 5.01 6.27 6.26 }
+--- probe: v0.6 archive
+reading 1: 0.21 s (8723 bytes)
+reading 2: 0.22 s (8723 bytes)
+reading 3: 0.22 s (8723 bytes)
+reading 4: 0.21 s (8723 bytes)
+reading 5: 0.22 s (8723 bytes)
+--- probe: current src
+reading 1: 0.21 s (8723 bytes)
+reading 2: 0.21 s (8723 bytes)
+reading 3: 0.22 s (8723 bytes)
+reading 4: 0.21 s (8723 bytes)
+reading 5: 0.21 s (8723 bytes)
+load after: { 5.01 6.25 6.26 }

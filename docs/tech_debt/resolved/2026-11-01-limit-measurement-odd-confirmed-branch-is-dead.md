@@ -1,8 +1,9 @@
 # `limit_measurement`'s `odd_confirmed` parameter and its odd-count branch are unreachable in production
 
 Severity: must
-Status: active
+Status: resolved
 Date: 2026-11-01
+Resolved in: 8e0885f refactor(34.1-03): drop limit_measurement's unreachable odd-count branch (D-09)
 Source: Phase 34 code review (34-REVIEW.md IN-01)
 Related files:
 - src/spur/shaft_calc.py:380-406
@@ -15,3 +16,6 @@ Related files:
 
 ## Next step
 Drop the parameter and the branch (the limit is only computed for a listed size), or keep it and correct the other debt note to say the line is dead rather than untested. Revisit when `limit_measurement` is next edited.
+
+## Resolution
+The branch and the `odd_confirmed` parameter were deleted, not tested (D-09): `limit_measurement` is asked for a limit only for a size the tables list, where D-11 confirms the odd formula at the tabulated pin, and `pin_measurement` keeps its own gate for the nominal reading. Both `derive_shaft` calls dropped the keyword; every printed number is unchanged (the shaft and parity tests ran unedited). The loader-refusals item's line 405 was therefore dead, not untested.

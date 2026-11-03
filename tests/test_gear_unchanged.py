@@ -6,6 +6,8 @@ reads `src/schema.json`, so `git archive` and the tar extraction run for real wh
 tree is needed; the two tests at the end drive the real probe. What is pinned is each way
 the check can lie: a watched path that moved, a schema that moved by one byte or by key
 order, a baseline that could not be read, and a probe that compared a tree with itself.
+The scratch repository's tag commit stands in for `BASELINE_SHA`, which names this
+repository's v0.6.
 """
 
 from __future__ import annotations
@@ -13,11 +15,13 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from scripts import gear_unchanged
 from scripts.gear_unchanged import REPO_ROOT, check, schema_of
 from spur.app import app
 
@@ -61,20 +65,37 @@ def _work_repo(tmp_path: Path) -> Path:
     return work
 
 
+def _ext_origin(tmp_path: Path, command: str) -> Path:
+    """A lone repository, one empty commit, whose origin is `ext::<command>`. Git's ext
+    transport runs the command as the remote, so a fetch needs no network and the command
+    decides what the remote does: hang, or print what git's child sees."""
+    lone = tmp_path / "lone"
+    lone.mkdir()
+    _git(lone, "init", "-q", "-b", "main")
+    _git(lone, "commit", "-q", "--allow-empty", "-m", "no tag here")
+    _git(lone, "config", "protocol.ext.allow", "always")
+    _git(lone, "remote", "add", "origin", f"ext::{command}")
+    return lone
+
+
 def _schema_json(src: Path) -> bytes:
     return (src / "schema.json").read_bytes()
 
 
-def _refused(work: Path, pattern: str) -> None:
+def _tagged(repo: Path) -> str:
+    return _git(repo, "rev-parse", "v0.6^{commit}")
+
+
+def _refused(work: Path, pattern: str, baseline: str | None = None) -> None:
     with pytest.raises(SystemExit, match=pattern) as refused:
-        check(work, _schema_json)
+        check(work, _schema_json, baseline=baseline or _tagged(work))
     assert str(refused.value.code).startswith("gear.unchanged: ")
 
 
 def test_an_unchanged_tree_reads_green_and_names_what_it_compared(tmp_path: Path) -> None:
     work = _work_repo(tmp_path)
 
-    line = check(work, _schema_json)
+    line = check(work, _schema_json, baseline=_tagged(work))
 
     assert line.endswith("are byte-equal to v0.6")
     assert f"({len(SCHEMA)} bytes)" in line
@@ -130,7 +151,7 @@ def test_an_empty_schema_is_never_a_pass(tmp_path: Path) -> None:
     work = _work_repo(tmp_path)
 
     with pytest.raises(SystemExit, match="read empty"):
-        check(work, lambda _src: b"")
+        check(work, lambda _src: b"", baseline=_tagged(work))
 
 
 def test_a_missing_tag_with_an_unreachable_origin_fails_naming_the_cause(
@@ -159,7 +180,7 @@ def test_a_missing_tag_is_fetched_without_making_a_full_clone_shallow(tmp_path: 
     _git(tmp_path, "clone", "-q", "--no-tags", str(work), str(clone))
     assert _git(clone, "tag") == ""
 
-    line = check(clone, _schema_json)
+    line = check(clone, _schema_json, baseline=_tagged(work))
 
     assert line.endswith("are byte-equal to v0.6")
     assert _git(clone, "rev-parse", "--verify", "v0.6^{commit}")
@@ -174,7 +195,7 @@ def test_a_shallow_clone_fetches_the_tag_at_depth_one(tmp_path: Path) -> None:
     _git(tmp_path, "clone", "-q", "--depth=1", "--no-tags", f"file://{work}", str(clone))
     assert _git(clone, "rev-parse", "--is-shallow-repository") == "true"
 
-    line = check(clone, _schema_json)
+    line = check(clone, _schema_json, baseline=_tagged(work))
 
     assert line.endswith("are byte-equal to v0.6")
     assert _git(clone, "rev-parse", "--is-shallow-repository") == "true"
@@ -188,7 +209,7 @@ def test_the_check_leaves_the_repository_as_it_found_it(tmp_path: Path) -> None:
     index_before = (work / ".git/index").read_bytes()
     status_before = _git(work, "status", "--porcelain")
 
-    check(work, _schema_json)
+    check(work, _schema_json, baseline=_tagged(work))
 
     assert (work / ".git/index").read_bytes() == index_before
     assert _git(work, "status", "--porcelain") == status_before
@@ -213,3 +234,82 @@ def test_the_probe_reads_the_bytes_the_app_serves() -> None:
 
     assert probed
     assert probed == served.content
+
+
+def test_a_fetch_that_hangs_fails_inside_its_bound_naming_the_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """D-07: an origin that never answers must end the check with a sentence, not hold the
+    pre-commit hook until the SDK kills the commit."""
+    lone = _ext_origin(tmp_path, "sleep 10")
+    monkeypatch.setattr(gear_unchanged, "GIT_TIMEOUT_S", 1)
+
+    started = time.monotonic()
+    with pytest.raises(SystemExit) as refused:
+        check(lone, _schema_json)
+    elapsed = time.monotonic() - started
+
+    assert refused.value.code == "gear.unchanged: git fetch origin tag v0.6 timed out after 1 s"
+    assert elapsed < 5
+
+
+def test_git_runs_with_terminal_prompts_off(tmp_path: Path) -> None:
+    """`_clean_git_env` removed every GIT_* variable, so only the script can have set
+    GIT_TERMINAL_PROMPT. The remote here is a shell that reports what its environment holds.
+    This proves the variable reaches git's children, which is all it can prove: an ssh
+    prompt that opens the terminal itself is ended by the bound, not by this."""
+    lone = _ext_origin(tmp_path, "sh -c echo% prompt=$GIT_TERMINAL_PROMPT>&2")
+
+    with pytest.raises(SystemExit) as refused:
+        check(lone, _schema_json)
+
+    assert "could not be fetched from origin: prompt=0" in str(refused.value.code)
+
+
+def test_a_probe_that_hangs_fails_inside_its_bound(monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-07: a probe that never answers ends the check with a sentence naming its tree."""
+    monkeypatch.setattr(gear_unchanged, "PROBE", "import time; time.sleep(10)")
+    monkeypatch.setattr(gear_unchanged, "PROBE_TIMEOUT_S", 1)
+
+    started = time.monotonic()
+    with pytest.raises(SystemExit) as refused:
+        schema_of(REPO_ROOT / "src")
+    elapsed = time.monotonic() - started
+
+    code = str(refused.value.code)
+    assert code.startswith("gear.unchanged: the probe for ")
+    assert code.endswith("timed out after 1 s")
+    assert elapsed < 5
+
+
+def test_a_lightweight_v0_6_tag_is_refused(tmp_path: Path) -> None:
+    """`git tag v0.6` on any commit would compare that commit with itself and read green
+    (30-REVIEW IN-02); only an annotated tag is a baseline someone chose."""
+    work = _work_repo(tmp_path)
+    _git(work, "tag", "-d", "v0.6")
+    _git(work, "tag", "v0.6")
+
+    _refused(work, "not an annotated tag")
+
+
+def test_a_moved_annotated_tag_is_refused(tmp_path: Path) -> None:
+    """An annotated tag force-moved to a later commit is still annotated; only the peeled
+    sha tells it from the baseline."""
+    work = _work_repo(tmp_path)
+    baseline = _tagged(work)
+    _git(work, "commit", "-q", "--allow-empty", "-m", "later")
+    _git(work, "tag", "-f", "-a", "v0.6", "-m", "moved")
+
+    _refused(work, "peels to", baseline)
+
+
+def test_a_branch_named_v0_6_is_not_taken_for_the_tag(tmp_path: Path) -> None:
+    """The bare name `v0.6` would resolve to the branch, skip the fetch and be refused with
+    the wrong sentence (not annotated). The tag is read as refs/tags/v0.6, so the check
+    goes to the fetch, which a repository with no origin cannot do."""
+    work = _work_repo(tmp_path)
+    baseline = _tagged(work)
+    _git(work, "tag", "-d", "v0.6")
+    _git(work, "branch", "v0.6")
+
+    _refused(work, "is not local and could not be fetched", baseline)

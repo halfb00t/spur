@@ -1,0 +1,30 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________________ test_a_lightweight_v0_6_tag_is_refused ____________________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2632/test_a_lightweight_v0_6_tag_is0')
+
+    def test_a_lightweight_v0_6_tag_is_refused(tmp_path: Path) -> None:
+        """`git tag v0.6` on any commit would compare that commit with itself and read green
+        (30-REVIEW IN-02); only an annotated tag is a baseline someone chose."""
+        work = _work_repo(tmp_path)
+        _git(work, "tag", "-d", "v0.6")
+        _git(work, "tag", "v0.6")
+    
+>       _refused(work, "not an annotated tag")
+
+tests/test_gear_unchanged.py:292: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+work = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2632/test_a_lightweight_v0_6_tag_is0/work')
+pattern = 'not an annotated tag', baseline = None
+
+    def _refused(work: Path, pattern: str, baseline: str | None = None) -> None:
+>       with pytest.raises(SystemExit, match=pattern) as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SystemExit
+
+tests/test_gear_unchanged.py:90: Failed
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_a_lightweight_v0_6_tag_is_refused
+1 failed in 0.38s

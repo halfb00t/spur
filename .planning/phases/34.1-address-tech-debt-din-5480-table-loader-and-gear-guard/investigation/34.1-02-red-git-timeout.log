@@ -1,0 +1,33 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_a_fetch_that_hangs_fails_inside_its_bound_naming_the_command _______
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2622/test_a_fetch_that_hangs_fails_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1085afc80>
+
+    def test_a_fetch_that_hangs_fails_inside_its_bound_naming_the_command(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """D-07: an origin that never answers must end the check with a sentence, not hold the
+        pre-commit hook until the SDK kills the commit."""
+        lone = _ext_origin(tmp_path, "sleep 10")
+        monkeypatch.setattr(gear_unchanged, "GIT_TIMEOUT_S", 1)
+    
+        started = time.monotonic()
+        with pytest.raises(SystemExit) as refused:
+            check(lone, _schema_json)
+        elapsed = time.monotonic() - started
+    
+>       assert refused.value.code == "gear.unchanged: git fetch origin tag v0.6 timed out after 1 s"
+E       AssertionError: assert 'gear.unchang...itory exists.' == 'gear.unchang...out after 1 s'
+E         
+E         - gear.unchanged: git fetch origin tag v0.6 timed out after 1 s
+E         + gear.unchanged: tag v0.6 is not local and could not be fetched from origin: fatal: Could not read from remote repository.
+E         + 
+E         + Please make sure you have the correct access rights
+E         + and the repository exists.
+
+tests/test_gear_unchanged.py:246: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_a_fetch_that_hangs_fails_inside_its_bound_naming_the_command
+1 failed in 10.35s

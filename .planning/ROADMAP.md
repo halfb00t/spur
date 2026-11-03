@@ -177,6 +177,8 @@ baseline, the gear `/api/schema` response byte-equal.
       gitignored file, transcribed twice and checked; tooth-thickness windows, M_Re limits and the
       maximum-material solid with them, `null` and warned without them; blocked until the copy's
       local path is supplied
+- [x] **Phase 34.1: Address tech debt: DIN 5480 table loader and gear guard** (INSERTED) - The (completed 2026-11-02)
+      audit's must debt on the tables loader and the gear guard, closed before the milestone closes
 
 ## Phase Details
 
@@ -559,6 +561,30 @@ Plans:
 **Wave 8** *(blocked on Wave 7 completion)*
 - [x] 34-17-PLAN.md — the gate delta against the baseline and the 300 s bar, L50, the phase close checks with the leak review, the seen-red table
 
+### Phase 34.1: Address tech debt: DIN 5480 table loader and gear guard (INSERTED)
+
+**Goal:** Close the v0.7 audit's must debt before the milestone closes (`.planning/v0.7-MILESTONE-AUDIT.md`):
+the DIN 5480 tables loader (oversized `A_s` cell, Table 7 partly present, loader refusals no test
+reaches) and the `gear.unchanged` guard (no timeout on git or the probe, lightweight or moved
+`v0.6` tag accepted). Scope is set at discuss-phase.
+**Requirements**: TBD
+**Depends on:** Phase 34
+**Plans:** 5/5 plans complete in 4 waves (two human checkpoints: the sizes ruling and the D-10 reply at 34.1-01, the real-file load at 34.1-04; k is fixed at 60 by D-01)
+
+Plans:
+Wave 1
+- [x] 34.1-01-PLAN.md — every loader refusal reached by a case, each seen red; the human rules on the sizes edge and confirms the D-10 reply, k taken from D-01 (D-01, D-05, D-10, D-11)
+- [x] 34.1-02-PLAN.md — gear.unchanged: bounded git and probe, prompts off, v0.6 pinned annotated at 792b45c (D-06..D-08)
+
+Wave 2
+- [x] 34.1-03-PLAN.md — the dead odd_confirmed branch deleted, the flanks return tested (D-09, D-11)
+
+Wave 3
+- [x] 34.1-04-PLAN.md — Table 7 whole or absent, each A_s cell capped at k = 60 per mm of module, the human loads the real file (D-01..D-05)
+
+Wave 4
+- [x] 34.1-05-PLAN.md — the gate run and its delta, L51, the close checks and the seen-red table (D-12, REQ-gate-cost-recorded)
+
 ## Process Notes (carried forward)
 
 - Phases run on `gsd/phase-NN-*` branches cut from `origin/main` and land only through
@@ -596,3 +622,4 @@ Plans:
 | 32. The Shaft Solid | v0.7 | 6/6 | Complete    | 2026-10-27 |
 | 33. Interfaces and Parity | v0.7 | 10/10 | Complete    | 2026-10-29 |
 | 34. Fit Tables and Tolerance Window | v0.7 | 17/17 | Complete    | 2026-11-01 |
+| 34.1. Address tech debt: DIN 5480 table loader and gear guard | v0.7 | 5/5 | Complete    | 2026-11-02 |

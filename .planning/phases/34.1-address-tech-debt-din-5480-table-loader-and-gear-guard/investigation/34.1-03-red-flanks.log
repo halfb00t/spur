@@ -1,0 +1,40 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_a_pin_that_misses_the_flanks_at_a_limit_thickness_is_null_with_its_own_sentence _
+
+    def test_a_pin_that_misses_the_flanks_at_a_limit_thickness_is_null_with_its_own_sentence() -> None:
+        """A direct call, as the analog's: a pin that touches at the nominal thickness can miss the
+        flanks altogether at a thinner limit. 0.1 mm is a pin `measure_over_pins` answers None for
+        on this shaft at s = 2.577014 (checked at plan time), and that is a different sentence from
+        the window's: there is no contact diameter to quote."""
+        p = ShaftParams()
+>       reading = shaft_calc.limit_measurement(p, 0.1, 2.577014, "min")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_shaft_calc.py:642: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+p = ShaftParams(reference_d=25.0, module=1.25, teeth=18, fit='8f', splined_length=30.0, end_chamfer=1.0, shank_d=25.0, shank_length=20.0)
+pin_d = 0.1, s = 2.577014, which = 'min', form_d_max = None
+
+    def limit_measurement(p: ShaftParams, pin_d: float, s: float, which: Literal["max", "min"],
+                          *, form_d_max: float | None = None) -> LimitReading:
+        """M_Re for `pin_d` at the tooth thickness `s`, unrounded, or nothing and the reason (L08).
+    
+        Each limit goes through the pin-contact window on its own: a thinner tooth moves the
+        contact, by up to about 0.08*m per 0.05*m of thickness, so a pin that sits inside the
+        window at the nominal thickness can leave it at s_min, and that limit alone is then null
+        (34-RESEARCH Pitfall 6; D-12 calls it a finding to surface, not something to widen).
+        There is no odd-count gate here: `derive_shaft` asks for a limit only for a size the tables
+        list, where D-11 confirms the odd formula at the tabulated pin. The nominal reading's gate
+        stays in `pin_measurement`.
+        """
+        result = din5480.measure_over_pins(p.module, p.teeth, s, pin_d)
+>       measure, contact = result
+        ^^^^^^^^^^^^^^^^
+E       TypeError: cannot unpack non-iterable NoneType object
+
+src/spur/shaft_calc.py:396: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_shaft_calc.py::test_a_pin_that_misses_the_flanks_at_a_limit_thickness_is_null_with_its_own_sentence
+1 failed in 0.03s

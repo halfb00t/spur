@@ -205,7 +205,10 @@ class PinReading(NamedTuple):
 
 
 class LimitReading(NamedTuple):
-    """One M_Re limit, or None and the sentence that says why (empty for the odd-count gate)."""
+    """One M_Re limit, or None and the sentence that says why.
+
+    `LimitReading(None, ())` is a limit `derive_shaft` did not ask for; its tier warning says why.
+    """
 
     measure: float | None
     warnings: tuple[str, ...]
@@ -378,16 +381,16 @@ def pin_measurement(p: ShaftParams, pin_d: float, *, form_d_max: float | None = 
 
 
 def limit_measurement(p: ShaftParams, pin_d: float, s: float, which: Literal["max", "min"],
-                      *, form_d_max: float | None = None,
-                      odd_confirmed: bool = False) -> LimitReading:
+                      *, form_d_max: float | None = None) -> LimitReading:
     """M_Re for `pin_d` at the tooth thickness `s`, unrounded, or nothing and the reason (L08).
 
     Each limit goes through the pin-contact window on its own: a thinner tooth moves the
     contact, by up to about 0.08*m per 0.05*m of thickness, so a pin that sits inside the
     window at the nominal thickness can leave it at s_min, and that limit alone is then null
-    (34-RESEARCH Pitfall 6; D-12 calls it a finding to surface, not something to widen). The
-    odd-count gate is the nominal reading's and is not repeated as a sentence; `odd_confirmed`
-    lifts it, as for `pin_measurement` (D-11).
+    (34-RESEARCH Pitfall 6; D-12 calls it a finding to surface, not something to widen).
+    There is no odd-count gate here: `derive_shaft` asks for a limit only for a size the tables
+    list, where D-11 confirms the odd formula at the tabulated pin. The nominal reading's gate
+    stays in `pin_measurement`.
     """
     result = din5480.measure_over_pins(p.module, p.teeth, s, pin_d)
     if result is None:
@@ -401,8 +404,6 @@ def limit_measurement(p: ShaftParams, pin_d: float, s: float, which: Literal["ma
             f"M_Re {which} is not given: a pin of {pin_d:g} mm at the tooth thickness "
             f"s_{which} touches at a diameter of {contact:.3f} mm, outside the window "
             f"{low:.3f} to {high:.3f} mm in which the flank is measured.",))
-    if p.teeth % 2 and not odd_confirmed:
-        return LimitReading(None, ())
     return LimitReading(measure, ())
 
 
@@ -461,9 +462,9 @@ def derive_shaft(p: ShaftParams) -> ShaftDimensions:
             s1, tolerance.a_s_um, tolerance.t_g_um, tolerance.t_eff_um)
         if reading.pin_d is not None:
             limit_max = limit_measurement(p, reading.pin_d, s_max, "max",
-                                          form_d_max=row.form_d_max_mm, odd_confirmed=True)
+                                          form_d_max=row.form_d_max_mm)
             limit_min = limit_measurement(p, reading.pin_d, s_min, "min",
-                                          form_d_max=row.form_d_max_mm, odd_confirmed=True)
+                                          form_d_max=row.form_d_max_mm)
     if reading.measure is None:
         measure_warnings: tuple[str, ...] = ()
     elif limit_max.measure is None and limit_min.measure is None:

@@ -2,17 +2,17 @@
 gsd_state_version: "1.0"
 milestone: v0.7
 milestone_name: Splined Shaft
-current_phase: 34
-status: "Phase 34 shipped — PR #55"
-stopped_at: Phase 34 complete — all phases complete
-last_updated: "2026-11-01T05:34:04.776Z"
-last_activity: 2026-11-01
-state_head: 37739b0fd12dd87b60e83a288c7166ce9171eb8b
+current_phase: "34.1"
+status: "Phase 34.1 shipped — PR #56"
+stopped_at: Phase 34.1 complete — all phases complete
+last_updated: "2026-11-03T12:29:00.249Z"
+last_activity: 2026-11-03
+state_head: e1113f7d6f2fa289799e02998e971f89858955b7
 progress:
-  total_phases: 5
-  completed_phases: 11
-  total_plans: 44
-  completed_plans: 44
+  total_phases: 6
+  completed_phases: 12
+  total_plans: 49
+  completed_plans: 49
   percent: 100
 ---
 
@@ -24,14 +24,14 @@ See: .planning/PROJECT.md (updated 2026-10-29)
 
 **Core value:** A number this tool prints is a number someone will cut metal to — every
 dimension is computed honestly or reported as a warning, never guessed (L08).
-**Current focus:** Phase 34 — Fit Tables and Tolerance Window
+**Current focus:** Phase 34.1 — Address tech debt: DIN 5480 table loader and gear guard
 
 ## Current Position
 
-Phase: 34
+Phase: 34.1
 Plan: Not started
-Status: Phase 34 shipped — PR #55
-Last activity: 2026-11-01
+Status: Phase 34.1 shipped — PR #56
+Last activity: 2026-11-03
 
 ## Performance Metrics
 
@@ -81,6 +81,7 @@ Last activity: 2026-11-01
 | 32 | 6 | - | - |
 | 33 | 10 | - | - |
 | 34 | 17 | - | - |
+| 34.1 | 5 | - | - |
 
 **Recent Trend:** Phase 2's five plans took ~3h50m of executor time; 02-04 (~2h)
 dominated because it waited on real benchmark runs, not on code. Phase 3's three plans
@@ -314,6 +315,9 @@ wall time 81.6 s → 101.4 s across the phase; code review 0 critical / 1 warnin
 | Phase 34 P15 | about 1 h | 3 tasks | 5 files |
 | Phase 34 P16 | 40min | 2 tasks | 8 files |
 | Phase 34 P17 | 50min | 3 tasks | 7 files |
+| Phase 34.1 P02 | 17 min | 3 tasks | 13 files |
+| Phase 34.1 P03 | 11 min | 3 tasks | 15 files |
+| Phase 34.1 P05 | 18 min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -637,6 +641,10 @@ pending; the next milestone starts this list fresh.
 - [Phase 34]: 34-15: F1 accepted as printed - the 11 shift-range-refused sizes keep the 422 under the existing debt item; F2 accepted
 - [Phase 34]: 34-16: range edge reads x < d_B <= y (edge-upper), confirmed by the human against page 24; pinned on both sides of every printed edge of the real file by make tables.test
 - [Phase 34]: L50 logs Phase 34: the private table file, the two reads, the approved anchors, the window and limits by tier, the solid at maximum material, the range edge (edge-upper) and the refusal of every subcommand on a broken file
+- [Phase 34.1]: 34.1-02: GIT_TIMEOUT_S = 20 s (slowest fetch 5.61 s) and PROBE_TIMEOUT_S = 60 s (slowest probe 0.22 s); v0.6 must be annotated and peel to BASELINE_SHA 792b45c, read as refs/tags/v0.6
+- [Phase 34.1]: 34.1-03: limit_measurement's odd-count branch deleted, not tested (D-09)
+- [Phase 34.1]: 34.1-03: load_file keeps both cap checks (stat and bounded read), each with a test that fails without it (D-10)
+- [Phase 34.1]: L51 records Phase 34.1's decisions D-01..D-12 and D-10a; the closing gate reads 2964 passed, real 284.91, 15.09 s under L43's bar
 
 ### Pending Todos
 
@@ -954,6 +962,7 @@ None yet.
 - Phase 29 closed (trigger not fired), 2026-10-22: no ubuntu-latest run named Ubuntu 26.04 by the milestone close (last read 2026-10-22T13:13Z, bench/RESULTS.md); the Ubuntu 26 item stays active with its trigger restated; REQ-ubuntu26-classified-on-migration moved to Future Requirements with the human.
 - Milestone v0.6 closed 2026-10-23: audit `tech_debt` (16/16 requirements, 11/12 integration, 5/6 flows), verified closeout; archived to `milestones/v0.6-*`.
 - v0.7 roadmap created: Phases 30–34 (Scope, Seam and Gear-Safety Guard; Shaft Maths, Parameters and Designation; The Shaft Solid; Interfaces and Parity; Fit Tables and Tolerance Window) — 24/24 v0.7 requirements mapped, 0 orphans, numbering continues from Phase 29; Phase 31 needs anchor rows from the human's DIN 5480 copy and Phase 34 is blocked on the copy's local path; REQ-gate-cost-recorded is cross-cutting and closes at Phase 34; REQ-wr02-fixed (Phase 33) retires the WR-02 debt item in its fixing commit
+- Phase 34.1 inserted after Phase 34: Address tech debt: DIN 5480 table loader and gear guard (v0.7 audit, option B) (URGENT)
 
 ## Deferred Items
 
@@ -963,8 +972,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-31T17:01:41.010Z
-Stopped at: Phase 34 complete — all phases complete
+Last session: 2026-11-02T17:02:19.584Z
+Stopped at: Phase 34.1 complete — all phases complete
 Resume file: None
 
 ## Operator Next Steps

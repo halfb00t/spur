@@ -1,0 +1,11 @@
+utc_start: 2026-11-02T16:49:20Z
+loadavg_start: { 6.90 6.08 5.34 }
+head: 24ac95a
+precondition: git status --porcelain -- src tests bench scripts pyproject.toml Makefile requirements.txt (printed nothing), exit 0
+sibling_procs_over_50pct_cpu_naming_screw: 0
+host: 18 CPUs, arm64, 64.0 GiB RAM
+utc_end: 2026-11-02T16:54:19Z
+loadavg_end: { 4.70 9.76 7.92 }
+sibling_procs_over_50pct_cpu_naming_screw_end: 0
+make_exit: 0
+runs: 1, discarded: 0

@@ -1,0 +1,27 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_a_file_that_grew_past_the_cap_after_the_stat_refuses ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109e51d90>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2594/test_a_file_that_grew_past_the0')
+
+    def test_a_file_that_grew_past_the_cap_after_the_stat_refuses(
+            monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """A file that grows between the stat and the read is a race, so the read is injected.
+        The stat-time cap has its own test, `test_the_file_size_cap_is_exact`; that the cap is
+        checked before the read rather than while reading is the open nice item (D-10)."""
+        path = fixture.write(tmp_path / "t.json")
+        _read_returning(monkeypatch, path, lambda: b" " * (MAX_FILE_BYTES + 1))
+        with pytest.raises(TablesError) as refused:
+            din5480_tables.load_file(path)
+>       assert str(refused.value) == f"{path}: is larger than the {MAX_FILE_BYTES} byte cap"
+E       AssertionError: assert '/private/var... json_invalid' == '/private/var...4304 byte cap'
+E         
+E         Skipping 114 identical leading characters in diff, use -v to show
+E         - 0/t.json: is larger than the 4194304 byte cap
+E         + 0/t.json: (document): json_invalid
+
+tests/test_din5480_tables.py:349: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_file_that_grew_past_the_cap_after_the_stat_refuses
+1 failed in 0.03s

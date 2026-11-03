@@ -10,13 +10,17 @@ edit of a gear-side file is proved by this check, never by reading the diff.
 Why each choice is what it is:
 
 - The baseline is the tag, read at run time; nothing is committed (D-02). A committed
-  snapshot would be a second source of truth that someone could regenerate by mistake. For
-  the same reason there is no pinned sha: the annotated tag is the one name for v0.6.
+  snapshot would be a second source of truth that someone could regenerate by mistake. The
+  tag is the one name for v0.6, but a name can be moved: `v0.6` must be an annotated tag
+  that peels to `BASELINE_SHA`, else the check refuses. A lightweight tag on HEAD, or a
+  tag force-moved there, would compare the tree with itself and read green (30-REVIEW
+  IN-02). A deliberate re-baseline edits that one constant. There is no ancestor check
+  (D-06).
 - The v0.6 tree is extracted with `git archive`, not checked out as a git worktree. This
   check runs in the pre-commit hook, where git exports GIT_INDEX_FILE, and a worktree added
   there emptied the commit in progress (30-RESEARCH Pitfall 1, scratch repo, 2026-10-23;
-  the human chose `git archive`). Every git call here is read-only (`rev-parse`, `diff`,
-  `ls-files`, `archive`, and a fetch of the one tag), with `--no-optional-locks`, so the
+  the human chose `git archive`). Every git call here is read-only (`rev-parse`, `cat-file`,
+  `diff`, `ls-files`, `archive`, and a fetch of the one tag), with `--no-optional-locks`, so the
   index is never written and no worktree is registered.
 - Each tree is probed in its own interpreter with PYTHONPATH pointing at its `src` and
   `-P`, and the probe's `spur.__file__` is asserted. The editable install appends this
@@ -35,6 +39,9 @@ Why each choice is what it is:
   at plan time). A failed fetch fails the check naming git's message. It never skips and
   never passes without comparing (L08).
 - requirements.txt is not watched; the human chose the two paths at plan time.
+- Every git call and each schema probe is bounded and reads no stdin; git also runs with
+  its terminal prompt off. Any other wait is cut by the bound, and a hang fails naming the
+  command or the probe's tree (D-07).
 
 Every failure is a SystemExit whose message starts `gear.unchanged: ` and names the cause.
 """
@@ -52,6 +59,24 @@ from collections.abc import Callable
 from pathlib import Path
 
 TAG = "v0.6"
+# v0.6's commit, `792b45c` in ROADMAP Phase 30 and 30-VERIFICATION.md (whose `git ls-remote`
+# showed the tag object `b7f217f` peeling to it). Held in full so no short prefix can
+# collide. A deliberate re-baseline edits this one line (D-06).
+BASELINE_SHA = "792b45c033c38b0fef12f85cdbba1df36adb3a69"
+# Bound on every git call, in seconds. Measured 2026-11-02 (bench/RESULTS.md, "The guard's
+# bounds, measured (34.1-02)"): each local call reads under 0.01 s; the one slow call is
+# the depth-1 tag fetch, slowest reading 5.61 s, so 20 s is more than three times it. It
+# fits L36's 30 s commit stage because `gear.unchanged` is the last step of `verify.static`,
+# which `verify.fast` runs before `test.fast` (Makefile): a fetch hung to the bound stops
+# make there, and the hook ends at about verify.static's 0.74 s reading plus 20 s. Read at
+# call time so a test can lower it.
+GIT_TIMEOUT_S = 20
+# Bound on each schema probe, in seconds. Slowest reading 0.22 s (the archived v0.6 tree,
+# always cold, 2026-11-02, same bench section), so 60 s is about 270 times a real probe and
+# only a hung one crosses it. It is longer than the git bound and not held to the hook's
+# 30 s: the SDK's 30 s kill already ends a hung commit, and `make verify` and CI, which
+# have no such kill, are what this bounds. Read at call time so a test can lower it.
+PROBE_TIMEOUT_S = 60
 WATCHED = ("tests/regression/", ".github/workflows/ci.yml")
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -71,26 +96,54 @@ sys.stdout.buffer.write(
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
-    return subprocess.run(
-        ["git", "--no-optional-locks", *args],
-        cwd=root, capture_output=True, check=False,
-    )
+    # The hook runs with a terminal attached, where git would wait on a credential prompt,
+    # and nothing here should read the hook's stdin. GIT_TERMINAL_PROMPT=0 turns off git's
+    # own terminal prompts (HTTP credentials); a wait it does not cover, an ssh passphrase
+    # or host-key question that opens the terminal itself, is ended by the bound.
+    try:
+        return subprocess.run(
+            ["git", "--no-optional-locks", *args],
+            cwd=root, capture_output=True, check=False,
+            stdin=subprocess.DEVNULL,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            timeout=GIT_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        raise SystemExit(
+            f"gear.unchanged: git {' '.join(args)} timed out after {GIT_TIMEOUT_S} s"
+        ) from None
 
 
 def _stderr(done: subprocess.CompletedProcess[bytes]) -> str:
     return done.stderr.decode(errors="replace").strip()
 
 
-def ensure_tag(root: Path) -> None:
-    if _git(root, "rev-parse", "-q", "--verify", f"{TAG}^{{commit}}").returncode == 0:
-        return
-    shallow = _git(root, "rev-parse", "--is-shallow-repository").stdout.strip() == b"true"
-    depth = ["--depth=1"] if shallow else []
-    fetched = _git(root, "fetch", *depth, "origin", "tag", TAG)
-    if fetched.returncode != 0:
+def ensure_tag(root: Path, baseline: str) -> None:
+    # The tag is read by its full ref: a branch named v0.6 would answer to the bare name,
+    # skip the fetch and be refused with the wrong sentence. `changed_paths` and
+    # `baseline_src` keep the bare name, which resolves to the tag once it is checked here.
+    ref = f"refs/tags/{TAG}"
+    if _git(root, "rev-parse", "-q", "--verify", f"{ref}^{{commit}}").returncode != 0:
+        shallow = _git(root, "rev-parse", "--is-shallow-repository").stdout.strip() == b"true"
+        depth = ["--depth=1"] if shallow else []
+        fetched = _git(root, "fetch", *depth, "origin", "tag", TAG)
+        if fetched.returncode != 0:
+            raise SystemExit(
+                f"gear.unchanged: tag {TAG} is not local and could not be fetched from "
+                f"origin: {_stderr(fetched)}"
+            )
+    kind = _git(root, "cat-file", "-t", ref).stdout.decode().strip()
+    if kind != "tag":
         raise SystemExit(
-            f"gear.unchanged: tag {TAG} is not local and could not be fetched from origin: "
-            f"{_stderr(fetched)}"
+            f"gear.unchanged: {TAG} is not an annotated tag (git cat-file -t printed "
+            f"'{kind}'); a lightweight tag can sit on any commit and make the check "
+            "compare that commit with itself"
+        )
+    peeled = _git(root, "rev-parse", f"{ref}^{{commit}}").stdout.decode().strip()
+    if peeled != baseline:
+        raise SystemExit(
+            f"gear.unchanged: {TAG} peels to {peeled}, not BASELINE_SHA {baseline}; a "
+            "deliberate re-baseline edits BASELINE_SHA in scripts/gear_unchanged.py"
         )
 
 
@@ -108,11 +161,18 @@ def changed_paths(root: Path) -> list[str]:
 
 
 def schema_of(src: Path) -> bytes:
-    done = subprocess.run(
-        [sys.executable, "-P", "-c", PROBE],
-        env={**os.environ, "PYTHONPATH": str(src)},
-        capture_output=True, check=False,
-    )
+    try:
+        done = subprocess.run(
+            [sys.executable, "-P", "-c", PROBE],
+            env={**os.environ, "PYTHONPATH": str(src)},
+            capture_output=True, check=False,
+            stdin=subprocess.DEVNULL,
+            timeout=PROBE_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        raise SystemExit(
+            f"gear.unchanged: the probe for {src} timed out after {PROBE_TIMEOUT_S} s"
+        ) from None
     if done.returncode != 0:
         tail = "\n".join(done.stderr.decode(errors="replace").strip().splitlines()[-5:])
         raise SystemExit(f"gear.unchanged: the probe for {src} failed:\n{tail}")
@@ -140,8 +200,10 @@ def baseline_src(root: Path, dest: Path) -> Path:
     return dest / "src"
 
 
-def check(root: Path, probe: Callable[[Path], bytes] = schema_of) -> str:
-    ensure_tag(root)
+def check(
+    root: Path, probe: Callable[[Path], bytes] = schema_of, *, baseline: str = BASELINE_SHA
+) -> str:
+    ensure_tag(root, baseline)
     changed = changed_paths(root)
     if changed:
         raise SystemExit(

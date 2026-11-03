@@ -1,0 +1,41 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_fit_is_none_when_an_unchecked_document_names_a_missing_tolerance_row ___
+
+    def test_fit_is_none_when_an_unchecked_document_names_a_missing_tolerance_row() -> None:
+        """A caller of `install` can hold a document that skipped `problems()`. The lookup then
+        answers None, not an IndexError or a near row (L08). `parse` refuses such a document
+        (`[row_by_column naming no row]`)."""
+        tables = Tables.model_validate_json(
+            _element("classes", 1, "row_by_column", 0, 99)(fixture.text()))
+>       assert tables.fit(1.25, 25.0, "8f") is None
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_din5480_tables.py:358: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Tables(schema_version=1, sizes=(SizeRow(provenance=Provenance(part=2, clause='9', table='12 and 13', pages=(18, 19)), ...'10.9', table='7', pages=(24,)), module_min_mm=5.0, module_max_mm=10.0, d_b_over_mm=None, d_b_upto_mm=None, column=3)))
+module = 1.25, reference_d = 25.0, fit = '8f'
+
+    def fit(self, module: float, reference_d: float, fit: str) -> FitTolerance | None:
+        """A_s, T_G, T_act and T_eff of a fit such as `8f` at this size, in micrometres.
+    
+        None when the letter or the class is not in the file, or the size has no column. `fit`
+        already matched FIT_PATTERN, so it is one or two digits and a letter.
+        """
+        deviation = next((d for d in self.deviations if d.letter == fit[-1]), None)
+        tolerance_class = next(
+            (c for c in self.classes if c.tolerance_class == int(fit[:-1])), None)
+        column = self.column_for(module, reference_d)
+        if deviation is None or tolerance_class is None or column is None:
+            return None
+        row = next((r for r in self.tolerances
+                    if r.row == tolerance_class.row_by_column[column - 1]), None)
+>       return FitTolerance(deviation.a_s_um[column - 1], row.t_g_um, row.t_act_um, row.t_eff_um)
+                                                          ^^^^^^^^^^
+E       AttributeError: 'NoneType' object has no attribute 't_g_um'
+
+src/spur/din5480_tables.py:180: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_fit_is_none_when_an_unchecked_document_names_a_missing_tolerance_row
+1 failed in 0.03s

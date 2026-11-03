@@ -1,0 +1,38 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_a_read_error_after_the_stat_refuses_naming_the_path ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1092d2960>
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2652/test_a_read_error_after_the_st0')
+
+    def test_a_read_error_after_the_stat_refuses_naming_the_path(
+            monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """The fault is injected at the open: a mode-000 file still opens as root, and
+        `make test-image` runs as root. A file that is readable at the stat and not at the open
+        is a race."""
+        path = fixture.write(tmp_path / "t.json")
+    
+        def refuse() -> AbstractContextManager[IO[bytes]]:
+            raise PermissionError(errno.EACCES, "Permission denied")
+        _open_answering(monkeypatch, path, refuse)
+        with pytest.raises(TablesError) as refused:
+>           din5480_tables.load_file(path)
+
+tests/test_din5480_tables.py:357: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/spur/din5480_tables.py:359: in load_file
+    with path.open("rb") as f:
+         ^^^^^^^^^^^^^^^
+tests/test_din5480_tables.py:327: in open_
+    return answer() if self == path else original(self, mode)
+           ^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def refuse() -> AbstractContextManager[IO[bytes]]:
+>       raise PermissionError(errno.EACCES, "Permission denied")
+E       PermissionError: [Errno 13] Permission denied
+
+tests/test_din5480_tables.py:354: PermissionError
+=========================== short test summary info ============================
+FAILED tests/test_din5480_tables.py::test_a_read_error_after_the_stat_refuses_naming_the_path
+1 failed in 0.03s

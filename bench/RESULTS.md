@@ -7801,3 +7801,136 @@ Each row is a deliberate break of a guard that this phase adds, run once to see 
 | 34-16 | `test_a_tabulated_size_on_an_edge_...` | the same flip | passes under the flip, by design: it pins the exact float key and that every tabulated size has a column, whichever way the edge reads (log `34-16-red-edge.log`) | restored |
 
 Every row is copied from the `## Seen red` section of its plan's SUMMARY, plan order, with the log that holds the run; the 34-02 rows are 14 table rows for 4 deliberate breaks (the checker disabled, each of the two ignore lines removed, and a tracked copy of the synthetic document). Plans 34-01 and 34-08 state that they add no guard test or step, and 34-09 to 34-14 (the reads, the settlement and the assembly) have no `## Seen red` section: the reads are held by `make tables.diff` and the real file by 34-16's rows. Not seen red, as the SUMMARYs say: 34-03's parser tests other than the diff, 34-04's `test_a_limit_outside_the_contact_window_is_null_with_its_own_sentence_and_the_other_prints`, `test_a_size_is_on_the_tables_only_by_an_exact_key`, `test_an_iso_style_fit_alias_is_still_refused` and `test_no_warning_carries_the_table_files_path`, 34-06's `test_an_odd_tooth_count_the_tables_do_not_list_stays_null_with_its_sentence` and the renamed off-table odd-count test, and 34-07's tier-3, off-table, no-file and name tests; each pins behaviour the code already had before the test was written, and none is claimed red here.
+
+## Tech debt: the table loader and the gear guard (Phase 34.1)
+
+This section holds what Phase 34.1 measured: the bounds `scripts/gear_unchanged.py` puts on its subprocesses (34.1-02).
+
+### The guard's bounds, measured (34.1-02)
+
+Source: `.planning/phases/34.1-address-tech-debt-din-5480-table-loader-and-gear-guard/investigation/34.1-02-bounds.log`. Host: `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`), git 2.56.0. The three fetch readings were taken at `HEAD` `10773d0` (2026-11-02T02:53:56Z), the `make verify.static` reading at `aa29856` (2026-11-02T10:21:26Z), the ten probe readings at `904ced5` (2026-11-02T10:23:07Z), each before the change that the reading sets. The 1-minute load read `9.43` and `8.90` around the fetches, `3.54` and `3.45` around `verify.static`, `5.01` and `5.01` around the probes (`sysctl -n vm.loadavg`), so none is an idle-host reading under Phase 25's rule, and each figure is one reading on this host. Every local git call (`rev-parse`, `diff`, `ls-files`, `archive`, `cat-file`) reads under 0.01 s and is not tabled.
+
+| Step | Real | Notes |
+|---|---|---|
+| depth-1 fetch of `v0.6` from `https://github.com/halfb00t/spur.git`, reading 1 | 3.86 s | fresh scratch shallow clone, `GIT_TERMINAL_PROMPT=0`, stdin from /dev/null |
+| the same, reading 2 | 5.61 s | slowest |
+| the same, reading 3 | 3.62 s | |
+| `make verify.static` | 0.74 s | the step `gear.unchanged` ends |
+| `schema_of` on the archived v0.6 `src`, readings 1 to 5 | 0.21, 0.22, 0.22, 0.21, 0.22 s | 8723 bytes each; the extract holds no bytecode, so always cold |
+| `schema_of` on this repository's `src`, readings 1 to 5 | 0.21, 0.21, 0.22, 0.21, 0.21 s | 8723 bytes each |
+
+Two constants, each set by a rule:
+
+- `GIT_TIMEOUT_S = 20`. The slowest fetch reading, 5.61 s, is at or under half of it (10 s), so 20 s is not under twice a real fetch. It fits L36's 30 s commit stage because `gear.unchanged` is the last step of `verify.static`, which `verify.fast` runs before `test.fast`: a fetch hung to the bound stops make there, and the hook ends at about `verify.static`'s 0.74 s plus 20 s. In this checkout the tag is local and no fetch runs; the fetch runs where the tag is missing, as in CI's shallow checkout with no tags, which has no 30 s kill.
+- `PROBE_TIMEOUT_S = 60`. The slowest probe reading, 0.22 s (the archived v0.6 tree), is below one hundredth of it, so only a hung probe crosses it. It is longer than the git bound and not held to the hook's 30 s: the SDK's 30 s kill already ends a hung commit, and `make verify` and CI, which have no such kill, are what it bounds.
+
+### The gate delta (34.1-05)
+
+Source logs: `34.1-05-verify.log` (the whole `/usr/bin/time -p make verify` output) and `34.1-05-verify-meta.log` (start, end, load, HEAD, host, make's exit status), both under `.planning/phases/34.1-address-tech-debt-din-5480-table-loader-and-gear-guard/investigation/`. Every figure below is copied from them or from the Phase 34 sections above, not re-rounded; the differences are computed from the copied figures. One reading, on the final Phase 34.1 tree: `git status --porcelain -- src tests bench scripts pyproject.toml Makefile requirements.txt` printed nothing before the run (exit 0 in the meta log), and `SPUR_DIN5480_TABLES` was not set by the run (the gate does not read the private file). It is the plan's one gate run: no run was discarded, none hung, none was red.
+
+| Field | Value |
+|---|---|
+| Host | `18 CPUs, arm64, 64.0 GiB RAM` (`bench.machine_facts()`) |
+| HEAD | `24ac95a` (`src`, `tests`, `bench`, `scripts`, `pyproject.toml`, `Makefile` and `requirements.txt` as the phase left them; the commits after `2fa48b8` hold only `docs/` and `.planning/`) |
+| UTC start -> end | `2026-11-02T16:49:20Z` -> `2026-11-02T16:54:19Z` |
+| 1-minute load before -> after | `6.90` -> `4.70` (`sysctl -n vm.loadavg` printed `{ 6.90 6.08 5.34 }` and `{ 4.70 9.76 7.92 }`) |
+| Sibling-project processes above 50 % CPU | 0 at the start, 0 at the end (`ps` for a command line naming `screw`) |
+| make's exit status | `0` |
+| pytest result line | `======================= 2964 passed in 283.77s (0:04:43) =======================` |
+| `/usr/bin/time -p` | `real 284.91`, `user 811.32`, `sys 812.23` |
+| Coverage TOTAL line | `TOTAL                         2144     22    598     13  98.72%` (`Required test coverage of 96.0% reached. Total coverage: 98.72%`) |
+| Gate lines inside the run | `Contracts: 10 kept, 0 broken.` and `gear.unchanged: tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6` |
+| Browser test, call time | `79.06s call     tests/test_browser.py::test_the_shipped_viewer_in_a_real_browser` (the slowest-durations list of `34.1-05-verify.log`; it `PASSED` in the run) |
+
+The coverage rows of the modules this phase touched, copied from the log (`Name  Stmts  Miss  Branch  BrPart  Cover`), with the Phase 34 close row of the same module beside each:
+
+```
+close (34.1-05-verify.log)
+src/spur/din5480.py            110      0     28      0 100.00%
+src/spur/din5480_tables.py     252      0     94      0 100.00%
+src/spur/shaft_calc.py         162      0     36      0 100.00%
+
+Phase 34 close (34-17-verify.log)
+src/spur/din5480.py            110      0     28      0 100.00%
+src/spur/din5480_tables.py     238     13     84      8  93.48%
+src/spur/shaft_calc.py         164      2     38      2  98.02%
+```
+
+`src/spur/din5480_tables.py` and `src/spur/shaft_calc.py` both read `100.00 %` in this run, which closes the two modules Phase 34 left under it (D-11). `fail_under = 96` and `pyproject.toml` are unchanged since `e2299c4` (`git diff --quiet e2299c4 -- pyproject.toml` exits 0); no per-file floor and no coverage rule was added (D-12).
+
+#### Against Phase 34's readings
+
+Both readings are on the same host; the loads at the start differ.
+
+| Reading | Tests | pytest `passed in` | `real` | Load (1-minute) | Source |
+|---|---|---|---|---|---|
+| Phase 34 close, `HEAD dc31539` (reading of record) | `2934 passed` | `213.54 s` | `214.53 s` | 3.43 -> 11.64 | `### The gate delta (34-17)` |
+| Phase 34 after the review fixes, `HEAD 504d5c5` | `2940 passed` | `235.27 s` | `236.30 s` | 5.58 -> 7.68 | `### The human's ruling and the review-fix reading (Phase 34)` |
+| This reading: Phase 34.1 close, `HEAD 24ac95a` | `2964 passed` | `283.77 s` | `284.91 s` | 6.90 -> 4.70 | `34.1-05-verify.log` |
+
+| This reading minus | Tests | pytest `passed in` | `real` |
+|---|---|---|---|
+| the reading of record | `+30` | `+70.23 s` (`+32.89 %`) | `+70.38 s` (`+32.81 %`) |
+| the review-fix reading | `+24` | `+48.50 s` (`+20.61 %`) | `+48.61 s` (`+20.57 %`) |
+
+Phase 25's run-to-run spread is about 8 % (the Makefile comment at the `test:` target), about 17.08 s of 213.54 s and 18.82 s of 235.27 s. This reading is above both Phase 34 readings by more than that spread, so it is not inside it, and no claim is made that the phase made the gate faster. It is also not read as the phase making it slower: each is one run, the loads differ (6.90 at the start here against 3.43 and 5.58), and the browser test's call time moved from `74.16 s` to `79.06 s` (`+4.90 s`), which is a small part of the difference. The 30 added tests are loader, guard and limit-reading tests; this section does not say what moved the rest. The Phase 34 close already recorded a reading of `308.61 s` on code identical to its reading of record, put down to host load, so one run moving by this much is on record for this gate; one run here does not settle it.
+
+The distance to the bar: this reading is under L43's 300 s bar by 16.23 s (`pytest`, `300.00 - 283.77`) and 15.09 s (`real`, `300.00 - 284.91`); the comparison is with the log's figures as printed, and both are under. The margin is smaller than at Phase 34's close (86.46 s and 85.47 s). If a later quiet-host run reads over the bar, the bar is the human's to move (L43).
+
+### Phase close checks (34.1-05)
+
+Source: `34.1-05-close-checks.log`, under the phase's `investigation/`, run once on `HEAD ca034a0` (the tree with L51 appended; this section, the seen-red table below and the SUMMARY were written after it). All sixteen read `PASS` and the log holds no `FAIL`. Numbers are as the log prints them.
+
+1. PASS `files="$(git ls-files -- private)" && test -z "$files"`: no file under `private/` is tracked.
+2. PASS `git diff --exit-code v0.6 -- tests/regression/ .github/workflows/ci.yml`: exit 0, empty.
+3. PASS `git diff --exit-code e2299c4 -- requirements.txt pyproject.toml src/spur/cli.py src/spur/app.py src/spur/params.py src/spur/calc.py tests/din5480_tables_fixture.py`: exit 0, empty (no package was installed, and the coverage floor in `pyproject.toml` did not move).
+4. PASS `make gear.unchanged`: `tests/regression/, .github/workflows/ci.yml and /api/schema (8723 bytes) are byte-equal to v0.6`.
+5. PASS `make lint-imports`: `Contracts: 10 kept, 0 broken.`
+6. PASS `/usr/bin/time -p make verify.fast`: `real 17.40`, under 30 s (L36), exit 0, `2474 passed in 16.34s`, load `{ 6.54 7.82 7.46 }` after.
+7. PASS `make no-fake-done`: exit 0.
+8. PASS the seven items are in `docs/tech_debt/resolved/` with `Status: resolved`, absent from `active/`, listed under the INDEX's `## Resolved`, and the first sha of each `Resolved in:` line passes `git cat-file -e <sha>^{commit}` (`2fa48b8`, `1ea2e45`, `7876797`, `8e0885f`, `8fb0d9e`, `9aa8c95`, `9653865`).
+9. PASS `git diff --name-status e2299c4 -- docs/tech_debt/active/`: the seven items deleted, nothing else changed, and one item added, the option-a item `2026-11-02-a-table-file-with-sizes-or-table-7-alone-loads-and-prints-a-false-sentence.md` (D-10a: `SCHEMA_VERSION` unused and every other nice or must item stay in `active/`).
+10. PASS the human's `make tables.test FILE=private/din5480-tables.json` line as `34.1-04-SUMMARY.md` records it, copied and not re-run: `passed: 22 passed in 5.94s`, run at `12aae8b`.
+11. PASS D-09: `awk '/^def limit_measurement/,/^def end_chamfer_reading/' src/spur/shaft_calc.py` holds 0 lines naming `odd_confirmed`; `pin_measurement` names it on 3 lines (its gate is kept).
+12. PASS D-06: `git cat-file -t v0.6` prints `tag`; `git rev-parse 'v0.6^{commit}'` equals `BASELINE_SHA` (`792b45c033c38b0fef12f85cdbba1df36adb3a69`).
+13. PASS D-07: both `subprocess.run(` calls in `scripts/gear_unchanged.py` carry `timeout=` and `stdin=subprocess.DEVNULL` (read from the syntax tree), the git call sets `GIT_TERMINAL_PROMPT`, and the file has no `shell=True`.
+14. PASS D-01, D-02, D-04: `A_S_CAP_UM_PER_MM` is defined once, the `UM_LIMIT` check on `dev.a_s_um` is in `problems()`, and `problems()` has no comparison on a deviation letter.
+15. PASS D-10: in `load_file` (comment lines dropped) `f.read(MAX_FILE_BYTES + 1)` appears once, `if size > MAX_FILE_BYTES:` once (the stat-time check), `if len(raw) > MAX_FILE_BYTES:` once (the read-time check), and `read_bytes` not at all.
+16. PASS the leak review: 19 files outside `.planning/` read (`git diff --name-only e2299c4 HEAD -- . ':(exclude).planning'`, captured first), and the phase's commit messages as one more row. Every number on every added line is in one class: an identifier, sha or date, `k` (60, the human's decided constant, the only class taken from the private file), a number already in the tree at `e2299c4`, or a measurement of this repository (a figure in the phase's logs, or arithmetic on two of them). 0 outside the classes. The aggregate figures the human recorded in `.planning/` CONTEXT (the largest ratio of the private file, the headroom as a percentage, the caught-cell counts and their share) are not a class; a grep for their obvious spellings finds none on an added line and none in a commit message, and the one near-hit, `93.48`, is the gate's own coverage reading of `din5480_tables.py` before the phase (Phase 34's log). The per-file counts are in the log; the scratch lists of numbers are in `/tmp`, not committed.
+
+Where the checks stop: the leak review is a classification, not a comparison with the private file, because the agent does not open it. It proves that every number the phase added is one it can account for, and it names the human's aggregate figures by kind and never by value; it cannot prove that a number it classed as already in the tree or as a fixture value is not also a value of the standard. Check 10 is the human's reading of the real file, not the agent's. The "already in the tree" class is weak for small numbers, so the added lines of `src/`, `tests/` and `scripts/` were also read by eye.
+
+### Seen red once (Phase 34.1)
+
+Each row is a deliberate break of a guard that this phase adds, run once to see the test go red and then reverted. Each plan wrote its own rows into its SUMMARY (`## Seen red`) and its `investigation/` log; 34.1-05 copies them here in plan order. The 34.1-04 rows came with a `Log` column in place of `Reverted` and a `same` for repeated cells; they are expanded here, and that SUMMARY's table now starts with a `Plan` column so that the row count can be checked against this table.
+
+| Plan | Test or step | Deliberate break | First failure line | Reverted |
+|---|---|---|---|---|
+| 34.1-01 | `test_a_broken_row_refuses_to_load[module not one of the sixteen]` | module-set `found.append(...)` (line 245) replaced by `pass`, its `continue` kept | `Failed: DID NOT RAISE TablesError`; `1 failed in 0.02s` (log `34.1-01-red-module-set.log`) | yes |
+| 34.1-01 | `[m1 not positive]` | `m1_mm is not positive` append (254) replaced by `pass` | `AssertionError: assert 'm1_mm is not positive' in 'sizes (1.25, 25.0, 18) (pages 18, 19): M1 disagrees with the formula at the printed pin'`; `1 failed in 0.02s`. The red is the needle assertion: the M1 identity still refuses the row, so only the sentence goes missing (log `34.1-01-red-m1-positive.log`) | yes |
+| 34.1-01 | `[a deviation row one column wider]` | deviation column-count append (294) replaced by `pass` | `Failed: DID NOT RAISE TablesError`; `1 failed in 0.02s` (log `34.1-01-red-deviation-width.log`) | yes |
+| 34.1-01 | `[a class row one column wider]` | class column-count append (300) replaced by `pass` | `Failed: DID NOT RAISE TablesError`; `1 failed in 0.02s` (log `34.1-01-red-class-width.log`) | yes |
+| 34.1-01 | `[column module bounds reversed]` and `[column module bound not a DIN 5480-2 module]` | column module-bounds append (307) replaced by `pass`, both cases in one run | `Failed: DID NOT RAISE TablesError` twice; `2 failed in 0.03s` (log `34.1-01-red-column-bounds.log`) | yes |
+| 34.1-01 | `[column d_B range reversed]` | d_B range append (310) replaced by `pass` | `Failed: DID NOT RAISE TablesError`; `1 failed in 0.02s` (log `34.1-01-red-column-d-b.log`) | yes |
+| 34.1-01 | `test_a_path_the_system_cannot_stat_refuses_naming_it` | `stat` handler's `raise TablesError(...)` (349) replaced by a bare `raise` | `OSError: [Errno 63] File name too long: '<tmp path>'`; `1 failed in 0.13s` (log `34.1-01-red-stat-error.log`) | yes |
+| 34.1-01 | `test_a_read_error_after_the_stat_refuses_naming_the_path` | `read_bytes` handler's `raise TablesError(...)` (358) replaced by a bare `raise` | `PermissionError: [Errno 13] Permission denied`; `1 failed in 0.03s` (log `34.1-01-red-read-error.log`) | yes |
+| 34.1-01 | `test_a_file_that_grew_past_the_cap_after_the_stat_refuses` | post-read cap, lines 361-362, deleted | `AssertionError: assert '<path>: ... json_invalid' == '<path>: is larger than the 4194304 byte cap'`; `1 failed in 0.03s` (log `34.1-01-red-grown-file.log`) | yes |
+| 34.1-01 | `test_fit_is_none_when_an_unchecked_document_names_a_missing_tolerance_row` | `if row is None: return None` in `Tables.fit` (180-181) deleted | `AttributeError: 'NoneType' object has no attribute 't_g_um'`; `1 failed in 0.03s` (log `34.1-01-red-unchecked-fit.log`) | yes |
+| 34.1-02 | `test_a_fetch_that_hangs_fails_inside_its_bound_naming_the_command` | `timeout=GIT_TIMEOUT_S` removed from `_git` | `AssertionError: assert 'gear.unchang...itory exists.' == 'gear.unchang...out after 1 s'` (the fetch waited out the sleep and refused with the fetch sentence); `1 failed in 10.35s` (log `34.1-02-red-git-timeout.log`) | yes |
+| 34.1-02 | `test_git_runs_with_terminal_prompts_off` | `env=` removed from `_git` | `AssertionError: assert 'could not be fetched from origin: prompt=0' in '...origin: prompt=\nfatal: ...'`; `1 failed in 0.27s` (log `34.1-02-red-prompt.log`) | yes |
+| 34.1-02 | `test_a_probe_that_hangs_fails_inside_its_bound` | `timeout=PROBE_TIMEOUT_S` removed from `schema_of` | `ValueError: not enough values to unpack (expected 3, got 1)` (the child slept out and printed nothing); `1 failed in 10.15s` (log `34.1-02-red-probe-timeout.log`) | yes |
+| 34.1-02 | `test_a_lightweight_v0_6_tag_is_refused` | `if kind != "tag":` replaced by `if False:` | `Failed: DID NOT RAISE SystemExit`; `1 failed in 0.38s` (log `34.1-02-red-lightweight.log`) | yes |
+| 34.1-02 | `test_a_moved_annotated_tag_is_refused` | `if peeled != baseline:` replaced by `if False:` | `Failed: DID NOT RAISE SystemExit`; `1 failed in 0.35s` (log `34.1-02-red-moved.log`) | yes |
+| 34.1-02 | `test_a_branch_named_v0_6_is_not_taken_for_the_tag` | presence probe back to the bare `TAG` | `AssertionError: Regex pattern did not match.` Actual message: `gear.unchanged: v0.6 is not an annotated tag (git cat-file -t printed '')...`; `1 failed in 0.32s` (log `34.1-02-red-branch.log`) | yes |
+| 34.1-03 | `test_a_file_over_the_cap_is_refused_at_the_stat_before_it_is_opened` | the stat-time `if size > MAX_FILE_BYTES:` and its raise deleted | `AssertionError: opened past the stat-time cap`; `1 failed in 0.03s` (log `34.1-03-red-stat-cap.log`) | yes |
+| 34.1-03 | `test_a_file_that_grew_past_the_cap_after_the_stat_refuses` | `f.read(MAX_FILE_BYTES + 1)` replaced by an unbounded `f.read()` | `assert 8388610 == (4194304 + 1)` on the in-memory file's position; `1 failed in 0.03s` (log `34.1-03-red-read-bound.log`) | yes |
+| 34.1-03 | `test_a_file_that_grew_past_the_cap_after_the_stat_refuses` | the read-time `if len(raw) > MAX_FILE_BYTES:` and its raise deleted | the cap sentence is replaced by `<path>: (document): json_invalid`; `1 failed in 0.03s` (log `34.1-03-red-read-cap.log`) | yes |
+| 34.1-03 | `test_a_read_error_after_the_stat_refuses_naming_the_path` | the read handler's `raise TablesError(...)` replaced by a bare `raise` | `PermissionError: [Errno 13] Permission denied`; `1 failed in 0.03s` (log `34.1-03-red-open-error.log`) | yes |
+| 34.1-03 | `test_a_pin_that_misses_the_flanks_at_a_limit_thickness_is_null_with_its_own_sentence` | the flanks return (`if result is None:` and its `LimitReading`) deleted | `TypeError: cannot unpack non-iterable NoneType object`; `1 failed in 0.03s` (log `34.1-03-red-flanks.log`) | yes |
+| 34.1-04 | `test_a_broken_row_refuses_to_load[Table 7 without its deviations]` | the rule's `found.append(...)` replaced by `pass` | `Failed: DID NOT RAISE TablesError` (log `34.1-04-red-table-7.log`; `4 failed, 67 deselected in 0.05s`, one run for the four cases) | yes |
+| 34.1-04 | `[Table 7 without its classes]` | the rule's `found.append(...)` replaced by `pass` | `Failed: DID NOT RAISE TablesError` (log `34.1-04-red-table-7.log`; `4 failed, 67 deselected in 0.05s`, one run for the four cases) | yes |
+| 34.1-04 | `[Table 7 without its tolerances]` | the rule's `found.append(...)` replaced by `pass` | `AssertionError: assert 'Table 7 is partly present: tolerances empty' in 'classes 7 (page 24): row_by_column names a tolerance row that does not exist ...'`. An existing check still refuses this case, so the needle is what fails (log `34.1-04-red-table-7.log`; `4 failed, 67 deselected in 0.05s`, one run for the four cases) | yes |
+| 34.1-04 | `[Table 7 without its columns]` | the rule's `found.append(...)` replaced by `pass` | `Failed: DID NOT RAISE TablesError` (the debt item's own reproduction) (log `34.1-04-red-table-7.log`; `4 failed, 67 deselected in 0.05s`, one run for the four cases) | yes |
+| 34.1-04 | `[A_s ten times its cell, under the micrometre limit]` | the cap's `found.append(...)` replaced by `pass` | `Failed: DID NOT RAISE TablesError`; `1 failed in 0.02s` (log `34.1-04-red-a-s-cap.log`) | yes |
+
+34.1-03's `test_a_file_that_grew_past_the_cap_after_the_stat_refuses` has two rows because two lines of the read were broken one at a time. The rows are 26 for the four plans: 10 (34.1-01), 6 (34.1-02), 5 (34.1-03) and 5 (34.1-04).

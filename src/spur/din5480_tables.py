@@ -36,6 +36,14 @@ MAX_FILE_BYTES = 4 * 1024 * 1024
 # A micrometre value of three extra digits is a millimetre value typed in micrometres
 # (34-RESEARCH Pattern 6). 34-14 stops and asks if the real file exceeds it.
 UM_LIMIT = 1000
+# An A_s cell is refused beyond this many micrometres per millimetre of the largest module of
+# its column (D-01). The human measured the real file in aggregate, and 60 leaves headroom over
+# its largest |A_s| / m. The cap is coarse on purpose: it catches a tenfold slip, which loads
+# under UM_LIMIT and moves s_vmax, s_max and s_min together, so the order among them cannot see
+# it (D-03). One global constant, not one per column, because it is a belt behind the two-reads
+# diff (Phase 34's D-08), which stays the primary guard; a tenfold slip on a cell whose ratio is
+# small still lands under the cap and loads, a residual accepted for the same reason.
+A_S_CAP_UM_PER_MM = 60
 # Half the printed third decimal plus float noise on the tie: 720 of 720 DIN 5480-2 rows
 # agree inside it, the worst at 0.0005 (34-RESEARCH Pattern 6).
 M1_TOLERANCE = 0.0005 + 1e-9
@@ -267,10 +275,19 @@ def problems(t: Tables) -> list[str]:
             n_selecting = len(_columns_selecting(t, size.module, size.reference_d))
             if n_selecting != 1:
                 found.append(f"{at}: selected by {n_selecting} column rows, not one")
-    for kind, rows in (("deviations", t.deviations), ("classes", t.classes),
-                       ("tolerances", t.tolerances), ("columns", t.columns)):
+    table_7 = (("deviations", t.deviations), ("classes", t.classes),
+               ("tolerances", t.tolerances), ("columns", t.columns))
+    for kind, rows in table_7:
         found += [f"{kind}: a row's provenance is not Part 1 Table 7's"
                   for row in rows if row.provenance != TABLE_7_PROVENANCE]
+    # Table 7 is whole or absent: a truncated file loaded and printed a sentence about the
+    # standard that is really about the file ("the fit 8f is not in DIN 5480-1 Table 7, whose
+    # shaft deviations are ...", 34-REVIEW IN-06, L08). The all-empty document still loads,
+    # because completeness is checked at transcription (L50); D-05.
+    empty = [kind for kind, rows in table_7 if not rows]
+    if 0 < len(empty) < len(table_7):
+        found.append(f"Table 7 is partly present: {', '.join(empty)} empty while the other "
+                     f"Table 7 lists are not")
     for tol in t.tolerances:
         at = f"tolerances {tol.row} (page 24)"
         if tol.t_g_um != tol.t_act_um + tol.t_eff_um:
@@ -281,10 +298,26 @@ def problems(t: Tables) -> list[str]:
             found.append(f"{at}: T_act or T_eff is negative")
         if any(abs(v) > UM_LIMIT for v in (tol.t_g_um, tol.t_act_um, tol.t_eff_um)):
             found.append(f"{at}: a micrometre field is beyond {UM_LIMIT}")
+    # A column no row selects gets no cap, because no lookup can read that cell. The cap lives
+    # here and not in a startup check above the loader and shaft_calc: a slip moves s_min, s_max
+    # and s_vmax together, so their derived order would not see it (D-03). There is no rule on
+    # a deviation's sign, an assumption the copy was not checked for; a sign slip stays the
+    # two-reads diff's (D-02).
+    largest_module: dict[int, float] = {}
+    for col in t.columns:
+        largest_module[col.column] = max(col.module_max_mm, largest_module.get(col.column, 0.0))
     for dev in t.deviations:
+        # Not redundant with the cap below: wherever a column has a row, that cap is at most
+        # A_S_CAP_UM_PER_MM times the largest of PART_2_MODULES, tighter than this, so only
+        # UM_LIMIT bounds a cell of a column no row selects (D-04).
         if any(abs(v) > UM_LIMIT for v in dev.a_s_um):
             found.append(f"deviations {dev.letter!r} (page 24): a micrometre field is beyond "
                          f"{UM_LIMIT}")
+        for column, cell in enumerate(dev.a_s_um, start=1):
+            if abs(cell) > A_S_CAP_UM_PER_MM * largest_module.get(column, float("inf")):
+                found.append(f"deviations {dev.letter!r} (page 24): A_s in column {column} is "
+                             f"beyond {A_S_CAP_UM_PER_MM} micrometres per millimetre of its "
+                             f"column's largest module")
     # One column count for every Table 7 row; the first deviation row (else the first class
     # row) sets it.
     widths = [len(r.a_s_um) for r in t.deviations] + [len(r.row_by_column) for r in t.classes]
@@ -352,8 +385,12 @@ def load_file(path: Path) -> Tables:
         raise TablesError(f"{path}: {reason}")
     if size > MAX_FILE_BYTES:
         raise TablesError(f"{path}: is larger than the {MAX_FILE_BYTES} byte cap")
+    # One byte past the cap is enough to know the file is over it, so a file that grew after
+    # the stat costs at most that much memory; reading it whole spent the memory before the
+    # check below could fire (34-REVIEW IN-04).
     try:
-        raw = path.read_bytes()
+        with path.open("rb") as f:
+            raw = f.read(MAX_FILE_BYTES + 1)
     except OSError as exc:
         raise TablesError(f"{path}: cannot be read ({exc.strerror})") from None
     if not raw:

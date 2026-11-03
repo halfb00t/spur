@@ -1,0 +1,31 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________________ test_a_moved_annotated_tag_is_refused _____________________
+
+tmp_path = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2633/test_a_moved_annotated_tag_is_0')
+
+    def test_a_moved_annotated_tag_is_refused(tmp_path: Path) -> None:
+        """An annotated tag force-moved to a later commit is still annotated; only the peeled
+        sha tells it from the baseline."""
+        work = _work_repo(tmp_path)
+        baseline = _tagged(work)
+        _git(work, "commit", "-q", "--allow-empty", "-m", "later")
+        _git(work, "tag", "-f", "-a", "v0.6", "-m", "moved")
+    
+>       _refused(work, "peels to", baseline)
+
+tests/test_gear_unchanged.py:303: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+work = PosixPath('/private/var/folders/g1/qxn3_5tx48xg4srplqpp46140000gn/T/pytest-of-half/pytest-2633/test_a_moved_annotated_tag_is_0/work')
+pattern = 'peels to', baseline = '92fc2cd217bf311e7cbec7676a3886e26e5493d9'
+
+    def _refused(work: Path, pattern: str, baseline: str | None = None) -> None:
+>       with pytest.raises(SystemExit, match=pattern) as refused:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SystemExit
+
+tests/test_gear_unchanged.py:90: Failed
+=========================== short test summary info ============================
+FAILED tests/test_gear_unchanged.py::test_a_moved_annotated_tag_is_refused - ...
+1 failed in 0.35s
