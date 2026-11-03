@@ -1,5 +1,5 @@
 ---
-status: diagnosed
+status: resolved
 phase: 33-interfaces-and-parity
 source: [33-VERIFICATION.md]
 started: 2026-10-28T02:52:43Z
@@ -26,7 +26,8 @@ severity: major
 
 total: 2
 passed: 1
-issues: 1
+issues: 0
+resolved: 1
 pending: 0
 skipped: 0
 blocked: 0
@@ -35,7 +36,8 @@ blocked: 0
 
 - gap_id: G-33-2
   truth: "Under 820 px the Gear | Shaft switch stays reachable above the canvas; a refused link leaves the form visibly non-editable; dark-mode primary button text meets WCAG AA 4.5:1 (33-UI-REVIEW.md findings)"
-  status: failed
+  status: resolved
+  resolved_by: "plan 33-10 (G-33-2 gap closure): browser tests IN-07 and the narrow-layout, refused-link and dark-mode contrast steps; see 33-10-SUMMARY.md. UAT test 2 was not re-run by a human."
   reason: "User reported: fix"
   severity: major
   test: 2
